@@ -1,0 +1,7 @@
+# JetBrains IDE project files
+.idea
+
+build/bin
+node_modules
+frontend/dist
+
