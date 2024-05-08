@@ -1,7 +1,10 @@
 # JetBrains IDE project files
 .idea
 
+# Build files
 build/bin
 node_modules
 frontend/dist
 
+# Environment variables
+.env

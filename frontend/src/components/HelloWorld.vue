@@ -1,17 +1,52 @@
 <script lang="ts" setup>
-import {reactive} from 'vue'
-import {Greet} from '../../wailsjs/go/main/App'
+import { reactive, ref } from "vue";
+import {Version, List, Backup} from '../../wailsjs/go/borg/Borg'
+import { borg } from "../../wailsjs/go/models";
 
 const data = reactive({
   name: "",
   resultText: "Please enter your name below 👇",
+  version: "",
+  error: "",
+  hasRunningBackup: false,
 })
 
-function greet() {
-  Greet(data.name).then(result => {
-    data.resultText = result
+const listData = ref<borg.ListResponse>();
+
+function version() {
+  Version().then((result) => {
+    data.version = result
+  }).catch((error) => {
+    data.error = error
   })
 }
+
+async function list() {
+  List().then((result) => {
+    listData.value = result
+  }).catch((error) => {
+    data.error = error
+  })
+}
+
+async function backup() {
+  try {
+    data.hasRunningBackup = true
+    await Backup()
+    data.resultText = "Backup completed successfully!"
+    data.hasRunningBackup = false
+    await list()
+  }
+  catch (error) {
+    data.error = error
+  }
+  finally {
+    data.hasRunningBackup = false
+  }
+}
+
+// version()
+list()
 
 </script>
 
@@ -19,8 +54,28 @@ function greet() {
   <main>
     <div id="result" class="result">{{ data.resultText }}</div>
     <div id="input" class="input-box">
-      <input id="name" v-model="data.name" autocomplete="off" class="input" type="text"/>
-      <button class="btn" @click="greet">Greet</button>
+<!--      <input id="name" v-model="data.name" autocomplete="off" class="input" type="text"/>-->
+      <button class="btn" @click="backup">Backup</button>
+<!--      Show if a backup is running-->
+      <div v-if="data.hasRunningBackup" class="result">Backup is running...</div>
+      <br>
+      <div id="version" class="result">{{ data.version }}</div>
+      <br>
+      <div id="error" class="result" style='color: red'>{{ data.error }}</div>
+      <table v-if="listData">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in listData.archives">
+            <td>{{ item.name }}</td>
+            <td>{{ item.time }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </main>
 </template>
