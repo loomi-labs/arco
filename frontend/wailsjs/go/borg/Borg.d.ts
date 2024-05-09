@@ -4,6 +4,12 @@ import {borg} from '../models';
 
 export function Backup():Promise<void>;
 
+export function CreateSSHKeyPair():Promise<string>;
+
+export function InitRepo(arg1:string):Promise<void>;
+
 export function List():Promise<borg.ListResponse>;
+
+export function Prune():Promise<void>;
 
 export function Version():Promise<string>;

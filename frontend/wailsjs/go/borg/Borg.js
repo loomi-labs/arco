@@ -6,8 +6,20 @@ export function Backup() {
   return window['go']['borg']['Borg']['Backup']();
 }
 
+export function CreateSSHKeyPair() {
+  return window['go']['borg']['Borg']['CreateSSHKeyPair']();
+}
+
+export function InitRepo(arg1) {
+  return window['go']['borg']['Borg']['InitRepo'](arg1);
+}
+
 export function List() {
   return window['go']['borg']['Borg']['List']();
+}
+
+export function Prune() {
+  return window['go']['borg']['Borg']['Prune']();
 }
 
 export function Version() {

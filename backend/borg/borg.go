@@ -6,7 +6,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
+	"timebender/backend/ssh"
 )
 
 type Borg struct {
@@ -21,6 +23,22 @@ func NewBorg(log logger.Logger) *Borg {
 	}
 }
 
+func (b *Borg) getEnv() []string {
+	passphrase := os.Getenv("BORG_PASSPHRASE")
+	sshOptions := []string{
+		"-oBatchMode=yes",
+		"-oStrictHostKeyChecking=accept-new",
+		"-i /tmp/ssh/id_storage_test",
+	}
+	env := append(
+		os.Environ(),
+		fmt.Sprintf("BORG_PASSPHRASE=%s", passphrase),
+		fmt.Sprintf("BORG_NEW_PASSPHRASE=%s", passphrase),
+		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
+	)
+	return env
+}
+
 func (b *Borg) Version() (string, error) {
 	cmd := exec.Command(b.binaryPath, "--version")
 	out, err := cmd.CombinedOutput()
@@ -31,12 +49,11 @@ func (b *Borg) Version() (string, error) {
 }
 
 func (b *Borg) List() (*ListResponse, error) {
-	repo := os.Getenv("BORG_REPO")
-	passphrase := os.Getenv("BORG_PASSPHRASE")
+	repo := fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
 	b.log.Debug(fmt.Sprintf("Listing repo: %s", repo))
 
 	cmd := exec.Command(b.binaryPath, "list", "--json", repo)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("BORG_PASSPHRASE=%s", passphrase))
+	cmd.Env = b.getEnv()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", out, err)
@@ -52,8 +69,8 @@ func (b *Borg) List() (*ListResponse, error) {
 }
 
 func (b *Borg) Backup() error {
+	root := os.Getenv("BORG_ROOT")
 	repo := os.Getenv("BORG_REPO")
-	passphrase := os.Getenv("BORG_PASSPHRASE")
 	path := os.Getenv("BORG_BACKUP_PATHS")
 
 	hostname, err := os.Hostname()
@@ -62,12 +79,56 @@ func (b *Borg) Backup() error {
 	}
 	name := fmt.Sprintf("%s-%s", hostname, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
-	cmd := exec.Command(b.binaryPath, "create", fmt.Sprintf("%s::%s", repo, name), path)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("BORG_PASSPHRASE=%s", passphrase))
+	cmd := exec.Command(b.binaryPath, "create", fmt.Sprintf("%s%s::%s", root, repo, name), path)
+	cmd.Env = b.getEnv()
+	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", out, err)
 	}
 
 	return nil
+}
+
+func (b *Borg) Prune() error {
+	repo := os.Getenv("BORG_REPO")
+
+	cmd := exec.Command(b.binaryPath, "prune", "--list", repo, "--keep-daily", "7")
+	cmd.Env = b.getEnv()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %s", out, err)
+	}
+
+	return nil
+}
+
+func (b *Borg) InitRepo(repoName string) error {
+	root := os.Getenv("BORG_ROOT")
+	repo := fmt.Sprintf("%s/~/%s", root, repoName)
+
+	quota := "10G"
+
+	cmd := exec.Command(b.binaryPath, "init", "--encryption=repokey-blake2", "--storage-quota", quota, repo)
+
+	// log command
+	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+
+	cmd.Env = b.getEnv()
+	out, err := cmd.CombinedOutput()
+	b.log.Debug(fmt.Sprintf("Output: %s", out))
+	if err != nil {
+		return fmt.Errorf("%s: %s", out, err)
+	}
+
+	return nil
+}
+
+func (b *Borg) CreateSSHKeyPair() (string, error) {
+	pair, err := ssh.GenerateKeyPair()
+	if err != nil {
+		return "", err
+	}
+	b.log.Debug(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
+	return pair.AuthorizedKey(), nil
 }
