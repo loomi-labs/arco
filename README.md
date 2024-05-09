@@ -17,3 +17,7 @@ to this in your browser, and you can call your Go code from devtools.
 ## Building
 
 To build a redistributable, production mode package, use `wails build`.
+
+## Borg
+Check out [Borg](https://manpages.debian.org/experimental/borgbackup/borg.1.en.html)
+for more information about the backup tool.
