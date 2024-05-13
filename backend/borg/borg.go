@@ -12,8 +12,9 @@ import (
 )
 
 type Borg struct {
-	binaryPath string
-	log        logger.Logger
+	binaryPath   string
+	log          logger.Logger
+	Repositories []Repo
 }
 
 func NewBorg(log logger.Logger) *Borg {
@@ -131,4 +132,34 @@ func (b *Borg) CreateSSHKeyPair() (string, error) {
 	}
 	b.log.Debug(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
 	return pair.AuthorizedKey(), nil
+}
+
+func (b *Borg) NewRepo() *Repo {
+	hostname, _ := os.Hostname()
+	home, _ := os.UserHomeDir()
+	return NewRepo(hostname, hostname, []string{home})
+}
+
+func (b *Borg) SaveRepo(repo *Repo) {
+	// Add the repo to the list of repositories
+	// If it already exists, update it
+	for i, r := range b.Repositories {
+		if r.Id == repo.Id {
+			b.Repositories[i] = *repo
+			return
+		}
+	}
+	b.Repositories = append(b.Repositories, *repo)
+}
+
+func (b *Borg) GetRepo(id string) (*Repo, error) {
+	b.log.Debug(fmt.Sprintf("Looking for repo with id: %s", id))
+	for _, repo := range b.Repositories {
+		if repo.Id == id {
+			b.log.Debug(fmt.Sprintf("Found repo: %s", repo.Name))
+			return &repo, nil
+		}
+	}
+	b.log.Error(fmt.Sprintf("Repo with id %s not found", id))
+	return nil, fmt.Errorf("repo with id %s not found", id)
 }

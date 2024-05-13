@@ -6,10 +6,16 @@ export function Backup():Promise<void>;
 
 export function CreateSSHKeyPair():Promise<string>;
 
+export function GetRepo(arg1:string):Promise<borg.Repo>;
+
 export function InitRepo(arg1:string):Promise<void>;
 
 export function List():Promise<borg.ListResponse>;
 
+export function NewRepo():Promise<borg.Repo>;
+
 export function Prune():Promise<void>;
+
+export function SaveRepo(arg1:borg.Repo):Promise<void>;
 
 export function Version():Promise<string>;

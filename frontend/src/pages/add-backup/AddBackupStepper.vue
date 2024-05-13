@@ -1,6 +1,9 @@
 <script setup lang='ts'>
 const props = defineProps({
-  currentStep: Number,
+  currentStep: {
+    type: Number,
+    default: 0,
+  },
 });
 </script>
 
