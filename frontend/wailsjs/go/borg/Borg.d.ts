@@ -10,6 +10,8 @@ export function CreateSSHKeyPair():Promise<string>;
 
 export function GetBackupSet(arg1:string):Promise<borg.BackupSet>;
 
+export function GetBackupSets():Promise<Array<borg.BackupSet>>;
+
 export function InitRepo(arg1:string):Promise<void>;
 
 export function List():Promise<borg.ListResponse>;
@@ -17,7 +19,5 @@ export function List():Promise<borg.ListResponse>;
 export function NewBackupSet():Promise<borg.BackupSet>;
 
 export function Prune():Promise<void>;
-
-export function SaveBackupSet(arg1:borg.BackupSet):Promise<void>;
 
 export function Version():Promise<string>;

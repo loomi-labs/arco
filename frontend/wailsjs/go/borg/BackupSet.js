@@ -5,3 +5,7 @@
 export function AddDirectory(arg1) {
   return window['go']['borg']['BackupSet']['AddDirectory'](arg1);
 }
+
+export function Save() {
+  return window['go']['borg']['BackupSet']['Save']();
+}

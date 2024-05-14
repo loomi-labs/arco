@@ -26,7 +26,7 @@ func NewRepo(log logger.Logger, binaryPath string) *Repo {
 func (r *Repo) Info() (*ListResponse, error) {
 	cmd := exec.Command(r.binaryPath, "info", "--json", r.Url)
 	cmd.Env = getEnv()
-	r.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	r.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", out, err)

@@ -29,7 +29,7 @@ func getEnv() []string {
 	sshOptions := []string{
 		"-oBatchMode=yes",
 		"-oStrictHostKeyChecking=accept-new",
-		"-i /tmp/ssh/id_storage_test",
+		"-i ~/sshtest/id_storage_test",
 	}
 	env := append(
 		os.Environ(),
@@ -139,19 +139,9 @@ func (b *Borg) CreateSSHKeyPair() (string, error) {
 func (b *Borg) NewBackupSet() *BackupSet {
 	hostname, _ := os.Hostname()
 	home, _ := os.UserHomeDir()
-	return NewBackupSet(hostname, hostname, []string{home})
-}
-
-func (b *Borg) SaveBackupSet(backupSet *BackupSet) {
-	// Add the backup-set to the list of backup-sets
-	// If it already exists, update it
-	for i, r := range b.BackupSets {
-		if r.Id == backupSet.Id {
-			b.BackupSets[i] = *backupSet
-			return
-		}
-	}
+	backupSet := NewBackupSet(hostname, hostname, []string{home})
 	b.BackupSets = append(b.BackupSets, *backupSet)
+	return backupSet
 }
 
 func (b *Borg) GetBackupSet(id string) (*BackupSet, error) {
@@ -162,6 +152,22 @@ func (b *Borg) GetBackupSet(id string) (*BackupSet, error) {
 	}
 	return nil, fmt.Errorf("backupSet with id %s not found", id)
 }
+
+func (b *Borg) GetBackupSets() []BackupSet {
+	return b.BackupSets
+}
+
+//func (b *Borg) SaveBackupSet(backupSet *BackupSet) {
+//	// Add the backup-set to the list of backup-sets
+//	// If it already exists, update it
+//	for i, r := range b.BackupSets {
+//		if r.Id == backupSet.Id {
+//			b.BackupSets[i] = *backupSet
+//			return
+//		}
+//	}
+//	b.BackupSets = append(b.BackupSets, *backupSet)
+//}
 
 func (b *Borg) ConnectExistingRepo() (*Repo, error) {
 	repo := NewRepo(b.log, b.binaryPath)

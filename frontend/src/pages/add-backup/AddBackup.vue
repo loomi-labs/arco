@@ -1,18 +1,19 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
-import { NewBackupSet, SaveBackupSet, ConnectExistingRepo } from "../../../wailsjs/go/borg/Borg";
+import { ConnectExistingRepo, NewBackupSet } from "../../../wailsjs/go/borg/Borg";
 import { AddDirectory } from "../../../wailsjs/go/borg/BackupSet";
 import { borg } from "../../../wailsjs/go/models";
-import { LogDebug } from "../../../wailsjs/runtime";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { rDataPage } from "../../router";
+import Navbar from "../../components/Navbar.vue";
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
-const repo = ref<borg.BackupSet>(borg.BackupSet.createFrom());
+const backupSet = ref<borg.BackupSet>(borg.BackupSet.createFrom());
 const currentStep = ref(0);
 
 /************
@@ -21,16 +22,16 @@ const currentStep = ref(0);
 
 async function createBackupSet() {
   try {
-    repo.value = await NewBackupSet();
+    backupSet.value = await NewBackupSet();
   } catch (error: any) {
     console.error(error);
   }
 }
 
 const markAdded = async (directory: borg.Directory) => {
-  for (let i = 0; i < repo.value.directories.length; i++) {
-    if (repo.value.directories[i].path === directory.path) {
-      repo.value.directories[i].isAdded = true;
+  for (let i = 0; i < backupSet.value.directories.length; i++) {
+    if (backupSet.value.directories[i].path === directory.path) {
+      backupSet.value.directories[i].isAdded = true;
     }
   }
   await AddDirectory(directory);
@@ -39,7 +40,7 @@ const markAdded = async (directory: borg.Directory) => {
 const addDirectory = async () => {
   const newDirectory = borg.Directory.createFrom();
   newDirectory.isAdded = true;
-  repo.value.directories.push(newDirectory);
+  backupSet.value.directories.push(newDirectory);
   await AddDirectory(newDirectory);
 };
 
@@ -56,11 +57,12 @@ const previousStep = async () => {
 };
 
 const nextStep = async () => {
-  // await SaveRepo(repo.value);
-  // LogDebug(JSON.stringify(repo.value));
-  //
-  // await router.push(`/add-backup/${repo.value.id}`);
   currentStep.value++;
+};
+
+const finish = async () => {
+  // await backupSet.value.Save();
+  await router.push(rDataPage);
 };
 
 /************
@@ -72,6 +74,7 @@ createBackupSet();
 </script>
 
 <template>
+  <Navbar></Navbar>
   <div class='flex flex-col items-center justify-center h-full'>
     <AddBackupStepper :currentStep='currentStep' />
     <div style='height: 100px'></div>
@@ -82,13 +85,13 @@ createBackupSet();
           <div class='label'>
             <span class='label-text'>Name</span>
           </div>
-          <input v-model='repo.name' type='text' class='input input-bordered w-full max-w-xs' />
+          <input v-model='backupSet.name' type='text' class='input input-bordered w-full max-w-xs' />
         </label>
         <label class='form-control w-full max-w-xs'>
           <div class='label'>
             <span class='label-text'>Prefix</span>
           </div>
-          <input v-model='repo.prefix' type='text' class='input input-bordered w-full max-w-xs' />
+          <input v-model='backupSet.prefix' type='text' class='input input-bordered w-full max-w-xs' />
         </label>
         <label class='form-control w-full max-w-xs'>
           <div class='label'>
@@ -103,7 +106,7 @@ createBackupSet();
 
       <h1>Data to backup</h1>
 
-      <div class='flex items-center' v-for='(directory, index) in repo.directories' :key='index'>
+      <div class='flex items-center' v-for='(directory, index) in backupSet.directories' :key='index'>
         <label class='form-control w-full max-w-xs'>
           <input type='text' class='input input-bordered w-full max-w-xs' :class="{ 'bg-accent': directory.isAdded }"
                  v-model='directory.path' />
@@ -142,6 +145,20 @@ createBackupSet();
 
       <button class='btn btn-outline' @click='previousStep'>Back</button>
       <button class='btn btn-primary' @click='nextStep'>Next</button>
+    </template>
+
+    <template v-if='currentStep === 3'>
+      <div class='flex items-center'>
+        <h2>Summary</h2>
+        <div>{{ backupSet.name }}</div>
+        <div>{{ backupSet.prefix }}</div>
+        <div>{{ backupSet.directories }}</div>
+      </div>
+
+      <div style='height: 20px'></div>
+
+      <button class='btn btn-outline' @click='previousStep'>Back</button>
+      <button class='btn btn-primary' @click='finish'>Finish</button>
     </template>
   </div>
 </template>

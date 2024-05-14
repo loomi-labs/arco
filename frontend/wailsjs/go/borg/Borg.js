@@ -18,6 +18,10 @@ export function GetBackupSet(arg1) {
   return window['go']['borg']['Borg']['GetBackupSet'](arg1);
 }
 
+export function GetBackupSets() {
+  return window['go']['borg']['Borg']['GetBackupSets']();
+}
+
 export function InitRepo(arg1) {
   return window['go']['borg']['Borg']['InitRepo'](arg1);
 }
@@ -32,10 +36,6 @@ export function NewBackupSet() {
 
 export function Prune() {
   return window['go']['borg']['Borg']['Prune']();
-}
-
-export function SaveBackupSet(arg1) {
-  return window['go']['borg']['Borg']['SaveBackupSet'](arg1);
 }
 
 export function Version() {

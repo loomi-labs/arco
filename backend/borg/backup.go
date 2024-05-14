@@ -40,6 +40,10 @@ func NewBackupSet(name, prefix string, directories []string) *BackupSet {
 	}
 }
 
+func (b *BackupSet) Save() {
+
+}
+
 func (b *BackupSet) AddDirectory(newDir Directory) {
 	// Add directory to the list of directories
 	// If it already exists, set IsAdded to true

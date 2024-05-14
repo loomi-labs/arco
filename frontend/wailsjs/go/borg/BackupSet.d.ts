@@ -3,3 +3,5 @@
 import {borg} from '../models';
 
 export function AddDirectory(arg1:borg.Directory):Promise<void>;
+
+export function Save():Promise<void>;
