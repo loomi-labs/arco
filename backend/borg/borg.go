@@ -3,7 +3,7 @@ package borg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,12 +12,12 @@ import (
 
 type Borg struct {
 	binaryPath   string
-	log          logger.Logger
+	log          *zap.SugaredLogger
 	backupSets   []BackupSet
 	repositories []Repo
 }
 
-func NewBorg(log logger.Logger) *Borg {
+func NewBorg(log *zap.SugaredLogger) *Borg {
 	return &Borg{
 		binaryPath: "bin/borg-linuxnewer64",
 		log:        log,

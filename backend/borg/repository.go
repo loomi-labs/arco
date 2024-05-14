@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"go.uber.org/zap"
 	"os/exec"
 )
 
@@ -12,10 +12,10 @@ type Repo struct {
 	Id         string `json:"id"`
 	Url        string `json:"url"`
 	binaryPath string
-	log        logger.Logger
+	log        *zap.SugaredLogger
 }
 
-func NewRepo(log logger.Logger, binaryPath string) *Repo {
+func NewRepo(log *zap.SugaredLogger, binaryPath string) *Repo {
 	return &Repo{
 		log:        log,
 		binaryPath: binaryPath,

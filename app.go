@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"go.uber.org/zap"
 	"timebender/backend/borg"
 )
 
@@ -13,7 +13,7 @@ type App struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp(log logger.Logger) *App {
+func NewApp(log *zap.SugaredLogger) *App {
 	return &App{
 		Borg: borg.NewBorg(log),
 	}
