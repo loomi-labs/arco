@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"timebender/backend/ent"
+	"timebender/backend/ent/migrate"
 )
 
 //go:embed all:frontend/dist
@@ -40,7 +41,7 @@ func initDb() error {
 	//goland:noinspection GoUnhandledErrorResult
 	defer client.Close()
 	// Run the auto migration tool.
-	if err := client.Schema.Create(context.Background()); err != nil {
+	if err := client.Schema.Create(context.Background(), migrate.WithGlobalUniqueID(true)); err != nil {
 		return err
 	}
 	return nil
