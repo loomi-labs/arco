@@ -1,43 +1,42 @@
 package borg
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/wailsapp/wails/v2/pkg/logger"
+	"os/exec"
+)
 
 type Repo struct {
-	Id          string      `json:"id"`
-	Name        string      `json:"name"`
-	Prefix      string      `json:"prefix"`
-	Directories []Directory `json:"directories"`
+	Id         string `json:"id"`
+	Url        string `json:"url"`
+	binaryPath string
+	log        logger.Logger
 }
 
-func NewRepo(name, prefix string, directories []string) *Repo {
-	var dirs []Directory
-	for _, dir := range directories {
-		dirs = append(dirs, Directory{
-			Path:    dir,
-			IsAdded: false,
-		})
-	}
+func NewRepo(log logger.Logger, binaryPath string) *Repo {
 	return &Repo{
-		Id:          uuid.New().String(),
-		Name:        name,
-		Prefix:      prefix,
-		Directories: dirs,
+		log:        log,
+		binaryPath: binaryPath,
+		Id:         uuid.New().String(),
 	}
 }
 
-type Directory struct {
-	Path    string `json:"path"`
-	IsAdded bool   `json:"isAdded"`
-}
-
-func (r *Repo) AddDirectory(newDir Directory) {
-	// Add directory to the list of directories
-	// If it already exists, set IsAdded to true
-	for i, dir := range r.Directories {
-		if dir.Path == newDir.Path {
-			r.Directories[i].IsAdded = true
-			return
-		}
+func (r *Repo) Info() (*ListResponse, error) {
+	cmd := exec.Command(r.binaryPath, "info", "--json", r.Url)
+	cmd.Env = getEnv()
+	r.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", out, err)
 	}
-	r.Directories = append(r.Directories, newDir)
+
+	var listResponse ListResponse
+	err = json.Unmarshal(out, &listResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &listResponse, nil
 }

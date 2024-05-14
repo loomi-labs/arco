@@ -6,12 +6,16 @@ export function Backup() {
   return window['go']['borg']['Borg']['Backup']();
 }
 
+export function ConnectExistingRepo() {
+  return window['go']['borg']['Borg']['ConnectExistingRepo']();
+}
+
 export function CreateSSHKeyPair() {
   return window['go']['borg']['Borg']['CreateSSHKeyPair']();
 }
 
-export function GetRepo(arg1) {
-  return window['go']['borg']['Borg']['GetRepo'](arg1);
+export function GetBackupSet(arg1) {
+  return window['go']['borg']['Borg']['GetBackupSet'](arg1);
 }
 
 export function InitRepo(arg1) {
@@ -22,16 +26,16 @@ export function List() {
   return window['go']['borg']['Borg']['List']();
 }
 
-export function NewRepo() {
-  return window['go']['borg']['Borg']['NewRepo']();
+export function NewBackupSet() {
+  return window['go']['borg']['Borg']['NewBackupSet']();
 }
 
 export function Prune() {
   return window['go']['borg']['Borg']['Prune']();
 }
 
-export function SaveRepo(arg1) {
-  return window['go']['borg']['Borg']['SaveRepo'](arg1);
+export function SaveBackupSet(arg1) {
+  return window['go']['borg']['Borg']['SaveBackupSet'](arg1);
 }
 
 export function Version() {

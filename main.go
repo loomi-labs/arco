@@ -37,6 +37,7 @@ func main() {
 		Bind: []interface{}{
 			app.Borg,
 			&borg.Repo{},
+			&borg.BackupSet{},
 		},
 		LogLevel: logLevel,
 		Logger:   log,

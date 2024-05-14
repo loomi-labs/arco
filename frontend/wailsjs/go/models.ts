@@ -22,6 +22,20 @@ export namespace borg {
 	        this.time = source["time"];
 	    }
 	}
+	export class Schedule {
+	    hasPeriodicBackups: boolean;
+	    periodicBackupTime: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Schedule(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hasPeriodicBackups = source["hasPeriodicBackups"];
+	        this.periodicBackupTime = source["periodicBackupTime"];
+	    }
+	}
 	export class Directory {
 	    path: string;
 	    isAdded: boolean;
@@ -36,6 +50,45 @@ export namespace borg {
 	        this.isAdded = source["isAdded"];
 	    }
 	}
+	export class BackupSet {
+	    id: string;
+	    name: string;
+	    prefix: string;
+	    directories: Directory[];
+	    schedule: Schedule;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupSet(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.prefix = source["prefix"];
+	        this.directories = this.convertValues(source["directories"], Directory);
+	        this.schedule = this.convertValues(source["schedule"], Schedule);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Encryption {
 	    mode: string;
 	
@@ -100,9 +153,7 @@ export namespace borg {
 	}
 	export class Repo {
 	    id: string;
-	    name: string;
-	    prefix: string;
-	    directories: Directory[];
+	    url: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Repo(source);
@@ -111,29 +162,10 @@ export namespace borg {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.prefix = source["prefix"];
-	        this.directories = this.convertValues(source["directories"], Directory);
+	        this.url = source["url"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
+	
 
 }
 
