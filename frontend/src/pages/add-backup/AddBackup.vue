@@ -1,7 +1,6 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
-import { ConnectExistingRepo, NewBackupSet } from "../../../wailsjs/go/borg/Borg";
-import { AddDirectory } from "../../../wailsjs/go/borg/BackupSet";
+import { ConnectExistingRepo, NewBackupSet, AddDirectory } from "../../../wailsjs/go/borg/Borg";
 import { borg } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -34,14 +33,14 @@ const markAdded = async (directory: borg.Directory) => {
       backupSet.value.directories[i].isAdded = true;
     }
   }
-  await AddDirectory(directory);
+  await AddDirectory(backupSet.value.id, directory);
 };
 
 const addDirectory = async () => {
   const newDirectory = borg.Directory.createFrom();
   newDirectory.isAdded = true;
   backupSet.value.directories.push(newDirectory);
-  await AddDirectory(newDirectory);
+  await AddDirectory(backupSet.value.id, newDirectory);
 };
 
 const createNewRepo = async () => {

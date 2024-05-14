@@ -44,14 +44,14 @@ func (b *BackupSet) Save() {
 
 }
 
-func (b *BackupSet) AddDirectory(newDir Directory) {
-	// Add directory to the list of directories
-	// If it already exists, set IsAdded to true
-	for i, dir := range b.Directories {
-		if dir.Path == newDir.Path {
-			b.Directories[i].IsAdded = true
-			return
-		}
-	}
-	b.Directories = append(b.Directories, newDir)
-}
+//func (b *BackupSet) AddDirectory(newDir Directory) {
+//	// Add directory to the list of directories
+//	// If it already exists, set IsAdded to true
+//	for i, dir := range b.Directories {
+//		if dir.Path == newDir.Path {
+//			b.Directories[i].IsAdded = true
+//			return
+//		}
+//	}
+//	b.Directories = append(b.Directories, newDir)
+//}
