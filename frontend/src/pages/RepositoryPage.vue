@@ -1,0 +1,49 @@
+<script setup lang='ts'>
+import { GetRepositories } from "../../wailsjs/go/borg/Borg";
+import { borg } from "../../wailsjs/go/models";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { rRepositoryDetailPage, withId } from "../router";
+import Navbar from "../components/Navbar.vue";
+
+/************
+ * Variables
+ ************/
+
+const router = useRouter();
+const repos = ref<borg.Repo[]>([]);
+
+/************
+ * Functions
+ ************/
+
+async function getRepos() {
+  try {
+    repos.value = await GetRepositories();
+  } catch (error: any) {
+    console.error(error);
+  }
+}
+
+/************
+ * Lifecycle
+ ************/
+
+getRepos();
+
+</script>
+
+<template>
+  <Navbar></Navbar>
+  <div class='flex flex-col items-center justify-center h-full'>
+    <h1>Repositories</h1>
+    <div v-for='(repo, index) in repos' :key='index'>
+      <p>{{ repo.id }}</p>
+      <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>View</button>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+
+</style>

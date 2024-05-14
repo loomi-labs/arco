@@ -14,6 +14,10 @@ export function CreateSSHKeyPair() {
   return window['go']['borg']['Borg']['CreateSSHKeyPair']();
 }
 
+export function GetArchives() {
+  return window['go']['borg']['Borg']['GetArchives']();
+}
+
 export function GetBackupSet(arg1) {
   return window['go']['borg']['Borg']['GetBackupSet'](arg1);
 }
@@ -22,12 +26,16 @@ export function GetBackupSets() {
   return window['go']['borg']['Borg']['GetBackupSets']();
 }
 
-export function InitRepo(arg1) {
-  return window['go']['borg']['Borg']['InitRepo'](arg1);
+export function GetRepositories() {
+  return window['go']['borg']['Borg']['GetRepositories']();
 }
 
-export function List() {
-  return window['go']['borg']['Borg']['List']();
+export function GetRepository(arg1) {
+  return window['go']['borg']['Borg']['GetRepository'](arg1);
+}
+
+export function InitRepo(arg1) {
+  return window['go']['borg']['Borg']['InitRepo'](arg1);
 }
 
 export function NewBackupSet() {

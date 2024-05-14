@@ -8,13 +8,17 @@ export function ConnectExistingRepo():Promise<borg.Repo>;
 
 export function CreateSSHKeyPair():Promise<string>;
 
+export function GetArchives():Promise<borg.ListResponse>;
+
 export function GetBackupSet(arg1:string):Promise<borg.BackupSet>;
 
 export function GetBackupSets():Promise<Array<borg.BackupSet>>;
 
-export function InitRepo(arg1:string):Promise<void>;
+export function GetRepositories():Promise<Array<borg.Repo>>;
 
-export function List():Promise<borg.ListResponse>;
+export function GetRepository(arg1:string):Promise<borg.Repo>;
+
+export function InitRepo(arg1:string):Promise<void>;
 
 export function NewBackupSet():Promise<borg.BackupSet>;
 

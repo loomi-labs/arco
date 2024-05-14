@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { rAddBackupPage, rDataPage, rWelcomePage } from "../router";
+import { rAddBackupPage, rDataPage, rRepositoryDetailPage, rRepositoryPage, rWelcomePage } from "../router";
 import { useRouter } from "vue-router";
 
 /************
@@ -22,8 +22,10 @@ const router = useRouter();
 
 <template>
   <button class='btn btn-neutral' @click='router.push(rWelcomePage)'>Welcome</button>
-  <button class='btn btn-neutral' @click='router.push(rDataPage)'>Data</button>
   <button class='btn btn-neutral' @click='router.push(rAddBackupPage)'>Add Backup</button>
+  <button class='btn btn-neutral' @click='router.push(rDataPage)'>Data</button>
+  <button class='btn btn-neutral' @click='router.push(rRepositoryPage)'>Repository</button>
+  <button class='btn btn-neutral' @click='router.push(rRepositoryDetailPage)'>Repository Detail</button>
 </template>
 
 <style scoped>

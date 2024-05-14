@@ -49,26 +49,6 @@ func (b *Borg) Version() (string, error) {
 	return string(out), nil
 }
 
-func (b *Borg) List() (*ListResponse, error) {
-	repo := fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
-	b.log.Debug(fmt.Sprintf("Listing repo: %s", repo))
-
-	cmd := exec.Command(b.binaryPath, "list", "--json", repo)
-	cmd.Env = getEnv()
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("%s: %s", out, err)
-	}
-
-	var listResponse ListResponse
-	err = json.Unmarshal(out, &listResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return &listResponse, nil
-}
-
 func (b *Borg) Backup() error {
 	root := os.Getenv("BORG_ROOT")
 	repo := os.Getenv("BORG_REPO")
@@ -134,7 +114,9 @@ func (b *Borg) CreateSSHKeyPair() (string, error) {
 	return pair.AuthorizedKey(), nil
 }
 
-// ------------------------------------
+/***************/
+/* Backup Sets */
+/***************/
 
 func (b *Borg) NewBackupSet() *BackupSet {
 	hostname, _ := os.Hostname()
@@ -209,3 +191,53 @@ func (b *Borg) ConnectExistingRepo() (*Repo, error) {
 //	b.log.Error(fmt.Sprintf("Repo with id %s not found", id))
 //	return nil, fmt.Errorf("repo with id %s not found", id)
 //}
+
+/****************/
+/* Repositories */
+/****************/
+
+func (b *Borg) GetRepository(id string) (*Repo, error) {
+	repo := NewRepo(b.log, b.binaryPath)
+	repo.Url = fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
+	info, err := repo.Info()
+	if err != nil {
+		return nil, err
+	}
+	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
+	return repo, nil
+}
+
+func (b *Borg) GetRepositories() ([]Repo, error) {
+	repo := NewRepo(b.log, b.binaryPath)
+	repo.Url = fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
+	info, err := repo.Info()
+	if err != nil {
+		return nil, err
+	}
+	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
+	return []Repo{*repo}, nil
+}
+
+func (b *Borg) GetArchives() (*ListResponse, error) {
+	repo, err := b.GetRepository("")
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(b.binaryPath, "list", "--json", repo.Url)
+	cmd.Env = getEnv()
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", out, err)
+	}
+
+	var listResponse ListResponse
+	err = json.Unmarshal(out, &listResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &listResponse, nil
+}

@@ -27,6 +27,7 @@ func (r *Repo) Info() (*ListResponse, error) {
 	cmd := exec.Command(r.binaryPath, "info", "--json", r.Url)
 	cmd.Env = getEnv()
 	r.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", out, err)
