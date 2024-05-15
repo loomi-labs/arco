@@ -56,6 +56,20 @@ func (ru *RepositoryUpdate) SetNillableURL(s *string) *RepositoryUpdate {
 	return ru
 }
 
+// SetPassword sets the "password" field.
+func (ru *RepositoryUpdate) SetPassword(s string) *RepositoryUpdate {
+	ru.mutation.SetPassword(s)
+	return ru
+}
+
+// SetNillablePassword sets the "password" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
+	if s != nil {
+		ru.SetPassword(*s)
+	}
+	return ru
+}
+
 // AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
 func (ru *RepositoryUpdate) AddBackupprofileIDs(ids ...int) *RepositoryUpdate {
 	ru.mutation.AddBackupprofileIDs(ids...)
@@ -138,6 +152,9 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
+	}
+	if value, ok := ru.mutation.Password(); ok {
+		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
 	if ru.mutation.BackupprofilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -228,6 +245,20 @@ func (ruo *RepositoryUpdateOne) SetURL(s string) *RepositoryUpdateOne {
 func (ruo *RepositoryUpdateOne) SetNillableURL(s *string) *RepositoryUpdateOne {
 	if s != nil {
 		ruo.SetURL(*s)
+	}
+	return ruo
+}
+
+// SetPassword sets the "password" field.
+func (ruo *RepositoryUpdateOne) SetPassword(s string) *RepositoryUpdateOne {
+	ruo.mutation.SetPassword(s)
+	return ruo
+}
+
+// SetNillablePassword sets the "password" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdateOne {
+	if s != nil {
+		ruo.SetPassword(*s)
 	}
 	return ruo
 }
@@ -344,6 +375,9 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	}
 	if value, ok := ruo.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.Password(); ok {
+		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
 	if ruo.mutation.BackupprofilesCleared() {
 		edge := &sqlgraph.EdgeSpec{

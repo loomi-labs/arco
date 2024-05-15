@@ -15,11 +15,13 @@ import (
 type Repository struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int `json:"id"`
 	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// URL holds the value of the "url" field.
-	URL string `json:"url,omitempty"`
+	URL string `json:"url"`
+	// Password holds the value of the "password" field.
+	Password string `json:"password"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
 	Edges        RepositoryEdges `json:"edges"`
@@ -51,7 +53,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repository.FieldID:
 			values[i] = new(sql.NullInt64)
-		case repository.FieldName, repository.FieldURL:
+		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,6 +87,12 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field url", values[i])
 			} else if value.Valid {
 				r.URL = value.String
+			}
+		case repository.FieldPassword:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field password", values[i])
+			} else if value.Valid {
+				r.Password = value.String
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -132,6 +140,9 @@ func (r *Repository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("url=")
 	builder.WriteString(r.URL)
+	builder.WriteString(", ")
+	builder.WriteString("password=")
+	builder.WriteString(r.Password)
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -9,15 +9,15 @@ import (
 	"os/exec"
 	"strings"
 	"timebender/backend/ent"
+	"timebender/backend/ent/backupprofile"
+	"timebender/backend/ent/repository"
 	"timebender/backend/ssh"
 )
 
 type Borg struct {
-	binaryPath     string
-	log            *zap.SugaredLogger
-	client         *ent.Client
-	backupProfiles []ent.BackupProfile
-	repositories   []Repo
+	binaryPath string
+	log        *zap.SugaredLogger
+	client     *ent.Client
 }
 
 func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
@@ -28,8 +28,7 @@ func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
 	}
 }
 
-func getEnv() []string {
-	passphrase := os.Getenv("BORG_PASSPHRASE")
+func createEnv(password string) []string {
 	sshOptions := []string{
 		"-oBatchMode=yes",
 		"-oStrictHostKeyChecking=accept-new",
@@ -37,9 +36,31 @@ func getEnv() []string {
 	}
 	env := append(
 		os.Environ(),
+		fmt.Sprintf("BORG_PASSPHRASE=%s", password),
+		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
+	)
+	return env
+}
+
+func getEnv() []string {
+	sshOptions := []string{
+		"-oBatchMode=yes",
+		"-oStrictHostKeyChecking=accept-new",
+		"-i ~/sshtest/id_storage_test",
+	}
+	env := append(
+		os.Environ(),
+		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
+	)
+	return env
+}
+
+func getTestEnvOverride() []string {
+	passphrase := os.Getenv("BORG_PASSPHRASE")
+	env := append(
+		getEnv(),
 		fmt.Sprintf("BORG_PASSPHRASE=%s", passphrase),
 		fmt.Sprintf("BORG_NEW_PASSPHRASE=%s", passphrase),
-		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
 	)
 	return env
 }
@@ -92,7 +113,10 @@ func (b *Borg) GetDirectorySuggestions() []string {
 }
 
 func (b *Borg) GetBackupProfile(id int) (*ent.BackupProfile, error) {
-	return b.client.BackupProfile.Get(context.Background(), id)
+	return b.client.BackupProfile.
+		Query().
+		WithRepositories().
+		Where(backupprofile.ID(id)).Only(context.Background())
 }
 
 func (b *Borg) GetBackupProfiles() ([]*ent.BackupProfile, error) {
@@ -112,54 +136,29 @@ func (b *Borg) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
-/***************/
-/* Backup Sets */
-/***************/
-
-func (b *Borg) ConnectExistingRepo() (*Repo, error) {
-	repo := NewRepo(b.log, b.binaryPath)
-	repo.Url = fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
-	info, err := repo.Info()
-	if err != nil {
-		return nil, err
-	}
-	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
-	return repo, nil
-}
-
 /****************/
 /* Repositories */
 /****************/
 
-func (b *Borg) GetRepository(id string) (*Repo, error) {
-	repo := NewRepo(b.log, b.binaryPath)
-	repo.Url = fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
-	info, err := repo.Info()
-	if err != nil {
-		return nil, err
-	}
-	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
-	return repo, nil
+func (b *Borg) GetRepository(id int) (*ent.Repository, error) {
+	return b.client.Repository.
+		Query().
+		WithBackupprofiles().
+		Where(repository.ID(id)).
+		Only(context.Background())
 }
 
-func (b *Borg) GetRepositories() ([]Repo, error) {
-	repo := NewRepo(b.log, b.binaryPath)
-	repo.Url = fmt.Sprintf("%s%s", os.Getenv("BORG_ROOT"), os.Getenv("BORG_REPO"))
-	info, err := repo.Info()
-	if err != nil {
-		return nil, err
-	}
-	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
-	return []Repo{*repo}, nil
+func (b *Borg) GetRepositories() ([]*ent.Repository, error) {
+	return b.client.Repository.Query().All(context.Background())
 }
 
 func (b *Borg) GetArchives() (*ListResponse, error) {
-	repo, err := b.GetRepository("")
+	repo, err := b.GetRepository(0)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(b.binaryPath, "list", "--json", repo.Url)
+	cmd := exec.Command(b.binaryPath, "list", "--json", repo.URL)
 	cmd.Env = getEnv()
 	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
@@ -175,4 +174,25 @@ func (b *Borg) GetArchives() (*ListResponse, error) {
 	}
 
 	return &listResponse, nil
+}
+
+func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+	cmd := exec.Command(b.binaryPath, "info", "--json", url)
+	cmd.Env = createEnv(password)
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+
+	// Check if we can connect to the repository
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", out, err)
+	}
+
+	// Create a new repository entity
+	return b.client.Repository.
+		Create().
+		SetName(name).
+		SetURL(url).
+		SetPassword(password).
+		AddBackupprofileIDs(backupProfileId).
+		Save(context.Background())
 }

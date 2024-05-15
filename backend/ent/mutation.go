@@ -770,6 +770,7 @@ type RepositoryMutation struct {
 	id                    *int
 	name                  *string
 	url                   *string
+	password              *string
 	clearedFields         map[string]struct{}
 	backupprofiles        map[int]struct{}
 	removedbackupprofiles map[int]struct{}
@@ -949,6 +950,42 @@ func (m *RepositoryMutation) ResetURL() {
 	m.url = nil
 }
 
+// SetPassword sets the "password" field.
+func (m *RepositoryMutation) SetPassword(s string) {
+	m.password = &s
+}
+
+// Password returns the value of the "password" field in the mutation.
+func (m *RepositoryMutation) Password() (r string, exists bool) {
+	v := m.password
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPassword returns the old "password" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldPassword(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPassword is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPassword requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPassword: %w", err)
+	}
+	return oldValue.Password, nil
+}
+
+// ResetPassword resets all changes to the "password" field.
+func (m *RepositoryMutation) ResetPassword() {
+	m.password = nil
+}
+
 // AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by ids.
 func (m *RepositoryMutation) AddBackupprofileIDs(ids ...int) {
 	if m.backupprofiles == nil {
@@ -1037,12 +1074,15 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
 	if m.url != nil {
 		fields = append(fields, repository.FieldURL)
+	}
+	if m.password != nil {
+		fields = append(fields, repository.FieldPassword)
 	}
 	return fields
 }
@@ -1056,6 +1096,8 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case repository.FieldURL:
 		return m.URL()
+	case repository.FieldPassword:
+		return m.Password()
 	}
 	return nil, false
 }
@@ -1069,6 +1111,8 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldName(ctx)
 	case repository.FieldURL:
 		return m.OldURL(ctx)
+	case repository.FieldPassword:
+		return m.OldPassword(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repository field %s", name)
 }
@@ -1091,6 +1135,13 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetURL(v)
+		return nil
+	case repository.FieldPassword:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPassword(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)
@@ -1146,6 +1197,9 @@ func (m *RepositoryMutation) ResetField(name string) error {
 		return nil
 	case repository.FieldURL:
 		m.ResetURL()
+		return nil
+	case repository.FieldPassword:
+		m.ResetPassword()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)

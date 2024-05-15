@@ -32,6 +32,12 @@ func (rc *RepositoryCreate) SetURL(s string) *RepositoryCreate {
 	return rc
 }
 
+// SetPassword sets the "password" field.
+func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
+	rc.mutation.SetPassword(s)
+	return rc
+}
+
 // AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
 func (rc *RepositoryCreate) AddBackupprofileIDs(ids ...int) *RepositoryCreate {
 	rc.mutation.AddBackupprofileIDs(ids...)
@@ -87,6 +93,9 @@ func (rc *RepositoryCreate) check() error {
 	if _, ok := rc.mutation.URL(); !ok {
 		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "Repository.url"`)}
 	}
+	if _, ok := rc.mutation.Password(); !ok {
+		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
+	}
 	return nil
 }
 
@@ -120,6 +129,10 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 		_node.URL = value
+	}
+	if value, ok := rc.mutation.Password(); ok {
+		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+		_node.Password = value
 	}
 	if nodes := rc.mutation.BackupprofilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

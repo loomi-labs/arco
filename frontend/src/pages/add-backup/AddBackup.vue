@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
 import {
-  ConnectExistingRepo,
+  AddExistingRepository,
   GetDirectorySuggestions,
   NewBackupProfile,
   SaveBackupProfile
@@ -32,12 +32,24 @@ const router = useRouter();
 const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref(0);
+
+// Step 1
 const directories = ref<Directory[]>([]);
+
+// Step 2
+
+// Step 3
+const repositories = ref<ent.Repository[]>([]);
+const showConnectRepoModal = ref(false);
+const repoUrl = ref('');
+const repoPassword = ref('');
+const repoName = ref('');
 
 /************
  * Functions
  ************/
 
+// Step 1
 async function createBackupProfile() {
   try {
     LogDebug("Creating backup profile");
@@ -86,14 +98,28 @@ const addDirectory = async () => {
   });
 };
 
+// Step 3
 const createNewRepo = async () => {
 
 };
 
-const connectExistingRepo = async () => {
-  await ConnectExistingRepo();
+const openConnectRepoModal = () => {
+  showConnectRepoModal.value = true;
 };
 
+const connectExistingRepo = async () => {
+  try {
+    const repo = await AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
+    repositories.value.push(repo);
+
+    showConnectRepoModal.value = false;
+    toast.success(`Added repository ${repo.name}`);
+  } catch (error: any) {
+    await showAndLogError("Failed to connect to existing repository", error);
+  }
+};
+
+// Navigation
 const previousStep = async () => {
   if (await saveBackupProfile()) {
     currentStep.value--;
@@ -187,8 +213,46 @@ createBackupProfile();
 
     <template v-if='currentStep === 2'>
       <div class='flex items-center'>
-        <button class='btn btn-primary' @click='createNewRepo()'>Add new repository</button>
-        <button class='btn btn-primary' @click='connectExistingRepo()'>Add existing repository</button>
+
+        <div v-for='(repository, index) in repositories' :key='index'>
+          <div>{{ repository.name }}</div>
+          <div>{{ repository.url }}</div>
+        </div>
+
+        <button class='btn btn-primary' @click='createNewRepo'>Add new repository</button>
+        <button class='btn btn-primary' @click='openConnectRepoModal'>Add existing repository</button>
+      </div>
+
+      <div v-if='showConnectRepoModal' class='modal modal-open'>
+        <div class='modal-box'>
+          <h2 class='text-2xl'>Connect to an existing repository</h2>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Name</span>
+            </label>
+            <input type='text' class='input' v-model='repoName' placeholder='Enter repository name' />
+          </div>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Repository URL</span>
+            </label>
+            <input type='text' class='input' v-model='repoUrl' placeholder='Enter repository URL' />
+          </div>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Password</span>
+            </label>
+            <input type='password' class='input' v-model='repoPassword' placeholder='Enter password' />
+          </div>
+
+          <div class='modal-action'>
+            <button class='btn' @click='showConnectRepoModal = false'>Cancel</button>
+            <button class='btn btn-primary' @click='connectExistingRepo'>Connect</button>
+          </div>
+        </div>
       </div>
 
       <div style='height: 20px'></div>

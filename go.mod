@@ -7,7 +7,6 @@ toolchain go1.22.2
 require (
 	entgo.io/ent v0.13.1
 	github.com/charmbracelet/keygen v0.5.0
-	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/wailsapp/wails/v2 v2.8.1
 	go.uber.org/zap v1.27.0
@@ -22,6 +21,7 @@ require (
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/labstack/echo/v4 v4.10.2 // indirect

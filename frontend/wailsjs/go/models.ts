@@ -98,20 +98,6 @@ export namespace borg {
 		    return a;
 		}
 	}
-	export class Repo {
-	    id: string;
-	    url: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Repo(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.url = source["url"];
-	    }
-	}
 
 }
 
@@ -148,11 +134,11 @@ export namespace ent {
 		}
 	}
 	export class Repository {
-	    id?: number;
-	    name?: string;
-	    url?: string;
-	    // Go type: RepositoryEdges
-	    edges: any;
+	    id: number;
+	    name: string;
+	    url: string;
+	    password: string;
+	    edges: RepositoryEdges;
 	
 	    static createFrom(source: any = {}) {
 	        return new Repository(source);
@@ -163,7 +149,8 @@ export namespace ent {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.url = source["url"];
-	        this.edges = this.convertValues(source["edges"], null);
+	        this.password = source["password"];
+	        this.edges = this.convertValues(source["edges"], RepositoryEdges);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -259,6 +246,8 @@ export namespace ent {
 		    return a;
 		}
 	}
+	
+	
 
 }
 

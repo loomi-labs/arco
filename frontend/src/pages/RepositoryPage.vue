@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { GetRepositories } from "../../wailsjs/go/borg/Borg";
-import { borg } from "../../wailsjs/go/models";
+import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { rRepositoryDetailPage, withId } from "../router";
@@ -11,7 +11,7 @@ import Navbar from "../components/Navbar.vue";
  ************/
 
 const router = useRouter();
-const repos = ref<borg.Repo[]>([]);
+const repos = ref<ent.Repository[]>([]);
 
 /************
  * Functions

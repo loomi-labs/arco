@@ -14,8 +14,14 @@ type Repository struct {
 // Fields of the Repository.
 func (Repository) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
-		field.String("url"),
+		field.Int("id").
+			StructTag(`json:"id"`),
+		field.String("name").
+			StructTag(`json:"name"`),
+		field.String("url").
+			StructTag(`json:"url"`),
+		field.String("password").
+			StructTag(`json:"password"`),
 	}
 }
 

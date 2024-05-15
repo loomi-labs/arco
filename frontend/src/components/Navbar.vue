@@ -25,7 +25,6 @@ const router = useRouter();
   <button class='btn btn-neutral' @click='router.push(rAddBackupPage)'>Add Backup</button>
   <button class='btn btn-neutral' @click='router.push(rDataPage)'>Data</button>
   <button class='btn btn-neutral' @click='router.push(rRepositoryPage)'>Repository</button>
-  <button class='btn btn-neutral' @click='router.push(rRepositoryDetailPage)'>Repository Detail</button>
 </template>
 
 <style scoped>

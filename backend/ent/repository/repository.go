@@ -16,6 +16,8 @@ const (
 	FieldName = "name"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
+	// FieldPassword holds the string denoting the password field in the database.
+	FieldPassword = "password"
 	// EdgeBackupprofiles holds the string denoting the backupprofiles edge name in mutations.
 	EdgeBackupprofiles = "backupprofiles"
 	// Table holds the table name of the repository in the database.
@@ -32,6 +34,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldURL,
+	FieldPassword,
 }
 
 var (
@@ -66,6 +69,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByURL orders the results by the url field.
 func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
+}
+
+// ByPassword orders the results by the password field.
+func ByPassword(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPassword, opts...).ToFunc()
 }
 
 // ByBackupprofilesCount orders the results by backupprofiles count.
