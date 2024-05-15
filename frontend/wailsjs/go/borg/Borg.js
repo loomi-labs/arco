@@ -54,6 +54,10 @@ export function RefreshArchives(arg1) {
   return window['go']['borg']['Borg']['RefreshArchives'](arg1);
 }
 
+export function RunBackups(arg1) {
+  return window['go']['borg']['Borg']['RunBackups'](arg1);
+}
+
 export function SaveBackupProfile(arg1) {
   return window['go']['borg']['Borg']['SaveBackupProfile'](arg1);
 }

@@ -66,7 +66,7 @@ getRepo();
         <p>{{ archive.id }}</p>
         <p>{{ archive.name }}</p>
         <p>{{ archive.createdAt }}</p>
-        <button class='btn btn-primary' @click='deleteArchive(archive.id)'>Delete</button>
+        <button class='btn btn-error' @click='deleteArchive(archive.id)'>Delete</button>
       </div>
     </div>
 

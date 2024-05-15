@@ -139,6 +139,38 @@ func (b *Borg) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
+func (b *Borg) RunBackups(backupProfileId int) error {
+	backupProfile, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return err
+	}
+	if !backupProfile.IsSetupComplete {
+		return fmt.Errorf("backup profile is not setup")
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	// TODO: run this async
+	for _, repo := range backupProfile.Edges.Repositories {
+		name := fmt.Sprintf("%s-%s", hostname, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+
+		cmd := exec.Command(b.binaryPath, "create", fmt.Sprintf("%s::%s", repo.URL, name), strings.Join(backupProfile.Directories, " "))
+		cmd.Env = createEnv(repo.Password)
+
+		startTime := time.Now()
+		b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("%s: %s", out, err)
+		}
+		b.log.Debug(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	}
+	return nil
+}
+
 /****************/
 /* Repositories */
 /****************/

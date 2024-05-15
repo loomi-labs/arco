@@ -1,16 +1,19 @@
 <script setup lang='ts'>
-import { GetBackupProfile } from "../../wailsjs/go/borg/Borg";
+import { GetBackupProfile, RunBackups } from "../../wailsjs/go/borg/Borg";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
-import { rDataDetailPage, rRepositoryDetailPage, withId } from "../router";
+import { rRepositoryDetailPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
+import Navbar from "../components/Navbar.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
+const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 
 /************
@@ -25,6 +28,15 @@ async function getBackupProfile() {
   }
 }
 
+async function runBackups() {
+  try {
+    await RunBackups(backup.value.id);
+    toast.success("Backup successfully run!");
+  } catch (error: any) {
+    await showAndLogError("Failed to run backup", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -34,6 +46,7 @@ getBackupProfile();
 </script>
 
 <template>
+  <Navbar></Navbar>
   <div class='flex flex-col items-center justify-center h-full'>
     <h1>{{ backup.name }}</h1>
     <p>{{ backup.id }}</p>
@@ -46,6 +59,8 @@ getBackupProfile();
         <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>
       </div>
     </div>
+
+    <button class='btn btn-accent' @click='runBackups()'>Run Backup</button>
 
     <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>
