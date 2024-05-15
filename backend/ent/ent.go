@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/repository"
 
@@ -74,6 +75,7 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			archive.Table:       archive.ValidColumn,
 			backupprofile.Table: backupprofile.ValidColumn,
 			repository.Table:    repository.ValidColumn,
 		})

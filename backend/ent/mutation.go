@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/predicate"
 	"timebender/backend/ent/repository"
@@ -25,9 +26,571 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeArchive       = "Archive"
 	TypeBackupProfile = "BackupProfile"
 	TypeRepository    = "Repository"
 )
+
+// ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
+type ArchiveMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	name              *string
+	createdAt         *time.Time
+	duration          *time.Time
+	borgID            *string
+	clearedFields     map[string]struct{}
+	repository        *int
+	clearedrepository bool
+	done              bool
+	oldValue          func(context.Context) (*Archive, error)
+	predicates        []predicate.Archive
+}
+
+var _ ent.Mutation = (*ArchiveMutation)(nil)
+
+// archiveOption allows management of the mutation configuration using functional options.
+type archiveOption func(*ArchiveMutation)
+
+// newArchiveMutation creates new mutation for the Archive entity.
+func newArchiveMutation(c config, op Op, opts ...archiveOption) *ArchiveMutation {
+	m := &ArchiveMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeArchive,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withArchiveID sets the ID field of the mutation.
+func withArchiveID(id int) archiveOption {
+	return func(m *ArchiveMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Archive
+		)
+		m.oldValue = func(ctx context.Context) (*Archive, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Archive.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withArchive sets the old Archive of the mutation.
+func withArchive(node *Archive) archiveOption {
+	return func(m *ArchiveMutation) {
+		m.oldValue = func(context.Context) (*Archive, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ArchiveMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ArchiveMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Archive entities.
+func (m *ArchiveMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ArchiveMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ArchiveMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Archive.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *ArchiveMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ArchiveMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ArchiveMutation) ResetName() {
+	m.name = nil
+}
+
+// SetCreatedAt sets the "createdAt" field.
+func (m *ArchiveMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the value of the "createdAt" field in the mutation.
+func (m *ArchiveMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "createdAt" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "createdAt" field.
+func (m *ArchiveMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetDuration sets the "duration" field.
+func (m *ArchiveMutation) SetDuration(t time.Time) {
+	m.duration = &t
+}
+
+// Duration returns the value of the "duration" field in the mutation.
+func (m *ArchiveMutation) Duration() (r time.Time, exists bool) {
+	v := m.duration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDuration returns the old "duration" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldDuration(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDuration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDuration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDuration: %w", err)
+	}
+	return oldValue.Duration, nil
+}
+
+// ResetDuration resets all changes to the "duration" field.
+func (m *ArchiveMutation) ResetDuration() {
+	m.duration = nil
+}
+
+// SetBorgID sets the "borgID" field.
+func (m *ArchiveMutation) SetBorgID(s string) {
+	m.borgID = &s
+}
+
+// BorgID returns the value of the "borgID" field in the mutation.
+func (m *ArchiveMutation) BorgID() (r string, exists bool) {
+	v := m.borgID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBorgID returns the old "borgID" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldBorgID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBorgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBorgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBorgID: %w", err)
+	}
+	return oldValue.BorgID, nil
+}
+
+// ResetBorgID resets all changes to the "borgID" field.
+func (m *ArchiveMutation) ResetBorgID() {
+	m.borgID = nil
+}
+
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *ArchiveMutation) SetRepositoryID(id int) {
+	m.repository = &id
+}
+
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *ArchiveMutation) ClearRepository() {
+	m.clearedrepository = true
+}
+
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *ArchiveMutation) RepositoryCleared() bool {
+	return m.clearedrepository
+}
+
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *ArchiveMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
+	}
+	return
+}
+
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *ArchiveMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRepository resets all changes to the "repository" edge.
+func (m *ArchiveMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
+}
+
+// Where appends a list predicates to the ArchiveMutation builder.
+func (m *ArchiveMutation) Where(ps ...predicate.Archive) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ArchiveMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ArchiveMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Archive, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ArchiveMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ArchiveMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Archive).
+func (m *ArchiveMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ArchiveMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.name != nil {
+		fields = append(fields, archive.FieldName)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, archive.FieldCreatedAt)
+	}
+	if m.duration != nil {
+		fields = append(fields, archive.FieldDuration)
+	}
+	if m.borgID != nil {
+		fields = append(fields, archive.FieldBorgID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ArchiveMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case archive.FieldName:
+		return m.Name()
+	case archive.FieldCreatedAt:
+		return m.CreatedAt()
+	case archive.FieldDuration:
+		return m.Duration()
+	case archive.FieldBorgID:
+		return m.BorgID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ArchiveMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case archive.FieldName:
+		return m.OldName(ctx)
+	case archive.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case archive.FieldDuration:
+		return m.OldDuration(ctx)
+	case archive.FieldBorgID:
+		return m.OldBorgID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Archive field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case archive.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case archive.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case archive.FieldDuration:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDuration(v)
+		return nil
+	case archive.FieldBorgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBorgID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Archive field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ArchiveMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ArchiveMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ArchiveMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Archive numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ArchiveMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ArchiveMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ArchiveMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Archive nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ArchiveMutation) ResetField(name string) error {
+	switch name {
+	case archive.FieldName:
+		m.ResetName()
+		return nil
+	case archive.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case archive.FieldDuration:
+		m.ResetDuration()
+		return nil
+	case archive.FieldBorgID:
+		m.ResetBorgID()
+		return nil
+	}
+	return fmt.Errorf("unknown Archive field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ArchiveMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.repository != nil {
+		edges = append(edges, archive.EdgeRepository)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ArchiveMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case archive.EdgeRepository:
+		if id := m.repository; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ArchiveMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ArchiveMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ArchiveMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedrepository {
+		edges = append(edges, archive.EdgeRepository)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ArchiveMutation) EdgeCleared(name string) bool {
+	switch name {
+	case archive.EdgeRepository:
+		return m.clearedrepository
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ArchiveMutation) ClearEdge(name string) error {
+	switch name {
+	case archive.EdgeRepository:
+		m.ClearRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown Archive unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ArchiveMutation) ResetEdge(name string) error {
+	switch name {
+	case archive.EdgeRepository:
+		m.ResetRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown Archive edge %s", name)
+}
 
 // BackupProfileMutation represents an operation that mutates the BackupProfile nodes in the graph.
 type BackupProfileMutation struct {
@@ -775,6 +1338,9 @@ type RepositoryMutation struct {
 	backupprofiles        map[int]struct{}
 	removedbackupprofiles map[int]struct{}
 	clearedbackupprofiles bool
+	archives              map[int]struct{}
+	removedarchives       map[int]struct{}
+	clearedarchives       bool
 	done                  bool
 	oldValue              func(context.Context) (*Repository, error)
 	predicates            []predicate.Repository
@@ -848,6 +1414,12 @@ func (m RepositoryMutation) Tx() (*Tx, error) {
 	tx := &Tx{config: m.config}
 	tx.init()
 	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Repository entities.
+func (m *RepositoryMutation) SetID(id int) {
+	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
@@ -1040,6 +1612,60 @@ func (m *RepositoryMutation) ResetBackupprofiles() {
 	m.removedbackupprofiles = nil
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by ids.
+func (m *RepositoryMutation) AddArchiveIDs(ids ...int) {
+	if m.archives == nil {
+		m.archives = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.archives[ids[i]] = struct{}{}
+	}
+}
+
+// ClearArchives clears the "archives" edge to the Archive entity.
+func (m *RepositoryMutation) ClearArchives() {
+	m.clearedarchives = true
+}
+
+// ArchivesCleared reports if the "archives" edge to the Archive entity was cleared.
+func (m *RepositoryMutation) ArchivesCleared() bool {
+	return m.clearedarchives
+}
+
+// RemoveArchiveIDs removes the "archives" edge to the Archive entity by IDs.
+func (m *RepositoryMutation) RemoveArchiveIDs(ids ...int) {
+	if m.removedarchives == nil {
+		m.removedarchives = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.archives, ids[i])
+		m.removedarchives[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedArchives returns the removed IDs of the "archives" edge to the Archive entity.
+func (m *RepositoryMutation) RemovedArchivesIDs() (ids []int) {
+	for id := range m.removedarchives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ArchivesIDs returns the "archives" edge IDs in the mutation.
+func (m *RepositoryMutation) ArchivesIDs() (ids []int) {
+	for id := range m.archives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetArchives resets all changes to the "archives" edge.
+func (m *RepositoryMutation) ResetArchives() {
+	m.archives = nil
+	m.clearedarchives = false
+	m.removedarchives = nil
+}
+
 // Where appends a list predicates to the RepositoryMutation builder.
 func (m *RepositoryMutation) Where(ps ...predicate.Repository) {
 	m.predicates = append(m.predicates, ps...)
@@ -1207,9 +1833,12 @@ func (m *RepositoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepositoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.backupprofiles != nil {
 		edges = append(edges, repository.EdgeBackupprofiles)
+	}
+	if m.archives != nil {
+		edges = append(edges, repository.EdgeArchives)
 	}
 	return edges
 }
@@ -1224,15 +1853,24 @@ func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.archives))
+		for id := range m.archives {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepositoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedbackupprofiles != nil {
 		edges = append(edges, repository.EdgeBackupprofiles)
+	}
+	if m.removedarchives != nil {
+		edges = append(edges, repository.EdgeArchives)
 	}
 	return edges
 }
@@ -1247,15 +1885,24 @@ func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.removedarchives))
+		for id := range m.removedarchives {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepositoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedbackupprofiles {
 		edges = append(edges, repository.EdgeBackupprofiles)
+	}
+	if m.clearedarchives {
+		edges = append(edges, repository.EdgeArchives)
 	}
 	return edges
 }
@@ -1266,6 +1913,8 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case repository.EdgeBackupprofiles:
 		return m.clearedbackupprofiles
+	case repository.EdgeArchives:
+		return m.clearedarchives
 	}
 	return false
 }
@@ -1284,6 +1933,9 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 	switch name {
 	case repository.EdgeBackupprofiles:
 		m.ResetBackupprofiles()
+		return nil
+	case repository.EdgeArchives:
+		m.ResetArchives()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository edge %s", name)

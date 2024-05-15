@@ -10,14 +10,6 @@ export function Backup() {
   return window['go']['borg']['Borg']['Backup']();
 }
 
-export function CreateSSHKeyPair() {
-  return window['go']['borg']['Borg']['CreateSSHKeyPair']();
-}
-
-export function GetArchives() {
-  return window['go']['borg']['Borg']['GetArchives']();
-}
-
 export function GetBackupProfile(arg1) {
   return window['go']['borg']['Borg']['GetBackupProfile'](arg1);
 }
@@ -52,6 +44,10 @@ export function NewBackupProfile() {
 
 export function Prune() {
   return window['go']['borg']['Borg']['Prune']();
+}
+
+export function RefreshArchives(arg1) {
+  return window['go']['borg']['Borg']['RefreshArchives'](arg1);
 }
 
 export function SaveBackupProfile(arg1) {

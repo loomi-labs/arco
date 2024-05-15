@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/repository"
 
@@ -38,6 +39,12 @@ func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	return rc
 }
 
+// SetID sets the "id" field.
+func (rc *RepositoryCreate) SetID(i int) *RepositoryCreate {
+	rc.mutation.SetID(i)
+	return rc
+}
+
 // AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
 func (rc *RepositoryCreate) AddBackupprofileIDs(ids ...int) *RepositoryCreate {
 	rc.mutation.AddBackupprofileIDs(ids...)
@@ -51,6 +58,21 @@ func (rc *RepositoryCreate) AddBackupprofiles(b ...*BackupProfile) *RepositoryCr
 		ids[i] = b[i].ID
 	}
 	return rc.AddBackupprofileIDs(ids...)
+}
+
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (rc *RepositoryCreate) AddArchiveIDs(ids ...int) *RepositoryCreate {
+	rc.mutation.AddArchiveIDs(ids...)
+	return rc
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (rc *RepositoryCreate) AddArchives(a ...*Archive) *RepositoryCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return rc.AddArchiveIDs(ids...)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
@@ -110,8 +132,10 @@ func (rc *RepositoryCreate) sqlSave(ctx context.Context) (*Repository, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int(id)
+	}
 	rc.mutation.id = &_node.ID
 	rc.mutation.done = true
 	return _node, nil
@@ -122,6 +146,10 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_node = &Repository{config: rc.config}
 		_spec = sqlgraph.NewCreateSpec(repository.Table, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	)
+	if id, ok := rc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
 	if value, ok := rc.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -143,6 +171,22 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -197,7 +241,7 @@ func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
 					nodes[i].ID = int(id)
 				}

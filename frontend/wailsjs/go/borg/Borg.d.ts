@@ -7,10 +7,6 @@ export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:n
 
 export function Backup():Promise<void>;
 
-export function CreateSSHKeyPair():Promise<string>;
-
-export function GetArchives():Promise<borg.ListResponse>;
-
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
@@ -28,6 +24,8 @@ export function InitRepo(arg1:string):Promise<void>;
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 
 export function Prune():Promise<void>;
+
+export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 

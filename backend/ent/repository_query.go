@@ -7,6 +7,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/predicate"
 	"timebender/backend/ent/repository"
@@ -24,6 +25,7 @@ type RepositoryQuery struct {
 	inters             []Interceptor
 	predicates         []predicate.Repository
 	withBackupprofiles *BackupProfileQuery
+	withArchives       *ArchiveQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -75,6 +77,28 @@ func (rq *RepositoryQuery) QueryBackupprofiles() *BackupProfileQuery {
 			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupprofilesTable, repository.BackupprofilesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryArchives chains the current query on the "archives" edge.
+func (rq *RepositoryQuery) QueryArchives() *ArchiveQuery {
+	query := (&ArchiveClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
+			sqlgraph.To(archive.Table, archive.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, repository.ArchivesTable, repository.ArchivesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -275,6 +299,7 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		inters:             append([]Interceptor{}, rq.inters...),
 		predicates:         append([]predicate.Repository{}, rq.predicates...),
 		withBackupprofiles: rq.withBackupprofiles.Clone(),
+		withArchives:       rq.withArchives.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -289,6 +314,17 @@ func (rq *RepositoryQuery) WithBackupprofiles(opts ...func(*BackupProfileQuery))
 		opt(query)
 	}
 	rq.withBackupprofiles = query
+	return rq
+}
+
+// WithArchives tells the query-builder to eager-load the nodes that are connected to
+// the "archives" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepositoryQuery) WithArchives(opts ...func(*ArchiveQuery)) *RepositoryQuery {
+	query := (&ArchiveClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withArchives = query
 	return rq
 }
 
@@ -370,8 +406,9 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 	var (
 		nodes       = []*Repository{}
 		_spec       = rq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			rq.withBackupprofiles != nil,
+			rq.withArchives != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -396,6 +433,13 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		if err := rq.loadBackupprofiles(ctx, query, nodes,
 			func(n *Repository) { n.Edges.Backupprofiles = []*BackupProfile{} },
 			func(n *Repository, e *BackupProfile) { n.Edges.Backupprofiles = append(n.Edges.Backupprofiles, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withArchives; query != nil {
+		if err := rq.loadArchives(ctx, query, nodes,
+			func(n *Repository) { n.Edges.Archives = []*Archive{} },
+			func(n *Repository, e *Archive) { n.Edges.Archives = append(n.Edges.Archives, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -460,6 +504,37 @@ func (rq *RepositoryQuery) loadBackupprofiles(ctx context.Context, query *Backup
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (rq *RepositoryQuery) loadArchives(ctx context.Context, query *ArchiveQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *Archive)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Repository)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Archive(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(repository.ArchivesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.repository_archives
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "repository_archives" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "repository_archives" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

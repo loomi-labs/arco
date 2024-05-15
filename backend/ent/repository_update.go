@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/predicate"
 	"timebender/backend/ent/repository"
@@ -85,6 +86,21 @@ func (ru *RepositoryUpdate) AddBackupprofiles(b ...*BackupProfile) *RepositoryUp
 	return ru.AddBackupprofileIDs(ids...)
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (ru *RepositoryUpdate) AddArchiveIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.AddArchiveIDs(ids...)
+	return ru
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (ru *RepositoryUpdate) AddArchives(a ...*Archive) *RepositoryUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return ru.AddArchiveIDs(ids...)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ru *RepositoryUpdate) Mutation() *RepositoryMutation {
 	return ru.mutation
@@ -109,6 +125,27 @@ func (ru *RepositoryUpdate) RemoveBackupprofiles(b ...*BackupProfile) *Repositor
 		ids[i] = b[i].ID
 	}
 	return ru.RemoveBackupprofileIDs(ids...)
+}
+
+// ClearArchives clears all "archives" edges to the Archive entity.
+func (ru *RepositoryUpdate) ClearArchives() *RepositoryUpdate {
+	ru.mutation.ClearArchives()
+	return ru
+}
+
+// RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
+func (ru *RepositoryUpdate) RemoveArchiveIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.RemoveArchiveIDs(ids...)
+	return ru
+}
+
+// RemoveArchives removes "archives" edges to Archive entities.
+func (ru *RepositoryUpdate) RemoveArchives(a ...*Archive) *RepositoryUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return ru.RemoveArchiveIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -201,6 +238,51 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ru.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{repository.Label}
@@ -278,6 +360,21 @@ func (ruo *RepositoryUpdateOne) AddBackupprofiles(b ...*BackupProfile) *Reposito
 	return ruo.AddBackupprofileIDs(ids...)
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (ruo *RepositoryUpdateOne) AddArchiveIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.AddArchiveIDs(ids...)
+	return ruo
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (ruo *RepositoryUpdateOne) AddArchives(a ...*Archive) *RepositoryUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return ruo.AddArchiveIDs(ids...)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ruo *RepositoryUpdateOne) Mutation() *RepositoryMutation {
 	return ruo.mutation
@@ -302,6 +399,27 @@ func (ruo *RepositoryUpdateOne) RemoveBackupprofiles(b ...*BackupProfile) *Repos
 		ids[i] = b[i].ID
 	}
 	return ruo.RemoveBackupprofileIDs(ids...)
+}
+
+// ClearArchives clears all "archives" edges to the Archive entity.
+func (ruo *RepositoryUpdateOne) ClearArchives() *RepositoryUpdateOne {
+	ruo.mutation.ClearArchives()
+	return ruo
+}
+
+// RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
+func (ruo *RepositoryUpdateOne) RemoveArchiveIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.RemoveArchiveIDs(ids...)
+	return ruo
+}
+
+// RemoveArchives removes "archives" edges to Archive entities.
+func (ruo *RepositoryUpdateOne) RemoveArchives(a ...*Archive) *RepositoryUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return ruo.RemoveArchiveIDs(ids...)
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
@@ -417,6 +535,51 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ruo.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repository.ArchivesTable,
+			Columns: []string{repository.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -20,6 +20,8 @@ const (
 	FieldPassword = "password"
 	// EdgeBackupprofiles holds the string denoting the backupprofiles edge name in mutations.
 	EdgeBackupprofiles = "backupprofiles"
+	// EdgeArchives holds the string denoting the archives edge name in mutations.
+	EdgeArchives = "archives"
 	// Table holds the table name of the repository in the database.
 	Table = "repositories"
 	// BackupprofilesTable is the table that holds the backupprofiles relation/edge. The primary key declared below.
@@ -27,6 +29,13 @@ const (
 	// BackupprofilesInverseTable is the table name for the BackupProfile entity.
 	// It exists in this package in order to avoid circular dependency with the "backupprofile" package.
 	BackupprofilesInverseTable = "backup_profiles"
+	// ArchivesTable is the table that holds the archives relation/edge.
+	ArchivesTable = "archives"
+	// ArchivesInverseTable is the table name for the Archive entity.
+	// It exists in this package in order to avoid circular dependency with the "archive" package.
+	ArchivesInverseTable = "archives"
+	// ArchivesColumn is the table column denoting the archives relation/edge.
+	ArchivesColumn = "repository_archives"
 )
 
 // Columns holds all SQL columns for repository fields.
@@ -89,10 +98,31 @@ func ByBackupprofiles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBackupprofilesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByArchivesCount orders the results by archives count.
+func ByArchivesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newArchivesStep(), opts...)
+	}
+}
+
+// ByArchives orders the results by archives terms.
+func ByArchives(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newArchivesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBackupprofilesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackupprofilesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, BackupprofilesTable, BackupprofilesPrimaryKey...),
+	)
+}
+func newArchivesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ArchivesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ArchivesTable, ArchivesColumn),
 	)
 }

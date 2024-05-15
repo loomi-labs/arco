@@ -5,6 +5,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { rRepositoryDetailPage, withId } from "../router";
 import Navbar from "../components/Navbar.vue";
+import { showAndLogError } from "../common/error";
 
 /************
  * Variables
@@ -21,7 +22,7 @@ async function getRepos() {
   try {
     repos.value = await GetRepositories();
   } catch (error: any) {
-    console.error(error);
+    await showAndLogError("Failed to get repositories", error);
   }
 }
 

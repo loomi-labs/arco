@@ -1,9 +1,10 @@
 <script setup lang='ts'>
-import { GetRepository, GetArchives, GetBackupProfile } from "../../wailsjs/go/borg/Borg";
-import { borg, ent } from "../../wailsjs/go/models";
+import { GetRepository, RefreshArchives } from "../../wailsjs/go/borg/Borg";
+import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import Navbar from "../components/Navbar.vue";
+import { showAndLogError } from "../common/error";
 
 /************
  * Variables
@@ -11,7 +12,7 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
-const archives = ref<borg.Archive[]>([]);
+const archives = ref<ent.Archive[]>([]);
 
 /************
  * Functions
@@ -19,21 +20,22 @@ const archives = ref<borg.Archive[]>([]);
 
 async function getRepo() {
   try {
-    repo.value = await GetRepository(parseInt(router.currentRoute.value.params.id as string));
-    // await getArchives(repo.value);
+    const repoId = parseInt(router.currentRoute.value.params.id as string);
+    repo.value = await GetRepository(repoId);
+    archives.value = repo.value.edges?.archives ?? [];
+    await refreshArchives(repoId);
   } catch (error: any) {
-    console.error(error);
+    await showAndLogError("Failed to get repository", error);
   }
 }
 
-// async function getArchives(repo: borg.Repo) {
-//   try {
-//     const result = await GetArchives();
-//     archives.value = result.archives;
-//   } catch (error: any) {
-//     console.error(error);
-//   }
-// }
+async function refreshArchives(repoId: number) {
+  try {
+    archives.value = await RefreshArchives(repoId);
+  } catch (error: any) {
+    await showAndLogError("Failed to get archives", error);
+  }
+}
 
 /************
  * Lifecycle
@@ -50,9 +52,11 @@ getRepo();
     <p>{{ repo.url }}</p>
 
     <h2>Archives</h2>
-<!--    <div v-for='(archive, index) in archives' :key='index'>-->
-<!--      <p>{{ archive.name }}</p>-->
-<!--    </div>-->
+    <div v-for='(archive, index) in archives' :key='index'>
+      <p>{{ archive.name }}</p>
+    </div>
+
+    <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>
 </template>
 

@@ -11,6 +11,7 @@ import (
 
 	"timebender/backend/ent/migrate"
 
+	"timebender/backend/ent/archive"
 	"timebender/backend/ent/backupprofile"
 	"timebender/backend/ent/repository"
 
@@ -25,6 +26,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Archive is the client for interacting with the Archive builders.
+	Archive *ArchiveClient
 	// BackupProfile is the client for interacting with the BackupProfile builders.
 	BackupProfile *BackupProfileClient
 	// Repository is the client for interacting with the Repository builders.
@@ -40,6 +43,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Archive = NewArchiveClient(c.config)
 	c.BackupProfile = NewBackupProfileClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
 }
@@ -134,6 +138,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:           ctx,
 		config:        cfg,
+		Archive:       NewArchiveClient(cfg),
 		BackupProfile: NewBackupProfileClient(cfg),
 		Repository:    NewRepositoryClient(cfg),
 	}, nil
@@ -155,6 +160,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:           ctx,
 		config:        cfg,
+		Archive:       NewArchiveClient(cfg),
 		BackupProfile: NewBackupProfileClient(cfg),
 		Repository:    NewRepositoryClient(cfg),
 	}, nil
@@ -163,7 +169,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		BackupProfile.
+//		Archive.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -185,6 +191,7 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Archive.Use(hooks...)
 	c.BackupProfile.Use(hooks...)
 	c.Repository.Use(hooks...)
 }
@@ -192,6 +199,7 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Archive.Intercept(interceptors...)
 	c.BackupProfile.Intercept(interceptors...)
 	c.Repository.Intercept(interceptors...)
 }
@@ -199,12 +207,163 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ArchiveMutation:
+		return c.Archive.mutate(ctx, m)
 	case *BackupProfileMutation:
 		return c.BackupProfile.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ArchiveClient is a client for the Archive schema.
+type ArchiveClient struct {
+	config
+}
+
+// NewArchiveClient returns a client for the Archive from the given config.
+func NewArchiveClient(c config) *ArchiveClient {
+	return &ArchiveClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `archive.Hooks(f(g(h())))`.
+func (c *ArchiveClient) Use(hooks ...Hook) {
+	c.hooks.Archive = append(c.hooks.Archive, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `archive.Intercept(f(g(h())))`.
+func (c *ArchiveClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Archive = append(c.inters.Archive, interceptors...)
+}
+
+// Create returns a builder for creating a Archive entity.
+func (c *ArchiveClient) Create() *ArchiveCreate {
+	mutation := newArchiveMutation(c.config, OpCreate)
+	return &ArchiveCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Archive entities.
+func (c *ArchiveClient) CreateBulk(builders ...*ArchiveCreate) *ArchiveCreateBulk {
+	return &ArchiveCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ArchiveClient) MapCreateBulk(slice any, setFunc func(*ArchiveCreate, int)) *ArchiveCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ArchiveCreateBulk{err: fmt.Errorf("calling to ArchiveClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ArchiveCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ArchiveCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Archive.
+func (c *ArchiveClient) Update() *ArchiveUpdate {
+	mutation := newArchiveMutation(c.config, OpUpdate)
+	return &ArchiveUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ArchiveClient) UpdateOne(a *Archive) *ArchiveUpdateOne {
+	mutation := newArchiveMutation(c.config, OpUpdateOne, withArchive(a))
+	return &ArchiveUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ArchiveClient) UpdateOneID(id int) *ArchiveUpdateOne {
+	mutation := newArchiveMutation(c.config, OpUpdateOne, withArchiveID(id))
+	return &ArchiveUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Archive.
+func (c *ArchiveClient) Delete() *ArchiveDelete {
+	mutation := newArchiveMutation(c.config, OpDelete)
+	return &ArchiveDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ArchiveClient) DeleteOne(a *Archive) *ArchiveDeleteOne {
+	return c.DeleteOneID(a.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ArchiveClient) DeleteOneID(id int) *ArchiveDeleteOne {
+	builder := c.Delete().Where(archive.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ArchiveDeleteOne{builder}
+}
+
+// Query returns a query builder for Archive.
+func (c *ArchiveClient) Query() *ArchiveQuery {
+	return &ArchiveQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeArchive},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Archive entity by its id.
+func (c *ArchiveClient) Get(ctx context.Context, id int) (*Archive, error) {
+	return c.Query().Where(archive.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ArchiveClient) GetX(ctx context.Context, id int) *Archive {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRepository queries the repository edge of a Archive.
+func (c *ArchiveClient) QueryRepository(a *Archive) *RepositoryQuery {
+	query := (&RepositoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(archive.Table, archive.FieldID, id),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, archive.RepositoryTable, archive.RepositoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ArchiveClient) Hooks() []Hook {
+	return c.hooks.Archive
+}
+
+// Interceptors returns the client interceptors.
+func (c *ArchiveClient) Interceptors() []Interceptor {
+	return c.inters.Archive
+}
+
+func (c *ArchiveClient) mutate(ctx context.Context, m *ArchiveMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ArchiveCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ArchiveUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ArchiveUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ArchiveDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Archive mutation op: %q", m.Op())
 	}
 }
 
@@ -481,6 +640,22 @@ func (c *RepositoryClient) QueryBackupprofiles(r *Repository) *BackupProfileQuer
 	return query
 }
 
+// QueryArchives queries the archives edge of a Repository.
+func (c *RepositoryClient) QueryArchives(r *Repository) *ArchiveQuery {
+	query := (&ArchiveClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, id),
+			sqlgraph.To(archive.Table, archive.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, repository.ArchivesTable, repository.ArchivesColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RepositoryClient) Hooks() []Hook {
 	return c.hooks.Repository
@@ -509,9 +684,9 @@ func (c *RepositoryClient) mutate(ctx context.Context, m *RepositoryMutation) (V
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		BackupProfile, Repository []ent.Hook
+		Archive, BackupProfile, Repository []ent.Hook
 	}
 	inters struct {
-		BackupProfile, Repository []ent.Interceptor
+		Archive, BackupProfile, Repository []ent.Interceptor
 	}
 )

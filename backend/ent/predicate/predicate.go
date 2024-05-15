@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Archive is the predicate function for archive builders.
+type Archive func(*sql.Selector)
+
 // BackupProfile is the predicate function for backupprofile builders.
 type BackupProfile func(*sql.Selector)
 

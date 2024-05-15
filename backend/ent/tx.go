@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Archive is the client for interacting with the Archive builders.
+	Archive *ArchiveClient
 	// BackupProfile is the client for interacting with the BackupProfile builders.
 	BackupProfile *BackupProfileClient
 	// Repository is the client for interacting with the Repository builders.
@@ -147,6 +149,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Archive = NewArchiveClient(tx.config)
 	tx.BackupProfile = NewBackupProfileClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
 }
@@ -158,7 +161,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: BackupProfile.QueryXXX(), the query will be executed
+// applies a query, for example: Archive.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -6,6 +6,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { rDataDetailPage, withId } from "../router";
 import Navbar from "../components/Navbar.vue";
+import { showAndLogError } from "../common/error";
 
 /************
  * Variables
@@ -22,7 +23,7 @@ async function getBackupProfiles() {
   try {
     backups.value = await GetBackupProfiles();
   } catch (error: any) {
-    LogError(error);
+    await showAndLogError("Failed to get backup profiles", error);
   }
 }
 

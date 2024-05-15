@@ -23,8 +23,8 @@ const routes: RouteRecordRaw[] = [
   { path: rRepositoryDetailPage, component: RepositoryDetailPage },
 ]
 
-export function withId(page: string, id: string): string {
-  return page.replace(':id', id)
+export function withId(page: string, id: string | number): string {
+  return page.replace(':id', id.toString())
 }
 
 const router = createRouter({

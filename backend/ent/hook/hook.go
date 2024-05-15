@@ -8,6 +8,18 @@ import (
 	"timebender/backend/ent"
 )
 
+// The ArchiveFunc type is an adapter to allow the use of ordinary
+// function as Archive mutator.
+type ArchiveFunc func(context.Context, *ent.ArchiveMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ArchiveFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ArchiveMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ArchiveMutation", m)
+}
+
 // The BackupProfileFunc type is an adapter to allow the use of ordinary
 // function as BackupProfile mutator.
 type BackupProfileFunc func(context.Context, *ent.BackupProfileMutation) (ent.Value, error)

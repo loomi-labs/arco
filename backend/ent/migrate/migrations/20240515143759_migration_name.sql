@@ -1,0 +1,2 @@
+-- Create "archives" table
+CREATE TABLE `archives` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `name` text NOT NULL, `created_at` datetime NOT NULL, `archive_repository` integer NULL, `repository_archives` integer NULL, CONSTRAINT `archives_repositories_repository` FOREIGN KEY (`archive_repository`) REFERENCES `repositories` (`id`) ON DELETE SET NULL, CONSTRAINT `archives_repositories_archives` FOREIGN KEY (`repository_archives`) REFERENCES `repositories` (`id`) ON DELETE SET NULL);
