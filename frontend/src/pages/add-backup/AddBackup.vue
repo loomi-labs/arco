@@ -1,46 +1,89 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
-import { ConnectExistingRepo, NewBackupSet, AddDirectory } from "../../../wailsjs/go/borg/Borg";
-import { borg } from "../../../wailsjs/go/models";
+import {
+  ConnectExistingRepo,
+  GetDirectorySuggestions,
+  NewBackupProfile,
+  SaveBackupProfile
+} from "../../../wailsjs/go/borg/Borg";
+import { ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { rDataPage } from "../../router";
 import Navbar from "../../components/Navbar.vue";
+import { LogDebug } from "../../../wailsjs/runtime";
+import { showAndLogError } from "../../common/error";
+import { useToast } from "vue-toastification";
+
+/************
+ * Types
+ ************/
+
+interface Directory {
+  path: string;
+  isAdded: boolean;
+}
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
-const backupSet = ref<borg.BackupSet>(borg.BackupSet.createFrom());
+const toast = useToast();
+const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref(0);
+const directories = ref<Directory[]>([]);
 
 /************
  * Functions
  ************/
 
-async function createBackupSet() {
+async function createBackupProfile() {
   try {
-    backupSet.value = await NewBackupSet();
+    LogDebug("Creating backup profile");
+    // Create a new backup profile
+    backupProfile.value = await NewBackupProfile();
+
+    // Get directory suggestions
+    const suggestions = await GetDirectorySuggestions();
+    LogDebug(`Suggestions: ${suggestions}`);
+    directories.value = backupProfile.value.directories.map((directory: string) => {
+      return {
+        path: directory,
+        isAdded: true
+      };
+    });
+    directories.value = directories.value.concat(suggestions.map((suggestion: string) => {
+      return {
+        path: suggestion,
+        isAdded: false
+      };
+    }));
   } catch (error: any) {
-    console.error(error);
+    await showAndLogError("Failed to create backup profile", error);
   }
 }
 
-const markAdded = async (directory: borg.Directory) => {
-  for (let i = 0; i < backupSet.value.directories.length; i++) {
-    if (backupSet.value.directories[i].path === directory.path) {
-      backupSet.value.directories[i].isAdded = true;
-    }
+async function saveBackupProfile(): Promise<boolean> {
+  try {
+    await SaveBackupProfile(backupProfile.value);
+  } catch (error: any) {
+    await showAndLogError("Failed to save backup profile", error);
+    return false;
   }
-  await AddDirectory(backupSet.value.id, directory);
+  return true;
+}
+
+const markAdded = async (directory: Directory) => {
+  directory.isAdded = true;
+  backupProfile.value.directories.push(directory.path);
 };
 
 const addDirectory = async () => {
-  const newDirectory = borg.Directory.createFrom();
-  newDirectory.isAdded = true;
-  backupSet.value.directories.push(newDirectory);
-  await AddDirectory(backupSet.value.id, newDirectory);
+  directories.value.push({
+    path: "",
+    isAdded: false
+  });
 };
 
 const createNewRepo = async () => {
@@ -52,15 +95,22 @@ const connectExistingRepo = async () => {
 };
 
 const previousStep = async () => {
-  currentStep.value--;
+  if (await saveBackupProfile()) {
+    currentStep.value--;
+  }
 };
 
 const nextStep = async () => {
-  currentStep.value++;
+  if (await saveBackupProfile()) {
+    currentStep.value++;
+  }
 };
 
 const finish = async () => {
-  // await backupSet.value.Save();
+  backupProfile.value.isSetupComplete = true;
+  if (await saveBackupProfile()) {
+    toast.success("Backup profile saved successfully");
+  }
   await router.push(rDataPage);
 };
 
@@ -68,7 +118,7 @@ const finish = async () => {
  * Lifecycle
  ************/
 
-createBackupSet();
+createBackupProfile();
 
 </script>
 
@@ -84,13 +134,13 @@ createBackupSet();
           <div class='label'>
             <span class='label-text'>Name</span>
           </div>
-          <input v-model='backupSet.name' type='text' class='input input-bordered w-full max-w-xs' />
+          <input v-model='backupProfile.name' type='text' class='input input-bordered w-full max-w-xs' />
         </label>
         <label class='form-control w-full max-w-xs'>
           <div class='label'>
             <span class='label-text'>Prefix</span>
           </div>
-          <input v-model='backupSet.prefix' type='text' class='input input-bordered w-full max-w-xs' />
+          <input v-model='backupProfile.prefix' type='text' class='input input-bordered w-full max-w-xs' />
         </label>
         <label class='form-control w-full max-w-xs'>
           <div class='label'>
@@ -105,10 +155,11 @@ createBackupSet();
 
       <h1>Data to backup</h1>
 
-      <div class='flex items-center' v-for='(directory, index) in backupSet.directories' :key='index'>
+      <div class='flex items-center' v-for='(directory, index) in directories' :key='index'>
         <label class='form-control w-full max-w-xs'>
           <input type='text' class='input input-bordered w-full max-w-xs' :class="{ 'bg-accent': directory.isAdded }"
                  v-model='directory.path' />
+
         </label>
         <button class='btn btn-accent' @click='markAdded(directory)'>+</button>
       </div>
@@ -149,9 +200,9 @@ createBackupSet();
     <template v-if='currentStep === 3'>
       <div class='flex items-center'>
         <h2>Summary</h2>
-        <div>{{ backupSet.name }}</div>
-        <div>{{ backupSet.prefix }}</div>
-        <div>{{ backupSet.directories }}</div>
+        <div>{{ backupProfile.name }}</div>
+        <div>{{ backupProfile.prefix }}</div>
+        <div>{{ backupProfile.directories }}</div>
       </div>
 
       <div style='height: 20px'></div>

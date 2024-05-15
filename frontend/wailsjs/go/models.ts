@@ -22,73 +22,6 @@ export namespace borg {
 	        this.time = source["time"];
 	    }
 	}
-	export class Schedule {
-	    hasPeriodicBackups: boolean;
-	    periodicBackupTime: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Schedule(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.hasPeriodicBackups = source["hasPeriodicBackups"];
-	        this.periodicBackupTime = source["periodicBackupTime"];
-	    }
-	}
-	export class Directory {
-	    path: string;
-	    isAdded: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new Directory(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.path = source["path"];
-	        this.isAdded = source["isAdded"];
-	    }
-	}
-	export class BackupSet {
-	    id: string;
-	    name: string;
-	    prefix: string;
-	    directories: Directory[];
-	    schedule: Schedule;
-	
-	    static createFrom(source: any = {}) {
-	        return new BackupSet(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.prefix = source["prefix"];
-	        this.directories = this.convertValues(source["directories"], Directory);
-	        this.schedule = this.convertValues(source["schedule"], Schedule);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	
 	export class Encryption {
 	    mode: string;
 	
@@ -99,6 +32,20 @@ export namespace borg {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.mode = source["mode"];
+	    }
+	}
+	export class FrontendError {
+	    message: string;
+	    stack: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FrontendError(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message = source["message"];
+	        this.stack = source["stack"];
 	    }
 	}
 	export class Repository {
@@ -165,7 +112,153 @@ export namespace borg {
 	        this.url = source["url"];
 	    }
 	}
+
+}
+
+export namespace ent {
 	
+	export class RepositoryEdges {
+	    backupprofiles?: BackupProfile[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RepositoryEdges(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.backupprofiles = this.convertValues(source["backupprofiles"], BackupProfile);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Repository {
+	    id?: number;
+	    name?: string;
+	    url?: string;
+	    // Go type: RepositoryEdges
+	    edges: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Repository(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.url = source["url"];
+	        this.edges = this.convertValues(source["edges"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class BackupProfileEdges {
+	    repositories?: Repository[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupProfileEdges(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.repositories = this.convertValues(source["repositories"], Repository);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class BackupProfile {
+	    id: number;
+	    name: string;
+	    prefix: string;
+	    directories: string[];
+	    hasPeriodicBackups: boolean;
+	    // Go type: time
+	    periodicBackupTime: any;
+	    isSetupComplete: boolean;
+	    edges: BackupProfileEdges;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupProfile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.prefix = source["prefix"];
+	        this.directories = source["directories"];
+	        this.hasPeriodicBackups = source["hasPeriodicBackups"];
+	        this.periodicBackupTime = this.convertValues(source["periodicBackupTime"], null);
+	        this.isSetupComplete = source["isSetupComplete"];
+	        this.edges = this.convertValues(source["edges"], BackupProfileEdges);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 
