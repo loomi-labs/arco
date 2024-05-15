@@ -65,11 +65,6 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
-// Directories applies equality check predicate on the "directories" field. It's identical to DirectoriesEQ.
-func Directories(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldDirectories, v))
-}
-
 // HasPeriodicBackups applies equality check predicate on the "hasPeriodicBackups" field. It's identical to HasPeriodicBackupsEQ.
 func HasPeriodicBackups(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldHasPeriodicBackups, v))
@@ -78,6 +73,11 @@ func HasPeriodicBackups(v bool) predicate.BackupProfile {
 // PeriodicBackupTime applies equality check predicate on the "periodicBackupTime" field. It's identical to PeriodicBackupTimeEQ.
 func PeriodicBackupTime(v time.Time) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPeriodicBackupTime, v))
+}
+
+// IsSetupComplete applies equality check predicate on the "isSetupComplete" field. It's identical to IsSetupCompleteEQ.
+func IsSetupComplete(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -210,71 +210,6 @@ func PrefixContainsFold(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldContainsFold(FieldPrefix, v))
 }
 
-// DirectoriesEQ applies the EQ predicate on the "directories" field.
-func DirectoriesEQ(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldDirectories, v))
-}
-
-// DirectoriesNEQ applies the NEQ predicate on the "directories" field.
-func DirectoriesNEQ(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNEQ(FieldDirectories, v))
-}
-
-// DirectoriesIn applies the In predicate on the "directories" field.
-func DirectoriesIn(vs ...string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldIn(FieldDirectories, vs...))
-}
-
-// DirectoriesNotIn applies the NotIn predicate on the "directories" field.
-func DirectoriesNotIn(vs ...string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNotIn(FieldDirectories, vs...))
-}
-
-// DirectoriesGT applies the GT predicate on the "directories" field.
-func DirectoriesGT(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGT(FieldDirectories, v))
-}
-
-// DirectoriesGTE applies the GTE predicate on the "directories" field.
-func DirectoriesGTE(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGTE(FieldDirectories, v))
-}
-
-// DirectoriesLT applies the LT predicate on the "directories" field.
-func DirectoriesLT(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLT(FieldDirectories, v))
-}
-
-// DirectoriesLTE applies the LTE predicate on the "directories" field.
-func DirectoriesLTE(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLTE(FieldDirectories, v))
-}
-
-// DirectoriesContains applies the Contains predicate on the "directories" field.
-func DirectoriesContains(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldContains(FieldDirectories, v))
-}
-
-// DirectoriesHasPrefix applies the HasPrefix predicate on the "directories" field.
-func DirectoriesHasPrefix(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldHasPrefix(FieldDirectories, v))
-}
-
-// DirectoriesHasSuffix applies the HasSuffix predicate on the "directories" field.
-func DirectoriesHasSuffix(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldHasSuffix(FieldDirectories, v))
-}
-
-// DirectoriesEqualFold applies the EqualFold predicate on the "directories" field.
-func DirectoriesEqualFold(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEqualFold(FieldDirectories, v))
-}
-
-// DirectoriesContainsFold applies the ContainsFold predicate on the "directories" field.
-func DirectoriesContainsFold(v string) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldContainsFold(FieldDirectories, v))
-}
-
 // HasPeriodicBackupsEQ applies the EQ predicate on the "hasPeriodicBackups" field.
 func HasPeriodicBackupsEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldHasPeriodicBackups, v))
@@ -333,6 +268,16 @@ func PeriodicBackupTimeIsNil() predicate.BackupProfile {
 // PeriodicBackupTimeNotNil applies the NotNil predicate on the "periodicBackupTime" field.
 func PeriodicBackupTimeNotNil() predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotNull(FieldPeriodicBackupTime))
+}
+
+// IsSetupCompleteEQ applies the EQ predicate on the "isSetupComplete" field.
+func IsSetupCompleteEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
+}
+
+// IsSetupCompleteNEQ applies the NEQ predicate on the "isSetupComplete" field.
+func IsSetupCompleteNEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldIsSetupComplete, v))
 }
 
 // HasRepositories applies the HasEdge predicate on the "repositories" edge.

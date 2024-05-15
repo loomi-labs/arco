@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 )
 
@@ -58,16 +59,14 @@ func (bpu *BackupProfileUpdate) SetNillablePrefix(s *string) *BackupProfileUpdat
 }
 
 // SetDirectories sets the "directories" field.
-func (bpu *BackupProfileUpdate) SetDirectories(s string) *BackupProfileUpdate {
+func (bpu *BackupProfileUpdate) SetDirectories(s []string) *BackupProfileUpdate {
 	bpu.mutation.SetDirectories(s)
 	return bpu
 }
 
-// SetNillableDirectories sets the "directories" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableDirectories(s *string) *BackupProfileUpdate {
-	if s != nil {
-		bpu.SetDirectories(*s)
-	}
+// AppendDirectories appends s to the "directories" field.
+func (bpu *BackupProfileUpdate) AppendDirectories(s []string) *BackupProfileUpdate {
+	bpu.mutation.AppendDirectories(s)
 	return bpu
 }
 
@@ -102,6 +101,20 @@ func (bpu *BackupProfileUpdate) SetNillablePeriodicBackupTime(t *time.Time) *Bac
 // ClearPeriodicBackupTime clears the value of the "periodicBackupTime" field.
 func (bpu *BackupProfileUpdate) ClearPeriodicBackupTime() *BackupProfileUpdate {
 	bpu.mutation.ClearPeriodicBackupTime()
+	return bpu
+}
+
+// SetIsSetupComplete sets the "isSetupComplete" field.
+func (bpu *BackupProfileUpdate) SetIsSetupComplete(b bool) *BackupProfileUpdate {
+	bpu.mutation.SetIsSetupComplete(b)
+	return bpu
+}
+
+// SetNillableIsSetupComplete sets the "isSetupComplete" field if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdate {
+	if b != nil {
+		bpu.SetIsSetupComplete(*b)
+	}
 	return bpu
 }
 
@@ -189,7 +202,12 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 	}
 	if value, ok := bpu.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeString, value)
+		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
+	}
+	if value, ok := bpu.mutation.AppendedDirectories(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, backupprofile.FieldDirectories, value)
+		})
 	}
 	if value, ok := bpu.mutation.HasPeriodicBackups(); ok {
 		_spec.SetField(backupprofile.FieldHasPeriodicBackups, field.TypeBool, value)
@@ -199,6 +217,9 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if bpu.mutation.PeriodicBackupTimeCleared() {
 		_spec.ClearField(backupprofile.FieldPeriodicBackupTime, field.TypeTime)
+	}
+	if value, ok := bpu.mutation.IsSetupComplete(); ok {
+		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 	}
 	if bpu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -294,16 +315,14 @@ func (bpuo *BackupProfileUpdateOne) SetNillablePrefix(s *string) *BackupProfileU
 }
 
 // SetDirectories sets the "directories" field.
-func (bpuo *BackupProfileUpdateOne) SetDirectories(s string) *BackupProfileUpdateOne {
+func (bpuo *BackupProfileUpdateOne) SetDirectories(s []string) *BackupProfileUpdateOne {
 	bpuo.mutation.SetDirectories(s)
 	return bpuo
 }
 
-// SetNillableDirectories sets the "directories" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableDirectories(s *string) *BackupProfileUpdateOne {
-	if s != nil {
-		bpuo.SetDirectories(*s)
-	}
+// AppendDirectories appends s to the "directories" field.
+func (bpuo *BackupProfileUpdateOne) AppendDirectories(s []string) *BackupProfileUpdateOne {
+	bpuo.mutation.AppendDirectories(s)
 	return bpuo
 }
 
@@ -338,6 +357,20 @@ func (bpuo *BackupProfileUpdateOne) SetNillablePeriodicBackupTime(t *time.Time) 
 // ClearPeriodicBackupTime clears the value of the "periodicBackupTime" field.
 func (bpuo *BackupProfileUpdateOne) ClearPeriodicBackupTime() *BackupProfileUpdateOne {
 	bpuo.mutation.ClearPeriodicBackupTime()
+	return bpuo
+}
+
+// SetIsSetupComplete sets the "isSetupComplete" field.
+func (bpuo *BackupProfileUpdateOne) SetIsSetupComplete(b bool) *BackupProfileUpdateOne {
+	bpuo.mutation.SetIsSetupComplete(b)
+	return bpuo
+}
+
+// SetNillableIsSetupComplete sets the "isSetupComplete" field if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdateOne {
+	if b != nil {
+		bpuo.SetIsSetupComplete(*b)
+	}
 	return bpuo
 }
 
@@ -455,7 +488,12 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 	}
 	if value, ok := bpuo.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeString, value)
+		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
+	}
+	if value, ok := bpuo.mutation.AppendedDirectories(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, backupprofile.FieldDirectories, value)
+		})
 	}
 	if value, ok := bpuo.mutation.HasPeriodicBackups(); ok {
 		_spec.SetField(backupprofile.FieldHasPeriodicBackups, field.TypeBool, value)
@@ -465,6 +503,9 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	}
 	if bpuo.mutation.PeriodicBackupTimeCleared() {
 		_spec.ClearField(backupprofile.FieldPeriodicBackupTime, field.TypeTime)
+	}
+	if value, ok := bpuo.mutation.IsSetupComplete(); ok {
+		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 	}
 	if bpuo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -1,26 +1,30 @@
 package borg
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"strings"
+	"timebender/backend/ent"
 	"timebender/backend/ssh"
 )
 
 type Borg struct {
-	binaryPath   string
-	log          *zap.SugaredLogger
-	backupSets   []BackupSet
-	repositories []Repo
+	binaryPath     string
+	log            *zap.SugaredLogger
+	client         *ent.Client
+	backupProfiles []ent.BackupProfile
+	repositories   []Repo
 }
 
-func NewBorg(log *zap.SugaredLogger) *Borg {
+func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
 	return &Borg{
 		binaryPath: "bin/borg-linuxnewer64",
 		log:        log,
+		client:     client,
 	}
 }
 
@@ -49,60 +53,68 @@ func (b *Borg) CreateSSHKeyPair() (string, error) {
 	return pair.AuthorizedKey(), nil
 }
 
+func (b *Borg) HandleError(msg string, fErr *FrontendError) {
+	errStr := ""
+	if fErr != nil {
+		if fErr.Message != "" && fErr.Stack != "" {
+			errStr = fmt.Sprintf("%s\n%s", fErr.Message, fErr.Stack)
+		} else if fErr.Message != "" {
+			errStr = fErr.Message
+		}
+	}
+
+	// We don't want to show the stack trace from the go code because the error comes from the frontend
+	b.log.WithOptions(zap.AddCallerSkip(9999999)).
+		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
+}
+
+/******************/
+/* Backup Profile */
+/******************/
+
+func (b *Borg) NewBackupProfile() (*ent.BackupProfile, error) {
+	hostname, _ := os.Hostname()
+	return b.client.BackupProfile.Create().
+		SetName(hostname).
+		SetPrefix(hostname).
+		SetDirectories([]string{}).
+		SetHasPeriodicBackups(true).
+		//SetPeriodicBackupTime(time.Date(0, 0, 0, 9, 0, 0, 0, time.Local)).
+		Save(context.Background())
+}
+
+func (b *Borg) GetDirectorySuggestions() []string {
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		return []string{home}
+	}
+	return []string{}
+}
+
+func (b *Borg) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+	return b.client.BackupProfile.Get(context.Background(), id)
+}
+
+func (b *Borg) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+	return b.client.BackupProfile.Query().All(context.Background())
+}
+
+func (b *Borg) SaveBackupProfile(backup ent.BackupProfile) error {
+	_, err := b.client.BackupProfile.
+		UpdateOneID(backup.ID).
+		SetName(backup.Name).
+		SetPrefix(backup.Prefix).
+		SetDirectories(backup.Directories).
+		SetHasPeriodicBackups(backup.HasPeriodicBackups).
+		//SetPeriodicBackupTime(backup.PeriodicBackupTime).
+		SetIsSetupComplete(backup.IsSetupComplete).
+		Save(context.Background())
+	return err
+}
+
 /***************/
 /* Backup Sets */
 /***************/
-
-func (b *Borg) NewBackupSet() *BackupSet {
-	hostname, _ := os.Hostname()
-	home, _ := os.UserHomeDir()
-	backupSet := NewBackupSet(hostname, hostname, []string{home})
-	b.backupSets = append(b.backupSets, *backupSet)
-	return backupSet
-}
-
-func (b *Borg) GetBackupSet(id string) (*BackupSet, error) {
-	for _, backupSet := range b.backupSets {
-		if backupSet.Id == id {
-			return &backupSet, nil
-		}
-	}
-	return nil, fmt.Errorf("backupSet with id %s not found", id)
-}
-
-func (b *Borg) GetBackupSets() []BackupSet {
-	return b.backupSets
-}
-
-func (b *Borg) AddDirectory(backupId string, newDir Directory) error {
-	backup, err := b.GetBackupSet(backupId)
-	if err != nil {
-		return err
-	}
-
-	// Add directory to the list of directories
-	// If it already exists, set IsAdded to true
-	for i, dir := range backup.Directories {
-		if dir.Path == newDir.Path {
-			backup.Directories[i].IsAdded = true
-			return nil
-		}
-	}
-	backup.Directories = append(backup.Directories, newDir)
-	return nil
-}
-
-//func (b *Borg) SaveBackupSet(backupSet *BackupSet) {
-//	// Add the backup-set to the list of backup-sets
-//	// If it already exists, update it
-//	for i, r := range b.backupSets {
-//		if r.Id == backupSet.Id {
-//			b.backupSets[i] = *backupSet
-//			return
-//		}
-//	}
-//	b.backupSets = append(b.backupSets, *backupSet)
-//}
 
 func (b *Borg) ConnectExistingRepo() (*Repo, error) {
 	repo := NewRepo(b.log, b.binaryPath)
@@ -114,36 +126,6 @@ func (b *Borg) ConnectExistingRepo() (*Repo, error) {
 	b.log.Debug(fmt.Sprintf("Connected to repo: %s", info))
 	return repo, nil
 }
-
-//func (b *Borg) NewRepo() *Repo {
-//	hostname, _ := os.Hostname()
-//	home, _ := os.UserHomeDir()
-//	return NewRepo(hostname, hostname, []string{home})
-//}
-//
-//func (b *Borg) SaveRepo(repo *Repo) {
-//	// Add the repo to the list of repositories
-//	// If it already exists, update it
-//	for i, r := range b.repositories {
-//		if r.Id == repo.Id {
-//			b.repositories[i] = *repo
-//			return
-//		}
-//	}
-//	b.repositories = append(b.repositories, *repo)
-//}
-//
-//func (b *Borg) GetRepo(id string) (*Repo, error) {
-//	b.log.Debug(fmt.Sprintf("Looking for repo with id: %s", id))
-//	for _, repo := range b.repositories {
-//		if repo.Id == id {
-//			b.log.Debug(fmt.Sprintf("Found repo: %s", repo.Name))
-//			return &repo, nil
-//		}
-//	}
-//	b.log.Error(fmt.Sprintf("Repo with id %s not found", id))
-//	return nil, fmt.Errorf("repo with id %s not found", id)
-//}
 
 /****************/
 /* Repositories */

@@ -14,13 +14,23 @@ type BackupProfile struct {
 // Fields of the BackupProfile.
 func (BackupProfile) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
-		field.String("prefix"),
-		field.String("directories"),
+		field.Int("id").
+			StructTag(`json:"id"`),
+		field.String("name").
+			StructTag(`json:"name"`),
+		field.String("prefix").
+			StructTag(`json:"prefix"`),
+		field.Strings("directories").
+			StructTag(`json:"directories"`),
 		field.Bool("hasPeriodicBackups").
+			StructTag(`json:"hasPeriodicBackups"`).
 			Default(false),
 		field.Time("periodicBackupTime").
+			StructTag(`json:"periodicBackupTime"`).
 			Optional(),
+		field.Bool("isSetupComplete").
+			StructTag(`json:"isSetupComplete"`).
+			Default(false),
 	}
 }
 

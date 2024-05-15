@@ -298,7 +298,7 @@ func (bpq *BackupProfileQuery) WithRepositories(opts ...func(*RepositoryQuery)) 
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -321,7 +321,7 @@ func (bpq *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupPr
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name"`
 //	}
 //
 //	client.BackupProfile.Query().

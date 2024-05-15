@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"timebender/backend/ent"
-	"timebender/backend/ent/migrate"
 )
 
 //go:embed all:frontend/dist
@@ -33,18 +32,17 @@ func initLogger() *zap.SugaredLogger {
 	}
 }
 
-func initDb() error {
-	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+func initDb() (*ent.Client, error) {
+	client, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
 	if err != nil {
-		return fmt.Errorf("failed opening connection to sqlite: %v", err)
+		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer client.Close()
+
 	// Run the auto migration tool.
-	if err := client.Schema.Create(context.Background(), migrate.WithGlobalUniqueID(true)); err != nil {
-		return err
+	if err := client.Schema.Create(context.Background()); err != nil {
+		return nil, err
 	}
-	return nil
+	return client, nil
 }
 
 func main() {
@@ -56,8 +54,16 @@ func main() {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
+	dbClient, err := initDb()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//goland:noinspection GoUnhandledErrorResult
+	defer dbClient.Close()
+
 	// Create an instance of the app structure
-	app := NewApp(log)
+	app := NewApp(log, dbClient)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -76,11 +82,6 @@ func main() {
 		Logger:   NewZapLogWrapper(log.Desugar()),
 	})
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = initDb()
 	if err != nil {
 		log.Fatal(err)
 	}

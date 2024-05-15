@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,17 +17,19 @@ import (
 type BackupProfile struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int `json:"id"`
 	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Prefix holds the value of the "prefix" field.
-	Prefix string `json:"prefix,omitempty"`
+	Prefix string `json:"prefix"`
 	// Directories holds the value of the "directories" field.
-	Directories string `json:"directories,omitempty"`
+	Directories []string `json:"directories"`
 	// HasPeriodicBackups holds the value of the "hasPeriodicBackups" field.
-	HasPeriodicBackups bool `json:"hasPeriodicBackups,omitempty"`
+	HasPeriodicBackups bool `json:"hasPeriodicBackups"`
 	// PeriodicBackupTime holds the value of the "periodicBackupTime" field.
-	PeriodicBackupTime time.Time `json:"periodicBackupTime,omitempty"`
+	PeriodicBackupTime time.Time `json:"periodicBackupTime"`
+	// IsSetupComplete holds the value of the "isSetupComplete" field.
+	IsSetupComplete bool `json:"isSetupComplete"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -56,11 +59,13 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backupprofile.FieldHasPeriodicBackups:
+		case backupprofile.FieldDirectories:
+			values[i] = new([]byte)
+		case backupprofile.FieldHasPeriodicBackups, backupprofile.FieldIsSetupComplete:
 			values[i] = new(sql.NullBool)
 		case backupprofile.FieldID:
 			values[i] = new(sql.NullInt64)
-		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldDirectories:
+		case backupprofile.FieldName, backupprofile.FieldPrefix:
 			values[i] = new(sql.NullString)
 		case backupprofile.FieldPeriodicBackupTime:
 			values[i] = new(sql.NullTime)
@@ -98,10 +103,12 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 				bp.Prefix = value.String
 			}
 		case backupprofile.FieldDirectories:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field directories", values[i])
-			} else if value.Valid {
-				bp.Directories = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &bp.Directories); err != nil {
+					return fmt.Errorf("unmarshal field directories: %w", err)
+				}
 			}
 		case backupprofile.FieldHasPeriodicBackups:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -114,6 +121,12 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field periodicBackupTime", values[i])
 			} else if value.Valid {
 				bp.PeriodicBackupTime = value.Time
+			}
+		case backupprofile.FieldIsSetupComplete:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isSetupComplete", values[i])
+			} else if value.Valid {
+				bp.IsSetupComplete = value.Bool
 			}
 		default:
 			bp.selectValues.Set(columns[i], values[i])
@@ -163,13 +176,16 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString(bp.Prefix)
 	builder.WriteString(", ")
 	builder.WriteString("directories=")
-	builder.WriteString(bp.Directories)
+	builder.WriteString(fmt.Sprintf("%v", bp.Directories))
 	builder.WriteString(", ")
 	builder.WriteString("hasPeriodicBackups=")
 	builder.WriteString(fmt.Sprintf("%v", bp.HasPeriodicBackups))
 	builder.WriteString(", ")
 	builder.WriteString("periodicBackupTime=")
 	builder.WriteString(bp.PeriodicBackupTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("isSetupComplete=")
+	builder.WriteString(fmt.Sprintf("%v", bp.IsSetupComplete))
 	builder.WriteByte(')')
 	return builder.String()
 }

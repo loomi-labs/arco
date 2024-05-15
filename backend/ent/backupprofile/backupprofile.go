@@ -22,6 +22,8 @@ const (
 	FieldHasPeriodicBackups = "has_periodic_backups"
 	// FieldPeriodicBackupTime holds the string denoting the periodicbackuptime field in the database.
 	FieldPeriodicBackupTime = "periodic_backup_time"
+	// FieldIsSetupComplete holds the string denoting the issetupcomplete field in the database.
+	FieldIsSetupComplete = "is_setup_complete"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// Table holds the table name of the backupprofile in the database.
@@ -41,6 +43,7 @@ var Columns = []string{
 	FieldDirectories,
 	FieldHasPeriodicBackups,
 	FieldPeriodicBackupTime,
+	FieldIsSetupComplete,
 }
 
 var (
@@ -62,6 +65,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultHasPeriodicBackups holds the default value on creation for the "hasPeriodicBackups" field.
 	DefaultHasPeriodicBackups bool
+	// DefaultIsSetupComplete holds the default value on creation for the "isSetupComplete" field.
+	DefaultIsSetupComplete bool
 )
 
 // OrderOption defines the ordering options for the BackupProfile queries.
@@ -82,11 +87,6 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
 }
 
-// ByDirectories orders the results by the directories field.
-func ByDirectories(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDirectories, opts...).ToFunc()
-}
-
 // ByHasPeriodicBackups orders the results by the hasPeriodicBackups field.
 func ByHasPeriodicBackups(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHasPeriodicBackups, opts...).ToFunc()
@@ -95,6 +95,11 @@ func ByHasPeriodicBackups(opts ...sql.OrderTermOption) OrderOption {
 // ByPeriodicBackupTime orders the results by the periodicBackupTime field.
 func ByPeriodicBackupTime(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPeriodicBackupTime, opts...).ToFunc()
+}
+
+// ByIsSetupComplete orders the results by the isSetupComplete field.
+func ByIsSetupComplete(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsSetupComplete, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

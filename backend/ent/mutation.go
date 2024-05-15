@@ -37,9 +37,11 @@ type BackupProfileMutation struct {
 	id                  *int
 	name                *string
 	prefix              *string
-	directories         *string
+	directories         *[]string
+	appenddirectories   []string
 	hasPeriodicBackups  *bool
 	periodicBackupTime  *time.Time
+	isSetupComplete     *bool
 	clearedFields       map[string]struct{}
 	repositories        map[int]struct{}
 	removedrepositories map[int]struct{}
@@ -117,6 +119,12 @@ func (m BackupProfileMutation) Tx() (*Tx, error) {
 	tx := &Tx{config: m.config}
 	tx.init()
 	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackupProfile entities.
+func (m *BackupProfileMutation) SetID(id int) {
+	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
@@ -220,12 +228,13 @@ func (m *BackupProfileMutation) ResetPrefix() {
 }
 
 // SetDirectories sets the "directories" field.
-func (m *BackupProfileMutation) SetDirectories(s string) {
+func (m *BackupProfileMutation) SetDirectories(s []string) {
 	m.directories = &s
+	m.appenddirectories = nil
 }
 
 // Directories returns the value of the "directories" field in the mutation.
-func (m *BackupProfileMutation) Directories() (r string, exists bool) {
+func (m *BackupProfileMutation) Directories() (r []string, exists bool) {
 	v := m.directories
 	if v == nil {
 		return
@@ -236,7 +245,7 @@ func (m *BackupProfileMutation) Directories() (r string, exists bool) {
 // OldDirectories returns the old "directories" field's value of the BackupProfile entity.
 // If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupProfileMutation) OldDirectories(ctx context.Context) (v string, err error) {
+func (m *BackupProfileMutation) OldDirectories(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDirectories is only allowed on UpdateOne operations")
 	}
@@ -250,9 +259,23 @@ func (m *BackupProfileMutation) OldDirectories(ctx context.Context) (v string, e
 	return oldValue.Directories, nil
 }
 
+// AppendDirectories adds s to the "directories" field.
+func (m *BackupProfileMutation) AppendDirectories(s []string) {
+	m.appenddirectories = append(m.appenddirectories, s...)
+}
+
+// AppendedDirectories returns the list of values that were appended to the "directories" field in this mutation.
+func (m *BackupProfileMutation) AppendedDirectories() ([]string, bool) {
+	if len(m.appenddirectories) == 0 {
+		return nil, false
+	}
+	return m.appenddirectories, true
+}
+
 // ResetDirectories resets all changes to the "directories" field.
 func (m *BackupProfileMutation) ResetDirectories() {
 	m.directories = nil
+	m.appenddirectories = nil
 }
 
 // SetHasPeriodicBackups sets the "hasPeriodicBackups" field.
@@ -338,6 +361,42 @@ func (m *BackupProfileMutation) PeriodicBackupTimeCleared() bool {
 func (m *BackupProfileMutation) ResetPeriodicBackupTime() {
 	m.periodicBackupTime = nil
 	delete(m.clearedFields, backupprofile.FieldPeriodicBackupTime)
+}
+
+// SetIsSetupComplete sets the "isSetupComplete" field.
+func (m *BackupProfileMutation) SetIsSetupComplete(b bool) {
+	m.isSetupComplete = &b
+}
+
+// IsSetupComplete returns the value of the "isSetupComplete" field in the mutation.
+func (m *BackupProfileMutation) IsSetupComplete() (r bool, exists bool) {
+	v := m.isSetupComplete
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsSetupComplete returns the old "isSetupComplete" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldIsSetupComplete(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsSetupComplete is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsSetupComplete requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsSetupComplete: %w", err)
+	}
+	return oldValue.IsSetupComplete, nil
+}
+
+// ResetIsSetupComplete resets all changes to the "isSetupComplete" field.
+func (m *BackupProfileMutation) ResetIsSetupComplete() {
+	m.isSetupComplete = nil
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
@@ -428,7 +487,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
@@ -443,6 +502,9 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.periodicBackupTime != nil {
 		fields = append(fields, backupprofile.FieldPeriodicBackupTime)
+	}
+	if m.isSetupComplete != nil {
+		fields = append(fields, backupprofile.FieldIsSetupComplete)
 	}
 	return fields
 }
@@ -462,6 +524,8 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.HasPeriodicBackups()
 	case backupprofile.FieldPeriodicBackupTime:
 		return m.PeriodicBackupTime()
+	case backupprofile.FieldIsSetupComplete:
+		return m.IsSetupComplete()
 	}
 	return nil, false
 }
@@ -481,6 +545,8 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldHasPeriodicBackups(ctx)
 	case backupprofile.FieldPeriodicBackupTime:
 		return m.OldPeriodicBackupTime(ctx)
+	case backupprofile.FieldIsSetupComplete:
+		return m.OldIsSetupComplete(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -505,7 +571,7 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		m.SetPrefix(v)
 		return nil
 	case backupprofile.FieldDirectories:
-		v, ok := value.(string)
+		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -524,6 +590,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPeriodicBackupTime(v)
+		return nil
+	case backupprofile.FieldIsSetupComplete:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsSetupComplete(v)
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
@@ -597,6 +670,9 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldPeriodicBackupTime:
 		m.ResetPeriodicBackupTime()
+		return nil
+	case backupprofile.FieldIsSetupComplete:
+		m.ResetIsSetupComplete()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)

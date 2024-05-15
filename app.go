@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.uber.org/zap"
 	"timebender/backend/borg"
+	"timebender/backend/ent"
 )
 
 // App struct
@@ -13,9 +14,9 @@ type App struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp(log *zap.SugaredLogger) *App {
+func NewApp(log *zap.SugaredLogger, client *ent.Client) *App {
 	return &App{
-		Borg: borg.NewBorg(log),
+		Borg: borg.NewBorg(log, client),
 	}
 }
 

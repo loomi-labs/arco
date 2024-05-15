@@ -13,9 +13,10 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "prefix", Type: field.TypeString},
-		{Name: "directories", Type: field.TypeString},
+		{Name: "directories", Type: field.TypeJSON},
 		{Name: "has_periodic_backups", Type: field.TypeBool, Default: false},
 		{Name: "periodic_backup_time", Type: field.TypeTime, Nullable: true},
+		{Name: "is_setup_complete", Type: field.TypeBool, Default: false},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
