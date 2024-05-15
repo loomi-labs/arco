@@ -7,6 +7,8 @@ export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:n
 
 export function Backup():Promise<void>;
 
+export function DeleteArchive(arg1:number):Promise<void>;
+
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;

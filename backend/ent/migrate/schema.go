@@ -16,7 +16,6 @@ var (
 		{Name: "duration", Type: field.TypeTime},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "archive_repository", Type: field.TypeInt},
-		{Name: "repository_archives", Type: field.TypeInt, Nullable: true},
 	}
 	// ArchivesTable holds the schema information for the "archives" table.
 	ArchivesTable = &schema.Table{
@@ -29,12 +28,6 @@ var (
 				Columns:    []*schema.Column{ArchivesColumns[5]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "archives_repositories_archives",
-				Columns:    []*schema.Column{ArchivesColumns[6]},
-				RefColumns: []*schema.Column{RepositoriesColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -103,7 +96,6 @@ var (
 
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
-	ArchivesTable.ForeignKeys[1].RefTable = RepositoriesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }

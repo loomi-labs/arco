@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetRepository, RefreshArchives } from "../../wailsjs/go/borg/Borg";
+import { DeleteArchive, GetRepository, RefreshArchives } from "../../wailsjs/go/borg/Borg";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -37,6 +37,15 @@ async function refreshArchives(repoId: number) {
   }
 }
 
+async function deleteArchive(archiveId: number) {
+  try {
+    await DeleteArchive(archiveId);
+    archives.value = archives.value.filter((archive) => archive.id !== archiveId);
+  } catch (error: any) {
+    await showAndLogError("Failed to delete archive", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -53,7 +62,12 @@ getRepo();
 
     <h2>Archives</h2>
     <div v-for='(archive, index) in archives' :key='index'>
-      <p>{{ archive.name }}</p>
+      <div class='flex flex-row items-center justify-center'>
+        <p>{{ archive.id }}</p>
+        <p>{{ archive.name }}</p>
+        <p>{{ archive.createdAt }}</p>
+        <button class='btn btn-primary' @click='deleteArchive(archive.id)'>Delete</button>
+      </div>
     </div>
 
     <button class='btn btn-primary' @click='router.back()'>Back</button>

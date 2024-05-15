@@ -28,10 +28,9 @@ type Archive struct {
 	BorgID string `json:"borgID"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
-	Edges               ArchiveEdges `json:"edges"`
-	archive_repository  *int
-	repository_archives *int
-	selectValues        sql.SelectValues
+	Edges              ArchiveEdges `json:"edges"`
+	archive_repository *int
+	selectValues       sql.SelectValues
 }
 
 // ArchiveEdges holds the relations/edges for other nodes in the graph.
@@ -66,8 +65,6 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 		case archive.FieldCreatedAt, archive.FieldDuration:
 			values[i] = new(sql.NullTime)
 		case archive.ForeignKeys[0]: // archive_repository
-			values[i] = new(sql.NullInt64)
-		case archive.ForeignKeys[1]: // repository_archives
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -120,13 +117,6 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				a.archive_repository = new(int)
 				*a.archive_repository = int(value.Int64)
-			}
-		case archive.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field repository_archives", value)
-			} else if value.Valid {
-				a.repository_archives = new(int)
-				*a.repository_archives = int(value.Int64)
 			}
 		default:
 			a.selectValues.Set(columns[i], values[i])

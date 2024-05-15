@@ -181,7 +181,7 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if nodes := rc.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,

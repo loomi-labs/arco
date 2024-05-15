@@ -30,6 +30,7 @@ func (Repository) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("backupprofiles", BackupProfile.Type).
 			Ref("repositories"),
-		edge.To("archives", Archive.Type),
+		edge.From("archives", Archive.Type).
+			Ref("repository"),
 	}
 }

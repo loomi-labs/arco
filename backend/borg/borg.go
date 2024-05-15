@@ -156,6 +156,27 @@ func (b *Borg) GetRepositories() ([]*ent.Repository, error) {
 	return b.client.Repository.Query().All(context.Background())
 }
 
+func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+	cmd := exec.Command(b.binaryPath, "info", "--json", url)
+	cmd.Env = createEnv(password)
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+
+	// Check if we can connect to the repository
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", out, err)
+	}
+
+	// Create a new repository entity
+	return b.client.Repository.
+		Create().
+		SetName(name).
+		SetURL(url).
+		SetPassword(password).
+		AddBackupprofileIDs(backupProfileId).
+		Save(context.Background())
+}
+
 func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	repo, err := b.GetRepository(repoId)
 	if err != nil {
@@ -206,7 +227,6 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	archives, err := b.client.Archive.
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
-		Select(archive.FieldBorgID).
 		All(context.Background())
 	if err != nil {
 		return nil, err
@@ -217,7 +237,6 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Save the new archives
-	var newArchives []*ent.Archive
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
 			createdAt, err := time.Parse("2006-01-02T15:04:05.000000", arch.Start)
@@ -239,31 +258,33 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 			if err != nil {
 				return nil, err
 			}
-			newArchives = append(newArchives, newArchive)
+			archives = append(archives, newArchive)
 			b.log.Debug(fmt.Sprintf("Saved archive: %s", newArchive.Name))
 		}
 	}
 
-	return newArchives, nil
+	return archives, nil
 }
 
-func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.binaryPath, "info", "--json", url)
-	cmd.Env = createEnv(password)
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
-
-	// Check if we can connect to the repository
-	out, err := cmd.CombinedOutput()
+func (b *Borg) DeleteArchive(id int) error {
+	arch, err := b.client.Archive.
+		Query().
+		WithRepository().
+		Where(archive.ID(id)).
+		Only(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", out, err)
+		return err
 	}
 
-	// Create a new repository entity
-	return b.client.Repository.
-		Create().
-		SetName(name).
-		SetURL(url).
-		SetPassword(password).
-		AddBackupprofileIDs(backupProfileId).
-		Save(context.Background())
+	cmd := exec.Command(b.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
+	cmd.Env = createEnv(arch.Edges.Repository.Password)
+
+	startTime := time.Now()
+	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %s", out, err)
+	}
+	b.log.Debug(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	return nil
 }

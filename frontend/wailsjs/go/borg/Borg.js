@@ -10,6 +10,10 @@ export function Backup() {
   return window['go']['borg']['Borg']['Backup']();
 }
 
+export function DeleteArchive(arg1) {
+  return window['go']['borg']['Borg']['DeleteArchive'](arg1);
+}
+
 export function GetBackupProfile(arg1) {
   return window['go']['borg']['Borg']['GetBackupProfile'](arg1);
 }

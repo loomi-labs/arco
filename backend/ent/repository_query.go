@@ -98,7 +98,7 @@ func (rq *RepositoryQuery) QueryArchives() *ArchiveQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(archive.Table, archive.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, repository.ArchivesTable, repository.ArchivesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.ArchivesTable, repository.ArchivesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -526,13 +526,13 @@ func (rq *RepositoryQuery) loadArchives(ctx context.Context, query *ArchiveQuery
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.repository_archives
+		fk := n.archive_repository
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "repository_archives" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "archive_repository" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "repository_archives" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "archive_repository" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

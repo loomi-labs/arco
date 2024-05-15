@@ -35,7 +35,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "archive" package.
 	ArchivesInverseTable = "archives"
 	// ArchivesColumn is the table column denoting the archives relation/edge.
-	ArchivesColumn = "repository_archives"
+	ArchivesColumn = "archive_repository"
 )
 
 // Columns holds all SQL columns for repository fields.
@@ -123,6 +123,6 @@ func newArchivesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ArchivesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ArchivesTable, ArchivesColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, ArchivesTable, ArchivesColumn),
 	)
 }

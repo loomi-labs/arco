@@ -241,7 +241,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ru.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,
@@ -254,7 +254,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if nodes := ru.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ru.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,
@@ -270,7 +270,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if nodes := ru.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,
@@ -545,7 +545,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if ruo.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,
@@ -558,7 +558,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if nodes := ruo.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ruo.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,
@@ -574,7 +574,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if nodes := ruo.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Inverse: true,
 			Table:   repository.ArchivesTable,
 			Columns: []string{repository.ArchivesColumn},
 			Bidi:    false,

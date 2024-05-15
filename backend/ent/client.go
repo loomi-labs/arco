@@ -648,7 +648,7 @@ func (c *RepositoryClient) QueryArchives(r *Repository) *ArchiveQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(archive.Table, archive.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, repository.ArchivesTable, repository.ArchivesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.ArchivesTable, repository.ArchivesColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
