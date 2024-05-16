@@ -29,7 +29,7 @@ func (b *Borg) Backup() error {
 
 	cmd := exec.Command(b.binaryPath, "create", fmt.Sprintf("%s%s::%s", root, repo, name), path)
 	cmd.Env = getEnv()
-	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", out, err)
@@ -60,11 +60,11 @@ func (b *Borg) InitRepo(repoName string) error {
 	cmd := exec.Command(b.binaryPath, "init", "--encryption=repokey-blake2", "--storage-quota", quota, repo)
 
 	// log command
-	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
 	cmd.Env = getEnv()
 	out, err := cmd.CombinedOutput()
-	b.log.Debug(fmt.Sprintf("Output: %s", out))
+	b.log.Info(fmt.Sprintf("Output: %s", out))
 	if err != nil {
 		return fmt.Errorf("%s: %s", out, err)
 	}

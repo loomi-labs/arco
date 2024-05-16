@@ -73,7 +73,7 @@ func (b *Borg) createSSHKeyPair() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	b.log.Debug(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
+	b.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
 	return pair.AuthorizedKey(), nil
 }
 
@@ -161,12 +161,12 @@ func (b *Borg) RunBackups(backupProfileId int) error {
 		cmd.Env = createEnv(repo.Password)
 
 		startTime := time.Now()
-		b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+		b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%s: %s", out, err)
 		}
-		b.log.Debug(fmt.Sprintf("Command took %s", time.Since(startTime)))
+		b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
 	}
 	return nil
 }
@@ -220,12 +220,12 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 
 	// Get the list from the borg repository
 	startTime := time.Now()
-	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", out, err)
 	}
-	b.log.Debug(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
 
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
@@ -252,7 +252,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 		return nil, err
 	}
 	if cnt > 0 {
-		b.log.Debug(fmt.Sprintf("Deleted %d archives", cnt))
+		b.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
 	}
 
 	// Check which archives are already saved
@@ -269,6 +269,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Save the new archives
+	cntNewArchives := 0
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
 			createdAt, err := time.Parse("2006-01-02T15:04:05.000000", arch.Start)
@@ -291,8 +292,11 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 				return nil, err
 			}
 			archives = append(archives, newArchive)
-			b.log.Debug(fmt.Sprintf("Saved archive: %s", newArchive.Name))
+			cntNewArchives++
 		}
+	}
+	if cntNewArchives > 0 {
+		b.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
 	}
 
 	return archives, nil
@@ -312,11 +316,12 @@ func (b *Borg) DeleteArchive(id int) error {
 	cmd.Env = createEnv(arch.Edges.Repository.Password)
 
 	startTime := time.Now()
-	b.log.Debug(fmt.Sprintf("Running command: %s", cmd.String()))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+	defer b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", out, err)
 	}
-	b.log.Debug(fmt.Sprintf("Command took %s", time.Since(startTime)))
 	return nil
 }
