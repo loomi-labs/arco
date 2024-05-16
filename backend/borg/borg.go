@@ -34,12 +34,10 @@ func (b *Borg) StartDaemon() {
 
 	// Start a goroutine that runs all background tasks
 	go func() {
-		wgBackupJobs := make(map[string]backupJob)
 		for {
 			select {
 			case job := <-b.startBackupChannel:
 				b.log.Info("Starting backup job")
-				wgBackupJobs[job.repoUrl] = job
 				go runBackup(job, b.finishBackupChannel)
 			case result := <-b.finishBackupChannel:
 				duration := result.endTime.Sub(result.startTime)
