@@ -8,7 +8,7 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
   const toast = useToast();
 
   if (development) {
-    toast.error(message + " " + error);
+    toast.error(message + "\n" + error);
   } else {
     toast.error(message);
   }
