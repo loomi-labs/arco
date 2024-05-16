@@ -24,4 +24,10 @@ func NewApp(log *zap.SugaredLogger, client *ent.Client) *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.Borg.StartDaemon()
+}
+
+// shutdown is called when the app is shutting down
+func (a *App) shutdown(ctx context.Context) {
+	a.Borg.StopDaemon()
 }

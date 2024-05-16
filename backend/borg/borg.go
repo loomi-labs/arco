@@ -10,17 +10,56 @@ import (
 )
 
 type Borg struct {
-	binaryPath string
-	log        *zap.SugaredLogger
-	client     *ent.Client
+	binaryPath          string
+	log                 *zap.SugaredLogger
+	client              *ent.Client
+	shutdownChannel     chan struct{}
+	startBackupChannel  chan backupJob
+	finishBackupChannel chan finishBackupJob
 }
 
 func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
 	return &Borg{
-		binaryPath: "bin/borg-linuxnewer64",
-		log:        log,
-		client:     client,
+		binaryPath:          "bin/borg-linuxnewer64",
+		log:                 log,
+		client:              client,
+		shutdownChannel:     make(chan struct{}),
+		startBackupChannel:  make(chan backupJob),
+		finishBackupChannel: make(chan finishBackupJob),
 	}
+}
+
+func (b *Borg) StartDaemon() {
+	b.log.Info("Starting Borg daemon")
+
+	// Start a goroutine that runs all background tasks
+	go func() {
+		wgBackupJobs := make(map[string]backupJob)
+		for {
+			select {
+			case job := <-b.startBackupChannel:
+				b.log.Info("Starting backup job")
+				wgBackupJobs[job.repoUrl] = job
+				go runBackup(job, b.finishBackupChannel)
+			case result := <-b.finishBackupChannel:
+				duration := result.endTime.Sub(result.startTime)
+				if result.err != nil {
+					b.log.Error(fmt.Sprintf("Backup job failed after %s: %s", duration, result.err))
+				} else {
+					b.log.Info(fmt.Sprintf("Backup job completed in %s", duration))
+				}
+				b.log.Debug(fmt.Sprintf("Command: %s", result.cmd))
+			case <-b.shutdownChannel:
+				b.log.Debug("Shutting down background tasks")
+				return
+			}
+		}
+	}()
+}
+
+func (b *Borg) StopDaemon() {
+	b.log.Info("Stopping Borg daemon")
+	close(b.shutdownChannel)
 }
 
 func createEnv(password string) []string {

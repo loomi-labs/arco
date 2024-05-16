@@ -54,12 +54,24 @@ export function RefreshArchives(arg1) {
   return window['go']['borg']['Borg']['RefreshArchives'](arg1);
 }
 
+export function RunBackup(arg1, arg2) {
+  return window['go']['borg']['Borg']['RunBackup'](arg1, arg2);
+}
+
 export function RunBackups(arg1) {
   return window['go']['borg']['Borg']['RunBackups'](arg1);
 }
 
 export function SaveBackupProfile(arg1) {
   return window['go']['borg']['Borg']['SaveBackupProfile'](arg1);
+}
+
+export function StartDaemon() {
+  return window['go']['borg']['Borg']['StartDaemon']();
+}
+
+export function StopDaemon() {
+  return window['go']['borg']['Borg']['StopDaemon']();
 }
 
 export function Version() {

@@ -29,8 +29,14 @@ export function Prune():Promise<void>;
 
 export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 
+export function RunBackup(arg1:number,arg2:number):Promise<void>;
+
 export function RunBackups(arg1:number):Promise<void>;
 
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
+
+export function StartDaemon():Promise<void>;
+
+export function StopDaemon():Promise<void>;
 
 export function Version():Promise<string>;
