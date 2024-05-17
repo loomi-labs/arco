@@ -3,12 +3,12 @@
 package enttest
 
 import (
+	"arco/backend/ent"
 	"context"
-	"timebender/backend/ent"
 	// required by schema hooks.
-	_ "timebender/backend/ent/runtime"
+	_ "arco/backend/ent/runtime"
 
-	"timebender/backend/ent/migrate"
+	"arco/backend/ent/migrate"
 
 	"entgo.io/ent/dialect/sql/schema"
 )

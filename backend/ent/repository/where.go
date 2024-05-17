@@ -3,7 +3,7 @@
 package repository
 
 import (
-	"timebender/backend/ent/predicate"
+	"arco/backend/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"

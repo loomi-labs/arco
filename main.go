@@ -1,6 +1,7 @@
 package main
 
 import (
+	"arco/backend/ent"
 	"context"
 	"embed"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
-	"timebender/backend/ent"
 )
 
 //go:embed all:frontend/dist
@@ -67,7 +67,7 @@ func main() {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:  "timebender",
+		Title:  "arco",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{

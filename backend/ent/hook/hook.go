@@ -3,9 +3,9 @@
 package hook
 
 import (
+	"arco/backend/ent"
 	"context"
 	"fmt"
-	"timebender/backend/ent"
 )
 
 // The ArchiveFunc type is an adapter to allow the use of ordinary

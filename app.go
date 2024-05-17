@@ -1,10 +1,10 @@
 package main
 
 import (
+	"arco/backend/borg"
+	"arco/backend/ent"
 	"context"
 	"go.uber.org/zap"
-	"timebender/backend/borg"
-	"timebender/backend/ent"
 )
 
 // App struct

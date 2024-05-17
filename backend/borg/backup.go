@@ -1,14 +1,14 @@
 package borg
 
 import (
+	"arco/backend/ent"
+	"arco/backend/ent/backupprofile"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-	"timebender/backend/ent"
-	"timebender/backend/ent/backupprofile"
 )
 
 func (b *Borg) NewBackupProfile() (*ent.BackupProfile, error) {

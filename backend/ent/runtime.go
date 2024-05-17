@@ -3,8 +3,8 @@
 package ent
 
 import (
-	"timebender/backend/ent/backupprofile"
-	"timebender/backend/ent/schema"
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/schema"
 )
 
 // The init function reads all schema descriptors with runtime code

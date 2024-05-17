@@ -3,13 +3,13 @@
 package ent
 
 import (
+	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/predicate"
+	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
-	"timebender/backend/ent/archive"
-	"timebender/backend/ent/backupprofile"
-	"timebender/backend/ent/predicate"
-	"timebender/backend/ent/repository"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"

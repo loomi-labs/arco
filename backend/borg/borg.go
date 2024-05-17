@@ -1,12 +1,12 @@
 package borg
 
 import (
+	"arco/backend/ent"
+	"arco/backend/ssh"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
 	"strings"
-	"timebender/backend/ent"
-	"timebender/backend/ssh"
 )
 
 type Borg struct {
