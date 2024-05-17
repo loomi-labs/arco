@@ -15,6 +15,8 @@ export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
 
 export function GetDirectorySuggestions():Promise<Array<string>>;
 
+export function GetNotifications():Promise<Array<string>>;
+
 export function GetRepositories():Promise<Array<ent.Repository>>;
 
 export function GetRepository(arg1:number):Promise<ent.Repository>;

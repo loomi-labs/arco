@@ -31,7 +31,7 @@ async function getBackupProfile() {
 async function runBackups() {
   try {
     await RunBackups(backup.value.id);
-    toast.success("Backup successfully run!");
+    toast.success("Backup started");
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
   }

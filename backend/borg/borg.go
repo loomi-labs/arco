@@ -16,6 +16,7 @@ type Borg struct {
 	shutdownChannel     chan struct{}
 	startBackupChannel  chan backupJob
 	finishBackupChannel chan finishBackupJob
+	notificationChannel chan string
 }
 
 func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
@@ -26,6 +27,7 @@ func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
 		shutdownChannel:     make(chan struct{}),
 		startBackupChannel:  make(chan backupJob),
 		finishBackupChannel: make(chan finishBackupJob),
+		notificationChannel: make(chan string),
 	}
 }
 
@@ -47,6 +49,7 @@ func (b *Borg) StartDaemon() {
 					b.log.Info(fmt.Sprintf("Backup job completed in %s", duration))
 				}
 				b.log.Debug(fmt.Sprintf("Command: %s", result.cmd))
+				b.notificationChannel <- fmt.Sprintf("Backup job completed in %s", duration)
 			case <-b.shutdownChannel:
 				b.log.Debug("Shutting down background tasks")
 				return
@@ -119,4 +122,16 @@ func (b *Borg) HandleError(msg string, fErr *FrontendError) {
 	// We don't want to show the stack trace from the go code because the error comes from the frontend
 	b.log.WithOptions(zap.AddCallerSkip(9999999)).
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
+}
+
+func (b *Borg) GetNotifications() []string {
+	notifications := make([]string, 0)
+	for {
+		select {
+		case notification := <-b.notificationChannel:
+			notifications = append(notifications, notification)
+		default:
+			return notifications
+		}
+	}
 }

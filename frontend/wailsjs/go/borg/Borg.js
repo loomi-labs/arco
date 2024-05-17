@@ -26,6 +26,10 @@ export function GetDirectorySuggestions() {
   return window['go']['borg']['Borg']['GetDirectorySuggestions']();
 }
 
+export function GetNotifications() {
+  return window['go']['borg']['Borg']['GetNotifications']();
+}
+
 export function GetRepositories() {
   return window['go']['borg']['Borg']['GetRepositories']();
 }
