@@ -1,15 +1,15 @@
 package borg
 
 import (
+	"arco/backend/ent"
+	"arco/backend/ent/archive"
+	"arco/backend/ent/repository"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"slices"
 	"time"
-	"timebender/backend/ent"
-	"timebender/backend/ent/archive"
-	"timebender/backend/ent/repository"
 )
 
 func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {

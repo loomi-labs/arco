@@ -9,11 +9,11 @@ import (
 	"log"
 	"reflect"
 
-	"timebender/backend/ent/migrate"
+	"arco/backend/ent/migrate"
 
-	"timebender/backend/ent/archive"
-	"timebender/backend/ent/backupprofile"
-	"timebender/backend/ent/repository"
+	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/repository"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"

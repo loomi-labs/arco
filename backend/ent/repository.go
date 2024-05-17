@@ -3,9 +3,9 @@
 package ent
 
 import (
+	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
-	"timebender/backend/ent/repository"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"

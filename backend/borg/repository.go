@@ -1,11 +1,11 @@
 package borg
 
 import (
+	"arco/backend/ent"
+	"arco/backend/ent/repository"
 	"context"
 	"fmt"
 	"os/exec"
-	"timebender/backend/ent"
-	"timebender/backend/ent/repository"
 )
 
 func (b *Borg) GetRepository(id int) (*ent.Repository, error) {

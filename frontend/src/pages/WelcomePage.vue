@@ -22,7 +22,7 @@ const router = useRouter();
 <template>
   <Navbar></Navbar>
   <div class='flex flex-col items-center justify-center h-full'>
-    <h1>Welcome to Timebender</h1>
+    <h1>Welcome to Arco</h1>
     <button class='btn btn-primary' @click='router.push(rAddBackupPage)'>Add your first backup</button>
   </div>
 </template>

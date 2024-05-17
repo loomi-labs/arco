@@ -3,8 +3,8 @@
 package backupprofile
 
 import (
+	"arco/backend/ent/predicate"
 	"time"
-	"timebender/backend/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"

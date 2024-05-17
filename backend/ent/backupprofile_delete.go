@@ -3,9 +3,9 @@
 package ent
 
 import (
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/predicate"
 	"context"
-	"timebender/backend/ent/backupprofile"
-	"timebender/backend/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
