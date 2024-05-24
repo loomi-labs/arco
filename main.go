@@ -48,7 +48,7 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func startApp(log *zap.SugaredLogger, channels *types.Channels, borgWorker *worker.Worker) {
+func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
@@ -62,7 +62,7 @@ func startApp(log *zap.SugaredLogger, channels *types.Channels, borgWorker *work
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
 
-	borgClient := client.NewBorgClient(log, dbClient, channels)
+	borgClient := client.NewBorgClient(log, dbClient, inChan, outChan)
 
 	// Create an instance of the app structure
 	app := NewApp(borgClient)
@@ -96,15 +96,16 @@ func main() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
-	channels := &types.Channels{
-		StartBackup:  make(chan types.BackupJob),
+	inChan := &types.InputChannels{
+		StartBackup: make(chan types.BackupJob),
+	}
+	outChan := &types.OutputChannels{
 		FinishBackup: make(chan types.FinishBackupJob),
-		Notification: make(chan string),
 	}
 
 	// Create a borg daemon
-	borgWorker, channels := worker.NewWorker(log, channels)
+	borgWorker := worker.NewWorker(log, inChan, outChan)
 
 	go borgWorker.Run()
-	startApp(log, channels, borgWorker)
+	startApp(log, inChan, outChan, borgWorker)
 }

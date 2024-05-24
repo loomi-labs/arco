@@ -12,15 +12,17 @@ type BorgClient struct {
 	binaryPath string
 	log        *zap.SugaredLogger
 	db         *ent.Client
-	channels   *types.Channels
+	inChan     *types.InputChannels
+	outChan    *types.OutputChannels
 }
 
-func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, channels *types.Channels) *BorgClient {
+func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
 		binaryPath: "bin/borg-linuxnewer64",
 		log:        log,
 		db:         dbClient,
-		channels:   channels,
+		inChan:     inChan,
+		outChan:    outChan,
 	}
 }
 
@@ -48,12 +50,22 @@ func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (b *BorgClient) GetNotifications() []string {
-	notifications := make([]string, 0)
+func (b *BorgClient) GetNotifications() []Notification {
+	notifications := make([]Notification, 0)
 	for {
 		select {
-		case notification := <-b.channels.Notification:
-			notifications = append(notifications, notification)
+		case result := <-b.outChan.FinishBackup:
+			if result.Err != nil {
+				notifications = append(notifications, Notification{
+					Message: fmt.Sprintf("Backup job failed after %s: %s", result.EndTime.Sub(result.StartTime), result.Err),
+					Level:   LevelError,
+				})
+			} else {
+				notifications = append(notifications, Notification{
+					Message: fmt.Sprintf("Backup job completed in %s", result.EndTime.Sub(result.StartTime)),
+					Level:   LevelInfo,
+				})
+			}
 		default:
 			return notifications
 		}

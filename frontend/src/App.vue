@@ -11,7 +11,13 @@ setInterval(async () => {
   try {
     const notifications = await GetNotifications();
     for (const notification of notifications) {
-      toast.success(notification);
+      if (notification.level === "error"){
+        toast.error(notification.message);
+      } else if (notification.level === "warning") {
+        toast.warning(notification.message);
+      } else if (notification.level === "info") {
+        toast.success(notification.message);
+      }
     }
   } catch (error: any) {
     await showAndLogError("Failed to get notifications", error);

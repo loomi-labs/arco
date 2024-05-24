@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-func runBackup(backupJob types.BackupJob, finishBackupChannel chan types.FinishBackupJob) {
+func (d *Worker) runBackup(backupJob types.BackupJob) {
+	d.log.Info("Starting backup job")
 	result := types.FinishBackupJob{
 		BackupProfileId: backupJob.BackupProfileId,
 		RepositoryId:    backupJob.RepositoryId,
@@ -18,7 +19,7 @@ func runBackup(backupJob types.BackupJob, finishBackupChannel chan types.FinishB
 	}
 	defer func() {
 		result.EndTime = time.Now()
-		finishBackupChannel <- result
+		d.outChan.FinishBackup <- result
 	}()
 
 	name := fmt.Sprintf("%s-%s", backupJob.Hostname, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))

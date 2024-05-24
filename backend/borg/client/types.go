@@ -6,7 +6,20 @@ type FrontendError struct {
 	Stack   string `json:"stack"`
 }
 
-// -------- BorgClient types --------
+type NotificationLevel string
+
+const (
+	LevelInfo    NotificationLevel = "info"
+	LevelWarning NotificationLevel = "warning"
+	LevelError   NotificationLevel = "error"
+)
+
+type Notification struct {
+	Message string            `json:"message"`
+	Level   NotificationLevel `json:"level"`
+}
+
+// -------- borg types --------
 
 type Archive struct {
 	Archive  string `json:"archive"`

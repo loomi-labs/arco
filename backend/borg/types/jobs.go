@@ -2,10 +2,12 @@ package types
 
 import "time"
 
-type Channels struct {
-	StartBackup  chan BackupJob
+type InputChannels struct {
+	StartBackup chan BackupJob
+}
+
+type OutputChannels struct {
 	FinishBackup chan FinishBackupJob
-	Notification chan string
 }
 
 type BackupJob struct {
