@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 )
 
 func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
@@ -82,14 +83,27 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return err
 	}
 
-	b.inChan.StartBackup <- types.BackupJob{
+	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
-		RepoUrl:         repo.URL,
-		RepoPassword:    repo.Password,
-		Hostname:        hostname,
-		Directories:     backupProfile.Directories,
-		BinaryPath:      b.binaryPath,
+	}
+	if slices.Contains(b.runningBackups, bId) {
+		return fmt.Errorf("backup is already running")
+	}
+	if slices.Contains(b.occupiedRepos, repositoryId) {
+		return fmt.Errorf("repository has already a backup running")
+	}
+
+	b.runningBackups = append(b.runningBackups, bId)
+	b.occupiedRepos = append(b.occupiedRepos, repositoryId)
+
+	b.inChan.StartBackup <- types.BackupJob{
+		Id:           bId,
+		RepoUrl:      repo.URL,
+		RepoPassword: repo.Password,
+		Hostname:     hostname,
+		Directories:  backupProfile.Directories,
+		BinaryPath:   b.binaryPath,
 	}
 	return nil
 }

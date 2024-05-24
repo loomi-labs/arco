@@ -9,11 +9,13 @@ import (
 )
 
 type BorgClient struct {
-	binaryPath string
-	log        *zap.SugaredLogger
-	db         *ent.Client
-	inChan     *types.InputChannels
-	outChan    *types.OutputChannels
+	binaryPath     string
+	log            *zap.SugaredLogger
+	db             *ent.Client
+	inChan         *types.InputChannels
+	outChan        *types.OutputChannels
+	runningBackups []types.BackupIdentifier
+	occupiedRepos  []int
 }
 
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
@@ -65,6 +67,20 @@ func (b *BorgClient) GetNotifications() []Notification {
 					Message: fmt.Sprintf("Backup job completed in %s", result.EndTime.Sub(result.StartTime)),
 					Level:   LevelInfo,
 				})
+			}
+
+			//	Remove backup from runningBackups and occupiedRepos
+			for i, id := range b.runningBackups {
+				if id == result.Id {
+					b.runningBackups = append(b.runningBackups[:i], b.runningBackups[i+1:]...)
+					break
+				}
+			}
+			for i, id := range b.occupiedRepos {
+				if id == result.Id.RepositoryId {
+					b.occupiedRepos = append(b.occupiedRepos[:i], b.occupiedRepos[i+1:]...)
+					break
+				}
 			}
 		default:
 			return notifications

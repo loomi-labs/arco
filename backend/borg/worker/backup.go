@@ -12,10 +12,9 @@ import (
 func (d *Worker) runBackup(backupJob types.BackupJob) {
 	d.log.Info("Starting backup job")
 	result := types.FinishBackupJob{
-		BackupProfileId: backupJob.BackupProfileId,
-		RepositoryId:    backupJob.RepositoryId,
-		StartTime:       time.Now(),
-		Err:             nil,
+		Id:        backupJob.Id,
+		StartTime: time.Now(),
+		Err:       nil,
 	}
 	defer func() {
 		result.EndTime = time.Now()
