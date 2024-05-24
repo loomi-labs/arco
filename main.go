@@ -65,7 +65,7 @@ func main() {
 	defer dbClient.Close()
 
 	// Create a borg client
-	borgClient := borg.NewBorgClient(log, dbClient)
+	borgClient := borg.NewClient(log, dbClient)
 
 	// Create an instance of the app structure
 	app := NewApp(borgClient)

@@ -8,11 +8,11 @@ import (
 // App struct
 type App struct {
 	ctx        context.Context
-	BorgClient *borg.BorgClient
+	BorgClient *borg.Client
 }
 
 // NewApp creates a new App application struct
-func NewApp(borg *borg.BorgClient) *App {
+func NewApp(borg *borg.Client) *App {
 	return &App{
 		BorgClient: borg,
 	}

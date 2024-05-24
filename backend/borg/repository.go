@@ -8,8 +8,8 @@ import (
 	"os/exec"
 )
 
-func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
-	return b.client.Repository.
+func (c *Client) GetRepository(id int) (*ent.Repository, error) {
+	return c.client.Repository.
 		Query().
 		WithBackupprofiles().
 		WithArchives().
@@ -17,14 +17,14 @@ func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
 		Only(context.Background())
 }
 
-func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
-	return b.client.Repository.Query().All(context.Background())
+func (c *Client) GetRepositories() ([]*ent.Repository, error) {
+	return c.client.Repository.Query().All(context.Background())
 }
 
-func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.binaryPath, "info", "--json", url)
+func (c *Client) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+	cmd := exec.Command(c.binaryPath, "info", "--json", url)
 	cmd.Env = createEnv(password)
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+	c.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
 	// Check if we can connect to the repository
 	out, err := cmd.CombinedOutput()
@@ -33,7 +33,7 @@ func (b *BorgClient) AddExistingRepository(name, url, password string, backupPro
 	}
 
 	// Create a new repository entity
-	return b.client.Repository.
+	return c.client.Repository.
 		Create().
 		SetName(name).
 		SetURL(url).

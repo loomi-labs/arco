@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type BorgClient struct {
+type Client struct {
 	binaryPath          string
 	log                 *zap.SugaredLogger
 	client              *ent.Client
@@ -19,8 +19,8 @@ type BorgClient struct {
 	notificationChannel chan string
 }
 
-func NewBorgClient(log *zap.SugaredLogger, client *ent.Client) *BorgClient {
-	return &BorgClient{
+func NewClient(log *zap.SugaredLogger, client *ent.Client) *Client {
+	return &Client{
 		binaryPath:          "bin/borg-linuxnewer64",
 		log:                 log,
 		client:              client,
@@ -31,36 +31,36 @@ func NewBorgClient(log *zap.SugaredLogger, client *ent.Client) *BorgClient {
 	}
 }
 
-func (b *BorgClient) StartDaemon() {
-	b.log.Info("Starting BorgClient daemon")
+func (c *Client) StartDaemon() {
+	c.log.Info("Starting Client daemon")
 
 	// Start a goroutine that runs all background tasks
 	go func() {
 		for {
 			select {
-			case job := <-b.startBackupChannel:
-				b.log.Info("Starting backup job")
-				go runBackup(job, b.finishBackupChannel)
-			case result := <-b.finishBackupChannel:
+			case job := <-c.startBackupChannel:
+				c.log.Info("Starting backup job")
+				go runBackup(job, c.finishBackupChannel)
+			case result := <-c.finishBackupChannel:
 				duration := result.endTime.Sub(result.startTime)
 				if result.err != nil {
-					b.log.Error(fmt.Sprintf("Backup job failed after %s: %s", duration, result.err))
+					c.log.Error(fmt.Sprintf("Backup job failed after %s: %s", duration, result.err))
 				} else {
-					b.log.Info(fmt.Sprintf("Backup job completed in %s", duration))
+					c.log.Info(fmt.Sprintf("Backup job completed in %s", duration))
 				}
-				b.log.Debug(fmt.Sprintf("Command: %s", result.cmd))
-				b.notificationChannel <- fmt.Sprintf("Backup job completed in %s", duration)
-			case <-b.shutdownChannel:
-				b.log.Debug("Shutting down background tasks")
+				c.log.Debug(fmt.Sprintf("Command: %s", result.cmd))
+				c.notificationChannel <- fmt.Sprintf("Backup job completed in %s", duration)
+			case <-c.shutdownChannel:
+				c.log.Debug("Shutting down background tasks")
 				return
 			}
 		}
 	}()
 }
 
-func (b *BorgClient) StopDaemon() {
-	b.log.Info("Stopping BorgClient daemon")
-	close(b.shutdownChannel)
+func (c *Client) StopDaemon() {
+	c.log.Info("Stopping Client daemon")
+	close(c.shutdownChannel)
 }
 
 func createEnv(password string) []string {
@@ -100,16 +100,16 @@ func getTestEnvOverride() []string {
 	return env
 }
 
-func (b *BorgClient) createSSHKeyPair() (string, error) {
+func (c *Client) createSSHKeyPair() (string, error) {
 	pair, err := ssh.GenerateKeyPair()
 	if err != nil {
 		return "", err
 	}
-	b.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
+	c.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
 	return pair.AuthorizedKey(), nil
 }
 
-func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
+func (c *Client) HandleError(msg string, fErr *FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -120,15 +120,15 @@ func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
 	}
 
 	// We don't want to show the stack trace from the go code because the error comes from the frontend
-	b.log.WithOptions(zap.AddCallerSkip(9999999)).
+	c.log.WithOptions(zap.AddCallerSkip(9999999)).
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (b *BorgClient) GetNotifications() []string {
+func (c *Client) GetNotifications() []string {
 	notifications := make([]string, 0)
 	for {
 		select {
-		case notification := <-b.notificationChannel:
+		case notification := <-c.notificationChannel:
 			notifications = append(notifications, notification)
 		default:
 			return notifications
