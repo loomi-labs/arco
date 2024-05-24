@@ -52,7 +52,7 @@ func (b *BorgClient) GetNotifications() []string {
 	notifications := make([]string, 0)
 	for {
 		select {
-		case notification := <-b.channels.NotificationChannel:
+		case notification := <-b.channels.Notification:
 			notifications = append(notifications, notification)
 		default:
 			return notifications

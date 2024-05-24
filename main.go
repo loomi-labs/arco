@@ -96,8 +96,14 @@ func main() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
+	channels := &types.Channels{
+		StartBackup:  make(chan types.BackupJob),
+		FinishBackup: make(chan types.FinishBackupJob),
+		Notification: make(chan string),
+	}
+
 	// Create a borg daemon
-	borgWorker, channels := worker.NewWorker(log)
+	borgWorker, channels := worker.NewWorker(log, channels)
 
 	go borgWorker.Run()
 	startApp(log, channels, borgWorker)

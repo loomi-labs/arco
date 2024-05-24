@@ -82,7 +82,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return err
 	}
 
-	b.channels.StartBackupChannel <- types.BackupJob{
+	b.channels.StartBackup <- types.BackupJob{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 		RepoUrl:         repo.URL,
