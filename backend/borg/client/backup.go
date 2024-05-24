@@ -5,7 +5,6 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
-	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -19,7 +18,7 @@ func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		SetDirectories([]string{}).
 		SetHasPeriodicBackups(true).
 		//SetPeriodicBackupTime(time.Date(0, 0, 0, 9, 0, 0, 0, time.Local)).
-		Save(context.Background())
+		Save(b.ctx)
 }
 
 func (b *BorgClient) GetDirectorySuggestions() []string {
@@ -34,11 +33,11 @@ func (b *BorgClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().
 		WithRepositories().
-		Where(backupprofile.ID(id)).Only(context.Background())
+		Where(backupprofile.ID(id)).Only(b.ctx)
 }
 
 func (b *BorgClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
-	return b.db.BackupProfile.Query().All(context.Background())
+	return b.db.BackupProfile.Query().All(b.ctx)
 }
 
 func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
@@ -50,7 +49,7 @@ func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
 		SetHasPeriodicBackups(backup.HasPeriodicBackups).
 		//SetPeriodicBackupTime(backup.PeriodicBackupTime).
 		SetIsSetupComplete(backup.IsSetupComplete).
-		Save(context.Background())
+		Save(b.ctx)
 	return err
 }
 
@@ -65,7 +64,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 			q.Limit(1)
 			q.Where(backupprofile.ID(backupProfileId))
 		}).
-		Only(context.Background())
+		Only(b.ctx)
 	if err != nil {
 		return err
 	}

@@ -4,11 +4,13 @@ import (
 	"arco/backend/borg/types"
 	"arco/backend/ent"
 	"arco/backend/ssh"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 )
 
 type BorgClient struct {
+	ctx            context.Context
 	binaryPath     string
 	log            *zap.SugaredLogger
 	db             *ent.Client
@@ -16,6 +18,10 @@ type BorgClient struct {
 	outChan        *types.OutputChannels
 	runningBackups []types.BackupIdentifier
 	occupiedRepos  []int
+}
+
+type BI interface {
+	HandleError(msg string, fErr *FrontendError)
 }
 
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
@@ -26,6 +32,10 @@ func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.I
 		inChan:     inChan,
 		outChan:    outChan,
 	}
+}
+
+func (b *BorgClient) Startup(ctx context.Context) {
+	b.ctx = ctx
 }
 
 func (b *BorgClient) createSSHKeyPair() (string, error) {

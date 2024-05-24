@@ -70,6 +70,10 @@ export function SaveBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['SaveBackupProfile'](arg1);
 }
 
+export function Startup(arg1) {
+  return window['go']['client']['BorgClient']['Startup'](arg1);
+}
+
 export function Version() {
   return window['go']['client']['BorgClient']['Version']();
 }

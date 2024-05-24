@@ -65,7 +65,7 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 	borgClient := client.NewBorgClient(log, dbClient, inChan, outChan)
 
 	// Create an instance of the app structure
-	app := NewApp(borgClient)
+	app := NewApp(borgClient, borgWorker)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -77,9 +77,7 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
-		OnShutdown: func(ctx context.Context) {
-			borgWorker.Stop()
-		},
+		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app.BorgClient,
 		},
