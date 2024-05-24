@@ -20,10 +20,6 @@ type BorgClient struct {
 	occupiedRepos  []int
 }
 
-type BI interface {
-	HandleError(msg string, fErr *FrontendError)
-}
-
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
 		binaryPath: "bin/borg-linuxnewer64",
