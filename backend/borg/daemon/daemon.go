@@ -1,9 +1,7 @@
 package daemon
 
 import (
-	"arco/backend/borg/client"
 	"arco/backend/borg/types"
-	"arco/backend/ent"
 	"fmt"
 	"go.uber.org/zap"
 )
@@ -12,10 +10,9 @@ type Daemon struct {
 	binaryPath string
 	log        *zap.SugaredLogger
 	channels   *types.Channels
-	BorgClient *client.BorgClient
 }
 
-func NewDaemon(log *zap.SugaredLogger, dbClient *ent.Client) *Daemon {
+func NewDaemon(log *zap.SugaredLogger) (*Daemon, *types.Channels) {
 	channels := &types.Channels{
 		ShutdownChannel:     make(chan struct{}),
 		StartBackupChannel:  make(chan types.BackupJob),
@@ -26,8 +23,7 @@ func NewDaemon(log *zap.SugaredLogger, dbClient *ent.Client) *Daemon {
 		binaryPath: "bin/borg-linuxnewer64",
 		log:        log,
 		channels:   channels,
-		BorgClient: client.NewBorgClient(log, dbClient, channels),
-	}
+	}, channels
 }
 
 func (d *Daemon) StartDaemon() {

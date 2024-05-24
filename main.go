@@ -1,7 +1,9 @@
 package main
 
 import (
+	"arco/backend/borg/client"
 	"arco/backend/borg/daemon"
+	"arco/backend/borg/types"
 	"arco/backend/ent"
 	"context"
 	"embed"
@@ -34,22 +36,19 @@ func initLogger() *zap.SugaredLogger {
 }
 
 func initDb() (*ent.Client, error) {
-	client, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
+	dbClient, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
 	// Run the auto migration tool.
-	if err := client.Schema.Create(context.Background()); err != nil {
+	if err := dbClient.Schema.Create(context.Background()); err != nil {
 		return nil, err
 	}
-	return client, nil
+	return dbClient, nil
 }
 
-func main() {
-	log := initLogger()
-	//goland:noinspection GoUnhandledErrorResult
-	defer log.Sync() // flushes buffer, if any
+func startApp(log *zap.SugaredLogger, channels *types.Channels, borgDaemon *daemon.Daemon) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
@@ -60,16 +59,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
 
-	// Create a borg daemon
-	borgDaemon := daemon.NewDaemon(log, dbClient)
-	go borgDaemon.StartDaemon()
+	borgClient := client.NewBorgClient(log, dbClient, channels)
 
 	// Create an instance of the app structure
-	app := NewApp(borgDaemon.BorgClient)
+	app := NewApp(borgClient)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -90,8 +86,19 @@ func main() {
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func main() {
+	log := initLogger()
+	//goland:noinspection GoUnhandledErrorResult
+	defer log.Sync() // flushes buffer, if any
+
+	// Create a borg daemon
+	borgDaemon, channels := daemon.NewDaemon(log)
+
+	go borgDaemon.StartDaemon()
+	startApp(log, channels, borgDaemon)
 }
