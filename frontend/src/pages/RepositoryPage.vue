@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetRepositories } from "../../wailsjs/go/borg/Client";
+import { GetRepositories } from "../../wailsjs/go/client/BorgClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";

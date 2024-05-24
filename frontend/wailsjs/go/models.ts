@@ -1,4 +1,4 @@
-export namespace borg {
+export namespace client {
 	
 	export class FrontendError {
 	    message: string;

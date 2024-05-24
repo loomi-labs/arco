@@ -1,6 +1,7 @@
-package borg
+package client
 
 import (
+	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
@@ -12,23 +13,23 @@ import (
 	"time"
 )
 
-func (c *Client) RefreshArchives(repoId int) ([]*ent.Archive, error) {
-	repo, err := c.GetRepository(repoId)
+func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
+	repo, err := b.GetRepository(repoId)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(c.binaryPath, "list", "--json", repo.URL)
-	cmd.Env = createEnv(repo.Password)
+	cmd := exec.Command(b.binaryPath, "list", "--json", repo.URL)
+	cmd.Env = util.CreateEnv(repo.Password)
 
 	// Get the list from the borg repository
 	startTime := time.Now()
-	c.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", out, err)
 	}
-	c.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
 
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
@@ -43,7 +44,7 @@ func (c *Client) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Delete the archives that don't exist anymore
-	cnt, err := c.client.Archive.
+	cnt, err := b.db.Archive.
 		Delete().
 		Where(
 			archive.And(
@@ -55,11 +56,11 @@ func (c *Client) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 		return nil, err
 	}
 	if cnt > 0 {
-		c.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
+		b.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
 	}
 
 	// Check which archives are already saved
-	archives, err := c.client.Archive.
+	archives, err := b.db.Archive.
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
 		All(context.Background())
@@ -83,7 +84,7 @@ func (c *Client) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 			if err != nil {
 				return nil, err
 			}
-			newArchive, err := c.client.Archive.
+			newArchive, err := b.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
@@ -99,14 +100,14 @@ func (c *Client) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 		}
 	}
 	if cntNewArchives > 0 {
-		c.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
+		b.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
 	}
 
 	return archives, nil
 }
 
-func (c *Client) DeleteArchive(id int) error {
-	arch, err := c.client.Archive.
+func (b *BorgClient) DeleteArchive(id int) error {
+	arch, err := b.db.Archive.
 		Query().
 		WithRepository().
 		Where(archive.ID(id)).
@@ -115,12 +116,12 @@ func (c *Client) DeleteArchive(id int) error {
 		return err
 	}
 
-	cmd := exec.Command(c.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
-	cmd.Env = createEnv(arch.Edges.Repository.Password)
+	cmd := exec.Command(b.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
+	cmd.Env = util.CreateEnv(arch.Edges.Repository.Password)
 
 	startTime := time.Now()
-	c.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
-	defer c.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+	defer b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {

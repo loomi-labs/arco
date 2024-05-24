@@ -5,7 +5,7 @@ import {
   GetDirectorySuggestions,
   NewBackupProfile,
   SaveBackupProfile
-} from "../../../wailsjs/go/borg/Client";
+} from "../../../wailsjs/go/client/BorgClient";
 import { ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";

@@ -1,4 +1,4 @@
-package borg
+package client
 
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {
@@ -6,7 +6,7 @@ type FrontendError struct {
 	Stack   string `json:"stack"`
 }
 
-// -------- Client types --------
+// -------- BorgClient types --------
 
 type Archive struct {
 	Archive  string `json:"archive"`
