@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetBackupProfile, RunBackups } from "../../wailsjs/go/borg/Borg";
+import { GetBackupProfile, RunBackups } from "../../wailsjs/go/borg/BorgClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";

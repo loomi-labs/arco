@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func (b *Borg) NewBackupProfile() (*ent.BackupProfile, error) {
+func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	hostname, _ := os.Hostname()
 	return b.client.BackupProfile.Create().
 		SetName(hostname).
@@ -23,7 +23,7 @@ func (b *Borg) NewBackupProfile() (*ent.BackupProfile, error) {
 		Save(context.Background())
 }
 
-func (b *Borg) GetDirectorySuggestions() []string {
+func (b *BorgClient) GetDirectorySuggestions() []string {
 	home, _ := os.UserHomeDir()
 	if home != "" {
 		return []string{home}
@@ -31,18 +31,18 @@ func (b *Borg) GetDirectorySuggestions() []string {
 	return []string{}
 }
 
-func (b *Borg) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+func (b *BorgClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 	return b.client.BackupProfile.
 		Query().
 		WithRepositories().
 		Where(backupprofile.ID(id)).Only(context.Background())
 }
 
-func (b *Borg) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+func (b *BorgClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 	return b.client.BackupProfile.Query().All(context.Background())
 }
 
-func (b *Borg) SaveBackupProfile(backup ent.BackupProfile) error {
+func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	_, err := b.client.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
@@ -98,7 +98,7 @@ func runBackup(backupJob backupJob, finishBackupChannel chan finishBackupJob) {
 	}
 }
 
-func (b *Borg) RunBackup(backupProfileId int, repositoryId int) error {
+func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.client.Repository.
 		Query().
 		Where(repository.And(
@@ -139,7 +139,7 @@ func (b *Borg) RunBackup(backupProfileId int, repositoryId int) error {
 	return nil
 }
 
-func (b *Borg) RunBackups(backupProfileId int) error {
+func (b *BorgClient) RunBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err

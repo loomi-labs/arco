@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (b *Borg) Version() (string, error) {
+func (b *BorgClient) Version() (string, error) {
 	cmd := exec.Command(b.binaryPath, "--version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -16,7 +16,7 @@ func (b *Borg) Version() (string, error) {
 	return string(out), nil
 }
 
-func (b *Borg) Backup() error {
+func (b *BorgClient) Backup() error {
 	root := os.Getenv("BORG_ROOT")
 	repo := os.Getenv("BORG_REPO")
 	path := os.Getenv("BORG_BACKUP_PATHS")
@@ -38,7 +38,7 @@ func (b *Borg) Backup() error {
 	return nil
 }
 
-func (b *Borg) Prune() error {
+func (b *BorgClient) Prune() error {
 	repo := os.Getenv("BORG_REPO")
 
 	cmd := exec.Command(b.binaryPath, "prune", "--list", repo, "--keep-daily", "7")
@@ -51,7 +51,7 @@ func (b *Borg) Prune() error {
 	return nil
 }
 
-func (b *Borg) InitRepo(repoName string) error {
+func (b *BorgClient) InitRepo(repoName string) error {
 	root := os.Getenv("BORG_ROOT")
 	repo := fmt.Sprintf("%s/~/%s", root, repoName)
 

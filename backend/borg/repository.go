@@ -8,7 +8,7 @@ import (
 	"os/exec"
 )
 
-func (b *Borg) GetRepository(id int) (*ent.Repository, error) {
+func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
 	return b.client.Repository.
 		Query().
 		WithBackupprofiles().
@@ -17,11 +17,11 @@ func (b *Borg) GetRepository(id int) (*ent.Repository, error) {
 		Only(context.Background())
 }
 
-func (b *Borg) GetRepositories() ([]*ent.Repository, error) {
+func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
 	return b.client.Repository.Query().All(context.Background())
 }
 
-func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(b.binaryPath, "info", "--json", url)
 	cmd.Env = createEnv(password)
 	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))

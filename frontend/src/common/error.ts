@@ -1,5 +1,5 @@
 import { useToast } from "vue-toastification";
-import { HandleError } from "../../wailsjs/go/borg/Borg";
+import { HandleError } from "../../wailsjs/go/borg/BorgClient";
 import { borg } from "../../wailsjs/go/models";
 
 const development = process.env.NODE_ENV === "development";

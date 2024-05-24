@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { DeleteArchive, GetRepository, RefreshArchives } from "../../wailsjs/go/borg/Borg";
+import { DeleteArchive, GetRepository, RefreshArchives } from "../../wailsjs/go/borg/BorgClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";

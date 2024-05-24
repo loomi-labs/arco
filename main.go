@@ -1,6 +1,7 @@
 package main
 
 import (
+	"arco/backend/borg"
 	"arco/backend/ent"
 	"context"
 	"embed"
@@ -54,6 +55,7 @@ func main() {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
+	// Initialize the database
 	dbClient, err := initDb()
 	if err != nil {
 		log.Fatal(err)
@@ -62,8 +64,11 @@ func main() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
 
+	// Create a borg client
+	borgClient := borg.NewBorgClient(log, dbClient)
+
 	// Create an instance of the app structure
-	app := NewApp(log, dbClient)
+	app := NewApp(borgClient)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -77,7 +82,7 @@ func main() {
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
-			app.Borg,
+			app.BorgClient,
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),

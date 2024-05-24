@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type Borg struct {
+type BorgClient struct {
 	binaryPath          string
 	log                 *zap.SugaredLogger
 	client              *ent.Client
@@ -19,8 +19,8 @@ type Borg struct {
 	notificationChannel chan string
 }
 
-func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
-	return &Borg{
+func NewBorgClient(log *zap.SugaredLogger, client *ent.Client) *BorgClient {
+	return &BorgClient{
 		binaryPath:          "bin/borg-linuxnewer64",
 		log:                 log,
 		client:              client,
@@ -31,8 +31,8 @@ func NewBorg(log *zap.SugaredLogger, client *ent.Client) *Borg {
 	}
 }
 
-func (b *Borg) StartDaemon() {
-	b.log.Info("Starting Borg daemon")
+func (b *BorgClient) StartDaemon() {
+	b.log.Info("Starting BorgClient daemon")
 
 	// Start a goroutine that runs all background tasks
 	go func() {
@@ -58,8 +58,8 @@ func (b *Borg) StartDaemon() {
 	}()
 }
 
-func (b *Borg) StopDaemon() {
-	b.log.Info("Stopping Borg daemon")
+func (b *BorgClient) StopDaemon() {
+	b.log.Info("Stopping BorgClient daemon")
 	close(b.shutdownChannel)
 }
 
@@ -100,7 +100,7 @@ func getTestEnvOverride() []string {
 	return env
 }
 
-func (b *Borg) createSSHKeyPair() (string, error) {
+func (b *BorgClient) createSSHKeyPair() (string, error) {
 	pair, err := ssh.GenerateKeyPair()
 	if err != nil {
 		return "", err
@@ -109,7 +109,7 @@ func (b *Borg) createSSHKeyPair() (string, error) {
 	return pair.AuthorizedKey(), nil
 }
 
-func (b *Borg) HandleError(msg string, fErr *FrontendError) {
+func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -124,7 +124,7 @@ func (b *Borg) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (b *Borg) GetNotifications() []string {
+func (b *BorgClient) GetNotifications() []string {
 	notifications := make([]string, 0)
 	for {
 		select {

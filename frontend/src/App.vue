@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 
 import { useToast } from "vue-toastification";
-import { GetNotifications } from "../wailsjs/go/borg/Borg";
+import { GetNotifications } from "../wailsjs/go/borg/BorgClient";
 import { showAndLogError } from "./common/error";
 
 const toast = useToast();

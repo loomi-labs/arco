@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
+func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	repo, err := b.GetRepository(repoId)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	return archives, nil
 }
 
-func (b *Borg) DeleteArchive(id int) error {
+func (b *BorgClient) DeleteArchive(id int) error {
 	arch, err := b.client.Archive.
 		Query().
 		WithRepository().

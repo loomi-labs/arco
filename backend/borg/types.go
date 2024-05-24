@@ -6,7 +6,7 @@ type FrontendError struct {
 	Stack   string `json:"stack"`
 }
 
-// -------- Borg types --------
+// -------- BorgClient types --------
 
 type Archive struct {
 	Archive  string `json:"archive"`
