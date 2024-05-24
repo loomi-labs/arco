@@ -2,6 +2,7 @@ package worker
 
 import (
 	"arco/backend/borg/types"
+	"context"
 	"go.uber.org/zap"
 )
 
@@ -25,11 +26,13 @@ func NewWorker(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *typ
 
 func (d *Worker) Run() {
 	d.log.Info("Starting worker")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
 		select {
 		case job := <-d.inChan.StartBackup:
-			go d.runBackup(job)
+			go d.runBackup(ctx, job)
 		case <-d.shutdownChan:
 			d.log.Debug("Shutting down worker")
 			return
