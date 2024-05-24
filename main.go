@@ -1,6 +1,9 @@
 package main
 
 import (
+	"arco/backend/borg/client"
+	"arco/backend/borg/types"
+	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"context"
 	"embed"
@@ -33,37 +36,36 @@ func initLogger() *zap.SugaredLogger {
 }
 
 func initDb() (*ent.Client, error) {
-	client, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
+	dbClient, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
 	// Run the auto migration tool.
-	if err := client.Schema.Create(context.Background()); err != nil {
+	if err := dbClient.Schema.Create(context.Background()); err != nil {
 		return nil, err
 	}
-	return client, nil
+	return dbClient, nil
 }
 
-func main() {
-	log := initLogger()
-	//goland:noinspection GoUnhandledErrorResult
-	defer log.Sync() // flushes buffer, if any
+func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
+	// Initialize the database
 	dbClient, err := initDb()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
 
+	borgClient := client.NewBorgClient(log, dbClient, inChan, outChan)
+
 	// Create an instance of the app structure
-	app := NewApp(log, dbClient)
+	app := NewApp(borgClient)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -75,14 +77,35 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
+		OnShutdown: func(ctx context.Context) {
+			borgWorker.Stop()
+		},
 		Bind: []interface{}{
-			app.Borg,
+			app.BorgClient,
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func main() {
+	log := initLogger()
+	//goland:noinspection GoUnhandledErrorResult
+	defer log.Sync() // flushes buffer, if any
+
+	inChan := &types.InputChannels{
+		StartBackup: make(chan types.BackupJob),
+	}
+	outChan := &types.OutputChannels{
+		FinishBackup: make(chan types.FinishBackupJob),
+	}
+
+	// Create a borg daemon
+	borgWorker := worker.NewWorker(log, inChan, outChan)
+
+	go borgWorker.Run()
+	startApp(log, inChan, outChan, borgWorker)
 }

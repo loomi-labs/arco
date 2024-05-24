@@ -1,6 +1,7 @@
-package borg
+package client
 
 import (
+	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
@@ -12,14 +13,14 @@ import (
 	"time"
 )
 
-func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
+func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	repo, err := b.GetRepository(repoId)
 	if err != nil {
 		return nil, err
 	}
 
 	cmd := exec.Command(b.binaryPath, "list", "--json", repo.URL)
-	cmd.Env = createEnv(repo.Password)
+	cmd.Env = util.CreateEnv(repo.Password)
 
 	// Get the list from the borg repository
 	startTime := time.Now()
@@ -43,7 +44,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Delete the archives that don't exist anymore
-	cnt, err := b.client.Archive.
+	cnt, err := b.db.Archive.
 		Delete().
 		Where(
 			archive.And(
@@ -59,7 +60,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Check which archives are already saved
-	archives, err := b.client.Archive.
+	archives, err := b.db.Archive.
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
 		All(context.Background())
@@ -83,7 +84,7 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 			if err != nil {
 				return nil, err
 			}
-			newArchive, err := b.client.Archive.
+			newArchive, err := b.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
@@ -105,8 +106,8 @@ func (b *Borg) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	return archives, nil
 }
 
-func (b *Borg) DeleteArchive(id int) error {
-	arch, err := b.client.Archive.
+func (b *BorgClient) DeleteArchive(id int) error {
+	arch, err := b.db.Archive.
 		Query().
 		WithRepository().
 		Where(archive.ID(id)).
@@ -116,7 +117,7 @@ func (b *Borg) DeleteArchive(id int) error {
 	}
 
 	cmd := exec.Command(b.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
-	cmd.Env = createEnv(arch.Edges.Repository.Password)
+	cmd.Env = util.CreateEnv(arch.Edges.Repository.Password)
 
 	startTime := time.Now()
 	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))

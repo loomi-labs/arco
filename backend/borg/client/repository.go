@@ -1,6 +1,7 @@
-package borg
+package client
 
 import (
+	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ent/repository"
 	"context"
@@ -8,8 +9,8 @@ import (
 	"os/exec"
 )
 
-func (b *Borg) GetRepository(id int) (*ent.Repository, error) {
-	return b.client.Repository.
+func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
+	return b.db.Repository.
 		Query().
 		WithBackupprofiles().
 		WithArchives().
@@ -17,13 +18,13 @@ func (b *Borg) GetRepository(id int) (*ent.Repository, error) {
 		Only(context.Background())
 }
 
-func (b *Borg) GetRepositories() ([]*ent.Repository, error) {
-	return b.client.Repository.Query().All(context.Background())
+func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
+	return b.db.Repository.Query().All(context.Background())
 }
 
-func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(b.binaryPath, "info", "--json", url)
-	cmd.Env = createEnv(password)
+	cmd.Env = util.CreateEnv(password)
 	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
 	// Check if we can connect to the repository
@@ -33,7 +34,7 @@ func (b *Borg) AddExistingRepository(name, url, password string, backupProfileId
 	}
 
 	// Create a new repository entity
-	return b.client.Repository.
+	return b.db.Repository.
 		Create().
 		SetName(name).
 		SetURL(url).

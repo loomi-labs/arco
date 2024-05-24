@@ -1,6 +1,6 @@
 import { useToast } from "vue-toastification";
-import { HandleError } from "../../wailsjs/go/borg/Borg";
-import { borg } from "../../wailsjs/go/models";
+import { HandleError } from "../../wailsjs/go/client/BorgClient";
+import { client } from "../../wailsjs/go/models";
 
 const development = process.env.NODE_ENV === "development";
 
@@ -13,7 +13,7 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
     toast.error(message);
   }
 
-  const fe = borg.FrontendError.createFrom();
+  const fe = client.FrontendError.createFrom();
 
   // check type of error and log it in the backend
   if (error instanceof Error) {

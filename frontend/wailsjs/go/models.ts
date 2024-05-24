@@ -1,4 +1,4 @@
-export namespace borg {
+export namespace client {
 	
 	export class FrontendError {
 	    message: string;
@@ -12,6 +12,20 @@ export namespace borg {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.message = source["message"];
 	        this.stack = source["stack"];
+	    }
+	}
+	export class Notification {
+	    message: string;
+	    level: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Notification(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message = source["message"];
+	        this.level = source["level"];
 	    }
 	}
 

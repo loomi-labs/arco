@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetBackupProfile, RunBackups } from "../../wailsjs/go/borg/Borg";
+import { GetBackupProfile, RunBackups } from "../../wailsjs/go/client/BorgClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
@@ -31,7 +31,7 @@ async function getBackupProfile() {
 async function runBackups() {
   try {
     await RunBackups(backup.value.id);
-    toast.success("Backup successfully run!");
+    toast.success("Backup started");
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
   }
