@@ -1,4 +1,4 @@
-package daemon
+package worker
 
 import (
 	"arco/backend/borg/types"

@@ -2,8 +2,8 @@ package main
 
 import (
 	"arco/backend/borg/client"
-	"arco/backend/borg/daemon"
 	"arco/backend/borg/types"
+	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"context"
 	"embed"
@@ -48,7 +48,7 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func startApp(log *zap.SugaredLogger, channels *types.Channels, borgDaemon *daemon.Daemon) {
+func startApp(log *zap.SugaredLogger, channels *types.Channels, borgWorker *worker.Worker) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
@@ -78,7 +78,7 @@ func startApp(log *zap.SugaredLogger, channels *types.Channels, borgDaemon *daem
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown: func(ctx context.Context) {
-			borgDaemon.StopDaemon()
+			borgWorker.Stop()
 		},
 		Bind: []interface{}{
 			app.BorgClient,
@@ -97,8 +97,8 @@ func main() {
 	defer log.Sync() // flushes buffer, if any
 
 	// Create a borg daemon
-	borgDaemon, channels := daemon.NewDaemon(log)
+	borgWorker, channels := worker.NewWorker(log)
 
-	go borgDaemon.StartDaemon()
-	startApp(log, channels, borgDaemon)
+	go borgWorker.Run()
+	startApp(log, channels, borgWorker)
 }

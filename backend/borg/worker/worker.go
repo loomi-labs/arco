@@ -1,4 +1,4 @@
-package daemon
+package worker
 
 import (
 	"arco/backend/borg/types"
@@ -6,28 +6,28 @@ import (
 	"go.uber.org/zap"
 )
 
-type Daemon struct {
+type Worker struct {
 	binaryPath string
 	log        *zap.SugaredLogger
 	channels   *types.Channels
 }
 
-func NewDaemon(log *zap.SugaredLogger) (*Daemon, *types.Channels) {
+func NewWorker(log *zap.SugaredLogger) (*Worker, *types.Channels) {
 	channels := &types.Channels{
 		ShutdownChannel:     make(chan struct{}),
 		StartBackupChannel:  make(chan types.BackupJob),
 		FinishBackupChannel: make(chan types.FinishBackupJob),
 		NotificationChannel: make(chan string),
 	}
-	return &Daemon{
+	return &Worker{
 		binaryPath: "bin/borg-linuxnewer64",
 		log:        log,
 		channels:   channels,
 	}, channels
 }
 
-func (d *Daemon) StartDaemon() {
-	d.log.Info("Starting Borg daemon")
+func (d *Worker) Run() {
+	d.log.Info("Starting worker")
 
 	for {
 		select {
@@ -50,7 +50,7 @@ func (d *Daemon) StartDaemon() {
 	}
 }
 
-func (d *Daemon) StopDaemon() {
-	d.log.Info("Stopping Borg daemon")
+func (d *Worker) Stop() {
+	d.log.Info("Stopping worker")
 	close(d.channels.ShutdownChannel)
 }
