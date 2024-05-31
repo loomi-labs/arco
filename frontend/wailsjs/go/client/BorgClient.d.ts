@@ -7,9 +7,9 @@ export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:n
 
 export function DeleteArchive(arg1:number):Promise<void>;
 
-export function DryRunPruneBackup(arg1:number,arg2:number):Promise<string>;
+export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<client.PruneInfo>>;
 
-export function DryRunPruneBackups(arg1:number):Promise<string>;
+export function DryRunPruneBackups(arg1:number):Promise<Array<client.PruneInfo>>;
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 

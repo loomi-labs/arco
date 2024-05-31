@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strings"
 )
 
 func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
@@ -178,10 +179,53 @@ func (b *BorgClient) PruneBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) (string, error) {
+type PruneInfo struct {
+	Name   string
+	Pruned bool
+	Reason string
+}
+
+func parsePruneOutput(output string) []PruneInfo {
+	// TODO: parsing of the output is not working correctly. There is no json output... for now let's just not use pruning info at all
+	lines := strings.Split(output, "\n")
+	var pruneInfos []PruneInfo
+
+	for _, line := range lines {
+		// Skip empty lines
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		// Split the line into fields using at least five spaces as the separator
+		fields := strings.SplitN(line, "     ", 3)
+		for i := range fields {
+			fields[i] = strings.TrimSpace(fields[i])
+		}
+		if len(fields) != 3 {
+			fmt.Println("Error parsing line:", line)
+			continue
+		}
+
+		pruneInfo := PruneInfo{
+			Name:   fields[1],
+			Pruned: strings.HasPrefix(fields[0], "Would prune"),
+		}
+
+		// If not pruned, get the reason
+		if !pruneInfo.Pruned {
+			pruneInfo.Reason = fields[0]
+		}
+
+		pruneInfos = append(pruneInfos, pruneInfo)
+	}
+
+	return pruneInfos
+}
+
+func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) ([]PruneInfo, error) {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
-		return "", err
+		return []PruneInfo{}, err
 	}
 	backupProfile := repo.Edges.Backupprofiles[0]
 
@@ -194,28 +238,27 @@ func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) (s
 	// Run prune command (dry-run)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("%s: %s", out, err)
+		return []PruneInfo{}, fmt.Errorf("%s: %s", out, err)
 	}
-	b.log.Debug("Output: ", string(out))
-	return string(out), nil
+	return parsePruneOutput(string(out)), nil
 }
 
-func (b *BorgClient) DryRunPruneBackups(backupProfileId int) (string, error) {
+func (b *BorgClient) DryRunPruneBackups(backupProfileId int) ([]PruneInfo, error) {
+	var result []PruneInfo
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
-		return "", err
+		return result, err
 	}
 	if !backupProfile.IsSetupComplete {
-		return "", fmt.Errorf("backup profile is not setup")
+		return result, fmt.Errorf("backup profile is not setup")
 	}
 
-	output := ""
 	for _, repo := range backupProfile.Edges.Repositories {
 		out, err := b.DryRunPruneBackup(backupProfileId, repo.ID)
 		if err != nil {
-			return "", err
+			return result, err
 		}
-		output += out
+		result = append(result, out...)
 	}
-	return output, nil
+	return result, nil
 }
