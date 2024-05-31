@@ -22,15 +22,18 @@ func (d *Worker) runBackup(ctx context.Context, backupJob types.BackupJob) {
 		d.outChan.FinishBackup <- result
 	}()
 
-	name := fmt.Sprintf("%s-%s", backupJob.Hostname, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
-
+	// Prepare backup command
+	name := fmt.Sprintf("%s-%s", backupJob.Prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 	cmd := exec.CommandContext(ctx, backupJob.BinaryPath, "create", fmt.Sprintf("%s::%s", backupJob.RepoUrl, name), strings.Join(backupJob.Directories, " "))
 	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
 	result.Cmd = cmd.String()
 	d.log.Debug("Command: ", result.Cmd)
 
+	// Run backup command
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		result.Err = fmt.Errorf("%s: %s", out, err)
+		d.log.Error("Error running backup command: ", result.Err)
 	}
+	d.log.Debug("Backup job finished")
 }

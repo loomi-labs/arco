@@ -53,11 +53,11 @@ func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
-func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
+func (b *BorgClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
 	repo, err := b.db.Repository.
 		Query().
 		Where(repository.And(
-			repository.ID(repositoryId),
+			repository.ID(repoId),
 			repository.HasBackupprofilesWith(backupprofile.ID(backupProfileId)),
 		)).
 		WithBackupprofiles(func(q *ent.BackupProfileQuery) {
@@ -66,21 +66,23 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		}).
 		Only(b.ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(repo.Edges.Backupprofiles) != 1 {
-		return fmt.Errorf("repository does not have the backup profile")
+		return nil, fmt.Errorf("repository does not have the backup profile")
 	}
-
-	backupProfile := repo.Edges.Backupprofiles[0]
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not complete")
+	if !repo.Edges.Backupprofiles[0].IsSetupComplete {
+		return nil, fmt.Errorf("backup profile is not complete")
 	}
+	return repo, nil
+}
 
-	hostname, err := os.Hostname()
+func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
 		return err
 	}
+	backupProfile := repo.Edges.Backupprofiles[0]
 
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
@@ -90,7 +92,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return fmt.Errorf("backup is already running")
 	}
 	if slices.Contains(b.occupiedRepos, repositoryId) {
-		return fmt.Errorf("repository has already a backup running")
+		return fmt.Errorf("repository is busy")
 	}
 
 	b.runningBackups = append(b.runningBackups, bId)
@@ -100,7 +102,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,
-		Hostname:     hostname,
+		Prefix:       backupProfile.Prefix,
 		Directories:  backupProfile.Directories,
 		BinaryPath:   b.binaryPath,
 	}

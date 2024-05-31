@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetBackupProfile, RunBackups } from "../../wailsjs/go/client/BorgClient";
+import { DryRunPruneBackups, GetBackupProfile, PruneBackups, RunBackups } from "../../wailsjs/go/client/BorgClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
@@ -37,6 +37,24 @@ async function runBackups() {
   }
 }
 
+async function pruneBackups() {
+  try {
+    await PruneBackups(backup.value.id);
+    toast.success("Pruning started");
+  } catch (error: any) {
+    await showAndLogError("Failed to prune backups", error);
+  }
+}
+
+async function dryRunPruneBackups() {
+  try {
+    const result = await DryRunPruneBackups(backup.value.id);
+    toast.success(`Pruning would remove ${result} backups`);
+  } catch (error: any) {
+    await showAndLogError("Failed to dry run prune backups", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -60,7 +78,9 @@ getBackupProfile();
       </div>
     </div>
 
-    <button class='btn btn-accent' @click='runBackups()'>Run Backup</button>
+    <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>
+    <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>
+    <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>
 
     <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>

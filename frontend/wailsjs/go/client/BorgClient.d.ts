@@ -5,9 +5,11 @@ import {client} from '../models';
 
 export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
 
-export function Backup():Promise<void>;
-
 export function DeleteArchive(arg1:number):Promise<void>;
+
+export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<client.PruneInfo>>;
+
+export function DryRunPruneBackups(arg1:number):Promise<Array<client.PruneInfo>>;
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
@@ -27,7 +29,9 @@ export function InitNewRepo(arg1:string,arg2:string,arg3:string,arg4:number):Pro
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 
-export function Prune():Promise<void>;
+export function PruneBackup(arg1:number,arg2:number):Promise<void>;
+
+export function PruneBackups(arg1:number):Promise<void>;
 
 export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 

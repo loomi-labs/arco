@@ -93,12 +93,8 @@ func main() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
-	inChan := &types.InputChannels{
-		StartBackup: make(chan types.BackupJob),
-	}
-	outChan := &types.OutputChannels{
-		FinishBackup: make(chan types.FinishBackupJob),
-	}
+	inChan := types.NewInputChannels()
+	outChan := types.NewOutputChannels()
 
 	// Create a borg daemon
 	borgWorker := worker.NewWorker(log, inChan, outChan)
