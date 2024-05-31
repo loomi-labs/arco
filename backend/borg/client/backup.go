@@ -53,11 +53,11 @@ func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
-func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
+func (b *BorgClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
 	repo, err := b.db.Repository.
 		Query().
 		Where(repository.And(
-			repository.ID(repositoryId),
+			repository.ID(repoId),
 			repository.HasBackupprofilesWith(backupprofile.ID(backupProfileId)),
 		)).
 		WithBackupprofiles(func(q *ent.BackupProfileQuery) {
@@ -66,16 +66,23 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		}).
 		Only(b.ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(repo.Edges.Backupprofiles) != 1 {
-		return fmt.Errorf("repository does not have the backup profile")
+		return nil, fmt.Errorf("repository does not have the backup profile")
 	}
+	if !repo.Edges.Backupprofiles[0].IsSetupComplete {
+		return nil, fmt.Errorf("backup profile is not complete")
+	}
+	return repo, nil
+}
 
-	backupProfile := repo.Edges.Backupprofiles[0]
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not complete")
+func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+	if err != nil {
+		return err
 	}
+	backupProfile := repo.Edges.Backupprofiles[0]
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -90,7 +97,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return fmt.Errorf("backup is already running")
 	}
 	if slices.Contains(b.occupiedRepos, repositoryId) {
-		return fmt.Errorf("repository has already a backup running")
+		return fmt.Errorf("repository is busy")
 	}
 
 	b.runningBackups = append(b.runningBackups, bId)
@@ -118,6 +125,55 @@ func (b *BorgClient) RunBackups(backupProfileId int) error {
 
 	for _, repo := range backupProfile.Edges.Repositories {
 		err := b.RunBackup(backupProfileId, repo.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BorgClient) PruneBackup(backupProfileId int, repositoryId int) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+	if err != nil {
+		return err
+	}
+	backupProfile := repo.Edges.Backupprofiles[0]
+
+	bId := types.BackupIdentifier{
+		BackupProfileId: backupProfileId,
+		RepositoryId:    repositoryId,
+	}
+	if slices.Contains(b.runningPruneJobs, bId) {
+		return fmt.Errorf("prune job is already running")
+	}
+	if slices.Contains(b.occupiedRepos, repositoryId) {
+		return fmt.Errorf("repository is busy")
+	}
+
+	b.runningPruneJobs = append(b.runningPruneJobs, bId)
+	b.occupiedRepos = append(b.occupiedRepos, repositoryId)
+
+	b.inChan.StartPrune <- types.PruneJob{
+		Id:           bId,
+		RepoUrl:      repo.URL,
+		RepoPassword: repo.Password,
+		Prefix:       backupProfile.Prefix,
+		BinaryPath:   b.binaryPath,
+	}
+	return nil
+}
+
+func (b *BorgClient) PruneBackups(backupProfileId int) error {
+	backupProfile, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return err
+	}
+	if !backupProfile.IsSetupComplete {
+		return fmt.Errorf("backup profile is not setup")
+	}
+
+	for _, repo := range backupProfile.Edges.Repositories {
+		err := b.PruneBackup(backupProfileId, repo.ID)
 		if err != nil {
 			return err
 		}

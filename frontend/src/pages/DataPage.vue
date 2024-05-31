@@ -21,7 +21,8 @@ const backups = ref<ent.BackupProfile[]>([]);
 
 async function getBackupProfiles() {
   try {
-    backups.value = await GetBackupProfiles();
+    const result = await GetBackupProfiles();
+    backups.value = result.filter((backup) => backup.isSetupComplete);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profiles", error);
   }

@@ -7,17 +7,19 @@ import (
 	"context"
 	"fmt"
 	"go.uber.org/zap"
+	"os/exec"
 )
 
 type BorgClient struct {
-	ctx            context.Context
-	binaryPath     string
-	log            *zap.SugaredLogger
-	db             *ent.Client
-	inChan         *types.InputChannels
-	outChan        *types.OutputChannels
-	runningBackups []types.BackupIdentifier
-	occupiedRepos  []int
+	ctx              context.Context
+	binaryPath       string
+	log              *zap.SugaredLogger
+	db               *ent.Client
+	inChan           *types.InputChannels
+	outChan          *types.OutputChannels
+	runningBackups   []types.BackupIdentifier
+	runningPruneJobs []types.BackupIdentifier
+	occupiedRepos    []int
 }
 
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
@@ -41,6 +43,15 @@ func (b *BorgClient) createSSHKeyPair() (string, error) {
 	}
 	b.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
 	return pair.AuthorizedKey(), nil
+}
+
+func (b *BorgClient) Version() (string, error) {
+	cmd := exec.Command(b.binaryPath, "--version")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
@@ -79,6 +90,32 @@ func (b *BorgClient) GetNotifications() []Notification {
 			for i, id := range b.runningBackups {
 				if id == result.Id {
 					b.runningBackups = append(b.runningBackups[:i], b.runningBackups[i+1:]...)
+					break
+				}
+			}
+			for i, id := range b.occupiedRepos {
+				if id == result.Id.RepositoryId {
+					b.occupiedRepos = append(b.occupiedRepos[:i], b.occupiedRepos[i+1:]...)
+					break
+				}
+			}
+		case result := <-b.outChan.FinishPrune:
+			if result.PruneErr != nil || result.CompactErr != nil {
+				notifications = append(notifications, Notification{
+					Message: fmt.Sprintf("Prune job failed after %s: %s", result.EndTime.Sub(result.StartTime), result.PruneErr),
+					Level:   LevelError,
+				})
+			} else {
+				notifications = append(notifications, Notification{
+					Message: fmt.Sprintf("Prune job completed in %s", result.EndTime.Sub(result.StartTime)),
+					Level:   LevelInfo,
+				})
+			}
+
+			// Remove prune job from runningPruneJobs and occupiedRepos
+			for i, id := range b.runningPruneJobs {
+				if id == result.Id {
+					b.runningPruneJobs = append(b.runningPruneJobs[:i], b.runningPruneJobs[i+1:]...)
 					break
 				}
 			}

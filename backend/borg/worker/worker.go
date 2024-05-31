@@ -33,6 +33,8 @@ func (d *Worker) Run() {
 		select {
 		case job := <-d.inChan.StartBackup:
 			go d.runBackup(ctx, job)
+		case job := <-d.inChan.StartPrune:
+			go d.runPrune(ctx, job)
 		case <-d.shutdownChan:
 			d.log.Debug("Shutting down worker")
 			return
