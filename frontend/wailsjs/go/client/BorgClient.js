@@ -10,6 +10,14 @@ export function DeleteArchive(arg1) {
   return window['go']['client']['BorgClient']['DeleteArchive'](arg1);
 }
 
+export function DryRunPruneBackup(arg1, arg2) {
+  return window['go']['client']['BorgClient']['DryRunPruneBackup'](arg1, arg2);
+}
+
+export function DryRunPruneBackups(arg1) {
+  return window['go']['client']['BorgClient']['DryRunPruneBackups'](arg1);
+}
+
 export function GetBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['GetBackupProfile'](arg1);
 }
@@ -44,10 +52,6 @@ export function InitNewRepo(arg1, arg2, arg3, arg4) {
 
 export function NewBackupProfile() {
   return window['go']['client']['BorgClient']['NewBackupProfile']();
-}
-
-export function Prune() {
-  return window['go']['client']['BorgClient']['Prune']();
 }
 
 export function PruneBackup(arg1, arg2) {

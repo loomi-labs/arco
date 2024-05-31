@@ -2,11 +2,13 @@ package client
 
 import (
 	"arco/backend/borg/types"
+	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 )
 
@@ -84,11 +86,6 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 	}
 	backupProfile := repo.Edges.Backupprofiles[0]
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
@@ -107,7 +104,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,
-		Hostname:     hostname,
+		Prefix:       backupProfile.Prefix,
 		Directories:  backupProfile.Directories,
 		BinaryPath:   b.binaryPath,
 	}
@@ -179,4 +176,46 @@ func (b *BorgClient) PruneBackups(backupProfileId int) error {
 		}
 	}
 	return nil
+}
+
+func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) (string, error) {
+	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+	if err != nil {
+		return "", err
+	}
+	backupProfile := repo.Edges.Backupprofiles[0]
+
+	// Prepare prune command (dry-run)
+	cmd := exec.CommandContext(b.ctx, b.binaryPath, "prune", "-v", "--dry-run", "--list", "--keep-daily=1", "--keep-weekly=1", fmt.Sprintf("--glob-archives='%s-*'", backupProfile.Prefix), repo.URL)
+	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
+	b.log.Debug("Command: ", cmd.String())
+	// TODO: this is somehow not working when invoked with go (it works on the command line) -> fix this and parse the output
+
+	// Run prune command (dry-run)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", out, err)
+	}
+	b.log.Debug("Output: ", string(out))
+	return string(out), nil
+}
+
+func (b *BorgClient) DryRunPruneBackups(backupProfileId int) (string, error) {
+	backupProfile, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return "", err
+	}
+	if !backupProfile.IsSetupComplete {
+		return "", fmt.Errorf("backup profile is not setup")
+	}
+
+	output := ""
+	for _, repo := range backupProfile.Edges.Repositories {
+		out, err := b.DryRunPruneBackup(backupProfileId, repo.ID)
+		if err != nil {
+			return "", err
+		}
+		output += out
+	}
+	return output, nil
 }

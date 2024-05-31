@@ -35,7 +35,7 @@ type BackupJob struct {
 	Id           BackupIdentifier
 	RepoUrl      string
 	RepoPassword string
-	Hostname     string
+	Prefix       string
 	Directories  []string
 	BinaryPath   string
 }

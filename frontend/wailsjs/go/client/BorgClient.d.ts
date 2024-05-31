@@ -7,6 +7,10 @@ export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:n
 
 export function DeleteArchive(arg1:number):Promise<void>;
 
+export function DryRunPruneBackup(arg1:number,arg2:number):Promise<string>;
+
+export function DryRunPruneBackups(arg1:number):Promise<string>;
+
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
@@ -24,8 +28,6 @@ export function HandleError(arg1:string,arg2:client.FrontendError):Promise<void>
 export function InitNewRepo(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
-
-export function Prune():Promise<void>;
 
 export function PruneBackup(arg1:number,arg2:number):Promise<void>;
 
