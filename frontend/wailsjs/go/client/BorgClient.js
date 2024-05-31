@@ -42,8 +42,8 @@ export function HandleError(arg1, arg2) {
   return window['go']['client']['BorgClient']['HandleError'](arg1, arg2);
 }
 
-export function InitRepo(arg1) {
-  return window['go']['client']['BorgClient']['InitRepo'](arg1);
+export function InitNewRepo(arg1, arg2, arg3, arg4) {
+  return window['go']['client']['BorgClient']['InitNewRepo'](arg1, arg2, arg3, arg4);
 }
 
 export function NewBackupProfile() {

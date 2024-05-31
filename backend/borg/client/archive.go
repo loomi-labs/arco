@@ -19,7 +19,7 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	cmd := exec.Command(b.binaryPath, "list", "--json", repo.URL)
-	cmd.Env = util.CreateEnv(repo.Password)
+	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
 
 	// Get the list from the borg repository
 	startTime := time.Now()
@@ -116,7 +116,7 @@ func (b *BorgClient) DeleteArchive(id int) error {
 	}
 
 	cmd := exec.Command(b.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
-	cmd.Env = util.CreateEnv(arch.Edges.Repository.Password)
+	cmd.Env = util.BorgEnv{}.WithPassword(arch.Edges.Repository.Password).AsList()
 
 	startTime := time.Now()
 	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))

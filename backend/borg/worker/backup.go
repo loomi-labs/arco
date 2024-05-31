@@ -25,7 +25,7 @@ func (d *Worker) runBackup(ctx context.Context, backupJob types.BackupJob) {
 	name := fmt.Sprintf("%s-%s", backupJob.Hostname, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	cmd := exec.CommandContext(ctx, backupJob.BinaryPath, "create", fmt.Sprintf("%s::%s", backupJob.RepoUrl, name), strings.Join(backupJob.Directories, " "))
-	cmd.Env = util.CreateEnv(backupJob.RepoPassword)
+	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
 	result.Cmd = cmd.String()
 	d.log.Debug("Command: ", result.Cmd)
 

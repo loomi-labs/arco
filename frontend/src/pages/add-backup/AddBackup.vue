@@ -3,6 +3,7 @@ import AddBackupStepper from "./AddBackupStepper.vue";
 import {
   AddExistingRepository,
   GetDirectorySuggestions,
+  InitNewRepo,
   NewBackupProfile,
   SaveBackupProfile
 } from "../../../wailsjs/go/client/BorgClient";
@@ -41,6 +42,7 @@ const directories = ref<Directory[]>([]);
 // Step 3
 const repositories = ref<ent.Repository[]>([]);
 const showConnectRepoModal = ref(false);
+const showInitNewRepoModal = ref(false);
 const repoUrl = ref('');
 const repoPassword = ref('');
 const repoName = ref('');
@@ -99,14 +101,6 @@ const addDirectory = async () => {
 };
 
 // Step 3
-const createNewRepo = async () => {
-
-};
-
-const openConnectRepoModal = () => {
-  showConnectRepoModal.value = true;
-};
-
 const connectExistingRepo = async () => {
   try {
     const repo = await AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
@@ -116,6 +110,18 @@ const connectExistingRepo = async () => {
     toast.success(`Added repository ${repo.name}`);
   } catch (error: any) {
     await showAndLogError("Failed to connect to existing repository", error);
+  }
+};
+
+const initNewRepo = async () => {
+  try {
+    const repo = await InitNewRepo(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
+    repositories.value.push(repo);
+
+    showInitNewRepoModal.value = false;
+    toast.success(`Created new repository ${repo.name}`);
+  } catch (error: any) {
+    await showAndLogError("Failed to init new repository", error);
   }
 };
 
@@ -219,8 +225,8 @@ createBackupProfile();
           <div>{{ repository.url }}</div>
         </div>
 
-        <button class='btn btn-primary' @click='createNewRepo'>Add new repository</button>
-        <button class='btn btn-primary' @click='openConnectRepoModal'>Add existing repository</button>
+        <button class='btn btn-primary' @click='showInitNewRepoModal = true'>Add new repository</button>
+        <button class='btn btn-primary' @click='showConnectRepoModal = true'>Add existing repository</button>
       </div>
 
       <div v-if='showConnectRepoModal' class='modal modal-open'>
@@ -254,6 +260,39 @@ createBackupProfile();
           </div>
         </div>
       </div>
+
+      <div v-if='showInitNewRepoModal' class='modal modal-open'>
+        <div class='modal-box'>
+          <h2 class='text-2xl'>Init a new repository</h2>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Name</span>
+            </label>
+            <input type='text' class='input' v-model='repoName' placeholder='Enter repository name' />
+          </div>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Repository URL</span>
+            </label>
+            <input type='text' class='input' v-model='repoUrl' placeholder='Enter repository URL' />
+          </div>
+
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Password</span>
+            </label>
+            <input type='password' class='input' v-model='repoPassword' placeholder='Enter password' />
+          </div>
+
+          <div class='modal-action'>
+            <button class='btn' @click='showInitNewRepoModal = false'>Cancel</button>
+            <button class='btn btn-primary' @click='initNewRepo'>Connect</button>
+          </div>
+        </div>
+      </div>
+
 
       <div style='height: 20px'></div>
 
