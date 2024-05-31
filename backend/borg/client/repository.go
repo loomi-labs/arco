@@ -4,7 +4,6 @@ import (
 	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ent/repository"
-	"context"
 	"fmt"
 	"os/exec"
 )
@@ -15,11 +14,11 @@ func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
 		WithBackupprofiles().
 		WithArchives().
 		Where(repository.ID(id)).
-		Only(context.Background())
+		Only(b.ctx)
 }
 
 func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
-	return b.db.Repository.Query().All(context.Background())
+	return b.db.Repository.Query().All(b.ctx)
 }
 
 func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
@@ -40,5 +39,5 @@ func (b *BorgClient) AddExistingRepository(name, url, password string, backupPro
 		SetURL(url).
 		SetPassword(password).
 		AddBackupprofileIDs(backupProfileId).
-		Save(context.Background())
+		Save(b.ctx)
 }

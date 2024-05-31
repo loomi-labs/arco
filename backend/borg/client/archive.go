@@ -5,7 +5,6 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
-	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -51,7 +50,7 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 				archive.HasRepositoryWith(repository.ID(repoId)),
 				archive.BorgIDNotIn(borgIds...),
 			)).
-		Exec(context.Background())
+		Exec(b.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +62,7 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	archives, err := b.db.Archive.
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
-		All(context.Background())
+		All(b.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 				SetCreatedAt(createdAt).
 				SetDuration(duration).
 				SetRepositoryID(repoId).
-				Save(context.Background())
+				Save(b.ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -111,7 +110,7 @@ func (b *BorgClient) DeleteArchive(id int) error {
 		Query().
 		WithRepository().
 		Where(archive.ID(id)).
-		Only(context.Background())
+		Only(b.ctx)
 	if err != nil {
 		return err
 	}
