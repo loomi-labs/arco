@@ -14,6 +14,20 @@ export namespace client {
 	        this.stack = source["stack"];
 	    }
 	}
+	export class MountState {
+	    is_mounted: boolean;
+	    mount_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MountState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.is_mounted = source["is_mounted"];
+	        this.mount_path = source["mount_path"];
+	    }
+	}
 	export class Notification {
 	    message: string;
 	    level: string;

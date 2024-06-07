@@ -30,6 +30,10 @@ export function GetDirectorySuggestions() {
   return window['go']['client']['BorgClient']['GetDirectorySuggestions']();
 }
 
+export function GetMountState(arg1) {
+  return window['go']['client']['BorgClient']['GetMountState'](arg1);
+}
+
 export function GetNotifications() {
   return window['go']['client']['BorgClient']['GetNotifications']();
 }
@@ -48,6 +52,10 @@ export function HandleError(arg1, arg2) {
 
 export function InitNewRepo(arg1, arg2, arg3, arg4) {
   return window['go']['client']['BorgClient']['InitNewRepo'](arg1, arg2, arg3, arg4);
+}
+
+export function MountRepository(arg1) {
+  return window['go']['client']['BorgClient']['MountRepository'](arg1);
 }
 
 export function NewBackupProfile() {
@@ -76,6 +84,10 @@ export function RunBackups(arg1) {
 
 export function SaveBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['SaveBackupProfile'](arg1);
+}
+
+export function UnmountRepository(arg1) {
+  return window['go']['client']['BorgClient']['UnmountRepository'](arg1);
 }
 
 export function Version() {
