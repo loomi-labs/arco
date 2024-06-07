@@ -1,9 +1,9 @@
 <script setup lang='ts'>
 import {
-  DeleteArchive, GetMountState,
+  DeleteArchive, GetRepositoryMountState,
   GetRepository,
   MountRepository,
-  RefreshArchives, UnmountRepository
+  RefreshArchives, UnmountRepository, MountArchive, UnmountArchive, GetArchiveMountStates
 } from "../../wailsjs/go/client/BorgClient";
 import { client, ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
@@ -19,8 +19,9 @@ import { useToast } from "vue-toastification";
 const router = useRouter();
 const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
-const mountState = ref<client.MountState>(client.MountState.createFrom());
+const repoMountState = ref<client.MountState>(client.MountState.createFrom());
 const archives = ref<ent.Archive[]>([]);
+const archiveMountStates = ref<Map<number, client.MountState>>(new Map()); // Map<archiveId, MountState>
 
 /************
  * Functions
@@ -37,12 +38,22 @@ async function getRepo() {
   }
 }
 
-async function getMountState() {
+async function getRepoMountState() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    mountState.value = await GetMountState(repoId);
+    repoMountState.value = await GetRepositoryMountState(repoId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
+  }
+}
+
+async function getArchiveMountStates() {
+  try {
+    const repoId = parseInt(router.currentRoute.value.params.id as string);
+    const result = await GetArchiveMountStates(repoId);
+    archiveMountStates.value = new Map(Object.entries(result).map(([k, v]) => [Number(k), v]));
+  } catch (error: any) {
+    await showAndLogError("Failed to get archive mount states", error);
   }
 }
 
@@ -58,6 +69,7 @@ async function deleteArchive(archiveId: number) {
   try {
     await DeleteArchive(archiveId);
     archives.value = archives.value.filter((archive) => archive.id !== archiveId);
+    toast.success("Archive deleted");
   } catch (error: any) {
     await showAndLogError("Failed to delete archive", error);
   }
@@ -65,8 +77,8 @@ async function deleteArchive(archiveId: number) {
 
 async function mountRepo(repoId: number) {
   try {
-    mountState.value = await MountRepository(repoId);
-    toast.success(`Repository mounted at ${mountState.value.mount_path}`)
+    repoMountState.value = await MountRepository(repoId);
+    toast.success(`Repository mounted at ${repoMountState.value.mount_path}`)
   } catch (error: any) {
     await showAndLogError("Failed to mount repository", error);
   }
@@ -74,11 +86,35 @@ async function mountRepo(repoId: number) {
 
 async function unmountRepo(repoId: number) {
   try {
-    mountState.value = await UnmountRepository(repoId);
+    repoMountState.value = await UnmountRepository(repoId);
     toast.success(`Repository unmounted`)
   } catch (error: any) {
     await showAndLogError("Failed to unmount repository", error);
   }
+}
+
+async function mountArchive(archiveId: number) {
+  try {
+    const archiveMountState = await MountArchive(archiveId);
+    archiveMountStates.value.set(archiveId, archiveMountState);
+    toast.success(`Archive mounted at ${archiveMountState.mount_path}`)
+  } catch (error: any) {
+    await showAndLogError("Failed to mount archive", error);
+  }
+}
+
+async function unmountArchive(archiveId: number) {
+  try {
+    await UnmountArchive(archiveId);
+    archiveMountStates.value.delete(archiveId);
+    toast.success(`Archive unmounted`)
+  } catch (error: any) {
+    await showAndLogError("Failed to unmount archive", error);
+  }
+}
+
+function isArchiveMounted(archiveId: number) {
+  return archiveMountStates.value.get(archiveId)?.is_mounted ?? false;
 }
 
 /************
@@ -86,7 +122,8 @@ async function unmountRepo(repoId: number) {
  ************/
 
 getRepo();
-getMountState();
+getRepoMountState();
+getArchiveMountStates();
 
 </script>
 
@@ -103,12 +140,13 @@ getMountState();
         <p>{{ archive.name }}</p>
         <p>{{ archive.createdAt }}</p>
         <button class='btn btn-error' @click='deleteArchive(archive.id)'>Delete</button>
-<!--        <button class='btn btn-neutral' @click='mountArchive(archive.id)'>Browse</button>-->
+        <button v-if='!isArchiveMounted(archive.id)' class='btn btn-neutral' @click='mountArchive(archive.id)'>Browse</button>
+        <button v-else class='btn btn-neutral' @click='unmountArchive(archive.id)'>Unmount</button>
       </div>
     </div>
 
-    <button v-if='!mountState.is_mounted' class='btn btn-neutral' @click='mountRepo(repo.id)'>Browse</button>
-    <button v-if='mountState.is_mounted' class='btn btn-neutral' @click='unmountRepo(repo.id)'>Unmount</button>
+    <button v-if='!repoMountState.is_mounted' class='btn btn-neutral' @click='mountRepo(repo.id)'>Browse</button>
+    <button v-else class='btn btn-neutral' @click='unmountRepo(repo.id)'>Unmount</button>
     <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>
 </template>
