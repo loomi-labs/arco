@@ -17,7 +17,7 @@ type Worker struct {
 
 func NewWorker(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
 	return &Worker{
-		binaryPath:   "bin/borg-linuxnewer64",
+		binaryPath:   util.GetBinaryPath(),
 		log:          util.NewCmdLogger(log),
 		inChan:       inChan,
 		outChan:      outChan,

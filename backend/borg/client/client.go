@@ -25,7 +25,7 @@ type BorgClient struct {
 
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
-		binaryPath: "bin/borg-linuxnewer64",
+		binaryPath: util.GetBinaryPath(),
 		log:        util.NewCmdLogger(log),
 		db:         dbClient,
 		inChan:     inChan,
