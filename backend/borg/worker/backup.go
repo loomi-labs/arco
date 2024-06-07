@@ -11,7 +11,6 @@ import (
 )
 
 func (d *Worker) runBackup(ctx context.Context, backupJob types.BackupJob) {
-	d.log.Info("Starting backup job")
 	result := types.FinishBackupJob{
 		Id:        backupJob.Id,
 		StartTime: time.Now(),
@@ -27,13 +26,12 @@ func (d *Worker) runBackup(ctx context.Context, backupJob types.BackupJob) {
 	cmd := exec.CommandContext(ctx, backupJob.BinaryPath, "create", fmt.Sprintf("%s::%s", backupJob.RepoUrl, name), strings.Join(backupJob.Directories, " "))
 	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
 	result.Cmd = cmd.String()
-	d.log.Debug("Command: ", result.Cmd)
 
 	// Run backup command
+	startTime := d.log.LogCmdStart(result.Cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		result.Err = fmt.Errorf("%s: %s", out, err)
-		d.log.Error("Error running backup command: ", result.Err)
+		result.Err = d.log.LogCmdError(result.Cmd, startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	d.log.Debug("Backup job finished")
+	d.log.LogCmdEnd(result.Cmd, startTime)
 }

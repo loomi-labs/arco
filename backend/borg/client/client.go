@@ -2,6 +2,7 @@ package client
 
 import (
 	"arco/backend/borg/types"
+	"arco/backend/borg/util"
 	"arco/backend/ent"
 	"arco/backend/ssh"
 	"context"
@@ -13,7 +14,7 @@ import (
 type BorgClient struct {
 	ctx              context.Context
 	binaryPath       string
-	log              *zap.SugaredLogger
+	log              *util.CmdLogger
 	db               *ent.Client
 	inChan           *types.InputChannels
 	outChan          *types.OutputChannels
@@ -25,7 +26,7 @@ type BorgClient struct {
 func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
 		binaryPath: "bin/borg-linuxnewer64",
-		log:        log,
+		log:        util.NewCmdLogger(log),
 		db:         dbClient,
 		inChan:     inChan,
 		outChan:    outChan,
