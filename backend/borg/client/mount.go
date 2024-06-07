@@ -56,14 +56,13 @@ func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
 
 	cmd := exec.Command(b.binaryPath, "mount", repo.URL, path)
 	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
-	b.log.Debug("Command: ", cmd.String())
 
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		b.log.Error("Error running mount command: ", fmt.Errorf("%s: %s", out, err))
-		return
+		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.Debug("Backup job finished", out)
+	b.log.LogCmdEnd(cmd.String(), startTime)
 	return b.getMountState(path)
 }
 
@@ -85,14 +84,13 @@ func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
 
 	cmd := exec.Command(b.binaryPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
 	cmd.Env = util.BorgEnv{}.WithPassword(archive.Edges.Repository.Password).AsList()
-	b.log.Debug("Command: ", cmd.String())
 
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		b.log.Error("Error running mount command: ", fmt.Errorf("%s: %s", out, err))
-		return
+		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.Debug("Command finished", out)
+	b.log.LogCmdEnd(cmd.String(), startTime)
 	return b.getMountState(path)
 }
 

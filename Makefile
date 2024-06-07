@@ -47,11 +47,12 @@ show-migrations: ensure-atlas
 
 
 ################################
-# Development 				   #
+#         Development 		   #
 ################################
 
 ensure-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
 
 dev: ensure-pnpm
+	@export DEBUG=true; \
 	wails dev

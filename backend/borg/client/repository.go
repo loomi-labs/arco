@@ -24,13 +24,14 @@ func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
 func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(b.binaryPath, "info", "--json", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
 	// Check if we can connect to the repository
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", out, err)
+		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
+	b.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
 	return b.db.Repository.
@@ -45,13 +46,13 @@ func (b *BorgClient) AddExistingRepository(name, url, password string, backupPro
 func (b *BorgClient) InitNewRepo(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(b.binaryPath, "init", "--encryption=repokey-blake2", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
 
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	b.log.Info(fmt.Sprintf("Output: %s", out))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", out, err)
+		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
+	b.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
 	return b.db.Repository.

@@ -2,13 +2,14 @@ package worker
 
 import (
 	"arco/backend/borg/types"
+	"arco/backend/borg/util"
 	"context"
 	"go.uber.org/zap"
 )
 
 type Worker struct {
 	binaryPath   string
-	log          *zap.SugaredLogger
+	log          *util.CmdLogger
 	inChan       *types.InputChannels
 	outChan      *types.OutputChannels
 	shutdownChan chan struct{}
@@ -17,7 +18,7 @@ type Worker struct {
 func NewWorker(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
 	return &Worker{
 		binaryPath:   "bin/borg-linuxnewer64",
-		log:          log,
+		log:          util.NewCmdLogger(log),
 		inChan:       inChan,
 		outChan:      outChan,
 		shutdownChan: make(chan struct{}),

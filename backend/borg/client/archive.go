@@ -22,13 +22,12 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
 
 	// Get the list from the borg repository
-	startTime := time.Now()
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", out, err)
+		return nil, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
-	b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
+	b.log.LogCmdEnd(cmd.String(), startTime)
 
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
@@ -118,14 +117,12 @@ func (b *BorgClient) DeleteArchive(id int) error {
 	cmd := exec.Command(b.binaryPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
 	cmd.Env = util.BorgEnv{}.WithPassword(arch.Edges.Repository.Password).AsList()
 
-	startTime := time.Now()
-	b.log.Info(fmt.Sprintf("Running command: %s", cmd.String()))
-	defer b.log.Info(fmt.Sprintf("Command took %s", time.Since(startTime)))
-
+	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s: %s", out, err)
+		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
+	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
 }
 
