@@ -44,3 +44,14 @@ show-migrations: ensure-atlas
 					 --dir "file://backend/ent/migrate/migrations" \
 					 --url "sqlite://sqlite.db?_fk=1"
 	@echo "✅ Done!"
+
+
+################################
+# Development 				   #
+################################
+
+ensure-pnpm:
+	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
+
+dev: ensure-pnpm
+	wails dev

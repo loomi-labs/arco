@@ -19,6 +19,11 @@ type Notification struct {
 	Level   NotificationLevel `json:"level"`
 }
 
+type MountState struct {
+	IsMounted bool   `json:"is_mounted"`
+	MountPath string `json:"mount_path"`
+}
+
 // -------- borg types --------
 
 type Archive struct {

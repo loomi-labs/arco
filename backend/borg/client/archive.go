@@ -128,3 +128,11 @@ func (b *BorgClient) DeleteArchive(id int) error {
 	}
 	return nil
 }
+
+func (b *BorgClient) getArchive(id int) (*ent.Archive, error) {
+	return b.db.Archive.
+		Query().
+		WithRepository().
+		Where(archive.ID(id)).
+		Only(b.ctx)
+}

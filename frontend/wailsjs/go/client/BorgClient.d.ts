@@ -11,6 +11,8 @@ export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<client.
 
 export function DryRunPruneBackups(arg1:number):Promise<Array<client.PruneInfo>>;
 
+export function GetArchiveMountStates(arg1:number):Promise<{[key: number]: client.MountState}>;
+
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
@@ -23,9 +25,15 @@ export function GetRepositories():Promise<Array<ent.Repository>>;
 
 export function GetRepository(arg1:number):Promise<ent.Repository>;
 
+export function GetRepositoryMountState(arg1:number):Promise<client.MountState>;
+
 export function HandleError(arg1:string,arg2:client.FrontendError):Promise<void>;
 
 export function InitNewRepo(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
+
+export function MountArchive(arg1:number):Promise<client.MountState>;
+
+export function MountRepository(arg1:number):Promise<client.MountState>;
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 
@@ -40,5 +48,9 @@ export function RunBackup(arg1:number,arg2:number):Promise<void>;
 export function RunBackups(arg1:number):Promise<void>;
 
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
+
+export function UnmountArchive(arg1:number):Promise<client.MountState>;
+
+export function UnmountRepository(arg1:number):Promise<client.MountState>;
 
 export function Version():Promise<string>;

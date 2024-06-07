@@ -18,6 +18,10 @@ export function DryRunPruneBackups(arg1) {
   return window['go']['client']['BorgClient']['DryRunPruneBackups'](arg1);
 }
 
+export function GetArchiveMountStates(arg1) {
+  return window['go']['client']['BorgClient']['GetArchiveMountStates'](arg1);
+}
+
 export function GetBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['GetBackupProfile'](arg1);
 }
@@ -42,12 +46,24 @@ export function GetRepository(arg1) {
   return window['go']['client']['BorgClient']['GetRepository'](arg1);
 }
 
+export function GetRepositoryMountState(arg1) {
+  return window['go']['client']['BorgClient']['GetRepositoryMountState'](arg1);
+}
+
 export function HandleError(arg1, arg2) {
   return window['go']['client']['BorgClient']['HandleError'](arg1, arg2);
 }
 
 export function InitNewRepo(arg1, arg2, arg3, arg4) {
   return window['go']['client']['BorgClient']['InitNewRepo'](arg1, arg2, arg3, arg4);
+}
+
+export function MountArchive(arg1) {
+  return window['go']['client']['BorgClient']['MountArchive'](arg1);
+}
+
+export function MountRepository(arg1) {
+  return window['go']['client']['BorgClient']['MountRepository'](arg1);
 }
 
 export function NewBackupProfile() {
@@ -76,6 +92,14 @@ export function RunBackups(arg1) {
 
 export function SaveBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['SaveBackupProfile'](arg1);
+}
+
+export function UnmountArchive(arg1) {
+  return window['go']['client']['BorgClient']['UnmountArchive'](arg1);
+}
+
+export function UnmountRepository(arg1) {
+  return window['go']['client']['BorgClient']['UnmountRepository'](arg1);
 }
 
 export function Version() {
