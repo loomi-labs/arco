@@ -19,6 +19,11 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
+      - name: print versions
+        run: |
+          node --version
+          npm --version
+          pnpm --version
       - name: Wails build
         uses: dAppServer/wails-build-action@v2.2
         with:
