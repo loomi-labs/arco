@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"path/filepath"
 )
 
 //go:embed all:frontend/dist
@@ -35,8 +36,34 @@ func initLogger() *zap.SugaredLogger {
 	}
 }
 
+func getConfigDir() (path string, err error) {
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	return filepath.Join(dir, ".config", "arco"), nil
+}
+
+func createConfigDir() error {
+	configDir, err := getConfigDir()
+	if err != nil {
+		return err
+	}
+	if _, err = os.Stat(configDir); os.IsNotExist(err) {
+		return os.MkdirAll(configDir, 0755)
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
 func initDb() (*ent.Client, error) {
-	dbClient, err := ent.Open("sqlite3", "file:sqlite.db?_fk=1")
+	configDir, err := getConfigDir()
+	if err != nil {
+		return nil, err
+	}
+
+	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s?_fk=1", filepath.Join(configDir, "arco.db")))
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
@@ -52,6 +79,11 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
+	}
+
+	err = createConfigDir()
+	if err != nil {
+		log.Fatalf("failed to create config dir: %v", err)
 	}
 
 	// Initialize the database
