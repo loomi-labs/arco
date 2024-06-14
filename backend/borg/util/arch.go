@@ -5,7 +5,7 @@ import (
 	"runtime"
 )
 
-func GetBinaryPathX() string {
+func GetBorgBinaryPathX() string {
 	if runtime.GOOS == "linux" {
 		return "bin/borg-linuxnewer64"
 	}

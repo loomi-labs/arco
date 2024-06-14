@@ -62,6 +62,19 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
+func initConfig() (*client.Config, error) {
+	configDir, err := createConfigDir()
+	if err != nil {
+		return nil, err
+	}
+
+	return &client.Config{
+		Binaries:    binaries,
+		BorgPath:    filepath.Join(configDir, "borg"),
+		BorgVersion: borgVersion,
+	}, nil
+}
+
 func initDb() (*ent.Client, error) {
 	configDir, err := getConfigDir()
 	if err != nil {
@@ -80,15 +93,10 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
+func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
-	}
-
-	configDir, err := createConfigDir()
-	if err != nil {
-		log.Fatalf("failed to create config dir: %v", err)
 	}
 
 	// Initialize the database
@@ -98,12 +106,6 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
-
-	config := client.Config{
-		Binaries:    binaries,
-		BorgPath:    filepath.Join(configDir, "borg"),
-		BorgVersion: borgVersion,
-	}
 
 	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan)
 
@@ -136,12 +138,17 @@ func main() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
+	config, err := initConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	inChan := types.NewInputChannels()
 	outChan := types.NewOutputChannels()
 
 	// Create a borg daemon
-	borgWorker := worker.NewWorker(log, inChan, outChan)
+	borgWorker := worker.NewWorker(log, config, inChan, outChan)
 
 	go borgWorker.Run()
-	startApp(log, inChan, outChan, borgWorker)
+	startApp(log, config, inChan, outChan, borgWorker)
 }

@@ -22,7 +22,7 @@ func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
 }
 
 func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.binaryPath, "info", "--json", url)
+	cmd := exec.Command(b.config.BorgPath, "info", "--json", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
@@ -44,7 +44,7 @@ func (b *BorgClient) AddExistingRepository(name, url, password string, backupPro
 }
 
 func (b *BorgClient) InitNewRepo(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.binaryPath, "init", "--encryption=repokey-blake2", url)
+	cmd := exec.Command(b.config.BorgPath, "init", "--encryption=repokey-blake2", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())

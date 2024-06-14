@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"arco/backend/borg/client"
 	"arco/backend/borg/types"
 	"arco/backend/borg/util"
 	"context"
@@ -8,17 +9,17 @@ import (
 )
 
 type Worker struct {
-	binaryPath   string
 	log          *util.CmdLogger
+	borgPath     string
 	inChan       *types.InputChannels
 	outChan      *types.OutputChannels
 	shutdownChan chan struct{}
 }
 
-func NewWorker(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
+func NewWorker(log *zap.SugaredLogger, config *client.Config, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
 	return &Worker{
-		binaryPath:   util.GetBinaryPathX(),
 		log:          util.NewCmdLogger(log),
+		borgPath:     config.BorgPath,
 		inChan:       inChan,
 		outChan:      outChan,
 		shutdownChan: make(chan struct{}),

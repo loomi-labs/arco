@@ -104,7 +104,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 		RepoPassword: repo.Password,
 		Prefix:       backupProfile.Prefix,
 		Directories:  backupProfile.Directories,
-		BinaryPath:   b.binaryPath,
+		BinaryPath:   b.config.BorgPath,
 	}
 	return nil
 }

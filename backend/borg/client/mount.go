@@ -67,7 +67,7 @@ func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
 		return
 	}
 
-	cmd := exec.Command(b.binaryPath, "mount", repo.URL, path)
+	cmd := exec.Command(b.config.BorgPath, "mount", repo.URL, path)
 	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -99,7 +99,7 @@ func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
 		return
 	}
 
-	cmd := exec.Command(b.binaryPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
+	cmd := exec.Command(b.config.BorgPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
 	cmd.Env = util.BorgEnv{}.WithPassword(archive.Edges.Repository.Password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -116,7 +116,7 @@ func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
 }
 
 func (b *BorgClient) unmount(path string) (state MountState, err error) {
-	cmd := exec.Command(b.binaryPath, "umount", path)
+	cmd := exec.Command(b.config.BorgPath, "umount", path)
 	b.log.Debug("Command: ", cmd.String())
 
 	out, err := cmd.CombinedOutput()

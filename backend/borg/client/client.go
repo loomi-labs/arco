@@ -14,12 +14,9 @@ import (
 )
 
 type BorgClient struct {
-	ctx    context.Context
-	log    *util.CmdLogger
-	config Config
-
-	// TODO: remove binaryPath and use config.BorgPath
-	binaryPath       string
+	ctx              context.Context
+	log              *util.CmdLogger
+	config           *Config
 	db               *ent.Client
 	inChan           *types.InputChannels
 	outChan          *types.OutputChannels
@@ -29,14 +26,13 @@ type BorgClient struct {
 	startupErr       error
 }
 
-func NewBorgClient(log *zap.SugaredLogger, config Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
+func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
-		log:        util.NewCmdLogger(log),
-		config:     config,
-		binaryPath: config.BorgPath,
-		db:         dbClient,
-		inChan:     inChan,
-		outChan:    outChan,
+		log:     util.NewCmdLogger(log),
+		config:  config,
+		db:      dbClient,
+		inChan:  inChan,
+		outChan: outChan,
 	}
 }
 
@@ -62,7 +58,7 @@ func (b *BorgClient) Startup(ctx context.Context) {
 
 func (b *BorgClient) isTargetVersionInstalled(targetVersion string) bool {
 	// Check if the binary is installed
-	if _, err := os.Stat(b.binaryPath); err == nil {
+	if _, err := os.Stat(b.config.BorgPath); err == nil {
 		version, err := b.Version()
 		// Check if the version is correct
 		return err == nil && version == targetVersion
@@ -78,7 +74,7 @@ func (b *BorgClient) installBorgBinary() error {
 		}
 	}
 
-	file, err := b.config.Binaries.ReadFile(util.GetBinaryPathX())
+	file, err := b.config.Binaries.ReadFile(util.GetBorgBinaryPathX())
 	if err != nil {
 		return err
 	}
@@ -95,7 +91,7 @@ func (b *BorgClient) createSSHKeyPair() (string, error) {
 }
 
 func (b *BorgClient) Version() (string, error) {
-	cmd := exec.Command(b.binaryPath, "--version")
+	cmd := exec.Command(b.config.BorgPath, "--version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err
