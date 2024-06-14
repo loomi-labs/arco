@@ -38,6 +38,19 @@ func ensurePathExists(path string) error {
 	return nil
 }
 
+func (b *BorgClient) openFileManager(path string) {
+	openCmd, err := util.GetOpenFileManagerCmd()
+	if err != nil {
+		b.log.Error("Error getting open file manager command: ", err)
+		return
+	}
+	cmd := exec.Command(openCmd, path)
+	err = cmd.Run()
+	if err != nil {
+		b.log.Error("Error opening file manager: ", err)
+	}
+}
+
 func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
 	repo, err := b.GetRepository(repoId)
 	if err != nil {
@@ -63,6 +76,10 @@ func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
 		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
+
+	// Open the file manager and forget about it
+	go b.openFileManager(path)
+
 	return b.getMountState(path)
 }
 
@@ -91,6 +108,10 @@ func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
 		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
+
+	// Open the file manager and forget about it
+	go b.openFileManager(path)
+
 	return b.getMountState(path)
 }
 
