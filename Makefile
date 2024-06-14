@@ -45,6 +45,12 @@ show-migrations: ensure-atlas
 					 --url "sqlite://sqlite.db?_fk=1"
 	@echo "✅ Done!"
 
+################################
+#            Build 		       #
+################################
+
+build: ensure-pnpm
+	@wails build
 
 ################################
 #         Development 		   #
