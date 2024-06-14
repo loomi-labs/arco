@@ -2,6 +2,7 @@
 import AddBackupStepper from "./AddBackupStepper.vue";
 import {
   AddExistingRepository,
+  SelectDirectory,
   GetDirectorySuggestions,
   InitNewRepo,
   NewBackupProfile,
@@ -43,9 +44,9 @@ const directories = ref<Directory[]>([]);
 const repositories = ref<ent.Repository[]>([]);
 const showConnectRepoModal = ref(false);
 const showInitNewRepoModal = ref(false);
-const repoUrl = ref('');
-const repoPassword = ref('');
-const repoName = ref('');
+const repoUrl = ref("");
+const repoPassword = ref("");
+const repoName = ref("");
 
 /************
  * Functions
@@ -88,16 +89,24 @@ async function saveBackupProfile(): Promise<boolean> {
   return true;
 }
 
-const markAdded = async (directory: Directory) => {
-  directory.isAdded = true;
-  backupProfile.value.directories.push(directory.path);
+const markDirectory = async (directory: Directory, isAdded: boolean) => {
+  if (isAdded) {
+    directory.isAdded = true;
+    backupProfile.value.directories.push(directory.path);
+  } else {
+    directories.value = directories.value.filter((dir) => dir !== directory);
+    backupProfile.value.directories = backupProfile.value.directories.filter((dir) => dir !== directory.path);
+  }
 };
 
 const addDirectory = async () => {
-  directories.value.push({
-    path: "",
-    isAdded: false
-  });
+  const dir = await SelectDirectory();
+  if (dir) {
+    directories.value.push({
+      path: dir,
+      isAdded: true
+    });
+  }
 };
 
 // Step 3
@@ -193,7 +202,8 @@ createBackupProfile();
                  v-model='directory.path' />
 
         </label>
-        <button class='btn btn-accent' @click='markAdded(directory)'>+</button>
+        <button v-if='!directory.isAdded' class='btn btn-accent' @click='markDirectory(directory, true)'>+</button>
+        <button v-else class='btn btn-error' @click='markDirectory(directory, false)'>-</button>
       </div>
 
       <button class='btn btn-primary' @click='addDirectory()'>Add directory</button>

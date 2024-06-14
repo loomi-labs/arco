@@ -51,6 +51,8 @@ export function RunBackups(arg1:number):Promise<void>;
 
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 
+export function SelectDirectory():Promise<string>;
+
 export function UnmountArchive(arg1:number):Promise<client.MountState>;
 
 export function UnmountRepository(arg1:number):Promise<client.MountState>;

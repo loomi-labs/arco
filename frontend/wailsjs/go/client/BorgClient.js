@@ -98,6 +98,10 @@ export function SaveBackupProfile(arg1) {
   return window['go']['client']['BorgClient']['SaveBackupProfile'](arg1);
 }
 
+export function SelectDirectory() {
+  return window['go']['client']['BorgClient']['SelectDirectory']();
+}
+
 export function UnmountArchive(arg1) {
   return window['go']['client']['BorgClient']['UnmountArchive'](arg1);
 }

@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"slices"
 )
@@ -125,4 +126,8 @@ func (b *BorgClient) RunBackups(backupProfileId int) error {
 		}
 	}
 	return nil
+}
+
+func (b *BorgClient) SelectDirectory() (string, error) {
+	return runtime.OpenDirectoryDialog(b.ctx, runtime.OpenDialogOptions{})
 }
