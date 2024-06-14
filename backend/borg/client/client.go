@@ -8,25 +8,32 @@ import (
 	"context"
 	"fmt"
 	"go.uber.org/zap"
+	"os"
 	"os/exec"
+	"strings"
 )
 
 type BorgClient struct {
-	ctx              context.Context
+	ctx    context.Context
+	log    *util.CmdLogger
+	config Config
+
+	// TODO: remove binaryPath and use config.BorgPath
 	binaryPath       string
-	log              *util.CmdLogger
 	db               *ent.Client
 	inChan           *types.InputChannels
 	outChan          *types.OutputChannels
 	runningBackups   []types.BackupIdentifier
 	runningPruneJobs []types.BackupIdentifier
 	occupiedRepos    []int
+	startupErr       error
 }
 
-func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
+func NewBorgClient(log *zap.SugaredLogger, config Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
-		binaryPath: util.GetBinaryPathX(),
 		log:        util.NewCmdLogger(log),
+		config:     config,
+		binaryPath: config.BorgPath,
 		db:         dbClient,
 		inChan:     inChan,
 		outChan:    outChan,
@@ -35,6 +42,47 @@ func NewBorgClient(log *zap.SugaredLogger, dbClient *ent.Client, inChan *types.I
 
 func (b *BorgClient) Startup(ctx context.Context) {
 	b.ctx = ctx
+
+	if b.isTargetVersionInstalled(b.config.BorgVersion) {
+		b.log.Info("Borg binary is installed")
+	} else {
+		b.log.Info("Installing Borg binary")
+		if err := b.installBorgBinary(); err != nil {
+			b.log.Error("Failed to install Borg binary: ", err)
+			b.startupErr = err
+		} else {
+			// Check again to make sure the binary was installed correctly
+			if !b.isTargetVersionInstalled(b.config.BorgVersion) {
+				b.log.Error("Failed to install Borg binary: version mismatch")
+				b.startupErr = fmt.Errorf("failed to install Borg binary: version mismatch")
+			}
+		}
+	}
+}
+
+func (b *BorgClient) isTargetVersionInstalled(targetVersion string) bool {
+	// Check if the binary is installed
+	if _, err := os.Stat(b.binaryPath); err == nil {
+		version, err := b.Version()
+		// Check if the version is correct
+		return err == nil && version == targetVersion
+	}
+	return false
+}
+
+func (b *BorgClient) installBorgBinary() error {
+	// Delete old binary if it exists
+	if _, err := os.Stat(b.config.BorgPath); err == nil {
+		if err := os.Remove(b.config.BorgPath); err != nil {
+			return err
+		}
+	}
+
+	file, err := b.config.Binaries.ReadFile(util.GetBinaryPathX())
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(b.config.BorgPath, file, 0755)
 }
 
 func (b *BorgClient) createSSHKeyPair() (string, error) {
@@ -52,7 +100,13 @@ func (b *BorgClient) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(out), nil
+	// Output is in the format "borg 1.2.8\n"
+	// We want to return "1.2.8"
+	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
+}
+
+func (b *BorgClient) GetStartupError() error {
+	return b.startupErr
 }
 
 func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {

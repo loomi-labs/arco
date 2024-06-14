@@ -22,6 +22,11 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed bin
+var binaries embed.FS
+
+const borgVersion = "1.2.8"
+
 func initLogger() *zap.SugaredLogger {
 	if os.Getenv("DEBUG") == "true" {
 		config := zap.NewDevelopmentConfig()
@@ -44,17 +49,17 @@ func getConfigDir() (path string, err error) {
 	return filepath.Join(dir, ".config", "arco"), nil
 }
 
-func createConfigDir() error {
+func createConfigDir() (string, error) {
 	configDir, err := getConfigDir()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if _, err = os.Stat(configDir); os.IsNotExist(err) {
-		return os.MkdirAll(configDir, 0755)
+		return configDir, os.MkdirAll(configDir, 0755)
 	} else if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return configDir, nil
 }
 
 func initDb() (*ent.Client, error) {
@@ -81,7 +86,7 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	err = createConfigDir()
+	configDir, err := createConfigDir()
 	if err != nil {
 		log.Fatalf("failed to create config dir: %v", err)
 	}
@@ -94,7 +99,13 @@ func startApp(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *type
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
 
-	borgClient := client.NewBorgClient(log, dbClient, inChan, outChan)
+	config := client.Config{
+		Binaries:    binaries,
+		BorgPath:    filepath.Join(configDir, "borg"),
+		BorgVersion: borgVersion,
+	}
+
+	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan)
 
 	// Create application with options
 	err = wails.Run(&options.App{

@@ -27,7 +27,7 @@ func NewWorker(log *zap.SugaredLogger, inChan *types.InputChannels, outChan *typ
 
 func (d *Worker) Run() {
 	d.log.Info("Starting worker")
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	for {
