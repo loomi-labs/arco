@@ -27,6 +27,8 @@ export function GetRepository(arg1:number):Promise<ent.Repository>;
 
 export function GetRepositoryMountState(arg1:number):Promise<client.MountState>;
 
+export function GetStartupError():Promise<client.Notification>;
+
 export function HandleError(arg1:string,arg2:client.FrontendError):Promise<void>;
 
 export function InitNewRepo(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;

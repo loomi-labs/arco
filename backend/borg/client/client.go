@@ -101,8 +101,15 @@ func (b *BorgClient) Version() (string, error) {
 	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
 }
 
-func (b *BorgClient) GetStartupError() error {
-	return b.startupErr
+func (b *BorgClient) GetStartupError() Notification {
+	var message string
+	if b.startupErr != nil {
+		message = b.startupErr.Error()
+	}
+	return Notification{
+		Message: message,
+		Level:   LevelError,
+	}
 }
 
 func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {

@@ -50,6 +50,10 @@ export function GetRepositoryMountState(arg1) {
   return window['go']['client']['BorgClient']['GetRepositoryMountState'](arg1);
 }
 
+export function GetStartupError() {
+  return window['go']['client']['BorgClient']['GetStartupError']();
+}
+
 export function HandleError(arg1, arg2) {
   return window['go']['client']['BorgClient']['HandleError'](arg1, arg2);
 }
