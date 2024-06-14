@@ -61,4 +61,4 @@ ensure-pnpm:
 
 dev: ensure-pnpm
 	@export DEBUG=true; \
-	wails dev
+	wails pnpm run dev
