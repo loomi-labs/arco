@@ -3,6 +3,8 @@
 import {client} from '../models';
 import {ent} from '../models';
 
+export function AppClient():Promise<client.AppClient>;
+
 export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<client.PruneInfo>>;
 
 export function DryRunPruneBackups(arg1:number):Promise<Array<client.PruneInfo>>;
@@ -12,12 +14,6 @@ export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
 
 export function GetDirectorySuggestions():Promise<Array<string>>;
-
-export function GetNotifications():Promise<Array<client.Notification>>;
-
-export function GetStartupError():Promise<client.Notification>;
-
-export function HandleError(arg1:string,arg2:client.FrontendError):Promise<void>;
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 

@@ -28,6 +28,8 @@ type BorgClient struct {
 
 type RepositoryClient BorgClient
 
+type AppClient BorgClient
+
 func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
 		log:     util.NewCmdLogger(log),
@@ -40,6 +42,10 @@ func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client,
 
 func (b *BorgClient) RepoClient() *RepositoryClient {
 	return (*RepositoryClient)(b)
+}
+
+func (b *BorgClient) AppClient() *AppClient {
+	return (*AppClient)(b)
 }
 
 func (b *BorgClient) Startup(ctx context.Context) {
@@ -107,7 +113,7 @@ func (b *BorgClient) Version() (string, error) {
 	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
 }
 
-func (b *BorgClient) GetStartupError() Notification {
+func (b *AppClient) GetStartupError() Notification {
 	var message string
 	if b.startupErr != nil {
 		message = b.startupErr.Error()
@@ -118,7 +124,7 @@ func (b *BorgClient) GetStartupError() Notification {
 	}
 }
 
-func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
+func (b *AppClient) HandleError(msg string, fErr *FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -133,7 +139,7 @@ func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (b *BorgClient) GetNotifications() []Notification {
+func (b *AppClient) GetNotifications() []Notification {
 	notifications := make([]Notification, 0)
 	for {
 		select {
