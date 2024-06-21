@@ -8,6 +8,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/godbus/dbus/v5"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -93,21 +94,19 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
+func startApp(
+	log *zap.SugaredLogger,
+	borgClient *client.BorgClient,
+	dbClient *ent.Client,
+	borgWorker *worker.Worker,
+) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	// Initialize the database
-	dbClient, err := initDb()
-	if err != nil {
-		log.Fatal(err)
-	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer dbClient.Close()
-
-	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan)
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -135,12 +134,52 @@ func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.Input
 	}
 }
 
+func checkInstance(log *zap.SugaredLogger) *dbus.Conn {
+	// Check if another instance is running
+	// If another instance is running, send a message to the other instance to open the window
+	// If no other instance is running, start the application
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		log.Fatalf("Failed to connect to session bus: %v", err)
+	}
+
+	// Check if another instance is already running
+	var running bool
+	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, client.DbusInterface).Store(&running)
+	if err != nil {
+		log.Fatalf("Failed to check if another instance is running: %v", err)
+	}
+
+	if running {
+		// Another instance is running, send it a wakeup command
+		log.Debug("Send wakeup command to other instance and exit")
+		err = conn.Object(client.DbusInterface, client.DbusPath).Call(client.DbusInterface+".Wakeup", 0).Err
+		if err != nil {
+			log.Fatalf("Failed to send wakeup command to other instance: %v", err)
+		}
+		os.Exit(0)
+	}
+
+	return conn
+}
+
 func main() {
 	log := initLogger()
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
+	// Check if another instance is running
+	// If another instance is running, send a message to the other instance to open the window and exit
+	dbusConn := checkInstance(log)
+
+	// Initialize the configuration
 	config, err := initConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize the database
+	dbClient, err := initDb()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -148,9 +187,10 @@ func main() {
 	inChan := types.NewInputChannels()
 	outChan := types.NewOutputChannels()
 
+	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan, dbusConn)
+
 	// Create a borg daemon
 	borgWorker := worker.NewWorker(log, config, inChan, outChan)
-
 	go borgWorker.Run()
-	startApp(log, config, inChan, outChan, borgWorker)
+	startApp(log, borgClient, dbClient, borgWorker)
 }

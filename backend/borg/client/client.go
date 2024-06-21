@@ -7,32 +7,53 @@ import (
 	"arco/backend/ssh"
 	"context"
 	"fmt"
+	"github.com/godbus/dbus/v5"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"strings"
 )
 
+const (
+	DbusPath      = "/github/com/loomilabs/arco"
+	DbusInterface = "github.com.loomilabs.arco"
+)
+
 type BorgClient struct {
-	ctx              context.Context
-	log              *util.CmdLogger
-	config           *Config
-	db               *ent.Client
-	inChan           *types.InputChannels
-	outChan          *types.OutputChannels
+	// Init
+	log      *util.CmdLogger
+	config   *Config
+	db       *ent.Client
+	inChan   *types.InputChannels
+	outChan  *types.OutputChannels
+	dbusConn *dbus.Conn
+
+	// Startup
+	ctx context.Context
+
+	// State (runtime)
 	runningBackups   []types.BackupIdentifier
 	runningPruneJobs []types.BackupIdentifier
 	occupiedRepos    []int
 	startupErr       error
 }
 
-func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
+func NewBorgClient(
+	log *zap.SugaredLogger,
+	config *Config,
+	dbClient *ent.Client,
+	inChan *types.InputChannels,
+	outChan *types.OutputChannels,
+	dbusConn *dbus.Conn,
+) *BorgClient {
 	return &BorgClient{
-		log:     util.NewCmdLogger(log),
-		config:  config,
-		db:      dbClient,
-		inChan:  inChan,
-		outChan: outChan,
+		log:      util.NewCmdLogger(log),
+		config:   config,
+		db:       dbClient,
+		inChan:   inChan,
+		outChan:  outChan,
+		dbusConn: dbusConn,
 	}
 }
 
@@ -78,6 +99,28 @@ func (b *BorgClient) Startup(ctx context.Context) {
 			}
 		}
 	}
+	b.registerDbusCalls()
+}
+
+func (b *BorgClient) registerDbusCalls() {
+	err := b.dbusConn.Export(b, DbusPath, DbusInterface)
+	if err != nil {
+		b.log.Fatalf("Failed to export dbus interface: %s", err)
+	}
+
+	reply, err := b.dbusConn.RequestName(DbusInterface, dbus.NameFlagDoNotQueue)
+	if err != nil {
+		b.log.Fatalf("Failed to request dbus name: %s", err)
+	}
+	if reply != dbus.RequestNameReplyPrimaryOwner {
+		b.log.Fatalf("DBus name is already owned by another process")
+	}
+}
+
+func (b *BorgClient) Wakeup() *dbus.Error {
+	b.log.Debug("Received wakeup command")
+	runtime.WindowShow(b.ctx)
+	return nil
 }
 
 func (b *BorgClient) isTargetVersionInstalled(targetVersion string) bool {
