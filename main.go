@@ -125,6 +125,7 @@ func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.Input
 		Bind: []interface{}{
 			borgClient,
 			borgClient.AppClient(),
+			borgClient.BackupClient(),
 			borgClient.RepoClient(),
 		},
 		LogLevel: logLevel,

@@ -1,11 +1,6 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
-import {
-  SelectDirectory,
-  GetDirectorySuggestions,
-  NewBackupProfile,
-  SaveBackupProfile
-} from "../../../wailsjs/go/client/BorgClient";
+import * as backupClient from "../../../wailsjs/go/client/BackupClient";
 import * as repoClient from "../../../wailsjs/go/client/RepositoryClient";
 import { ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
@@ -56,10 +51,10 @@ async function createBackupProfile() {
   try {
     LogDebug("Creating backup profile");
     // Create a new backup profile
-    backupProfile.value = await NewBackupProfile();
+    backupProfile.value = await backupClient.NewBackupProfile();
 
     // Get directory suggestions
-    const suggestions = await GetDirectorySuggestions();
+    const suggestions = await backupClient.GetDirectorySuggestions();
     LogDebug(`Suggestions: ${suggestions}`);
     directories.value = backupProfile.value.directories.map((directory: string) => {
       return {
@@ -80,7 +75,7 @@ async function createBackupProfile() {
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
-    await SaveBackupProfile(backupProfile.value);
+    await backupClient.SaveBackupProfile(backupProfile.value);
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
@@ -99,7 +94,7 @@ const markDirectory = async (directory: Directory, isAdded: boolean) => {
 };
 
 const addDirectory = async () => {
-  const dir = await SelectDirectory();
+  const dir = await backupClient.SelectDirectory();
   if (dir) {
     directories.value.push({
       path: dir,

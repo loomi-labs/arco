@@ -26,9 +26,17 @@ type BorgClient struct {
 	startupErr       error
 }
 
+// These clients separate the different types of operations that can be performed with the Borg client
+// This makes it easier to expose them in a clean way to the frontend
+
+// RepositoryClient is a client for repository related operations
 type RepositoryClient BorgClient
 
+// AppClient is a client for application related operations
 type AppClient BorgClient
+
+// BackupClient is a client for backup related operations
+type BackupClient BorgClient
 
 func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
@@ -46,6 +54,10 @@ func (b *BorgClient) RepoClient() *RepositoryClient {
 
 func (b *BorgClient) AppClient() *AppClient {
 	return (*AppClient)(b)
+}
+
+func (b *BorgClient) BackupClient() *BackupClient {
+	return (*BackupClient)(b)
 }
 
 func (b *BorgClient) Startup(ctx context.Context) {

@@ -6,56 +6,12 @@ export function AppClient() {
   return window['go']['client']['BorgClient']['AppClient']();
 }
 
-export function DryRunPruneBackup(arg1, arg2) {
-  return window['go']['client']['BorgClient']['DryRunPruneBackup'](arg1, arg2);
-}
-
-export function DryRunPruneBackups(arg1) {
-  return window['go']['client']['BorgClient']['DryRunPruneBackups'](arg1);
-}
-
-export function GetBackupProfile(arg1) {
-  return window['go']['client']['BorgClient']['GetBackupProfile'](arg1);
-}
-
-export function GetBackupProfiles() {
-  return window['go']['client']['BorgClient']['GetBackupProfiles']();
-}
-
-export function GetDirectorySuggestions() {
-  return window['go']['client']['BorgClient']['GetDirectorySuggestions']();
-}
-
-export function NewBackupProfile() {
-  return window['go']['client']['BorgClient']['NewBackupProfile']();
-}
-
-export function PruneBackup(arg1, arg2) {
-  return window['go']['client']['BorgClient']['PruneBackup'](arg1, arg2);
-}
-
-export function PruneBackups(arg1) {
-  return window['go']['client']['BorgClient']['PruneBackups'](arg1);
+export function BackupClient() {
+  return window['go']['client']['BorgClient']['BackupClient']();
 }
 
 export function RepoClient() {
   return window['go']['client']['BorgClient']['RepoClient']();
-}
-
-export function RunBackup(arg1, arg2) {
-  return window['go']['client']['BorgClient']['RunBackup'](arg1, arg2);
-}
-
-export function RunBackups(arg1) {
-  return window['go']['client']['BorgClient']['RunBackups'](arg1);
-}
-
-export function SaveBackupProfile(arg1) {
-  return window['go']['client']['BorgClient']['SaveBackupProfile'](arg1);
-}
-
-export function SelectDirectory() {
-  return window['go']['client']['BorgClient']['SelectDirectory']();
 }
 
 export function Version() {

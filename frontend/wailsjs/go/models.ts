@@ -1,6 +1,7 @@
 export namespace client {
 	
 	
+	
 	export class FrontendError {
 	    message: string;
 	    stack: string;
