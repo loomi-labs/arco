@@ -8,58 +8,59 @@ import (
 	"os/exec"
 )
 
-func (b *BorgClient) GetRepository(id int) (*ent.Repository, error) {
-	return b.db.Repository.
+func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
+	return r.db.Repository.
 		Query().
 		WithBackupprofiles().
 		WithArchives().
 		Where(repository.ID(id)).
-		Only(b.ctx)
+		Only(r.ctx)
 }
 
-func (b *BorgClient) GetRepositories() ([]*ent.Repository, error) {
-	return b.db.Repository.Query().All(b.ctx)
+func (r *RepositoryClient) All() ([]*ent.Repository, error) {
+	return r.db.Repository.Query().All(r.ctx)
 }
 
-func (b *BorgClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.config.BorgPath, "info", "--json", url)
+// TODO: remove this function or refactor it
+func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+	cmd := exec.Command(r.config.BorgPath, "info", "--json", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return nil, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
-	return b.db.Repository.
+	return r.db.Repository.
 		Create().
 		SetName(name).
 		SetURL(url).
 		SetPassword(password).
 		AddBackupprofileIDs(backupProfileId).
-		Save(b.ctx)
+		Save(r.ctx)
 }
 
-func (b *BorgClient) InitNewRepo(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	cmd := exec.Command(b.config.BorgPath, "init", "--encryption=repokey-blake2", url)
+func (r *RepositoryClient) Create(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+	cmd := exec.Command(r.config.BorgPath, "init", "--encryption=repokey-blake2", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
 
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return nil, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
-	return b.db.Repository.
+	return r.db.Repository.
 		Create().
 		SetName(name).
 		SetURL(url).
 		SetPassword(password).
 		AddBackupprofileIDs(backupProfileId).
-		Save(b.ctx)
+		Save(r.ctx)
 }

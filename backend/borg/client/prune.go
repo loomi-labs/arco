@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (b *BorgClient) PruneBackup(backupProfileId int, repositoryId int) error {
+func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (b *BorgClient) PruneBackup(backupProfileId int, repositoryId int) error {
 	return nil
 }
 
-func (b *BorgClient) PruneBackups(backupProfileId int) error {
+func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func parsePruneOutput(output string) []PruneInfo {
 	return pruneInfos
 }
 
-func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) ([]PruneInfo, error) {
+func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) ([]PruneInfo, error) {
 	return []PruneInfo{}, fmt.Errorf("not implemented")
 
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
@@ -124,7 +124,7 @@ func (b *BorgClient) DryRunPruneBackup(backupProfileId int, repositoryId int) ([
 	return parsePruneOutput(string(out)), nil
 }
 
-func (b *BorgClient) DryRunPruneBackups(backupProfileId int) ([]PruneInfo, error) {
+func (b *BackupClient) DryRunPruneBackups(backupProfileId int) ([]PruneInfo, error) {
 	return []PruneInfo{}, fmt.Errorf("not implemented")
 
 	var result []PruneInfo

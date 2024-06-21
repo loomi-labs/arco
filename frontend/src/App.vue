@@ -1,7 +1,7 @@
 <script lang='ts' setup>
 
 import { useToast } from "vue-toastification";
-import { GetNotifications, GetStartupError } from "../wailsjs/go/client/BorgClient";
+import * as appClient from "../wailsjs/go/client/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
@@ -19,7 +19,7 @@ const toast = useToast();
 
 async function getNotifications() {
   try {
-    const notifications = await GetNotifications();
+    const notifications = await appClient.GetNotifications();
     for (const notification of notifications) {
       if (notification.level === "error") {
         toast.error(notification.message);
@@ -36,7 +36,7 @@ async function getNotifications() {
 
 async function getStartupError() {
   try {
-    const errorMsg = await GetStartupError();
+    const errorMsg = await appClient.GetStartupError();
     if (errorMsg.message !== "") {
       await router.push(rErrorPage);
     }

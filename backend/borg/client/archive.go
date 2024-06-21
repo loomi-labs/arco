@@ -12,22 +12,22 @@ import (
 	"time"
 )
 
-func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
-	repo, err := b.GetRepository(repoId)
+func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
+	repo, err := r.Get(repoId)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(b.config.BorgPath, "list", "--json", repo.URL)
+	cmd := exec.Command(r.config.BorgPath, "list", "--json", repo.URL)
 	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
 
 	// Get the list from the borg repository
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, err)
+		return nil, r.log.LogCmdError(cmd.String(), startTime, err)
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
@@ -42,26 +42,26 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Delete the archives that don't exist anymore
-	cnt, err := b.db.Archive.
+	cnt, err := r.db.Archive.
 		Delete().
 		Where(
 			archive.And(
 				archive.HasRepositoryWith(repository.ID(repoId)),
 				archive.BorgIDNotIn(borgIds...),
 			)).
-		Exec(b.ctx)
+		Exec(r.ctx)
 	if err != nil {
 		return nil, err
 	}
 	if cnt > 0 {
-		b.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
+		r.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
 	}
 
 	// Check which archives are already saved
-	archives, err := b.db.Archive.
+	archives, err := r.db.Archive.
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
-		All(b.ctx)
+		All(r.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,14 +82,14 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 			if err != nil {
 				return nil, err
 			}
-			newArchive, err := b.db.Archive.
+			newArchive, err := r.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
 				SetCreatedAt(createdAt).
 				SetDuration(duration).
 				SetRepositoryID(repoId).
-				Save(b.ctx)
+				Save(r.ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -98,38 +98,38 @@ func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 		}
 	}
 	if cntNewArchives > 0 {
-		b.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
+		r.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
 	}
 
 	return archives, nil
 }
 
-func (b *BorgClient) DeleteArchive(id int) error {
-	arch, err := b.db.Archive.
+func (r *RepositoryClient) DeleteArchive(id int) error {
+	arch, err := r.db.Archive.
 		Query().
 		WithRepository().
 		Where(archive.ID(id)).
-		Only(b.ctx)
+		Only(r.ctx)
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command(b.config.BorgPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
+	cmd := exec.Command(r.config.BorgPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
 	cmd.Env = util.BorgEnv{}.WithPassword(arch.Edges.Repository.Password).AsList()
 
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
 }
 
-func (b *BorgClient) getArchive(id int) (*ent.Archive, error) {
-	return b.db.Archive.
+func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {
+	return r.db.Archive.
 		Query().
 		WithRepository().
 		Where(archive.ID(id)).
-		Only(b.ctx)
+		Only(r.ctx)
 }

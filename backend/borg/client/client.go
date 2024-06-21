@@ -36,6 +36,30 @@ func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client,
 	}
 }
 
+// These clients separate the different types of operations that can be performed with the Borg client
+// This makes it easier to expose them in a clean way to the frontend
+
+// RepositoryClient is a client for repository related operations
+type RepositoryClient BorgClient
+
+// AppClient is a client for application related operations
+type AppClient BorgClient
+
+// BackupClient is a client for backup related operations
+type BackupClient BorgClient
+
+func (b *BorgClient) RepoClient() *RepositoryClient {
+	return (*RepositoryClient)(b)
+}
+
+func (b *BorgClient) AppClient() *AppClient {
+	return (*AppClient)(b)
+}
+
+func (b *BorgClient) BackupClient() *BackupClient {
+	return (*BackupClient)(b)
+}
+
 func (b *BorgClient) Startup(ctx context.Context) {
 	b.ctx = ctx
 
@@ -101,7 +125,7 @@ func (b *BorgClient) Version() (string, error) {
 	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
 }
 
-func (b *BorgClient) GetStartupError() Notification {
+func (b *AppClient) GetStartupError() Notification {
 	var message string
 	if b.startupErr != nil {
 		message = b.startupErr.Error()
@@ -112,7 +136,7 @@ func (b *BorgClient) GetStartupError() Notification {
 	}
 }
 
-func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
+func (b *AppClient) HandleError(msg string, fErr *FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -127,7 +151,7 @@ func (b *BorgClient) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (b *BorgClient) GetNotifications() []Notification {
+func (b *AppClient) GetNotifications() []Notification {
 	notifications := make([]Notification, 0)
 	for {
 		select {

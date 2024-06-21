@@ -1,5 +1,6 @@
 import { useToast } from "vue-toastification";
-import { HandleError } from "../../wailsjs/go/client/BorgClient";
+import * as appClient from "../../wailsjs/go/client/AppClient";
+
 import { client } from "../../wailsjs/go/models";
 
 const development = process.env.NODE_ENV === "development";
@@ -21,12 +22,12 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
     if (error.stack) {
       fe.stack = error.stack;
     }
-    await HandleError(message, fe);
+    await appClient.HandleError(message, fe);
   } else if (typeof error === "string") {
     fe.message = error.toString();
-    await HandleError(message, fe);
+    await appClient.HandleError(message, fe);
   } else {
     fe.message = "Unknown error";
-    await HandleError(message, fe);
+    await appClient.HandleError(message, fe);
   }
 }

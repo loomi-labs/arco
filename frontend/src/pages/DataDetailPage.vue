@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { DryRunPruneBackups, GetBackupProfile, PruneBackups, RunBackups } from "../../wailsjs/go/client/BorgClient";
+import * as backupClient from "../../wailsjs/go/client/BackupClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
@@ -22,7 +22,7 @@ const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 
 async function getBackupProfile() {
   try {
-    backup.value = await GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
+    backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -30,7 +30,7 @@ async function getBackupProfile() {
 
 async function runBackups() {
   try {
-    await RunBackups(backup.value.id);
+    await backupClient.RunBackups(backup.value.id);
     toast.success("Backup started");
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
@@ -39,7 +39,7 @@ async function runBackups() {
 
 async function pruneBackups() {
   try {
-    await PruneBackups(backup.value.id);
+    await backupClient.PruneBackups(backup.value.id);
     toast.success("Pruning started");
   } catch (error: any) {
     await showAndLogError("Failed to prune backups", error);
@@ -48,7 +48,7 @@ async function pruneBackups() {
 
 async function dryRunPruneBackups() {
   try {
-    const result = await DryRunPruneBackups(backup.value.id);
+    const result = await backupClient.DryRunPruneBackups(backup.value.id);
     toast.success(`Pruning would remove ${result} backups`);
   } catch (error: any) {
     await showAndLogError("Failed to dry run prune backups", error);

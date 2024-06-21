@@ -7,5 +7,4 @@ node_modules
 frontend/dist
 
 # Environment variables
-.env
-sqlite.db
+.env*

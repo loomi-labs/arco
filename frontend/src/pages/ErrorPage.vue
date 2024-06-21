@@ -1,6 +1,5 @@
 <script setup lang='ts'>
-import { useRouter } from "vue-router";
-import { GetStartupError } from "../../wailsjs/go/client/BorgClient";
+import * as appClient from "../../wailsjs/go/client/AppClient";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 
@@ -8,7 +7,6 @@ import { showAndLogError } from "../common/error";
  * Variables
  ************/
 
-const router = useRouter();
 const errorMsg = ref<string>("");
 
 /************
@@ -17,7 +15,7 @@ const errorMsg = ref<string>("");
 
 async function getStartupError() {
   try {
-    const result = await GetStartupError();
+    const result = await appClient.GetStartupError();
     errorMsg.value = result.message;
   } catch (error: any) {
     await showAndLogError("Failed to get startup error", error);

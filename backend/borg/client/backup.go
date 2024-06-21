@@ -11,7 +11,7 @@ import (
 	"slices"
 )
 
-func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
+func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	hostname, _ := os.Hostname()
 	return b.db.BackupProfile.Create().
 		SetName(hostname).
@@ -22,7 +22,7 @@ func (b *BorgClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Save(b.ctx)
 }
 
-func (b *BorgClient) GetDirectorySuggestions() []string {
+func (b *BackupClient) GetDirectorySuggestions() []string {
 	home, _ := os.UserHomeDir()
 	if home != "" {
 		return []string{home}
@@ -30,18 +30,18 @@ func (b *BorgClient) GetDirectorySuggestions() []string {
 	return []string{}
 }
 
-func (b *BorgClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().
 		WithRepositories().
 		Where(backupprofile.ID(id)).Only(b.ctx)
 }
 
-func (b *BorgClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 	return b.db.BackupProfile.Query().All(b.ctx)
 }
 
-func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
+func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	_, err := b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
@@ -54,7 +54,7 @@ func (b *BorgClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
-func (b *BorgClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
+func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
 	repo, err := b.db.Repository.
 		Query().
 		Where(repository.And(
@@ -78,7 +78,7 @@ func (b *BorgClient) getRepoWithCompletedBackupProfile(repoId int, backupProfile
 	return repo, nil
 }
 
-func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
+func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (b *BorgClient) RunBackup(backupProfileId int, repositoryId int) error {
 	return nil
 }
 
-func (b *BorgClient) RunBackups(backupProfileId int) error {
+func (b *BackupClient) RunBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
@@ -128,6 +128,6 @@ func (b *BorgClient) RunBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BorgClient) SelectDirectory() (string, error) {
+func (b *BackupClient) SelectDirectory() (string, error) {
 	return runtime.OpenDirectoryDialog(b.ctx, runtime.OpenDialogOptions{})
 }
