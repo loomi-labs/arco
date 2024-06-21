@@ -104,7 +104,6 @@ func initDb() (*ent.Client, error) {
 func startApp(
 	log *zap.SugaredLogger,
 	borgClient *client.BorgClient,
-	dbClient *ent.Client,
 ) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
@@ -113,7 +112,7 @@ func startApp(
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:  "arco",
+		Title:  "Arco",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
@@ -138,8 +137,7 @@ func startApp(
 
 func checkInstance(log *zap.SugaredLogger) *dbus.Conn {
 	// Check if another instance is running
-	// If another instance is running, send a message to the other instance to open the window
-	// If no other instance is running, start the application
+	// If another instance is running, send a WakeUp message to the other instance and exit
 	conn, err := dbus.SessionBus()
 	if err != nil {
 		log.Fatalf("Failed to connect to session bus: %v", err)
@@ -188,5 +186,5 @@ func main() {
 
 	borgClient := client.NewBorgClient(log, config, dbClient, dbusConn)
 
-	startApp(log, borgClient, dbClient)
+	startApp(log, borgClient)
 }

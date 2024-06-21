@@ -105,7 +105,7 @@ func (b *BorgClient) Startup(ctx context.Context) {
 }
 
 func (b *BorgClient) Shutdown(_ context.Context) {
-	b.log.Info("Shutting down Borg client")
+	b.log.Info(fmt.Sprintf("Shutting down %s", AppName))
 	b.worker.Stop()
 	err := b.db.Close()
 	if err != nil {
