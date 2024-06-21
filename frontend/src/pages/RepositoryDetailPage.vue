@@ -1,10 +1,10 @@
 <script setup lang='ts'>
 import {
   DeleteArchive, GetRepositoryMountState,
-  GetRepository,
   MountRepository,
   RefreshArchives, UnmountRepository, MountArchive, UnmountArchive, GetArchiveMountStates
 } from "../../wailsjs/go/client/BorgClient";
+import * as repoClient from "../../wailsjs/go/client/RepositoryClient";
 import { client, ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -30,7 +30,7 @@ const archiveMountStates = ref<Map<number, client.MountState>>(new Map()); // Ma
 async function getRepo() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    repo.value = await GetRepository(repoId);
+    repo.value = await repoClient.Get(repoId);
     archives.value = repo.value.edges?.archives ?? [];
     await refreshArchives(repoId);
   } catch (error: any) {

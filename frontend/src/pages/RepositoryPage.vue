@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { GetRepositories } from "../../wailsjs/go/client/BorgClient";
+import * as repoClient from "../../wailsjs/go/client/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -20,7 +20,7 @@ const repos = ref<ent.Repository[]>([]);
 
 async function getRepos() {
   try {
-    repos.value = await GetRepositories();
+    repos.value = await repoClient.All();
   } catch (error: any) {
     await showAndLogError("Failed to get repositories", error);
   }

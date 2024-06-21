@@ -52,7 +52,7 @@ func (b *BorgClient) openFileManager(path string) {
 }
 
 func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
-	repo, err := b.GetRepository(repoId)
+	repo, err := b.RepoClient().Get(repoId)
 	if err != nil {
 		return
 	}
@@ -129,7 +129,7 @@ func (b *BorgClient) unmount(path string) (state MountState, err error) {
 }
 
 func (b *BorgClient) UnmountRepository(repoId int) (state MountState, err error) {
-	repo, err := b.GetRepository(repoId)
+	repo, err := b.RepoClient().Get(repoId)
 	if err != nil {
 		return
 	}
@@ -187,7 +187,7 @@ func (b *BorgClient) getMountState(mountPath string) (state MountState, err erro
 }
 
 func (b *BorgClient) GetRepositoryMountState(repoId int) (state MountState, err error) {
-	repo, err := b.GetRepository(repoId)
+	repo, err := b.RepoClient().Get(repoId)
 	if err != nil {
 		return
 	}
@@ -202,7 +202,7 @@ func (b *BorgClient) GetRepositoryMountState(repoId int) (state MountState, err 
 
 func (b *BorgClient) GetArchiveMountStates(repoId int) (states map[int]*MountState, err error) {
 	states = make(map[int]*MountState)
-	repo, err := b.GetRepository(repoId)
+	repo, err := b.RepoClient().Get(repoId)
 	if err != nil {
 		return
 	}

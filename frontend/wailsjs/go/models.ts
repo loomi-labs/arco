@@ -42,6 +42,7 @@ export namespace client {
 	        this.level = source["level"];
 	    }
 	}
+	
 
 }
 

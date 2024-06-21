@@ -1,13 +1,12 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
 import {
-  AddExistingRepository,
   SelectDirectory,
   GetDirectorySuggestions,
-  InitNewRepo,
   NewBackupProfile,
   SaveBackupProfile
 } from "../../../wailsjs/go/client/BorgClient";
+import * as repoClient from "../../../wailsjs/go/client/RepositoryClient";
 import { ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -112,7 +111,7 @@ const addDirectory = async () => {
 // Step 3
 const connectExistingRepo = async () => {
   try {
-    const repo = await AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
+    const repo = await repoClient.AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
     repositories.value.push(repo);
 
     showConnectRepoModal.value = false;
@@ -124,7 +123,7 @@ const connectExistingRepo = async () => {
 
 const initNewRepo = async () => {
   try {
-    const repo = await InitNewRepo(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
+    const repo = await repoClient.Init(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
     repositories.value.push(repo);
 
     showInitNewRepoModal.value = false;

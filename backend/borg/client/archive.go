@@ -13,7 +13,7 @@ import (
 )
 
 func (b *BorgClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
-	repo, err := b.GetRepository(repoId)
+	repo, err := b.RepoClient().Get(repoId)
 	if err != nil {
 		return nil, err
 	}

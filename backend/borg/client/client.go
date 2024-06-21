@@ -26,6 +26,8 @@ type BorgClient struct {
 	startupErr       error
 }
 
+type RepositoryClient BorgClient
+
 func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client, inChan *types.InputChannels, outChan *types.OutputChannels) *BorgClient {
 	return &BorgClient{
 		log:     util.NewCmdLogger(log),
@@ -34,6 +36,10 @@ func NewBorgClient(log *zap.SugaredLogger, config *Config, dbClient *ent.Client,
 		inChan:  inChan,
 		outChan: outChan,
 	}
+}
+
+func (b *BorgClient) RepoClient() *RepositoryClient {
+	return (*RepositoryClient)(b)
 }
 
 func (b *BorgClient) Startup(ctx context.Context) {
