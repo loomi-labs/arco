@@ -31,6 +31,7 @@ func (b *AppClient) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
+// TODO: refactor this to separate concerns. Right now it handles notification updates and state changes
 func (b *AppClient) GetNotifications() []Notification {
 	notifications := make([]Notification, 0)
 	for {
