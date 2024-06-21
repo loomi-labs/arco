@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"arco/backend/borg/client"
 	"arco/backend/borg/types"
 	"arco/backend/borg/util"
 	"context"
@@ -16,10 +15,10 @@ type Worker struct {
 	shutdownChan chan struct{}
 }
 
-func NewWorker(log *zap.SugaredLogger, config *client.Config, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
+func NewWorker(log *zap.SugaredLogger, borgPath string, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
 	return &Worker{
 		log:          util.NewCmdLogger(log),
-		borgPath:     config.BorgPath,
+		borgPath:     borgPath,
 		inChan:       inChan,
 		outChan:      outChan,
 		shutdownChan: make(chan struct{}),

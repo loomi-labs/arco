@@ -3,11 +3,11 @@ package main
 import (
 	"arco/backend/borg/client"
 	"arco/backend/borg/types"
-	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"context"
 	"embed"
 	"fmt"
+	"github.com/godbus/dbus/v5"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -24,6 +24,9 @@ var assets embed.FS
 
 //go:embed bin
 var binaries embed.FS
+
+//go:embed icon.png
+var icon embed.FS
 
 const borgVersion = "1.2.8"
 
@@ -62,16 +65,21 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig() (*client.Config, error) {
+func initConfig() (*types.Config, error) {
 	configDir, err := createConfigDir()
 	if err != nil {
 		return nil, err
 	}
+	iconData, err := icon.ReadFile("icon.png")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read icon: %v", err)
+	}
 
-	return &client.Config{
+	return &types.Config{
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, "borg"),
 		BorgVersion: borgVersion,
+		Icon:        iconData,
 	}, nil
 }
 
@@ -93,25 +101,18 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.InputChannels, outChan *types.OutputChannels, borgWorker *worker.Worker) {
+func startApp(
+	log *zap.SugaredLogger,
+	borgClient *client.BorgClient,
+) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	// Initialize the database
-	dbClient, err := initDb()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer dbClient.Close()
-
-	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan)
-
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:  "arco",
+		Title:  "Arco",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
@@ -119,9 +120,8 @@ func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.Input
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        borgClient.Startup,
-		OnShutdown: func(ctx context.Context) {
-			borgWorker.Stop()
-		},
+		OnShutdown:       borgClient.Shutdown,
+		OnBeforeClose:    borgClient.BeforeClose,
 		Bind: []interface{}{
 			borgClient.AppClient(),
 			borgClient.BackupClient(),
@@ -135,22 +135,56 @@ func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.Input
 	}
 }
 
+func checkInstance(log *zap.SugaredLogger) *dbus.Conn {
+	// Check if another instance is running
+	// If another instance is running, send a WakeUp message to the other instance and exit
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		log.Fatalf("Failed to connect to session bus: %v", err)
+	}
+
+	// Check if another instance is already running
+	var running bool
+	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, client.DbusInterface).Store(&running)
+	if err != nil {
+		log.Fatalf("Failed to check if another instance is running: %v", err)
+	}
+
+	if running {
+		// Another instance is running, send it a wakeup command
+		log.Debug("Send wakeup command to other instance and exit")
+		err = conn.Object(client.DbusInterface, client.DbusPath).Call(client.DbusInterface+".Wakeup", 0).Err
+		if err != nil {
+			log.Fatalf("Failed to send wakeup command to other instance: %v", err)
+		}
+		os.Exit(0)
+	}
+
+	return conn
+}
+
 func main() {
 	log := initLogger()
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
 
+	// Check if another instance is running
+	// If another instance is running, send a message to the other instance to open the window and exit
+	dbusConn := checkInstance(log)
+
+	// Initialize the configuration
 	config, err := initConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	inChan := types.NewInputChannels()
-	outChan := types.NewOutputChannels()
+	// Initialize the database
+	dbClient, err := initDb()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Create a borg daemon
-	borgWorker := worker.NewWorker(log, config, inChan, outChan)
+	borgClient := client.NewBorgClient(log, config, dbClient, dbusConn)
 
-	go borgWorker.Run()
-	startApp(log, config, inChan, outChan, borgWorker)
+	startApp(log, borgClient)
 }
