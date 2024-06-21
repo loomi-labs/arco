@@ -81,8 +81,8 @@ github.com/wailsapp/go-webview2 v1.0.10 h1:PP5Hug6pnQEAhfRzLCoOh2jJaPdrqeRgJKZhy
 github.com/wailsapp/go-webview2 v1.0.10/go.mod h1:Uk2BePfCRzttBBjFrBmqKGJd41P6QIHeV9kTgIeOZNo=
 github.com/wailsapp/mimetype v1.4.1 h1:pQN9ycO7uo4vsUUuPeHEYoUkLVkaRntMnHJxVwYhwHs=
 github.com/wailsapp/mimetype v1.4.1/go.mod h1:9aV5k31bBOv5z6u+QP8TltzvNGJPmNJD4XlAL3U+j3o=
-github.com/wailsapp/wails/v2 v2.8.2 h1:rYOn9p+7bJiZuFSi2wDyq8rBLHrIX/FoUxov+RpdUOI=
-github.com/wailsapp/wails/v2 v2.8.2/go.mod h1:5pTURIST4yZ/wRcmqDUtnM0Mk+caNax/oS610hFiy74=
+github.com/wailsapp/wails/v2 v2.9.1 h1:irsXnoQrCpeKzKTYZ2SUVlRRyeMR6I0vCO9Q1cvlEdc=
+github.com/wailsapp/wails/v2 v2.9.1/go.mod h1:7maJV2h+Egl11Ak8QZN/jlGLj2wg05bsQS+ywJPT0gI=
 github.com/zclconf/go-cty v1.14.4 h1:uXXczd9QDGsgu0i/QFR/hzI5NYCHLf6NQw/atrbnhq8=
 github.com/zclconf/go-cty v1.14.4/go.mod h1:VvMs5i0vgZdhYawQNq5kePSpLAoz8u1xvZgrPIxfnZE=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b h1:FosyBZYxY34Wul7O/MSKey3txpPYyCqVO5ZyceuQJEI=

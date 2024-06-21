@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/keygen v0.5.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/prometheus/procfs v0.15.1
-	github.com/wailsapp/wails/v2 v2.8.2
+	github.com/wailsapp/wails/v2 v2.9.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
