@@ -109,6 +109,11 @@ func (b *BorgClient) Shutdown(_ context.Context) {
 	}
 }
 
+func (b *BorgClient) BeforeClose(ctx context.Context) (prevent bool) {
+	runtime.WindowHide(ctx)
+	return true
+}
+
 func (b *BorgClient) ensureBorgBinary() error {
 	if !b.isTargetVersionInstalled(b.config.BorgVersion) {
 		b.log.Info("Installing Borg binary")

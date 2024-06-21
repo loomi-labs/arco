@@ -114,6 +114,7 @@ func startApp(
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        borgClient.Startup,
 		OnShutdown:       borgClient.Shutdown,
+		OnBeforeClose:    borgClient.BeforeClose,
 		Bind: []interface{}{
 			borgClient.AppClient(),
 			borgClient.BackupClient(),
