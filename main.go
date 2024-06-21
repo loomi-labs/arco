@@ -3,7 +3,6 @@ package main
 import (
 	"arco/backend/borg/client"
 	"arco/backend/borg/types"
-	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"context"
 	"embed"
@@ -63,13 +62,13 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig() (*client.Config, error) {
+func initConfig() (*types.Config, error) {
 	configDir, err := createConfigDir()
 	if err != nil {
 		return nil, err
 	}
 
-	return &client.Config{
+	return &types.Config{
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, "borg"),
 		BorgVersion: borgVersion,
@@ -98,15 +97,11 @@ func startApp(
 	log *zap.SugaredLogger,
 	borgClient *client.BorgClient,
 	dbClient *ent.Client,
-	borgWorker *worker.Worker,
 ) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
-
-	//goland:noinspection GoUnhandledErrorResult
-	defer dbClient.Close()
 
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -118,9 +113,7 @@ func startApp(
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        borgClient.Startup,
-		OnShutdown: func(ctx context.Context) {
-			borgWorker.Stop()
-		},
+		OnShutdown:       borgClient.Shutdown,
 		Bind: []interface{}{
 			borgClient.AppClient(),
 			borgClient.BackupClient(),
@@ -184,13 +177,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	inChan := types.NewInputChannels()
-	outChan := types.NewOutputChannels()
+	borgClient := client.NewBorgClient(log, config, dbClient, dbusConn)
 
-	borgClient := client.NewBorgClient(log, config, dbClient, inChan, outChan, dbusConn)
-
-	// Create a borg daemon
-	borgWorker := worker.NewWorker(log, config, inChan, outChan)
-	go borgWorker.Run()
-	startApp(log, borgClient, dbClient, borgWorker)
+	startApp(log, borgClient, dbClient)
 }

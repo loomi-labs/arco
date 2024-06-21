@@ -3,6 +3,7 @@ package client
 import (
 	"arco/backend/borg/types"
 	"arco/backend/borg/util"
+	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"arco/backend/ssh"
 	"context"
@@ -23,11 +24,12 @@ const (
 type BorgClient struct {
 	// Init
 	log      *util.CmdLogger
-	config   *Config
+	config   *types.Config
 	db       *ent.Client
 	inChan   *types.InputChannels
 	outChan  *types.OutputChannels
 	dbusConn *dbus.Conn
+	worker   *worker.Worker
 
 	// Startup
 	ctx context.Context
@@ -41,12 +43,12 @@ type BorgClient struct {
 
 func NewBorgClient(
 	log *zap.SugaredLogger,
-	config *Config,
+	config *types.Config,
 	dbClient *ent.Client,
-	inChan *types.InputChannels,
-	outChan *types.OutputChannels,
 	dbusConn *dbus.Conn,
 ) *BorgClient {
+	inChan := types.NewInputChannels()
+	outChan := types.NewOutputChannels()
 	return &BorgClient{
 		log:      util.NewCmdLogger(log),
 		config:   config,
@@ -54,6 +56,7 @@ func NewBorgClient(
 		inChan:   inChan,
 		outChan:  outChan,
 		dbusConn: dbusConn,
+		worker:   worker.NewWorker(log, config.BorgPath, inChan, outChan),
 	}
 }
 
@@ -84,37 +87,57 @@ func (b *BorgClient) BackupClient() *BackupClient {
 func (b *BorgClient) Startup(ctx context.Context) {
 	b.ctx = ctx
 
-	if b.isTargetVersionInstalled(b.config.BorgVersion) {
-		b.log.Info("Borg binary is installed")
-	} else {
+	if err := b.ensureBorgBinary(); err != nil {
+		b.startupErr = err
+		return
+	}
+
+	if err := b.registerDbusCalls(); err != nil {
+		b.startupErr = err
+		return
+	}
+
+	go b.worker.Run()
+}
+
+func (b *BorgClient) Shutdown(_ context.Context) {
+	b.log.Info("Shutting down Borg client")
+	b.worker.Stop()
+	err := b.db.Close()
+	if err != nil {
+		b.log.Error("Failed to close database connection")
+	}
+}
+
+func (b *BorgClient) ensureBorgBinary() error {
+	if !b.isTargetVersionInstalled(b.config.BorgVersion) {
 		b.log.Info("Installing Borg binary")
 		if err := b.installBorgBinary(); err != nil {
-			b.log.Error("Failed to install Borg binary: ", err)
-			b.startupErr = err
+			return fmt.Errorf("failed to install Borg binary: %w", err)
 		} else {
 			// Check again to make sure the binary was installed correctly
 			if !b.isTargetVersionInstalled(b.config.BorgVersion) {
-				b.log.Error("Failed to install Borg binary: version mismatch")
-				b.startupErr = fmt.Errorf("failed to install Borg binary: version mismatch")
+				return fmt.Errorf("failed to install Borg binary: version mismatch")
 			}
 		}
 	}
-	b.registerDbusCalls()
+	return nil
 }
 
-func (b *BorgClient) registerDbusCalls() {
+func (b *BorgClient) registerDbusCalls() error {
 	err := b.dbusConn.Export(b, DbusPath, DbusInterface)
 	if err != nil {
-		b.log.Fatalf("Failed to export dbus interface: %s", err)
+		return fmt.Errorf("failed to export dbus interface: %w", err)
 	}
 
 	reply, err := b.dbusConn.RequestName(DbusInterface, dbus.NameFlagDoNotQueue)
 	if err != nil {
-		b.log.Fatalf("Failed to request dbus name: %s", err)
+		return fmt.Errorf("failed to request dbus name: %w", err)
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		b.log.Fatalf("DBus name is already owned by another process")
+		return fmt.Errorf("failed to request dbus name: name already taken")
 	}
+	return nil
 }
 
 func (b *BorgClient) Wakeup() *dbus.Error {

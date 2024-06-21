@@ -1,7 +1,5 @@
 package client
 
-import "embed"
-
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {
 	Message string `json:"message"`
@@ -24,12 +22,6 @@ type Notification struct {
 type MountState struct {
 	IsMounted bool   `json:"is_mounted"`
 	MountPath string `json:"mount_path"`
-}
-
-type Config struct {
-	Binaries    embed.FS
-	BorgPath    string
-	BorgVersion string
 }
 
 // -------- borg types --------
