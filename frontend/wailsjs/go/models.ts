@@ -1,7 +1,5 @@
 export namespace client {
 	
-	
-	
 	export class FrontendError {
 	    message: string;
 	    stack: string;
@@ -44,7 +42,6 @@ export namespace client {
 	        this.level = source["level"];
 	    }
 	}
-	
 
 }
 

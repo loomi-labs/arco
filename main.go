@@ -123,7 +123,6 @@ func startApp(log *zap.SugaredLogger, config *client.Config, inChan *types.Input
 			borgWorker.Stop()
 		},
 		Bind: []interface{}{
-			borgClient,
 			borgClient.AppClient(),
 			borgClient.BackupClient(),
 			borgClient.RepoClient(),
