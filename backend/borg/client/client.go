@@ -8,6 +8,7 @@ import (
 	"arco/backend/ssh"
 	"context"
 	"fmt"
+	"github.com/getlantern/systray"
 	"github.com/godbus/dbus/v5"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
@@ -17,6 +18,7 @@ import (
 )
 
 const (
+	AppName       = "Arco"
 	DbusPath      = "/github/com/loomilabs/arco"
 	DbusInterface = "github.com.loomilabs.arco"
 )
@@ -97,7 +99,38 @@ func (b *BorgClient) Startup(ctx context.Context) {
 		return
 	}
 
+	systray.Run(b.onSystrayReady, b.onSystrayExit)
+
 	go b.worker.Run()
+}
+
+func (b *BorgClient) onSystrayReady() {
+	systray.SetIcon(b.config.Icon)
+	systray.SetTitle(AppName)
+	systray.SetTooltip(AppName)
+
+	mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", AppName), fmt.Sprintf("Open %s", AppName))
+	systray.AddSeparator()
+	mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", AppName), fmt.Sprintf("Quit %s", AppName))
+
+	// Sets the icon of a menu item. Only available on Mac and Windows.
+	mOpen.SetIcon(b.config.Icon)
+	mQuit.SetIcon(b.config.Icon)
+
+	go func() {
+		for {
+			select {
+			case <-mOpen.ClickedCh:
+				runtime.WindowShow(b.ctx)
+			case <-mQuit.ClickedCh:
+				b.Shutdown(b.ctx)
+			}
+		}
+	}()
+}
+
+func (b *BorgClient) onSystrayExit() {
+	b.Shutdown(b.ctx)
 }
 
 func (b *BorgClient) Shutdown(_ context.Context) {
@@ -107,9 +140,11 @@ func (b *BorgClient) Shutdown(_ context.Context) {
 	if err != nil {
 		b.log.Error("Failed to close database connection")
 	}
+	os.Exit(0)
 }
 
 func (b *BorgClient) BeforeClose(ctx context.Context) (prevent bool) {
+	b.log.Debug("Received beforeclose command")
 	runtime.WindowHide(ctx)
 	return true
 }

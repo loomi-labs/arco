@@ -6,4 +6,5 @@ type Config struct {
 	Binaries    embed.FS
 	BorgPath    string
 	BorgVersion string
+	Icon        []byte
 }

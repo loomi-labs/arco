@@ -25,6 +25,9 @@ var assets embed.FS
 //go:embed bin
 var binaries embed.FS
 
+//go:embed icon.png
+var icon embed.FS
+
 const borgVersion = "1.2.8"
 
 func initLogger() *zap.SugaredLogger {
@@ -67,11 +70,16 @@ func initConfig() (*types.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	iconData, err := icon.ReadFile("icon.png")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read icon: %v", err)
+	}
 
 	return &types.Config{
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, "borg"),
 		BorgVersion: borgVersion,
+		Icon:        iconData,
 	}, nil
 }
 
