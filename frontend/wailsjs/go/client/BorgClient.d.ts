@@ -3,13 +3,9 @@
 import {client} from '../models';
 import {ent} from '../models';
 
-export function DeleteArchive(arg1:number):Promise<void>;
-
 export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<client.PruneInfo>>;
 
 export function DryRunPruneBackups(arg1:number):Promise<Array<client.PruneInfo>>;
-
-export function GetArchiveMountStates(arg1:number):Promise<{[key: number]: client.MountState}>;
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
@@ -19,23 +15,15 @@ export function GetDirectorySuggestions():Promise<Array<string>>;
 
 export function GetNotifications():Promise<Array<client.Notification>>;
 
-export function GetRepositoryMountState(arg1:number):Promise<client.MountState>;
-
 export function GetStartupError():Promise<client.Notification>;
 
 export function HandleError(arg1:string,arg2:client.FrontendError):Promise<void>;
-
-export function MountArchive(arg1:number):Promise<client.MountState>;
-
-export function MountRepository(arg1:number):Promise<client.MountState>;
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 
 export function PruneBackup(arg1:number,arg2:number):Promise<void>;
 
 export function PruneBackups(arg1:number):Promise<void>;
-
-export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 
 export function RepoClient():Promise<client.RepositoryClient>;
 
@@ -46,9 +34,5 @@ export function RunBackups(arg1:number):Promise<void>;
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 
 export function SelectDirectory():Promise<string>;
-
-export function UnmountArchive(arg1:number):Promise<client.MountState>;
-
-export function UnmountRepository(arg1:number):Promise<client.MountState>;
 
 export function Version():Promise<string>;

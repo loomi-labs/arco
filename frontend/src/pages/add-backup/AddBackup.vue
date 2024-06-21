@@ -42,7 +42,7 @@ const directories = ref<Directory[]>([]);
 // Step 3
 const repositories = ref<ent.Repository[]>([]);
 const showConnectRepoModal = ref(false);
-const showInitNewRepoModal = ref(false);
+const showAddNewRepoModal = ref(false);
 const repoUrl = ref("");
 const repoPassword = ref("");
 const repoName = ref("");
@@ -121,12 +121,12 @@ const connectExistingRepo = async () => {
   }
 };
 
-const initNewRepo = async () => {
+const createNewRepo = async () => {
   try {
-    const repo = await repoClient.Init(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
+    const repo = await repoClient.Create(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
     repositories.value.push(repo);
 
-    showInitNewRepoModal.value = false;
+    showAddNewRepoModal.value = false;
     toast.success(`Created new repository ${repo.name}`);
   } catch (error: any) {
     await showAndLogError("Failed to init new repository", error);
@@ -234,7 +234,7 @@ createBackupProfile();
           <div>{{ repository.url }}</div>
         </div>
 
-        <button class='btn btn-primary' @click='showInitNewRepoModal = true'>Add new repository</button>
+        <button class='btn btn-primary' @click='showAddNewRepoModal = true'>Add new repository</button>
         <button class='btn btn-primary' @click='showConnectRepoModal = true'>Add existing repository</button>
       </div>
 
@@ -270,9 +270,9 @@ createBackupProfile();
         </div>
       </div>
 
-      <div v-if='showInitNewRepoModal' class='modal modal-open'>
+      <div v-if='showAddNewRepoModal' class='modal modal-open'>
         <div class='modal-box'>
-          <h2 class='text-2xl'>Init a new repository</h2>
+          <h2 class='text-2xl'>Add a new repository</h2>
 
           <div class='form-control'>
             <label class='label'>
@@ -296,8 +296,8 @@ createBackupProfile();
           </div>
 
           <div class='modal-action'>
-            <button class='btn' @click='showInitNewRepoModal = false'>Cancel</button>
-            <button class='btn btn-primary' @click='initNewRepo'>Connect</button>
+            <button class='btn' @click='showAddNewRepoModal = false'>Cancel</button>
+            <button class='btn btn-primary' @click='createNewRepo'>Connect</button>
           </div>
         </div>
       </div>

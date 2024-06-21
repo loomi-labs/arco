@@ -1,9 +1,4 @@
 <script setup lang='ts'>
-import {
-  DeleteArchive, GetRepositoryMountState,
-  MountRepository,
-  RefreshArchives, UnmountRepository, MountArchive, UnmountArchive, GetArchiveMountStates
-} from "../../wailsjs/go/client/BorgClient";
 import * as repoClient from "../../wailsjs/go/client/RepositoryClient";
 import { client, ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
@@ -41,7 +36,7 @@ async function getRepo() {
 async function getRepoMountState() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    repoMountState.value = await GetRepositoryMountState(repoId);
+    repoMountState.value = await repoClient.GetRepositoryMountState(repoId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
@@ -50,7 +45,7 @@ async function getRepoMountState() {
 async function getArchiveMountStates() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    const result = await GetArchiveMountStates(repoId);
+    const result = await repoClient.GetArchiveMountStates(repoId);
     archiveMountStates.value = new Map(Object.entries(result).map(([k, v]) => [Number(k), v]));
   } catch (error: any) {
     await showAndLogError("Failed to get archive mount states", error);
@@ -59,7 +54,7 @@ async function getArchiveMountStates() {
 
 async function refreshArchives(repoId: number) {
   try {
-    archives.value = await RefreshArchives(repoId);
+    archives.value = await repoClient.RefreshArchives(repoId);
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
   }
@@ -67,7 +62,7 @@ async function refreshArchives(repoId: number) {
 
 async function deleteArchive(archiveId: number) {
   try {
-    await DeleteArchive(archiveId);
+    await repoClient.DeleteArchive(archiveId);
     archives.value = archives.value.filter((archive) => archive.id !== archiveId);
     toast.success("Archive deleted");
   } catch (error: any) {
@@ -77,7 +72,7 @@ async function deleteArchive(archiveId: number) {
 
 async function mountRepo(repoId: number) {
   try {
-    repoMountState.value = await MountRepository(repoId);
+    repoMountState.value = await repoClient.MountRepository(repoId);
     toast.success(`Repository mounted at ${repoMountState.value.mount_path}`)
   } catch (error: any) {
     await showAndLogError("Failed to mount repository", error);
@@ -86,7 +81,7 @@ async function mountRepo(repoId: number) {
 
 async function unmountRepo(repoId: number) {
   try {
-    repoMountState.value = await UnmountRepository(repoId);
+    repoMountState.value = await repoClient.UnmountRepository(repoId);
     toast.success(`Repository unmounted`)
   } catch (error: any) {
     await showAndLogError("Failed to unmount repository", error);
@@ -95,7 +90,7 @@ async function unmountRepo(repoId: number) {
 
 async function mountArchive(archiveId: number) {
   try {
-    const archiveMountState = await MountArchive(archiveId);
+    const archiveMountState = await repoClient.MountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
     toast.success(`Archive mounted at ${archiveMountState.mount_path}`)
   } catch (error: any) {
@@ -105,7 +100,7 @@ async function mountArchive(archiveId: number) {
 
 async function unmountArchive(archiveId: number) {
   try {
-    await UnmountArchive(archiveId);
+    await repoClient.UnmountArchive(archiveId);
     archiveMountStates.value.delete(archiveId);
     toast.success(`Archive unmounted`)
   } catch (error: any) {

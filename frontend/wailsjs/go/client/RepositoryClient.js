@@ -10,10 +10,42 @@ export function All() {
   return window['go']['client']['RepositoryClient']['All']();
 }
 
+export function Create(arg1, arg2, arg3, arg4) {
+  return window['go']['client']['RepositoryClient']['Create'](arg1, arg2, arg3, arg4);
+}
+
+export function DeleteArchive(arg1) {
+  return window['go']['client']['RepositoryClient']['DeleteArchive'](arg1);
+}
+
 export function Get(arg1) {
   return window['go']['client']['RepositoryClient']['Get'](arg1);
 }
 
-export function Init(arg1, arg2, arg3, arg4) {
-  return window['go']['client']['RepositoryClient']['Init'](arg1, arg2, arg3, arg4);
+export function GetArchiveMountStates(arg1) {
+  return window['go']['client']['RepositoryClient']['GetArchiveMountStates'](arg1);
+}
+
+export function GetRepositoryMountState(arg1) {
+  return window['go']['client']['RepositoryClient']['GetRepositoryMountState'](arg1);
+}
+
+export function MountArchive(arg1) {
+  return window['go']['client']['RepositoryClient']['MountArchive'](arg1);
+}
+
+export function MountRepository(arg1) {
+  return window['go']['client']['RepositoryClient']['MountRepository'](arg1);
+}
+
+export function RefreshArchives(arg1) {
+  return window['go']['client']['RepositoryClient']['RefreshArchives'](arg1);
+}
+
+export function UnmountArchive(arg1) {
+  return window['go']['client']['RepositoryClient']['UnmountArchive'](arg1);
+}
+
+export function UnmountRepository(arg1) {
+  return window['go']['client']['RepositoryClient']['UnmountRepository'](arg1);
 }

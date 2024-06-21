@@ -38,21 +38,21 @@ func ensurePathExists(path string) error {
 	return nil
 }
 
-func (b *BorgClient) openFileManager(path string) {
+func (r *RepositoryClient) openFileManager(path string) {
 	openCmd, err := util.GetOpenFileManagerCmd()
 	if err != nil {
-		b.log.Error("Error getting open file manager command: ", err)
+		r.log.Error("Error getting open file manager command: ", err)
 		return
 	}
 	cmd := exec.Command(openCmd, path)
 	err = cmd.Run()
 	if err != nil {
-		b.log.Error("Error opening file manager: ", err)
+		r.log.Error("Error opening file manager: ", err)
 	}
 }
 
-func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
-	repo, err := b.RepoClient().Get(repoId)
+func (r *RepositoryClient) MountRepository(repoId int) (state MountState, err error) {
+	repo, err := r.Get(repoId)
 	if err != nil {
 		return
 	}
@@ -67,24 +67,24 @@ func (b *BorgClient) MountRepository(repoId int) (state MountState, err error) {
 		return
 	}
 
-	cmd := exec.Command(b.config.BorgPath, "mount", repo.URL, path)
+	cmd := exec.Command(r.config.BorgPath, "mount", repo.URL, path)
 	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
 
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return state, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Open the file manager and forget about it
-	go b.openFileManager(path)
+	go r.openFileManager(path)
 
-	return b.getMountState(path)
+	return r.getMountState(path)
 }
 
-func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
-	archive, err := b.getArchive(archiveId)
+func (r *RepositoryClient) MountArchive(archiveId int) (state MountState, err error) {
+	archive, err := r.getArchive(archiveId)
 	if err != nil {
 		return
 	}
@@ -99,37 +99,37 @@ func (b *BorgClient) MountArchive(archiveId int) (state MountState, err error) {
 		return
 	}
 
-	cmd := exec.Command(b.config.BorgPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
+	cmd := exec.Command(r.config.BorgPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
 	cmd.Env = util.BorgEnv{}.WithPassword(archive.Edges.Repository.Password).AsList()
 
-	startTime := b.log.LogCmdStart(cmd.String())
+	startTime := r.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return state, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return state, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Open the file manager and forget about it
-	go b.openFileManager(path)
+	go r.openFileManager(path)
 
-	return b.getMountState(path)
+	return r.getMountState(path)
 }
 
-func (b *BorgClient) unmount(path string) (state MountState, err error) {
-	cmd := exec.Command(b.config.BorgPath, "umount", path)
-	b.log.Debug("Command: ", cmd.String())
+func (r *RepositoryClient) unmount(path string) (state MountState, err error) {
+	cmd := exec.Command(r.config.BorgPath, "umount", path)
+	r.log.Debug("Command: ", cmd.String())
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		b.log.Error("Error running unmount command: ", fmt.Errorf("%s: %s", out, err))
+		r.log.Error("Error running unmount command: ", fmt.Errorf("%s: %s", out, err))
 		return
 	}
-	b.log.Debug("Unmount finished", out)
-	return b.getMountState(path)
+	r.log.Debug("Unmount finished", out)
+	return r.getMountState(path)
 }
 
-func (b *BorgClient) UnmountRepository(repoId int) (state MountState, err error) {
-	repo, err := b.RepoClient().Get(repoId)
+func (r *RepositoryClient) UnmountRepository(repoId int) (state MountState, err error) {
+	repo, err := r.Get(repoId)
 	if err != nil {
 		return
 	}
@@ -139,11 +139,11 @@ func (b *BorgClient) UnmountRepository(repoId int) (state MountState, err error)
 		return
 	}
 
-	return b.unmount(path)
+	return r.unmount(path)
 }
 
-func (b *BorgClient) UnmountArchive(archiveId int) (state MountState, err error) {
-	archive, err := b.getArchive(archiveId)
+func (r *RepositoryClient) UnmountArchive(archiveId int) (state MountState, err error) {
+	archive, err := r.getArchive(archiveId)
 	if err != nil {
 		return
 	}
@@ -153,7 +153,7 @@ func (b *BorgClient) UnmountArchive(archiveId int) (state MountState, err error)
 		return
 	}
 
-	return b.unmount(path)
+	return r.unmount(path)
 }
 
 func getMounts(mountPaths ...string) (mounts []*procfs.MountInfo, err error) {
@@ -173,7 +173,7 @@ func getMounts(mountPaths ...string) (mounts []*procfs.MountInfo, err error) {
 	return
 }
 
-func (b *BorgClient) getMountState(mountPath string) (state MountState, err error) {
+func (r *RepositoryClient) getMountState(mountPath string) (state MountState, err error) {
 	mounts, err := getMounts(mountPath)
 	if err != nil {
 		return
@@ -186,8 +186,8 @@ func (b *BorgClient) getMountState(mountPath string) (state MountState, err erro
 	return
 }
 
-func (b *BorgClient) GetRepositoryMountState(repoId int) (state MountState, err error) {
-	repo, err := b.RepoClient().Get(repoId)
+func (r *RepositoryClient) GetRepositoryMountState(repoId int) (state MountState, err error) {
+	repo, err := r.Get(repoId)
 	if err != nil {
 		return
 	}
@@ -197,12 +197,12 @@ func (b *BorgClient) GetRepositoryMountState(repoId int) (state MountState, err 
 		return
 	}
 
-	return b.getMountState(path)
+	return r.getMountState(path)
 }
 
-func (b *BorgClient) GetArchiveMountStates(repoId int) (states map[int]*MountState, err error) {
+func (r *RepositoryClient) GetArchiveMountStates(repoId int) (states map[int]*MountState, err error) {
 	states = make(map[int]*MountState)
-	repo, err := b.RepoClient().Get(repoId)
+	repo, err := r.Get(repoId)
 	if err != nil {
 		return
 	}
