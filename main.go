@@ -31,7 +31,7 @@ var icon embed.FS
 const borgVersion = "1.2.8"
 
 func initLogger() *zap.SugaredLogger {
-	if os.Getenv("DEBUG") == "true" {
+	if os.Getenv(client.EnvVarDebug.String()) == "true" {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		log, err := config.Build()
@@ -70,16 +70,12 @@ func initConfig() (*types.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	iconData, err := icon.ReadFile("icon.png")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read icon: %v", err)
-	}
 
 	return &types.Config{
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, "borg"),
 		BorgVersion: borgVersion,
-		Icon:        iconData,
+		Icon:        icon,
 	}, nil
 }
 
@@ -99,6 +95,34 @@ func initDb() (*ent.Client, error) {
 		return nil, err
 	}
 	return dbClient, nil
+}
+
+func initDbus(log *zap.SugaredLogger) (*dbus.Conn, error) {
+	// Check if another instance is running
+	// If another instance is running, send a WakeUp message to the other instance and exit
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to session bus: %v", err)
+	}
+
+	// Check if another instance is already running
+	var running bool
+	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, client.DbusInterface).Store(&running)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if another instance is running: %v", err)
+	}
+
+	if running {
+		// Another instance is running, send it a wakeup command
+		log.Debug("Send wakeup command to other instance and exit")
+		err = conn.Object(client.DbusInterface, client.DbusPath).Call(client.DbusInterface+".Wakeup", 0).Err
+		if err != nil {
+			return nil, fmt.Errorf("failed to send wakeup command to other instance: %v", err)
+		}
+		os.Exit(0)
+	}
+
+	return conn, nil
 }
 
 func startApp(
@@ -135,34 +159,6 @@ func startApp(
 	}
 }
 
-func checkInstance(log *zap.SugaredLogger) *dbus.Conn {
-	// Check if another instance is running
-	// If another instance is running, send a WakeUp message to the other instance and exit
-	conn, err := dbus.SessionBus()
-	if err != nil {
-		log.Fatalf("Failed to connect to session bus: %v", err)
-	}
-
-	// Check if another instance is already running
-	var running bool
-	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, client.DbusInterface).Store(&running)
-	if err != nil {
-		log.Fatalf("Failed to check if another instance is running: %v", err)
-	}
-
-	if running {
-		// Another instance is running, send it a wakeup command
-		log.Debug("Send wakeup command to other instance and exit")
-		err = conn.Object(client.DbusInterface, client.DbusPath).Call(client.DbusInterface+".Wakeup", 0).Err
-		if err != nil {
-			log.Fatalf("Failed to send wakeup command to other instance: %v", err)
-		}
-		os.Exit(0)
-	}
-
-	return conn
-}
-
 func main() {
 	log := initLogger()
 	//goland:noinspection GoUnhandledErrorResult
@@ -170,7 +166,10 @@ func main() {
 
 	// Check if another instance is running
 	// If another instance is running, send a message to the other instance to open the window and exit
-	dbusConn := checkInstance(log)
+	dbusConn, err := initDbus(log)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize the configuration
 	config, err := initConfig()

@@ -14,7 +14,9 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 const (
@@ -22,6 +24,16 @@ const (
 	DbusPath      = "/github/com/loomilabs/arco"
 	DbusInterface = "github.com.loomilabs.arco"
 )
+
+type EnvVar string
+
+const (
+	EnvVarDebug EnvVar = "DEBUG"
+)
+
+func (e EnvVar) String() string {
+	return string(e)
+}
 
 type BorgClient struct {
 	// Init
@@ -94,7 +106,12 @@ func (b *BorgClient) Startup(ctx context.Context) {
 		return
 	}
 
-	systray.Run(b.onSystrayReady, b.onSystrayExit)
+	if err := b.setupSystray(); err != nil {
+		b.startupErr = err
+		return
+	}
+
+	b.registerSignalHandler()
 
 	if err := b.ensureBorgBinary(); err != nil {
 		b.startupErr = err
@@ -126,6 +143,7 @@ func (b *BorgClient) Wakeup() *dbus.Error {
 	return nil
 }
 
+// RegisterDbusCalls registers the BorgClient as a D-Bus service
 func (b *BorgClient) registerDbusCalls() error {
 	err := b.dbusConn.Export(b, DbusPath, DbusInterface)
 	if err != nil {
@@ -193,33 +211,55 @@ func (b *BorgClient) installBorgBinary() error {
 	return os.WriteFile(b.config.BorgPath, file, 0755)
 }
 
-func (b *BorgClient) onSystrayReady() {
-	systray.SetIcon(b.config.Icon)
-	systray.SetTitle(AppName)
-	systray.SetTooltip(AppName)
+func (b *BorgClient) setupSystray() error {
+	iconData, err := b.config.Icon.ReadFile("icon.png")
+	if err != nil {
+		return fmt.Errorf("failed to read icon: %v", err)
+	}
 
-	mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", AppName), fmt.Sprintf("Open %s", AppName))
-	systray.AddSeparator()
-	mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", AppName), fmt.Sprintf("Quit %s", AppName))
+	readyFunc := func() {
+		systray.SetIcon(iconData)
+		systray.SetTitle(AppName)
+		systray.SetTooltip(AppName)
 
-	// Sets the icon of a menu item. Only available on Mac and Windows.
-	mOpen.SetIcon(b.config.Icon)
-	mQuit.SetIcon(b.config.Icon)
+		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", AppName), fmt.Sprintf("Open %s", AppName))
+		systray.AddSeparator()
+		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", AppName), fmt.Sprintf("Quit %s", AppName))
 
-	go func() {
-		for {
-			select {
-			case <-mOpen.ClickedCh:
-				runtime.WindowShow(b.ctx)
-			case <-mQuit.ClickedCh:
-				b.Shutdown(b.ctx)
+		// Sets the icon of a menu item. Only available on Mac and Windows.
+		mOpen.SetIcon(iconData)
+		mQuit.SetIcon(iconData)
+
+		go func() {
+			for {
+				select {
+				case <-mOpen.ClickedCh:
+					runtime.WindowShow(b.ctx)
+				case <-mQuit.ClickedCh:
+					b.Shutdown(b.ctx)
+				}
 			}
-		}
-	}()
+		}()
+	}
+
+	exitFunc := func() {
+		b.Shutdown(b.ctx)
+	}
+
+	// TODO: not working right now -> fix this
+	//systray.Run(readyFunc, exitFunc)
+	_, _ = readyFunc, exitFunc
+	return nil
 }
 
-func (b *BorgClient) onSystrayExit() {
-	b.Shutdown(b.ctx)
+func (b *BorgClient) registerSignalHandler() {
+	//	Listen to interrupt signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-signalChan
+		b.Shutdown(b.ctx)
+	}()
 }
 
 // TODO: remove or move somewhere else
