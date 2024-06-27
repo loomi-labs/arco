@@ -6,7 +6,6 @@ require (
 	entgo.io/ent v0.13.1
 	github.com/charmbracelet/keygen v0.5.0
 	github.com/getlantern/systray v1.2.2
-	github.com/godbus/dbus/v5 v5.1.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/prometheus/procfs v0.15.1
 	github.com/wailsapp/wails/v2 v2.9.1
@@ -28,6 +27,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/inflect v0.21.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.20.1 // indirect

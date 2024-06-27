@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/getlantern/systray"
-	"github.com/godbus/dbus/v5"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"os"
@@ -20,9 +19,7 @@ import (
 )
 
 const (
-	AppName       = "Arco"
-	DbusPath      = "/github/com/loomilabs/arco"
-	DbusInterface = "github.com.loomilabs.arco"
+	AppName = "Arco"
 )
 
 type EnvVar string
@@ -37,13 +34,12 @@ func (e EnvVar) String() string {
 
 type BorgClient struct {
 	// Init
-	log      *util.CmdLogger
-	config   *types.Config
-	db       *ent.Client
-	inChan   *types.InputChannels
-	outChan  *types.OutputChannels
-	dbusConn *dbus.Conn
-	worker   *worker.Worker
+	log     *util.CmdLogger
+	config  *types.Config
+	db      *ent.Client
+	inChan  *types.InputChannels
+	outChan *types.OutputChannels
+	worker  *worker.Worker
 
 	// Startup
 	ctx context.Context
@@ -59,18 +55,16 @@ func NewBorgClient(
 	log *zap.SugaredLogger,
 	config *types.Config,
 	dbClient *ent.Client,
-	dbusConn *dbus.Conn,
 ) *BorgClient {
 	inChan := types.NewInputChannels()
 	outChan := types.NewOutputChannels()
 	return &BorgClient{
-		log:      util.NewCmdLogger(log),
-		config:   config,
-		db:       dbClient,
-		inChan:   inChan,
-		outChan:  outChan,
-		dbusConn: dbusConn,
-		worker:   worker.NewWorker(log, config.BorgPath, inChan, outChan),
+		log:     util.NewCmdLogger(log),
+		config:  config,
+		db:      dbClient,
+		inChan:  inChan,
+		outChan: outChan,
+		worker:  worker.NewWorker(log, config.BorgPath, inChan, outChan),
 	}
 }
 
@@ -100,11 +94,6 @@ func (b *BorgClient) BackupClient() *BackupClient {
 
 func (b *BorgClient) Startup(ctx context.Context) {
 	b.ctx = ctx
-
-	if err := b.registerDbusCalls(); err != nil {
-		b.startupErr = err
-		return
-	}
 
 	if err := b.setupSystray(); err != nil {
 		b.startupErr = err
@@ -137,27 +126,9 @@ func (b *BorgClient) BeforeClose(ctx context.Context) (prevent bool) {
 	return true
 }
 
-func (b *BorgClient) Wakeup() *dbus.Error {
+func (b *BorgClient) Wakeup() {
 	b.log.Debug("Received wakeup command")
 	runtime.WindowShow(b.ctx)
-	return nil
-}
-
-// RegisterDbusCalls registers the BorgClient as a D-Bus service
-func (b *BorgClient) registerDbusCalls() error {
-	err := b.dbusConn.Export(b, DbusPath, DbusInterface)
-	if err != nil {
-		return fmt.Errorf("failed to export dbus interface: %w", err)
-	}
-
-	reply, err := b.dbusConn.RequestName(DbusInterface, dbus.NameFlagDoNotQueue)
-	if err != nil {
-		return fmt.Errorf("failed to request dbus name: %w", err)
-	}
-	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return fmt.Errorf("failed to request dbus name: name already taken")
-	}
-	return nil
 }
 
 func (b *BorgClient) ensureBorgBinary() error {

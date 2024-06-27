@@ -7,7 +7,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/godbus/dbus/v5"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -97,34 +96,6 @@ func initDb() (*ent.Client, error) {
 	return dbClient, nil
 }
 
-func initDbus(log *zap.SugaredLogger) (*dbus.Conn, error) {
-	// Check if another instance is running
-	// If another instance is running, send a WakeUp message to the other instance and exit
-	conn, err := dbus.SessionBus()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to session bus: %v", err)
-	}
-
-	// Check if another instance is already running
-	var running bool
-	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, client.DbusInterface).Store(&running)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check if another instance is running: %v", err)
-	}
-
-	if running {
-		// Another instance is running, send it a wakeup command
-		log.Debug("Send wakeup command to other instance and exit")
-		err = conn.Object(client.DbusInterface, client.DbusPath).Call(client.DbusInterface+".Wakeup", 0).Err
-		if err != nil {
-			return nil, fmt.Errorf("failed to send wakeup command to other instance: %v", err)
-		}
-		os.Exit(0)
-	}
-
-	return conn, nil
-}
-
 func startApp(
 	log *zap.SugaredLogger,
 	borgClient *client.BorgClient,
@@ -153,6 +124,12 @@ func startApp(
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "4ffabbd3-334a-454e-8c66-dee8d1ff9afb",
+			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
+				borgClient.Wakeup()
+			},
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -163,13 +140,6 @@ func main() {
 	log := initLogger()
 	//goland:noinspection GoUnhandledErrorResult
 	defer log.Sync() // flushes buffer, if any
-
-	// Check if another instance is running
-	// If another instance is running, send a message to the other instance to open the window and exit
-	dbusConn, err := initDbus(log)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Initialize the configuration
 	config, err := initConfig()
@@ -183,7 +153,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	borgClient := client.NewBorgClient(log, config, dbClient, dbusConn)
+	borgClient := client.NewBorgClient(log, config, dbClient)
 
 	startApp(log, borgClient)
 }
