@@ -1,7 +1,7 @@
 package client
 
 import (
-	"arco/backend/borg/types"
+	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"arco/backend/borg/client"
-	"arco/backend/borg/types"
+	"arco/backend/app/client"
+	"arco/backend/app/types"
 	"embed"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"

@@ -1,9 +1,9 @@
 package client
 
 import (
-	"arco/backend/borg/types"
-	"arco/backend/borg/util"
-	"arco/backend/borg/worker"
+	"arco/backend/app/types"
+	"arco/backend/app/util"
+	"arco/backend/app/worker"
 	"arco/backend/ent"
 	"arco/backend/ssh"
 	"context"
