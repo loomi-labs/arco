@@ -98,7 +98,7 @@ func initDb() (*ent.Client, error) {
 
 func startApp(
 	log *zap.SugaredLogger,
-	borgClient *client.BorgClient,
+	borgClient *client.App,
 ) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
@@ -153,7 +153,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	borgClient := client.NewBorgClient(log, config, dbClient)
+	borgClient := client.NewApp(log, config, dbClient)
 
 	startApp(log, borgClient)
 }
