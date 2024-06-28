@@ -264,21 +264,21 @@ func PasswordContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
 }
 
-// HasBackupprofiles applies the HasEdge predicate on the "backupprofiles" edge.
-func HasBackupprofiles() predicate.Repository {
+// HasBackupProfiles applies the HasEdge predicate on the "backup_profiles" edge.
+func HasBackupProfiles() predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, BackupprofilesTable, BackupprofilesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2M, true, BackupProfilesTable, BackupProfilesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasBackupprofilesWith applies the HasEdge predicate on the "backupprofiles" edge with a given conditions (other predicates).
-func HasBackupprofilesWith(preds ...predicate.BackupProfile) predicate.Repository {
+// HasBackupProfilesWith applies the HasEdge predicate on the "backup_profiles" edge with a given conditions (other predicates).
+func HasBackupProfilesWith(preds ...predicate.BackupProfile) predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
-		step := newBackupprofilesStep()
+		step := newBackupProfilesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

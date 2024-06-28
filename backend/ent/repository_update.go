@@ -71,19 +71,19 @@ func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
 	return ru
 }
 
-// AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
-func (ru *RepositoryUpdate) AddBackupprofileIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.AddBackupprofileIDs(ids...)
+// AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
+func (ru *RepositoryUpdate) AddBackupProfileIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.AddBackupProfileIDs(ids...)
 	return ru
 }
 
-// AddBackupprofiles adds the "backupprofiles" edges to the BackupProfile entity.
-func (ru *RepositoryUpdate) AddBackupprofiles(b ...*BackupProfile) *RepositoryUpdate {
+// AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
+func (ru *RepositoryUpdate) AddBackupProfiles(b ...*BackupProfile) *RepositoryUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
-	return ru.AddBackupprofileIDs(ids...)
+	return ru.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
@@ -106,25 +106,25 @@ func (ru *RepositoryUpdate) Mutation() *RepositoryMutation {
 	return ru.mutation
 }
 
-// ClearBackupprofiles clears all "backupprofiles" edges to the BackupProfile entity.
-func (ru *RepositoryUpdate) ClearBackupprofiles() *RepositoryUpdate {
-	ru.mutation.ClearBackupprofiles()
+// ClearBackupProfiles clears all "backup_profiles" edges to the BackupProfile entity.
+func (ru *RepositoryUpdate) ClearBackupProfiles() *RepositoryUpdate {
+	ru.mutation.ClearBackupProfiles()
 	return ru
 }
 
-// RemoveBackupprofileIDs removes the "backupprofiles" edge to BackupProfile entities by IDs.
-func (ru *RepositoryUpdate) RemoveBackupprofileIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.RemoveBackupprofileIDs(ids...)
+// RemoveBackupProfileIDs removes the "backup_profiles" edge to BackupProfile entities by IDs.
+func (ru *RepositoryUpdate) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.RemoveBackupProfileIDs(ids...)
 	return ru
 }
 
-// RemoveBackupprofiles removes "backupprofiles" edges to BackupProfile entities.
-func (ru *RepositoryUpdate) RemoveBackupprofiles(b ...*BackupProfile) *RepositoryUpdate {
+// RemoveBackupProfiles removes "backup_profiles" edges to BackupProfile entities.
+func (ru *RepositoryUpdate) RemoveBackupProfiles(b ...*BackupProfile) *RepositoryUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
-	return ru.RemoveBackupprofileIDs(ids...)
+	return ru.RemoveBackupProfileIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
@@ -193,12 +193,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if ru.mutation.BackupprofilesCleared() {
+	if ru.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
@@ -206,12 +206,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedBackupprofilesIDs(); len(nodes) > 0 && !ru.mutation.BackupprofilesCleared() {
+	if nodes := ru.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !ru.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
@@ -222,12 +222,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.BackupprofilesIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
@@ -345,19 +345,19 @@ func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdate
 	return ruo
 }
 
-// AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
-func (ruo *RepositoryUpdateOne) AddBackupprofileIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.AddBackupprofileIDs(ids...)
+// AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
+func (ruo *RepositoryUpdateOne) AddBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.AddBackupProfileIDs(ids...)
 	return ruo
 }
 
-// AddBackupprofiles adds the "backupprofiles" edges to the BackupProfile entity.
-func (ruo *RepositoryUpdateOne) AddBackupprofiles(b ...*BackupProfile) *RepositoryUpdateOne {
+// AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
+func (ruo *RepositoryUpdateOne) AddBackupProfiles(b ...*BackupProfile) *RepositoryUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
-	return ruo.AddBackupprofileIDs(ids...)
+	return ruo.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
@@ -380,25 +380,25 @@ func (ruo *RepositoryUpdateOne) Mutation() *RepositoryMutation {
 	return ruo.mutation
 }
 
-// ClearBackupprofiles clears all "backupprofiles" edges to the BackupProfile entity.
-func (ruo *RepositoryUpdateOne) ClearBackupprofiles() *RepositoryUpdateOne {
-	ruo.mutation.ClearBackupprofiles()
+// ClearBackupProfiles clears all "backup_profiles" edges to the BackupProfile entity.
+func (ruo *RepositoryUpdateOne) ClearBackupProfiles() *RepositoryUpdateOne {
+	ruo.mutation.ClearBackupProfiles()
 	return ruo
 }
 
-// RemoveBackupprofileIDs removes the "backupprofiles" edge to BackupProfile entities by IDs.
-func (ruo *RepositoryUpdateOne) RemoveBackupprofileIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.RemoveBackupprofileIDs(ids...)
+// RemoveBackupProfileIDs removes the "backup_profiles" edge to BackupProfile entities by IDs.
+func (ruo *RepositoryUpdateOne) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.RemoveBackupProfileIDs(ids...)
 	return ruo
 }
 
-// RemoveBackupprofiles removes "backupprofiles" edges to BackupProfile entities.
-func (ruo *RepositoryUpdateOne) RemoveBackupprofiles(b ...*BackupProfile) *RepositoryUpdateOne {
+// RemoveBackupProfiles removes "backup_profiles" edges to BackupProfile entities.
+func (ruo *RepositoryUpdateOne) RemoveBackupProfiles(b ...*BackupProfile) *RepositoryUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
-	return ruo.RemoveBackupprofileIDs(ids...)
+	return ruo.RemoveBackupProfileIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
@@ -497,12 +497,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if ruo.mutation.BackupprofilesCleared() {
+	if ruo.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
@@ -510,12 +510,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedBackupprofilesIDs(); len(nodes) > 0 && !ruo.mutation.BackupprofilesCleared() {
+	if nodes := ruo.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !ruo.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
@@ -526,12 +526,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.BackupprofilesIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),

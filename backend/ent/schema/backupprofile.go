@@ -22,13 +22,7 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"prefix"`),
 		field.Strings("directories").
 			StructTag(`json:"directories"`),
-		field.Bool("hasPeriodicBackups").
-			StructTag(`json:"hasPeriodicBackups"`).
-			Default(false),
-		field.Time("periodicBackupTime").
-			StructTag(`json:"periodicBackupTime"`).
-			Optional(),
-		field.Bool("isSetupComplete").
+		field.Bool("is_setup_complete").
 			StructTag(`json:"isSetupComplete"`).
 			Default(false),
 	}
@@ -38,5 +32,7 @@ func (BackupProfile) Fields() []ent.Field {
 func (BackupProfile) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("repositories", Repository.Type),
+		edge.To("backup_schedule", BackupSchedule.Type).
+			Unique(),
 	}
 }

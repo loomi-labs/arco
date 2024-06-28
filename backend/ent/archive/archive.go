@@ -18,7 +18,7 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDuration holds the string denoting the duration field in the database.
 	FieldDuration = "duration"
-	// FieldBorgID holds the string denoting the borgid field in the database.
+	// FieldBorgID holds the string denoting the borg_id field in the database.
 	FieldBorgID = "borg_id"
 	// EdgeRepository holds the string denoting the repository edge name in mutations.
 	EdgeRepository = "repository"
@@ -86,7 +86,7 @@ func ByDuration(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDuration, opts...).ToFunc()
 }
 
-// ByBorgID orders the results by the borgID field.
+// ByBorgID orders the results by the borg_id field.
 func ByBorgID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBorgID, opts...).ToFunc()
 }

@@ -70,7 +70,7 @@ func Duration(v time.Time) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldDuration, v))
 }
 
-// BorgID applies equality check predicate on the "borgID" field. It's identical to BorgIDEQ.
+// BorgID applies equality check predicate on the "borg_id" field. It's identical to BorgIDEQ.
 func BorgID(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldBorgID, v))
 }
@@ -220,67 +220,67 @@ func DurationLTE(v time.Time) predicate.Archive {
 	return predicate.Archive(sql.FieldLTE(FieldDuration, v))
 }
 
-// BorgIDEQ applies the EQ predicate on the "borgID" field.
+// BorgIDEQ applies the EQ predicate on the "borg_id" field.
 func BorgIDEQ(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldBorgID, v))
 }
 
-// BorgIDNEQ applies the NEQ predicate on the "borgID" field.
+// BorgIDNEQ applies the NEQ predicate on the "borg_id" field.
 func BorgIDNEQ(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldNEQ(FieldBorgID, v))
 }
 
-// BorgIDIn applies the In predicate on the "borgID" field.
+// BorgIDIn applies the In predicate on the "borg_id" field.
 func BorgIDIn(vs ...string) predicate.Archive {
 	return predicate.Archive(sql.FieldIn(FieldBorgID, vs...))
 }
 
-// BorgIDNotIn applies the NotIn predicate on the "borgID" field.
+// BorgIDNotIn applies the NotIn predicate on the "borg_id" field.
 func BorgIDNotIn(vs ...string) predicate.Archive {
 	return predicate.Archive(sql.FieldNotIn(FieldBorgID, vs...))
 }
 
-// BorgIDGT applies the GT predicate on the "borgID" field.
+// BorgIDGT applies the GT predicate on the "borg_id" field.
 func BorgIDGT(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldGT(FieldBorgID, v))
 }
 
-// BorgIDGTE applies the GTE predicate on the "borgID" field.
+// BorgIDGTE applies the GTE predicate on the "borg_id" field.
 func BorgIDGTE(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldGTE(FieldBorgID, v))
 }
 
-// BorgIDLT applies the LT predicate on the "borgID" field.
+// BorgIDLT applies the LT predicate on the "borg_id" field.
 func BorgIDLT(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldLT(FieldBorgID, v))
 }
 
-// BorgIDLTE applies the LTE predicate on the "borgID" field.
+// BorgIDLTE applies the LTE predicate on the "borg_id" field.
 func BorgIDLTE(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldLTE(FieldBorgID, v))
 }
 
-// BorgIDContains applies the Contains predicate on the "borgID" field.
+// BorgIDContains applies the Contains predicate on the "borg_id" field.
 func BorgIDContains(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldContains(FieldBorgID, v))
 }
 
-// BorgIDHasPrefix applies the HasPrefix predicate on the "borgID" field.
+// BorgIDHasPrefix applies the HasPrefix predicate on the "borg_id" field.
 func BorgIDHasPrefix(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldHasPrefix(FieldBorgID, v))
 }
 
-// BorgIDHasSuffix applies the HasSuffix predicate on the "borgID" field.
+// BorgIDHasSuffix applies the HasSuffix predicate on the "borg_id" field.
 func BorgIDHasSuffix(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldHasSuffix(FieldBorgID, v))
 }
 
-// BorgIDEqualFold applies the EqualFold predicate on the "borgID" field.
+// BorgIDEqualFold applies the EqualFold predicate on the "borg_id" field.
 func BorgIDEqualFold(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEqualFold(FieldBorgID, v))
 }
 
-// BorgIDContainsFold applies the ContainsFold predicate on the "borgID" field.
+// BorgIDContainsFold applies the ContainsFold predicate on the "borg_id" field.
 func BorgIDContainsFold(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldContainsFold(FieldBorgID, v))
 }

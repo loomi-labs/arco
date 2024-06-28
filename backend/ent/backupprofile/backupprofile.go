@@ -18,14 +18,12 @@ const (
 	FieldPrefix = "prefix"
 	// FieldDirectories holds the string denoting the directories field in the database.
 	FieldDirectories = "directories"
-	// FieldHasPeriodicBackups holds the string denoting the hasperiodicbackups field in the database.
-	FieldHasPeriodicBackups = "has_periodic_backups"
-	// FieldPeriodicBackupTime holds the string denoting the periodicbackuptime field in the database.
-	FieldPeriodicBackupTime = "periodic_backup_time"
-	// FieldIsSetupComplete holds the string denoting the issetupcomplete field in the database.
+	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
 	FieldIsSetupComplete = "is_setup_complete"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
+	// EdgeBackupSchedule holds the string denoting the backup_schedule edge name in mutations.
+	EdgeBackupSchedule = "backup_schedule"
 	// Table holds the table name of the backupprofile in the database.
 	Table = "backup_profiles"
 	// RepositoriesTable is the table that holds the repositories relation/edge. The primary key declared below.
@@ -33,6 +31,13 @@ const (
 	// RepositoriesInverseTable is the table name for the Repository entity.
 	// It exists in this package in order to avoid circular dependency with the "repository" package.
 	RepositoriesInverseTable = "repositories"
+	// BackupScheduleTable is the table that holds the backup_schedule relation/edge.
+	BackupScheduleTable = "backup_schedules"
+	// BackupScheduleInverseTable is the table name for the BackupSchedule entity.
+	// It exists in this package in order to avoid circular dependency with the "backupschedule" package.
+	BackupScheduleInverseTable = "backup_schedules"
+	// BackupScheduleColumn is the table column denoting the backup_schedule relation/edge.
+	BackupScheduleColumn = "backup_profile_backup_schedule"
 )
 
 // Columns holds all SQL columns for backupprofile fields.
@@ -41,8 +46,6 @@ var Columns = []string{
 	FieldName,
 	FieldPrefix,
 	FieldDirectories,
-	FieldHasPeriodicBackups,
-	FieldPeriodicBackupTime,
 	FieldIsSetupComplete,
 }
 
@@ -63,9 +66,7 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultHasPeriodicBackups holds the default value on creation for the "hasPeriodicBackups" field.
-	DefaultHasPeriodicBackups bool
-	// DefaultIsSetupComplete holds the default value on creation for the "isSetupComplete" field.
+	// DefaultIsSetupComplete holds the default value on creation for the "is_setup_complete" field.
 	DefaultIsSetupComplete bool
 )
 
@@ -87,17 +88,7 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
 }
 
-// ByHasPeriodicBackups orders the results by the hasPeriodicBackups field.
-func ByHasPeriodicBackups(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHasPeriodicBackups, opts...).ToFunc()
-}
-
-// ByPeriodicBackupTime orders the results by the periodicBackupTime field.
-func ByPeriodicBackupTime(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPeriodicBackupTime, opts...).ToFunc()
-}
-
-// ByIsSetupComplete orders the results by the isSetupComplete field.
+// ByIsSetupComplete orders the results by the is_setup_complete field.
 func ByIsSetupComplete(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsSetupComplete, opts...).ToFunc()
 }
@@ -115,10 +106,24 @@ func ByRepositories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRepositoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBackupScheduleField orders the results by backup_schedule field.
+func ByBackupScheduleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackupScheduleStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newRepositoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RepositoriesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, RepositoriesTable, RepositoriesPrimaryKey...),
+	)
+}
+func newBackupScheduleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackupScheduleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, BackupScheduleTable, BackupScheduleColumn),
 	)
 }

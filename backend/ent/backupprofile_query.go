@@ -4,6 +4,7 @@ package ent
 
 import (
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -19,11 +20,12 @@ import (
 // BackupProfileQuery is the builder for querying BackupProfile entities.
 type BackupProfileQuery struct {
 	config
-	ctx              *QueryContext
-	order            []backupprofile.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.BackupProfile
-	withRepositories *RepositoryQuery
+	ctx                *QueryContext
+	order              []backupprofile.OrderOption
+	inters             []Interceptor
+	predicates         []predicate.BackupProfile
+	withRepositories   *RepositoryQuery
+	withBackupSchedule *BackupScheduleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -75,6 +77,28 @@ func (bpq *BackupProfileQuery) QueryRepositories() *RepositoryQuery {
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, backupprofile.RepositoriesTable, backupprofile.RepositoriesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBackupSchedule chains the current query on the "backup_schedule" edge.
+func (bpq *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
+	query := (&BackupScheduleClient{config: bpq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
+			sqlgraph.To(backupschedule.Table, backupschedule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.BackupScheduleTable, backupprofile.BackupScheduleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,12 +293,13 @@ func (bpq *BackupProfileQuery) Clone() *BackupProfileQuery {
 		return nil
 	}
 	return &BackupProfileQuery{
-		config:           bpq.config,
-		ctx:              bpq.ctx.Clone(),
-		order:            append([]backupprofile.OrderOption{}, bpq.order...),
-		inters:           append([]Interceptor{}, bpq.inters...),
-		predicates:       append([]predicate.BackupProfile{}, bpq.predicates...),
-		withRepositories: bpq.withRepositories.Clone(),
+		config:             bpq.config,
+		ctx:                bpq.ctx.Clone(),
+		order:              append([]backupprofile.OrderOption{}, bpq.order...),
+		inters:             append([]Interceptor{}, bpq.inters...),
+		predicates:         append([]predicate.BackupProfile{}, bpq.predicates...),
+		withRepositories:   bpq.withRepositories.Clone(),
+		withBackupSchedule: bpq.withBackupSchedule.Clone(),
 		// clone intermediate query.
 		sql:  bpq.sql.Clone(),
 		path: bpq.path,
@@ -289,6 +314,17 @@ func (bpq *BackupProfileQuery) WithRepositories(opts ...func(*RepositoryQuery)) 
 		opt(query)
 	}
 	bpq.withRepositories = query
+	return bpq
+}
+
+// WithBackupSchedule tells the query-builder to eager-load the nodes that are connected to
+// the "backup_schedule" edge. The optional arguments are used to configure the query builder of the edge.
+func (bpq *BackupProfileQuery) WithBackupSchedule(opts ...func(*BackupScheduleQuery)) *BackupProfileQuery {
+	query := (&BackupScheduleClient{config: bpq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bpq.withBackupSchedule = query
 	return bpq
 }
 
@@ -370,8 +406,9 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*BackupProfile{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			bpq.withRepositories != nil,
+			bpq.withBackupSchedule != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -396,6 +433,12 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		if err := bpq.loadRepositories(ctx, query, nodes,
 			func(n *BackupProfile) { n.Edges.Repositories = []*Repository{} },
 			func(n *BackupProfile, e *Repository) { n.Edges.Repositories = append(n.Edges.Repositories, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bpq.withBackupSchedule; query != nil {
+		if err := bpq.loadBackupSchedule(ctx, query, nodes, nil,
+			func(n *BackupProfile, e *BackupSchedule) { n.Edges.BackupSchedule = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -460,6 +503,34 @@ func (bpq *BackupProfileQuery) loadRepositories(ctx context.Context, query *Repo
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (bpq *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *BackupScheduleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *BackupSchedule)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*BackupProfile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.BackupSchedule(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(backupprofile.BackupScheduleColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.backup_profile_backup_schedule
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "backup_profile_backup_schedule" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "backup_profile_backup_schedule" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

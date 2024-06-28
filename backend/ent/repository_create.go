@@ -45,19 +45,19 @@ func (rc *RepositoryCreate) SetID(i int) *RepositoryCreate {
 	return rc
 }
 
-// AddBackupprofileIDs adds the "backupprofiles" edge to the BackupProfile entity by IDs.
-func (rc *RepositoryCreate) AddBackupprofileIDs(ids ...int) *RepositoryCreate {
-	rc.mutation.AddBackupprofileIDs(ids...)
+// AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
+func (rc *RepositoryCreate) AddBackupProfileIDs(ids ...int) *RepositoryCreate {
+	rc.mutation.AddBackupProfileIDs(ids...)
 	return rc
 }
 
-// AddBackupprofiles adds the "backupprofiles" edges to the BackupProfile entity.
-func (rc *RepositoryCreate) AddBackupprofiles(b ...*BackupProfile) *RepositoryCreate {
+// AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
+func (rc *RepositoryCreate) AddBackupProfiles(b ...*BackupProfile) *RepositoryCreate {
 	ids := make([]int, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
-	return rc.AddBackupprofileIDs(ids...)
+	return rc.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
@@ -162,12 +162,12 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
-	if nodes := rc.mutation.BackupprofilesIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repository.BackupprofilesTable,
-			Columns: repository.BackupprofilesPrimaryKey,
+			Table:   repository.BackupProfilesTable,
+			Columns: repository.BackupProfilesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),

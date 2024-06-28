@@ -16,6 +16,8 @@ type Tx struct {
 	Archive *ArchiveClient
 	// BackupProfile is the client for interacting with the BackupProfile builders.
 	BackupProfile *BackupProfileClient
+	// BackupSchedule is the client for interacting with the BackupSchedule builders.
+	BackupSchedule *BackupScheduleClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 
@@ -151,6 +153,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Archive = NewArchiveClient(tx.config)
 	tx.BackupProfile = NewBackupProfileClient(tx.config)
+	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
 }
 

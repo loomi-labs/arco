@@ -14,7 +14,7 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 	if err != nil {
 		return err
 	}
-	backupProfile := repo.Edges.Backupprofiles[0]
+	backupProfile := repo.Edges.BackupProfiles[0]
 
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
@@ -108,7 +108,7 @@ func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) 
 	if err != nil {
 		return []PruneInfo{}, err
 	}
-	backupProfile := repo.Edges.Backupprofiles[0]
+	backupProfile := repo.Edges.BackupProfiles[0]
 
 	// Prepare prune command (dry-run)
 	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, "prune", "-v", "--dry-run", "--list", "--keep-daily=1", "--keep-weekly=1", fmt.Sprintf("--glob-archives='%s-*'", backupProfile.Prefix), repo.URL)

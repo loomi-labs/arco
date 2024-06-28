@@ -3,6 +3,7 @@ package app
 import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
 	"arco/backend/types"
 	"fmt"
@@ -11,14 +12,16 @@ import (
 	"slices"
 )
 
+/***********************************/
+/********** Backup Profile *********/
+/***********************************/
+
 func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	hostname, _ := os.Hostname()
 	return b.db.BackupProfile.Create().
 		SetName(hostname).
 		SetPrefix(hostname).
 		SetDirectories([]string{}).
-		SetHasPeriodicBackups(true).
-		//SetPeriodicBackupTime(time.Date(0, 0, 0, 9, 0, 0, 0, time.Local)).
 		Save(b.ctx)
 }
 
@@ -34,21 +37,24 @@ func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().
 		WithRepositories().
+		WithBackupSchedule().
 		Where(backupprofile.ID(id)).Only(b.ctx)
 }
 
 func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
-	return b.db.BackupProfile.Query().All(b.ctx)
+	return b.db.BackupProfile.
+		Query().
+		WithBackupSchedule().
+		All(b.ctx)
 }
 
 func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
+	b.log.Debug(fmt.Sprintf("Saving backup profile %d", backup.ID))
 	_, err := b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
 		SetDirectories(backup.Directories).
-		SetHasPeriodicBackups(backup.HasPeriodicBackups).
-		//SetPeriodicBackupTime(backup.PeriodicBackupTime).
 		SetIsSetupComplete(backup.IsSetupComplete).
 		Save(b.ctx)
 	return err
@@ -59,9 +65,9 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 		Query().
 		Where(repository.And(
 			repository.ID(repoId),
-			repository.HasBackupprofilesWith(backupprofile.ID(backupProfileId)),
+			repository.HasBackupProfilesWith(backupprofile.ID(backupProfileId)),
 		)).
-		WithBackupprofiles(func(q *ent.BackupProfileQuery) {
+		WithBackupProfiles(func(q *ent.BackupProfileQuery) {
 			q.Limit(1)
 			q.Where(backupprofile.ID(backupProfileId))
 		}).
@@ -69,10 +75,10 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	if err != nil {
 		return nil, err
 	}
-	if len(repo.Edges.Backupprofiles) != 1 {
+	if len(repo.Edges.BackupProfiles) != 1 {
 		return nil, fmt.Errorf("repository does not have the backup profile")
 	}
-	if !repo.Edges.Backupprofiles[0].IsSetupComplete {
+	if !repo.Edges.BackupProfiles[0].IsSetupComplete {
 		return nil, fmt.Errorf("backup profile is not complete")
 	}
 	return repo, nil
@@ -83,7 +89,7 @@ func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 	if err != nil {
 		return err
 	}
-	backupProfile := repo.Edges.Backupprofiles[0]
+	backupProfile := repo.Edges.BackupProfiles[0]
 
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
@@ -130,4 +136,50 @@ func (b *BackupClient) RunBackups(backupProfileId int) error {
 
 func (b *BackupClient) SelectDirectory() (string, error) {
 	return runtime.OpenDirectoryDialog(b.ctx, runtime.OpenDialogOptions{})
+}
+
+/***********************************/
+/********** Backup Schedule ********/
+/***********************************/
+
+func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSchedule) error {
+	doesExist, err := b.db.BackupSchedule.
+		Query().
+		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+		Exist(b.ctx)
+	if err != nil {
+		return err
+	}
+	if doesExist {
+		_, err = b.db.BackupSchedule.
+			Update().
+			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+			SetHourly(schedule.Hourly).
+			SetNillableDailyAt(schedule.DailyAt).
+			SetNillableWeeklyAt(schedule.WeeklyAt).
+			SetNillableWeekday(schedule.Weekday).
+			SetNillableMonthlyAt(schedule.MonthlyAt).
+			SetNillableMonthday(schedule.Monthday).
+			Save(b.ctx)
+		return err
+	}
+	_, err = b.db.BackupSchedule.
+		Create().
+		SetHourly(schedule.Hourly).
+		SetNillableDailyAt(schedule.DailyAt).
+		SetNillableWeeklyAt(schedule.WeeklyAt).
+		SetNillableWeekday(schedule.Weekday).
+		SetNillableMonthlyAt(schedule.MonthlyAt).
+		SetNillableMonthday(schedule.Monthday).
+		SetBackupProfileID(backupProfileId).
+		Save(b.ctx)
+	return err
+}
+
+func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
+	_, err := b.db.BackupSchedule.
+		Delete().
+		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+		Exec(b.ctx)
+	return err
 }

@@ -28,7 +28,7 @@ func (Repository) Fields() []ent.Field {
 // Edges of the Repository.
 func (Repository) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("backupprofiles", BackupProfile.Type).
+		edge.From("backup_profiles", BackupProfile.Type).
 			Ref("repositories"),
 		edge.From("archives", Archive.Type).
 			Ref("repository"),

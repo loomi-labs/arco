@@ -37,8 +37,6 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "prefix", Type: field.TypeString},
 		{Name: "directories", Type: field.TypeJSON},
-		{Name: "has_periodic_backups", Type: field.TypeBool, Default: false},
-		{Name: "periodic_backup_time", Type: field.TypeTime, Nullable: true},
 		{Name: "is_setup_complete", Type: field.TypeBool, Default: false},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
@@ -46,6 +44,31 @@ var (
 		Name:       "backup_profiles",
 		Columns:    BackupProfilesColumns,
 		PrimaryKey: []*schema.Column{BackupProfilesColumns[0]},
+	}
+	// BackupSchedulesColumns holds the columns for the "backup_schedules" table.
+	BackupSchedulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "hourly", Type: field.TypeBool, Default: false},
+		{Name: "daily_at", Type: field.TypeTime, Nullable: true},
+		{Name: "weekday", Type: field.TypeEnum, Nullable: true, Enums: []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}},
+		{Name: "weekly_at", Type: field.TypeTime, Nullable: true},
+		{Name: "monthday", Type: field.TypeUint8, Nullable: true},
+		{Name: "monthly_at", Type: field.TypeTime, Nullable: true},
+		{Name: "backup_profile_backup_schedule", Type: field.TypeInt, Unique: true},
+	}
+	// BackupSchedulesTable holds the schema information for the "backup_schedules" table.
+	BackupSchedulesTable = &schema.Table{
+		Name:       "backup_schedules",
+		Columns:    BackupSchedulesColumns,
+		PrimaryKey: []*schema.Column{BackupSchedulesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
+				Columns:    []*schema.Column{BackupSchedulesColumns[7]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// RepositoriesColumns holds the columns for the "repositories" table.
 	RepositoriesColumns = []*schema.Column{
@@ -89,6 +112,7 @@ var (
 	Tables = []*schema.Table{
 		ArchivesTable,
 		BackupProfilesTable,
+		BackupSchedulesTable,
 		RepositoriesTable,
 		BackupProfileRepositoriesTable,
 	}
@@ -96,6 +120,7 @@ var (
 
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
+	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }
