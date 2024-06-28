@@ -1,4 +1,4 @@
-package client
+package app
 
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {

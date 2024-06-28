@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/app/util"
+	"arco/backend/types"
+	"arco/backend/util"
 	"context"
 	"go.uber.org/zap"
 )

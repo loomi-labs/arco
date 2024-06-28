@@ -1,11 +1,11 @@
-package client
+package app
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/app/util"
-	"arco/backend/app/worker"
 	"arco/backend/ent"
 	"arco/backend/ssh"
+	"arco/backend/types"
+	"arco/backend/util"
+	"arco/backend/worker"
 	"context"
 	"fmt"
 	"github.com/getlantern/systray"

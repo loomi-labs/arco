@@ -1,8 +1,8 @@
-package client
+package app
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/app/util"
+	"arco/backend/types"
+	"arco/backend/util"
 	"fmt"
 	"os/exec"
 	"slices"

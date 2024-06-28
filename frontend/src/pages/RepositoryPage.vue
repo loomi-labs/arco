@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import * as repoClient from "../../wailsjs/go/client/RepositoryClient";
+import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";

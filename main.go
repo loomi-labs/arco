@@ -1,8 +1,8 @@
 package main
 
 import (
-	"arco/backend/app/client"
-	"arco/backend/app/types"
+	"arco/backend/app"
+	"arco/backend/types"
 	"embed"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -28,7 +28,7 @@ var icon embed.FS
 const borgVersion = "1.2.8"
 
 func initLogger() *zap.SugaredLogger {
-	if os.Getenv(client.EnvVarDebug.String()) == "true" {
+	if os.Getenv(app.EnvVarDebug.String()) == "true" {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		log, err := config.Build()
@@ -78,14 +78,14 @@ func initConfig() (*types.Config, error) {
 }
 
 func startApp(log *zap.SugaredLogger, config *types.Config) {
-	app := client.NewApp(log, config)
+	arco := app.NewApp(log, config)
 
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	// Create application with options
+	// Create arco with options
 	err = wails.Run(&options.App{
 		Title:  "Arco",
 		Width:  1024,
@@ -94,20 +94,20 @@ func startApp(log *zap.SugaredLogger, config *types.Config) {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.Startup,
-		OnShutdown:       app.Shutdown,
-		OnBeforeClose:    app.BeforeClose,
+		OnStartup:        arco.Startup,
+		OnShutdown:       arco.Shutdown,
+		OnBeforeClose:    arco.BeforeClose,
 		Bind: []interface{}{
-			app.AppClient(),
-			app.BackupClient(),
-			app.RepoClient(),
+			arco.AppClient(),
+			arco.BackupClient(),
+			arco.RepoClient(),
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "4ffabbd3-334a-454e-8c66-dee8d1ff9afb",
 			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
-				app.Wakeup()
+				arco.Wakeup()
 			},
 		},
 	})

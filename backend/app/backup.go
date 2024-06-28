@@ -1,10 +1,10 @@
-package client
+package app
 
 import (
-	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
+	"arco/backend/types"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
