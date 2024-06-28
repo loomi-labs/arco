@@ -1,10 +1,8 @@
 package main
 
 import (
-	"arco/backend/borg/client"
-	"arco/backend/borg/types"
-	"arco/backend/ent"
-	"context"
+	"arco/backend/app"
+	"arco/backend/types"
 	"embed"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -30,7 +28,7 @@ var icon embed.FS
 const borgVersion = "1.2.8"
 
 func initLogger() *zap.SugaredLogger {
-	if os.Getenv(client.EnvVarDebug.String()) == "true" {
+	if os.Getenv(app.EnvVarDebug.String()) == "true" {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		log, err := config.Build()
@@ -71,6 +69,7 @@ func initConfig() (*types.Config, error) {
 	}
 
 	return &types.Config{
+		Dir:         configDir,
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, "borg"),
 		BorgVersion: borgVersion,
@@ -78,34 +77,15 @@ func initConfig() (*types.Config, error) {
 	}, nil
 }
 
-func initDb() (*ent.Client, error) {
-	configDir, err := getConfigDir()
-	if err != nil {
-		return nil, err
-	}
+func startApp(log *zap.SugaredLogger, config *types.Config) {
+	arco := app.NewApp(log, config)
 
-	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s?_fk=1", filepath.Join(configDir, "arco.db")))
-	if err != nil {
-		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
-	}
-
-	// Run the auto migration tool.
-	if err := dbClient.Schema.Create(context.Background()); err != nil {
-		return nil, err
-	}
-	return dbClient, nil
-}
-
-func startApp(
-	log *zap.SugaredLogger,
-	borgClient *client.BorgClient,
-) {
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	// Create application with options
+	// Create arco with options
 	err = wails.Run(&options.App{
 		Title:  "Arco",
 		Width:  1024,
@@ -114,20 +94,20 @@ func startApp(
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        borgClient.Startup,
-		OnShutdown:       borgClient.Shutdown,
-		OnBeforeClose:    borgClient.BeforeClose,
+		OnStartup:        arco.Startup,
+		OnShutdown:       arco.Shutdown,
+		OnBeforeClose:    arco.BeforeClose,
 		Bind: []interface{}{
-			borgClient.AppClient(),
-			borgClient.BackupClient(),
-			borgClient.RepoClient(),
+			arco.AppClient(),
+			arco.BackupClient(),
+			arco.RepoClient(),
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "4ffabbd3-334a-454e-8c66-dee8d1ff9afb",
 			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
-				borgClient.Wakeup()
+				arco.Wakeup()
 			},
 		},
 	})
@@ -147,13 +127,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Initialize the database
-	dbClient, err := initDb()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	borgClient := client.NewBorgClient(log, config, dbClient)
-
-	startApp(log, borgClient)
+	startApp(log, config)
 }

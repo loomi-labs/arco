@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { rDataDetailPage, withId } from "../router";
 import Navbar from "../components/Navbar.vue";
 import { showAndLogError } from "../common/error";
-import * as backupClient from "../../wailsjs/go/client/BackupClient";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
 
 /************
  * Variables

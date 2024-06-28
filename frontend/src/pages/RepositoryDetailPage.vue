@@ -1,6 +1,6 @@
 <script setup lang='ts'>
-import * as repoClient from "../../wailsjs/go/client/RepositoryClient";
-import { client, ent } from "../../wailsjs/go/models";
+import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
+import { app, ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import Navbar from "../components/Navbar.vue";
@@ -14,9 +14,9 @@ import { useToast } from "vue-toastification";
 const router = useRouter();
 const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
-const repoMountState = ref<client.MountState>(client.MountState.createFrom());
+const repoMountState = ref<app.MountState>(app.MountState.createFrom());
 const archives = ref<ent.Archive[]>([]);
-const archiveMountStates = ref<Map<number, client.MountState>>(new Map()); // Map<archiveId, MountState>
+const archiveMountStates = ref<Map<number, app.MountState>>(new Map()); // Map<archiveId, MountState>
 
 /************
  * Functions

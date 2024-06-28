@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import * as appClient from "../../wailsjs/go/client/AppClient";
+import * as appClient from "../../wailsjs/go/app/AppClient";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 

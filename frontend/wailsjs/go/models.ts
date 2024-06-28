@@ -1,4 +1,4 @@
-export namespace client {
+export namespace app {
 	
 	export class FrontendError {
 	    message: string;

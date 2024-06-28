@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import AddBackupStepper from "./AddBackupStepper.vue";
-import * as backupClient from "../../../wailsjs/go/client/BackupClient";
-import * as repoClient from "../../../wailsjs/go/client/RepositoryClient";
+import * as backupClient from "../../../wailsjs/go/app/BackupClient";
+import * as repoClient from "../../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";

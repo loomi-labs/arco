@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import * as backupClient from "../../wailsjs/go/client/BackupClient";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";

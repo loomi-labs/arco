@@ -1,7 +1,7 @@
 <script lang='ts' setup>
 
 import { useToast } from "vue-toastification";
-import * as appClient from "../wailsjs/go/client/AppClient";
+import * as appClient from "../wailsjs/go/app/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";

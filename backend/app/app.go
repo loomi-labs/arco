@@ -1,11 +1,11 @@
-package client
+package app
 
 import (
-	"arco/backend/borg/types"
-	"arco/backend/borg/util"
-	"arco/backend/borg/worker"
 	"arco/backend/ent"
 	"arco/backend/ssh"
+	"arco/backend/types"
+	"arco/backend/util"
+	"arco/backend/worker"
 	"context"
 	"fmt"
 	"github.com/getlantern/systray"
@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -32,17 +33,17 @@ func (e EnvVar) String() string {
 	return string(e)
 }
 
-type BorgClient struct {
+type App struct {
 	// Init
 	log     *util.CmdLogger
 	config  *types.Config
-	db      *ent.Client
 	inChan  *types.InputChannels
 	outChan *types.OutputChannels
 	worker  *worker.Worker
 
 	// Startup
 	ctx context.Context
+	db  *ent.Client
 
 	// State (runtime)
 	runningBackups   []types.BackupIdentifier
@@ -51,17 +52,15 @@ type BorgClient struct {
 	startupErr       error
 }
 
-func NewBorgClient(
+func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
-	dbClient *ent.Client,
-) *BorgClient {
+) *App {
 	inChan := types.NewInputChannels()
 	outChan := types.NewOutputChannels()
-	return &BorgClient{
+	return &App{
 		log:     util.NewCmdLogger(log),
 		config:  config,
-		db:      dbClient,
 		inChan:  inChan,
 		outChan: outChan,
 		worker:  worker.NewWorker(log, config.BorgPath, inChan, outChan),
@@ -72,73 +71,101 @@ func NewBorgClient(
 // This makes it easier to expose them in a clean way to the frontend
 
 // RepositoryClient is a client for repository related operations
-type RepositoryClient BorgClient
+type RepositoryClient App
 
 // AppClient is a client for application related operations
-type AppClient BorgClient
+type AppClient App
 
 // BackupClient is a client for backup related operations
-type BackupClient BorgClient
+type BackupClient App
 
-func (b *BorgClient) RepoClient() *RepositoryClient {
-	return (*RepositoryClient)(b)
+func (a *App) RepoClient() *RepositoryClient {
+	return (*RepositoryClient)(a)
 }
 
-func (b *BorgClient) AppClient() *AppClient {
-	return (*AppClient)(b)
+func (a *App) AppClient() *AppClient {
+	return (*AppClient)(a)
 }
 
-func (b *BorgClient) BackupClient() *BackupClient {
-	return (*BackupClient)(b)
+func (a *App) BackupClient() *BackupClient {
+	return (*BackupClient)(a)
 }
 
-func (b *BorgClient) Startup(ctx context.Context) {
-	b.ctx = ctx
+func (a *App) Startup(ctx context.Context) {
+	a.ctx = ctx
 
-	if err := b.setupSystray(); err != nil {
-		b.startupErr = err
-		return
-	}
-
-	b.registerSignalHandler()
-
-	if err := b.ensureBorgBinary(); err != nil {
-		b.startupErr = err
-		return
-	}
-
-	go b.worker.Run()
-}
-
-func (b *BorgClient) Shutdown(_ context.Context) {
-	b.log.Info(fmt.Sprintf("Shutting down %s", AppName))
-	b.worker.Stop()
-	err := b.db.Close()
+	// Initialize the database
+	db, err := a.initDb()
 	if err != nil {
-		b.log.Error("Failed to close database connection")
+		a.startupErr = err
+		a.log.Error(err)
+		return
+	}
+	a.db = db
+
+	// Initialize the systray
+	if err := a.initSystray(); err != nil {
+		a.startupErr = err
+		a.log.Error(err)
+		return
+	}
+
+	// Register signal handler
+	a.registerSignalHandler()
+
+	// Ensure Borg binary is installed
+	if err := a.ensureBorgBinary(); err != nil {
+		a.startupErr = err
+		a.log.Error(err)
+		return
+	}
+
+	// Start the worker
+	go a.worker.Run()
+}
+
+func (a *App) Shutdown(_ context.Context) {
+	a.log.Info(fmt.Sprintf("Shutting down %s", AppName))
+	a.worker.Stop()
+	err := a.db.Close()
+	if err != nil {
+		a.log.Error("Failed to close database connection")
 	}
 	os.Exit(0)
 }
 
-func (b *BorgClient) BeforeClose(ctx context.Context) (prevent bool) {
-	b.log.Debug("Received beforeclose command")
+func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
+	a.log.Debug("Received beforeclose command")
 	runtime.WindowHide(ctx)
 	return true
 }
 
-func (b *BorgClient) Wakeup() {
-	b.log.Debug("Received wakeup command")
-	runtime.WindowShow(b.ctx)
+func (a *App) Wakeup() {
+	a.log.Debug("Received wakeup command")
+	runtime.WindowShow(a.ctx)
 }
 
-func (b *BorgClient) ensureBorgBinary() error {
-	if !b.isTargetVersionInstalled(b.config.BorgVersion) {
-		b.log.Info("Installing Borg binary")
-		if err := b.installBorgBinary(); err != nil {
+func (a *App) initDb() (*ent.Client, error) {
+	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s?_fk=1", filepath.Join(a.config.Dir, "arco.db")))
+	if err != nil {
+		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
+	}
+
+	// Run the auto migration tool.
+	if err := dbClient.Schema.Create(context.Background()); err != nil {
+		return nil, err
+	}
+	return dbClient, nil
+}
+
+func (a *App) ensureBorgBinary() error {
+	if !a.isTargetVersionInstalled(a.config.BorgVersion) {
+		a.log.Info("Installing Borg binary")
+		if err := a.installBorgBinary(); err != nil {
 			return fmt.Errorf("failed to install Borg binary: %w", err)
 		} else {
 			// Check again to make sure the binary was installed correctly
-			if !b.isTargetVersionInstalled(b.config.BorgVersion) {
+			if !a.isTargetVersionInstalled(a.config.BorgVersion) {
 				return fmt.Errorf("failed to install Borg binary: version mismatch")
 			}
 		}
@@ -146,18 +173,18 @@ func (b *BorgClient) ensureBorgBinary() error {
 	return nil
 }
 
-func (b *BorgClient) isTargetVersionInstalled(targetVersion string) bool {
+func (a *App) isTargetVersionInstalled(targetVersion string) bool {
 	// Check if the binary is installed
-	if _, err := os.Stat(b.config.BorgPath); err == nil {
-		version, err := b.version()
+	if _, err := os.Stat(a.config.BorgPath); err == nil {
+		version, err := a.version()
 		// Check if the version is correct
 		return err == nil && version == targetVersion
 	}
 	return false
 }
 
-func (b *BorgClient) version() (string, error) {
-	cmd := exec.Command(b.config.BorgPath, "--version")
+func (a *App) version() (string, error) {
+	cmd := exec.Command(a.config.BorgPath, "--version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err
@@ -167,23 +194,23 @@ func (b *BorgClient) version() (string, error) {
 	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
 }
 
-func (b *BorgClient) installBorgBinary() error {
+func (a *App) installBorgBinary() error {
 	// Delete old binary if it exists
-	if _, err := os.Stat(b.config.BorgPath); err == nil {
-		if err := os.Remove(b.config.BorgPath); err != nil {
+	if _, err := os.Stat(a.config.BorgPath); err == nil {
+		if err := os.Remove(a.config.BorgPath); err != nil {
 			return err
 		}
 	}
 
-	file, err := b.config.Binaries.ReadFile(util.GetBorgBinaryPathX())
+	file, err := a.config.Binaries.ReadFile(util.GetBorgBinaryPathX())
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(b.config.BorgPath, file, 0755)
+	return os.WriteFile(a.config.BorgPath, file, 0755)
 }
 
-func (b *BorgClient) setupSystray() error {
-	iconData, err := b.config.Icon.ReadFile("icon.png")
+func (a *App) initSystray() error {
+	iconData, err := a.config.Icon.ReadFile("icon.png")
 	if err != nil {
 		return fmt.Errorf("failed to read icon: %v", err)
 	}
@@ -205,16 +232,17 @@ func (b *BorgClient) setupSystray() error {
 			for {
 				select {
 				case <-mOpen.ClickedCh:
-					runtime.WindowShow(b.ctx)
+					runtime.WindowShow(a.ctx)
 				case <-mQuit.ClickedCh:
-					b.Shutdown(b.ctx)
+					a.Shutdown(a.ctx)
 				}
 			}
 		}()
 	}
 
 	exitFunc := func() {
-		b.Shutdown(b.ctx)
+		// TODO: check if there is a running backup and ask the user if they want to cancel it
+		a.Shutdown(a.ctx)
 	}
 
 	// TODO: not working right now -> fix this
@@ -223,22 +251,22 @@ func (b *BorgClient) setupSystray() error {
 	return nil
 }
 
-func (b *BorgClient) registerSignalHandler() {
-	//	Listen to interrupt signals
+// RegisterSignalHandler listens to interrupt signals and shuts down the application on receiving one
+func (a *App) registerSignalHandler() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-signalChan
-		b.Shutdown(b.ctx)
+		a.Shutdown(a.ctx)
 	}()
 }
 
 // TODO: remove or move somewhere else
-func (b *BorgClient) createSSHKeyPair() (string, error) {
+func (a *App) createSSHKeyPair() (string, error) {
 	pair, err := ssh.GenerateKeyPair()
 	if err != nil {
 		return "", err
 	}
-	b.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
+	a.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
 	return pair.AuthorizedKey(), nil
 }

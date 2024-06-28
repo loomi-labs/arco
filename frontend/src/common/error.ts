@@ -1,7 +1,7 @@
 import { useToast } from "vue-toastification";
-import * as appClient from "../../wailsjs/go/client/AppClient";
+import * as appClient from "../../wailsjs/go/app/AppClient";
 
-import { client } from "../../wailsjs/go/models";
+import { app } from "../../wailsjs/go/models";
 
 const development = process.env.NODE_ENV === "development";
 
@@ -14,7 +14,7 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
     toast.error(message);
   }
 
-  const fe = client.FrontendError.createFrom();
+  const fe = app.FrontendError.createFrom();
 
   // check type of error and log it in the backend
   if (error instanceof Error) {

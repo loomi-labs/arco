@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"arco/backend/borg/types"
-	"arco/backend/borg/util"
+	"arco/backend/types"
+	"arco/backend/util"
 	"context"
 	"fmt"
 	"os/exec"
