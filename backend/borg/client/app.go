@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -36,13 +37,13 @@ type App struct {
 	// Init
 	log     *util.CmdLogger
 	config  *types.Config
-	db      *ent.Client
 	inChan  *types.InputChannels
 	outChan *types.OutputChannels
 	worker  *worker.Worker
 
 	// Startup
 	ctx context.Context
+	db  *ent.Client
 
 	// State (runtime)
 	runningBackups   []types.BackupIdentifier
@@ -54,14 +55,12 @@ type App struct {
 func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
-	dbClient *ent.Client,
 ) *App {
 	inChan := types.NewInputChannels()
 	outChan := types.NewOutputChannels()
 	return &App{
 		log:     util.NewCmdLogger(log),
 		config:  config,
-		db:      dbClient,
 		inChan:  inChan,
 		outChan: outChan,
 		worker:  worker.NewWorker(log, config.BorgPath, inChan, outChan),
@@ -95,18 +94,33 @@ func (a *App) BackupClient() *BackupClient {
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 
-	if err := a.setupSystray(); err != nil {
+	// Initialize the database
+	db, err := a.initDb()
+	if err != nil {
 		a.startupErr = err
+		a.log.Error(err)
+		return
+	}
+	a.db = db
+
+	// Initialize the systray
+	if err := a.initSystray(); err != nil {
+		a.startupErr = err
+		a.log.Error(err)
 		return
 	}
 
+	// Register signal handler
 	a.registerSignalHandler()
 
+	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.startupErr = err
+		a.log.Error(err)
 		return
 	}
 
+	// Start the worker
 	go a.worker.Run()
 }
 
@@ -129,6 +143,19 @@ func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 func (a *App) Wakeup() {
 	a.log.Debug("Received wakeup command")
 	runtime.WindowShow(a.ctx)
+}
+
+func (a *App) initDb() (*ent.Client, error) {
+	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s?_fk=1", filepath.Join(a.config.Dir, "arco.db")))
+	if err != nil {
+		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
+	}
+
+	// Run the auto migration tool.
+	if err := dbClient.Schema.Create(context.Background()); err != nil {
+		return nil, err
+	}
+	return dbClient, nil
 }
 
 func (a *App) ensureBorgBinary() error {
@@ -182,7 +209,7 @@ func (a *App) installBorgBinary() error {
 	return os.WriteFile(a.config.BorgPath, file, 0755)
 }
 
-func (a *App) setupSystray() error {
+func (a *App) initSystray() error {
 	iconData, err := a.config.Icon.ReadFile("icon.png")
 	if err != nil {
 		return fmt.Errorf("failed to read icon: %v", err)
@@ -224,8 +251,8 @@ func (a *App) setupSystray() error {
 	return nil
 }
 
+// RegisterSignalHandler listens to interrupt signals and shuts down the application on receiving one
 func (a *App) registerSignalHandler() {
-	//	Listen to interrupt signals
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
