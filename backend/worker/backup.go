@@ -18,7 +18,7 @@ func (d *Worker) runBackup(ctx context.Context, backupJob types.BackupJob) {
 	}
 	defer func() {
 		result.EndTime = time.Now()
-		d.outChan.FinishBackup <- result
+		d.resultChans.FinishBackup <- result
 	}()
 
 	// Prepare backup command

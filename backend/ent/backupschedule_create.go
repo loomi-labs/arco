@@ -105,6 +105,48 @@ func (bsc *BackupScheduleCreate) SetNillableMonthlyAt(t *time.Time) *BackupSched
 	return bsc
 }
 
+// SetNextRun sets the "next_run" field.
+func (bsc *BackupScheduleCreate) SetNextRun(t time.Time) *BackupScheduleCreate {
+	bsc.mutation.SetNextRun(t)
+	return bsc
+}
+
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableNextRun(t *time.Time) *BackupScheduleCreate {
+	if t != nil {
+		bsc.SetNextRun(*t)
+	}
+	return bsc
+}
+
+// SetLastRun sets the "last_run" field.
+func (bsc *BackupScheduleCreate) SetLastRun(t time.Time) *BackupScheduleCreate {
+	bsc.mutation.SetLastRun(t)
+	return bsc
+}
+
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableLastRun(t *time.Time) *BackupScheduleCreate {
+	if t != nil {
+		bsc.SetLastRun(*t)
+	}
+	return bsc
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (bsc *BackupScheduleCreate) SetLastRunStatus(s string) *BackupScheduleCreate {
+	bsc.mutation.SetLastRunStatus(s)
+	return bsc
+}
+
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableLastRunStatus(s *string) *BackupScheduleCreate {
+	if s != nil {
+		bsc.SetLastRunStatus(*s)
+	}
+	return bsc
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
 func (bsc *BackupScheduleCreate) SetBackupProfileID(id int) *BackupScheduleCreate {
 	bsc.mutation.SetBackupProfileID(id)
@@ -227,6 +269,18 @@ func (bsc *BackupScheduleCreate) createSpec() (*BackupSchedule, *sqlgraph.Create
 	if value, ok := bsc.mutation.MonthlyAt(); ok {
 		_spec.SetField(backupschedule.FieldMonthlyAt, field.TypeTime, value)
 		_node.MonthlyAt = &value
+	}
+	if value, ok := bsc.mutation.NextRun(); ok {
+		_spec.SetField(backupschedule.FieldNextRun, field.TypeTime, value)
+		_node.NextRun = value
+	}
+	if value, ok := bsc.mutation.LastRun(); ok {
+		_spec.SetField(backupschedule.FieldLastRun, field.TypeTime, value)
+		_node.LastRun = &value
+	}
+	if value, ok := bsc.mutation.LastRunStatus(); ok {
+		_spec.SetField(backupschedule.FieldLastRunStatus, field.TypeString, value)
+		_node.LastRunStatus = &value
 	}
 	if nodes := bsc.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

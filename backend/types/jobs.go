@@ -2,25 +2,25 @@ package types
 
 import "time"
 
-type InputChannels struct {
+type ActionChannels struct {
 	StartBackup chan BackupJob
 	StartPrune  chan PruneJob
 }
 
-func NewInputChannels() *InputChannels {
-	return &InputChannels{
+func NewActionsChannels() *ActionChannels {
+	return &ActionChannels{
 		StartBackup: make(chan BackupJob),
 		StartPrune:  make(chan PruneJob),
 	}
 }
 
-type OutputChannels struct {
+type ResultChannels struct {
 	FinishBackup chan FinishBackupJob
 	FinishPrune  chan FinishPruneJob
 }
 
-func NewOutputChannels() *OutputChannels {
-	return &OutputChannels{
+func NewResultChannels() *ResultChannels {
+	return &ResultChannels{
 		FinishBackup: make(chan FinishBackupJob),
 		FinishPrune:  make(chan FinishPruneJob),
 	}

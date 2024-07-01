@@ -29,124 +29,63 @@ func (bsu *BackupScheduleUpdate) Where(ps ...predicate.BackupSchedule) *BackupSc
 	return bsu
 }
 
-// SetHourly sets the "hourly" field.
-func (bsu *BackupScheduleUpdate) SetHourly(b bool) *BackupScheduleUpdate {
-	bsu.mutation.SetHourly(b)
+// SetNextRun sets the "next_run" field.
+func (bsu *BackupScheduleUpdate) SetNextRun(t time.Time) *BackupScheduleUpdate {
+	bsu.mutation.SetNextRun(t)
 	return bsu
 }
 
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableHourly(b *bool) *BackupScheduleUpdate {
-	if b != nil {
-		bsu.SetHourly(*b)
-	}
-	return bsu
-}
-
-// SetDailyAt sets the "daily_at" field.
-func (bsu *BackupScheduleUpdate) SetDailyAt(t time.Time) *BackupScheduleUpdate {
-	bsu.mutation.SetDailyAt(t)
-	return bsu
-}
-
-// SetNillableDailyAt sets the "daily_at" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableDailyAt(t *time.Time) *BackupScheduleUpdate {
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (bsu *BackupScheduleUpdate) SetNillableNextRun(t *time.Time) *BackupScheduleUpdate {
 	if t != nil {
-		bsu.SetDailyAt(*t)
+		bsu.SetNextRun(*t)
 	}
 	return bsu
 }
 
-// ClearDailyAt clears the value of the "daily_at" field.
-func (bsu *BackupScheduleUpdate) ClearDailyAt() *BackupScheduleUpdate {
-	bsu.mutation.ClearDailyAt()
+// ClearNextRun clears the value of the "next_run" field.
+func (bsu *BackupScheduleUpdate) ClearNextRun() *BackupScheduleUpdate {
+	bsu.mutation.ClearNextRun()
 	return bsu
 }
 
-// SetWeekday sets the "weekday" field.
-func (bsu *BackupScheduleUpdate) SetWeekday(b backupschedule.Weekday) *BackupScheduleUpdate {
-	bsu.mutation.SetWeekday(b)
+// SetLastRun sets the "last_run" field.
+func (bsu *BackupScheduleUpdate) SetLastRun(t time.Time) *BackupScheduleUpdate {
+	bsu.mutation.SetLastRun(t)
 	return bsu
 }
 
-// SetNillableWeekday sets the "weekday" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableWeekday(b *backupschedule.Weekday) *BackupScheduleUpdate {
-	if b != nil {
-		bsu.SetWeekday(*b)
-	}
-	return bsu
-}
-
-// ClearWeekday clears the value of the "weekday" field.
-func (bsu *BackupScheduleUpdate) ClearWeekday() *BackupScheduleUpdate {
-	bsu.mutation.ClearWeekday()
-	return bsu
-}
-
-// SetWeeklyAt sets the "weekly_at" field.
-func (bsu *BackupScheduleUpdate) SetWeeklyAt(t time.Time) *BackupScheduleUpdate {
-	bsu.mutation.SetWeeklyAt(t)
-	return bsu
-}
-
-// SetNillableWeeklyAt sets the "weekly_at" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableWeeklyAt(t *time.Time) *BackupScheduleUpdate {
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (bsu *BackupScheduleUpdate) SetNillableLastRun(t *time.Time) *BackupScheduleUpdate {
 	if t != nil {
-		bsu.SetWeeklyAt(*t)
+		bsu.SetLastRun(*t)
 	}
 	return bsu
 }
 
-// ClearWeeklyAt clears the value of the "weekly_at" field.
-func (bsu *BackupScheduleUpdate) ClearWeeklyAt() *BackupScheduleUpdate {
-	bsu.mutation.ClearWeeklyAt()
+// ClearLastRun clears the value of the "last_run" field.
+func (bsu *BackupScheduleUpdate) ClearLastRun() *BackupScheduleUpdate {
+	bsu.mutation.ClearLastRun()
 	return bsu
 }
 
-// SetMonthday sets the "monthday" field.
-func (bsu *BackupScheduleUpdate) SetMonthday(u uint8) *BackupScheduleUpdate {
-	bsu.mutation.ResetMonthday()
-	bsu.mutation.SetMonthday(u)
+// SetLastRunStatus sets the "last_run_status" field.
+func (bsu *BackupScheduleUpdate) SetLastRunStatus(s string) *BackupScheduleUpdate {
+	bsu.mutation.SetLastRunStatus(s)
 	return bsu
 }
 
-// SetNillableMonthday sets the "monthday" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableMonthday(u *uint8) *BackupScheduleUpdate {
-	if u != nil {
-		bsu.SetMonthday(*u)
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (bsu *BackupScheduleUpdate) SetNillableLastRunStatus(s *string) *BackupScheduleUpdate {
+	if s != nil {
+		bsu.SetLastRunStatus(*s)
 	}
 	return bsu
 }
 
-// AddMonthday adds u to the "monthday" field.
-func (bsu *BackupScheduleUpdate) AddMonthday(u int8) *BackupScheduleUpdate {
-	bsu.mutation.AddMonthday(u)
-	return bsu
-}
-
-// ClearMonthday clears the value of the "monthday" field.
-func (bsu *BackupScheduleUpdate) ClearMonthday() *BackupScheduleUpdate {
-	bsu.mutation.ClearMonthday()
-	return bsu
-}
-
-// SetMonthlyAt sets the "monthly_at" field.
-func (bsu *BackupScheduleUpdate) SetMonthlyAt(t time.Time) *BackupScheduleUpdate {
-	bsu.mutation.SetMonthlyAt(t)
-	return bsu
-}
-
-// SetNillableMonthlyAt sets the "monthly_at" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableMonthlyAt(t *time.Time) *BackupScheduleUpdate {
-	if t != nil {
-		bsu.SetMonthlyAt(*t)
-	}
-	return bsu
-}
-
-// ClearMonthlyAt clears the value of the "monthly_at" field.
-func (bsu *BackupScheduleUpdate) ClearMonthlyAt() *BackupScheduleUpdate {
-	bsu.mutation.ClearMonthlyAt()
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (bsu *BackupScheduleUpdate) ClearLastRunStatus() *BackupScheduleUpdate {
+	bsu.mutation.ClearLastRunStatus()
 	return bsu
 }
 
@@ -201,16 +140,6 @@ func (bsu *BackupScheduleUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsu *BackupScheduleUpdate) check() error {
-	if v, ok := bsu.mutation.Weekday(); ok {
-		if err := backupschedule.WeekdayValidator(v); err != nil {
-			return &ValidationError{Name: "weekday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.weekday": %w`, err)}
-		}
-	}
-	if v, ok := bsu.mutation.Monthday(); ok {
-		if err := backupschedule.MonthdayValidator(v); err != nil {
-			return &ValidationError{Name: "monthday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.monthday": %w`, err)}
-		}
-	}
 	if _, ok := bsu.mutation.BackupProfileID(); bsu.mutation.BackupProfileCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "BackupSchedule.backup_profile"`)
 	}
@@ -229,41 +158,38 @@ func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error)
 			}
 		}
 	}
-	if value, ok := bsu.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
-	}
-	if value, ok := bsu.mutation.DailyAt(); ok {
-		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
-	}
 	if bsu.mutation.DailyAtCleared() {
 		_spec.ClearField(backupschedule.FieldDailyAt, field.TypeTime)
-	}
-	if value, ok := bsu.mutation.Weekday(); ok {
-		_spec.SetField(backupschedule.FieldWeekday, field.TypeEnum, value)
 	}
 	if bsu.mutation.WeekdayCleared() {
 		_spec.ClearField(backupschedule.FieldWeekday, field.TypeEnum)
 	}
-	if value, ok := bsu.mutation.WeeklyAt(); ok {
-		_spec.SetField(backupschedule.FieldWeeklyAt, field.TypeTime, value)
-	}
 	if bsu.mutation.WeeklyAtCleared() {
 		_spec.ClearField(backupschedule.FieldWeeklyAt, field.TypeTime)
-	}
-	if value, ok := bsu.mutation.Monthday(); ok {
-		_spec.SetField(backupschedule.FieldMonthday, field.TypeUint8, value)
-	}
-	if value, ok := bsu.mutation.AddedMonthday(); ok {
-		_spec.AddField(backupschedule.FieldMonthday, field.TypeUint8, value)
 	}
 	if bsu.mutation.MonthdayCleared() {
 		_spec.ClearField(backupschedule.FieldMonthday, field.TypeUint8)
 	}
-	if value, ok := bsu.mutation.MonthlyAt(); ok {
-		_spec.SetField(backupschedule.FieldMonthlyAt, field.TypeTime, value)
-	}
 	if bsu.mutation.MonthlyAtCleared() {
 		_spec.ClearField(backupschedule.FieldMonthlyAt, field.TypeTime)
+	}
+	if value, ok := bsu.mutation.NextRun(); ok {
+		_spec.SetField(backupschedule.FieldNextRun, field.TypeTime, value)
+	}
+	if bsu.mutation.NextRunCleared() {
+		_spec.ClearField(backupschedule.FieldNextRun, field.TypeTime)
+	}
+	if value, ok := bsu.mutation.LastRun(); ok {
+		_spec.SetField(backupschedule.FieldLastRun, field.TypeTime, value)
+	}
+	if bsu.mutation.LastRunCleared() {
+		_spec.ClearField(backupschedule.FieldLastRun, field.TypeTime)
+	}
+	if value, ok := bsu.mutation.LastRunStatus(); ok {
+		_spec.SetField(backupschedule.FieldLastRunStatus, field.TypeString, value)
+	}
+	if bsu.mutation.LastRunStatusCleared() {
+		_spec.ClearField(backupschedule.FieldLastRunStatus, field.TypeString)
 	}
 	if bsu.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -314,124 +240,63 @@ type BackupScheduleUpdateOne struct {
 	mutation *BackupScheduleMutation
 }
 
-// SetHourly sets the "hourly" field.
-func (bsuo *BackupScheduleUpdateOne) SetHourly(b bool) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetHourly(b)
+// SetNextRun sets the "next_run" field.
+func (bsuo *BackupScheduleUpdateOne) SetNextRun(t time.Time) *BackupScheduleUpdateOne {
+	bsuo.mutation.SetNextRun(t)
 	return bsuo
 }
 
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableHourly(b *bool) *BackupScheduleUpdateOne {
-	if b != nil {
-		bsuo.SetHourly(*b)
-	}
-	return bsuo
-}
-
-// SetDailyAt sets the "daily_at" field.
-func (bsuo *BackupScheduleUpdateOne) SetDailyAt(t time.Time) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetDailyAt(t)
-	return bsuo
-}
-
-// SetNillableDailyAt sets the "daily_at" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableDailyAt(t *time.Time) *BackupScheduleUpdateOne {
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (bsuo *BackupScheduleUpdateOne) SetNillableNextRun(t *time.Time) *BackupScheduleUpdateOne {
 	if t != nil {
-		bsuo.SetDailyAt(*t)
+		bsuo.SetNextRun(*t)
 	}
 	return bsuo
 }
 
-// ClearDailyAt clears the value of the "daily_at" field.
-func (bsuo *BackupScheduleUpdateOne) ClearDailyAt() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearDailyAt()
+// ClearNextRun clears the value of the "next_run" field.
+func (bsuo *BackupScheduleUpdateOne) ClearNextRun() *BackupScheduleUpdateOne {
+	bsuo.mutation.ClearNextRun()
 	return bsuo
 }
 
-// SetWeekday sets the "weekday" field.
-func (bsuo *BackupScheduleUpdateOne) SetWeekday(b backupschedule.Weekday) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetWeekday(b)
+// SetLastRun sets the "last_run" field.
+func (bsuo *BackupScheduleUpdateOne) SetLastRun(t time.Time) *BackupScheduleUpdateOne {
+	bsuo.mutation.SetLastRun(t)
 	return bsuo
 }
 
-// SetNillableWeekday sets the "weekday" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableWeekday(b *backupschedule.Weekday) *BackupScheduleUpdateOne {
-	if b != nil {
-		bsuo.SetWeekday(*b)
-	}
-	return bsuo
-}
-
-// ClearWeekday clears the value of the "weekday" field.
-func (bsuo *BackupScheduleUpdateOne) ClearWeekday() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearWeekday()
-	return bsuo
-}
-
-// SetWeeklyAt sets the "weekly_at" field.
-func (bsuo *BackupScheduleUpdateOne) SetWeeklyAt(t time.Time) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetWeeklyAt(t)
-	return bsuo
-}
-
-// SetNillableWeeklyAt sets the "weekly_at" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableWeeklyAt(t *time.Time) *BackupScheduleUpdateOne {
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (bsuo *BackupScheduleUpdateOne) SetNillableLastRun(t *time.Time) *BackupScheduleUpdateOne {
 	if t != nil {
-		bsuo.SetWeeklyAt(*t)
+		bsuo.SetLastRun(*t)
 	}
 	return bsuo
 }
 
-// ClearWeeklyAt clears the value of the "weekly_at" field.
-func (bsuo *BackupScheduleUpdateOne) ClearWeeklyAt() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearWeeklyAt()
+// ClearLastRun clears the value of the "last_run" field.
+func (bsuo *BackupScheduleUpdateOne) ClearLastRun() *BackupScheduleUpdateOne {
+	bsuo.mutation.ClearLastRun()
 	return bsuo
 }
 
-// SetMonthday sets the "monthday" field.
-func (bsuo *BackupScheduleUpdateOne) SetMonthday(u uint8) *BackupScheduleUpdateOne {
-	bsuo.mutation.ResetMonthday()
-	bsuo.mutation.SetMonthday(u)
+// SetLastRunStatus sets the "last_run_status" field.
+func (bsuo *BackupScheduleUpdateOne) SetLastRunStatus(s string) *BackupScheduleUpdateOne {
+	bsuo.mutation.SetLastRunStatus(s)
 	return bsuo
 }
 
-// SetNillableMonthday sets the "monthday" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableMonthday(u *uint8) *BackupScheduleUpdateOne {
-	if u != nil {
-		bsuo.SetMonthday(*u)
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (bsuo *BackupScheduleUpdateOne) SetNillableLastRunStatus(s *string) *BackupScheduleUpdateOne {
+	if s != nil {
+		bsuo.SetLastRunStatus(*s)
 	}
 	return bsuo
 }
 
-// AddMonthday adds u to the "monthday" field.
-func (bsuo *BackupScheduleUpdateOne) AddMonthday(u int8) *BackupScheduleUpdateOne {
-	bsuo.mutation.AddMonthday(u)
-	return bsuo
-}
-
-// ClearMonthday clears the value of the "monthday" field.
-func (bsuo *BackupScheduleUpdateOne) ClearMonthday() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearMonthday()
-	return bsuo
-}
-
-// SetMonthlyAt sets the "monthly_at" field.
-func (bsuo *BackupScheduleUpdateOne) SetMonthlyAt(t time.Time) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetMonthlyAt(t)
-	return bsuo
-}
-
-// SetNillableMonthlyAt sets the "monthly_at" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableMonthlyAt(t *time.Time) *BackupScheduleUpdateOne {
-	if t != nil {
-		bsuo.SetMonthlyAt(*t)
-	}
-	return bsuo
-}
-
-// ClearMonthlyAt clears the value of the "monthly_at" field.
-func (bsuo *BackupScheduleUpdateOne) ClearMonthlyAt() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearMonthlyAt()
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (bsuo *BackupScheduleUpdateOne) ClearLastRunStatus() *BackupScheduleUpdateOne {
+	bsuo.mutation.ClearLastRunStatus()
 	return bsuo
 }
 
@@ -499,16 +364,6 @@ func (bsuo *BackupScheduleUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsuo *BackupScheduleUpdateOne) check() error {
-	if v, ok := bsuo.mutation.Weekday(); ok {
-		if err := backupschedule.WeekdayValidator(v); err != nil {
-			return &ValidationError{Name: "weekday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.weekday": %w`, err)}
-		}
-	}
-	if v, ok := bsuo.mutation.Monthday(); ok {
-		if err := backupschedule.MonthdayValidator(v); err != nil {
-			return &ValidationError{Name: "monthday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.monthday": %w`, err)}
-		}
-	}
 	if _, ok := bsuo.mutation.BackupProfileID(); bsuo.mutation.BackupProfileCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "BackupSchedule.backup_profile"`)
 	}
@@ -544,41 +399,38 @@ func (bsuo *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *Backup
 			}
 		}
 	}
-	if value, ok := bsuo.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
-	}
-	if value, ok := bsuo.mutation.DailyAt(); ok {
-		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
-	}
 	if bsuo.mutation.DailyAtCleared() {
 		_spec.ClearField(backupschedule.FieldDailyAt, field.TypeTime)
-	}
-	if value, ok := bsuo.mutation.Weekday(); ok {
-		_spec.SetField(backupschedule.FieldWeekday, field.TypeEnum, value)
 	}
 	if bsuo.mutation.WeekdayCleared() {
 		_spec.ClearField(backupschedule.FieldWeekday, field.TypeEnum)
 	}
-	if value, ok := bsuo.mutation.WeeklyAt(); ok {
-		_spec.SetField(backupschedule.FieldWeeklyAt, field.TypeTime, value)
-	}
 	if bsuo.mutation.WeeklyAtCleared() {
 		_spec.ClearField(backupschedule.FieldWeeklyAt, field.TypeTime)
-	}
-	if value, ok := bsuo.mutation.Monthday(); ok {
-		_spec.SetField(backupschedule.FieldMonthday, field.TypeUint8, value)
-	}
-	if value, ok := bsuo.mutation.AddedMonthday(); ok {
-		_spec.AddField(backupschedule.FieldMonthday, field.TypeUint8, value)
 	}
 	if bsuo.mutation.MonthdayCleared() {
 		_spec.ClearField(backupschedule.FieldMonthday, field.TypeUint8)
 	}
-	if value, ok := bsuo.mutation.MonthlyAt(); ok {
-		_spec.SetField(backupschedule.FieldMonthlyAt, field.TypeTime, value)
-	}
 	if bsuo.mutation.MonthlyAtCleared() {
 		_spec.ClearField(backupschedule.FieldMonthlyAt, field.TypeTime)
+	}
+	if value, ok := bsuo.mutation.NextRun(); ok {
+		_spec.SetField(backupschedule.FieldNextRun, field.TypeTime, value)
+	}
+	if bsuo.mutation.NextRunCleared() {
+		_spec.ClearField(backupschedule.FieldNextRun, field.TypeTime)
+	}
+	if value, ok := bsuo.mutation.LastRun(); ok {
+		_spec.SetField(backupschedule.FieldLastRun, field.TypeTime, value)
+	}
+	if bsuo.mutation.LastRunCleared() {
+		_spec.ClearField(backupschedule.FieldLastRun, field.TypeTime)
+	}
+	if value, ok := bsuo.mutation.LastRunStatus(); ok {
+		_spec.SetField(backupschedule.FieldLastRunStatus, field.TypeString, value)
+	}
+	if bsuo.mutation.LastRunStatusCleared() {
+		_spec.ClearField(backupschedule.FieldLastRunStatus, field.TypeString)
 	}
 	if bsuo.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{

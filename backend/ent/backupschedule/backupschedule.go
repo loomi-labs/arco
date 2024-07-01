@@ -27,6 +27,12 @@ const (
 	FieldMonthday = "monthday"
 	// FieldMonthlyAt holds the string denoting the monthly_at field in the database.
 	FieldMonthlyAt = "monthly_at"
+	// FieldNextRun holds the string denoting the next_run field in the database.
+	FieldNextRun = "next_run"
+	// FieldLastRun holds the string denoting the last_run field in the database.
+	FieldLastRun = "last_run"
+	// FieldLastRunStatus holds the string denoting the last_run_status field in the database.
+	FieldLastRunStatus = "last_run_status"
 	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
 	EdgeBackupProfile = "backup_profile"
 	// Table holds the table name of the backupschedule in the database.
@@ -49,6 +55,9 @@ var Columns = []string{
 	FieldWeeklyAt,
 	FieldMonthday,
 	FieldMonthlyAt,
+	FieldNextRun,
+	FieldLastRun,
+	FieldLastRunStatus,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "backup_schedules"
@@ -149,6 +158,21 @@ func ByMonthday(opts ...sql.OrderTermOption) OrderOption {
 // ByMonthlyAt orders the results by the monthly_at field.
 func ByMonthlyAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMonthlyAt, opts...).ToFunc()
+}
+
+// ByNextRun orders the results by the next_run field.
+func ByNextRun(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextRun, opts...).ToFunc()
+}
+
+// ByLastRun orders the results by the last_run field.
+func ByLastRun(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastRun, opts...).ToFunc()
+}
+
+// ByLastRunStatus orders the results by the last_run_status field.
+func ByLastRunStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastRunStatus, opts...).ToFunc()
 }
 
 // ByBackupProfileField orders the results by backup_profile field.

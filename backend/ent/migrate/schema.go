@@ -54,6 +54,9 @@ var (
 		{Name: "weekly_at", Type: field.TypeTime, Nullable: true},
 		{Name: "monthday", Type: field.TypeUint8, Nullable: true},
 		{Name: "monthly_at", Type: field.TypeTime, Nullable: true},
+		{Name: "next_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_status", Type: field.TypeString, Nullable: true},
 		{Name: "backup_profile_backup_schedule", Type: field.TypeInt, Unique: true},
 	}
 	// BackupSchedulesTable holds the schema information for the "backup_schedules" table.
@@ -64,9 +67,16 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
-				Columns:    []*schema.Column{BackupSchedulesColumns[7]},
+				Columns:    []*schema.Column{BackupSchedulesColumns[10]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "backupschedule_next_run",
+				Unique:  false,
+				Columns: []*schema.Column{BackupSchedulesColumns[7]},
 			},
 		},
 	}

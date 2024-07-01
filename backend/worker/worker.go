@@ -10,17 +10,17 @@ import (
 type Worker struct {
 	log          *util.CmdLogger
 	borgPath     string
-	inChan       *types.InputChannels
-	outChan      *types.OutputChannels
+	actionChans  *types.ActionChannels
+	resultChans  *types.ResultChannels
 	shutdownChan chan struct{}
 }
 
-func NewWorker(log *zap.SugaredLogger, borgPath string, inChan *types.InputChannels, outChan *types.OutputChannels) *Worker {
+func NewWorker(log *zap.SugaredLogger, borgPath string, inChan *types.ActionChannels, outChan *types.ResultChannels) *Worker {
 	return &Worker{
 		log:          util.NewCmdLogger(log),
 		borgPath:     borgPath,
-		inChan:       inChan,
-		outChan:      outChan,
+		actionChans:  inChan,
+		resultChans:  outChan,
 		shutdownChan: make(chan struct{}),
 	}
 }
@@ -32,9 +32,9 @@ func (d *Worker) Run() {
 
 	for {
 		select {
-		case job := <-d.inChan.StartBackup:
+		case job := <-d.actionChans.StartBackup:
 			go d.runBackup(ctx, job)
-		case job := <-d.inChan.StartPrune:
+		case job := <-d.actionChans.StartPrune:
 			go d.runPrune(ctx, job)
 		case <-d.shutdownChan:
 			d.log.Debug("Shutting down worker")

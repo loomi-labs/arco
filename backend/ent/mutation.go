@@ -1269,6 +1269,9 @@ type BackupScheduleMutation struct {
 	monthday              *uint8
 	addmonthday           *int8
 	monthly_at            *time.Time
+	next_run              *time.Time
+	last_run              *time.Time
+	last_run_status       *string
 	clearedFields         map[string]struct{}
 	backup_profile        *int
 	clearedbackup_profile bool
@@ -1677,6 +1680,153 @@ func (m *BackupScheduleMutation) ResetMonthlyAt() {
 	delete(m.clearedFields, backupschedule.FieldMonthlyAt)
 }
 
+// SetNextRun sets the "next_run" field.
+func (m *BackupScheduleMutation) SetNextRun(t time.Time) {
+	m.next_run = &t
+}
+
+// NextRun returns the value of the "next_run" field in the mutation.
+func (m *BackupScheduleMutation) NextRun() (r time.Time, exists bool) {
+	v := m.next_run
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextRun returns the old "next_run" field's value of the BackupSchedule entity.
+// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupScheduleMutation) OldNextRun(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextRun is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextRun requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextRun: %w", err)
+	}
+	return oldValue.NextRun, nil
+}
+
+// ClearNextRun clears the value of the "next_run" field.
+func (m *BackupScheduleMutation) ClearNextRun() {
+	m.next_run = nil
+	m.clearedFields[backupschedule.FieldNextRun] = struct{}{}
+}
+
+// NextRunCleared returns if the "next_run" field was cleared in this mutation.
+func (m *BackupScheduleMutation) NextRunCleared() bool {
+	_, ok := m.clearedFields[backupschedule.FieldNextRun]
+	return ok
+}
+
+// ResetNextRun resets all changes to the "next_run" field.
+func (m *BackupScheduleMutation) ResetNextRun() {
+	m.next_run = nil
+	delete(m.clearedFields, backupschedule.FieldNextRun)
+}
+
+// SetLastRun sets the "last_run" field.
+func (m *BackupScheduleMutation) SetLastRun(t time.Time) {
+	m.last_run = &t
+}
+
+// LastRun returns the value of the "last_run" field in the mutation.
+func (m *BackupScheduleMutation) LastRun() (r time.Time, exists bool) {
+	v := m.last_run
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRun returns the old "last_run" field's value of the BackupSchedule entity.
+// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupScheduleMutation) OldLastRun(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRun is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRun requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRun: %w", err)
+	}
+	return oldValue.LastRun, nil
+}
+
+// ClearLastRun clears the value of the "last_run" field.
+func (m *BackupScheduleMutation) ClearLastRun() {
+	m.last_run = nil
+	m.clearedFields[backupschedule.FieldLastRun] = struct{}{}
+}
+
+// LastRunCleared returns if the "last_run" field was cleared in this mutation.
+func (m *BackupScheduleMutation) LastRunCleared() bool {
+	_, ok := m.clearedFields[backupschedule.FieldLastRun]
+	return ok
+}
+
+// ResetLastRun resets all changes to the "last_run" field.
+func (m *BackupScheduleMutation) ResetLastRun() {
+	m.last_run = nil
+	delete(m.clearedFields, backupschedule.FieldLastRun)
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (m *BackupScheduleMutation) SetLastRunStatus(s string) {
+	m.last_run_status = &s
+}
+
+// LastRunStatus returns the value of the "last_run_status" field in the mutation.
+func (m *BackupScheduleMutation) LastRunStatus() (r string, exists bool) {
+	v := m.last_run_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunStatus returns the old "last_run_status" field's value of the BackupSchedule entity.
+// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupScheduleMutation) OldLastRunStatus(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunStatus: %w", err)
+	}
+	return oldValue.LastRunStatus, nil
+}
+
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (m *BackupScheduleMutation) ClearLastRunStatus() {
+	m.last_run_status = nil
+	m.clearedFields[backupschedule.FieldLastRunStatus] = struct{}{}
+}
+
+// LastRunStatusCleared returns if the "last_run_status" field was cleared in this mutation.
+func (m *BackupScheduleMutation) LastRunStatusCleared() bool {
+	_, ok := m.clearedFields[backupschedule.FieldLastRunStatus]
+	return ok
+}
+
+// ResetLastRunStatus resets all changes to the "last_run_status" field.
+func (m *BackupScheduleMutation) ResetLastRunStatus() {
+	m.last_run_status = nil
+	delete(m.clearedFields, backupschedule.FieldLastRunStatus)
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
 func (m *BackupScheduleMutation) SetBackupProfileID(id int) {
 	m.backup_profile = &id
@@ -1750,7 +1900,7 @@ func (m *BackupScheduleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupScheduleMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 9)
 	if m.hourly != nil {
 		fields = append(fields, backupschedule.FieldHourly)
 	}
@@ -1768,6 +1918,15 @@ func (m *BackupScheduleMutation) Fields() []string {
 	}
 	if m.monthly_at != nil {
 		fields = append(fields, backupschedule.FieldMonthlyAt)
+	}
+	if m.next_run != nil {
+		fields = append(fields, backupschedule.FieldNextRun)
+	}
+	if m.last_run != nil {
+		fields = append(fields, backupschedule.FieldLastRun)
+	}
+	if m.last_run_status != nil {
+		fields = append(fields, backupschedule.FieldLastRunStatus)
 	}
 	return fields
 }
@@ -1789,6 +1948,12 @@ func (m *BackupScheduleMutation) Field(name string) (ent.Value, bool) {
 		return m.Monthday()
 	case backupschedule.FieldMonthlyAt:
 		return m.MonthlyAt()
+	case backupschedule.FieldNextRun:
+		return m.NextRun()
+	case backupschedule.FieldLastRun:
+		return m.LastRun()
+	case backupschedule.FieldLastRunStatus:
+		return m.LastRunStatus()
 	}
 	return nil, false
 }
@@ -1810,6 +1975,12 @@ func (m *BackupScheduleMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldMonthday(ctx)
 	case backupschedule.FieldMonthlyAt:
 		return m.OldMonthlyAt(ctx)
+	case backupschedule.FieldNextRun:
+		return m.OldNextRun(ctx)
+	case backupschedule.FieldLastRun:
+		return m.OldLastRun(ctx)
+	case backupschedule.FieldLastRunStatus:
+		return m.OldLastRunStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupSchedule field %s", name)
 }
@@ -1860,6 +2031,27 @@ func (m *BackupScheduleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMonthlyAt(v)
+		return nil
+	case backupschedule.FieldNextRun:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextRun(v)
+		return nil
+	case backupschedule.FieldLastRun:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRun(v)
+		return nil
+	case backupschedule.FieldLastRunStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown BackupSchedule field %s", name)
@@ -1921,6 +2113,15 @@ func (m *BackupScheduleMutation) ClearedFields() []string {
 	if m.FieldCleared(backupschedule.FieldMonthlyAt) {
 		fields = append(fields, backupschedule.FieldMonthlyAt)
 	}
+	if m.FieldCleared(backupschedule.FieldNextRun) {
+		fields = append(fields, backupschedule.FieldNextRun)
+	}
+	if m.FieldCleared(backupschedule.FieldLastRun) {
+		fields = append(fields, backupschedule.FieldLastRun)
+	}
+	if m.FieldCleared(backupschedule.FieldLastRunStatus) {
+		fields = append(fields, backupschedule.FieldLastRunStatus)
+	}
 	return fields
 }
 
@@ -1950,6 +2151,15 @@ func (m *BackupScheduleMutation) ClearField(name string) error {
 	case backupschedule.FieldMonthlyAt:
 		m.ClearMonthlyAt()
 		return nil
+	case backupschedule.FieldNextRun:
+		m.ClearNextRun()
+		return nil
+	case backupschedule.FieldLastRun:
+		m.ClearLastRun()
+		return nil
+	case backupschedule.FieldLastRunStatus:
+		m.ClearLastRunStatus()
+		return nil
 	}
 	return fmt.Errorf("unknown BackupSchedule nullable field %s", name)
 }
@@ -1975,6 +2185,15 @@ func (m *BackupScheduleMutation) ResetField(name string) error {
 		return nil
 	case backupschedule.FieldMonthlyAt:
 		m.ResetMonthlyAt()
+		return nil
+	case backupschedule.FieldNextRun:
+		m.ResetNextRun()
+		return nil
+	case backupschedule.FieldLastRun:
+		m.ResetLastRun()
+		return nil
+	case backupschedule.FieldLastRunStatus:
+		m.ResetLastRunStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupSchedule field %s", name)

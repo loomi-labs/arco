@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
-	"slices"
 )
 
 /***********************************/
@@ -95,17 +94,13 @@ func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
-	if slices.Contains(b.runningBackups, bId) {
-		return fmt.Errorf("backup is already running")
-	}
-	if slices.Contains(b.occupiedRepos, repositoryId) {
-		return fmt.Errorf("repository is busy")
+	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
+		return fmt.Errorf(reason)
 	}
 
-	b.runningBackups = append(b.runningBackups, bId)
-	b.occupiedRepos = append(b.occupiedRepos, repositoryId)
+	b.state.AddRunningBackup(bId)
 
-	b.inChan.StartBackup <- types.BackupJob{
+	b.actionChans.StartBackup <- types.BackupJob{
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,
@@ -150,20 +145,20 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 	if err != nil {
 		return err
 	}
-	if doesExist {
-		_, err = b.db.BackupSchedule.
-			Update().
-			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-			SetHourly(schedule.Hourly).
-			SetNillableDailyAt(schedule.DailyAt).
-			SetNillableWeeklyAt(schedule.WeeklyAt).
-			SetNillableWeekday(schedule.Weekday).
-			SetNillableMonthlyAt(schedule.MonthlyAt).
-			SetNillableMonthday(schedule.Monthday).
-			Save(b.ctx)
+	tx, err := b.db.Tx(b.ctx)
+	if err != nil {
 		return err
 	}
-	_, err = b.db.BackupSchedule.
+	if doesExist {
+		_, err := tx.BackupSchedule.
+			Delete().
+			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+			Exec(b.ctx)
+		if err != nil {
+			return rollback(tx, fmt.Errorf("failed to delete existing schedule: %w", err))
+		}
+	}
+	_, err = tx.BackupSchedule.
 		Create().
 		SetHourly(schedule.Hourly).
 		SetNillableDailyAt(schedule.DailyAt).
@@ -173,7 +168,10 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 		SetNillableMonthday(schedule.Monthday).
 		SetBackupProfileID(backupProfileId).
 		Save(b.ctx)
-	return err
+	if err != nil {
+		return rollback(tx, fmt.Errorf("failed to save schedule: %w", err))
+	}
+	return tx.Commit()
 }
 
 func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
@@ -181,5 +179,14 @@ func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
 		Delete().
 		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
 		Exec(b.ctx)
+	return err
+}
+
+// rollback calls to tx.Rollback and wraps the given error
+// with the rollback error if occurred.
+func rollback(tx *ent.Tx, err error) error {
+	if rerr := tx.Rollback(); rerr != nil {
+		err = fmt.Errorf("%w: %v", err, rerr)
+	}
 	return err
 }

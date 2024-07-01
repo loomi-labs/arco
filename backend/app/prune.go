@@ -5,7 +5,6 @@ import (
 	"arco/backend/util"
 	"fmt"
 	"os/exec"
-	"slices"
 	"strings"
 )
 
@@ -20,17 +19,13 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
-	if slices.Contains(b.runningPruneJobs, bId) {
-		return fmt.Errorf("prune job is already running")
-	}
-	if slices.Contains(b.occupiedRepos, repositoryId) {
-		return fmt.Errorf("repository is busy")
+	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
+		return fmt.Errorf(reason)
 	}
 
-	b.runningPruneJobs = append(b.runningPruneJobs, bId)
-	b.occupiedRepos = append(b.occupiedRepos, repositoryId)
+	b.state.AddRunningPruneJob(bId)
 
-	b.inChan.StartPrune <- types.PruneJob{
+	b.actionChans.StartPrune <- types.PruneJob{
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,

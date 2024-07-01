@@ -30,6 +30,12 @@ type BackupSchedule struct {
 	Monthday *uint8 `json:"monthday"`
 	// MonthlyAt holds the value of the "monthly_at" field.
 	MonthlyAt *time.Time `json:"monthlyAt"`
+	// NextRun holds the value of the "next_run" field.
+	NextRun time.Time `json:"nextRun"`
+	// LastRun holds the value of the "last_run" field.
+	LastRun *time.Time `json:"lastRun"`
+	// LastRunStatus holds the value of the "last_run_status" field.
+	LastRunStatus *string `json:"lastRunStatus"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupScheduleQuery when eager-loading is set.
 	Edges                          BackupScheduleEdges `json:"edges"`
@@ -66,9 +72,9 @@ func (*BackupSchedule) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case backupschedule.FieldID, backupschedule.FieldMonthday:
 			values[i] = new(sql.NullInt64)
-		case backupschedule.FieldWeekday:
+		case backupschedule.FieldWeekday, backupschedule.FieldLastRunStatus:
 			values[i] = new(sql.NullString)
-		case backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt:
+		case backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt, backupschedule.FieldNextRun, backupschedule.FieldLastRun:
 			values[i] = new(sql.NullTime)
 		case backupschedule.ForeignKeys[0]: // backup_profile_backup_schedule
 			values[i] = new(sql.NullInt64)
@@ -133,6 +139,26 @@ func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				bs.MonthlyAt = new(time.Time)
 				*bs.MonthlyAt = value.Time
+			}
+		case backupschedule.FieldNextRun:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_run", values[i])
+			} else if value.Valid {
+				bs.NextRun = value.Time
+			}
+		case backupschedule.FieldLastRun:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_run", values[i])
+			} else if value.Valid {
+				bs.LastRun = new(time.Time)
+				*bs.LastRun = value.Time
+			}
+		case backupschedule.FieldLastRunStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_run_status", values[i])
+			} else if value.Valid {
+				bs.LastRunStatus = new(string)
+				*bs.LastRunStatus = value.String
 			}
 		case backupschedule.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -208,6 +234,19 @@ func (bs *BackupSchedule) String() string {
 	if v := bs.MonthlyAt; v != nil {
 		builder.WriteString("monthly_at=")
 		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("next_run=")
+	builder.WriteString(bs.NextRun.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := bs.LastRun; v != nil {
+		builder.WriteString("last_run=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := bs.LastRunStatus; v != nil {
+		builder.WriteString("last_run_status=")
+		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')
 	return builder.String()

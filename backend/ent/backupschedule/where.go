@@ -80,6 +80,21 @@ func MonthlyAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldMonthlyAt, v))
 }
 
+// NextRun applies equality check predicate on the "next_run" field. It's identical to NextRunEQ.
+func NextRun(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldNextRun, v))
+}
+
+// LastRun applies equality check predicate on the "last_run" field. It's identical to LastRunEQ.
+func LastRun(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRun, v))
+}
+
+// LastRunStatus applies equality check predicate on the "last_run_status" field. It's identical to LastRunStatusEQ.
+func LastRunStatus(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
 // HourlyEQ applies the EQ predicate on the "hourly" field.
 func HourlyEQ(v bool) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldHourly, v))
@@ -318,6 +333,181 @@ func MonthlyAtIsNil() predicate.BackupSchedule {
 // MonthlyAtNotNil applies the NotNil predicate on the "monthly_at" field.
 func MonthlyAtNotNil() predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldNotNull(FieldMonthlyAt))
+}
+
+// NextRunEQ applies the EQ predicate on the "next_run" field.
+func NextRunEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldNextRun, v))
+}
+
+// NextRunNEQ applies the NEQ predicate on the "next_run" field.
+func NextRunNEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldNextRun, v))
+}
+
+// NextRunIn applies the In predicate on the "next_run" field.
+func NextRunIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldNextRun, vs...))
+}
+
+// NextRunNotIn applies the NotIn predicate on the "next_run" field.
+func NextRunNotIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldNextRun, vs...))
+}
+
+// NextRunGT applies the GT predicate on the "next_run" field.
+func NextRunGT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldNextRun, v))
+}
+
+// NextRunGTE applies the GTE predicate on the "next_run" field.
+func NextRunGTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldNextRun, v))
+}
+
+// NextRunLT applies the LT predicate on the "next_run" field.
+func NextRunLT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldNextRun, v))
+}
+
+// NextRunLTE applies the LTE predicate on the "next_run" field.
+func NextRunLTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldNextRun, v))
+}
+
+// NextRunIsNil applies the IsNil predicate on the "next_run" field.
+func NextRunIsNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIsNull(FieldNextRun))
+}
+
+// NextRunNotNil applies the NotNil predicate on the "next_run" field.
+func NextRunNotNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotNull(FieldNextRun))
+}
+
+// LastRunEQ applies the EQ predicate on the "last_run" field.
+func LastRunEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRun, v))
+}
+
+// LastRunNEQ applies the NEQ predicate on the "last_run" field.
+func LastRunNEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldLastRun, v))
+}
+
+// LastRunIn applies the In predicate on the "last_run" field.
+func LastRunIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldLastRun, vs...))
+}
+
+// LastRunNotIn applies the NotIn predicate on the "last_run" field.
+func LastRunNotIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldLastRun, vs...))
+}
+
+// LastRunGT applies the GT predicate on the "last_run" field.
+func LastRunGT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldLastRun, v))
+}
+
+// LastRunGTE applies the GTE predicate on the "last_run" field.
+func LastRunGTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldLastRun, v))
+}
+
+// LastRunLT applies the LT predicate on the "last_run" field.
+func LastRunLT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldLastRun, v))
+}
+
+// LastRunLTE applies the LTE predicate on the "last_run" field.
+func LastRunLTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldLastRun, v))
+}
+
+// LastRunIsNil applies the IsNil predicate on the "last_run" field.
+func LastRunIsNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIsNull(FieldLastRun))
+}
+
+// LastRunNotNil applies the NotNil predicate on the "last_run" field.
+func LastRunNotNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotNull(FieldLastRun))
+}
+
+// LastRunStatusEQ applies the EQ predicate on the "last_run_status" field.
+func LastRunStatusEQ(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
+// LastRunStatusNEQ applies the NEQ predicate on the "last_run_status" field.
+func LastRunStatusNEQ(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldLastRunStatus, v))
+}
+
+// LastRunStatusIn applies the In predicate on the "last_run_status" field.
+func LastRunStatusIn(vs ...string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldLastRunStatus, vs...))
+}
+
+// LastRunStatusNotIn applies the NotIn predicate on the "last_run_status" field.
+func LastRunStatusNotIn(vs ...string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldLastRunStatus, vs...))
+}
+
+// LastRunStatusGT applies the GT predicate on the "last_run_status" field.
+func LastRunStatusGT(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldLastRunStatus, v))
+}
+
+// LastRunStatusGTE applies the GTE predicate on the "last_run_status" field.
+func LastRunStatusGTE(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldLastRunStatus, v))
+}
+
+// LastRunStatusLT applies the LT predicate on the "last_run_status" field.
+func LastRunStatusLT(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldLastRunStatus, v))
+}
+
+// LastRunStatusLTE applies the LTE predicate on the "last_run_status" field.
+func LastRunStatusLTE(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldLastRunStatus, v))
+}
+
+// LastRunStatusContains applies the Contains predicate on the "last_run_status" field.
+func LastRunStatusContains(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldContains(FieldLastRunStatus, v))
+}
+
+// LastRunStatusHasPrefix applies the HasPrefix predicate on the "last_run_status" field.
+func LastRunStatusHasPrefix(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldHasPrefix(FieldLastRunStatus, v))
+}
+
+// LastRunStatusHasSuffix applies the HasSuffix predicate on the "last_run_status" field.
+func LastRunStatusHasSuffix(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldHasSuffix(FieldLastRunStatus, v))
+}
+
+// LastRunStatusIsNil applies the IsNil predicate on the "last_run_status" field.
+func LastRunStatusIsNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIsNull(FieldLastRunStatus))
+}
+
+// LastRunStatusNotNil applies the NotNil predicate on the "last_run_status" field.
+func LastRunStatusNotNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotNull(FieldLastRunStatus))
+}
+
+// LastRunStatusEqualFold applies the EqualFold predicate on the "last_run_status" field.
+func LastRunStatusEqualFold(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEqualFold(FieldLastRunStatus, v))
+}
+
+// LastRunStatusContainsFold applies the ContainsFold predicate on the "last_run_status" field.
+func LastRunStatusContainsFold(v string) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldContainsFold(FieldLastRunStatus, v))
 }
 
 // HasBackupProfile applies the HasEdge predicate on the "backup_profile" edge.

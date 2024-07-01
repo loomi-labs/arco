@@ -17,7 +17,7 @@ func (d *Worker) runPrune(ctx context.Context, pruneJob types.PruneJob) {
 	}
 	defer func() {
 		result.EndTime = time.Now()
-		d.outChan.FinishPrune <- result
+		d.resultChans.FinishPrune <- result
 	}()
 
 	// Prepare prune command

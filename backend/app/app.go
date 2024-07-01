@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	AppName = "Arco"
+	Name = "Arco"
 )
 
 type EnvVar string
@@ -35,35 +35,31 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log     *util.CmdLogger
-	config  *types.Config
-	inChan  *types.InputChannels
-	outChan *types.OutputChannels
-	worker  *worker.Worker
+	log         *util.CmdLogger
+	config      *types.Config
+	actionChans *types.ActionChannels
+	resultChans *types.ResultChannels
+	worker      *worker.Worker
+	state       *State
 
 	// Startup
 	ctx context.Context
 	db  *ent.Client
-
-	// State (runtime)
-	runningBackups   []types.BackupIdentifier
-	runningPruneJobs []types.BackupIdentifier
-	occupiedRepos    []int
-	startupErr       error
 }
 
 func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
 ) *App {
-	inChan := types.NewInputChannels()
-	outChan := types.NewOutputChannels()
+	aChans := types.NewActionsChannels()
+	rChans := types.NewResultChannels()
 	return &App{
-		log:     util.NewCmdLogger(log),
-		config:  config,
-		inChan:  inChan,
-		outChan: outChan,
-		worker:  worker.NewWorker(log, config.BorgPath, inChan, outChan),
+		log:         util.NewCmdLogger(log),
+		config:      config,
+		actionChans: aChans,
+		resultChans: rChans,
+		worker:      worker.NewWorker(log, config.BorgPath, aChans, rChans),
+		state:       NewState(),
 	}
 }
 
@@ -97,7 +93,7 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
-		a.startupErr = err
+		a.state.StartupErr = err
 		a.log.Error(err)
 		return
 	}
@@ -105,7 +101,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize the systray
 	if err := a.initSystray(); err != nil {
-		a.startupErr = err
+		a.state.StartupErr = err
 		a.log.Error(err)
 		return
 	}
@@ -115,7 +111,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
-		a.startupErr = err
+		a.state.StartupErr = err
 		a.log.Error(err)
 		return
 	}
@@ -125,7 +121,7 @@ func (a *App) Startup(ctx context.Context) {
 }
 
 func (a *App) Shutdown(_ context.Context) {
-	a.log.Info(fmt.Sprintf("Shutting down %s", AppName))
+	a.log.Info(fmt.Sprintf("Shutting down %s", Name))
 	a.worker.Stop()
 	err := a.db.Close()
 	if err != nil {
@@ -217,12 +213,12 @@ func (a *App) initSystray() error {
 
 	readyFunc := func() {
 		systray.SetIcon(iconData)
-		systray.SetTitle(AppName)
-		systray.SetTooltip(AppName)
+		systray.SetTitle(Name)
+		systray.SetTooltip(Name)
 
-		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", AppName), fmt.Sprintf("Open %s", AppName))
+		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
 		systray.AddSeparator()
-		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", AppName), fmt.Sprintf("Quit %s", AppName))
+		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
 
 		// Sets the icon of a menu item. Only available on Mac and Windows.
 		mOpen.SetIcon(iconData)
