@@ -43,6 +43,7 @@ const router = useRouter();
 const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
+const existingRepositories = ref<ent.Repository[]>([]);
 
 // Step 1
 const directories = ref<Directory[]>([]);
@@ -128,6 +129,14 @@ const addDirectory = async () => {
   }
 };
 
+async function getExistingRepositories() {
+  try {
+    existingRepositories.value = await repoClient.All();
+  } catch (error: any) {
+    await showAndLogError("Failed to get existing repositories", error);
+  }
+}
+
 // Step 2
 const monthdayAsString = (num: number) => {
   switch (num) {
@@ -177,7 +186,19 @@ async function saveBackupSchedule(): Promise<boolean> {
 }
 
 // Step 3
-const connectExistingRepo = async () => {
+async function connectExistingRepo(repoId: number) {
+  try {
+    const repo = await repoClient.AddBackupProfile(repoId, backupProfile.value.id);
+    repositories.value.push(repo);
+
+    showConnectRepoModal.value = false;
+    toast.success(`Added repository ${repo.name}`);
+  } catch (error: any) {
+    await showAndLogError("Failed to connect to existing repository", error);
+  }
+}
+
+const connectExistingRemoteRepo = async () => {
   try {
     const repo = await repoClient.AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
     repositories.value.push(repo);
@@ -237,6 +258,7 @@ const finish = async () => {
  ************/
 
 createBackupProfile();
+getExistingRepositories();
 
 </script>
 
@@ -354,9 +376,17 @@ createBackupProfile();
     </template>
 
     <template v-if='currentStep === Step.Repository'>
-      <div class='flex items-center'>
+      <div class='flex flex-col items-center'>
 
-        <div v-for='(repository, index) in repositories' :key='index'>
+        <h2>Existing Repositories</h2>
+        <div class='flex flex-col' v-for='(repository, index) in existingRepositories' :key='index'>
+          <div>{{ repository.name }}</div>
+          <div>{{ repository.url }}</div>
+          <button class='btn btn-primary' @click='connectExistingRepo(repository.id)'>Connect</button>
+        </div>
+
+        <h2>Repositories</h2>
+        <div class='flex flex-col'  v-for='(repository, index) in repositories' :key='index'>
           <div>{{ repository.name }}</div>
           <div>{{ repository.url }}</div>
         </div>
@@ -392,7 +422,7 @@ createBackupProfile();
 
           <div class='modal-action'>
             <button class='btn' @click='showConnectRepoModal = false'>Cancel</button>
-            <button class='btn btn-primary' @click='connectExistingRepo'>Connect</button>
+            <button class='btn btn-primary' @click='connectExistingRemoteRepo'>Connect</button>
           </div>
         </div>
       </div>

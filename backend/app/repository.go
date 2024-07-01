@@ -44,6 +44,13 @@ func (r *RepositoryClient) AddExistingRepository(name, url, password string, bac
 		Save(r.ctx)
 }
 
+func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.Repository, error) {
+	return r.db.Repository.
+		UpdateOneID(id).
+		AddBackupProfileIDs(backupProfileId).
+		Save(r.ctx)
+}
+
 func (r *RepositoryClient) Create(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(r.config.BorgPath, "init", "--encryption=repokey-blake2", url)
 	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()

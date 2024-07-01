@@ -84,7 +84,7 @@ var (
 	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "url", Type: field.TypeString},
+		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
 	}
 	// RepositoriesTable holds the schema information for the "repositories" table.

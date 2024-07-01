@@ -114,6 +114,11 @@ export namespace ent {
 	    monthday?: number;
 	    // Go type: time
 	    monthlyAt?: any;
+	    // Go type: time
+	    nextRun: any;
+	    // Go type: time
+	    lastRun?: any;
+	    lastRunStatus?: string;
 	    edges: BackupScheduleEdges;
 	
 	    static createFrom(source: any = {}) {
@@ -129,6 +134,9 @@ export namespace ent {
 	        this.weeklyAt = this.convertValues(source["weeklyAt"], null);
 	        this.monthday = source["monthday"];
 	        this.monthlyAt = this.convertValues(source["monthlyAt"], null);
+	        this.nextRun = this.convertValues(source["nextRun"], null);
+	        this.lastRun = this.convertValues(source["lastRun"], null);
+	        this.lastRunStatus = source["lastRunStatus"];
 	        this.edges = this.convertValues(source["edges"], BackupScheduleEdges);
 	    }
 	

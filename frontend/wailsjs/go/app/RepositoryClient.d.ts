@@ -3,6 +3,8 @@
 import {ent} from '../models';
 import {app} from '../models';
 
+export function AddBackupProfile(arg1:number,arg2:number):Promise<ent.Repository>;
+
 export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
 
 export function All():Promise<Array<ent.Repository>>;
