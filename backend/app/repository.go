@@ -11,7 +11,7 @@ import (
 func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		WithBackupprofiles().
+		WithBackupProfiles().
 		WithArchives().
 		Where(repository.ID(id)).
 		Only(r.ctx)
@@ -40,7 +40,14 @@ func (r *RepositoryClient) AddExistingRepository(name, url, password string, bac
 		SetName(name).
 		SetURL(url).
 		SetPassword(password).
-		AddBackupprofileIDs(backupProfileId).
+		AddBackupProfileIDs(backupProfileId).
+		Save(r.ctx)
+}
+
+func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.Repository, error) {
+	return r.db.Repository.
+		UpdateOneID(id).
+		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
 }
 
@@ -61,6 +68,6 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 		SetName(name).
 		SetURL(url).
 		SetPassword(password).
-		AddBackupprofileIDs(backupProfileId).
+		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
 }

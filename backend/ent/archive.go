@@ -24,8 +24,8 @@ type Archive struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// Duration holds the value of the "duration" field.
 	Duration time.Time `json:"duration"`
-	// BorgID holds the value of the "borgID" field.
-	BorgID string `json:"borgID"`
+	// BorgID holds the value of the "borg_id" field.
+	BorgID string `json:"borgId"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
 	Edges              ArchiveEdges `json:"edges"`
@@ -107,7 +107,7 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 			}
 		case archive.FieldBorgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field borgID", values[i])
+				return fmt.Errorf("unexpected type %T for field borg_id", values[i])
 			} else if value.Valid {
 				a.BorgID = value.String
 			}
@@ -168,7 +168,7 @@ func (a *Archive) String() string {
 	builder.WriteString("duration=")
 	builder.WriteString(a.Duration.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("borgID=")
+	builder.WriteString("borg_id=")
 	builder.WriteString(a.BorgID)
 	builder.WriteByte(')')
 	return builder.String()

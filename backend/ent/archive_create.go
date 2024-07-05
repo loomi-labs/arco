@@ -39,7 +39,7 @@ func (ac *ArchiveCreate) SetDuration(t time.Time) *ArchiveCreate {
 	return ac
 }
 
-// SetBorgID sets the "borgID" field.
+// SetBorgID sets the "borg_id" field.
 func (ac *ArchiveCreate) SetBorgID(s string) *ArchiveCreate {
 	ac.mutation.SetBorgID(s)
 	return ac
@@ -106,7 +106,7 @@ func (ac *ArchiveCreate) check() error {
 		return &ValidationError{Name: "duration", err: errors.New(`ent: missing required field "Archive.duration"`)}
 	}
 	if _, ok := ac.mutation.BorgID(); !ok {
-		return &ValidationError{Name: "borgID", err: errors.New(`ent: missing required field "Archive.borgID"`)}
+		return &ValidationError{Name: "borg_id", err: errors.New(`ent: missing required field "Archive.borg_id"`)}
 	}
 	if _, ok := ac.mutation.RepositoryID(); !ok {
 		return &ValidationError{Name: "repository", err: errors.New(`ent: missing required edge "Archive.repository"`)}

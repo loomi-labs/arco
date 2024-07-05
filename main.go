@@ -2,6 +2,8 @@ package main
 
 import (
 	"arco/backend/app"
+	"arco/backend/ent/backupschedule"
+	_ "arco/backend/ent/runtime" // required to allow cyclic imports
 	"arco/backend/types"
 	"embed"
 	"fmt"
@@ -77,6 +79,19 @@ func initConfig() (*types.Config, error) {
 	}, nil
 }
 
+var Weekdays = []struct {
+	Value  backupschedule.Weekday
+	TSName string
+}{
+	{backupschedule.WeekdayMonday, backupschedule.WeekdayMonday.String()},
+	{backupschedule.WeekdayTuesday, backupschedule.WeekdayTuesday.String()},
+	{backupschedule.WeekdayWednesday, backupschedule.WeekdayWednesday.String()},
+	{backupschedule.WeekdayThursday, backupschedule.WeekdayThursday.String()},
+	{backupschedule.WeekdayFriday, backupschedule.WeekdayFriday.String()},
+	{backupschedule.WeekdaySaturday, backupschedule.WeekdaySaturday.String()},
+	{backupschedule.WeekdaySunday, backupschedule.WeekdaySunday.String()},
+}
+
 func startApp(log *zap.SugaredLogger, config *types.Config) {
 	arco := app.NewApp(log, config)
 
@@ -97,19 +112,22 @@ func startApp(log *zap.SugaredLogger, config *types.Config) {
 		OnStartup:        arco.Startup,
 		OnShutdown:       arco.Shutdown,
 		OnBeforeClose:    arco.BeforeClose,
-		Bind: []interface{}{
-			arco.AppClient(),
-			arco.BackupClient(),
-			arco.RepoClient(),
-		},
-		LogLevel: logLevel,
-		Logger:   NewZapLogWrapper(log.Desugar()),
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "4ffabbd3-334a-454e-8c66-dee8d1ff9afb",
 			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
 				arco.Wakeup()
 			},
 		},
+		Bind: []interface{}{
+			arco.AppClient(),
+			arco.BackupClient(),
+			arco.RepoClient(),
+		},
+		EnumBind: []interface{}{
+			Weekdays,
+		},
+		LogLevel: logLevel,
+		Logger:   NewZapLogWrapper(log.Desugar()),
 	})
 	if err != nil {
 		log.Fatal(err)

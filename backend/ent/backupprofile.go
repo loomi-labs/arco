@@ -4,10 +4,10 @@ package ent
 
 import (
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -24,11 +24,7 @@ type BackupProfile struct {
 	Prefix string `json:"prefix"`
 	// Directories holds the value of the "directories" field.
 	Directories []string `json:"directories"`
-	// HasPeriodicBackups holds the value of the "hasPeriodicBackups" field.
-	HasPeriodicBackups bool `json:"hasPeriodicBackups"`
-	// PeriodicBackupTime holds the value of the "periodicBackupTime" field.
-	PeriodicBackupTime time.Time `json:"periodicBackupTime"`
-	// IsSetupComplete holds the value of the "isSetupComplete" field.
+	// IsSetupComplete holds the value of the "is_setup_complete" field.
 	IsSetupComplete bool `json:"isSetupComplete"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
@@ -40,9 +36,11 @@ type BackupProfile struct {
 type BackupProfileEdges struct {
 	// Repositories holds the value of the repositories edge.
 	Repositories []*Repository `json:"repositories,omitempty"`
+	// BackupSchedule holds the value of the backup_schedule edge.
+	BackupSchedule *BackupSchedule `json:"backup_schedule,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // RepositoriesOrErr returns the Repositories value or an error if the edge
@@ -54,6 +52,17 @@ func (e BackupProfileEdges) RepositoriesOrErr() ([]*Repository, error) {
 	return nil, &NotLoadedError{edge: "repositories"}
 }
 
+// BackupScheduleOrErr returns the BackupSchedule value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BackupProfileEdges) BackupScheduleOrErr() (*BackupSchedule, error) {
+	if e.BackupSchedule != nil {
+		return e.BackupSchedule, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: backupschedule.Label}
+	}
+	return nil, &NotLoadedError{edge: "backup_schedule"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -61,14 +70,12 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backupprofile.FieldDirectories:
 			values[i] = new([]byte)
-		case backupprofile.FieldHasPeriodicBackups, backupprofile.FieldIsSetupComplete:
+		case backupprofile.FieldIsSetupComplete:
 			values[i] = new(sql.NullBool)
 		case backupprofile.FieldID:
 			values[i] = new(sql.NullInt64)
 		case backupprofile.FieldName, backupprofile.FieldPrefix:
 			values[i] = new(sql.NullString)
-		case backupprofile.FieldPeriodicBackupTime:
-			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -110,21 +117,9 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field directories: %w", err)
 				}
 			}
-		case backupprofile.FieldHasPeriodicBackups:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field hasPeriodicBackups", values[i])
-			} else if value.Valid {
-				bp.HasPeriodicBackups = value.Bool
-			}
-		case backupprofile.FieldPeriodicBackupTime:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field periodicBackupTime", values[i])
-			} else if value.Valid {
-				bp.PeriodicBackupTime = value.Time
-			}
 		case backupprofile.FieldIsSetupComplete:
 			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field isSetupComplete", values[i])
+				return fmt.Errorf("unexpected type %T for field is_setup_complete", values[i])
 			} else if value.Valid {
 				bp.IsSetupComplete = value.Bool
 			}
@@ -144,6 +139,11 @@ func (bp *BackupProfile) Value(name string) (ent.Value, error) {
 // QueryRepositories queries the "repositories" edge of the BackupProfile entity.
 func (bp *BackupProfile) QueryRepositories() *RepositoryQuery {
 	return NewBackupProfileClient(bp.config).QueryRepositories(bp)
+}
+
+// QueryBackupSchedule queries the "backup_schedule" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
+	return NewBackupProfileClient(bp.config).QueryBackupSchedule(bp)
 }
 
 // Update returns a builder for updating this BackupProfile.
@@ -178,13 +178,7 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString("directories=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Directories))
 	builder.WriteString(", ")
-	builder.WriteString("hasPeriodicBackups=")
-	builder.WriteString(fmt.Sprintf("%v", bp.HasPeriodicBackups))
-	builder.WriteString(", ")
-	builder.WriteString("periodicBackupTime=")
-	builder.WriteString(bp.PeriodicBackupTime.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("isSetupComplete=")
+	builder.WriteString("is_setup_complete=")
 	builder.WriteString(fmt.Sprintf("%v", bp.IsSetupComplete))
 	builder.WriteByte(')')
 	return builder.String()

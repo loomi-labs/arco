@@ -22,8 +22,8 @@ func (Archive) Fields() []ent.Field {
 			StructTag(`json:"createdAt"`),
 		field.Time("duration").
 			StructTag(`json:"duration"`),
-		field.String("borgID").
-			StructTag(`json:"borgID"`),
+		field.String("borg_id").
+			StructTag(`json:"borgId"`),
 	}
 }
 

@@ -71,13 +71,13 @@ func (au *ArchiveUpdate) SetNillableDuration(t *time.Time) *ArchiveUpdate {
 	return au
 }
 
-// SetBorgID sets the "borgID" field.
+// SetBorgID sets the "borg_id" field.
 func (au *ArchiveUpdate) SetBorgID(s string) *ArchiveUpdate {
 	au.mutation.SetBorgID(s)
 	return au
 }
 
-// SetNillableBorgID sets the "borgID" field if the given value is not nil.
+// SetNillableBorgID sets the "borg_id" field if the given value is not nil.
 func (au *ArchiveUpdate) SetNillableBorgID(s *string) *ArchiveUpdate {
 	if s != nil {
 		au.SetBorgID(*s)
@@ -257,13 +257,13 @@ func (auo *ArchiveUpdateOne) SetNillableDuration(t *time.Time) *ArchiveUpdateOne
 	return auo
 }
 
-// SetBorgID sets the "borgID" field.
+// SetBorgID sets the "borg_id" field.
 func (auo *ArchiveUpdateOne) SetBorgID(s string) *ArchiveUpdateOne {
 	auo.mutation.SetBorgID(s)
 	return auo
 }
 
-// SetNillableBorgID sets the "borgID" field if the given value is not nil.
+// SetNillableBorgID sets the "borg_id" field if the given value is not nil.
 func (auo *ArchiveUpdateOne) SetNillableBorgID(s *string) *ArchiveUpdateOne {
 	if s != nil {
 		auo.SetBorgID(*s)

@@ -5,6 +5,7 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
@@ -75,9 +76,10 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			archive.Table:       archive.ValidColumn,
-			backupprofile.Table: backupprofile.ValidColumn,
-			repository.Table:    repository.ValidColumn,
+			archive.Table:        archive.ValidColumn,
+			backupprofile.Table:  backupprofile.ValidColumn,
+			backupschedule.Table: backupschedule.ValidColumn,
+			repository.Table:     repository.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

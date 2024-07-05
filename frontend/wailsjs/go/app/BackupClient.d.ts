@@ -3,6 +3,8 @@
 import {app} from '../models';
 import {ent} from '../models';
 
+export function DeleteBackupSchedule(arg1:number):Promise<void>;
+
 export function DryRunPruneBackup(arg1:number,arg2:number):Promise<Array<app.PruneInfo>>;
 
 export function DryRunPruneBackups(arg1:number):Promise<Array<app.PruneInfo>>;
@@ -19,10 +21,12 @@ export function PruneBackup(arg1:number,arg2:number):Promise<void>;
 
 export function PruneBackups(arg1:number):Promise<void>;
 
-export function RunBackup(arg1:number,arg2:number):Promise<void>;
-
-export function RunBackups(arg1:number):Promise<void>;
-
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 
+export function SaveBackupSchedule(arg1:number,arg2:ent.BackupSchedule):Promise<void>;
+
 export function SelectDirectory():Promise<string>;
+
+export function StartBackupJob(arg1:number,arg2:number):Promise<void>;
+
+export function StartBackupJobs(arg1:number):Promise<void>;

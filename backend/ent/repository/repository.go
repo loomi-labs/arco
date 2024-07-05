@@ -18,17 +18,17 @@ const (
 	FieldURL = "url"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
-	// EdgeBackupprofiles holds the string denoting the backupprofiles edge name in mutations.
-	EdgeBackupprofiles = "backupprofiles"
+	// EdgeBackupProfiles holds the string denoting the backup_profiles edge name in mutations.
+	EdgeBackupProfiles = "backup_profiles"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
 	EdgeArchives = "archives"
 	// Table holds the table name of the repository in the database.
 	Table = "repositories"
-	// BackupprofilesTable is the table that holds the backupprofiles relation/edge. The primary key declared below.
-	BackupprofilesTable = "backup_profile_repositories"
-	// BackupprofilesInverseTable is the table name for the BackupProfile entity.
+	// BackupProfilesTable is the table that holds the backup_profiles relation/edge. The primary key declared below.
+	BackupProfilesTable = "backup_profile_repositories"
+	// BackupProfilesInverseTable is the table name for the BackupProfile entity.
 	// It exists in this package in order to avoid circular dependency with the "backupprofile" package.
-	BackupprofilesInverseTable = "backup_profiles"
+	BackupProfilesInverseTable = "backup_profiles"
 	// ArchivesTable is the table that holds the archives relation/edge.
 	ArchivesTable = "archives"
 	// ArchivesInverseTable is the table name for the Archive entity.
@@ -47,9 +47,9 @@ var Columns = []string{
 }
 
 var (
-	// BackupprofilesPrimaryKey and BackupprofilesColumn2 are the table columns denoting the
-	// primary key for the backupprofiles relation (M2M).
-	BackupprofilesPrimaryKey = []string{"backup_profile_id", "repository_id"}
+	// BackupProfilesPrimaryKey and BackupProfilesColumn2 are the table columns denoting the
+	// primary key for the backup_profiles relation (M2M).
+	BackupProfilesPrimaryKey = []string{"backup_profile_id", "repository_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -85,17 +85,17 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
 }
 
-// ByBackupprofilesCount orders the results by backupprofiles count.
-func ByBackupprofilesCount(opts ...sql.OrderTermOption) OrderOption {
+// ByBackupProfilesCount orders the results by backup_profiles count.
+func ByBackupProfilesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBackupprofilesStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newBackupProfilesStep(), opts...)
 	}
 }
 
-// ByBackupprofiles orders the results by backupprofiles terms.
-func ByBackupprofiles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByBackupProfiles orders the results by backup_profiles terms.
+func ByBackupProfiles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBackupprofilesStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newBackupProfilesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -112,11 +112,11 @@ func ByArchives(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newArchivesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newBackupprofilesStep() *sqlgraph.Step {
+func newBackupProfilesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BackupprofilesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, BackupprofilesTable, BackupprofilesPrimaryKey...),
+		sqlgraph.To(BackupProfilesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, BackupProfilesTable, BackupProfilesPrimaryKey...),
 	)
 }
 func newArchivesStep() *sqlgraph.Step {

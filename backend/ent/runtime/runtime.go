@@ -2,7 +2,35 @@
 
 package runtime
 
-// The schema-stitching logic is generated in arco/backend/ent/runtime.go
+import (
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/schema"
+)
+
+// The init function reads all schema descriptors with runtime code
+// (default values, validators, hooks and policies) and stitches it
+// to their package variables.
+func init() {
+	backupprofileFields := schema.BackupProfile{}.Fields()
+	_ = backupprofileFields
+	// backupprofileDescIsSetupComplete is the schema descriptor for is_setup_complete field.
+	backupprofileDescIsSetupComplete := backupprofileFields[4].Descriptor()
+	// backupprofile.DefaultIsSetupComplete holds the default value on creation for the is_setup_complete field.
+	backupprofile.DefaultIsSetupComplete = backupprofileDescIsSetupComplete.Default.(bool)
+	backupscheduleHooks := schema.BackupSchedule{}.Hooks()
+	backupschedule.Hooks[0] = backupscheduleHooks[0]
+	backupscheduleFields := schema.BackupSchedule{}.Fields()
+	_ = backupscheduleFields
+	// backupscheduleDescHourly is the schema descriptor for hourly field.
+	backupscheduleDescHourly := backupscheduleFields[0].Descriptor()
+	// backupschedule.DefaultHourly holds the default value on creation for the hourly field.
+	backupschedule.DefaultHourly = backupscheduleDescHourly.Default.(bool)
+	// backupscheduleDescMonthday is the schema descriptor for monthday field.
+	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
+	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
+	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+}
 
 const (
 	Version = "v0.13.1"                                         // Version of ent codegen.

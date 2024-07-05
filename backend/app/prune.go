@@ -5,38 +5,74 @@ import (
 	"arco/backend/util"
 	"fmt"
 	"os/exec"
-	"slices"
 	"strings"
+	"time"
 )
+
+func (b *BackupClient) runPruneJob(pruneJob types.PruneJob) {
+	repoLock := b.state.GetRepoLock(pruneJob.Id)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	b.state.AddRunningPruneJob(b.ctx, pruneJob.Id)
+	defer b.state.RemoveRunningBackup(pruneJob.Id)
+
+	// Prepare prune command
+	cmd := exec.CommandContext(b.ctx, pruneJob.BinaryPath, "prune", "--list", "--keep-daily", "3", "--keep-weekly", "4", "--glob-archives", fmt.Sprintf("'%s-*'", pruneJob.Prefix), pruneJob.RepoUrl)
+	cmd.Env = util.BorgEnv{}.WithPassword(pruneJob.RepoPassword).AsList()
+
+	// Run prune command
+	startTime := b.log.LogCmdStart(cmd.String())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
+		b.state.AddNotification(errMsg, LevelError)
+
+		// There is no need to continue with the compact job if the prune job failed
+		return
+	} else {
+		b.log.LogCmdEnd(cmd.String(), startTime)
+		b.state.AddNotification(fmt.Sprintf("Prune job completed in %s", time.Since(startTime)), LevelInfo)
+	}
+
+	// Prepare compact command
+	cmd = exec.CommandContext(b.ctx, pruneJob.BinaryPath, "compact", pruneJob.RepoUrl)
+	cmd.Env = util.BorgEnv{}.WithPassword(pruneJob.RepoPassword).AsList()
+	b.log.Debug("Command: ", cmd.String())
+
+	// Run compact command
+	startTime = b.log.LogCmdStart(cmd.String())
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
+		b.state.AddNotification(errMsg, LevelError)
+	} else {
+		b.log.LogCmdEnd(cmd.String(), startTime)
+		b.state.AddNotification(fmt.Sprintf("Compact job completed in %s", time.Since(startTime)), LevelInfo)
+	}
+}
 
 func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
 		return err
 	}
-	backupProfile := repo.Edges.Backupprofiles[0]
+	backupProfile := repo.Edges.BackupProfiles[0]
 
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
-	if slices.Contains(b.runningPruneJobs, bId) {
-		return fmt.Errorf("prune job is already running")
-	}
-	if slices.Contains(b.occupiedRepos, repositoryId) {
-		return fmt.Errorf("repository is busy")
+	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
+		return fmt.Errorf(reason)
 	}
 
-	b.runningPruneJobs = append(b.runningPruneJobs, bId)
-	b.occupiedRepos = append(b.occupiedRepos, repositoryId)
-
-	b.inChan.StartPrune <- types.PruneJob{
+	go b.runPruneJob(types.PruneJob{
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,
 		Prefix:       backupProfile.Prefix,
 		BinaryPath:   b.config.BorgPath,
-	}
+	})
 	return nil
 }
 
@@ -108,7 +144,7 @@ func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) 
 	if err != nil {
 		return []PruneInfo{}, err
 	}
-	backupProfile := repo.Edges.Backupprofiles[0]
+	backupProfile := repo.Edges.BackupProfiles[0]
 
 	// Prepare prune command (dry-run)
 	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, "prune", "-v", "--dry-run", "--list", "--keep-daily=1", "--keep-weekly=1", fmt.Sprintf("--glob-archives='%s-*'", backupProfile.Prefix), repo.URL)

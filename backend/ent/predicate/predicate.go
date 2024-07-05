@@ -12,5 +12,8 @@ type Archive func(*sql.Selector)
 // BackupProfile is the predicate function for backupprofile builders.
 type BackupProfile func(*sql.Selector)
 
+// BackupSchedule is the predicate function for backupschedule builders.
+type BackupSchedule func(*sql.Selector)
+
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)

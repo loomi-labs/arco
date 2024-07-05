@@ -4,7 +4,6 @@ package backupprofile
 
 import (
 	"arco/backend/ent/predicate"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -65,17 +64,7 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
-// HasPeriodicBackups applies equality check predicate on the "hasPeriodicBackups" field. It's identical to HasPeriodicBackupsEQ.
-func HasPeriodicBackups(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldHasPeriodicBackups, v))
-}
-
-// PeriodicBackupTime applies equality check predicate on the "periodicBackupTime" field. It's identical to PeriodicBackupTimeEQ.
-func PeriodicBackupTime(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldPeriodicBackupTime, v))
-}
-
-// IsSetupComplete applies equality check predicate on the "isSetupComplete" field. It's identical to IsSetupCompleteEQ.
+// IsSetupComplete applies equality check predicate on the "is_setup_complete" field. It's identical to IsSetupCompleteEQ.
 func IsSetupComplete(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
 }
@@ -210,72 +199,12 @@ func PrefixContainsFold(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldContainsFold(FieldPrefix, v))
 }
 
-// HasPeriodicBackupsEQ applies the EQ predicate on the "hasPeriodicBackups" field.
-func HasPeriodicBackupsEQ(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldHasPeriodicBackups, v))
-}
-
-// HasPeriodicBackupsNEQ applies the NEQ predicate on the "hasPeriodicBackups" field.
-func HasPeriodicBackupsNEQ(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNEQ(FieldHasPeriodicBackups, v))
-}
-
-// PeriodicBackupTimeEQ applies the EQ predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeEQ(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeNEQ applies the NEQ predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeNEQ(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNEQ(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeIn applies the In predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeIn(vs ...time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldIn(FieldPeriodicBackupTime, vs...))
-}
-
-// PeriodicBackupTimeNotIn applies the NotIn predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeNotIn(vs ...time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNotIn(FieldPeriodicBackupTime, vs...))
-}
-
-// PeriodicBackupTimeGT applies the GT predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeGT(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGT(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeGTE applies the GTE predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeGTE(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGTE(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeLT applies the LT predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeLT(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLT(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeLTE applies the LTE predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeLTE(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLTE(FieldPeriodicBackupTime, v))
-}
-
-// PeriodicBackupTimeIsNil applies the IsNil predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeIsNil() predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldIsNull(FieldPeriodicBackupTime))
-}
-
-// PeriodicBackupTimeNotNil applies the NotNil predicate on the "periodicBackupTime" field.
-func PeriodicBackupTimeNotNil() predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNotNull(FieldPeriodicBackupTime))
-}
-
-// IsSetupCompleteEQ applies the EQ predicate on the "isSetupComplete" field.
+// IsSetupCompleteEQ applies the EQ predicate on the "is_setup_complete" field.
 func IsSetupCompleteEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
 }
 
-// IsSetupCompleteNEQ applies the NEQ predicate on the "isSetupComplete" field.
+// IsSetupCompleteNEQ applies the NEQ predicate on the "is_setup_complete" field.
 func IsSetupCompleteNEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNEQ(FieldIsSetupComplete, v))
 }
@@ -295,6 +224,29 @@ func HasRepositories() predicate.BackupProfile {
 func HasRepositoriesWith(preds ...predicate.Repository) predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
 		step := newRepositoriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBackupSchedule applies the HasEdge predicate on the "backup_schedule" edge.
+func HasBackupSchedule() predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, BackupScheduleTable, BackupScheduleColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackupScheduleWith applies the HasEdge predicate on the "backup_schedule" edge with a given conditions (other predicates).
+func HasBackupScheduleWith(preds ...predicate.BackupSchedule) predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := newBackupScheduleStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

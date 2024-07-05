@@ -4,11 +4,11 @@ package ent
 
 import (
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -39,41 +39,13 @@ func (bpc *BackupProfileCreate) SetDirectories(s []string) *BackupProfileCreate 
 	return bpc
 }
 
-// SetHasPeriodicBackups sets the "hasPeriodicBackups" field.
-func (bpc *BackupProfileCreate) SetHasPeriodicBackups(b bool) *BackupProfileCreate {
-	bpc.mutation.SetHasPeriodicBackups(b)
-	return bpc
-}
-
-// SetNillableHasPeriodicBackups sets the "hasPeriodicBackups" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableHasPeriodicBackups(b *bool) *BackupProfileCreate {
-	if b != nil {
-		bpc.SetHasPeriodicBackups(*b)
-	}
-	return bpc
-}
-
-// SetPeriodicBackupTime sets the "periodicBackupTime" field.
-func (bpc *BackupProfileCreate) SetPeriodicBackupTime(t time.Time) *BackupProfileCreate {
-	bpc.mutation.SetPeriodicBackupTime(t)
-	return bpc
-}
-
-// SetNillablePeriodicBackupTime sets the "periodicBackupTime" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillablePeriodicBackupTime(t *time.Time) *BackupProfileCreate {
-	if t != nil {
-		bpc.SetPeriodicBackupTime(*t)
-	}
-	return bpc
-}
-
-// SetIsSetupComplete sets the "isSetupComplete" field.
+// SetIsSetupComplete sets the "is_setup_complete" field.
 func (bpc *BackupProfileCreate) SetIsSetupComplete(b bool) *BackupProfileCreate {
 	bpc.mutation.SetIsSetupComplete(b)
 	return bpc
 }
 
-// SetNillableIsSetupComplete sets the "isSetupComplete" field if the given value is not nil.
+// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
 func (bpc *BackupProfileCreate) SetNillableIsSetupComplete(b *bool) *BackupProfileCreate {
 	if b != nil {
 		bpc.SetIsSetupComplete(*b)
@@ -100,6 +72,25 @@ func (bpc *BackupProfileCreate) AddRepositories(r ...*Repository) *BackupProfile
 		ids[i] = r[i].ID
 	}
 	return bpc.AddRepositoryIDs(ids...)
+}
+
+// SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
+func (bpc *BackupProfileCreate) SetBackupScheduleID(id int) *BackupProfileCreate {
+	bpc.mutation.SetBackupScheduleID(id)
+	return bpc
+}
+
+// SetNillableBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillableBackupScheduleID(id *int) *BackupProfileCreate {
+	if id != nil {
+		bpc = bpc.SetBackupScheduleID(*id)
+	}
+	return bpc
+}
+
+// SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
+func (bpc *BackupProfileCreate) SetBackupSchedule(b *BackupSchedule) *BackupProfileCreate {
+	return bpc.SetBackupScheduleID(b.ID)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -137,10 +128,6 @@ func (bpc *BackupProfileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bpc *BackupProfileCreate) defaults() {
-	if _, ok := bpc.mutation.HasPeriodicBackups(); !ok {
-		v := backupprofile.DefaultHasPeriodicBackups
-		bpc.mutation.SetHasPeriodicBackups(v)
-	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		v := backupprofile.DefaultIsSetupComplete
 		bpc.mutation.SetIsSetupComplete(v)
@@ -158,11 +145,8 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.Directories(); !ok {
 		return &ValidationError{Name: "directories", err: errors.New(`ent: missing required field "BackupProfile.directories"`)}
 	}
-	if _, ok := bpc.mutation.HasPeriodicBackups(); !ok {
-		return &ValidationError{Name: "hasPeriodicBackups", err: errors.New(`ent: missing required field "BackupProfile.hasPeriodicBackups"`)}
-	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
-		return &ValidationError{Name: "isSetupComplete", err: errors.New(`ent: missing required field "BackupProfile.isSetupComplete"`)}
+		return &ValidationError{Name: "is_setup_complete", err: errors.New(`ent: missing required field "BackupProfile.is_setup_complete"`)}
 	}
 	return nil
 }
@@ -208,14 +192,6 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
 		_node.Directories = value
 	}
-	if value, ok := bpc.mutation.HasPeriodicBackups(); ok {
-		_spec.SetField(backupprofile.FieldHasPeriodicBackups, field.TypeBool, value)
-		_node.HasPeriodicBackups = value
-	}
-	if value, ok := bpc.mutation.PeriodicBackupTime(); ok {
-		_spec.SetField(backupprofile.FieldPeriodicBackupTime, field.TypeTime, value)
-		_node.PeriodicBackupTime = value
-	}
 	if value, ok := bpc.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 		_node.IsSetupComplete = value
@@ -229,6 +205,22 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bpc.mutation.BackupScheduleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.BackupScheduleTable,
+			Columns: []string{backupprofile.BackupScheduleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

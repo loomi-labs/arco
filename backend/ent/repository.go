@@ -30,8 +30,8 @@ type Repository struct {
 
 // RepositoryEdges holds the relations/edges for other nodes in the graph.
 type RepositoryEdges struct {
-	// Backupprofiles holds the value of the backupprofiles edge.
-	Backupprofiles []*BackupProfile `json:"backupprofiles,omitempty"`
+	// BackupProfiles holds the value of the backup_profiles edge.
+	BackupProfiles []*BackupProfile `json:"backup_profiles,omitempty"`
 	// Archives holds the value of the archives edge.
 	Archives []*Archive `json:"archives,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -39,13 +39,13 @@ type RepositoryEdges struct {
 	loadedTypes [2]bool
 }
 
-// BackupprofilesOrErr returns the Backupprofiles value or an error if the edge
+// BackupProfilesOrErr returns the BackupProfiles value or an error if the edge
 // was not loaded in eager-loading.
-func (e RepositoryEdges) BackupprofilesOrErr() ([]*BackupProfile, error) {
+func (e RepositoryEdges) BackupProfilesOrErr() ([]*BackupProfile, error) {
 	if e.loadedTypes[0] {
-		return e.Backupprofiles, nil
+		return e.BackupProfiles, nil
 	}
-	return nil, &NotLoadedError{edge: "backupprofiles"}
+	return nil, &NotLoadedError{edge: "backup_profiles"}
 }
 
 // ArchivesOrErr returns the Archives value or an error if the edge
@@ -118,9 +118,9 @@ func (r *Repository) Value(name string) (ent.Value, error) {
 	return r.selectValues.Get(name)
 }
 
-// QueryBackupprofiles queries the "backupprofiles" edge of the Repository entity.
-func (r *Repository) QueryBackupprofiles() *BackupProfileQuery {
-	return NewRepositoryClient(r.config).QueryBackupprofiles(r)
+// QueryBackupProfiles queries the "backup_profiles" edge of the Repository entity.
+func (r *Repository) QueryBackupProfiles() *BackupProfileQuery {
+	return NewRepositoryClient(r.config).QueryBackupProfiles(r)
 }
 
 // QueryArchives queries the "archives" edge of the Repository entity.

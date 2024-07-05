@@ -17,7 +17,12 @@ generate-models:
 	@echo "✅ Done!"
 
 ensure-atlas:
-	@command -v atlas >/dev/null 2>&1 || { echo >&2 "atlas is not installed. Please run 'curl -sSf https://atlasgo.sh | sh' or go to https://entgo.io/docs/versioned-migrations/ to install it."; exit 1; }
+	@command -v atlas >/dev/null 2>&1 || { echo >&2 "atlas is not installed. Please run 'make install atlas' to install it."; exit 1; }
+
+install-atlas:
+	@echo "Installing atlas..."
+	@curl -sSf https://atlasgo.sh | sh
+	@echo "✅ Done!"
 
 generate-migrations: ensure-atlas
 	@echo "Creating ent migration..."
@@ -60,4 +65,4 @@ ensure-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
 
 dev: ensure-pnpm
-	DEBUG=true wails dev
+	wails dev

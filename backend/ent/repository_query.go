@@ -24,7 +24,7 @@ type RepositoryQuery struct {
 	order              []repository.OrderOption
 	inters             []Interceptor
 	predicates         []predicate.Repository
-	withBackupprofiles *BackupProfileQuery
+	withBackupProfiles *BackupProfileQuery
 	withArchives       *ArchiveQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -62,8 +62,8 @@ func (rq *RepositoryQuery) Order(o ...repository.OrderOption) *RepositoryQuery {
 	return rq
 }
 
-// QueryBackupprofiles chains the current query on the "backupprofiles" edge.
-func (rq *RepositoryQuery) QueryBackupprofiles() *BackupProfileQuery {
+// QueryBackupProfiles chains the current query on the "backup_profiles" edge.
+func (rq *RepositoryQuery) QueryBackupProfiles() *BackupProfileQuery {
 	query := (&BackupProfileClient{config: rq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -76,7 +76,7 @@ func (rq *RepositoryQuery) QueryBackupprofiles() *BackupProfileQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupprofilesTable, repository.BackupprofilesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupProfilesTable, repository.BackupProfilesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -298,7 +298,7 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		order:              append([]repository.OrderOption{}, rq.order...),
 		inters:             append([]Interceptor{}, rq.inters...),
 		predicates:         append([]predicate.Repository{}, rq.predicates...),
-		withBackupprofiles: rq.withBackupprofiles.Clone(),
+		withBackupProfiles: rq.withBackupProfiles.Clone(),
 		withArchives:       rq.withArchives.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
@@ -306,14 +306,14 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 	}
 }
 
-// WithBackupprofiles tells the query-builder to eager-load the nodes that are connected to
-// the "backupprofiles" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepositoryQuery) WithBackupprofiles(opts ...func(*BackupProfileQuery)) *RepositoryQuery {
+// WithBackupProfiles tells the query-builder to eager-load the nodes that are connected to
+// the "backup_profiles" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepositoryQuery) WithBackupProfiles(opts ...func(*BackupProfileQuery)) *RepositoryQuery {
 	query := (&BackupProfileClient{config: rq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withBackupprofiles = query
+	rq.withBackupProfiles = query
 	return rq
 }
 
@@ -407,7 +407,7 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		nodes       = []*Repository{}
 		_spec       = rq.querySpec()
 		loadedTypes = [2]bool{
-			rq.withBackupprofiles != nil,
+			rq.withBackupProfiles != nil,
 			rq.withArchives != nil,
 		}
 	)
@@ -429,10 +429,10 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := rq.withBackupprofiles; query != nil {
-		if err := rq.loadBackupprofiles(ctx, query, nodes,
-			func(n *Repository) { n.Edges.Backupprofiles = []*BackupProfile{} },
-			func(n *Repository, e *BackupProfile) { n.Edges.Backupprofiles = append(n.Edges.Backupprofiles, e) }); err != nil {
+	if query := rq.withBackupProfiles; query != nil {
+		if err := rq.loadBackupProfiles(ctx, query, nodes,
+			func(n *Repository) { n.Edges.BackupProfiles = []*BackupProfile{} },
+			func(n *Repository, e *BackupProfile) { n.Edges.BackupProfiles = append(n.Edges.BackupProfiles, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -446,7 +446,7 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 	return nodes, nil
 }
 
-func (rq *RepositoryQuery) loadBackupprofiles(ctx context.Context, query *BackupProfileQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *BackupProfile)) error {
+func (rq *RepositoryQuery) loadBackupProfiles(ctx context.Context, query *BackupProfileQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *BackupProfile)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*Repository)
 	nids := make(map[int]map[*Repository]struct{})
@@ -458,11 +458,11 @@ func (rq *RepositoryQuery) loadBackupprofiles(ctx context.Context, query *Backup
 		}
 	}
 	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(repository.BackupprofilesTable)
-		s.Join(joinT).On(s.C(backupprofile.FieldID), joinT.C(repository.BackupprofilesPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(repository.BackupprofilesPrimaryKey[1]), edgeIDs...))
+		joinT := sql.Table(repository.BackupProfilesTable)
+		s.Join(joinT).On(s.C(backupprofile.FieldID), joinT.C(repository.BackupProfilesPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(repository.BackupProfilesPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
-		s.Select(joinT.C(repository.BackupprofilesPrimaryKey[1]))
+		s.Select(joinT.C(repository.BackupProfilesPrimaryKey[1]))
 		s.AppendSelect(columns...)
 		s.SetDistinct(false)
 	})
@@ -499,7 +499,7 @@ func (rq *RepositoryQuery) loadBackupprofiles(ctx context.Context, query *Backup
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "backupprofiles" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "backup_profiles" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

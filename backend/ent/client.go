@@ -13,6 +13,7 @@ import (
 
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
 
 	"entgo.io/ent"
@@ -30,6 +31,8 @@ type Client struct {
 	Archive *ArchiveClient
 	// BackupProfile is the client for interacting with the BackupProfile builders.
 	BackupProfile *BackupProfileClient
+	// BackupSchedule is the client for interacting with the BackupSchedule builders.
+	BackupSchedule *BackupScheduleClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 }
@@ -45,6 +48,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Archive = NewArchiveClient(c.config)
 	c.BackupProfile = NewBackupProfileClient(c.config)
+	c.BackupSchedule = NewBackupScheduleClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
 }
 
@@ -136,11 +140,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:           ctx,
-		config:        cfg,
-		Archive:       NewArchiveClient(cfg),
-		BackupProfile: NewBackupProfileClient(cfg),
-		Repository:    NewRepositoryClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Archive:        NewArchiveClient(cfg),
+		BackupProfile:  NewBackupProfileClient(cfg),
+		BackupSchedule: NewBackupScheduleClient(cfg),
+		Repository:     NewRepositoryClient(cfg),
 	}, nil
 }
 
@@ -158,11 +163,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:           ctx,
-		config:        cfg,
-		Archive:       NewArchiveClient(cfg),
-		BackupProfile: NewBackupProfileClient(cfg),
-		Repository:    NewRepositoryClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Archive:        NewArchiveClient(cfg),
+		BackupProfile:  NewBackupProfileClient(cfg),
+		BackupSchedule: NewBackupScheduleClient(cfg),
+		Repository:     NewRepositoryClient(cfg),
 	}, nil
 }
 
@@ -193,6 +199,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Archive.Use(hooks...)
 	c.BackupProfile.Use(hooks...)
+	c.BackupSchedule.Use(hooks...)
 	c.Repository.Use(hooks...)
 }
 
@@ -201,6 +208,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Archive.Intercept(interceptors...)
 	c.BackupProfile.Intercept(interceptors...)
+	c.BackupSchedule.Intercept(interceptors...)
 	c.Repository.Intercept(interceptors...)
 }
 
@@ -211,6 +219,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Archive.mutate(ctx, m)
 	case *BackupProfileMutation:
 		return c.BackupProfile.mutate(ctx, m)
+	case *BackupScheduleMutation:
+		return c.BackupSchedule.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
 	default:
@@ -491,6 +501,22 @@ func (c *BackupProfileClient) QueryRepositories(bp *BackupProfile) *RepositoryQu
 	return query
 }
 
+// QueryBackupSchedule queries the backup_schedule edge of a BackupProfile.
+func (c *BackupProfileClient) QueryBackupSchedule(bp *BackupProfile) *BackupScheduleQuery {
+	query := (&BackupScheduleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
+			sqlgraph.To(backupschedule.Table, backupschedule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.BackupScheduleTable, backupprofile.BackupScheduleColumn),
+		)
+		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *BackupProfileClient) Hooks() []Hook {
 	return c.hooks.BackupProfile
@@ -513,6 +539,156 @@ func (c *BackupProfileClient) mutate(ctx context.Context, m *BackupProfileMutati
 		return (&BackupProfileDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BackupProfile mutation op: %q", m.Op())
+	}
+}
+
+// BackupScheduleClient is a client for the BackupSchedule schema.
+type BackupScheduleClient struct {
+	config
+}
+
+// NewBackupScheduleClient returns a client for the BackupSchedule from the given config.
+func NewBackupScheduleClient(c config) *BackupScheduleClient {
+	return &BackupScheduleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `backupschedule.Hooks(f(g(h())))`.
+func (c *BackupScheduleClient) Use(hooks ...Hook) {
+	c.hooks.BackupSchedule = append(c.hooks.BackupSchedule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `backupschedule.Intercept(f(g(h())))`.
+func (c *BackupScheduleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BackupSchedule = append(c.inters.BackupSchedule, interceptors...)
+}
+
+// Create returns a builder for creating a BackupSchedule entity.
+func (c *BackupScheduleClient) Create() *BackupScheduleCreate {
+	mutation := newBackupScheduleMutation(c.config, OpCreate)
+	return &BackupScheduleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BackupSchedule entities.
+func (c *BackupScheduleClient) CreateBulk(builders ...*BackupScheduleCreate) *BackupScheduleCreateBulk {
+	return &BackupScheduleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BackupScheduleClient) MapCreateBulk(slice any, setFunc func(*BackupScheduleCreate, int)) *BackupScheduleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BackupScheduleCreateBulk{err: fmt.Errorf("calling to BackupScheduleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BackupScheduleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BackupScheduleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BackupSchedule.
+func (c *BackupScheduleClient) Update() *BackupScheduleUpdate {
+	mutation := newBackupScheduleMutation(c.config, OpUpdate)
+	return &BackupScheduleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BackupScheduleClient) UpdateOne(bs *BackupSchedule) *BackupScheduleUpdateOne {
+	mutation := newBackupScheduleMutation(c.config, OpUpdateOne, withBackupSchedule(bs))
+	return &BackupScheduleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BackupScheduleClient) UpdateOneID(id int) *BackupScheduleUpdateOne {
+	mutation := newBackupScheduleMutation(c.config, OpUpdateOne, withBackupScheduleID(id))
+	return &BackupScheduleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BackupSchedule.
+func (c *BackupScheduleClient) Delete() *BackupScheduleDelete {
+	mutation := newBackupScheduleMutation(c.config, OpDelete)
+	return &BackupScheduleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BackupScheduleClient) DeleteOne(bs *BackupSchedule) *BackupScheduleDeleteOne {
+	return c.DeleteOneID(bs.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BackupScheduleClient) DeleteOneID(id int) *BackupScheduleDeleteOne {
+	builder := c.Delete().Where(backupschedule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BackupScheduleDeleteOne{builder}
+}
+
+// Query returns a query builder for BackupSchedule.
+func (c *BackupScheduleClient) Query() *BackupScheduleQuery {
+	return &BackupScheduleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBackupSchedule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BackupSchedule entity by its id.
+func (c *BackupScheduleClient) Get(ctx context.Context, id int) (*BackupSchedule, error) {
+	return c.Query().Where(backupschedule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BackupScheduleClient) GetX(ctx context.Context, id int) *BackupSchedule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBackupProfile queries the backup_profile edge of a BackupSchedule.
+func (c *BackupScheduleClient) QueryBackupProfile(bs *BackupSchedule) *BackupProfileQuery {
+	query := (&BackupProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupschedule.Table, backupschedule.FieldID, id),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, backupschedule.BackupProfileTable, backupschedule.BackupProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(bs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BackupScheduleClient) Hooks() []Hook {
+	hooks := c.hooks.BackupSchedule
+	return append(hooks[:len(hooks):len(hooks)], backupschedule.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *BackupScheduleClient) Interceptors() []Interceptor {
+	return c.inters.BackupSchedule
+}
+
+func (c *BackupScheduleClient) mutate(ctx context.Context, m *BackupScheduleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BackupScheduleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BackupScheduleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BackupScheduleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BackupScheduleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BackupSchedule mutation op: %q", m.Op())
 	}
 }
 
@@ -624,15 +800,15 @@ func (c *RepositoryClient) GetX(ctx context.Context, id int) *Repository {
 	return obj
 }
 
-// QueryBackupprofiles queries the backupprofiles edge of a Repository.
-func (c *RepositoryClient) QueryBackupprofiles(r *Repository) *BackupProfileQuery {
+// QueryBackupProfiles queries the backup_profiles edge of a Repository.
+func (c *RepositoryClient) QueryBackupProfiles(r *Repository) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupprofilesTable, repository.BackupprofilesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupProfilesTable, repository.BackupProfilesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -684,9 +860,9 @@ func (c *RepositoryClient) mutate(ctx context.Context, m *RepositoryMutation) (V
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, BackupProfile, Repository []ent.Hook
+		Archive, BackupProfile, BackupSchedule, Repository []ent.Hook
 	}
 	inters struct {
-		Archive, BackupProfile, Repository []ent.Interceptor
+		Archive, BackupProfile, BackupSchedule, Repository []ent.Interceptor
 	}
 )
