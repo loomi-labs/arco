@@ -2,107 +2,121 @@ package app
 
 import (
 	"arco/backend/types"
-	"slices"
+	"context"
+	"go.uber.org/zap"
 	"sync"
-	"time"
 )
 
 type State struct {
-	StartupErr       error
-	runningBackups   []types.BackupIdentifier
-	runningPruneJobs []types.BackupIdentifier
-	occupiedRepos    []int
-	notifications    []Notification
-	mu               sync.Mutex
-	backupTimer      *time.Timer
+	log           *zap.SugaredLogger
+	mu            sync.Mutex
+	notifications []Notification
+	StartupErr    error
+
+	repoLocks map[int]*sync.Mutex
+
+	runningBackupJobs map[types.BackupIdentifier]*CancelCtx
+	runningPruneJobs  map[types.BackupIdentifier]*CancelCtx
 }
 
-func NewState() *State {
-	return &State{
-		runningBackups:   []types.BackupIdentifier{},
-		runningPruneJobs: []types.BackupIdentifier{},
-		occupiedRepos:    []int{},
-		StartupErr:       nil,
-		notifications:    []Notification{},
+type CancelCtx struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+// TODO: do we need this?
+func NewCancelCtx(ctx context.Context) *CancelCtx {
+	nCtx, cancel := context.WithCancel(ctx)
+	return &CancelCtx{
+		ctx:    nCtx,
+		cancel: cancel,
 	}
+}
+
+func NewState(log *zap.SugaredLogger) *State {
+	return &State{
+		log:           log,
+		mu:            sync.Mutex{},
+		notifications: []Notification{},
+		StartupErr:    nil,
+
+		repoLocks:         map[int]*sync.Mutex{},
+		runningBackupJobs: make(map[types.BackupIdentifier]*CancelCtx),
+		runningPruneJobs:  make(map[types.BackupIdentifier]*CancelCtx),
+	}
+}
+
+func (s *State) GetRepoLock(id types.BackupIdentifier) *sync.Mutex {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.repoLocks[id.RepositoryId]; !ok {
+		s.repoLocks[id.RepositoryId] = &sync.Mutex{}
+	}
+	return s.repoLocks[id.RepositoryId]
 }
 
 func (s *State) CanRunBackup(id types.BackupIdentifier) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
-	if slices.Contains(s.runningBackups, id) {
+	if _, ok := s.runningBackupJobs[id]; ok {
 		return false, "Backup is already running"
 	}
-	if slices.Contains(s.occupiedRepos, id.RepositoryId) {
+	if _, ok := s.repoLocks[id.RepositoryId]; ok {
 		return false, "Repository is busy"
 	}
 	return true, ""
 }
 
-func (s *State) AddRunningBackup(id types.BackupIdentifier) {
+func (s *State) AddRunningBackup(ctx context.Context, id types.BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningBackups = append(s.runningBackups, id)
-	s.occupiedRepos = append(s.occupiedRepos, id.RepositoryId)
+	s.runningBackupJobs[id] = NewCancelCtx(ctx)
 }
 
 func (s *State) RemoveRunningBackup(id types.BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i, backup := range s.runningBackups {
-		if backup == id {
-			s.runningBackups = append(s.runningBackups[:i], s.runningBackups[i+1:]...)
-			break
-		}
+	if ctx, ok := s.runningBackupJobs[id]; ok {
+		s.log.Debugf("Cancelling backup job %v", id)
+		ctx.cancel()
 	}
-	for i, repo := range s.occupiedRepos {
-		if repo == id.RepositoryId {
-			s.occupiedRepos = append(s.occupiedRepos[:i], s.occupiedRepos[i+1:]...)
-			break
-		}
-	}
+
+	delete(s.runningBackupJobs, id)
 }
 
 func (s *State) CanRunPruneJob(id types.BackupIdentifier) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
-	if slices.Contains(s.runningPruneJobs, id) {
+	if _, ok := s.runningPruneJobs[id]; ok {
 		return false, "Prune job is already running"
 	}
-	if slices.Contains(s.occupiedRepos, id.RepositoryId) {
+	if _, ok := s.repoLocks[id.RepositoryId]; ok {
 		return false, "Repository is busy"
 	}
 	return true, ""
 }
 
-func (s *State) AddRunningPruneJob(id types.BackupIdentifier) {
+func (s *State) AddRunningPruneJob(ctx context.Context, id types.BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningPruneJobs = append(s.runningPruneJobs, id)
-	s.occupiedRepos = append(s.occupiedRepos, id.RepositoryId)
+	s.runningPruneJobs[id] = NewCancelCtx(ctx)
 }
 
 func (s *State) RemoveRunningPruneJob(id types.BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i, prune := range s.runningPruneJobs {
-		if prune == id {
-			s.runningPruneJobs = append(s.runningPruneJobs[:i], s.runningPruneJobs[i+1:]...)
-			break
-		}
+	if ctx, ok := s.runningPruneJobs[id]; ok {
+		s.log.Debugf("Cancelling prune job %v", id)
+		ctx.cancel()
 	}
-	for i, repo := range s.occupiedRepos {
-		if repo == id.RepositoryId {
-			s.occupiedRepos = append(s.occupiedRepos[:i], s.occupiedRepos[i+1:]...)
-			break
-		}
-	}
+
+	delete(s.runningPruneJobs, id)
 }
 
 func (s *State) AddNotification(msg string, level NotificationLevel) {
@@ -122,15 +136,4 @@ func (s *State) GetAndDeleteNofications() []Notification {
 	notifications := s.notifications
 	s.notifications = []Notification{}
 	return notifications
-}
-
-func (s *State) SetBackupTimer(t *time.Timer) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.backupTimer != nil {
-		s.backupTimer.Stop()
-	}
-
-	s.backupTimer = t
 }
