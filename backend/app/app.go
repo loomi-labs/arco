@@ -133,7 +133,12 @@ func (a *App) Wakeup() {
 }
 
 func (a *App) initDb() (*ent.Client, error) {
-	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s?_fk=1", filepath.Join(a.config.Dir, "arco.db")))
+	// - Set WAL mode (not strictly necessary each time because it's persisted in the database, but good for first run)
+	// - Set busy timeout, so concurrent writers wait on each other instead of erroring immediately
+	// - Enable foreign key checks
+	opts := "?_journal=WAL&_timeout=5000&_fk=1"
+
+	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}

@@ -156,6 +156,7 @@ func (r *RepositoryClient) UnmountArchive(archiveId int) (state MountState, err 
 	return r.unmount(path)
 }
 
+// TODO: move mount state to state
 func getMounts(mountPaths ...string) (mounts []*procfs.MountInfo, err error) {
 	allMounts, err := procfs.GetMounts()
 	if err != nil {
