@@ -7,6 +7,9 @@ import { rRepositoryDetailPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
+import DataSelection from "../components/DataSelection.vue";
+import { Directory, pathToDirectory } from "../common/types";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -15,6 +18,7 @@ import { useToast } from "vue-toastification";
 const router = useRouter();
 const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
+const directories = ref<Directory[]>([]);
 
 /************
  * Functions
@@ -23,6 +27,8 @@ const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 async function getBackupProfile() {
   try {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
+    LogDebug(`Got backup profile: ${JSON.stringify(backup.value.directories)}`);
+    directories.value = pathToDirectory(true, backup.value.directories);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -55,6 +61,15 @@ async function dryRunPruneBackups() {
   }
 }
 
+function handleDirectoryUpdate(directories: Directory[]) {
+  try {
+    backup.value.directories = directories.map((dir) => dir.path);
+    backupClient.SaveBackupProfile(backup.value);
+  } catch (error: any) {
+    showAndLogError("Failed to update backup profile", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -68,7 +83,8 @@ getBackupProfile();
   <div class='flex flex-col items-center justify-center h-full'>
     <h1>{{ backup.name }}</h1>
     <p>{{ backup.id }}</p>
-    <p>{{ backup.directories }}</p>
+    <DataSelection :directories='directories' @update:directories='handleDirectoryUpdate'/>
+
     <p>{{ backup.isSetupComplete }}</p>
 
     <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>

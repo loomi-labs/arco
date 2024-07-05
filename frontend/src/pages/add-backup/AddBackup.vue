@@ -10,15 +10,12 @@ import Navbar from "../../components/Navbar.vue";
 import { LogDebug } from "../../../wailsjs/runtime";
 import { showAndLogError } from "../../common/error";
 import { useToast } from "vue-toastification";
+import DataSelection from "../../components/DataSelection.vue";
+import { Directory, pathToDirectory } from "../../common/types";
 
 /************
  * Types
  ************/
-
-interface Directory {
-  path: string;
-  isAdded: boolean;
-}
 
 enum BackupFrequency {
   None = "none",
@@ -46,7 +43,7 @@ const currentStep = ref<Step>(Step.SelectData);
 const existingRepositories = ref<ent.Repository[]>([]);
 
 // Step 1
-const directories = ref<Directory[]>([]);
+const directorySuggestions = ref<Directory[]>([]);
 
 // Step 2
 const backupSchedule = ref<ent.BackupSchedule | undefined>(undefined);
@@ -78,24 +75,17 @@ async function createBackupProfile() {
     LogDebug("Creating backup profile");
     // Create a new backup profile
     backupProfile.value = await backupClient.NewBackupProfile();
-
-    // Get directory suggestions
-    const suggestions = await backupClient.GetDirectorySuggestions();
-    LogDebug(`Suggestions: ${suggestions}`);
-    directories.value = backupProfile.value.directories.map((directory: string) => {
-      return {
-        path: directory,
-        isAdded: true
-      };
-    });
-    directories.value = directories.value.concat(suggestions.map((suggestion: string) => {
-      return {
-        path: suggestion,
-        isAdded: false
-      };
-    }));
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
+  }
+}
+
+async function getDirectorySuggestions() {
+  try {
+    const result = await backupClient.GetDirectorySuggestions();
+    directorySuggestions.value = pathToDirectory(false, result);
+  } catch (error: any) {
+    await showAndLogError("Failed to get directory suggestions", error);
   }
 }
 
@@ -109,25 +99,9 @@ async function saveBackupProfile(): Promise<boolean> {
   return true;
 }
 
-const markDirectory = async (directory: Directory, isAdded: boolean) => {
-  if (isAdded) {
-    directory.isAdded = true;
-    backupProfile.value.directories.push(directory.path);
-  } else {
-    directories.value = directories.value.filter((dir) => dir !== directory);
-    backupProfile.value.directories = backupProfile.value.directories.filter((dir) => dir !== directory.path);
-  }
-};
-
-const addDirectory = async () => {
-  const dir = await backupClient.SelectDirectory();
-  if (dir) {
-    directories.value.push({
-      path: dir,
-      isAdded: true
-    });
-  }
-};
+function handleDirectoryUpdate(directories: Directory[]) {
+  backupProfile.value.directories = directories.filter((dir) => dir.isAdded).map((dir) => dir.path);
+}
 
 async function getExistingRepositories() {
   try {
@@ -258,6 +232,7 @@ const finish = async () => {
  ************/
 
 createBackupProfile();
+getDirectorySuggestions();
 getExistingRepositories();
 
 </script>
@@ -295,17 +270,7 @@ getExistingRepositories();
 
       <h1>Data to backup</h1>
 
-      <div class='flex items-center' v-for='(directory, index) in directories' :key='index'>
-        <label class='form-control w-full max-w-xs'>
-          <input type='text' class='input input-bordered w-full max-w-xs' :class="{ 'bg-accent': directory.isAdded }"
-                 v-model='directory.path' />
-
-        </label>
-        <button v-if='!directory.isAdded' class='btn btn-accent' @click='markDirectory(directory, true)'>+</button>
-        <button v-else class='btn btn-error' @click='markDirectory(directory, false)'>-</button>
-      </div>
-
-      <button class='btn btn-primary' @click='addDirectory()'>Add directory</button>
+      <DataSelection :directories='directorySuggestions' @update:directories='handleDirectoryUpdate'/>
 
       <div style='height: 20px'></div>
 
