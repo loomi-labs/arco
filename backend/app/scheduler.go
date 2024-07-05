@@ -87,24 +87,6 @@ func (a *App) getBackupSchedules() ([]*ent.BackupSchedule, error) {
 		All(a.ctx)
 }
 
-//func (a *App) getNextBackupSchedule() (*ent.BackupSchedule, error) {
-//	bs, err := a.db.BackupSchedule.
-//		Query().
-//		WithBackupProfile(func(q *ent.BackupProfileQuery) {
-//			q.WithRepositories()
-//		}).
-//		Order(ent.Asc(backupschedule.FieldNextRun)).
-//		First(a.ctx)
-//	if err != nil {
-//		if ent.IsNotFound(err) {
-//			return nil, nil
-//		}
-//		return nil, err
-//	}
-//
-//	return bs, nil
-//}
-
 func weekdayToTimeWeekday(weekday backupschedule.Weekday) time.Weekday {
 	switch weekday {
 	case backupschedule.WeekdayMonday:
