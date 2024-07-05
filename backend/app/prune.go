@@ -10,7 +10,11 @@ import (
 )
 
 func (b *BackupClient) runPruneJob(pruneJob types.PruneJob) {
-	defer b.state.RemoveRunningPruneJob(pruneJob.Id)
+	repoLock := b.state.GetRepoLock(pruneJob.Id)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	b.state.AddRunningPruneJob(b.ctx, pruneJob.Id)
+	defer b.state.RemoveRunningBackup(pruneJob.Id)
 
 	// Prepare prune command
 	cmd := exec.CommandContext(b.ctx, pruneJob.BinaryPath, "prune", "--list", "--keep-daily", "3", "--keep-weekly", "4", "--glob-archives", fmt.Sprintf("'%s-*'", pruneJob.Prefix), pruneJob.RepoUrl)
@@ -61,8 +65,6 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
-
-	b.state.AddRunningPruneJob(bId)
 
 	go b.runPruneJob(types.PruneJob{
 		Id:           bId,

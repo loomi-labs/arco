@@ -30,7 +30,7 @@ async function getBackupProfile() {
 
 async function runBackups() {
   try {
-    await backupClient.RunBackups(backup.value.id);
+    await backupClient.StartBackupJobs(backup.value.id);
     toast.success("Backup started");
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);

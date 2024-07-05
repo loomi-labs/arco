@@ -21,12 +21,12 @@ export function PruneBackup(arg1:number,arg2:number):Promise<void>;
 
 export function PruneBackups(arg1:number):Promise<void>;
 
-export function RunBackup(arg1:number,arg2:number):Promise<void>;
-
-export function RunBackups(arg1:number):Promise<void>;
-
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 
 export function SaveBackupSchedule(arg1:number,arg2:ent.BackupSchedule):Promise<void>;
 
 export function SelectDirectory():Promise<string>;
+
+export function StartBackupJob(arg1:number,arg2:number):Promise<void>;
+
+export function StartBackupJobs(arg1:number):Promise<void>;

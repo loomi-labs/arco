@@ -115,7 +115,7 @@ func (b *BackupClient) runBorgCreate(backupJob types.BackupJob) {
 	}
 }
 
-func (b *BackupClient) runBackup(bId types.BackupIdentifier, isQuiet bool) error {
+func (b *BackupClient) startBackupJob(bId types.BackupIdentifier, isQuiet bool) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
@@ -133,9 +133,9 @@ func (b *BackupClient) runBackup(bId types.BackupIdentifier, isQuiet bool) error
 	return nil
 }
 
-// RunBackup starts a backup job for the given repository and backup profile.
+// StartBackupJob starts a backup job for the given repository and backup profile.
 // TODO: rename to StartBackupJob
-func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
+func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) error {
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
@@ -144,11 +144,11 @@ func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return fmt.Errorf(reason)
 	}
 
-	return b.runBackup(bId, false)
+	return b.startBackupJob(bId, false)
 }
 
 // TODO: do we need this?
-func (b *BackupClient) RunBackups(backupProfileId int) error {
+func (b *BackupClient) StartBackupJobs(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (b *BackupClient) RunBackups(backupProfileId int) error {
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.RunBackup(backupProfileId, repo.ID)
+		err := b.StartBackupJob(backupProfileId, repo.ID)
 		if err != nil {
 			return err
 		}
