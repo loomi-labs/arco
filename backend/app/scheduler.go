@@ -14,7 +14,7 @@ func (a *App) scheduleBackups() {
 	// Get the duration until the next backup
 	allBs, err := a.getBackupSchedules()
 	if err != nil {
-		a.log.Error(fmt.Sprintf("Failed to get backup schedules: %s", err))
+		a.log.Errorf("Failed to get backup schedules: %s", err)
 		a.state.AddNotification(fmt.Sprintf("Failed to get backup schedules: %s", err), LevelError)
 		return
 	}
