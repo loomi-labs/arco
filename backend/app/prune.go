@@ -13,6 +13,7 @@ func (b *BackupClient) runPruneJob(pruneJob types.PruneJob) {
 	repoLock := b.state.GetRepoLock(pruneJob.Id)
 	repoLock.Lock()
 	defer repoLock.Unlock()
+	defer b.state.DeleteRepoLock(pruneJob.Id)
 	b.state.AddRunningPruneJob(b.ctx, pruneJob.Id)
 	defer b.state.RemoveRunningBackup(pruneJob.Id)
 

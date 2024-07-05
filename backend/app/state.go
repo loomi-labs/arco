@@ -55,6 +55,12 @@ func (s *State) GetRepoLock(id types.BackupIdentifier) *sync.Mutex {
 	return s.repoLocks[id.RepositoryId]
 }
 
+func (s *State) DeleteRepoLock(id types.BackupIdentifier) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.repoLocks, id.RepositoryId)
+}
+
 func (s *State) CanRunBackup(id types.BackupIdentifier) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"

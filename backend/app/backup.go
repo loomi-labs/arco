@@ -11,7 +11,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 )
 
@@ -93,12 +92,17 @@ func (b *BackupClient) runBorgCreate(backupJob types.BackupJob) {
 	repoLock := b.state.GetRepoLock(backupJob.Id)
 	repoLock.Lock()
 	defer repoLock.Unlock()
+	defer b.state.DeleteRepoLock(backupJob.Id)
 	b.state.AddRunningBackup(b.ctx, backupJob.Id)
 	defer b.state.RemoveRunningBackup(backupJob.Id)
 
 	// Prepare backup command
 	name := fmt.Sprintf("%s-%s", backupJob.Prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
-	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, "create", fmt.Sprintf("%s::%s", backupJob.RepoUrl, name), strings.Join(backupJob.Directories, " "))
+	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, append([]string{
+		"create",
+		fmt.Sprintf("%s::%s", backupJob.RepoUrl, name)},
+		backupJob.Directories...,
+	)...)
 	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
 
 	// Run backup command
