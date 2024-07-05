@@ -6,9 +6,13 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
 	"arco/backend/types"
+	"arco/backend/util"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
+	"os/exec"
+	"strings"
+	"time"
 )
 
 /***********************************/
@@ -83,13 +87,55 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
-func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+// runBorgCreate runs the actual backup job.
+// It is long running and should be run in a goroutine.
+func (b *BackupClient) runBorgCreate(backupJob types.BackupJob) {
+	repoLock := b.state.GetRepoLock(backupJob.Id)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	b.state.AddRunningBackup(b.ctx, backupJob.Id)
+	defer b.state.RemoveRunningBackup(backupJob.Id)
+
+	// Prepare backup command
+	name := fmt.Sprintf("%s-%s", backupJob.Prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, "create", fmt.Sprintf("%s::%s", backupJob.RepoUrl, name), strings.Join(backupJob.Directories, " "))
+	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
+
+	// Run backup command
+	startTime := b.log.LogCmdStart(cmd.String())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
+		b.state.AddNotification(errMsg, LevelError)
+	} else {
+		b.log.LogCmdEnd(cmd.String(), startTime)
+		if !backupJob.IsQuiet {
+			b.state.AddNotification(fmt.Sprintf("Backup job completed in %s", time.Since(startTime)), LevelInfo)
+		}
+	}
+}
+
+func (b *BackupClient) runBackup(bId types.BackupIdentifier, isQuiet bool) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
+	go b.runBorgCreate(types.BackupJob{
+		Id:           bId,
+		RepoUrl:      repo.URL,
+		RepoPassword: repo.Password,
+		Prefix:       backupProfile.Prefix,
+		Directories:  backupProfile.Directories,
+		IsQuiet:      isQuiet,
+	})
+	return nil
+}
+
+// RunBackup starts a backup job for the given repository and backup profile.
+// TODO: rename to StartBackupJob
+func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 	bId := types.BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
@@ -98,19 +144,10 @@ func (b *BackupClient) RunBackup(backupProfileId int, repositoryId int) error {
 		return fmt.Errorf(reason)
 	}
 
-	b.state.AddRunningBackup(bId)
-
-	b.actionChans.StartBackup <- types.BackupJob{
-		Id:           bId,
-		RepoUrl:      repo.URL,
-		RepoPassword: repo.Password,
-		Prefix:       backupProfile.Prefix,
-		Directories:  backupProfile.Directories,
-		BinaryPath:   b.config.BorgPath,
-	}
-	return nil
+	return b.runBackup(bId, false)
 }
 
+// TODO: do we need this?
 func (b *BackupClient) RunBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {

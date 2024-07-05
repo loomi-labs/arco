@@ -5,7 +5,6 @@ import (
 	"arco/backend/ssh"
 	"arco/backend/types"
 	"arco/backend/util"
-	"arco/backend/worker"
 	"context"
 	"fmt"
 	"github.com/getlantern/systray"
@@ -35,31 +34,24 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log         *util.CmdLogger
-	config      *types.Config
-	actionChans *types.ActionChannels
-	resultChans *types.ResultChannels
-	worker      *worker.Worker
-	state       *State
+	log    *util.CmdLogger
+	config *types.Config
+	state  *State
 
 	// Startup
-	ctx context.Context
-	db  *ent.Client
+	ctx    context.Context
+	cancel context.CancelFunc
+	db     *ent.Client
 }
 
 func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
 ) *App {
-	aChans := types.NewActionsChannels()
-	rChans := types.NewResultChannels()
 	return &App{
-		log:         util.NewCmdLogger(log),
-		config:      config,
-		actionChans: aChans,
-		resultChans: rChans,
-		worker:      worker.NewWorker(log, config.BorgPath, aChans, rChans),
-		state:       NewState(),
+		log:    util.NewCmdLogger(log),
+		config: config,
+		state:  NewState(log),
 	}
 }
 
@@ -88,7 +80,7 @@ func (a *App) BackupClient() *BackupClient {
 }
 
 func (a *App) Startup(ctx context.Context) {
-	a.ctx = ctx
+	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	// Initialize the database
 	db, err := a.initDb()
@@ -116,13 +108,12 @@ func (a *App) Startup(ctx context.Context) {
 		return
 	}
 
-	// Start the worker
-	go a.worker.Run()
+	a.scheduleBackups()
 }
 
 func (a *App) Shutdown(_ context.Context) {
 	a.log.Info(fmt.Sprintf("Shutting down %s", Name))
-	a.worker.Stop()
+	a.cancel()
 	err := a.db.Close()
 	if err != nil {
 		a.log.Error("Failed to close database connection")

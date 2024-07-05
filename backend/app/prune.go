@@ -6,7 +6,46 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
+
+func (b *BackupClient) runPruneJob(pruneJob types.PruneJob) {
+	defer b.state.RemoveRunningPruneJob(pruneJob.Id)
+
+	// Prepare prune command
+	cmd := exec.CommandContext(b.ctx, pruneJob.BinaryPath, "prune", "--list", "--keep-daily", "3", "--keep-weekly", "4", "--glob-archives", fmt.Sprintf("'%s-*'", pruneJob.Prefix), pruneJob.RepoUrl)
+	cmd.Env = util.BorgEnv{}.WithPassword(pruneJob.RepoPassword).AsList()
+
+	// Run prune command
+	startTime := b.log.LogCmdStart(cmd.String())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
+		b.state.AddNotification(errMsg, LevelError)
+
+		// There is no need to continue with the compact job if the prune job failed
+		return
+	} else {
+		b.log.LogCmdEnd(cmd.String(), startTime)
+		b.state.AddNotification(fmt.Sprintf("Prune job completed in %s", time.Since(startTime)), LevelInfo)
+	}
+
+	// Prepare compact command
+	cmd = exec.CommandContext(b.ctx, pruneJob.BinaryPath, "compact", pruneJob.RepoUrl)
+	cmd.Env = util.BorgEnv{}.WithPassword(pruneJob.RepoPassword).AsList()
+	b.log.Debug("Command: ", cmd.String())
+
+	// Run compact command
+	startTime = b.log.LogCmdStart(cmd.String())
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
+		b.state.AddNotification(errMsg, LevelError)
+	} else {
+		b.log.LogCmdEnd(cmd.String(), startTime)
+		b.state.AddNotification(fmt.Sprintf("Compact job completed in %s", time.Since(startTime)), LevelInfo)
+	}
+}
 
 func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
@@ -25,13 +64,13 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 
 	b.state.AddRunningPruneJob(bId)
 
-	b.actionChans.StartPrune <- types.PruneJob{
+	go b.runPruneJob(types.PruneJob{
 		Id:           bId,
 		RepoUrl:      repo.URL,
 		RepoPassword: repo.Password,
 		Prefix:       backupProfile.Prefix,
 		BinaryPath:   b.config.BorgPath,
-	}
+	})
 	return nil
 }
 
