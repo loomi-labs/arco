@@ -24,6 +24,7 @@ func (b BorgEnv) AsList() []string {
 	env := append(
 		os.Environ(),
 		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
+		"BORG_EXIT_CODES=modern",
 	)
 	if b.password != "" {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", b.password))

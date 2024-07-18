@@ -1,25 +1,33 @@
 package util
 
 import (
+	"arco/backend/types"
 	"fmt"
 	"runtime"
 )
 
-func GetBorgBinaryPathX() string {
-	if runtime.GOOS == "linux" {
-		return "bin/borg-linuxnewer64"
+func IsLinux() bool {
+	return runtime.GOOS == types.Linux.String()
+}
+
+func IsDarwin() bool {
+	return runtime.GOOS == types.Darwin.String()
+}
+
+func GetLatestBorgBinary(binaries []types.Binary) (types.Binary, error) {
+	for _, binary := range binaries {
+		if binary.Os == types.OS(runtime.GOOS) {
+			return binary, nil
+		}
 	}
-	if runtime.GOOS == "darwin" {
-		return "bin/borg-macos64"
-	}
-	panic("unsupported OS")
+	return types.Binary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
 }
 
 func GetOpenFileManagerCmd() (string, error) {
-	if runtime.GOOS == "linux" {
+	if IsLinux() {
 		return "xdg-open", nil
 	}
-	if runtime.GOOS == "darwin" {
+	if IsDarwin() {
 		return "open", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
