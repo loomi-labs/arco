@@ -32,7 +32,7 @@ func DownloadFile(filepath string, url string) error {
 	// Writer the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write to file %s: %w", filepath, err)
 	}
 
 	// Make the file executable
