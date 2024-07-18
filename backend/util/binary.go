@@ -11,7 +11,7 @@ func DownloadFile(filepath string, url string) error {
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file %s: %w", filepath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer out.Close()
