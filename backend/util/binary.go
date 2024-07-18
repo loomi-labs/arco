@@ -19,7 +19,7 @@ func DownloadFile(filepath string, url string) error {
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to download file from %s: %w", url, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer resp.Body.Close()
