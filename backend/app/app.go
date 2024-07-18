@@ -180,9 +180,13 @@ func (a *App) version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Output is in the format "borg 1.2.8\n"
+	// Output is in the format "xxx 1.2.8\n"
 	// We want to return "1.2.8"
-	return strings.TrimSpace(strings.TrimPrefix(string(out), "borg ")), nil
+	fields := strings.Fields(string(out))
+	if len(fields) < 2 {
+		return "", fmt.Errorf("unexpected output: %s", string(out))
+	}
+	return fields[1], nil
 }
 
 func (a *App) installBorgBinary() error {
@@ -193,11 +197,13 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	file, err := a.config.Binaries.ReadFile(util.GetBorgBinaryPathX())
+	binary, err := util.GetLatestBorgBinary(a.config.Binaries)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(a.config.BorgPath, file, 0755)
+
+	// Download the binary
+	return util.DownloadFile(a.config.BorgPath, binary.Url)
 }
 
 func (a *App) initSystray() error {

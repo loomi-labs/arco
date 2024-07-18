@@ -21,13 +21,23 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed bin
-var binaries embed.FS
-
 //go:embed icon.png
 var icon embed.FS
 
-const borgVersion = "1.2.8"
+var binaries = []types.Binary{
+	{
+		Name:    "borg_1.4.0",
+		Version: "1.4.0",
+		Os:      types.Linux,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
+	},
+	{
+		Name:    "borg_1.4.0",
+		Version: "1.4.0",
+		Os:      types.Darwin,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
+	},
+}
 
 func initLogger() *zap.SugaredLogger {
 	if os.Getenv(app.EnvVarDebug.String()) == "true" {
@@ -73,8 +83,8 @@ func initConfig() (*types.Config, error) {
 	return &types.Config{
 		Dir:         configDir,
 		Binaries:    binaries,
-		BorgPath:    filepath.Join(configDir, "borg"),
-		BorgVersion: borgVersion,
+		BorgPath:    filepath.Join(configDir, binaries[0].Name),
+		BorgVersion: binaries[0].Version,
 		Icon:        icon,
 	}, nil
 }
