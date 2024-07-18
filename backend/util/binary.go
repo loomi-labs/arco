@@ -36,5 +36,8 @@ func DownloadFile(filepath string, url string) error {
 	}
 
 	// Make the file executable
-	return os.Chmod(filepath, 0755)
+	if err := os.Chmod(filepath, 0755); err != nil {
+		return fmt.Errorf("failed to change permissions for file %s: %w", filepath, err)
+	}
+	return nil
 }
