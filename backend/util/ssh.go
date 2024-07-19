@@ -1,4 +1,4 @@
-package ssh
+package util
 
 import (
 	"github.com/charmbracelet/keygen"

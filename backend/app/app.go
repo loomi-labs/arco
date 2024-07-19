@@ -3,7 +3,6 @@ package app
 import (
 	"arco/backend/borg"
 	"arco/backend/ent"
-	"arco/backend/ssh"
 	"arco/backend/types"
 	"arco/backend/util"
 	"context"
@@ -264,7 +263,7 @@ func (a *App) registerSignalHandler() {
 
 // TODO: remove or move somewhere else
 func (a *App) createSSHKeyPair() (string, error) {
-	pair, err := ssh.GenerateKeyPair()
+	pair, err := util.GenerateKeyPair()
 	if err != nil {
 		return "", err
 	}
