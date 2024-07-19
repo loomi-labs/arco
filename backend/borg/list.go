@@ -45,7 +45,8 @@ func (b *Borg) List(repoUrl string, password string) (*ListResponse, error) {
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal JSON: %s, error: %w", out, err)
+	}
 	}
 
 	return &listResponse, nil
