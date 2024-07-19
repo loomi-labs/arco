@@ -1,7 +1,7 @@
 package app
 
 import (
-	"arco/backend/app/borg"
+	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/ssh"
 	"arco/backend/types"
