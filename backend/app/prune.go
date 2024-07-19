@@ -5,22 +5,6 @@ import (
 	"fmt"
 )
 
-func (b *BackupClient) runPruneJob(pruneJob types.PruneJob) {
-	repoLock := b.state.GetRepoLock(pruneJob.Id.RepositoryId)
-	repoLock.Lock()
-	defer repoLock.Unlock()
-	defer b.state.DeleteRepoLock(pruneJob.Id.RepositoryId)
-	b.state.AddRunningPruneJob(b.ctx, pruneJob.Id)
-	defer b.state.RemoveRunningBackup(pruneJob.Id)
-
-	err := b.borg.Prune(b.ctx, pruneJob)
-	if err != nil {
-		b.state.AddNotification(err.Error(), LevelError)
-	} else {
-		b.state.AddNotification(fmt.Sprintf("Prune job completed"), LevelInfo)
-	}
-}
-
 func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
 	if err != nil {
@@ -36,12 +20,7 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 		return fmt.Errorf(reason)
 	}
 
-	go b.runPruneJob(types.PruneJob{
-		Id:           bId,
-		RepoUrl:      repo.URL,
-		RepoPassword: repo.Password,
-		Prefix:       backupProfile.Prefix,
-	})
+	go b.runPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
 	return nil
 }
 
@@ -61,4 +40,20 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 		}
 	}
 	return nil
+}
+
+func (b *BackupClient) runPruneJob(bId types.BackupIdentifier, repoUrl string, password string, prefix string) {
+	repoLock := b.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	b.state.AddRunningPruneJob(b.ctx, bId)
+	defer b.state.RemoveRunningBackup(bId)
+
+	err := b.borg.Prune(b.ctx, repoUrl, password, prefix)
+	if err != nil {
+		b.state.AddNotification(err.Error(), LevelError)
+	} else {
+		b.state.AddNotification(fmt.Sprintf("Prune job completed"), LevelInfo)
+	}
 }

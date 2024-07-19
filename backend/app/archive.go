@@ -107,7 +107,7 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	repoLock.Lock()
 	defer repoLock.Unlock()
 
-	return r.borg.DeleteArchive(arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	return r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
 }
 
 func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {

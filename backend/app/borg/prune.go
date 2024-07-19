@@ -1,13 +1,12 @@
 package borg
 
 import (
-	"arco/backend/types"
 	"context"
 	"fmt"
 	"os/exec"
 )
 
-func (b *Borg) Prune(ctx context.Context, pruneJob types.PruneJob) error {
+func (b *Borg) Prune(ctx context.Context, repoUrl, password, prefix string) error {
 	// Prepare prune command
 	cmd := exec.CommandContext(ctx, b.path,
 		"prune",
@@ -17,10 +16,10 @@ func (b *Borg) Prune(ctx context.Context, pruneJob types.PruneJob) error {
 		"--keep-weekly",
 		"4",
 		"--glob-archives",
-		fmt.Sprintf("'%s-*'", pruneJob.Prefix),
-		pruneJob.RepoUrl,
+		fmt.Sprintf("'%s-*'", prefix),
+		repoUrl,
 	)
-	cmd.Env = Env{}.WithPassword(pruneJob.RepoPassword).AsList()
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Run prune command
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -31,7 +30,7 @@ func (b *Borg) Prune(ctx context.Context, pruneJob types.PruneJob) error {
 		b.log.LogCmdEnd(cmd.String(), startTime)
 
 		// Run compact to free up space
-		return b.Compact(ctx, pruneJob.RepoUrl, pruneJob.RepoPassword)
+		return b.Compact(ctx, repoUrl, password)
 	}
 }
 

@@ -48,7 +48,7 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupIdenti
 func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupIdentifier) {
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err := a.BackupClient().startBackupJob(backupId, true)
+	err := a.BackupClient().startBackupJob(backupId)
 	if err != nil {
 		lastRunStatus = err.Error()
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
