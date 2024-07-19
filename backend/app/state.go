@@ -17,6 +17,7 @@ type State struct {
 
 	runningBackupJobs map[types.BackupIdentifier]*CancelCtx
 	runningPruneJobs  map[types.BackupIdentifier]*CancelCtx
+	runningDeleteJobs map[types.BackupIdentifier]*CancelCtx
 }
 
 type CancelCtx struct {
@@ -43,22 +44,23 @@ func NewState(log *zap.SugaredLogger) *State {
 		repoLocks:         map[int]*sync.Mutex{},
 		runningBackupJobs: make(map[types.BackupIdentifier]*CancelCtx),
 		runningPruneJobs:  make(map[types.BackupIdentifier]*CancelCtx),
+		runningDeleteJobs: make(map[types.BackupIdentifier]*CancelCtx),
 	}
 }
 
-func (s *State) GetRepoLock(id types.BackupIdentifier) *sync.Mutex {
+func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.repoLocks[id.RepositoryId]; !ok {
-		s.repoLocks[id.RepositoryId] = &sync.Mutex{}
+	if _, ok := s.repoLocks[repoId]; !ok {
+		s.repoLocks[repoId] = &sync.Mutex{}
 	}
-	return s.repoLocks[id.RepositoryId]
+	return s.repoLocks[repoId]
 }
 
-func (s *State) DeleteRepoLock(id types.BackupIdentifier) {
+func (s *State) DeleteRepoLock(repoId int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.repoLocks, id.RepositoryId)
+	delete(s.repoLocks, repoId)
 }
 
 func (s *State) CanRunBackup(id types.BackupIdentifier) (canRun bool, reason string) {
@@ -86,7 +88,7 @@ func (s *State) RemoveRunningBackup(id types.BackupIdentifier) {
 	defer s.mu.Unlock()
 
 	if ctx, ok := s.runningBackupJobs[id]; ok {
-		s.log.Debugf("Cancelling backup job %v", id)
+		s.log.Debugf("Cancelling context of backup job %v", id)
 		ctx.cancel()
 	}
 
@@ -118,11 +120,30 @@ func (s *State) RemoveRunningPruneJob(id types.BackupIdentifier) {
 	defer s.mu.Unlock()
 
 	if ctx, ok := s.runningPruneJobs[id]; ok {
-		s.log.Debugf("Cancelling prune job %v", id)
+		s.log.Debugf("Cancelling context of prune job %v", id)
 		ctx.cancel()
 	}
 
 	delete(s.runningPruneJobs, id)
+}
+
+func (s *State) AddRunningDeleteJob(ctx context.Context, id types.BackupIdentifier) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.runningDeleteJobs[id] = NewCancelCtx(ctx)
+}
+
+func (s *State) RemoveRunningDeleteJob(id types.BackupIdentifier) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if ctx, ok := s.runningDeleteJobs[id]; ok {
+		s.log.Debugf("Cancelling context of delete job %v", id)
+		ctx.cancel()
+	}
+
+	delete(s.runningDeleteJobs, id)
 }
 
 func (s *State) AddNotification(msg string, level NotificationLevel) {

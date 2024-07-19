@@ -27,5 +27,11 @@ type PruneJob struct {
 	RepoUrl      string
 	RepoPassword string
 	Prefix       string
-	BinaryPath   string
+}
+
+type DeleteJob struct {
+	Id           BackupIdentifier
+	RepoUrl      string
+	RepoPassword string
+	Prefix       string
 }

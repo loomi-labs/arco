@@ -1,9 +1,21 @@
-package util
+package borg
 
 import (
 	"go.uber.org/zap"
 	"time"
 )
+
+type Borg struct {
+	path string
+	log  *CmdLogger
+}
+
+func NewBorg(path string, log *zap.SugaredLogger) *Borg {
+	return &Borg{
+		path: path,
+		log:  NewCmdLogger(log),
+	}
+}
 
 type CmdLogger struct {
 	*zap.SugaredLogger

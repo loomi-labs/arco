@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/app/borg"
 	"arco/backend/ent"
 	"arco/backend/ssh"
 	"arco/backend/types"
@@ -33,9 +34,10 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log    *util.CmdLogger
+	log    *zap.SugaredLogger
 	config *types.Config
 	state  *State
+	borg   *borg.Borg
 
 	// Startup
 	ctx    context.Context
@@ -47,10 +49,12 @@ func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
 ) *App {
+	state := NewState(log)
 	return &App{
-		log:    util.NewCmdLogger(log),
+		log:    log,
 		config: config,
-		state:  NewState(log),
+		state:  state,
+		borg:   borg.NewBorg(config.BorgPath, log),
 	}
 }
 

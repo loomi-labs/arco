@@ -4,10 +4,7 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
-	"arco/backend/util"
-	"encoding/json"
 	"fmt"
-	"os/exec"
 	"slices"
 	"time"
 )
@@ -18,19 +15,11 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(r.config.BorgPath, "list", "--json", repo.URL)
-	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
+	repoLock := r.state.GetRepoLock(repoId)
+	repoLock.Lock()
+	defer repoLock.Unlock()
 
-	// Get the list from the borg repository
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, r.log.LogCmdError(cmd.String(), startTime, err)
-	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
-
-	var listResponse ListResponse
-	err = json.Unmarshal(out, &listResponse)
+	listResponse, err := r.borg.List(repo.URL, repo.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -114,16 +103,11 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 		return err
 	}
 
-	cmd := exec.Command(r.config.BorgPath, "delete", fmt.Sprintf("%s::%s", arch.Edges.Repository.URL, arch.Name))
-	cmd.Env = util.BorgEnv{}.WithPassword(arch.Edges.Repository.Password).AsList()
+	repoLock := r.state.GetRepoLock(arch.Edges.Repository.ID)
+	repoLock.Lock()
+	defer repoLock.Unlock()
 
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	return r.borg.DeleteArchive(arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
 }
 
 func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {
