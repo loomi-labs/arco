@@ -1,5 +1,7 @@
 package app
 
+import "fmt"
+
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {
 	Message string `json:"message"`
@@ -24,29 +26,11 @@ type MountState struct {
 	MountPath string `json:"mount_path"`
 }
 
-// -------- borg types --------
-
-type Archive struct {
-	Archive  string `json:"archive"`
-	Barchive string `json:"barchive"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Start    string `json:"start"`
-	Time     string `json:"time"`
+type BackupIdentifier struct {
+	BackupProfileId int
+	RepositoryId    int
 }
 
-type Encryption struct {
-	Mode string `json:"mode"`
-}
-
-type Repository struct {
-	ID           string `json:"id"`
-	LastModified string `json:"last_modified"`
-	Location     string `json:"location"`
-}
-
-type ListResponse struct {
-	Archives   []Archive  `json:"archives"`
-	Encryption Encryption `json:"encryption"`
-	Repository Repository `json:"repository"`
+func (b BackupIdentifier) String() string {
+	return fmt.Sprintf("BackupProfileId: %d, RepositoryId: %d", b.BackupProfileId, b.RepositoryId)
 }

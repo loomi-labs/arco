@@ -1,8 +1,8 @@
 package app
 
 import (
+	"arco/backend/borg"
 	"arco/backend/ent"
-	"arco/backend/ssh"
 	"arco/backend/types"
 	"arco/backend/util"
 	"context"
@@ -33,9 +33,10 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log    *util.CmdLogger
+	log    *zap.SugaredLogger
 	config *types.Config
 	state  *State
+	borg   *borg.Borg
 
 	// Startup
 	ctx    context.Context
@@ -47,10 +48,12 @@ func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
 ) *App {
+	state := NewState(log)
 	return &App{
-		log:    util.NewCmdLogger(log),
+		log:    log,
 		config: config,
-		state:  NewState(log),
+		state:  state,
+		borg:   borg.NewBorg(config.BorgPath, log),
 	}
 }
 
@@ -260,7 +263,7 @@ func (a *App) registerSignalHandler() {
 
 // TODO: remove or move somewhere else
 func (a *App) createSSHKeyPair() (string, error) {
-	pair, err := ssh.GenerateKeyPair()
+	pair, err := util.GenerateKeyPair()
 	if err != nil {
 		return "", err
 	}

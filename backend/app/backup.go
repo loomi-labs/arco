@@ -5,13 +5,9 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
-	"arco/backend/types"
-	"arco/backend/util"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
-	"os/exec"
-	"time"
 )
 
 /***********************************/
@@ -62,6 +58,26 @@ func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
 	return err
 }
 
+func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
+	if withBackups {
+		backupProfile, err := b.GetBackupProfile(id)
+		if err != nil {
+			return err
+		}
+		for _, repo := range backupProfile.Edges.Repositories {
+			bId := BackupIdentifier{
+				BackupProfileId: id,
+				RepositoryId:    repo.ID,
+			}
+			go b.runBorgDelete(bId, repo.URL, repo.Password, backupProfile.Prefix)
+		}
+	}
+	err := b.db.BackupProfile.
+		DeleteOneID(id).
+		Exec(b.ctx)
+	return err
+}
+
 func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
 	repo, err := b.db.Repository.
 		Query().
@@ -86,61 +102,20 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
-// runBorgCreate runs the actual backup job.
-// It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(backupJob types.BackupJob) {
-	repoLock := b.state.GetRepoLock(backupJob.Id)
-	repoLock.Lock()
-	defer repoLock.Unlock()
-	defer b.state.DeleteRepoLock(backupJob.Id)
-	b.state.AddRunningBackup(b.ctx, backupJob.Id)
-	defer b.state.RemoveRunningBackup(backupJob.Id)
-
-	// Prepare backup command
-	name := fmt.Sprintf("%s-%s", backupJob.Prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
-	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, append([]string{
-		"create",
-		fmt.Sprintf("%s::%s", backupJob.RepoUrl, name)},
-		backupJob.Directories...,
-	)...)
-	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
-
-	// Run backup command
-	startTime := b.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		errMsg := b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err)).Error()
-		b.state.AddNotification(errMsg, LevelError)
-	} else {
-		b.log.LogCmdEnd(cmd.String(), startTime)
-		if !backupJob.IsQuiet {
-			b.state.AddNotification(fmt.Sprintf("Backup job completed in %s", time.Since(startTime)), LevelInfo)
-		}
-	}
-}
-
-func (b *BackupClient) startBackupJob(bId types.BackupIdentifier, isQuiet bool) error {
+func (b *BackupClient) startBackupJob(bId BackupIdentifier) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	go b.runBorgCreate(types.BackupJob{
-		Id:           bId,
-		RepoUrl:      repo.URL,
-		RepoPassword: repo.Password,
-		Prefix:       backupProfile.Prefix,
-		Directories:  backupProfile.Directories,
-		IsQuiet:      isQuiet,
-	})
+	go b.runBorgCreate(bId, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.Directories)
 	return nil
 }
 
 // StartBackupJob starts a backup job for the given repository and backup profile.
-// TODO: rename to StartBackupJob
 func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) error {
-	bId := types.BackupIdentifier{
+	bId := BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
@@ -148,7 +123,7 @@ func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) err
 		return fmt.Errorf(reason)
 	}
 
-	return b.startBackupJob(bId, false)
+	return b.startBackupJob(bId)
 }
 
 // TODO: do we need this?
@@ -230,4 +205,42 @@ func rollback(tx *ent.Tx, err error) error {
 		err = fmt.Errorf("%w: %v", err, rerr)
 	}
 	return err
+}
+
+/***********************************/
+/********** Borg Commands **********/
+/***********************************/
+
+// runBorgCreate runs the actual backup job.
+// It is long running and should be run in a goroutine.
+func (b *BackupClient) runBorgCreate(bId BackupIdentifier, repoUrl, password, prefix string, directories []string) {
+	repoLock := b.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	b.state.AddRunningBackup(b.ctx, bId)
+	defer b.state.RemoveRunningBackup(bId)
+
+	err := b.borg.Create(b.ctx, repoUrl, password, prefix, directories)
+	if err != nil {
+		b.state.AddNotification(err.Error(), LevelError)
+	} else {
+		b.state.AddNotification(fmt.Sprintf("Backup job completed"), LevelInfo)
+	}
+}
+
+func (b *BackupClient) runBorgDelete(bId BackupIdentifier, repoUrl, password, prefix string) {
+	repoLock := b.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	b.state.AddRunningDeleteJob(b.ctx, bId)
+	defer b.state.RemoveRunningDeleteJob(bId)
+
+	err := b.borg.DeleteArchives(b.ctx, repoUrl, password, prefix)
+	if err != nil {
+		b.state.AddNotification(err.Error(), LevelError)
+	} else {
+		b.state.AddNotification(fmt.Sprintf("Delete job completed"), LevelInfo)
+	}
 }

@@ -1,10 +1,9 @@
 package app
 
 import (
+	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/ent/repository"
-	"arco/backend/util"
-	"fmt"
 	"os/exec"
 )
 
@@ -24,15 +23,12 @@ func (r *RepositoryClient) All() ([]*ent.Repository, error) {
 // TODO: remove this function or refactor it
 func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(r.config.BorgPath, "info", "--json", url)
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = borg.Env{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+	if err := r.borg.Info(url, password); err != nil {
+		return nil, err
 	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
 	return r.db.Repository.
@@ -53,14 +49,11 @@ func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.R
 
 func (r *RepositoryClient) Create(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	cmd := exec.Command(r.config.BorgPath, "init", "--encryption=repokey-blake2", url)
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = borg.Env{}.WithPassword(password).AsList()
 
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+	if err := r.borg.Init(url, password); err != nil {
+		return nil, err
 	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Create a new repository entity
 	return r.db.Repository.

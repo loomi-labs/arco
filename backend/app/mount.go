@@ -67,15 +67,9 @@ func (r *RepositoryClient) MountRepository(repoId int) (state MountState, err er
 		return
 	}
 
-	cmd := exec.Command(r.config.BorgPath, "mount", repo.URL, path)
-	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
-
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return state, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+	if err = r.borg.MountRepository(repo.URL, repo.Password, path); err != nil {
+		return
 	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Open the file manager and forget about it
 	go r.openFileManager(path)
@@ -99,15 +93,9 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state MountState, err er
 		return
 	}
 
-	cmd := exec.Command(r.config.BorgPath, "mount", fmt.Sprintf("%s::%s", archive.Edges.Repository.URL, archive.Name), path)
-	cmd.Env = util.BorgEnv{}.WithPassword(archive.Edges.Repository.Password).AsList()
-
-	startTime := r.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return state, r.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+	if err = r.borg.MountArchive(archive.Edges.Repository.URL, archive.Name, archive.Edges.Repository.Password, path); err != nil {
+		return
 	}
-	r.log.LogCmdEnd(cmd.String(), startTime)
 
 	// Open the file manager and forget about it
 	go r.openFileManager(path)

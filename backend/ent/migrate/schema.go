@@ -69,7 +69,7 @@ var (
 				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
 				Columns:    []*schema.Column{BackupSchedulesColumns[10]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{

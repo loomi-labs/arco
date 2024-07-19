@@ -3,7 +3,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
-import { rRepositoryDetailPage, withId } from "../router";
+import { rDataPage, rRepositoryDetailPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
@@ -43,6 +43,16 @@ async function runBackups() {
   }
 }
 
+async function deleteBackupProfile() {
+  try {
+    await backupClient.DeleteBackupProfile(backup.value.id, true);
+    toast.success("Backup profile deleted");
+    await router.push(rDataPage);
+  } catch (error: any) {
+    await showAndLogError("Failed to delete backup profile", error);
+  }
+}
+
 async function pruneBackups() {
   try {
     await backupClient.PruneBackups(backup.value.id);
@@ -54,8 +64,8 @@ async function pruneBackups() {
 
 async function dryRunPruneBackups() {
   try {
-    const result = await backupClient.DryRunPruneBackups(backup.value.id);
-    toast.success(`Pruning would remove ${result} backups`);
+    // const result = await backupClient.DryRunPruneBackups(backup.value.id);
+    // toast.success(`Pruning would remove ${result} backups`);
   } catch (error: any) {
     await showAndLogError("Failed to dry run prune backups", error);
   }
@@ -97,6 +107,7 @@ getBackupProfile();
     <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>
     <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>
     <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>
+    <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>
 
     <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>

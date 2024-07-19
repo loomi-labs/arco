@@ -3,7 +3,6 @@ package app
 import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/types"
 	"fmt"
 	"time"
 )
@@ -22,7 +21,7 @@ func (a *App) scheduleBackups() {
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
-		backupId := types.BackupIdentifier{
+		backupId := BackupIdentifier{
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
@@ -30,7 +29,7 @@ func (a *App) scheduleBackups() {
 	}
 }
 
-func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupIdentifier) {
+func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupIdentifier) {
 	// Calculate the duration until the next backup
 	durationUntilNextBackup := bs.NextRun.Sub(time.Now())
 	if durationUntilNextBackup < 0 {
@@ -45,10 +44,10 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupIdenti
 	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
 }
 
-func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupIdentifier) {
+func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId BackupIdentifier) {
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err := a.BackupClient().startBackupJob(backupId, true)
+	err := a.BackupClient().startBackupJob(backupId)
 	if err != nil {
 		lastRunStatus = err.Error()
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
