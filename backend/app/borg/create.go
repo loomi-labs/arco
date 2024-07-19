@@ -2,7 +2,6 @@ package borg
 
 import (
 	"arco/backend/types"
-	"arco/backend/util"
 	"context"
 	"fmt"
 	"os/exec"
@@ -19,7 +18,7 @@ func (b *Borg) Create(ctx context.Context, backupJob types.BackupJob) error {
 		fmt.Sprintf("%s::%s", backupJob.RepoUrl, name)},
 		backupJob.Directories...,
 	)...)
-	cmd.Env = util.BorgEnv{}.WithPassword(backupJob.RepoPassword).AsList()
+	cmd.Env = Env{}.WithPassword(backupJob.RepoPassword).AsList()
 
 	// Run backup command
 	startTime := b.log.LogCmdStart(cmd.String())

@@ -1,7 +1,6 @@
 package borg
 
 import (
-	"arco/backend/util"
 	"context"
 	"fmt"
 	"github.com/labstack/gommon/log"
@@ -12,7 +11,7 @@ import (
 func (b *Borg) Compact(ctx context.Context, repoUrl string, repoPassword string) error {
 	// Prepare compact command
 	cmd := exec.CommandContext(ctx, b.path, "compact", repoUrl)
-	cmd.Env = util.BorgEnv{}.WithPassword(repoPassword).AsList()
+	cmd.Env = Env{}.WithPassword(repoPassword).AsList()
 	log.Debug("Command: ", cmd.String())
 
 	// Run compact command

@@ -1,14 +1,13 @@
 package borg
 
 import (
-	"arco/backend/util"
 	"fmt"
 	"os/exec"
 )
 
 func (b *Borg) Info(url, password string) error {
 	cmd := exec.Command(b.path, "info", "--json", url)
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
 	startTime := b.log.LogCmdStart(cmd.String())

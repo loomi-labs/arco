@@ -2,7 +2,6 @@ package borg
 
 import (
 	"arco/backend/types"
-	"arco/backend/util"
 	"context"
 	"fmt"
 	"os/exec"
@@ -21,7 +20,7 @@ func (b *Borg) Prune(ctx context.Context, pruneJob types.PruneJob) error {
 		fmt.Sprintf("'%s-*'", pruneJob.Prefix),
 		pruneJob.RepoUrl,
 	)
-	cmd.Env = util.BorgEnv{}.WithPassword(pruneJob.RepoPassword).AsList()
+	cmd.Env = Env{}.WithPassword(pruneJob.RepoPassword).AsList()
 
 	// Run prune command
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -90,7 +89,7 @@ func (b *Borg) Prune(ctx context.Context, pruneJob types.PruneJob) error {
 //
 //	// Prepare prune command (dry-run)
 //	cmd := exec.CommandContext(b.ctx, b.config.BorgPath, "prune", "-v", "--dry-run", "--list", "--keep-daily=1", "--keep-weekly=1", fmt.Sprintf("--glob-archives='%s-*'", backupProfile.Prefix), repo.URL)
-//	cmd.Env = util.BorgEnv{}.WithPassword(repo.Password).AsList()
+//	cmd.Env = util.Env{}.WithPassword(repo.Password).AsList()
 //	b.log.Debug("Command: ", cmd.String())
 //	// TODO: this is somehow not working when invoked with go (it works on the command line) -> fix this and parse the output
 //

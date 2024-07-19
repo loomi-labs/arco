@@ -1,7 +1,6 @@
 package borg
 
 import (
-	"arco/backend/util"
 	"fmt"
 	"os/exec"
 )
@@ -21,7 +20,7 @@ func (b *Borg) mount(repoUrl string, archive *string, password string, mountPath
 	}
 
 	cmd := exec.Command(b.path, "mount", archiveOrRepo, mountPath)
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

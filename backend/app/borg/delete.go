@@ -2,7 +2,6 @@ package borg
 
 import (
 	"arco/backend/types"
-	"arco/backend/util"
 	"context"
 	"fmt"
 	"os/exec"
@@ -18,7 +17,7 @@ func (b *Borg) Delete(ctx context.Context, deleteJob types.DeleteJob) error {
 		fmt.Sprintf("%s-*", deleteJob.Prefix),
 		deleteJob.RepoUrl,
 	)
-	cmd.Env = util.BorgEnv{}.WithPassword(deleteJob.RepoPassword).AsList()
+	cmd.Env = Env{}.WithPassword(deleteJob.RepoPassword).AsList()
 
 	// Run delete command
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -36,7 +35,7 @@ func (b *Borg) Delete(ctx context.Context, deleteJob types.DeleteJob) error {
 // DeleteArchive deletes a single archive from the repository
 func (b *Borg) DeleteArchive(repository string, archive string, password string) error {
 	cmd := exec.Command(b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

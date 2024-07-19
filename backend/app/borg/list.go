@@ -1,7 +1,6 @@
 package borg
 
 import (
-	"arco/backend/util"
 	"encoding/json"
 	"os/exec"
 )
@@ -33,7 +32,7 @@ type ListResponse struct {
 
 func (b *Borg) List(repoUrl string, password string) (*ListResponse, error) {
 	cmd := exec.Command(b.path, "list", "--json", repoUrl)
-	cmd.Env = util.BorgEnv{}.WithPassword(password).AsList()
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Get the list from the borg repository
 	startTime := b.log.LogCmdStart(cmd.String())
