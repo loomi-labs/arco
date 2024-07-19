@@ -4,7 +4,6 @@ import (
 	"arco/backend/app"
 	"arco/backend/ent/backupschedule"
 	_ "arco/backend/ent/runtime" // required to allow cyclic imports
-	"arco/backend/types"
 	"embed"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -24,17 +23,17 @@ var assets embed.FS
 //go:embed icon.png
 var icon embed.FS
 
-var binaries = []types.Binary{
+var binaries = []app.Binary{
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
-		Os:      types.Linux,
+		Os:      app.Linux,
 		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
 	},
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
-		Os:      types.Darwin,
+		Os:      app.Darwin,
 		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
 	},
 }
@@ -74,13 +73,13 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig() (*types.Config, error) {
+func initConfig() (*app.Config, error) {
 	configDir, err := createConfigDir()
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.Config{
+	return &app.Config{
 		Dir:         configDir,
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, binaries[0].Name),
@@ -102,7 +101,7 @@ var Weekdays = []struct {
 	{backupschedule.WeekdaySunday, backupschedule.WeekdaySunday.String()},
 }
 
-func startApp(log *zap.SugaredLogger, config *types.Config) {
+func startApp(log *zap.SugaredLogger, config *app.Config) {
 	arco := app.NewApp(log, config)
 
 	logLevel, err := logger.StringToLogLevel(log.Level().String())

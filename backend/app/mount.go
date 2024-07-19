@@ -2,7 +2,6 @@ package app
 
 import (
 	"arco/backend/ent"
-	"arco/backend/util"
 	"fmt"
 	"github.com/prometheus/procfs"
 	"golang.org/x/exp/maps"
@@ -39,7 +38,7 @@ func ensurePathExists(path string) error {
 }
 
 func (r *RepositoryClient) openFileManager(path string) {
-	openCmd, err := util.GetOpenFileManagerCmd()
+	openCmd, err := GetOpenFileManagerCmd()
 	if err != nil {
 		r.log.Error("Error getting open file manager command: ", err)
 		return

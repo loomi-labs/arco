@@ -2,6 +2,7 @@ package borg
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/exec"
 )
 
@@ -46,7 +47,6 @@ func (b *Borg) List(repoUrl string, password string) (*ListResponse, error) {
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %s, error: %w", out, err)
-	}
 	}
 
 	return &listResponse, nil

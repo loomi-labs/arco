@@ -1,6 +1,9 @@
 package app
 
-import "fmt"
+import (
+	"embed"
+	"fmt"
+)
 
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {
@@ -33,4 +36,19 @@ type BackupIdentifier struct {
 
 func (b BackupIdentifier) String() string {
 	return fmt.Sprintf("BackupProfileId: %d, RepositoryId: %d", b.BackupProfileId, b.RepositoryId)
+}
+
+type Config struct {
+	Dir         string
+	Binaries    []Binary
+	BorgPath    string
+	BorgVersion string
+	Icon        embed.FS
+}
+
+type Binary struct {
+	Name    string
+	Version string
+	Os      OS
+	Url     string
 }

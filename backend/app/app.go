@@ -3,7 +3,6 @@ package app
 import (
 	"arco/backend/borg"
 	"arco/backend/ent"
-	"arco/backend/types"
 	"arco/backend/util"
 	"context"
 	"fmt"
@@ -34,7 +33,7 @@ func (e EnvVar) String() string {
 type App struct {
 	// Init
 	log    *zap.SugaredLogger
-	config *types.Config
+	config *Config
 	state  *State
 	borg   *borg.Borg
 
@@ -46,7 +45,7 @@ type App struct {
 
 func NewApp(
 	log *zap.SugaredLogger,
-	config *types.Config,
+	config *Config,
 ) *App {
 	state := NewState(log)
 	return &App{
@@ -200,7 +199,7 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	binary, err := util.GetLatestBorgBinary(a.config.Binaries)
+	binary, err := GetLatestBorgBinary(a.config.Binaries)
 	if err != nil {
 		return err
 	}
