@@ -1,7 +1,6 @@
 package app
 
 import (
-	"arco/backend/app/borg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
@@ -111,13 +110,7 @@ func (b *BackupClient) startBackupJob(bId types.BackupIdentifier) error {
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	go b.runBorgCreate(borg.BackupJob{
-		Id:           bId,
-		RepoUrl:      repo.URL,
-		RepoPassword: repo.Password,
-		Prefix:       backupProfile.Prefix,
-		Directories:  backupProfile.Directories,
-	})
+	go b.runBorgCreate(bId, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.Directories)
 	return nil
 }
 
@@ -221,15 +214,15 @@ func rollback(tx *ent.Tx, err error) error {
 
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(backupJob borg.BackupJob) {
-	repoLock := b.state.GetRepoLock(backupJob.Id.RepositoryId)
+func (b *BackupClient) runBorgCreate(bId types.BackupIdentifier, repoUrl, password, prefix string, directories []string) {
+	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()
-	defer b.state.DeleteRepoLock(backupJob.Id.RepositoryId)
-	b.state.AddRunningBackup(b.ctx, backupJob.Id)
-	defer b.state.RemoveRunningBackup(backupJob.Id)
+	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	b.state.AddRunningBackup(b.ctx, bId)
+	defer b.state.RemoveRunningBackup(bId)
 
-	err := b.borg.Create(b.ctx, backupJob)
+	err := b.borg.Create(b.ctx, repoUrl, password, prefix, directories)
 	if err != nil {
 		b.state.AddNotification(err.Error(), LevelError)
 	} else {
