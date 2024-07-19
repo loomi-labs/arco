@@ -5,7 +5,6 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
-	"arco/backend/types"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
@@ -66,7 +65,7 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 			return err
 		}
 		for _, repo := range backupProfile.Edges.Repositories {
-			bId := types.BackupIdentifier{
+			bId := BackupIdentifier{
 				BackupProfileId: id,
 				RepositoryId:    repo.ID,
 			}
@@ -103,7 +102,7 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
-func (b *BackupClient) startBackupJob(bId types.BackupIdentifier) error {
+func (b *BackupClient) startBackupJob(bId BackupIdentifier) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
@@ -116,7 +115,7 @@ func (b *BackupClient) startBackupJob(bId types.BackupIdentifier) error {
 
 // StartBackupJob starts a backup job for the given repository and backup profile.
 func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) error {
-	bId := types.BackupIdentifier{
+	bId := BackupIdentifier{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
@@ -214,7 +213,7 @@ func rollback(tx *ent.Tx, err error) error {
 
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(bId types.BackupIdentifier, repoUrl, password, prefix string, directories []string) {
+func (b *BackupClient) runBorgCreate(bId BackupIdentifier, repoUrl, password, prefix string, directories []string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()
@@ -230,7 +229,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupIdentifier, repoUrl, passwo
 	}
 }
 
-func (b *BackupClient) runBorgDelete(bId types.BackupIdentifier, repoUrl, password, prefix string) {
+func (b *BackupClient) runBorgDelete(bId BackupIdentifier, repoUrl, password, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()

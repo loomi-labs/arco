@@ -1,7 +1,6 @@
 package app
 
 import (
-	"arco/backend/types"
 	"context"
 	"go.uber.org/zap"
 	"sync"
@@ -15,9 +14,9 @@ type State struct {
 
 	repoLocks map[int]*sync.Mutex
 
-	runningBackupJobs map[types.BackupIdentifier]*CancelCtx
-	runningPruneJobs  map[types.BackupIdentifier]*CancelCtx
-	runningDeleteJobs map[types.BackupIdentifier]*CancelCtx
+	runningBackupJobs map[BackupIdentifier]*CancelCtx
+	runningPruneJobs  map[BackupIdentifier]*CancelCtx
+	runningDeleteJobs map[BackupIdentifier]*CancelCtx
 }
 
 type CancelCtx struct {
@@ -42,9 +41,9 @@ func NewState(log *zap.SugaredLogger) *State {
 		StartupErr:    nil,
 
 		repoLocks:         map[int]*sync.Mutex{},
-		runningBackupJobs: make(map[types.BackupIdentifier]*CancelCtx),
-		runningPruneJobs:  make(map[types.BackupIdentifier]*CancelCtx),
-		runningDeleteJobs: make(map[types.BackupIdentifier]*CancelCtx),
+		runningBackupJobs: make(map[BackupIdentifier]*CancelCtx),
+		runningPruneJobs:  make(map[BackupIdentifier]*CancelCtx),
+		runningDeleteJobs: make(map[BackupIdentifier]*CancelCtx),
 	}
 }
 
@@ -63,7 +62,7 @@ func (s *State) DeleteRepoLock(repoId int) {
 	delete(s.repoLocks, repoId)
 }
 
-func (s *State) CanRunBackup(id types.BackupIdentifier) (canRun bool, reason string) {
+func (s *State) CanRunBackup(id BackupIdentifier) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
@@ -76,14 +75,14 @@ func (s *State) CanRunBackup(id types.BackupIdentifier) (canRun bool, reason str
 	return true, ""
 }
 
-func (s *State) AddRunningBackup(ctx context.Context, id types.BackupIdentifier) {
+func (s *State) AddRunningBackup(ctx context.Context, id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.runningBackupJobs[id] = NewCancelCtx(ctx)
 }
 
-func (s *State) RemoveRunningBackup(id types.BackupIdentifier) {
+func (s *State) RemoveRunningBackup(id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -95,7 +94,7 @@ func (s *State) RemoveRunningBackup(id types.BackupIdentifier) {
 	delete(s.runningBackupJobs, id)
 }
 
-func (s *State) CanRunPruneJob(id types.BackupIdentifier) (canRun bool, reason string) {
+func (s *State) CanRunPruneJob(id BackupIdentifier) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
@@ -108,14 +107,14 @@ func (s *State) CanRunPruneJob(id types.BackupIdentifier) (canRun bool, reason s
 	return true, ""
 }
 
-func (s *State) AddRunningPruneJob(ctx context.Context, id types.BackupIdentifier) {
+func (s *State) AddRunningPruneJob(ctx context.Context, id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.runningPruneJobs[id] = NewCancelCtx(ctx)
 }
 
-func (s *State) RemoveRunningPruneJob(id types.BackupIdentifier) {
+func (s *State) RemoveRunningPruneJob(id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -127,14 +126,14 @@ func (s *State) RemoveRunningPruneJob(id types.BackupIdentifier) {
 	delete(s.runningPruneJobs, id)
 }
 
-func (s *State) AddRunningDeleteJob(ctx context.Context, id types.BackupIdentifier) {
+func (s *State) AddRunningDeleteJob(ctx context.Context, id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.runningDeleteJobs[id] = NewCancelCtx(ctx)
 }
 
-func (s *State) RemoveRunningDeleteJob(id types.BackupIdentifier) {
+func (s *State) RemoveRunningDeleteJob(id BackupIdentifier) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
