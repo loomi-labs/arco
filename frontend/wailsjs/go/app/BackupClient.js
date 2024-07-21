@@ -18,6 +18,14 @@ export function GetBackupProfiles() {
   return window['go']['app']['BackupClient']['GetBackupProfiles']();
 }
 
+export function GetBackupProgress(arg1) {
+  return window['go']['app']['BackupClient']['GetBackupProgress'](arg1);
+}
+
+export function GetBackupProgresses(arg1) {
+  return window['go']['app']['BackupClient']['GetBackupProgresses'](arg1);
+}
+
 export function GetDirectorySuggestions() {
   return window['go']['app']['BackupClient']['GetDirectorySuggestions']();
 }
@@ -46,8 +54,8 @@ export function SelectDirectory() {
   return window['go']['app']['BackupClient']['SelectDirectory']();
 }
 
-export function StartBackupJob(arg1, arg2) {
-  return window['go']['app']['BackupClient']['StartBackupJob'](arg1, arg2);
+export function StartBackupJob(arg1) {
+  return window['go']['app']['BackupClient']['StartBackupJob'](arg1);
 }
 
 export function StartBackupJobs(arg1) {
