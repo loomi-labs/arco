@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/borg"
 	"context"
 	"go.uber.org/zap"
 	"sync"
@@ -14,14 +15,19 @@ type State struct {
 
 	repoLocks map[int]*sync.Mutex
 
-	runningBackupJobs map[BackupIdentifier]*CancelCtx
-	runningPruneJobs  map[BackupIdentifier]*CancelCtx
-	runningDeleteJobs map[BackupIdentifier]*CancelCtx
+	runningBackupJobs map[BackupId]*BackupJob
+	runningPruneJobs  map[BackupId]*CancelCtx
+	runningDeleteJobs map[BackupId]*CancelCtx
 }
 
 type CancelCtx struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+}
+
+type BackupJob struct {
+	*CancelCtx
+	progress borg.BackupProgress
 }
 
 // TODO: do we need this?
@@ -41,9 +47,9 @@ func NewState(log *zap.SugaredLogger) *State {
 		StartupErr:    nil,
 
 		repoLocks:         map[int]*sync.Mutex{},
-		runningBackupJobs: make(map[BackupIdentifier]*CancelCtx),
-		runningPruneJobs:  make(map[BackupIdentifier]*CancelCtx),
-		runningDeleteJobs: make(map[BackupIdentifier]*CancelCtx),
+		runningBackupJobs: make(map[BackupId]*BackupJob),
+		runningPruneJobs:  make(map[BackupId]*CancelCtx),
+		runningDeleteJobs: make(map[BackupId]*CancelCtx),
 	}
 }
 
@@ -62,7 +68,7 @@ func (s *State) DeleteRepoLock(repoId int) {
 	delete(s.repoLocks, repoId)
 }
 
-func (s *State) CanRunBackup(id BackupIdentifier) (canRun bool, reason string) {
+func (s *State) CanRunBackup(id BackupId) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
@@ -75,14 +81,17 @@ func (s *State) CanRunBackup(id BackupIdentifier) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) AddRunningBackup(ctx context.Context, id BackupIdentifier) {
+func (s *State) AddRunningBackup(ctx context.Context, id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningBackupJobs[id] = NewCancelCtx(ctx)
+	s.runningBackupJobs[id] = &BackupJob{
+		CancelCtx: NewCancelCtx(ctx),
+		progress:  borg.BackupProgress{},
+	}
 }
 
-func (s *State) RemoveRunningBackup(id BackupIdentifier) {
+func (s *State) RemoveRunningBackup(id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -94,7 +103,7 @@ func (s *State) RemoveRunningBackup(id BackupIdentifier) {
 	delete(s.runningBackupJobs, id)
 }
 
-func (s *State) CanRunPruneJob(id BackupIdentifier) (canRun bool, reason string) {
+func (s *State) CanRunPruneJob(id BackupId) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
 	}
@@ -107,14 +116,14 @@ func (s *State) CanRunPruneJob(id BackupIdentifier) (canRun bool, reason string)
 	return true, ""
 }
 
-func (s *State) AddRunningPruneJob(ctx context.Context, id BackupIdentifier) {
+func (s *State) AddRunningPruneJob(ctx context.Context, id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.runningPruneJobs[id] = NewCancelCtx(ctx)
 }
 
-func (s *State) RemoveRunningPruneJob(id BackupIdentifier) {
+func (s *State) RemoveRunningPruneJob(id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -126,14 +135,14 @@ func (s *State) RemoveRunningPruneJob(id BackupIdentifier) {
 	delete(s.runningPruneJobs, id)
 }
 
-func (s *State) AddRunningDeleteJob(ctx context.Context, id BackupIdentifier) {
+func (s *State) AddRunningDeleteJob(ctx context.Context, id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.runningDeleteJobs[id] = NewCancelCtx(ctx)
 }
 
-func (s *State) RemoveRunningDeleteJob(id BackupIdentifier) {
+func (s *State) RemoveRunningDeleteJob(id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -162,4 +171,21 @@ func (s *State) GetAndDeleteNofications() []Notification {
 	notifications := s.notifications
 	s.notifications = []Notification{}
 	return notifications
+}
+
+func (s *State) UpdateBackupProgress(id BackupId, progress borg.BackupProgress) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if bj := s.runningBackupJobs[id]; bj != nil {
+		bj.progress = progress
+	}
+}
+
+func (s *State) GetBackupProgress(id BackupId) (progress borg.BackupProgress, found bool) {
+	s.log.Debugf("Getting progress for backup job %v", id)
+	if bj := s.runningBackupJobs[id]; bj != nil {
+		return bj.progress, true
+	}
+	return borg.BackupProgress{}, false
 }
