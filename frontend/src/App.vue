@@ -5,6 +5,9 @@ import * as appClient from "../wailsjs/go/app/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
+import app from "./App.vue";
+import { LogInfo } from "../wailsjs/runtime";
+import { getCurrentInstance } from 'vue';
 
 /************
  * Variables
@@ -45,6 +48,17 @@ async function getStartupError() {
   }
 }
 
+async function goToStartPage() {
+  try {
+    const env = await appClient.GetEnvVars();
+    if (env.startPage) {
+      await router.push(env.startPage);
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get env vars", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -52,6 +66,7 @@ async function getStartupError() {
 // Poll for notifications every second
 setInterval(getNotifications, 1000);
 getStartupError();
+goToStartPage();
 
 </script>
 

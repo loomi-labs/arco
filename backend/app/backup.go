@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
@@ -65,7 +66,7 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 			return err
 		}
 		for _, repo := range backupProfile.Edges.Repositories {
-			bId := BackupIdentifier{
+			bId := BackupId{
 				BackupProfileId: id,
 				RepositoryId:    repo.ID,
 			}
@@ -102,7 +103,7 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
-func (b *BackupClient) startBackupJob(bId BackupIdentifier) error {
+func (b *BackupClient) startBackupJob(bId BackupId) error {
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
@@ -114,11 +115,7 @@ func (b *BackupClient) startBackupJob(bId BackupIdentifier) error {
 }
 
 // StartBackupJob starts a backup job for the given repository and backup profile.
-func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) error {
-	bId := BackupIdentifier{
-		BackupProfileId: backupProfileId,
-		RepositoryId:    repositoryId,
-	}
+func (b *BackupClient) StartBackupJob(bId BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
@@ -126,27 +123,52 @@ func (b *BackupClient) StartBackupJob(backupProfileId int, repositoryId int) err
 	return b.startBackupJob(bId)
 }
 
-// TODO: do we need this?
-func (b *BackupClient) StartBackupJobs(backupProfileId int) error {
+func (b *BackupClient) StartBackupJobs(backupProfileId int) ([]BackupId, error) {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not setup")
+		return nil, fmt.Errorf("backup profile is not setup")
 	}
 
+	var bIds []BackupId
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.StartBackupJob(backupProfileId, repo.ID)
+		bId := BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		err := b.StartBackupJob(bId)
 		if err != nil {
-			return err
+			return bIds, err
 		}
+		bIds = append(bIds, bId)
 	}
-	return nil
+	return bIds, nil
 }
 
 func (b *BackupClient) SelectDirectory() (string, error) {
 	return runtime.OpenDirectoryDialog(b.ctx, runtime.OpenDialogOptions{})
+}
+
+type BackupProgressResponse struct {
+	BackupId BackupId            `json:"backupId"`
+	Progress borg.BackupProgress `json:"progress"`
+	Found    bool                `json:"found"`
+}
+
+func (b *BackupClient) GetBackupProgress(id BackupId) BackupProgressResponse {
+	progress, found := b.state.GetBackupProgress(id)
+	return BackupProgressResponse{
+		BackupId: id,
+		Progress: progress,
+		Found:    found,
+	}
+}
+
+func (b *BackupClient) GetBackupProgresses(ids []BackupId) []BackupProgressResponse {
+	var progresses []BackupProgressResponse
+	for _, id := range ids {
+		progresses = append(progresses, b.GetBackupProgress(id))
+	}
+	return progresses
 }
 
 /***********************************/
@@ -211,9 +233,24 @@ func rollback(tx *ent.Tx, err error) error {
 /********** Borg Commands **********/
 /***********************************/
 
+func (b *BackupClient) saveProgressInfo(id BackupId, ch chan borg.BackupProgress) {
+	for {
+		select {
+		case <-b.ctx.Done():
+			return
+		case progress, ok := <-ch:
+			if !ok {
+				// Channel is closed, break the loop
+				return
+			}
+			b.state.UpdateBackupProgress(id, progress)
+		}
+	}
+}
+
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(bId BackupIdentifier, repoUrl, password, prefix string, directories []string) {
+func (b *BackupClient) runBorgCreate(bId BackupId, repoUrl, password, prefix string, directories []string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()
@@ -221,7 +258,11 @@ func (b *BackupClient) runBorgCreate(bId BackupIdentifier, repoUrl, password, pr
 	b.state.AddRunningBackup(b.ctx, bId)
 	defer b.state.RemoveRunningBackup(bId)
 
-	err := b.borg.Create(b.ctx, repoUrl, password, prefix, directories)
+	// Create go routine to receive progress info
+	ch := make(chan borg.BackupProgress)
+	go b.saveProgressInfo(bId, ch)
+
+	err := b.borg.Create(b.ctx, repoUrl, password, prefix, directories, ch)
 	if err != nil {
 		b.state.AddNotification(err.Error(), LevelError)
 	} else {
@@ -229,7 +270,7 @@ func (b *BackupClient) runBorgCreate(bId BackupIdentifier, repoUrl, password, pr
 	}
 }
 
-func (b *BackupClient) runBorgDelete(bId BackupIdentifier, repoUrl, password, prefix string) {
+func (b *BackupClient) runBorgDelete(bId BackupId, repoUrl, password, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()

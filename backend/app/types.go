@@ -29,12 +29,12 @@ type MountState struct {
 	MountPath string `json:"mount_path"`
 }
 
-type BackupIdentifier struct {
-	BackupProfileId int
-	RepositoryId    int
+type BackupId struct {
+	BackupProfileId int `json:"backupProfileId"`
+	RepositoryId    int `json:"repositoryId"`
 }
 
-func (b BackupIdentifier) String() string {
+func (b BackupId) String() string {
 	return fmt.Sprintf("BackupProfileId: %d, RepositoryId: %d", b.BackupProfileId, b.RepositoryId)
 }
 

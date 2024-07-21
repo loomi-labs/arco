@@ -25,14 +25,14 @@ type TestingT interface {
 }
 
 func NewTestApp(t TestingT) *App {
-	config := zap.NewDevelopmentConfig()
-	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	log, err := config.Build()
+	logConfig := zap.NewDevelopmentConfig()
+	logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	log, err := logConfig.Build()
 	if err != nil {
 		panic(fmt.Sprintf("failed to build logger: %v", err))
 	}
 
-	a := NewApp(log.Sugar(), nil)
+	a := NewApp(log.Sugar(), &Config{})
 	a.ctx = context.Background()
 	a.config = nil
 

@@ -23,7 +23,8 @@ const (
 type EnvVar string
 
 const (
-	EnvVarDebug EnvVar = "DEBUG"
+	EnvVarDebug     EnvVar = "DEBUG"
+	EnvVarStartPage EnvVar = "START_PAGE"
 )
 
 func (e EnvVar) String() string {

@@ -11,7 +11,7 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := BackupIdentifier{
+	bId := BackupId{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
@@ -41,7 +41,7 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BackupClient) runPruneJob(bId BackupIdentifier, repoUrl string, password string, prefix string) {
+func (b *BackupClient) runPruneJob(bId BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()

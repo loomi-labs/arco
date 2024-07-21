@@ -21,7 +21,7 @@ func (a *App) scheduleBackups() {
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
-		backupId := BackupIdentifier{
+		backupId := BackupId{
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
@@ -29,7 +29,7 @@ func (a *App) scheduleBackups() {
 	}
 }
 
-func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupIdentifier) {
+func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupId) {
 	// Calculate the duration until the next backup
 	durationUntilNextBackup := bs.NextRun.Sub(time.Now())
 	if durationUntilNextBackup < 0 {
@@ -44,7 +44,7 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupIdentifier) 
 	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
 }
 
-func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId BackupIdentifier) {
+func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId BackupId) {
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
 	err := a.BackupClient().startBackupJob(backupId)

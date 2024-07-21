@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"go.uber.org/zap"
+	"os"
 )
 
 func (a *AppClient) GetStartupError() Notification {
@@ -33,4 +34,16 @@ func (a *AppClient) HandleError(msg string, fErr *FrontendError) {
 
 func (a *AppClient) GetNotifications() []Notification {
 	return a.state.GetAndDeleteNofications()
+}
+
+type Env struct {
+	Debug     bool   `json:"debug"`
+	StartPage string `json:"startPage"`
+}
+
+func (a *AppClient) GetEnvVars() Env {
+	return Env{
+		Debug:     os.Getenv(EnvVarDebug.String()) == "true",
+		StartPage: os.Getenv(EnvVarStartPage.String()),
+	}
 }
