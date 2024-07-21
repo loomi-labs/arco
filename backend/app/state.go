@@ -183,7 +183,6 @@ func (s *State) UpdateBackupProgress(id BackupId, progress borg.BackupProgress) 
 }
 
 func (s *State) GetBackupProgress(id BackupId) (progress borg.BackupProgress, found bool) {
-	s.log.Debugf("Getting progress for backup job %v", id)
 	if bj := s.runningBackupJobs[id]; bj != nil {
 		return bj.progress, true
 	}
