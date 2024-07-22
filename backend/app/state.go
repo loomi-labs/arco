@@ -165,7 +165,7 @@ func (s *State) AddNotification(msg string, level NotificationLevel) {
 	})
 }
 
-func (s *State) GetAndDeleteNofications() []Notification {
+func (s *State) GetAndDeleteNotifications() []Notification {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

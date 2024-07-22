@@ -239,21 +239,6 @@ func rollback(tx *ent.Tx, err error) error {
 /********** Borg Commands **********/
 /***********************************/
 
-func (b *BackupClient) saveProgressInfo(id BackupId, ch chan borg.BackupProgress) {
-	for {
-		select {
-		case <-b.ctx.Done():
-			return
-		case progress, ok := <-ch:
-			if !ok {
-				// Channel is closed, break the loop
-				return
-			}
-			b.state.UpdateBackupProgress(id, progress)
-		}
-	}
-}
-
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
 func (b *BackupClient) runBorgCreate(bId BackupId, repoUrl, password, prefix string, directories []string) {
@@ -293,5 +278,20 @@ func (b *BackupClient) runBorgDelete(bId BackupId, repoUrl, password, prefix str
 		b.state.AddNotification(err.Error(), LevelError)
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Delete job completed"), LevelInfo)
+	}
+}
+
+func (b *BackupClient) saveProgressInfo(id BackupId, ch chan borg.BackupProgress) {
+	for {
+		select {
+		case <-b.ctx.Done():
+			return
+		case progress, ok := <-ch:
+			if !ok {
+				// Channel is closed, break the loop
+				return
+			}
+			b.state.UpdateBackupProgress(id, progress)
+		}
 	}
 }
