@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/repository"
+	"errors"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
@@ -171,6 +172,11 @@ func (b *BackupClient) GetBackupProgresses(ids []BackupId) []BackupProgressRespo
 	return progresses
 }
 
+func (b *BackupClient) AbortBackupJob(id BackupId) error {
+	b.state.RemoveRunningBackup(id)
+	return nil
+}
+
 /***********************************/
 /********** Backup Schedule ********/
 /***********************************/
@@ -255,16 +261,20 @@ func (b *BackupClient) runBorgCreate(bId BackupId, repoUrl, password, prefix str
 	repoLock.Lock()
 	defer repoLock.Unlock()
 	defer b.state.DeleteRepoLock(bId.RepositoryId)
-	b.state.AddRunningBackup(b.ctx, bId)
+	ctx := b.state.AddRunningBackup(b.ctx, bId)
 	defer b.state.RemoveRunningBackup(bId)
 
 	// Create go routine to receive progress info
 	ch := make(chan borg.BackupProgress)
 	go b.saveProgressInfo(bId, ch)
 
-	err := b.borg.Create(b.ctx, repoUrl, password, prefix, directories, ch)
+	err := b.borg.Create(ctx, repoUrl, password, prefix, directories, ch)
 	if err != nil {
-		b.state.AddNotification(err.Error(), LevelError)
+		if errors.As(err, &borg.CancelErr{}) {
+			b.state.AddNotification("Backup job cancelled", LevelWarning)
+		} else {
+			b.state.AddNotification(err.Error(), LevelError)
+		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Backup job completed"), LevelInfo)
 	}

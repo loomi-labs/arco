@@ -134,6 +134,15 @@ function getProgressString(repoId: number): string {
   return `--value:${getProgressValue(repoId)};`;
 }
 
+async function abortBackup(repoId: number) {
+  try {
+    await backupClient.AbortBackupJob(toBackupIdentifier(backupIdStringForRepo(repoId)));
+    toast.success("Backup aborted");
+  } catch (error: any) {
+    await showAndLogError("Failed to abort backup", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -156,6 +165,7 @@ getBackupProfile();
         <p>{{ repo.name }}</p>
         <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>
         <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>
+        <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>
       </div>
     </div>
 

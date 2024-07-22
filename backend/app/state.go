@@ -30,7 +30,6 @@ type BackupJob struct {
 	progress borg.BackupProgress
 }
 
-// TODO: do we need this?
 func NewCancelCtx(ctx context.Context) *CancelCtx {
 	nCtx, cancel := context.WithCancel(ctx)
 	return &CancelCtx{
@@ -81,14 +80,16 @@ func (s *State) CanRunBackup(id BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) AddRunningBackup(ctx context.Context, id BackupId) {
+func (s *State) AddRunningBackup(ctx context.Context, id BackupId) context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	cancelCtx := NewCancelCtx(ctx)
 	s.runningBackupJobs[id] = &BackupJob{
-		CancelCtx: NewCancelCtx(ctx),
+		CancelCtx: cancelCtx,
 		progress:  borg.BackupProgress{},
 	}
+	return cancelCtx.ctx
 }
 
 func (s *State) RemoveRunningBackup(id BackupId) {
