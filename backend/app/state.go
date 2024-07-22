@@ -16,7 +16,7 @@ type State struct {
 	repoLocks map[int]*sync.Mutex
 
 	runningBackupJobs map[BackupId]*BackupJob
-	runningPruneJobs  map[BackupId]*CancelCtx
+	runningPruneJobs  map[BackupId]*PruneJob
 	runningDeleteJobs map[BackupId]*CancelCtx
 }
 
@@ -28,6 +28,11 @@ type CancelCtx struct {
 type BackupJob struct {
 	*CancelCtx
 	progress borg.BackupProgress
+}
+
+type PruneJob struct {
+	*CancelCtx
+	result borg.PruneResult
 }
 
 func NewCancelCtx(ctx context.Context) *CancelCtx {
@@ -47,7 +52,7 @@ func NewState(log *zap.SugaredLogger) *State {
 
 		repoLocks:         map[int]*sync.Mutex{},
 		runningBackupJobs: make(map[BackupId]*BackupJob),
-		runningPruneJobs:  make(map[BackupId]*CancelCtx),
+		runningPruneJobs:  make(map[BackupId]*PruneJob),
 		runningDeleteJobs: make(map[BackupId]*CancelCtx),
 	}
 }
@@ -121,7 +126,10 @@ func (s *State) AddRunningPruneJob(ctx context.Context, id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningPruneJobs[id] = NewCancelCtx(ctx)
+	s.runningPruneJobs[id] = &PruneJob{
+		CancelCtx: NewCancelCtx(ctx),
+		result:    borg.PruneResult{},
+	}
 }
 
 func (s *State) RemoveRunningPruneJob(id BackupId) {
@@ -188,4 +196,13 @@ func (s *State) GetBackupProgress(id BackupId) (progress borg.BackupProgress, fo
 		return bj.progress, true
 	}
 	return borg.BackupProgress{}, false
+}
+
+func (s *State) SetPruneResult(id BackupId, result borg.PruneResult) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if bj := s.runningPruneJobs[id]; bj != nil {
+		bj.result = result
+	}
 }

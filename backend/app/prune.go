@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/borg"
 	"fmt"
 )
 
@@ -49,10 +50,29 @@ func (b *BackupClient) runPruneJob(bId BackupId, repoUrl string, password string
 	b.state.AddRunningPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningBackup(bId)
 
-	err := b.borg.Prune(b.ctx, repoUrl, password, prefix)
+	// Create go routine to save prune result
+	ch := make(chan borg.PruneResult)
+	go b.savePruneResult(bId, ch)
+
+	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, ch)
 	if err != nil {
 		b.state.AddNotification(err.Error(), LevelError)
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Prune job completed"), LevelInfo)
+	}
+}
+
+func (b *BackupClient) savePruneResult(bId BackupId, ch chan borg.PruneResult) {
+	for {
+		select {
+		case <-b.ctx.Done():
+			return
+		case result, ok := <-ch:
+			if !ok {
+				// Channel is closed, break the loop
+				return
+			}
+			b.state.SetPruneResult(bId, result)
+		}
 	}
 }
