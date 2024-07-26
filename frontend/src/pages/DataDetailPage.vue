@@ -83,8 +83,7 @@ async function pruneBackups() {
 
 async function dryRunPruneBackups() {
   try {
-    // const result = await backupClient.DryRunPruneBackups(backup.value.id);
-    // toast.success(`Pruning would remove ${result} backups`);
+    await backupClient.DryRunPruneBackups(backup.value.id);
   } catch (error: any) {
     await showAndLogError("Failed to dry run prune backups", error);
   }

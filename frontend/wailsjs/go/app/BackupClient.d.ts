@@ -9,6 +9,10 @@ export function DeleteBackupProfile(arg1:number,arg2:boolean):Promise<void>;
 
 export function DeleteBackupSchedule(arg1:number):Promise<void>;
 
+export function DryRunPruneBackup(arg1:number,arg2:number):Promise<void>;
+
+export function DryRunPruneBackups(arg1:number):Promise<void>;
+
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;

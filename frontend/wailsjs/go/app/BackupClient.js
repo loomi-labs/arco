@@ -14,6 +14,14 @@ export function DeleteBackupSchedule(arg1) {
   return window['go']['app']['BackupClient']['DeleteBackupSchedule'](arg1);
 }
 
+export function DryRunPruneBackup(arg1, arg2) {
+  return window['go']['app']['BackupClient']['DryRunPruneBackup'](arg1, arg2);
+}
+
+export function DryRunPruneBackups(arg1) {
+  return window['go']['app']['BackupClient']['DryRunPruneBackups'](arg1);
+}
+
 export function GetBackupProfile(arg1) {
   return window['go']['app']['BackupClient']['GetBackupProfile'](arg1);
 }
