@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTeamKeeper(t *testing.T) {
+func TestApp(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "app test suite")
 }
