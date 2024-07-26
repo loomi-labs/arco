@@ -33,7 +33,7 @@ func (a *AppClient) HandleError(msg string, fErr *FrontendError) {
 }
 
 func (a *AppClient) GetNotifications() []Notification {
-	return a.state.GetAndDeleteNofications()
+	return a.state.GetAndDeleteNotifications()
 }
 
 type Env struct {

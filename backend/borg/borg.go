@@ -29,17 +29,21 @@ func NewCmdLogger(log *zap.SugaredLogger) *CmdLogger {
 }
 
 func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
-	z.Infof("Running command: %s", cmd)
+	z.Infof("Running command: `%s`", cmd)
 	return time.Now()
 }
 
 func (z *CmdLogger) LogCmdEnd(cmd string, startTime time.Time) {
-	z.Infof("Finished command: %s in %s", cmd, time.Since(startTime))
+	z.Infof("Finished command: `%s` in %s", cmd, time.Since(startTime))
 }
 
 func (z *CmdLogger) LogCmdError(cmd string, startTime time.Time, err error) error {
-	z.Errorf("Command %s failed after %s: %s", cmd, time.Since(startTime), err)
+	z.Errorf("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
 	return err
+}
+
+func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
+	z.Infof("Command `%s` cancelled after %s", cmd, time.Since(startTime))
 }
 
 type Env struct {

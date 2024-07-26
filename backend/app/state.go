@@ -15,9 +15,10 @@ type State struct {
 
 	repoLocks map[int]*sync.Mutex
 
-	runningBackupJobs map[BackupId]*BackupJob
-	runningPruneJobs  map[BackupId]*CancelCtx
-	runningDeleteJobs map[BackupId]*CancelCtx
+	runningBackupJobs      map[BackupId]*BackupJob
+	runningPruneJobs       map[BackupId]*PruneJob
+	runningDryRunPruneJobs map[BackupId]*PruneJob
+	runningDeleteJobs      map[BackupId]*CancelCtx
 }
 
 type CancelCtx struct {
@@ -30,7 +31,22 @@ type BackupJob struct {
 	progress borg.BackupProgress
 }
 
-// TODO: do we need this?
+type KeepArchive struct {
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
+}
+
+type PruneJobResult struct {
+	PruneArchives []int         `json:"prune_archives"`
+	KeepArchives  []KeepArchive `json:"keep_archives"`
+}
+
+type PruneJob struct {
+	*CancelCtx
+	result PruneJobResult
+}
+
 func NewCancelCtx(ctx context.Context) *CancelCtx {
 	nCtx, cancel := context.WithCancel(ctx)
 	return &CancelCtx{
@@ -46,10 +62,11 @@ func NewState(log *zap.SugaredLogger) *State {
 		notifications: []Notification{},
 		StartupErr:    nil,
 
-		repoLocks:         map[int]*sync.Mutex{},
-		runningBackupJobs: make(map[BackupId]*BackupJob),
-		runningPruneJobs:  make(map[BackupId]*CancelCtx),
-		runningDeleteJobs: make(map[BackupId]*CancelCtx),
+		repoLocks:              map[int]*sync.Mutex{},
+		runningBackupJobs:      make(map[BackupId]*BackupJob),
+		runningPruneJobs:       make(map[BackupId]*PruneJob),
+		runningDryRunPruneJobs: make(map[BackupId]*PruneJob),
+		runningDeleteJobs:      make(map[BackupId]*CancelCtx),
 	}
 }
 
@@ -68,6 +85,10 @@ func (s *State) DeleteRepoLock(repoId int) {
 	delete(s.repoLocks, repoId)
 }
 
+/***********************************/
+/********** Backup Jobs ************/
+/***********************************/
+
 func (s *State) CanRunBackup(id BackupId) (canRun bool, reason string) {
 	if s.StartupErr != nil {
 		return false, "Startup error"
@@ -81,14 +102,16 @@ func (s *State) CanRunBackup(id BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) AddRunningBackup(ctx context.Context, id BackupId) {
+func (s *State) AddRunningBackup(ctx context.Context, id BackupId) context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	cancelCtx := NewCancelCtx(ctx)
 	s.runningBackupJobs[id] = &BackupJob{
-		CancelCtx: NewCancelCtx(ctx),
+		CancelCtx: cancelCtx,
 		progress:  borg.BackupProgress{},
 	}
+	return cancelCtx.ctx
 }
 
 func (s *State) RemoveRunningBackup(id BackupId) {
@@ -102,6 +125,26 @@ func (s *State) RemoveRunningBackup(id BackupId) {
 
 	delete(s.runningBackupJobs, id)
 }
+
+func (s *State) UpdateBackupProgress(id BackupId, progress borg.BackupProgress) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if bj := s.runningBackupJobs[id]; bj != nil {
+		bj.progress = progress
+	}
+}
+
+func (s *State) GetBackupProgress(id BackupId) (progress borg.BackupProgress, found bool) {
+	if bj := s.runningBackupJobs[id]; bj != nil {
+		return bj.progress, true
+	}
+	return borg.BackupProgress{}, false
+}
+
+/***********************************/
+/********** Prune Jobs ************/
+/***********************************/
 
 func (s *State) CanRunPruneJob(id BackupId) (canRun bool, reason string) {
 	if s.StartupErr != nil {
@@ -120,7 +163,10 @@ func (s *State) AddRunningPruneJob(ctx context.Context, id BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningPruneJobs[id] = NewCancelCtx(ctx)
+	s.runningPruneJobs[id] = &PruneJob{
+		CancelCtx: NewCancelCtx(ctx),
+		result:    PruneJobResult{},
+	}
 }
 
 func (s *State) RemoveRunningPruneJob(id BackupId) {
@@ -134,6 +180,54 @@ func (s *State) RemoveRunningPruneJob(id BackupId) {
 
 	delete(s.runningPruneJobs, id)
 }
+
+func (s *State) SetPruneResult(id BackupId, result PruneJobResult) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if bj := s.runningPruneJobs[id]; bj != nil {
+		bj.result = result
+	}
+}
+
+/***********************************/
+/********** Dry Run Prune Jobs ****/
+/***********************************/
+
+func (s *State) AddRunningDryRunPruneJob(ctx context.Context, id BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.runningDryRunPruneJobs[id] = &PruneJob{
+		CancelCtx: NewCancelCtx(ctx),
+		result:    PruneJobResult{},
+	}
+}
+
+func (s *State) RemoveRunningDryRunPruneJob(id BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if ctx, ok := s.runningDryRunPruneJobs[id]; ok {
+		s.log.Debugf("Cancelling context of dry-run prune job %v", id)
+		ctx.cancel()
+	}
+
+	delete(s.runningDryRunPruneJobs, id)
+}
+
+func (s *State) SetDryRunPruneResult(id BackupId, result PruneJobResult) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if bj := s.runningDryRunPruneJobs[id]; bj != nil {
+		bj.result = result
+	}
+}
+
+/***********************************/
+/********** Delete Jobs ************/
+/***********************************/
 
 func (s *State) AddRunningDeleteJob(ctx context.Context, id BackupId) {
 	s.mu.Lock()
@@ -154,6 +248,10 @@ func (s *State) RemoveRunningDeleteJob(id BackupId) {
 	delete(s.runningDeleteJobs, id)
 }
 
+/***********************************/
+/********** Notifications **********/
+/***********************************/
+
 func (s *State) AddNotification(msg string, level NotificationLevel) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -164,27 +262,11 @@ func (s *State) AddNotification(msg string, level NotificationLevel) {
 	})
 }
 
-func (s *State) GetAndDeleteNofications() []Notification {
+func (s *State) GetAndDeleteNotifications() []Notification {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	notifications := s.notifications
 	s.notifications = []Notification{}
 	return notifications
-}
-
-func (s *State) UpdateBackupProgress(id BackupId, progress borg.BackupProgress) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if bj := s.runningBackupJobs[id]; bj != nil {
-		bj.progress = progress
-	}
-}
-
-func (s *State) GetBackupProgress(id BackupId) (progress borg.BackupProgress, found bool) {
-	if bj := s.runningBackupJobs[id]; bj != nil {
-		return bj.progress, true
-	}
-	return borg.BackupProgress{}, false
 }

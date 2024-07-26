@@ -34,6 +34,16 @@ type Type struct {
 	Type string `json:"type"`
 }
 
+type JSONType string
+
+const (
+	ArchiveProgressType JSONType = "archive_progress"
+	ProgressMessageType JSONType = "progress_message"
+	ProgressPercentType JSONType = "progress_percent"
+	FileStatusType      JSONType = "file_status"
+	LogMessageType      JSONType = "log_message"
+)
+
 type ArchiveProgress struct {
 	OriginalSize     int64    `json:"original_size,omitempty"`
 	CompressedSize   int64    `json:"compressed_size,omitempty"`
@@ -113,8 +123,8 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 			continue
 		}
 
-		switch typeMsg.Type {
-		case "archive_progress":
+		switch JSONType(typeMsg.Type) {
+		case ArchiveProgressType:
 			var archiveProgress ArchiveProgress
 			decoder = json.NewDecoder(strings.NewReader(data))
 			err = decoder.Decode(&archiveProgress)
@@ -122,7 +132,7 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 				continue
 			}
 			ch <- archiveProgress
-		case "progress_message":
+		case ProgressMessageType:
 			var progressMessage ProgressMessage
 			decoder = json.NewDecoder(strings.NewReader(data))
 			err = decoder.Decode(&progressMessage)
@@ -130,7 +140,7 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 				continue
 			}
 			ch <- progressMessage
-		case "progress_percent":
+		case ProgressPercentType:
 			var progressPercent ProgressPercent
 			decoder = json.NewDecoder(strings.NewReader(data))
 			err = decoder.Decode(&progressPercent)
@@ -138,7 +148,7 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 				continue
 			}
 			ch <- progressPercent
-		case "file_status":
+		case FileStatusType:
 			var fileStatus FileStatus
 			decoder = json.NewDecoder(strings.NewReader(data))
 			err = decoder.Decode(&fileStatus)
@@ -146,7 +156,7 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 				continue
 			}
 			ch <- fileStatus
-		case "log_message":
+		case LogMessageType:
 			var logMessage LogMessage
 			decoder = json.NewDecoder(strings.NewReader(data))
 			err = decoder.Decode(&logMessage)

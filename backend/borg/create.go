@@ -9,12 +9,26 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
+
+type CancelErr struct{}
+
+func (CancelErr) Error() string {
+	return "command canceled"
+}
+
+type BackupProgress struct {
+	TotalFiles     int `json:"totalFiles"`
+	ProcessedFiles int `json:"processedFiles"`
+}
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
 func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, directories []string, ch chan BackupProgress) error {
+	defer close(ch)
+
 	// Count the total files to backup
 	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, directories)
 	if err != nil {
@@ -32,6 +46,14 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, dir
 	)...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
+	// Add cancel functionality
+	hasBeenCanceled := false
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		hasBeenCanceled = true
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
+	}
+
 	// Run backup command
 	startTime := b.log.LogCmdStart(cmd.String())
 
@@ -48,24 +70,22 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, dir
 
 	scanner := bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
-	progressDecoder(scanner, totalFiles, ch)
+	decodeBackupProgress(scanner, totalFiles, ch)
 
 	err = cmd.Wait()
 	if err != nil {
+		if hasBeenCanceled {
+			b.log.LogCmdCancelled(cmd.String(), startTime)
+			return CancelErr{}
+		}
 		return b.log.LogCmdError(cmd.String(), startTime, err)
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
 }
 
-type BackupProgress struct {
-	TotalFiles     int `json:"totalFiles"`
-	ProcessedFiles int `json:"processedFiles"`
-}
-
-// progressDecoder decodes the progress messages from Borg and sends them to the channel.
-func progressDecoder(scanner *bufio.Scanner, totalFiles int, ch chan<- BackupProgress) {
-	defer close(ch)
+// decodeBackupProgress decodes the progress messages from Borg and sends them to the channel.
+func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- BackupProgress) {
 	for scanner.Scan() {
 		data := scanner.Text()
 
@@ -76,7 +96,7 @@ func progressDecoder(scanner *bufio.Scanner, totalFiles int, ch chan<- BackupPro
 			// Continue if we can't decode the JSON
 			continue
 		}
-		if typeMsg.Type != "archive_progress" {
+		if JSONType(typeMsg.Type) != ArchiveProgressType {
 			// We only care about archive progress
 			continue
 		}
@@ -109,11 +129,23 @@ func (b *Borg) countBackupFiles(ctx context.Context, repoUrl, password, prefix s
 	)...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
+	// Add cancel functionality
+	hasBeenCanceled := false
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		hasBeenCanceled = true
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
+	}
+
 	// Run backup command
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		if hasBeenCanceled {
+			b.log.LogCmdCancelled(cmd.String(), startTime)
+			return 0, CancelErr{}
+		}
+		return 0, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 
