@@ -12,7 +12,6 @@ import (
 func (a *App) scheduleBackups() {
 	a.log.Info("Scheduling backups")
 
-	// Get the duration until the next backup
 	allBs, err := a.getBackupSchedules()
 	if err != nil {
 		a.log.Errorf("Failed to get backup schedules: %s", err)
