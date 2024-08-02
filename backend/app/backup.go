@@ -259,6 +259,9 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, pref
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Backup job cancelled", types.LevelWarning)
+		} else if errors.As(err, &borg.LockTimeout{}) {
+			b.state.AddBorgLock(bId.RepositoryId)
+			b.state.AddNotification("Backup job failed: repository is locked", types.LevelError)
 		} else {
 			b.state.AddNotification(err.Error(), types.LevelError)
 		}
@@ -278,7 +281,14 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 
 	err := b.borg.DeleteArchives(b.ctx, repoUrl, password, prefix)
 	if err != nil {
-		b.state.AddNotification(err.Error(), types.LevelError)
+		if errors.As(err, &borg.CancelErr{}) {
+			b.state.AddNotification("Delete job cancelled", types.LevelWarning)
+		} else if errors.As(err, &borg.LockTimeout{}) {
+			b.state.AddBorgLock(bId.RepositoryId)
+			b.state.AddNotification("Delete job failed: repository is locked", types.LevelError)
+		} else {
+			b.state.AddNotification(err.Error(), types.LevelError)
+		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Delete job completed"), types.LevelInfo)
 	}

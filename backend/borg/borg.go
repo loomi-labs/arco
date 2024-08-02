@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -38,6 +39,7 @@ func (z *CmdLogger) LogCmdEnd(cmd string, startTime time.Time) {
 }
 
 func (z *CmdLogger) LogCmdError(cmd string, startTime time.Time, err error) error {
+	err = exitCodesToError(err)
 	z.Errorf("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
 	return err
 }
@@ -70,4 +72,24 @@ func (e Env) AsList() []string {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", e.password))
 	}
 	return env
+}
+
+type CancelErr struct{}
+
+func (CancelErr) Error() string {
+	return "command canceled"
+}
+
+type LockTimeout struct{}
+
+func (LockTimeout) Error() string {
+	return "failed to create/acquire the lock"
+}
+
+func exitCodesToError(err error) error {
+	switch err.(*exec.ExitError).ExitCode() {
+	case 73:
+		return LockTimeout{}
+	}
+	return err
 }

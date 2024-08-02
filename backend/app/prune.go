@@ -6,6 +6,7 @@ import (
 	"arco/backend/borg"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
+	"errors"
 	"fmt"
 )
 
@@ -98,7 +99,14 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 
 	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, false, ch)
 	if err != nil {
-		b.state.AddNotification(err.Error(), types.LevelError)
+		if errors.As(err, &borg.CancelErr{}) {
+			b.state.AddNotification("Prune job was canceled", types.LevelWarning)
+		} else if errors.As(err, &borg.LockTimeout{}) {
+			b.state.AddBorgLock(bId.RepositoryId)
+			b.state.AddNotification("Repository is locked by another operation", types.LevelError)
+		} else {
+			b.state.AddNotification(err.Error(), types.LevelError)
+		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Prune job completed"), types.LevelInfo)
 	}

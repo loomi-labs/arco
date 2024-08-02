@@ -13,12 +13,6 @@ import (
 	"time"
 )
 
-type CancelErr struct{}
-
-func (CancelErr) Error() string {
-	return "command canceled"
-}
-
 type BackupProgress struct {
 	TotalFiles     int `json:"totalFiles"`
 	ProcessedFiles int `json:"processedFiles"`
