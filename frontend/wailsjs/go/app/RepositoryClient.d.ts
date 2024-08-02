@@ -17,7 +17,7 @@ export function Get(arg1:number):Promise<ent.Repository>;
 
 export function GetArchiveMountStates(arg1:number):Promise<{[key: number]: app.MountState}>;
 
-export function GetRepositoryMountState(arg1:number):Promise<app.MountState>;
+export function GetRepoMountState(arg1:number):Promise<app.MountState>;
 
 export function MountArchive(arg1:number):Promise<app.MountState>;
 

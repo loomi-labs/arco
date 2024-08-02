@@ -24,11 +24,6 @@ type Notification struct {
 	Level   NotificationLevel `json:"level"`
 }
 
-type MountState struct {
-	IsMounted bool   `json:"is_mounted"`
-	MountPath string `json:"mount_path"`
-}
-
 type BackupId struct {
 	BackupProfileId int `json:"backupProfileId"`
 	RepositoryId    int `json:"repositoryId"`

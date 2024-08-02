@@ -103,6 +103,9 @@ func (a *App) Startup(ctx context.Context) {
 	// Register signal handler
 	a.registerSignalHandler()
 
+	// Save mount states
+	a.RepoClient().saveMountStates()
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.state.StartupErr = err
@@ -110,6 +113,7 @@ func (a *App) Startup(ctx context.Context) {
 		return
 	}
 
+	// Schedule backups
 	a.scheduleBackups()
 }
 

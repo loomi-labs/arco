@@ -36,7 +36,7 @@ async function getRepo() {
 async function getRepoMountState() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    repoMountState.value = await repoClient.GetRepositoryMountState(repoId);
+    repoMountState.value = await repoClient.GetRepoMountState(repoId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
