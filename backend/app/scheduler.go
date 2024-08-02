@@ -2,6 +2,7 @@ package app
 
 import (
 	"arco/backend/ent"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"fmt"
 	"time"
@@ -80,6 +81,9 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 func (a *App) getBackupSchedules() ([]*ent.BackupSchedule, error) {
 	return a.db.BackupSchedule.
 		Query().
+		Where(
+			backupschedule.HasBackupProfileWith(
+				backupprofile.IsSetupCompleteEQ(true))).
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithRepositories()
 		}).
