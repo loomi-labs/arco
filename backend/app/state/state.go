@@ -12,7 +12,7 @@ type State struct {
 	log           *zap.SugaredLogger
 	mu            sync.Mutex
 	notifications []types.Notification
-	StartupErr    error
+	startupError  error
 
 	repoLocks map[int]*sync.Mutex
 
@@ -69,7 +69,7 @@ func NewState(log *zap.SugaredLogger) *State {
 		log:           log,
 		mu:            sync.Mutex{},
 		notifications: []types.Notification{},
-		StartupErr:    nil,
+		startupError:  nil,
 
 		repoLocks:              map[int]*sync.Mutex{},
 		runningBackupJobs:      make(map[types.BackupId]*BackupJob),
@@ -81,6 +81,28 @@ func NewState(log *zap.SugaredLogger) *State {
 		archiveMounts: make(map[int]map[int]*MountState),
 	}
 }
+
+/***********************************/
+/********** Startup Error **********/
+/***********************************/
+
+func (s *State) SetStartupError(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.startupError = err
+}
+
+func (s *State) GetStartupError() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.startupError
+}
+
+/***********************************/
+/********** Repo Locks *************/
+/***********************************/
 
 func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 	s.mu.Lock()
@@ -102,7 +124,7 @@ func (s *State) DeleteRepoLock(repoId int) {
 /***********************************/
 
 func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
-	if s.StartupErr != nil {
+	if s.startupError != nil {
 		return false, "Startup error"
 	}
 	if _, ok := s.runningBackupJobs[id]; ok {
@@ -159,7 +181,7 @@ func (s *State) GetBackupProgress(id types.BackupId) (progress borg.BackupProgre
 /***********************************/
 
 func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
-	if s.StartupErr != nil {
+	if s.startupError != nil {
 		return false, "Startup error"
 	}
 	if _, ok := s.runningPruneJobs[id]; ok {

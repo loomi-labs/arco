@@ -89,7 +89,7 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}
@@ -97,7 +97,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize the systray
 	if err := a.initSystray(); err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}
@@ -110,7 +110,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}

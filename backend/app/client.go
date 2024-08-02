@@ -9,8 +9,8 @@ import (
 
 func (a *AppClient) GetStartupError() types.Notification {
 	var message string
-	if a.state.StartupErr != nil {
-		message = a.state.StartupErr.Error()
+	if a.state.GetStartupError() != nil {
+		message = a.state.GetStartupError().Error()
 	}
 	return types.Notification{
 		Message: message,
