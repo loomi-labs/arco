@@ -15,7 +15,7 @@ type State struct {
 	startupError  error
 
 	repoLocks map[int]*RepoLock   // locks that prevent multiple operations on the same repository
-	borgLocks map[int]interface{} // locks created by borg operations. They have to be removed with `borg break-lock`
+	borgLocks map[int]struct{}    // locks created by borg operations. They have to be removed with `borg break-lock`
 
 	runningBackupJobs      map[types.BackupId]*BackupJob
 	runningPruneJobs       map[types.BackupId]*PruneJob
