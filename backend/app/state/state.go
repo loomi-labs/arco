@@ -14,7 +14,8 @@ type State struct {
 	notifications []types.Notification
 	startupError  error
 
-	repoLocks map[int]*RepoLock
+	repoLocks map[int]*RepoLock   // locks that prevent multiple operations on the same repository
+	borgLocks map[int]interface{} // locks created by borg operations. They have to be removed with `borg break-lock`
 
 	runningBackupJobs      map[types.BackupId]*BackupJob
 	runningPruneJobs       map[types.BackupId]*PruneJob
@@ -76,7 +77,9 @@ func NewState(log *zap.SugaredLogger) *State {
 		notifications: []types.Notification{},
 		startupError:  nil,
 
-		repoLocks:              make(map[int]*RepoLock),
+		repoLocks: make(map[int]*RepoLock),
+		borgLocks: make(map[int]interface{}),
+
 		runningBackupJobs:      make(map[types.BackupId]*BackupJob),
 		runningPruneJobs:       make(map[types.BackupId]*PruneJob),
 		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
@@ -149,6 +152,20 @@ func (s *State) UnlockRepo(repoId int) {
 	}
 }
 
+func (s *State) AddBorgLock(repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.borgLocks[repoId] = struct{}{}
+}
+
+func (s *State) RemoveBorgLock(repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.borgLocks, repoId)
+}
+
 /***********************************/
 /********** Backup Jobs ************/
 /***********************************/
@@ -164,6 +181,9 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 		if lock.IsLocked {
 			return false, "Repository is busy"
 		}
+	}
+	if _, ok := s.borgLocks[id.RepositoryId]; ok {
+		return false, "Repository is locked by Borg"
 	}
 	return true, ""
 }
@@ -223,6 +243,9 @@ func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
 		if lock.IsLocked {
 			return false, "Repository is busy"
 		}
+	}
+	if _, ok := s.borgLocks[id.RepositoryId]; ok {
+		return false, "Repository is locked by Borg"
 	}
 	return true, ""
 }
