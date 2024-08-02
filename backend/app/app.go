@@ -1,6 +1,8 @@
 package app
 
 import (
+	appstate "arco/backend/app/state"
+	"arco/backend/app/types"
 	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/util"
@@ -34,8 +36,8 @@ func (e EnvVar) String() string {
 type App struct {
 	// Init
 	log    *zap.SugaredLogger
-	config *Config
-	state  *State
+	config *types.Config
+	state  *appstate.State
 	borg   *borg.Borg
 
 	// Startup
@@ -46,9 +48,9 @@ type App struct {
 
 func NewApp(
 	log *zap.SugaredLogger,
-	config *Config,
+	config *types.Config,
 ) *App {
-	state := NewState(log)
+	state := appstate.NewState(log)
 	return &App{
 		log:    log,
 		config: config,
@@ -87,7 +89,7 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}
@@ -95,7 +97,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize the systray
 	if err := a.initSystray(); err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}
@@ -103,13 +105,17 @@ func (a *App) Startup(ctx context.Context) {
 	// Register signal handler
 	a.registerSignalHandler()
 
+	// Save mount states
+	a.RepoClient().saveMountStates()
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
-		a.state.StartupErr = err
+		a.state.SetStartupError(err)
 		a.log.Error(err)
 		return
 	}
 
+	// Schedule backups
 	a.scheduleBackups()
 }
 
@@ -200,7 +206,7 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	binary, err := GetLatestBorgBinary(a.config.Binaries)
+	binary, err := types.GetLatestBorgBinary(a.config.Binaries)
 	if err != nil {
 		return err
 	}

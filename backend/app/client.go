@@ -1,23 +1,24 @@
 package app
 
 import (
+	"arco/backend/app/types"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
 )
 
-func (a *AppClient) GetStartupError() Notification {
+func (a *AppClient) GetStartupError() types.Notification {
 	var message string
-	if a.state.StartupErr != nil {
-		message = a.state.StartupErr.Error()
+	if a.state.GetStartupError() != nil {
+		message = a.state.GetStartupError().Error()
 	}
-	return Notification{
+	return types.Notification{
 		Message: message,
-		Level:   LevelError,
+		Level:   types.LevelError,
 	}
 }
 
-func (a *AppClient) HandleError(msg string, fErr *FrontendError) {
+func (a *AppClient) HandleError(msg string, fErr *types.FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -32,7 +33,7 @@ func (a *AppClient) HandleError(msg string, fErr *FrontendError) {
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (a *AppClient) GetNotifications() []Notification {
+func (a *AppClient) GetNotifications() []types.Notification {
 	return a.state.GetAndDeleteNotifications()
 }
 

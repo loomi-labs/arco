@@ -25,6 +25,8 @@ TEST CASES - scheduler.go
 * getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00
 * getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00
 * getNextBackupTime monthly at 10:15 on the 30th - from 2024-01-01 00:00
+* delete backup profile
+* backup schedule on incomplete backup profile
 
 */
 
@@ -293,6 +295,40 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		// ASSERT
 		Expect(err).To(BeNil())
 		Expect(nextTime).To(Equal(parseX("2024-01-30 10:15:00")))
+	})
+
+	It("delete backup profile", func() {
+		// ARRANGE
+		schedule := ent.BackupSchedule{
+			Hourly: true,
+		}
+		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
+		Expect(err).To(BeNil())
+
+		// ACT
+		err = a.BackupClient().DeleteBackupProfile(profile.ID, false)
+
+		// ASSERT
+		Expect(err).To(BeNil())
+		Expect(a.db.BackupProfile.Query().CountX(a.ctx)).To(Equal(0))
+		Expect(a.db.BackupSchedule.Query().CountX(a.ctx)).To(Equal(0))
+	})
+
+	It("backup schedule on incomplete backup profile", func() {
+		// ARRANGE
+		profile.Update().SetIsSetupComplete(false).SaveX(a.ctx)
+		schedule := ent.BackupSchedule{
+			Hourly: true,
+		}
+		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
+		Expect(err).To(BeNil())
+
+		// ACT
+		schedules, err := a.getBackupSchedules()
+
+		// ASSERT
+		Expect(err).To(BeNil())
+		Expect(schedules).To(HaveLen(0))
 	})
 })
 

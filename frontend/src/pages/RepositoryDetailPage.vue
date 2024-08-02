@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { app, ent } from "../../wailsjs/go/models";
+import { app, ent, state } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import Navbar from "../components/Navbar.vue";
@@ -14,9 +14,9 @@ import { useToast } from "vue-toastification";
 const router = useRouter();
 const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
-const repoMountState = ref<app.MountState>(app.MountState.createFrom());
+const repoMountState = ref<state.MountState>(state.MountState.createFrom());
 const archives = ref<ent.Archive[]>([]);
-const archiveMountStates = ref<Map<number, app.MountState>>(new Map()); // Map<archiveId, MountState>
+const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map<archiveId, MountState>
 
 /************
  * Functions
@@ -36,7 +36,7 @@ async function getRepo() {
 async function getRepoMountState() {
   try {
     const repoId = parseInt(router.currentRoute.value.params.id as string);
-    repoMountState.value = await repoClient.GetRepositoryMountState(repoId);
+    repoMountState.value = await repoClient.GetRepoMountState(repoId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }

@@ -1,7 +1,9 @@
 package app
 
 import (
+	"arco/backend/app/types"
 	"arco/backend/ent"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"fmt"
 	"time"
@@ -10,18 +12,17 @@ import (
 func (a *App) scheduleBackups() {
 	a.log.Info("Scheduling backups")
 
-	// Get the duration until the next backup
 	allBs, err := a.getBackupSchedules()
 	if err != nil {
 		a.log.Errorf("Failed to get backup schedules: %s", err)
-		a.state.AddNotification(fmt.Sprintf("Failed to get backup schedules: %s", err), LevelError)
+		a.state.AddNotification(fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
 		return
 	}
 
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
-		backupId := BackupId{
+		backupId := types.BackupId{
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
@@ -29,7 +30,7 @@ func (a *App) scheduleBackups() {
 	}
 }
 
-func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupId) {
+func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
 	// Calculate the duration until the next backup
 	durationUntilNextBackup := bs.NextRun.Sub(time.Now())
 	if durationUntilNextBackup < 0 {
@@ -44,19 +45,19 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId BackupId) {
 	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
 }
 
-func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId BackupId) {
+func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
 	err := a.BackupClient().startBackupJob(backupId)
 	if err != nil {
 		lastRunStatus = err.Error()
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
-		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), LevelError)
+		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 	}
 	updated, err := a.updateBackupSchedule(bs, lastRunStatus)
 	if err != nil {
 		a.log.Error(fmt.Sprintf("Failed to save backup run: %s", err))
-		a.state.AddNotification(fmt.Sprintf("Failed to save backup run: %s", err), LevelError)
+		a.state.AddNotification(fmt.Sprintf("Failed to save backup run: %s", err), types.LevelError)
 	} else {
 		a.scheduleBackup(updated, backupId)
 	}
@@ -80,6 +81,9 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 func (a *App) getBackupSchedules() ([]*ent.BackupSchedule, error) {
 	return a.db.BackupSchedule.
 		Query().
+		Where(
+			backupschedule.HasBackupProfileWith(
+				backupprofile.IsSetupCompleteEQ(true))).
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithRepositories()
 		}).

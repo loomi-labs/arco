@@ -1,21 +1,7 @@
 export namespace app {
 	
-	export class BackupId {
-	    backupProfileId: number;
-	    repositoryId: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new BackupId(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.backupProfileId = source["backupProfileId"];
-	        this.repositoryId = source["repositoryId"];
-	    }
-	}
 	export class BackupProgressResponse {
-	    backupId: BackupId;
+	    backupId: types.BackupId;
 	    progress: borg.BackupProgress;
 	    found: boolean;
 	
@@ -25,7 +11,7 @@ export namespace app {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.backupId = this.convertValues(source["backupId"], BackupId);
+	        this.backupId = this.convertValues(source["backupId"], types.BackupId);
 	        this.progress = this.convertValues(source["progress"], borg.BackupProgress);
 	        this.found = source["found"];
 	    }
@@ -60,48 +46,6 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.debug = source["debug"];
 	        this.startPage = source["startPage"];
-	    }
-	}
-	export class FrontendError {
-	    message: string;
-	    stack: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new FrontendError(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.message = source["message"];
-	        this.stack = source["stack"];
-	    }
-	}
-	export class MountState {
-	    is_mounted: boolean;
-	    mount_path: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new MountState(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.is_mounted = source["is_mounted"];
-	        this.mount_path = source["mount_path"];
-	    }
-	}
-	export class Notification {
-	    message: string;
-	    level: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Notification(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.message = source["message"];
-	        this.level = source["level"];
 	    }
 	}
 
@@ -447,6 +391,72 @@ export namespace ent {
 	
 	
 	
+
+}
+
+export namespace state {
+	
+	export class MountState {
+	    is_mounted: boolean;
+	    mount_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MountState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.is_mounted = source["is_mounted"];
+	        this.mount_path = source["mount_path"];
+	    }
+	}
+
+}
+
+export namespace types {
+	
+	export class BackupId {
+	    backupProfileId: number;
+	    repositoryId: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupId(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.backupProfileId = source["backupProfileId"];
+	        this.repositoryId = source["repositoryId"];
+	    }
+	}
+	export class FrontendError {
+	    message: string;
+	    stack: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FrontendError(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message = source["message"];
+	        this.stack = source["stack"];
+	    }
+	}
+	export class Notification {
+	    message: string;
+	    level: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Notification(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message = source["message"];
+	        this.level = source["level"];
+	    }
+	}
 
 }
 

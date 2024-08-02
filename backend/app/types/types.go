@@ -1,4 +1,4 @@
-package app
+package types
 
 import (
 	"embed"
@@ -24,11 +24,6 @@ type Notification struct {
 	Level   NotificationLevel `json:"level"`
 }
 
-type MountState struct {
-	IsMounted bool   `json:"is_mounted"`
-	MountPath string `json:"mount_path"`
-}
-
 type BackupId struct {
 	BackupProfileId int `json:"backupProfileId"`
 	RepositoryId    int `json:"repositoryId"`
@@ -44,11 +39,4 @@ type Config struct {
 	BorgPath    string
 	BorgVersion string
 	Icon        embed.FS
-}
-
-type Binary struct {
-	Name    string
-	Version string
-	Os      OS
-	Url     string
 }
