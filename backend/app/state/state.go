@@ -14,7 +14,7 @@ type State struct {
 	notifications []types.Notification
 	startupError  error
 
-	repoLocks map[int]*sync.Mutex
+	repoLocks map[int]*RepoLock
 
 	runningBackupJobs      map[types.BackupId]*BackupJob
 	runningPruneJobs       map[types.BackupId]*PruneJob
@@ -25,9 +25,9 @@ type State struct {
 	archiveMounts map[int]map[int]*MountState // maps of [repository ID][archive ID] to mount state
 }
 
-type MountState struct {
-	IsMounted bool   `json:"is_mounted"`
-	MountPath string `json:"mount_path"`
+type RepoLock struct {
+	IsLocked bool
+	*sync.Mutex
 }
 
 type CancelCtx struct {
@@ -56,6 +56,11 @@ type PruneJob struct {
 	result PruneJobResult
 }
 
+type MountState struct {
+	IsMounted bool   `json:"is_mounted"`
+	MountPath string `json:"mount_path"`
+}
+
 func NewCancelCtx(ctx context.Context) *CancelCtx {
 	nCtx, cancel := context.WithCancel(ctx)
 	return &CancelCtx{
@@ -71,7 +76,7 @@ func NewState(log *zap.SugaredLogger) *State {
 		notifications: []types.Notification{},
 		startupError:  nil,
 
-		repoLocks:              map[int]*sync.Mutex{},
+		repoLocks:              make(map[int]*RepoLock),
 		runningBackupJobs:      make(map[types.BackupId]*BackupJob),
 		runningPruneJobs:       make(map[types.BackupId]*PruneJob),
 		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
@@ -104,19 +109,44 @@ func (s *State) GetStartupError() error {
 /********** Repo Locks *************/
 /***********************************/
 
-func (s *State) GetRepoLock(repoId int) *sync.Mutex {
+// GetRepoLock returns the lock for the given repository ID.
+// The lock has to be acquired before performing any operations on the repository.
+//
+// Usage:
+// lock := state.GetRepoLock(repoId)
+// lock.Lock() // Wait to acquire the lock
+// state.SetRepoLocked(repoId)	// Set the repo as locked
+// defer state.UnlockRepo(repoId)	// Unlock the repo when done
+func (s *State) GetRepoLock(repoId int) *RepoLock {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if _, ok := s.repoLocks[repoId]; !ok {
-		s.repoLocks[repoId] = &sync.Mutex{}
+		s.repoLocks[repoId] = &RepoLock{
+			IsLocked: false,
+			Mutex:    &sync.Mutex{},
+		}
 	}
 	return s.repoLocks[repoId]
 }
 
-func (s *State) DeleteRepoLock(repoId int) {
+func (s *State) SetRepoLocked(repoId int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.repoLocks, repoId)
+
+	if lock, ok := s.repoLocks[repoId]; ok {
+		lock.IsLocked = true
+	}
+}
+
+func (s *State) UnlockRepo(repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if lock, ok := s.repoLocks[repoId]; ok {
+		lock.IsLocked = false
+		lock.Unlock()
+	}
 }
 
 /***********************************/
@@ -130,8 +160,10 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 	if _, ok := s.runningBackupJobs[id]; ok {
 		return false, "Backup is already running"
 	}
-	if _, ok := s.repoLocks[id.RepositoryId]; ok {
-		return false, "Repository is busy"
+	if lock, ok := s.repoLocks[id.RepositoryId]; ok {
+		if lock.IsLocked {
+			return false, "Repository is busy"
+		}
 	}
 	return true, ""
 }
@@ -187,8 +219,10 @@ func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
 	if _, ok := s.runningPruneJobs[id]; ok {
 		return false, "Prune job is already running"
 	}
-	if _, ok := s.repoLocks[id.RepositoryId]; ok {
-		return false, "Repository is busy"
+	if lock, ok := s.repoLocks[id.RepositoryId]; ok {
+		if lock.IsLocked {
+			return false, "Repository is busy"
+		}
 	}
 	return true, ""
 }

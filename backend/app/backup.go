@@ -245,8 +245,9 @@ func rollback(tx *ent.Tx, err error) error {
 func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, prefix string, directories []string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
-	defer repoLock.Unlock()
-	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	// Wait to acquire the lock and then set the repo as locked
+	b.state.SetRepoLocked(bId.RepositoryId)
+	defer b.state.UnlockRepo(bId.RepositoryId)
 	ctx := b.state.AddRunningBackup(b.ctx, bId)
 	defer b.state.RemoveRunningBackup(bId)
 
@@ -269,8 +270,9 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, pref
 func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
-	defer repoLock.Unlock()
-	defer b.state.DeleteRepoLock(bId.RepositoryId)
+	// Wait to acquire the lock and then set the repo as locked
+	b.state.SetRepoLocked(bId.RepositoryId)
+	defer b.state.UnlockRepo(bId.RepositoryId)
 	b.state.AddRunningDeleteJob(b.ctx, bId)
 	defer b.state.RemoveRunningDeleteJob(bId)
 
