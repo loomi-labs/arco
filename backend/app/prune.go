@@ -1,6 +1,8 @@
 package app
 
 import (
+	"arco/backend/app/state"
+	"arco/backend/app/types"
 	"arco/backend/borg"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
@@ -14,7 +16,7 @@ func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error 
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := BackupId{
+	bId := types.BackupId{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
@@ -51,7 +53,7 @@ func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) 
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := BackupId{
+	bId := types.BackupId{
 		BackupProfileId: backupProfileId,
 		RepositoryId:    repositoryId,
 	}
@@ -81,7 +83,7 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BackupClient) runPruneJob(bId BackupId, repoUrl string, password string, prefix string) {
+func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()
@@ -95,13 +97,13 @@ func (b *BackupClient) runPruneJob(bId BackupId, repoUrl string, password string
 
 	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, false, ch)
 	if err != nil {
-		b.state.AddNotification(err.Error(), LevelError)
+		b.state.AddNotification(err.Error(), types.LevelError)
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Prune job completed"), LevelInfo)
+		b.state.AddNotification(fmt.Sprintf("Prune job completed"), types.LevelInfo)
 	}
 }
 
-func (b *BackupClient) savePruneResult(bId BackupId, isDryRun bool, ch chan borg.PruneResult) {
+func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch chan borg.PruneResult) {
 	for {
 		select {
 		case <-b.ctx.Done():
@@ -123,12 +125,12 @@ func (b *BackupClient) savePruneResult(bId BackupId, isDryRun bool, ch chan borg
 			}
 
 			// Merge the prune result with the archives
-			var pjr PruneJobResult
+			var pjr state.PruneJobResult
 			for _, arch := range archives {
 				found := false
 				for _, keep := range result.KeepArchives {
 					if arch.Name == keep.Name {
-						pjr.KeepArchives = append(pjr.KeepArchives, KeepArchive{
+						pjr.KeepArchives = append(pjr.KeepArchives, state.KeepArchive{
 							Id:     arch.ID,
 							Name:   arch.Name,
 							Reason: keep.Reason,
@@ -156,7 +158,7 @@ func (b *BackupClient) savePruneResult(bId BackupId, isDryRun bool, ch chan borg
 	}
 }
 
-func (b *BackupClient) dryRunPruneJob(bId BackupId, repoUrl string, password string, prefix string) {
+func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	defer repoLock.Unlock()
@@ -170,8 +172,8 @@ func (b *BackupClient) dryRunPruneJob(bId BackupId, repoUrl string, password str
 
 	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, true, ch)
 	if err != nil {
-		b.state.AddNotification(err.Error(), LevelError)
+		b.state.AddNotification(err.Error(), types.LevelError)
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Dry-run prune job completed"), LevelInfo)
+		b.state.AddNotification(fmt.Sprintf("Dry-run prune job completed"), types.LevelInfo)
 	}
 }

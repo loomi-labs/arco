@@ -1,4 +1,4 @@
-package app
+package types
 
 import (
 	"embed"
@@ -39,11 +39,4 @@ type Config struct {
 	BorgPath    string
 	BorgVersion string
 	Icon        embed.FS
-}
-
-type Binary struct {
-	Name    string
-	Version string
-	Os      OS
-	Url     string
 }

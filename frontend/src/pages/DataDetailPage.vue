@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { app, borg, ent } from "../../wailsjs/go/models";
+import { types, borg, ent } from "../../wailsjs/go/models";
 import { rDataPage, rRepositoryDetailPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
@@ -25,7 +25,7 @@ const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
  * Functions
  ************/
 
-function backupIdString(backupId: app.BackupId) {
+function backupIdString(backupId: types.BackupId) {
   return `${backupId.backupProfileId}-${backupId.repositoryId}`;
 }
 
@@ -33,9 +33,9 @@ function backupIdStringForRepo(repoId: number) {
   return `${backup.value.id}-${repoId}`;
 }
 
-function toBackupIdentifier(backupIdString: string): app.BackupId {
+function toBackupIdentifier(backupIdString: string): types.BackupId {
   const parts = backupIdString.split("-");
-  const bId = app.BackupId.createFrom();
+  const bId = types.BackupId.createFrom();
   bId.backupProfileId = parseInt(parts[0]);
   bId.repositoryId = parseInt(parts[1]);
   return bId;

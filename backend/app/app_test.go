@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/enttest"
 	"context"
@@ -32,7 +33,7 @@ func NewTestApp(t TestingT) *App {
 		panic(fmt.Sprintf("failed to build logger: %v", err))
 	}
 
-	a := NewApp(log.Sugar(), &Config{})
+	a := NewApp(log.Sugar(), &types.Config{})
 	a.ctx = context.Background()
 	a.config = nil
 

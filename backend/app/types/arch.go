@@ -1,4 +1,4 @@
-package app
+package types
 
 import (
 	"fmt"
@@ -14,6 +14,13 @@ const (
 
 func (o OS) String() string {
 	return string(o)
+}
+
+type Binary struct {
+	Name    string
+	Version string
+	Os      OS
+	Url     string
 }
 
 func IsLinux() bool {
