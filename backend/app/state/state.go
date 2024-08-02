@@ -14,8 +14,8 @@ type State struct {
 	notifications []types.Notification
 	startupError  error
 
-	repoLocks map[int]*RepoLock   // locks that prevent multiple operations on the same repository
-	borgLocks map[int]struct{}    // locks created by borg operations. They have to be removed with `borg break-lock`
+	repoLocks map[int]*RepoLock // locks that prevent multiple operations on the same repository
+	borgLocks map[int]struct{}  // locks created by borg operations. They have to be removed with `borg break-lock`
 
 	runningBackupJobs      map[types.BackupId]*BackupJob
 	runningPruneJobs       map[types.BackupId]*PruneJob
@@ -78,7 +78,7 @@ func NewState(log *zap.SugaredLogger) *State {
 		startupError:  nil,
 
 		repoLocks: make(map[int]*RepoLock),
-		borgLocks: make(map[int]interface{}),
+		borgLocks: make(map[int]struct{}),
 
 		runningBackupJobs:      make(map[types.BackupId]*BackupJob),
 		runningPruneJobs:       make(map[types.BackupId]*PruneJob),
