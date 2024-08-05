@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n-report": "vue-i18n-extract report --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
+    "i18n-add": "vue-i18n-extract report --add --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
+    "i18n-remove": "vue-i18n-extract report --remove --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'"
   },
   "dependencies": {
     "vue": "^3.4.27",
@@ -24,6 +27,7 @@
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
+    "vue-i18n-extract": "^2.0.7",
     "vue-tsc": "^2.0.18"
   }
 }
