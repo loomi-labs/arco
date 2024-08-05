@@ -5,9 +5,6 @@ import * as appClient from "../wailsjs/go/app/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
-import app from "./App.vue";
-import { LogInfo } from "../wailsjs/runtime";
-import { getCurrentInstance } from 'vue';
 
 /************
  * Variables
@@ -59,6 +56,19 @@ async function goToStartPage() {
   }
 }
 
+async function setTheme() {
+  try {
+    // Set theme on <html> element as data-theme attribute
+    const theme = "light"; // TODO: make this dynamic
+    const html = document.querySelector("html");
+    if (html) {
+      html.setAttribute("data-theme", theme);
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get theme", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -67,6 +77,7 @@ async function goToStartPage() {
 setInterval(getNotifications, 1000);
 getStartupError();
 goToStartPage();
+setTheme();
 
 </script>
 
