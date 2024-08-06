@@ -25,6 +25,8 @@ TEST CASES - scheduler.go
 * getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00
 * getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00
 * getNextBackupTime monthly at 10:15 on the 30th - from 2024-01-01 00:00
+* getNextBackupTime monthly at 10:15 on the 29th - from 2024-02-01 00:00 (february has 29 days in 2024)
+* getNextBackupTime monthly at 10:15 on the 30th - from 2024-02-01 00:00 (february has 29 days in 2024)
 * delete backup profile
 * backup schedule on incomplete backup profile
 
@@ -295,6 +297,44 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		// ASSERT
 		Expect(err).To(BeNil())
 		Expect(nextTime).To(Equal(parseX("2024-01-30 10:15:00")))
+	})
+
+	It("getNextBackupTime monthly at 10:15 on the 29th - from 2024-02-01 00:00 (february has 28 days)", func() {
+		// ARRANGE
+		monthlyAt := hourMinute(now, 10, 15)
+		twentyNinth := uint8(29)
+		schedule := ent.BackupSchedule{
+			MonthlyAt: &monthlyAt,
+			Monthday:  &twentyNinth,
+		}
+		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
+		Expect(err).To(BeNil())
+
+		// ACT
+		nextTime, err := a.getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
+
+		// ASSERT
+		Expect(err).To(BeNil())
+		Expect(nextTime).To(Equal(parseX("2024-02-29 10:15:00")))
+	})
+
+	It("getNextBackupTime monthly at 10:15 on the 30th - from 2024-02-01 00:00 (february has 29 days in 2024)", func() {
+		// ARRANGE
+		monthlyAt := hourMinute(now, 10, 15)
+		thirtieth := uint8(30)
+		schedule := ent.BackupSchedule{
+			MonthlyAt: &monthlyAt,
+			Monthday:  &thirtieth,
+		}
+		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
+		Expect(err).To(BeNil())
+
+		// ACT
+		nextTime, err := a.getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
+
+		// ASSERT
+		Expect(err).To(BeNil())
+		Expect(nextTime).To(Equal(parseX("2024-02-29 10:15:00")))
 	})
 
 	It("delete backup profile", func() {

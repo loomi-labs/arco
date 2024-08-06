@@ -158,9 +158,26 @@ func (a *App) getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (tim
 		return fromTime.Add(diff), nil
 	}
 	if bs.MonthlyAt != nil && bs.Monthday != nil {
+		monthday := *bs.Monthday
+
+		// If we are in February and the monthday is 29 or 30, we use the last day of the month
+		if fromTime.Month() == time.February && monthday > 28 {
+			// Check if the year is a leap year
+			year := fromTime.Year()
+			if year%4 == 0 && (year%100 != 0 || year%400 == 0) {
+				// If it is a leap year, we use 29
+				if monthday > 29 {
+					monthday = 29
+				}
+			} else {
+				// If it is not a leap year, we use 28
+				monthday = 28
+			}
+		}
+
 		// Calculate the wanted duration from the beginning of the month
 		wantedDuration :=
-			time.Duration(*bs.Monthday-1)*24*time.Hour + // days
+			time.Duration(monthday-1)*24*time.Hour + // days
 				time.Duration(bs.MonthlyAt.Hour())*time.Hour + // hours
 				time.Duration(bs.MonthlyAt.Minute())*time.Minute // minutes
 
