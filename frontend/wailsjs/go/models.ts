@@ -87,7 +87,7 @@ export namespace borg {
 export namespace ent {
 	
 	export class BackupScheduleEdges {
-	    backup_profile?: BackupProfile;
+	    backupProfile?: BackupProfile;
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupScheduleEdges(source);
@@ -95,7 +95,7 @@ export namespace ent {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.backup_profile = this.convertValues(source["backup_profile"], BackupProfile);
+	        this.backupProfile = this.convertValues(source["backupProfile"], BackupProfile);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -173,7 +173,7 @@ export namespace ent {
 	}
 	export class BackupProfileEdges {
 	    repositories?: Repository[];
-	    backup_schedule?: BackupSchedule;
+	    backupSchedule?: BackupSchedule;
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupProfileEdges(source);
@@ -182,7 +182,7 @@ export namespace ent {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.repositories = this.convertValues(source["repositories"], Repository);
-	        this.backup_schedule = this.convertValues(source["backup_schedule"], BackupSchedule);
+	        this.backupSchedule = this.convertValues(source["backupSchedule"], BackupSchedule);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

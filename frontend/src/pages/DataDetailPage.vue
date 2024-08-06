@@ -8,6 +8,7 @@ import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
+import ScheduleSelection from "../components/ScheduleSelection.vue";
 import { Path, toPaths } from "../common/types";
 
 /************
@@ -107,6 +108,15 @@ async function saveExcludePaths(paths: Path[]) {
   }
 }
 
+async function saveSchedule(schedule: ent.BackupSchedule) {
+  try {
+    backup.value.edges.backupSchedule = schedule;
+    await backupClient.SaveBackupProfile(backup.value);
+  } catch (error: any) {
+    await showAndLogError("Failed to update backup profile", error);
+  }
+}
+
 function pollBackupProgress() {
   const intervalId = setInterval(async () => {
     try {
@@ -189,12 +199,12 @@ getBackupProfile();
         </div>
       </div>
 
-
-      <div class='bg-purple-100 p-6 rounded-lg shadow-md mb-6'>
-        <h2 class='text-xl font-semibold mb-4'>Schedule</h2>
-        <p>Every day @ 9:30</p>
-        <p>Next backup tomorrow at 9:30</p>
+      <!-- Schedule Section -->
+      <h1 class='text-2xl font-bold px-10 mb-4'>{{ $t("schedule") }}</h1>
+      <div class='bg-base-300/25 p-10 rounded-4xl'>
+        <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule' />
       </div>
+
       <h2 class='text-2xl font-bold mb-6'>Stored on</h2>
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- USB Drive Card -->
