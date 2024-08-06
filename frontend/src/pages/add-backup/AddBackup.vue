@@ -11,7 +11,7 @@ import { LogDebug } from "../../../wailsjs/runtime";
 import { showAndLogError } from "../../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../../components/DataSelection.vue";
-import { Directory, pathToDirectory } from "../../common/types";
+import { Path, toPaths } from "../../common/types";
 
 /************
  * Types
@@ -43,7 +43,7 @@ const currentStep = ref<Step>(Step.SelectData);
 const existingRepositories = ref<ent.Repository[]>([]);
 
 // Step 1
-const directorySuggestions = ref<Directory[]>([]);
+const directorySuggestions = ref<Path[]>([]);
 
 // Step 2
 const backupSchedule = ref<ent.BackupSchedule | undefined>(undefined);
@@ -83,7 +83,7 @@ async function createBackupProfile() {
 async function getDirectorySuggestions() {
   try {
     const result = await backupClient.GetDirectorySuggestions();
-    directorySuggestions.value = pathToDirectory(false, result);
+    directorySuggestions.value = toPaths(false, result);
   } catch (error: any) {
     await showAndLogError("Failed to get directory suggestions", error);
   }
@@ -99,7 +99,7 @@ async function saveBackupProfile(): Promise<boolean> {
   return true;
 }
 
-function handleDirectoryUpdate(directories: Directory[]) {
+function handleDirectoryUpdate(directories: Path[]) {
   backupProfile.value.backupPaths = directories.filter((dir) => dir.isAdded).map((dir) => dir.path);
 }
 
@@ -270,7 +270,7 @@ getExistingRepositories();
 
       <h1>Data to backup</h1>
 
-      <DataSelection :directories='directorySuggestions' @update:directories='handleDirectoryUpdate'/>
+      <DataSelection :paths='directorySuggestions' @update:directories='handleDirectoryUpdate'/>
 
       <div style='height: 20px'></div>
 

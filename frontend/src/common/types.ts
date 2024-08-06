@@ -1,10 +1,10 @@
-export interface Directory {
+export interface Path {
   path: string;
   isAdded: boolean;
 }
 
-/* pathToDirectory takes a string array and returns an array of Directory objects */
-export function pathToDirectory(isAdded: boolean, paths: string[]): Directory[] {
+/* toPaths takes a string array and returns an array of Path objects */
+export function toPaths(isAdded: boolean, paths: string[]): Path[] {
   return paths.map((path) => {
     return {
       path,

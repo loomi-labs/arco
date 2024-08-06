@@ -8,7 +8,7 @@ import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
-import { Directory, pathToDirectory } from "../common/types";
+import { Path, toPaths } from "../common/types";
 
 /************
  * Variables
@@ -17,8 +17,8 @@ import { Directory, pathToDirectory } from "../common/types";
 const router = useRouter();
 const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
-const backupPaths = ref<Directory[]>([]);
-const excludePaths = ref<Directory[]>([]);
+const backupPaths = ref<Path[]>([]);
+const excludePaths = ref<Path[]>([]);
 const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
 
 /************
@@ -44,8 +44,8 @@ function toBackupIdentifier(backupIdString: string): types.BackupId {
 async function getBackupProfile() {
   try {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
-    backupPaths.value = pathToDirectory(true, backup.value.backupPaths);
-    excludePaths.value = pathToDirectory(true, backup.value.excludePaths);
+    backupPaths.value = toPaths(true, backup.value.backupPaths);
+    excludePaths.value = toPaths(true, backup.value.excludePaths);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -89,18 +89,18 @@ async function dryRunPruneBackups() {
   }
 }
 
-async function saveBackupPaths(directories: Directory[]) {
+async function saveBackupPaths(paths: Path[]) {
   try {
-    backup.value.backupPaths = directories.map((dir) => dir.path);
+    backup.value.backupPaths = paths.map((dir) => dir.path);
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to update backup profile", error);
   }
 }
 
-async function saveExcludePaths(directories: Directory[]) {
+async function saveExcludePaths(paths: Path[]) {
   try {
-    backup.value.excludePaths = directories.map((dir) => dir.path);
+    backup.value.excludePaths = paths.map((dir) => dir.path);
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to update backup profile", error);
@@ -179,12 +179,12 @@ getBackupProfile();
           <!-- Data to backup Card -->
           <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
             <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-backup") }}</h2>
-            <DataSelection :directories='backupPaths' @update:directories='saveBackupPaths' />
+            <DataSelection :paths='backupPaths' @update:paths='saveBackupPaths' />
           </div>
           <!-- Data to ignore Card -->
           <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
             <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-ignore") }}</h2>
-            <DataSelection :directories='excludePaths' @update:directories='saveExcludePaths' />
+            <DataSelection :paths='excludePaths' @update:paths='saveExcludePaths' />
           </div>
         </div>
       </div>
@@ -261,7 +261,7 @@ getBackupProfile();
   <!--  <div class='flex flex-col items-center justify-center h-full'>-->
   <!--    <h1>{{ backup.name }}</h1>-->
   <!--    <p>{{ backup.id }}</p>-->
-  <!--    <DataSelection :directories='directories' @update:directories='handleDirectoryUpdate' />-->
+  <!--    <DataSelection :paths='paths' @update:paths='handleDirectoryUpdate' />-->
 
   <!--    <p>{{ backup.isSetupComplete }}</p>-->
 

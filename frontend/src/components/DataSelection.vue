@@ -2,7 +2,7 @@
 
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref, watch } from "vue";
-import { Directory } from "../common/types";
+import { Path } from "../common/types";
 import { FolderPlusIcon, XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 
@@ -11,41 +11,41 @@ import { PlusIcon } from "@heroicons/vue/24/outline";
  ************/
 
 const props = defineProps({
-  directories: {
-    type: Array as () => Directory[],
+  paths: {
+    type: Array as () => Path[],
     required: true
   }
 });
 
-const directories = ref<Directory[]>(props.directories);
-const emit = defineEmits(["update:directories"]);
+const paths = ref<Path[]>(props.paths);
+const emit = defineEmits(["update:paths"]);
 
 /************
  * Functions
  ************/
 
-async function markDirectory(directory: Directory, isAdded: boolean) {
+async function markPath(path: Path, isAdded: boolean) {
   if (isAdded) {
-    directory.isAdded = true;
+    path.isAdded = true;
   } else {
-    directories.value = directories.value.filter((dir) => dir !== directory);
+    paths.value = paths.value.filter((p) => p !== path);
   }
-  emit("update:directories", directories.value);
+  emit("update:paths", paths.value);
 }
 
 async function addDirectory() {
   const dir = await backupClient.SelectDirectory();
   if (dir) {
-    directories.value.push({
+    paths.value.push({
       path: dir,
       isAdded: true
     });
-    emit("update:directories", directories.value);
+    emit("update:paths", paths.value);
   }
 }
 
-async function addEmptyDirectory() {
-  directories.value.push({
+async function addEmptyPath() {
+  paths.value.push({
     path: "",
     isAdded: true,
   })
@@ -55,33 +55,33 @@ async function addEmptyDirectory() {
  * Lifecycle
  ************/
 
-// Watch for changes to props.directories
-watch(() => props.directories, (newDirectories) => {
-  directories.value = newDirectories;
+// Watch for changes to props.paths
+watch(() => props.paths, (newPaths) => {
+  paths.value = newPaths;
 });
 
 </script>
 
 <template>
-  <div class='flex justify-between' v-for='(directory, index) in directories' :key='index'>
+  <div class='flex justify-between' v-for='(path, index) in paths' :key='index'>
     <label class='form-control w-full max-w-xs mb-1'>
       <input type='text' class='input input-sm w-full max-w-xs text-base'
-             :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !directory.isAdded }"
-             @change='emit("update:directories", directories)'
-             v-model='directory.path' />
+             :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !path.isAdded }"
+             @change='emit("update:paths", paths)'
+             v-model='path.path' />
     </label>
-    <button v-if='!directory.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markDirectory(directory, true)'>
+    <button v-if='!path.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markPath(path, true)'>
       <PlusIcon class='size-4 text-success group-hover:text-success-content' />
     </button>
     <button v-else class='btn btn-outline btn-square btn-sm btn-error group ml-2'
-            @click='markDirectory(directory, false)'>
+            @click='markPath(path, false)'>
       <XMarkIcon class='size-4 text-error group-hover:text-error-content' />
     </button>
   </div>
 
   <div class='flex justify-end'>
     <button class='btn btn-outline btn-circle btn-sm btn-success group'
-            @click='addEmptyDirectory()'>
+            @click='addEmptyPath()'>
       <PlusIcon class='size-4 text-success group-hover:text-success-content' />
     </button>
   </div>
