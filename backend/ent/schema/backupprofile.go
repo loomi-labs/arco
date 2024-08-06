@@ -37,6 +37,7 @@ func (BackupProfile) Edges() []ent.Edge {
 		edge.To("repositories", Repository.Type),
 		edge.To("backup_schedule", BackupSchedule.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)).
+			StructTag(`json:"backupSchedule,omitempty"`).
 			Unique(),
 	}
 }

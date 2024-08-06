@@ -39,7 +39,7 @@ type BackupProfileEdges struct {
 	// Repositories holds the value of the repositories edge.
 	Repositories []*Repository `json:"repositories,omitempty"`
 	// BackupSchedule holds the value of the backup_schedule edge.
-	BackupSchedule *BackupSchedule `json:"backup_schedule,omitempty"`
+	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

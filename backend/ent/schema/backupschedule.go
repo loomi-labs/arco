@@ -80,6 +80,7 @@ func (BackupSchedule) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("backup_profile", BackupProfile.Type).
 			Ref("backup_schedule").
+			StructTag(`json:"backupProfile,omitempty"`).
 			Unique().
 			Required(),
 	}
