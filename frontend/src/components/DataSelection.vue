@@ -3,6 +3,8 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref, watch } from "vue";
 import { Directory } from "../common/types";
+import { FolderPlusIcon, XMarkIcon } from "@heroicons/vue/24/solid";
+import { PlusIcon } from "@heroicons/vue/24/outline";
 
 /************
  * Variables
@@ -55,16 +57,26 @@ watch(() => props.directories, (newDirectories) => {
 
 <template>
   <div class='flex items-center' v-for='(directory, index) in directories' :key='index'>
-    <label class='form-control w-full max-w-xs'>
-      <input type='text' class='input input-bordered w-full max-w-xs' :class="{ 'bg-accent': directory.isAdded }"
+    <label class='form-control w-full max-w-xs mb-1'>
+      <input type='text' class='input input-sm w-full max-w-xs text-base'
+             :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !directory.isAdded }"
              v-model='directory.path' />
-
     </label>
-    <button v-if='!directory.isAdded' class='btn btn-accent' @click='markDirectory(directory, true)'>+</button>
-    <button v-else class='btn btn-error' @click='markDirectory(directory, false)'>-</button>
+    <button v-if='!directory.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markDirectory(directory, true)'>
+      <PlusIcon class='size-4 text-success group-hover:text-success-content' />
+    </button>
+    <button v-else class='btn btn-outline btn-square btn-sm btn-error group ml-2'
+            @click='markDirectory(directory, false)'>
+      <XMarkIcon class='size-4 text-error group-hover:text-error-content' />
+    </button>
   </div>
 
-  <button class='btn btn-primary' @click='addDirectory()'>Add directory</button>
+  <div class='flex justify-end mt-4'>
+    <button class='btn btn-primary btn-sm' @click='addDirectory()'>
+      {{ $t("add") }}
+      <FolderPlusIcon class='size-4' />
+    </button>
+  </div>
 
   <div style='height: 20px'></div>
 </template>
