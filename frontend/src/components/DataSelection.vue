@@ -34,10 +34,10 @@ async function markPath(path: Path, isAdded: boolean) {
 }
 
 async function addDirectory() {
-  const dir = await backupClient.SelectDirectory();
-  if (dir) {
+  const path = await backupClient.SelectDirectory();
+  if (path) {
     paths.value.push({
-      path: dir,
+      path: path,
       isAdded: true
     });
     emit("update:paths", paths.value);
