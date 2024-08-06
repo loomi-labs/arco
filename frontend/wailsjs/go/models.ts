@@ -207,7 +207,8 @@ export namespace ent {
 	    id: number;
 	    name: string;
 	    prefix: string;
-	    directories: string[];
+	    backupPaths: string[];
+	    excludePaths: string[];
 	    isSetupComplete: boolean;
 	    edges: BackupProfileEdges;
 	
@@ -220,7 +221,8 @@ export namespace ent {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.prefix = source["prefix"];
-	        this.directories = source["directories"];
+	        this.backupPaths = source["backupPaths"];
+	        this.excludePaths = source["excludePaths"];
 	        this.isSetupComplete = source["isSetupComplete"];
 	        this.edges = this.convertValues(source["edges"], BackupProfileEdges);
 	    }

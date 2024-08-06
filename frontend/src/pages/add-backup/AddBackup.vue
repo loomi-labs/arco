@@ -100,7 +100,7 @@ async function saveBackupProfile(): Promise<boolean> {
 }
 
 function handleDirectoryUpdate(directories: Directory[]) {
-  backupProfile.value.directories = directories.filter((dir) => dir.isAdded).map((dir) => dir.path);
+  backupProfile.value.backupPaths = directories.filter((dir) => dir.isAdded).map((dir) => dir.path);
 }
 
 async function getExistingRepositories() {
@@ -436,7 +436,7 @@ getExistingRepositories();
         <h2>Summary</h2>
         <div>{{ backupProfile.name }}</div>
         <div>{{ backupProfile.prefix }}</div>
-        <div>{{ backupProfile.directories }}</div>
+        <div>{{ backupProfile.backupPaths }}</div>
       </div>
 
       <div style='height: 20px'></div>

@@ -44,6 +44,13 @@ async function addDirectory() {
   }
 }
 
+async function addEmptyDirectory() {
+  directories.value.push({
+    path: "",
+    isAdded: true,
+  })
+}
+
 /************
  * Lifecycle
  ************/
@@ -56,10 +63,11 @@ watch(() => props.directories, (newDirectories) => {
 </script>
 
 <template>
-  <div class='flex items-center' v-for='(directory, index) in directories' :key='index'>
+  <div class='flex justify-between' v-for='(directory, index) in directories' :key='index'>
     <label class='form-control w-full max-w-xs mb-1'>
       <input type='text' class='input input-sm w-full max-w-xs text-base'
              :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !directory.isAdded }"
+             @change='emit("update:directories", directories)'
              v-model='directory.path' />
     </label>
     <button v-if='!directory.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markDirectory(directory, true)'>
@@ -71,10 +79,17 @@ watch(() => props.directories, (newDirectories) => {
     </button>
   </div>
 
+  <div class='flex justify-end'>
+    <button class='btn btn-outline btn-circle btn-sm btn-success group'
+            @click='addEmptyDirectory()'>
+      <PlusIcon class='size-4 text-success group-hover:text-success-content' />
+    </button>
+  </div>
+
   <div class='flex justify-end mt-4'>
-    <button class='btn btn-primary btn-sm' @click='addDirectory()'>
+    <button class='btn btn-primary btn-sm group' @click='addDirectory()'>
       {{ $t("add") }}
-      <FolderPlusIcon class='size-4' />
+      <FolderPlusIcon class='size-4 group-hover:text-primary-content' />
     </button>
   </div>
 

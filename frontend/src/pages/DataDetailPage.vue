@@ -2,14 +2,13 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { types, borg, ent } from "../../wailsjs/go/models";
-import { rDataPage, rRepositoryDetailPage, withId } from "../router";
+import { borg, ent, types } from "../../wailsjs/go/models";
+import { rDataPage } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import { Directory, pathToDirectory } from "../common/types";
-import { LogDebug, LogInfo } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -18,7 +17,8 @@ import { LogDebug, LogInfo } from "../../wailsjs/runtime";
 const router = useRouter();
 const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
-const directories = ref<Directory[]>([]);
+const backupPaths = ref<Directory[]>([]);
+const excludePaths = ref<Directory[]>([]);
 const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
 
 /************
@@ -44,8 +44,8 @@ function toBackupIdentifier(backupIdString: string): types.BackupId {
 async function getBackupProfile() {
   try {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
-    LogDebug(`Got backup profile: ${JSON.stringify(backup.value.directories)}`);
-    directories.value = pathToDirectory(true, backup.value.directories);
+    backupPaths.value = pathToDirectory(true, backup.value.backupPaths);
+    excludePaths.value = pathToDirectory(true, backup.value.excludePaths);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -89,12 +89,21 @@ async function dryRunPruneBackups() {
   }
 }
 
-function handleDirectoryUpdate(directories: Directory[]) {
+async function saveBackupPaths(directories: Directory[]) {
   try {
-    backup.value.directories = directories.map((dir) => dir.path);
-    backupClient.SaveBackupProfile(backup.value);
+    backup.value.backupPaths = directories.map((dir) => dir.path);
+    await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
-    showAndLogError("Failed to update backup profile", error);
+    await showAndLogError("Failed to update backup profile", error);
+  }
+}
+
+async function saveExcludePaths(directories: Directory[]) {
+  try {
+    backup.value.excludePaths = directories.map((dir) => dir.path);
+    await backupClient.SaveBackupProfile(backup.value);
+  } catch (error: any) {
+    await showAndLogError("Failed to update backup profile", error);
   }
 }
 
@@ -152,29 +161,127 @@ getBackupProfile();
 
 <template>
   <Navbar></Navbar>
-  <div class='flex flex-col items-center justify-center h-full'>
-    <h1>{{ backup.name }}</h1>
-    <p>{{ backup.id }}</p>
-    <DataSelection :directories='directories' @update:directories='handleDirectoryUpdate' />
+  <div class='bg-base-200 p-10'>
+    <div class='container mx-auto px-4 text-left'>
+      <!-- Data Section -->
+      <h1 class='text-2xl font-bold px-10 mb-4'>{{ backup.name }}</h1>
+      <div class='bg-base-300/25 p-10 rounded-4xl'>
+        <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
+          <!-- Storage Card -->
+          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
+            <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
+            <ul>
+              <li>600 GB</li>
+              <li>15603 Files</li>
+              <li>Prefix: {{ backup.prefix }}</li>
+            </ul>
+          </div>
+          <!-- Data to backup Card -->
+          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
+            <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-backup") }}</h2>
+            <DataSelection :directories='backupPaths' @update:directories='saveBackupPaths' />
+          </div>
+          <!-- Data to ignore Card -->
+          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
+            <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-ignore") }}</h2>
+            <DataSelection :directories='excludePaths' @update:directories='saveExcludePaths' />
+          </div>
+        </div>
+      </div>
 
-    <p>{{ backup.isSetupComplete }}</p>
 
-    <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
-      <div class='flex flex-row items-center justify-center'>
-        <p>{{ repo.name }}</p>
-        <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>
-        <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>
-        <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>
+      <div class='bg-purple-100 p-6 rounded-lg shadow-md mb-6'>
+        <h2 class='text-xl font-semibold mb-4'>Schedule</h2>
+        <p>Every day @ 9:30</p>
+        <p>Next backup tomorrow at 9:30</p>
+      </div>
+      <h2 class='text-2xl font-bold mb-6'>Stored on</h2>
+      <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
+        <!-- USB Drive Card -->
+        <div class='bg-white p-6 rounded-lg shadow-md'>
+          <h3 class='text-lg font-semibold mb-4'>USB DRIVE</h3>
+          <p>Last backup TODAY</p>
+          <div class='bg-gray-200 rounded-full h-4 overflow-hidden mb-4'>
+            <div class='bg-purple-600 h-full' style='width: 50%;'></div>
+          </div>
+          <p>50GB used / 100GB free</p>
+        </div>
+        <!-- Grandma's Cloud Card -->
+        <div class='bg-white p-6 rounded-lg shadow-md'>
+          <h3 class='text-lg font-semibold mb-4'>Grandma's Cloud</h3>
+          <p>Last backup TODAY</p>
+          <div class='bg-gray-200 rounded-full h-4 overflow-hidden mb-4'>
+            <div class='bg-purple-600 h-full' style='width: 70%;'></div>
+          </div>
+          <p>70GB used / 30GB free</p>
+        </div>
+      </div>
+      <div class='bg-white p-6 rounded-lg shadow-md'>
+        <h3 class='text-lg font-semibold mb-4'>Archives</h3>
+        <table class='w-full table-auto'>
+          <thead>
+          <tr>
+            <th class='px-4 py-2'>Name</th>
+            <th class='px-4 py-2'>Date</th>
+            <th class='px-4 py-2'>Action</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td class='border px-4 py-2'>Fotos</td>
+            <td class='border px-4 py-2 text-orange-500'>Today</td>
+            <td class='border px-4 py-2'>
+              <button class='btn btn-secondary'>Remove</button>
+              <button class='btn btn-error'>Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td class='border px-4 py-2'>Documentos</td>
+            <td class='border px-4 py-2'>2023</td>
+            <td class='border px-4 py-2'>
+              <button class='btn btn-secondary'>Remove</button>
+              <button class='btn btn-error'>Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td class='border px-4 py-2'>Birthdate.bak</td>
+            <td class='border px-4 py-2'>12.01.2024</td>
+            <td class='border px-4 py-2'>
+              <button class='btn btn-secondary'>Remove</button>
+              <button class='btn btn-error'>Delete</button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-
-    <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>
-    <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>
-    <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>
-    <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>
-
-    <button class='btn btn-primary' @click='router.back()'>Back</button>
   </div>
+  <!--  COPILOT MARKER -->
+  <!--  <div class='flex'></div>-->
+  <!--  <div class='flex flex-col items-center justify-center h-full'>-->
+  <!--    <h1>{{ backup.name }}</h1>-->
+  <!--    <p>{{ backup.id }}</p>-->
+  <!--    <DataSelection :directories='directories' @update:directories='handleDirectoryUpdate' />-->
+
+  <!--    <p>{{ backup.isSetupComplete }}</p>-->
+
+  <!--    <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>-->
+  <!--      <div class='flex flex-row items-center justify-center'>-->
+  <!--        <p>{{ repo.name }}</p>-->
+  <!--        <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>-->
+  <!--        <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>-->
+  <!--        <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>-->
+  <!--      </div>-->
+  <!--    </div>-->
+
+  <!--    <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>-->
+  <!--    <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>-->
+  <!--    <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>-->
+  <!--    <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>-->
+
+  <!--    <button class='btn btn-primary' @click='router.back()'>{{ $t('back') }}</button>-->
+  <!--  </div>-->
+  <!--  COPILOT MARKER -->
 </template>
 
 <style scoped>
