@@ -36,7 +36,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "prefix", Type: field.TypeString},
-		{Name: "directories", Type: field.TypeJSON},
+		{Name: "backup_paths", Type: field.TypeJSON},
+		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "is_setup_complete", Type: field.TypeBool, Default: false},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.

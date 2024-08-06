@@ -33,9 +33,15 @@ func (bpc *BackupProfileCreate) SetPrefix(s string) *BackupProfileCreate {
 	return bpc
 }
 
-// SetDirectories sets the "directories" field.
-func (bpc *BackupProfileCreate) SetDirectories(s []string) *BackupProfileCreate {
-	bpc.mutation.SetDirectories(s)
+// SetBackupPaths sets the "backup_paths" field.
+func (bpc *BackupProfileCreate) SetBackupPaths(s []string) *BackupProfileCreate {
+	bpc.mutation.SetBackupPaths(s)
+	return bpc
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (bpc *BackupProfileCreate) SetExcludePaths(s []string) *BackupProfileCreate {
+	bpc.mutation.SetExcludePaths(s)
 	return bpc
 }
 
@@ -128,6 +134,14 @@ func (bpc *BackupProfileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bpc *BackupProfileCreate) defaults() {
+	if _, ok := bpc.mutation.BackupPaths(); !ok {
+		v := backupprofile.DefaultBackupPaths
+		bpc.mutation.SetBackupPaths(v)
+	}
+	if _, ok := bpc.mutation.ExcludePaths(); !ok {
+		v := backupprofile.DefaultExcludePaths
+		bpc.mutation.SetExcludePaths(v)
+	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		v := backupprofile.DefaultIsSetupComplete
 		bpc.mutation.SetIsSetupComplete(v)
@@ -142,8 +156,8 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupProfile.prefix"`)}
 	}
-	if _, ok := bpc.mutation.Directories(); !ok {
-		return &ValidationError{Name: "directories", err: errors.New(`ent: missing required field "BackupProfile.directories"`)}
+	if _, ok := bpc.mutation.BackupPaths(); !ok {
+		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
 	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		return &ValidationError{Name: "is_setup_complete", err: errors.New(`ent: missing required field "BackupProfile.is_setup_complete"`)}
@@ -188,9 +202,13 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 		_node.Prefix = value
 	}
-	if value, ok := bpc.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
-		_node.Directories = value
+	if value, ok := bpc.mutation.BackupPaths(); ok {
+		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
+		_node.BackupPaths = value
+	}
+	if value, ok := bpc.mutation.ExcludePaths(); ok {
+		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
+		_node.ExcludePaths = value
 	}
 	if value, ok := bpc.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)

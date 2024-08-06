@@ -16,8 +16,10 @@ const (
 	FieldName = "name"
 	// FieldPrefix holds the string denoting the prefix field in the database.
 	FieldPrefix = "prefix"
-	// FieldDirectories holds the string denoting the directories field in the database.
-	FieldDirectories = "directories"
+	// FieldBackupPaths holds the string denoting the backup_paths field in the database.
+	FieldBackupPaths = "backup_paths"
+	// FieldExcludePaths holds the string denoting the exclude_paths field in the database.
+	FieldExcludePaths = "exclude_paths"
 	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
 	FieldIsSetupComplete = "is_setup_complete"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
@@ -45,7 +47,8 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldPrefix,
-	FieldDirectories,
+	FieldBackupPaths,
+	FieldExcludePaths,
 	FieldIsSetupComplete,
 }
 
@@ -66,6 +69,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultBackupPaths holds the default value on creation for the "backup_paths" field.
+	DefaultBackupPaths []string
+	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
+	DefaultExcludePaths []string
 	// DefaultIsSetupComplete holds the default value on creation for the "is_setup_complete" field.
 	DefaultIsSetupComplete bool
 )

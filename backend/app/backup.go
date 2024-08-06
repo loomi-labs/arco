@@ -22,7 +22,8 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	return b.db.BackupProfile.Create().
 		SetName(hostname).
 		SetPrefix(hostname).
-		SetDirectories([]string{}).
+		SetBackupPaths([]string{}).
+		SetExcludePaths([]string{}).
 		Save(b.ctx)
 }
 
@@ -55,7 +56,8 @@ func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
-		SetDirectories(backup.Directories).
+		SetBackupPaths(backup.BackupPaths).
+		SetExcludePaths(backup.ExcludePaths).
 		SetIsSetupComplete(backup.IsSetupComplete).
 		Save(b.ctx)
 	return err
@@ -112,7 +114,7 @@ func (b *BackupClient) startBackupJob(bId types.BackupId) error {
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	go b.runBorgCreate(bId, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.Directories)
+	go b.runBorgCreate(bId, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths)
 	return nil
 }
 
@@ -242,7 +244,7 @@ func rollback(tx *ent.Tx, err error) error {
 
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, prefix string, directories []string) {
+func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, prefix string, backupPaths []string, excludePaths []string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	// Wait to acquire the lock and then set the repo as locked
@@ -255,7 +257,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, pref
 	ch := make(chan borg.BackupProgress)
 	go b.saveProgressInfo(bId, ch)
 
-	err := b.borg.Create(ctx, repoUrl, password, prefix, directories, ch)
+	err := b.borg.Create(ctx, repoUrl, password, prefix, backupPaths, excludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Backup job cancelled", types.LevelWarning)

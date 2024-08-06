@@ -199,6 +199,16 @@ func PrefixContainsFold(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldContainsFold(FieldPrefix, v))
 }
 
+// ExcludePathsIsNil applies the IsNil predicate on the "exclude_paths" field.
+func ExcludePathsIsNil() predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldIsNull(FieldExcludePaths))
+}
+
+// ExcludePathsNotNil applies the NotNil predicate on the "exclude_paths" field.
+func ExcludePathsNotNil() predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNotNull(FieldExcludePaths))
+}
+
 // IsSetupCompleteEQ applies the EQ predicate on the "is_setup_complete" field.
 func IsSetupCompleteEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))

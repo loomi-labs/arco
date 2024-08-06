@@ -20,24 +20,28 @@ type BackupProgress struct {
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, directories []string, ch chan BackupProgress) error {
+func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths []string, excludePaths []string, ch chan BackupProgress) error {
 	defer close(ch)
 
 	// Count the total files to backup
-	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, directories)
+	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, backupPaths)
 	if err != nil {
 		return err
 	}
 
 	// Prepare backup command
 	name := fmt.Sprintf("%s-%s", prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
-	cmd := exec.CommandContext(ctx, b.path, append([]string{
+	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
 		"--log-json", // Outputs JSON log messages
 		fmt.Sprintf("%s::%s", repoUrl, name)},
-		directories...,
-	)...)
+		backupPaths...,
+	)
+	for _, excludeDir := range excludePaths {
+		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
+	}
+	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Add cancel functionality

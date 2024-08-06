@@ -152,7 +152,7 @@ func (a *App) initDb() (*ent.Client, error) {
 	}
 
 	// Run the auto migration tool.
-	if err := dbClient.Schema.Create(context.Background()); err != nil {
+	if err := dbClient.Schema.Create(a.ctx); err != nil {
 		return nil, err
 	}
 	return dbClient, nil

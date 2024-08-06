@@ -58,15 +58,33 @@ func (bpu *BackupProfileUpdate) SetNillablePrefix(s *string) *BackupProfileUpdat
 	return bpu
 }
 
-// SetDirectories sets the "directories" field.
-func (bpu *BackupProfileUpdate) SetDirectories(s []string) *BackupProfileUpdate {
-	bpu.mutation.SetDirectories(s)
+// SetBackupPaths sets the "backup_paths" field.
+func (bpu *BackupProfileUpdate) SetBackupPaths(s []string) *BackupProfileUpdate {
+	bpu.mutation.SetBackupPaths(s)
 	return bpu
 }
 
-// AppendDirectories appends s to the "directories" field.
-func (bpu *BackupProfileUpdate) AppendDirectories(s []string) *BackupProfileUpdate {
-	bpu.mutation.AppendDirectories(s)
+// AppendBackupPaths appends s to the "backup_paths" field.
+func (bpu *BackupProfileUpdate) AppendBackupPaths(s []string) *BackupProfileUpdate {
+	bpu.mutation.AppendBackupPaths(s)
+	return bpu
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (bpu *BackupProfileUpdate) SetExcludePaths(s []string) *BackupProfileUpdate {
+	bpu.mutation.SetExcludePaths(s)
+	return bpu
+}
+
+// AppendExcludePaths appends s to the "exclude_paths" field.
+func (bpu *BackupProfileUpdate) AppendExcludePaths(s []string) *BackupProfileUpdate {
+	bpu.mutation.AppendExcludePaths(s)
+	return bpu
+}
+
+// ClearExcludePaths clears the value of the "exclude_paths" field.
+func (bpu *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
+	bpu.mutation.ClearExcludePaths()
 	return bpu
 }
 
@@ -192,13 +210,24 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := bpu.mutation.Prefix(); ok {
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 	}
-	if value, ok := bpu.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
+	if value, ok := bpu.mutation.BackupPaths(); ok {
+		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
-	if value, ok := bpu.mutation.AppendedDirectories(); ok {
+	if value, ok := bpu.mutation.AppendedBackupPaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, backupprofile.FieldDirectories, value)
+			sqljson.Append(u, backupprofile.FieldBackupPaths, value)
 		})
+	}
+	if value, ok := bpu.mutation.ExcludePaths(); ok {
+		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
+	}
+	if value, ok := bpu.mutation.AppendedExcludePaths(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, backupprofile.FieldExcludePaths, value)
+		})
+	}
+	if bpu.mutation.ExcludePathsCleared() {
+		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
 	if value, ok := bpu.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
@@ -325,15 +354,33 @@ func (bpuo *BackupProfileUpdateOne) SetNillablePrefix(s *string) *BackupProfileU
 	return bpuo
 }
 
-// SetDirectories sets the "directories" field.
-func (bpuo *BackupProfileUpdateOne) SetDirectories(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetDirectories(s)
+// SetBackupPaths sets the "backup_paths" field.
+func (bpuo *BackupProfileUpdateOne) SetBackupPaths(s []string) *BackupProfileUpdateOne {
+	bpuo.mutation.SetBackupPaths(s)
 	return bpuo
 }
 
-// AppendDirectories appends s to the "directories" field.
-func (bpuo *BackupProfileUpdateOne) AppendDirectories(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.AppendDirectories(s)
+// AppendBackupPaths appends s to the "backup_paths" field.
+func (bpuo *BackupProfileUpdateOne) AppendBackupPaths(s []string) *BackupProfileUpdateOne {
+	bpuo.mutation.AppendBackupPaths(s)
+	return bpuo
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (bpuo *BackupProfileUpdateOne) SetExcludePaths(s []string) *BackupProfileUpdateOne {
+	bpuo.mutation.SetExcludePaths(s)
+	return bpuo
+}
+
+// AppendExcludePaths appends s to the "exclude_paths" field.
+func (bpuo *BackupProfileUpdateOne) AppendExcludePaths(s []string) *BackupProfileUpdateOne {
+	bpuo.mutation.AppendExcludePaths(s)
+	return bpuo
+}
+
+// ClearExcludePaths clears the value of the "exclude_paths" field.
+func (bpuo *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearExcludePaths()
 	return bpuo
 }
 
@@ -489,13 +536,24 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	if value, ok := bpuo.mutation.Prefix(); ok {
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 	}
-	if value, ok := bpuo.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
+	if value, ok := bpuo.mutation.BackupPaths(); ok {
+		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
-	if value, ok := bpuo.mutation.AppendedDirectories(); ok {
+	if value, ok := bpuo.mutation.AppendedBackupPaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, backupprofile.FieldDirectories, value)
+			sqljson.Append(u, backupprofile.FieldBackupPaths, value)
 		})
+	}
+	if value, ok := bpuo.mutation.ExcludePaths(); ok {
+		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
+	}
+	if value, ok := bpuo.mutation.AppendedExcludePaths(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, backupprofile.FieldExcludePaths, value)
+		})
+	}
+	if bpuo.mutation.ExcludePathsCleared() {
+		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
 	if value, ok := bpuo.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)

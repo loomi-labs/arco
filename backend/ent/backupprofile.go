@@ -22,8 +22,10 @@ type BackupProfile struct {
 	Name string `json:"name"`
 	// Prefix holds the value of the "prefix" field.
 	Prefix string `json:"prefix"`
-	// Directories holds the value of the "directories" field.
-	Directories []string `json:"directories"`
+	// BackupPaths holds the value of the "backup_paths" field.
+	BackupPaths []string `json:"backupPaths"`
+	// ExcludePaths holds the value of the "exclude_paths" field.
+	ExcludePaths []string `json:"excludePaths"`
 	// IsSetupComplete holds the value of the "is_setup_complete" field.
 	IsSetupComplete bool `json:"isSetupComplete"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -68,7 +70,7 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backupprofile.FieldDirectories:
+		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
 		case backupprofile.FieldIsSetupComplete:
 			values[i] = new(sql.NullBool)
@@ -109,12 +111,20 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				bp.Prefix = value.String
 			}
-		case backupprofile.FieldDirectories:
+		case backupprofile.FieldBackupPaths:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field directories", values[i])
+				return fmt.Errorf("unexpected type %T for field backup_paths", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &bp.Directories); err != nil {
-					return fmt.Errorf("unmarshal field directories: %w", err)
+				if err := json.Unmarshal(*value, &bp.BackupPaths); err != nil {
+					return fmt.Errorf("unmarshal field backup_paths: %w", err)
+				}
+			}
+		case backupprofile.FieldExcludePaths:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field exclude_paths", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &bp.ExcludePaths); err != nil {
+					return fmt.Errorf("unmarshal field exclude_paths: %w", err)
 				}
 			}
 		case backupprofile.FieldIsSetupComplete:
@@ -175,8 +185,11 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString("prefix=")
 	builder.WriteString(bp.Prefix)
 	builder.WriteString(", ")
-	builder.WriteString("directories=")
-	builder.WriteString(fmt.Sprintf("%v", bp.Directories))
+	builder.WriteString("backup_paths=")
+	builder.WriteString(fmt.Sprintf("%v", bp.BackupPaths))
+	builder.WriteString(", ")
+	builder.WriteString("exclude_paths=")
+	builder.WriteString(fmt.Sprintf("%v", bp.ExcludePaths))
 	builder.WriteString(", ")
 	builder.WriteString("is_setup_complete=")
 	builder.WriteString(fmt.Sprintf("%v", bp.IsSetupComplete))

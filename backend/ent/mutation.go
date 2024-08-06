@@ -602,8 +602,10 @@ type BackupProfileMutation struct {
 	id                     *int
 	name                   *string
 	prefix                 *string
-	directories            *[]string
-	appenddirectories      []string
+	backup_paths           *[]string
+	appendbackup_paths     []string
+	exclude_paths          *[]string
+	appendexclude_paths    []string
 	is_setup_complete      *bool
 	clearedFields          map[string]struct{}
 	repositories           map[int]struct{}
@@ -792,55 +794,120 @@ func (m *BackupProfileMutation) ResetPrefix() {
 	m.prefix = nil
 }
 
-// SetDirectories sets the "directories" field.
-func (m *BackupProfileMutation) SetDirectories(s []string) {
-	m.directories = &s
-	m.appenddirectories = nil
+// SetBackupPaths sets the "backup_paths" field.
+func (m *BackupProfileMutation) SetBackupPaths(s []string) {
+	m.backup_paths = &s
+	m.appendbackup_paths = nil
 }
 
-// Directories returns the value of the "directories" field in the mutation.
-func (m *BackupProfileMutation) Directories() (r []string, exists bool) {
-	v := m.directories
+// BackupPaths returns the value of the "backup_paths" field in the mutation.
+func (m *BackupProfileMutation) BackupPaths() (r []string, exists bool) {
+	v := m.backup_paths
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDirectories returns the old "directories" field's value of the BackupProfile entity.
+// OldBackupPaths returns the old "backup_paths" field's value of the BackupProfile entity.
 // If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupProfileMutation) OldDirectories(ctx context.Context) (v []string, err error) {
+func (m *BackupProfileMutation) OldBackupPaths(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDirectories is only allowed on UpdateOne operations")
+		return v, errors.New("OldBackupPaths is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDirectories requires an ID field in the mutation")
+		return v, errors.New("OldBackupPaths requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDirectories: %w", err)
+		return v, fmt.Errorf("querying old value for OldBackupPaths: %w", err)
 	}
-	return oldValue.Directories, nil
+	return oldValue.BackupPaths, nil
 }
 
-// AppendDirectories adds s to the "directories" field.
-func (m *BackupProfileMutation) AppendDirectories(s []string) {
-	m.appenddirectories = append(m.appenddirectories, s...)
+// AppendBackupPaths adds s to the "backup_paths" field.
+func (m *BackupProfileMutation) AppendBackupPaths(s []string) {
+	m.appendbackup_paths = append(m.appendbackup_paths, s...)
 }
 
-// AppendedDirectories returns the list of values that were appended to the "directories" field in this mutation.
-func (m *BackupProfileMutation) AppendedDirectories() ([]string, bool) {
-	if len(m.appenddirectories) == 0 {
+// AppendedBackupPaths returns the list of values that were appended to the "backup_paths" field in this mutation.
+func (m *BackupProfileMutation) AppendedBackupPaths() ([]string, bool) {
+	if len(m.appendbackup_paths) == 0 {
 		return nil, false
 	}
-	return m.appenddirectories, true
+	return m.appendbackup_paths, true
 }
 
-// ResetDirectories resets all changes to the "directories" field.
-func (m *BackupProfileMutation) ResetDirectories() {
-	m.directories = nil
-	m.appenddirectories = nil
+// ResetBackupPaths resets all changes to the "backup_paths" field.
+func (m *BackupProfileMutation) ResetBackupPaths() {
+	m.backup_paths = nil
+	m.appendbackup_paths = nil
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (m *BackupProfileMutation) SetExcludePaths(s []string) {
+	m.exclude_paths = &s
+	m.appendexclude_paths = nil
+}
+
+// ExcludePaths returns the value of the "exclude_paths" field in the mutation.
+func (m *BackupProfileMutation) ExcludePaths() (r []string, exists bool) {
+	v := m.exclude_paths
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExcludePaths returns the old "exclude_paths" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldExcludePaths(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExcludePaths is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExcludePaths requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExcludePaths: %w", err)
+	}
+	return oldValue.ExcludePaths, nil
+}
+
+// AppendExcludePaths adds s to the "exclude_paths" field.
+func (m *BackupProfileMutation) AppendExcludePaths(s []string) {
+	m.appendexclude_paths = append(m.appendexclude_paths, s...)
+}
+
+// AppendedExcludePaths returns the list of values that were appended to the "exclude_paths" field in this mutation.
+func (m *BackupProfileMutation) AppendedExcludePaths() ([]string, bool) {
+	if len(m.appendexclude_paths) == 0 {
+		return nil, false
+	}
+	return m.appendexclude_paths, true
+}
+
+// ClearExcludePaths clears the value of the "exclude_paths" field.
+func (m *BackupProfileMutation) ClearExcludePaths() {
+	m.exclude_paths = nil
+	m.appendexclude_paths = nil
+	m.clearedFields[backupprofile.FieldExcludePaths] = struct{}{}
+}
+
+// ExcludePathsCleared returns if the "exclude_paths" field was cleared in this mutation.
+func (m *BackupProfileMutation) ExcludePathsCleared() bool {
+	_, ok := m.clearedFields[backupprofile.FieldExcludePaths]
+	return ok
+}
+
+// ResetExcludePaths resets all changes to the "exclude_paths" field.
+func (m *BackupProfileMutation) ResetExcludePaths() {
+	m.exclude_paths = nil
+	m.appendexclude_paths = nil
+	delete(m.clearedFields, backupprofile.FieldExcludePaths)
 }
 
 // SetIsSetupComplete sets the "is_setup_complete" field.
@@ -1006,15 +1073,18 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
 	if m.prefix != nil {
 		fields = append(fields, backupprofile.FieldPrefix)
 	}
-	if m.directories != nil {
-		fields = append(fields, backupprofile.FieldDirectories)
+	if m.backup_paths != nil {
+		fields = append(fields, backupprofile.FieldBackupPaths)
+	}
+	if m.exclude_paths != nil {
+		fields = append(fields, backupprofile.FieldExcludePaths)
 	}
 	if m.is_setup_complete != nil {
 		fields = append(fields, backupprofile.FieldIsSetupComplete)
@@ -1031,8 +1101,10 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case backupprofile.FieldPrefix:
 		return m.Prefix()
-	case backupprofile.FieldDirectories:
-		return m.Directories()
+	case backupprofile.FieldBackupPaths:
+		return m.BackupPaths()
+	case backupprofile.FieldExcludePaths:
+		return m.ExcludePaths()
 	case backupprofile.FieldIsSetupComplete:
 		return m.IsSetupComplete()
 	}
@@ -1048,8 +1120,10 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldName(ctx)
 	case backupprofile.FieldPrefix:
 		return m.OldPrefix(ctx)
-	case backupprofile.FieldDirectories:
-		return m.OldDirectories(ctx)
+	case backupprofile.FieldBackupPaths:
+		return m.OldBackupPaths(ctx)
+	case backupprofile.FieldExcludePaths:
+		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIsSetupComplete:
 		return m.OldIsSetupComplete(ctx)
 	}
@@ -1075,12 +1149,19 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPrefix(v)
 		return nil
-	case backupprofile.FieldDirectories:
+	case backupprofile.FieldBackupPaths:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDirectories(v)
+		m.SetBackupPaths(v)
+		return nil
+	case backupprofile.FieldExcludePaths:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExcludePaths(v)
 		return nil
 	case backupprofile.FieldIsSetupComplete:
 		v, ok := value.(bool)
@@ -1118,7 +1199,11 @@ func (m *BackupProfileMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *BackupProfileMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(backupprofile.FieldExcludePaths) {
+		fields = append(fields, backupprofile.FieldExcludePaths)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1131,6 +1216,11 @@ func (m *BackupProfileMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *BackupProfileMutation) ClearField(name string) error {
+	switch name {
+	case backupprofile.FieldExcludePaths:
+		m.ClearExcludePaths()
+		return nil
+	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
 }
 
@@ -1144,8 +1234,11 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 	case backupprofile.FieldPrefix:
 		m.ResetPrefix()
 		return nil
-	case backupprofile.FieldDirectories:
-		m.ResetDirectories()
+	case backupprofile.FieldBackupPaths:
+		m.ResetBackupPaths()
+		return nil
+	case backupprofile.FieldExcludePaths:
+		m.ResetExcludePaths()
 		return nil
 	case backupprofile.FieldIsSetupComplete:
 		m.ResetIsSetupComplete()

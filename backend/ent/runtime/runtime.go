@@ -14,8 +14,16 @@ import (
 func init() {
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
+	// backupprofileDescBackupPaths is the schema descriptor for backup_paths field.
+	backupprofileDescBackupPaths := backupprofileFields[3].Descriptor()
+	// backupprofile.DefaultBackupPaths holds the default value on creation for the backup_paths field.
+	backupprofile.DefaultBackupPaths = backupprofileDescBackupPaths.Default.([]string)
+	// backupprofileDescExcludePaths is the schema descriptor for exclude_paths field.
+	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
+	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
+	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
 	// backupprofileDescIsSetupComplete is the schema descriptor for is_setup_complete field.
-	backupprofileDescIsSetupComplete := backupprofileFields[4].Descriptor()
+	backupprofileDescIsSetupComplete := backupprofileFields[5].Descriptor()
 	// backupprofile.DefaultIsSetupComplete holds the default value on creation for the is_setup_complete field.
 	backupprofile.DefaultIsSetupComplete = backupprofileDescIsSetupComplete.Default.(bool)
 	backupscheduleHooks := schema.BackupSchedule{}.Hooks()

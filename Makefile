@@ -34,20 +34,15 @@ generate-migrations: ensure-atlas
 
 apply-migrations: ensure-atlas
 	@echo "Migrating ent schema..."
-#	number_of_files=$(ls backend/ent/migrate/migrations/*.sql | wc -l)
-#	@atlas migrate apply $[number_of_files-1] \
-#                     --dir "file://backend/ent/migrate/migrations" \
-#                     --url "sqlite://sqlite.db?_fk=1"
 	@atlas migrate apply \
                      --dir "file://backend/ent/migrate/migrations" \
-                     --url "sqlite://sqlite.db?_fk=1"
+                     --url "sqlite://$$HOME/.config/arco/aroc.db?_fk=1"
 	@echo "✅ Done!"
 
 show-migrations: ensure-atlas
-	@echo "Showing ent migrations..."
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
-					 --url "sqlite://sqlite.db?_fk=1"
+					 --url "sqlite://$$HOME/.config/arco/aroc.db?_fk=1"
 	@echo "✅ Done!"
 
 ################################
