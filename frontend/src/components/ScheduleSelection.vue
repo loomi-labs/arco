@@ -15,43 +15,8 @@ enum BackupFrequency {
 }
 
 /************
- * Functions
+ * Variables
  ************/
-
-function getScheduleType(schedule: ent.BackupSchedule | undefined): BackupFrequency | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  if (schedule.hourly) {
-    return BackupFrequency.Hourly;
-  } else if (schedule.dailyAt) {
-    return BackupFrequency.Daily;
-  } else if (schedule.weeklyAt) {
-    return BackupFrequency.Weekly;
-  } else if (schedule.monthlyAt) {
-    return BackupFrequency.Monthly;
-  }
-  return undefined;
-}
-
-function backupFrequencyChanged() {
-  switch (backupFrequency.value) {
-    case BackupFrequency.Hourly:
-      schedule.value.hourly = true;
-      break;
-    default:
-      schedule.value.hourly = false;
-      break;
-  }
-}
-
-function emitUpdateSchedule(schedule: ent.BackupSchedule) {
-  emit(emitUpdate, schedule);
-}
-
-function emitDeleteSchedule() {
-  emit(emitDelete);
-}
 
 const props = defineProps({
   schedule: {
@@ -59,70 +24,6 @@ const props = defineProps({
     required: false
   }
 });
-
-function getBackupScheduleFromProps(): ent.BackupSchedule {
-  const at9am = new Date();
-  at9am.setHours(9, 0, 0, 0);
-  const newSchedule = ent.BackupSchedule.createFrom();
-  newSchedule.hourly = true;
-  newSchedule.dailyAt = at9am;
-  newSchedule.weekday = backupschedule.Weekday.monday;
-  newSchedule.weeklyAt = at9am;
-  newSchedule.monthday = 30;
-  newSchedule.monthlyAt = at9am;
-
-  // Deep copy the schedule
-  const schedule = props.schedule;
-
-  if (!schedule) {
-    return newSchedule;
-  }
-
-  switch (getScheduleType(schedule)) {
-    case BackupFrequency.Hourly:
-      newSchedule.hourly = schedule.hourly;
-      break;
-    case BackupFrequency.Daily:
-      newSchedule.dailyAt = schedule.dailyAt;
-      break;
-    case BackupFrequency.Weekly:
-      newSchedule.weeklyAt = schedule.weeklyAt;
-      newSchedule.weekday = schedule.weekday;
-      break;
-    case BackupFrequency.Monthly:
-      newSchedule.monthlyAt = schedule.monthlyAt;
-      newSchedule.monthday = schedule.monthday;
-      break;
-  }
-  return newSchedule;
-}
-
-function getCleanedSchedule(): ent.BackupSchedule {
-  const newSchedule = ent.BackupSchedule.createFrom();
-  if (isScheduleEnabled.value) {
-    switch (backupFrequency.value) {
-      case BackupFrequency.Hourly:
-        newSchedule.hourly = true;
-        break;
-      case BackupFrequency.Daily:
-        newSchedule.dailyAt = schedule.value.dailyAt;
-        break;
-      case BackupFrequency.Weekly:
-        newSchedule.weeklyAt = schedule.value.weeklyAt;
-        newSchedule.weekday = schedule.value.weekday;
-        break;
-      case BackupFrequency.Monthly:
-        newSchedule.monthlyAt = schedule.value.monthlyAt;
-        newSchedule.monthday = schedule.value.monthday;
-        break;
-    }
-  }
-  return newSchedule;
-}
-
-/************
- * Variables
- ************/
 
 const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
 const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
@@ -161,6 +62,104 @@ const monthlyAtDateTime = defineModel("monthlyAtDateTime", {
     return setTime((date: Date) => schedule.value.monthlyAt = date, value);
   }
 });
+
+
+/************
+ * Functions
+ ************/
+
+function getScheduleType(schedule: ent.BackupSchedule | undefined): BackupFrequency | undefined {
+  if (!schedule) {
+    return undefined;
+  }
+  if (schedule.hourly) {
+    return BackupFrequency.Hourly;
+  } else if (schedule.dailyAt) {
+    return BackupFrequency.Daily;
+  } else if (schedule.weeklyAt) {
+    return BackupFrequency.Weekly;
+  } else if (schedule.monthlyAt) {
+    return BackupFrequency.Monthly;
+  }
+  return undefined;
+}
+
+function backupFrequencyChanged() {
+  switch (backupFrequency.value) {
+    case BackupFrequency.Hourly:
+      schedule.value.hourly = true;
+      break;
+    default:
+      schedule.value.hourly = false;
+      break;
+  }
+}
+
+function emitUpdateSchedule(schedule: ent.BackupSchedule) {
+  emit(emitUpdate, schedule);
+}
+
+function emitDeleteSchedule() {
+  emit(emitDelete);
+}
+
+
+function getBackupScheduleFromProps(): ent.BackupSchedule {
+  const at9am = new Date();
+  at9am.setHours(9, 0, 0, 0);
+  const newSchedule = ent.BackupSchedule.createFrom();
+  newSchedule.hourly = true;
+  newSchedule.dailyAt = at9am;
+  newSchedule.weekday = backupschedule.Weekday.monday;
+  newSchedule.weeklyAt = at9am;
+  newSchedule.monthday = 30;
+  newSchedule.monthlyAt = at9am;
+
+  if (!props.schedule) {
+    return newSchedule;
+  }
+
+  switch (getScheduleType(props.schedule)) {
+    case BackupFrequency.Hourly:
+      newSchedule.hourly = props.schedule.hourly;
+      break;
+    case BackupFrequency.Daily:
+      newSchedule.dailyAt = props.schedule.dailyAt;
+      break;
+    case BackupFrequency.Weekly:
+      newSchedule.weeklyAt = props.schedule.weeklyAt;
+      newSchedule.weekday = props.schedule.weekday;
+      break;
+    case BackupFrequency.Monthly:
+      newSchedule.monthlyAt = props.schedule.monthlyAt;
+      newSchedule.monthday = props.schedule.monthday;
+      break;
+  }
+  return newSchedule;
+}
+
+function getCleanedSchedule(): ent.BackupSchedule {
+  const newSchedule = ent.BackupSchedule.createFrom();
+  if (isScheduleEnabled.value) {
+    switch (backupFrequency.value) {
+      case BackupFrequency.Hourly:
+        newSchedule.hourly = true;
+        break;
+      case BackupFrequency.Daily:
+        newSchedule.dailyAt = schedule.value.dailyAt;
+        break;
+      case BackupFrequency.Weekly:
+        newSchedule.weeklyAt = schedule.value.weeklyAt;
+        newSchedule.weekday = schedule.value.weekday;
+        break;
+      case BackupFrequency.Monthly:
+        newSchedule.monthlyAt = schedule.value.monthlyAt;
+        newSchedule.monthday = schedule.value.monthday;
+        break;
+    }
+  }
+  return newSchedule;
+}
 
 /************
  * Lifecycle
