@@ -68,42 +68,6 @@ const monthlyAtDateTime = defineModel("monthlyAtDateTime", {
  * Functions
  ************/
 
-function getScheduleType(schedule: ent.BackupSchedule | undefined): BackupFrequency | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  if (schedule.hourly) {
-    return BackupFrequency.Hourly;
-  } else if (schedule.dailyAt) {
-    return BackupFrequency.Daily;
-  } else if (schedule.weeklyAt) {
-    return BackupFrequency.Weekly;
-  } else if (schedule.monthlyAt) {
-    return BackupFrequency.Monthly;
-  }
-  return undefined;
-}
-
-function backupFrequencyChanged() {
-  switch (backupFrequency.value) {
-    case BackupFrequency.Hourly:
-      schedule.value.hourly = true;
-      break;
-    default:
-      schedule.value.hourly = false;
-      break;
-  }
-}
-
-function emitUpdateSchedule(schedule: ent.BackupSchedule) {
-  emit(emitUpdate, schedule);
-}
-
-function emitDeleteSchedule() {
-  emit(emitDelete);
-}
-
-
 function getBackupScheduleFromProps(): ent.BackupSchedule {
   const at9am = new Date();
   at9am.setHours(9, 0, 0, 0);
@@ -138,6 +102,22 @@ function getBackupScheduleFromProps(): ent.BackupSchedule {
   return newSchedule;
 }
 
+function getScheduleType(schedule: ent.BackupSchedule | undefined): BackupFrequency | undefined {
+  if (!schedule) {
+    return undefined;
+  }
+  if (schedule.hourly) {
+    return BackupFrequency.Hourly;
+  } else if (schedule.dailyAt) {
+    return BackupFrequency.Daily;
+  } else if (schedule.weeklyAt) {
+    return BackupFrequency.Weekly;
+  } else if (schedule.monthlyAt) {
+    return BackupFrequency.Monthly;
+  }
+  return undefined;
+}
+
 function getCleanedSchedule(): ent.BackupSchedule {
   const newSchedule = ent.BackupSchedule.createFrom();
   if (isScheduleEnabled.value) {
@@ -159,6 +139,25 @@ function getCleanedSchedule(): ent.BackupSchedule {
     }
   }
   return newSchedule;
+}
+
+function backupFrequencyChanged() {
+  switch (backupFrequency.value) {
+    case BackupFrequency.Hourly:
+      schedule.value.hourly = true;
+      break;
+    default:
+      schedule.value.hourly = false;
+      break;
+  }
+}
+
+function emitUpdateSchedule(schedule: ent.BackupSchedule) {
+  emit(emitUpdate, schedule);
+}
+
+function emitDeleteSchedule() {
+  emit(emitDelete);
 }
 
 /************
