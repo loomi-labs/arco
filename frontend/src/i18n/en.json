@@ -3,5 +3,21 @@
   "add": "Add",
   "storage": "Storage",
   "data-to-backup": "Data to backup",
-  "data-to-ignore": "Data to ignore"
+  "data-to-ignore": "Data to ignore",
+  "schedule": "Schedule",
+  "run-periodic-backups": "Run periodic backups",
+  "every": "Every",
+  "hour": "Hour",
+  "day": "Day",
+  "week": "Week",
+  "month": "Month",
+  "types": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  }
 }

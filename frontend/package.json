@@ -8,8 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "i18n-report": "vue-i18n-extract report --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
-    "i18n-add": "vue-i18n-extract report --add --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
-    "i18n-remove": "vue-i18n-extract report --remove --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'"
+    "i18n-add": "vue-i18n-extract report --add --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
+    "i18n-remove": "vue-i18n-extract report --remove --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'"
   },
   "dependencies": {
     "@heroicons/vue": "^2.1.5",

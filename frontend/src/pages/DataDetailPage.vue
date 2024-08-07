@@ -110,11 +110,19 @@ async function saveExcludePaths(paths: Path[]) {
 
 async function saveSchedule(schedule: ent.BackupSchedule) {
   try {
+    await backupClient.SaveBackupSchedule(backup.value.id, schedule);
     backup.value.edges.backupSchedule = schedule;
-    await backupClient.SaveBackupProfile(backup.value);
-    toast.success("Schedule saved");
   } catch (error: any) {
     await showAndLogError("Failed to update backup profile", error);
+  }
+}
+
+async function deleteSchedule() {
+  try {
+    await backupClient.DeleteBackupSchedule(backup.value.id);
+    backup.value.edges.backupSchedule = undefined;
+  } catch (error: any) {
+    await showAndLogError("Failed to delete schedule", error);
   }
 }
 
@@ -203,7 +211,7 @@ getBackupProfile();
       <!-- Schedule Section -->
       <h1 class='text-2xl font-bold px-10 mb-4'>{{ $t("schedule") }}</h1>
       <div class='bg-base-300/25 p-10 rounded-4xl'>
-        <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule' />
+        <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule' @delete:schedule='deleteSchedule'/>
       </div>
 
       <h2 class='text-2xl font-bold mb-6'>Stored on</h2>

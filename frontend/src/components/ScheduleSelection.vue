@@ -190,11 +190,11 @@ watch(cleanedSchedule, (newSchedule) => {
 <template>
   <div class='bg-base-100 p-6 rounded-3xl shadow-lg'>
     <div class='flex items-center justify-between mb-4'>
-      <h2 class='text-xl font-semibold'>Run periodic backups</h2>
+      <h2 class='text-xl font-semibold'>{{ $t("run-periodic-backups") }}</h2>
       <input type='checkbox' class='toggle toggle-primary' v-model='isScheduleEnabled'>
     </div>
     <div class='flex flex-col'>
-      <h3 class='text-lg font-semibold mb-4'>Every</h3>
+      <h3 class='text-lg font-semibold mb-4'>{{ $t("every") }}</h3>
       <div class='flex w-full'>
         <!-- Hourly -->
         <div class='flex space-x-2 w-40'>
@@ -203,7 +203,7 @@ watch(cleanedSchedule, (newSchedule) => {
                  :value='BackupFrequency.Hourly'
                  @change='backupFrequencyChanged'
                  v-model='backupFrequency'>
-          <label for='hourly'>Hour</label>
+          <label for='hourly'>{{ $t("hour") }}</label>
         </div>
         <div class='divider divider-horizontal'></div>
 
@@ -214,7 +214,7 @@ watch(cleanedSchedule, (newSchedule) => {
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Daily'
                    v-model='backupFrequency'>
-            <label for='daily'>Day</label>
+            <label for='daily'>{{ $t("day") }}</label>
           </div>
           <input type='time' class='input input-bordered input-sm text-base w-20'
                  :disabled='!isScheduleEnabled  || backupFrequency !== BackupFrequency.Daily'
@@ -229,13 +229,13 @@ watch(cleanedSchedule, (newSchedule) => {
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Weekly'
                    v-model='backupFrequency'>
-            <label for='weekly'>Week</label>
+            <label for='weekly'>{{ $t("week") }}</label>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
                   v-model='schedule.weekday'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
-              {{ option }}
+              {{ $t(`types.${option}`) }}
             </option>
           </select>
           <input type='time' class='input input-bordered input-sm text-base w-20'
@@ -251,7 +251,7 @@ watch(cleanedSchedule, (newSchedule) => {
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Monthly'
                    v-model='backupFrequency'>
-            <label for='monthly'>Month</label>
+            <label for='monthly'>{{ $t("month") }}</label>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
