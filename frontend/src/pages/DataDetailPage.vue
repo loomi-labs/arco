@@ -112,6 +112,7 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
   try {
     backup.value.edges.backupSchedule = schedule;
     await backupClient.SaveBackupProfile(backup.value);
+    toast.success("Schedule saved");
   } catch (error: any) {
     await showAndLogError("Failed to update backup profile", error);
   }

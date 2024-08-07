@@ -18,7 +18,8 @@ const props = defineProps({
 });
 
 const paths = ref<Path[]>(props.paths);
-const emit = defineEmits(["update:paths"]);
+const emitString = "update:paths";
+const emit = defineEmits([emitString]);
 
 /************
  * Functions
@@ -30,7 +31,7 @@ async function markPath(path: Path, isAdded: boolean) {
   } else {
     paths.value = paths.value.filter((p) => p !== path);
   }
-  emit("update:paths", paths.value);
+  emitUpdatePaths();
 }
 
 async function addDirectory() {
@@ -40,7 +41,7 @@ async function addDirectory() {
       path: path,
       isAdded: true
     });
-    emit("update:paths", paths.value);
+    emitUpdatePaths();
   }
 }
 
@@ -49,6 +50,10 @@ async function addEmptyPath() {
     path: "",
     isAdded: true,
   })
+}
+
+function emitUpdatePaths() {
+  emit(emitString, paths.value);
 }
 
 /************
@@ -67,7 +72,7 @@ watch(() => props.paths, (newPaths) => {
     <label class='form-control w-full max-w-xs mb-1'>
       <input type='text' class='input input-sm w-full max-w-xs text-base'
              :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !path.isAdded }"
-             @change='emit("update:paths", paths)'
+             @change='emitUpdatePaths'
              v-model='path.path' />
     </label>
     <button v-if='!path.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markPath(path, true)'>
