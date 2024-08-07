@@ -2,6 +2,7 @@
 import { backupschedule, ent } from "../../wailsjs/go/models";
 import { ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
+import { applyOffset, offset, removeOffset } from "@formkit/tempo";
 
 /************
  * Types
@@ -25,6 +26,9 @@ const props = defineProps({
   }
 });
 
+// We have to remove the timezone offset from the date when showing it in the UI
+// and add it back when saving it to the schedule
+const offsetToUtc = offset(new Date());
 const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
 const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
 const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
@@ -88,14 +92,14 @@ function getBackupScheduleFromProps(): ent.BackupSchedule {
       newSchedule.hourly = props.schedule.hourly;
       break;
     case BackupFrequency.Daily:
-      newSchedule.dailyAt = props.schedule.dailyAt;
+      newSchedule.dailyAt = removeOffset(props.schedule.dailyAt, offsetToUtc);
       break;
     case BackupFrequency.Weekly:
-      newSchedule.weeklyAt = props.schedule.weeklyAt;
+      newSchedule.weeklyAt = removeOffset(props.schedule.weeklyAt, offsetToUtc);
       newSchedule.weekday = props.schedule.weekday;
       break;
     case BackupFrequency.Monthly:
-      newSchedule.monthlyAt = props.schedule.monthlyAt;
+      newSchedule.monthlyAt = removeOffset(props.schedule.monthlyAt, offsetToUtc);
       newSchedule.monthday = props.schedule.monthday;
       break;
   }
@@ -126,14 +130,14 @@ function getCleanedSchedule(): ent.BackupSchedule {
         newSchedule.hourly = true;
         break;
       case BackupFrequency.Daily:
-        newSchedule.dailyAt = schedule.value.dailyAt;
+        newSchedule.dailyAt = applyOffset(schedule.value.dailyAt, offsetToUtc);
         break;
       case BackupFrequency.Weekly:
-        newSchedule.weeklyAt = schedule.value.weeklyAt;
+        newSchedule.weeklyAt = applyOffset(schedule.value.weeklyAt, offsetToUtc);
         newSchedule.weekday = schedule.value.weekday;
         break;
       case BackupFrequency.Monthly:
-        newSchedule.monthlyAt = schedule.value.monthlyAt;
+        newSchedule.monthlyAt = applyOffset(schedule.value.monthlyAt, offsetToUtc);
         newSchedule.monthday = schedule.value.monthday;
         break;
     }

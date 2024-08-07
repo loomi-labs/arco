@@ -12,6 +12,7 @@
     "i18n-remove": "vue-i18n-extract report --remove --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'"
   },
   "dependencies": {
+    "@formkit/tempo": "^0.1.2",
     "@heroicons/vue": "^2.1.5",
     "vue": "^3.4.27",
     "vue-i18n": "^9.13.1",

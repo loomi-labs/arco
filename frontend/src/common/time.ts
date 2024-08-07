@@ -1,24 +1,32 @@
-// getTime can be used for a v-model binding to a html input element
-// It converts a Date object to a string in the format "HH:mm"
-//
-// Usage:
-// const refTime = ref<Date>(new Date());
-// const timeModel = defineModel("time", {
-//   get() {
-//     return getTime(() => refTime.value);
-//   },
-//   set(value: string) {
-//     return setTime((date: Date) => refTime.value = date, value);
-//   }
-// });
-// <input v-model="timeModel" type="time">
+import { LogDebug } from "../../wailsjs/runtime";
+import { applyOffset, format, formatStr, offset, parse, parts, removeOffset } from "@formkit/tempo";
+
+
+/**
+ * getTime can be used for a v-model binding to a html input element
+ * It converts a Date object to a string in the format "HH:mm"
+ *
+ * Usage:
+ * const refTime = ref<Date>(new Date());
+ * const timeModel = defineModel("time", {
+ *   get() {
+ *     return getTime(() => refTime.value);
+ *   },
+ *   set(value: string) {
+ *     return setTime((date: Date) => refTime.value = date, value);
+ *   }
+ * });
+ * <input v-model="timeModel" type="time">
+ */
 export function getTime(getValFn: () => Date | string): string | undefined {
   if (!getValFn()) {
     return undefined;
   }
-  let date = getValFn() as Date;
+  let date: Date;
   if (typeof getValFn() === "string") {
-    date = new Date(getValFn());
+    date = parse(getValFn() as string);
+  } else {
+    date = getValFn() as Date;
   }
 
   if (isNaN(date.getTime())) {
@@ -37,20 +45,22 @@ export function getTime(getValFn: () => Date | string): string | undefined {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
 
-// setTime can be used for a v-model binding to a html input element
-// It converts a string in the format "HH:mm" to a Date object
-//
-// Usage:
-// const refTime = ref<Date>(new Date());
-// const timeModel = defineModel("time", {
-//   get() {
-//     return getTime(() => refTime.value);
-//   },
-//   set(value: string) {
-//     return setTime((date: Date) => refTime.value = date, value);
-//   }
-// });
-// <input v-model="timeModel" type="time">
+/**
+ * setTime can be used for a v-model binding to a html input element
+ * It converts a string in the format "HH:mm" to a Date object
+ *
+ * Usage:
+ * const refTime = ref<Date>(new Date());
+ * const timeModel = defineModel("time", {
+ *   get() {
+ *     return getTime(() => refTime.value);
+ *   },
+ *   set(value: string) {
+ *     return setTime((date: Date) => refTime.value = date, value);
+ *   }
+ * });
+ * <input v-model="timeModel" type="time">
+ */
 export function setTime(setValFn: (date: Date) => void, value: string): string {
   const split = value.split(":");
   if (split.length !== 2) {
