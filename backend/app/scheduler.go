@@ -46,9 +46,26 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
 }
 
 func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
+	// Check if the backup schedule still exists
+	// This is necessary because the backup schedule might have been deleted or modified (modified -> deleted and recreated)
+	exist, err := a.db.BackupSchedule.
+		Query().
+		Where(backupschedule.ID(bs.ID)).
+		Exist(a.ctx)
+	if err != nil {
+		a.log.Error(fmt.Sprintf("Failed to check if backup schedule exists: %s", err))
+		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+		return
+	}
+	if !exist {
+		a.log.Infof("Backup schedule %d does not exist anymore, skipping", bs.ID)
+		return
+	}
+
+	// Run the backup
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err := a.BackupClient().startBackupJob(backupId)
+	err = a.BackupClient().startBackupJob(backupId)
 	if err != nil {
 		lastRunStatus = err.Error()
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
