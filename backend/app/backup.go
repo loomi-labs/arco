@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/borg"
 	"arco/backend/ent"
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
+	"time"
 )
 
 /***********************************/
@@ -107,24 +109,17 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
-func (b *BackupClient) startBackupJob(bId types.BackupId) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
-	if err != nil {
-		return err
-	}
-	backupProfile := repo.Edges.BackupProfiles[0]
-
-	go b.runBorgCreate(bId, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths)
-	return nil
-}
-
 // StartBackupJob starts a backup job for the given repository and backup profile.
 func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
 
-	return b.startBackupJob(bId)
+	go func() {
+		_, _ = b.runBorgCreate(bId)
+	}()
+
+	return nil
 }
 
 func (b *BackupClient) StartBackupJobs(backupProfileId int) ([]types.BackupId, error) {
@@ -176,7 +171,7 @@ func (b *BackupClient) GetBackupProgresses(ids []types.BackupId) []BackupProgres
 }
 
 func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
-	b.state.RemoveRunningBackup(id)
+	b.state.SetBackupState(id, state.BackupStateCancelled{}, &state.RepoStateIdle{})
 	return nil
 }
 
@@ -205,6 +200,10 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 			return rollback(tx, fmt.Errorf("failed to delete existing schedule: %w", err))
 		}
 	}
+	backupTime, err := getNextBackupTime(&schedule, time.Now())
+	if err != nil {
+		return rollback(tx, fmt.Errorf("failed to get next backup time: %w", err))
+	}
 	_, err = tx.BackupSchedule.
 		Create().
 		SetHourly(schedule.Hourly).
@@ -213,11 +212,13 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 		SetNillableWeekday(schedule.Weekday).
 		SetNillableMonthlyAt(schedule.MonthlyAt).
 		SetNillableMonthday(schedule.Monthday).
+		SetNextRun(backupTime).
 		SetBackupProfileID(backupProfileId).
 		Save(b.ctx)
 	if err != nil {
 		return rollback(tx, fmt.Errorf("failed to save schedule: %w", err))
 	}
+	defer b.sendBackupScheduleChanged()
 	return tx.Commit()
 }
 
@@ -229,13 +230,8 @@ func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
 	return err
 }
 
-// rollback calls to tx.Rollback and wraps the given error
-// with the rollback error if occurred.
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: %v", err, rerr)
-	}
-	return err
+func (b *BackupClient) sendBackupScheduleChanged() {
+	b.backupScheduleChangedCh <- struct{}{}
 }
 
 /***********************************/
@@ -244,40 +240,50 @@ func rollback(tx *ent.Tx, err error) error {
 
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(bId types.BackupId, repoUrl, password, prefix string, backupPaths []string, excludePaths []string) {
+func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupResult, err error) {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		b.state.SetBackupState(bId, state.BackupStateError{Error: err}, nil)
+		return state.BackupResultError, err
+	}
+	backupProfile := repo.Edges.BackupProfiles[0]
+	b.state.SetBackupState(bId, state.BackupStateWaiting{}, nil)
+
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
-	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoLocked(bId.RepositoryId)
-	defer b.state.UnlockRepo(bId.RepositoryId)
-	ctx := b.state.AddRunningBackup(b.ctx, bId)
-	defer b.state.RemoveRunningBackup(bId)
+	repoLock.Lock() // We might wait here for other operations to finish
+
+	// Wait to acquire the lock and then set the backup as running
+	ctx := b.state.SetBackupRunning(b.ctx, bId, &state.RepoStateBackingUp{})
 
 	// Create go routine to receive progress info
 	ch := make(chan borg.BackupProgress)
 	go b.saveProgressInfo(bId, ch)
 
-	err := b.borg.Create(ctx, repoUrl, password, prefix, backupPaths, excludePaths, ch)
+	err = b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.AddNotification("Backup job cancelled", types.LevelWarning)
+			b.state.SetBackupState(bId, state.BackupStateCancelled{}, &state.RepoStateIdle{})
+			return state.BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			b.state.AddBorgLock(bId.RepositoryId)
-			b.state.AddNotification("Backup job failed: repository is locked", types.LevelError)
+			err = fmt.Errorf("repository is locked")
+			b.state.SetBackupState(bId, state.BackupStateError{Error: err}, &state.RepoStateLocked{})
+			return state.BackupResultError, err
 		} else {
-			b.state.AddNotification(err.Error(), types.LevelError)
+			b.state.SetBackupState(bId, state.BackupStateError{Error: err}, &state.RepoStateIdle{})
+			return state.BackupResultError, err
 		}
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Backup job completed"), types.LevelInfo)
+		b.state.SetBackupState(bId, state.BackupStateCompleted{}, &state.RepoStateIdle{})
+		return state.BackupResultSuccess, nil
 	}
 }
 
 func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
+	repoLock.Lock() // We might wait here for other operations to finish
+
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoLocked(bId.RepositoryId)
-	defer b.state.UnlockRepo(bId.RepositoryId)
+	b.state.SetRepoState(bId.RepositoryId, &state.RepoStateDeleting{})
 	b.state.AddRunningDeleteJob(b.ctx, bId)
 	defer b.state.RemoveRunningDeleteJob(bId)
 
@@ -285,14 +291,18 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Delete job cancelled", types.LevelWarning)
+			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			b.state.AddBorgLock(bId.RepositoryId)
+			//b.state.AddBorgLock(bId.RepositoryId)
 			b.state.AddNotification("Delete job failed: repository is locked", types.LevelError)
+			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateLocked{})
 		} else {
 			b.state.AddNotification(err.Error(), types.LevelError)
+			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
 		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Delete job completed"), types.LevelInfo)
+		b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
 	}
 }
 

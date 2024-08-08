@@ -9,16 +9,32 @@ import (
 	"time"
 )
 
-func (a *App) scheduleBackups() {
+func (a *App) startScheduleChangeListener() {
+	var timers []*time.Timer
+	for {
+		<-a.backupScheduleChangedCh
+
+		// Stop all scheduled backups
+		for _, t := range timers {
+			t.Stop()
+		}
+
+		// Schedule all backups
+		timers = a.scheduleBackups()
+	}
+}
+
+func (a *App) scheduleBackups() []*time.Timer {
 	a.log.Info("Scheduling backups")
 
 	allBs, err := a.getBackupSchedules()
 	if err != nil {
 		a.log.Errorf("Failed to get backup schedules: %s", err)
 		a.state.AddNotification(fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
-		return
+		return nil
 	}
 
+	var timers []*time.Timer
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
@@ -26,11 +42,13 @@ func (a *App) scheduleBackups() {
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
-		a.scheduleBackup(bs, backupId)
+		timer := a.scheduleBackup(bs, backupId)
+		timers = append(timers, timer)
 	}
+	return timers
 }
 
-func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
+func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *time.Timer {
 	// Calculate the duration until the next backup
 	durationUntilNextBackup := bs.NextRun.Sub(time.Now())
 	if durationUntilNextBackup < 0 {
@@ -39,10 +57,11 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
 	}
 
 	// Schedule the backup
-	time.AfterFunc(durationUntilNextBackup, func() {
+	timer := time.AfterFunc(durationUntilNextBackup, func() {
 		a.runScheduledBackup(bs, backupId)
 	})
 	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
+	return timer
 }
 
 func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
@@ -65,11 +84,13 @@ func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId
 	// Run the backup
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err = a.BackupClient().startBackupJob(backupId)
+	result, err := a.BackupClient().runBorgCreate(backupId)
 	if err != nil {
-		lastRunStatus = err.Error()
+		lastRunStatus = fmt.Sprintf("error: %s", err)
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
 		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+	} else {
+		lastRunStatus = result.String()
 	}
 	updated, err := a.updateBackupSchedule(bs, lastRunStatus)
 	if err != nil {
@@ -87,7 +108,7 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 	if lastRunStatus != "" {
 		update.SetNillableLastRunStatus(&lastRunStatus)
 	}
-	nextBackupTime, err := a.getNextBackupTime(bs, lastRunTime)
+	nextBackupTime, err := getNextBackupTime(bs, lastRunTime)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +149,7 @@ func weekdayToTimeWeekday(weekday backupschedule.Weekday) time.Weekday {
 }
 
 // getNextBackupTime calculates the next time a backup should run based on the schedule
-func (a *App) getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, error) {
+func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, error) {
 	if bs.Hourly {
 		return fromTime.Truncate(time.Hour).Add(time.Hour), nil
 	}

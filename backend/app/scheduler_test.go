@@ -56,7 +56,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, now)
+		nextTime, err := getNextBackupTime(&schedule, now)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -72,7 +72,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024.Add(time.Minute*59))
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024.Add(time.Minute*59))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -88,7 +88,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024.Add(time.Hour))
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024.Add(time.Hour))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -105,7 +105,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, hourMinute(now, 9, 0))
+		nextTime, err := getNextBackupTime(&schedule, hourMinute(now, 9, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -122,7 +122,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, hourMinute(now, 11, 0))
+		nextTime, err := getNextBackupTime(&schedule, hourMinute(now, 11, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -140,7 +140,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024)
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -159,7 +159,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, weekdayHourMinute(now, time.Wednesday, 9, 0))
+		nextTime, err := getNextBackupTime(&schedule, weekdayHourMinute(now, time.Wednesday, 9, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -178,7 +178,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, weekdayHourMinute(now, time.Wednesday, 11, 0))
+		nextTime, err := getNextBackupTime(&schedule, weekdayHourMinute(now, time.Wednesday, 11, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -197,7 +197,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024)
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -216,7 +216,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024)
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -235,7 +235,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, monthdayHourMinute(now, 5, 9, 0))
+		nextTime, err := getNextBackupTime(&schedule, monthdayHourMinute(now, 5, 9, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -254,7 +254,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, monthdayHourMinute(now, 5, 11, 0))
+		nextTime, err := getNextBackupTime(&schedule, monthdayHourMinute(now, 5, 11, 0))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -273,7 +273,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024)
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -292,7 +292,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, firstOfJanuary2024)
+		nextTime, err := getNextBackupTime(&schedule, firstOfJanuary2024)
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -311,7 +311,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
+		nextTime, err := getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
 
 		// ASSERT
 		Expect(err).To(BeNil())
@@ -330,7 +330,7 @@ var _ = Describe("scheduler.go", Ordered, func() {
 		Expect(err).To(BeNil())
 
 		// ACT
-		nextTime, err := a.getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
+		nextTime, err := getNextBackupTime(&schedule, parseX("2024-02-01 00:00:00"))
 
 		// ASSERT
 		Expect(err).To(BeNil())

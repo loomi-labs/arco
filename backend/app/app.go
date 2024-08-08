@@ -35,10 +35,11 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log    *zap.SugaredLogger
-	config *types.Config
-	state  *appstate.State
-	borg   *borg.Borg
+	log                     *zap.SugaredLogger
+	config                  *types.Config
+	state                   *appstate.State
+	borg                    *borg.Borg
+	backupScheduleChangedCh chan struct{}
 
 	// Startup
 	ctx    context.Context
@@ -52,10 +53,11 @@ func NewApp(
 ) *App {
 	state := appstate.NewState(log)
 	return &App{
-		log:    log,
-		config: config,
-		state:  state,
-		borg:   borg.NewBorg(config.BorgPath, log),
+		log:                     log,
+		config:                  config,
+		state:                   state,
+		borg:                    borg.NewBorg(config.BorgPath, log),
+		backupScheduleChangedCh: make(chan struct{}),
 	}
 }
 
@@ -116,7 +118,8 @@ func (a *App) Startup(ctx context.Context) {
 	}
 
 	// Schedule backups
-	a.scheduleBackups()
+	go a.startScheduleChangeListener()
+	a.backupScheduleChangedCh <- struct{}{}
 }
 
 func (a *App) Shutdown(_ context.Context) {
@@ -265,6 +268,15 @@ func (a *App) registerSignalHandler() {
 		<-signalChan
 		a.Shutdown(a.ctx)
 	}()
+}
+
+// rollback calls to tx.Rollback and wraps the given error
+// with the rollback error if occurred.
+func rollback(tx *ent.Tx, err error) error {
+	if rerr := tx.Rollback(); rerr != nil {
+		err = fmt.Errorf("%w: %v", err, rerr)
+	}
+	return err
 }
 
 // TODO: remove or move somewhere else
