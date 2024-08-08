@@ -183,36 +183,28 @@ getBackupProfile();
   <div class='bg-base-200 p-10'>
     <div class='container mx-auto px-4 text-left'>
       <!-- Data Section -->
-      <h1 class='text-2xl font-bold px-10 mb-4'>{{ backup.name }}</h1>
-      <div class='bg-base-300/25 p-10 rounded-4xl'>
-        <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <!-- Storage Card -->
-          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
-            <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
-            <ul>
-              <li>600 GB</li>
-              <li>15603 Files</li>
-              <li>Prefix: {{ backup.prefix }}</li>
-            </ul>
-          </div>
-          <!-- Data to backup Card -->
-          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
-            <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-backup") }}</h2>
-            <DataSelection :paths='backupPaths' @update:paths='saveBackupPaths' />
-          </div>
-          <!-- Data to ignore Card -->
-          <div class='bg-base-100 p-10 rounded-3xl shadow-lg'>
-            <h2 class='text-lg font-semibold mb-4'>{{ $t("data-to-ignore") }}</h2>
-            <DataSelection :paths='excludePaths' @update:paths='saveExcludePaths' />
-          </div>
+      <h1 class='text-2xl font-bold mb-4'>{{ backup.name }}</h1>
+      <button class='btn btn-primary' @click='runBackups()'>Run all backups</button>
+      <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        <!-- Storage Card -->
+        <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
+          <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
+          <ul>
+            <li>600 GB</li>
+            <li>15603 Files</li>
+            <li>Prefix: {{ backup.prefix }}</li>
+          </ul>
         </div>
+        <!-- Data to backup Card -->
+        <DataSelection :paths='backupPaths' :is-backup-selection='true' @update:paths='saveBackupPaths' />
+        <!-- Data to ignore Card -->
+        <DataSelection :paths='excludePaths' :is-backup-selection='false' @update:paths='saveExcludePaths' />
       </div>
 
       <!-- Schedule Section -->
-      <h1 class='text-2xl font-bold px-10 mb-4'>{{ $t("schedule") }}</h1>
-      <div class='bg-base-300/25 p-10 rounded-4xl'>
-        <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule' @delete:schedule='deleteSchedule'/>
-      </div>
+      <h1 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h1>
+      <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
+                         @delete:schedule='deleteSchedule' />
 
       <h2 class='text-2xl font-bold mb-6'>Stored on</h2>
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
@@ -276,30 +268,28 @@ getBackupProfile();
     </div>
   </div>
   <!--  COPILOT MARKER -->
-  <!--  <div class='flex'></div>-->
-  <!--  <div class='flex flex-col items-center justify-center h-full'>-->
-  <!--    <h1>{{ backup.name }}</h1>-->
-  <!--    <p>{{ backup.id }}</p>-->
-  <!--    <DataSelection :paths='paths' @update:paths='handleDirectoryUpdate' />-->
+  <!--    <div class='flex'></div>-->
+  <!--    <div class='flex flex-col items-center justify-center h-full'>-->
+  <!--      <h1>{{ backup.name }}</h1>-->
+  <!--      <p>{{ backup.id }}</p>-->
+  <!--      <p>{{ backup.isSetupComplete }}</p>-->
 
-  <!--    <p>{{ backup.isSetupComplete }}</p>-->
-
-  <!--    <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>-->
-  <!--      <div class='flex flex-row items-center justify-center'>-->
-  <!--        <p>{{ repo.name }}</p>-->
-  <!--        <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>-->
-  <!--        <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>-->
-  <!--        <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>-->
+  <!--      <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>-->
+  <!--        <div class='flex flex-row items-center justify-center'>-->
+  <!--          <p>{{ repo.name }}</p>-->
+  <!--          <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>-->
+  <!--          <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>-->
+  <!--          <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>-->
+  <!--        </div>-->
   <!--      </div>-->
+
+  <!--      <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>-->
+  <!--      <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>-->
+  <!--      <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>-->
+  <!--      <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>-->
+
+  <!--      <button class='btn btn-primary' @click='router.back()'>{{ $t('back') }}</button>-->
   <!--    </div>-->
-
-  <!--    <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>-->
-  <!--    <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>-->
-  <!--    <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>-->
-  <!--    <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>-->
-
-  <!--    <button class='btn btn-primary' @click='router.back()'>{{ $t('back') }}</button>-->
-  <!--  </div>-->
   <!--  COPILOT MARKER -->
 </template>
 
