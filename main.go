@@ -2,6 +2,7 @@ package main
 
 import (
 	"arco/backend/app"
+	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/ent/backupschedule"
 	_ "arco/backend/ent/runtime" // required to allow cyclic imports
@@ -89,17 +90,39 @@ func initConfig() (*types.Config, error) {
 	}, nil
 }
 
-var Weekdays = []struct {
-	Value  backupschedule.Weekday
+type Stringer interface {
+	String() string
+}
+
+func toTsEnums[T Stringer](states []T) []struct {
+	Value  T
 	TSName string
-}{
-	{backupschedule.WeekdayMonday, backupschedule.WeekdayMonday.String()},
-	{backupschedule.WeekdayTuesday, backupschedule.WeekdayTuesday.String()},
-	{backupschedule.WeekdayWednesday, backupschedule.WeekdayWednesday.String()},
-	{backupschedule.WeekdayThursday, backupschedule.WeekdayThursday.String()},
-	{backupschedule.WeekdayFriday, backupschedule.WeekdayFriday.String()},
-	{backupschedule.WeekdaySaturday, backupschedule.WeekdaySaturday.String()},
-	{backupschedule.WeekdaySunday, backupschedule.WeekdaySunday.String()},
+} {
+	var allBs = make([]struct {
+		Value  T
+		TSName string
+	}, len(states))
+
+	for i, bs := range states {
+		allBs[i] = struct {
+			Value  T
+			TSName string
+		}{
+			Value:  bs,
+			TSName: bs.String(),
+		}
+	}
+	return allBs
+}
+
+var allWeekdays = []backupschedule.Weekday{
+	backupschedule.WeekdayMonday,
+	backupschedule.WeekdayTuesday,
+	backupschedule.WeekdayWednesday,
+	backupschedule.WeekdayThursday,
+	backupschedule.WeekdayFriday,
+	backupschedule.WeekdaySaturday,
+	backupschedule.WeekdaySunday,
 }
 
 func startApp(log *zap.SugaredLogger, config *types.Config) {
@@ -134,7 +157,8 @@ func startApp(log *zap.SugaredLogger, config *types.Config) {
 			arco.RepoClient(),
 		},
 		EnumBind: []interface{}{
-			Weekdays,
+			toTsEnums(allWeekdays),
+			toTsEnums(state.AllBackupStates),
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),

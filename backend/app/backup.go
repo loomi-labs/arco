@@ -171,8 +171,12 @@ func (b *BackupClient) GetBackupProgresses(ids []types.BackupId) []BackupProgres
 }
 
 func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
-	b.state.SetBackupState(id, state.BackupStateCancelled{}, &state.RepoStateIdle{})
+	b.state.SetBackupCancelled(id)
 	return nil
+}
+
+func (b *BackupClient) GetState(bId types.BackupId) state.BackupState {
+	return b.state.GetBackupState(bId)
 }
 
 /***********************************/
@@ -243,17 +247,17 @@ func (b *BackupClient) sendBackupScheduleChanged() {
 func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupResult, err error) {
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
-		b.state.SetBackupState(bId, state.BackupStateError{Error: err}, nil)
+		b.state.SetBackupError(bId, err, false, false)
 		return state.BackupResultError, err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
-	b.state.SetBackupState(bId, state.BackupStateWaiting{}, nil)
+	b.state.SetBackupWaiting(bId)
 
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock() // We might wait here for other operations to finish
 
 	// Wait to acquire the lock and then set the backup as running
-	ctx := b.state.SetBackupRunning(b.ctx, bId, &state.RepoStateBackingUp{})
+	ctx := b.state.SetBackupRunning(b.ctx, bId)
 
 	// Create go routine to receive progress info
 	ch := make(chan borg.BackupProgress)
@@ -262,18 +266,18 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	err = b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.SetBackupState(bId, state.BackupStateCancelled{}, &state.RepoStateIdle{})
+			b.state.SetBackupCancelled(bId)
 			return state.BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			err = fmt.Errorf("repository is locked")
-			b.state.SetBackupState(bId, state.BackupStateError{Error: err}, &state.RepoStateLocked{})
+			b.state.SetBackupError(bId, err, false, true)
 			return state.BackupResultError, err
 		} else {
-			b.state.SetBackupState(bId, state.BackupStateError{Error: err}, &state.RepoStateIdle{})
+			b.state.SetBackupError(bId, err, true, false)
 			return state.BackupResultError, err
 		}
 	} else {
-		b.state.SetBackupState(bId, state.BackupStateCompleted{}, &state.RepoStateIdle{})
+		b.state.SetBackupCompleted(bId)
 		return state.BackupResultSuccess, nil
 	}
 }
@@ -283,7 +287,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	repoLock.Lock() // We might wait here for other operations to finish
 
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoState(bId.RepositoryId, &state.RepoStateDeleting{})
+	b.state.SetRepoState(bId.RepositoryId, state.RepoStateDeleting)
 	b.state.AddRunningDeleteJob(b.ctx, bId)
 	defer b.state.RemoveRunningDeleteJob(bId)
 
@@ -291,18 +295,18 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Delete job cancelled", types.LevelWarning)
-			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
+			b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			//b.state.AddBorgLock(bId.RepositoryId)
 			b.state.AddNotification("Delete job failed: repository is locked", types.LevelError)
-			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateLocked{})
+			b.state.SetRepoState(bId.RepositoryId, state.RepoStateLocked)
 		} else {
 			b.state.AddNotification(err.Error(), types.LevelError)
-			b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
+			b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
 		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Delete job completed"), types.LevelInfo)
-		b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
+		b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
 	}
 }
 

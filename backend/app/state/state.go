@@ -14,8 +14,8 @@ type State struct {
 	notifications []types.Notification
 	startupError  error
 
-	repoStates   map[int]RepoState
-	backupStates map[types.BackupId]BackupState // TODO: make this a pointer?
+	repoStates   map[int]*RepoState
+	backupStates map[types.BackupId]*BackupState
 
 	runningPruneJobs       map[types.BackupId]*PruneJob
 	runningDryRunPruneJobs map[types.BackupId]*PruneJob
@@ -61,83 +61,68 @@ type MountState struct {
 	MountPath string `json:"mount_path"`
 }
 
-type RepoState interface {
-	getMutex() *sync.Mutex
-	setMutex(*sync.Mutex)
+type RepoStateVal string
+
+const (
+	RepoStateIdle                RepoStateVal = "idle"
+	RepoStateBackingUp           RepoStateVal = "backing_up"
+	RepoStatePruning             RepoStateVal = "pruning"
+	RepoStateDeleting            RepoStateVal = "deleting"
+	RepoStatePerformingOperation RepoStateVal = "performing_operation"
+	RepoStateLocked              RepoStateVal = "locked"
+)
+
+type RepoState struct {
+	mutex *sync.Mutex
+	State RepoStateVal `json:"state"`
 }
 
-type RepoStateIdle struct {
-	*sync.Mutex
+func newRepoState() *RepoState {
+	return &RepoState{
+		mutex: &sync.Mutex{},
+		State: RepoStateIdle,
+	}
 }
 
-type RepoStateBackingUp struct {
-	*sync.Mutex
+type BackupStateVal string
+
+const (
+	BackupStateIdle      BackupStateVal = "idle"
+	BackupStateWaiting   BackupStateVal = "waiting"
+	BackupStateRunning   BackupStateVal = "running"
+	BackupStateCompleted BackupStateVal = "completed"
+	BackupStateCancelled BackupStateVal = "cancelled"
+	BackupStateError     BackupStateVal = "error"
+)
+
+var AllBackupStates = []BackupStateVal{
+	BackupStateIdle,
+	BackupStateWaiting,
+	BackupStateRunning,
+	BackupStateCompleted,
+	BackupStateCancelled,
+	BackupStateError,
 }
 
-type RepoStatePruning struct {
-	*sync.Mutex
+func (bs BackupStateVal) String() string {
+	return string(bs)
 }
 
-type RepoStateDeleting struct {
-	*sync.Mutex
-}
-
-type RepoStatePerformingOperation struct {
-	*sync.Mutex
-}
-
-type RepoStateLocked struct {
-	*sync.Mutex
-}
-
-func (rs *RepoStateIdle) getMutex() *sync.Mutex      { return rs.Mutex }
-func (rs *RepoStateIdle) setMutex(m *sync.Mutex)     { rs.Mutex = m }
-func (rs *RepoStateBackingUp) getMutex() *sync.Mutex { return rs.Mutex }
-func (rs *RepoStateBackingUp) setMutex(m *sync.Mutex) {
-	rs.Mutex = m
-}
-func (rs *RepoStatePruning) getMutex() *sync.Mutex { return rs.Mutex }
-func (rs *RepoStatePruning) setMutex(m *sync.Mutex) {
-	rs.Mutex = m
-}
-func (rs *RepoStateDeleting) getMutex() *sync.Mutex { return rs.Mutex }
-func (rs *RepoStateDeleting) setMutex(m *sync.Mutex) {
-	rs.Mutex = m
-}
-func (rs *RepoStatePerformingOperation) getMutex() *sync.Mutex { return rs.Mutex }
-func (rs *RepoStatePerformingOperation) setMutex(m *sync.Mutex) {
-	rs.Mutex = m
-}
-func (rs *RepoStateLocked) getMutex() *sync.Mutex  { return rs.Mutex }
-func (rs *RepoStateLocked) setMutex(m *sync.Mutex) { rs.Mutex = m }
-
-type BackupState interface {
-	bs() // marker method for the compiler... without this we could store any type as BackupState
-}
-
-type BackupStateWaiting struct {
-}
-
-type backupStateRunning struct {
+type BackupState struct {
 	*cancelCtx
-	Progress borg.BackupProgress
+	State    BackupStateVal       `json:"state"`
+	Progress *borg.BackupProgress `json:"progress,omitempty"`
+	Error    error                `json:"error,omitempty"`
 }
 
-type BackupStateCompleted struct {
+func newBackupState() *BackupState {
+	return &BackupState{
+		cancelCtx: nil,
+		State:     BackupStateIdle,
+		Progress:  nil,
+		Error:     nil,
+	}
 }
-
-type BackupStateCancelled struct {
-}
-
-type BackupStateError struct {
-	Error error
-}
-
-func (BackupStateWaiting) bs()   {}
-func (backupStateRunning) bs()   {}
-func (BackupStateCompleted) bs() {}
-func (BackupStateCancelled) bs() {}
-func (BackupStateError) bs()     {}
 
 type BackupResult string
 
@@ -158,8 +143,8 @@ func NewState(log *zap.SugaredLogger) *State {
 		notifications: []types.Notification{},
 		startupError:  nil,
 
-		repoStates:   make(map[int]RepoState),
-		backupStates: map[types.BackupId]BackupState{},
+		repoStates:   make(map[int]*RepoState),
+		backupStates: map[types.BackupId]*BackupState{},
 
 		runningPruneJobs:       make(map[types.BackupId]*PruneJob),
 		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
@@ -213,51 +198,40 @@ func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 	defer s.mu.Unlock()
 
 	if _, ok := s.repoStates[repoId]; !ok {
-		s.repoStates[repoId] = &RepoStateIdle{Mutex: &sync.Mutex{}}
+		s.setRepoState(repoId, RepoStateIdle)
 	}
-	return s.repoStates[repoId].getMutex()
+	return s.repoStates[repoId].mutex
 }
 
-func (s *State) SetRepoState(repoId int, state RepoState) {
+func (s *State) SetRepoState(repoId int, state RepoStateVal) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.setRepoState(repoId, state)
 }
 
-func (s *State) setRepoState(repoId int, state RepoState) {
+func (s *State) setRepoState(repoId int, state RepoStateVal) {
 	if rs, ok := s.repoStates[repoId]; ok {
-		if _, ok := rs.(*RepoStateIdle); !ok {
-			if _, ok := state.(*RepoStateIdle); ok {
-				// If we are here it means:
-				// - the current state is not idle
-				// - the new state is idle
-				// Therefore we unlock the repository
-				rs.getMutex().Unlock()
-			}
+		if rs.State != RepoStateIdle && state == RepoStateIdle {
+			// If we are here it means:
+			// - the current state is not idle
+			// - the new state is idle
+			// Therefore we unlock the repository
+			rs.mutex.Unlock()
 		}
 
-		// Copy the mutex from the old state to the new state
-		mutex := rs.getMutex()
-		if mutex == nil {
-			mutex = &sync.Mutex{}
-		}
-		state.setMutex(mutex)
-		s.repoStates[repoId] = state
+		s.repoStates[repoId].State = state
 	} else {
 		// If the repository state doesn't exist, we create it
-		if state.getMutex() == nil {
-			state.setMutex(&sync.Mutex{})
-		}
-		s.repoStates[repoId] = state
+		s.repoStates[repoId] = newRepoState()
 	}
 }
 
 func (s *State) GetRepoState(repoId int) RepoState {
-	if state, ok := s.repoStates[repoId]; ok {
-		return state
+	if rs, ok := s.repoStates[repoId]; ok {
+		return *rs
 	}
-	return &RepoStateIdle{}
+	return *newRepoState()
 }
 
 /***********************************/
@@ -269,99 +243,128 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 		return false, "Startup error"
 	}
 	if bs, ok := s.backupStates[id]; ok {
-		if _, ok := bs.(*backupStateRunning); ok {
+		if bs.State == BackupStateRunning {
 			return false, "Backup is already running"
 		}
 	}
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
-		if _, ok := rs.(*RepoStateIdle); !ok {
+		if rs.State != RepoStateIdle {
 			return false, "Repository is busy"
 		}
 	}
 	return true, ""
 }
 
-// TODO: revove this?
+// TODO: remove this?
 func (s *State) GetBackupProgress(id types.BackupId) (progress borg.BackupProgress, found bool) {
 	if currentState, ok := s.backupStates[id]; ok {
-		if currentState, ok := currentState.(*backupStateRunning); ok {
-			return currentState.Progress, true
+		if currentState.State == BackupStateRunning {
+			if currentState.Progress != nil {
+				return *currentState.Progress, true
+			}
+			return borg.BackupProgress{}, true
 		}
 	}
 	return borg.BackupProgress{}, false
 }
 
-func (s *State) SetBackupState(bId types.BackupId, newState BackupState, repoState RepoState) {
+func (s *State) SetBackupWaiting(bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if currentState, ok := s.backupStates[bId]; ok {
-		if _, ok := currentState.(*backupStateRunning); ok {
+	s.changeBackupState(bId, BackupStateWaiting)
+}
+
+func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) context.Context {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	currentState, ok := s.backupStates[bId]
+	if ok {
+		if currentState.State == BackupStateRunning {
+			// If the state is already running, we don't do anything
+			return currentState.ctx
+		}
+	} else {
+		// If the backup state doesn't exist, we create it
+		s.changeBackupState(bId, BackupStateRunning)
+	}
+
+	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
+	s.backupStates[bId].State = BackupStateRunning
+	s.backupStates[bId].Progress = &borg.BackupProgress{}
+	s.backupStates[bId].Error = nil
+
+	s.setRepoState(bId.RepositoryId, RepoStateBackingUp)
+
+	return s.backupStates[bId].ctx
+}
+
+func (s *State) SetBackupCompleted(bId types.BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.changeBackupState(bId, BackupStateCompleted)
+	s.setRepoState(bId.RepositoryId, RepoStateIdle)
+}
+
+func (s *State) SetBackupCancelled(bId types.BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.changeBackupState(bId, BackupStateCancelled)
+	s.setRepoState(bId.RepositoryId, RepoStateIdle)
+}
+
+func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.changeBackupState(bId, BackupStateError)
+	s.backupStates[bId].Error = err
+	if setRepoLocked {
+		s.setRepoState(bId.RepositoryId, RepoStateLocked)
+	} else if setRepoStateIdle {
+		s.setRepoState(bId.RepositoryId, RepoStateIdle)
+	}
+}
+
+func (s *State) changeBackupState(bId types.BackupId, newState BackupStateVal) {
+	currentState, ok := s.backupStates[bId]
+	if ok {
+		if currentState.State == BackupStateRunning && newState != BackupStateRunning {
 			// If we are here it means:
 			// - the current state is running
 			// - the new state is not running (it's either completed, cancelled or errored)
 			// Therefore we cancel the context to stop eventual running borg operations
-			currentState.(*backupStateRunning).cancel()
+			currentState.cancel()
+			currentState.ctx = nil
+			currentState.Progress = nil
 		}
-	}
-	if repoState != nil {
-		s.setRepoState(bId.RepositoryId, repoState)
+	} else {
+		// If the backup state doesn't exist, we create it
+		s.backupStates[bId] = newBackupState()
 	}
 
-	s.backupStates[bId] = newState
+	s.backupStates[bId].State = newState
 }
-
-func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId, repoState RepoState) context.Context {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if currentState, ok := s.backupStates[bId]; ok {
-		if currentState, ok := currentState.(*backupStateRunning); ok {
-			// If the state is already running, we don't do anything
-			return currentState.ctx
-		}
-	}
-
-	cCtx := newCancelCtx(ctx)
-	s.backupStates[bId] = &backupStateRunning{
-		cancelCtx: cCtx,
-		Progress:  borg.BackupProgress{},
-	}
-
-	if repoState != nil {
-		s.setRepoState(bId.RepositoryId, repoState)
-	}
-
-	return cCtx.ctx
-}
-
-//func (s *State) StopRunningBackup(id types.BackupId) {
-//	s.mu.Lock()
-//	defer s.mu.Unlock()
-//
-//	if currentState, ok := s.backupStates[id]; ok {
-//		if currentState, ok := currentState.(*backupStateRunning); ok {
-//			currentState.cancel()
-//		}
-//	}
-//
-//	delete(s.backupStates, id)
-//}
 
 func (s *State) UpdateBackupProgress(id types.BackupId, progress borg.BackupProgress) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if currentState, ok := s.backupStates[id]; ok {
-		if currentState, ok := currentState.(*backupStateRunning); ok {
-			currentState.Progress = progress
+		if currentState.State == BackupStateRunning {
+			currentState.Progress = &progress
 		}
 	}
 }
 
-func (s *State) GetBackupState(id types.BackupId) (BackupState, bool) {
-	state, found := s.backupStates[id]
-	return state, found
+func (s *State) GetBackupState(id types.BackupId) BackupState {
+	if bs, ok := s.backupStates[id]; ok {
+		return *bs
+	}
+	return *newBackupState()
 }
 
 /***********************************/
@@ -376,7 +379,7 @@ func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
 		return false, "Prune job is already running"
 	}
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
-		if _, ok := rs.(*RepoStateIdle); !ok {
+		if rs.State != RepoStateIdle {
 			return false, "Repository is busy"
 		}
 	}

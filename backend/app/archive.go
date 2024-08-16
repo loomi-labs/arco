@@ -20,8 +20,8 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	repoLock.Lock()
 
 	// Wait to acquire the lock and then set the repo as fetching info
-	r.state.SetRepoState(repoId, &state.RepoStatePerformingOperation{})
-	defer r.state.SetRepoState(repoId, &state.RepoStateIdle{})
+	r.state.SetRepoState(repoId, state.RepoStatePerformingOperation)
+	defer r.state.SetRepoState(repoId, state.RepoStateIdle)
 
 	listResponse, err := r.borg.List(repo.URL, repo.Password)
 	if err != nil {
@@ -111,8 +111,8 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	repoLock.Lock()
 
 	// Wait to acquire the lock and then set the repo as locked
-	r.state.SetRepoState(arch.Edges.Repository.ID, &state.RepoStatePerformingOperation{})
-	defer r.state.SetRepoState(arch.Edges.Repository.ID, &state.RepoStateIdle{})
+	r.state.SetRepoState(arch.Edges.Repository.ID, state.RepoStatePerformingOperation)
+	defer r.state.SetRepoState(arch.Edges.Repository.ID, state.RepoStateIdle)
 
 	return r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
 }

@@ -10,17 +10,13 @@ import (
 	"fmt"
 )
 
-func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+func (b *BackupClient) PruneBackup(bId types.BackupId) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := types.BackupId{
-		BackupProfileId: backupProfileId,
-		RepositoryId:    repositoryId,
-	}
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
@@ -39,7 +35,8 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.PruneBackup(backupProfileId, repo.ID)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		err := b.PruneBackup(bId)
 		if err != nil {
 			return err
 		}
@@ -47,17 +44,13 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := types.BackupId{
-		BackupProfileId: backupProfileId,
-		RepositoryId:    repositoryId,
-	}
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
@@ -76,7 +69,8 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.DryRunPruneBackup(backupProfileId, repo.ID)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		err := b.DryRunPruneBackup(bId)
 		if err != nil {
 			return err
 		}
@@ -88,8 +82,8 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoState(bId.RepositoryId, &state.RepoStatePruning{})
-	defer b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
+	b.state.SetRepoState(bId.RepositoryId, state.RepoStatePruning)
+	defer b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
 	b.state.AddRunningPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningPruneJob(bId)
 
@@ -171,8 +165,8 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, passwo
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()
 
-	b.state.SetRepoState(bId.RepositoryId, &state.RepoStatePerformingOperation{})
-	defer b.state.SetRepoState(bId.RepositoryId, &state.RepoStateIdle{})
+	b.state.SetRepoState(bId.RepositoryId, state.RepoStatePerformingOperation)
+	defer b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
 	b.state.AddRunningDryRunPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningDryRunPruneJob(bId)
 
