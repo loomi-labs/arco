@@ -261,6 +261,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 
 	// Create go routine to receive progress info
 	ch := make(chan borg.BackupProgress)
+	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
 	err = b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)

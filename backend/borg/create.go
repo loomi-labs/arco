@@ -21,8 +21,6 @@ type BackupProgress struct {
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
 func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths []string, excludePaths []string, ch chan BackupProgress) error {
-	defer close(ch)
-
 	// Count the total files to backup
 	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, backupPaths)
 	if err != nil {
