@@ -16,9 +16,6 @@ generate-models:
 	@cd backend && go generate ./ent
 	@echo "✅ Done!"
 
-ensure-atlas:
-	@command -v atlas >/dev/null 2>&1 || { echo >&2 "atlas is not installed. Please run 'make install atlas' to install it."; exit 1; }
-
 install-atlas:
 	@echo "Installing atlas..."
 	@curl -sSf https://atlasgo.sh | sh
@@ -36,14 +33,27 @@ apply-migrations: ensure-atlas
 	@echo "Migrating ent schema..."
 	@atlas migrate apply \
                      --dir "file://backend/ent/migrate/migrations" \
-                     --url "sqlite://$$HOME/.config/arco/aroc.db?_fk=1"
+                     --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
 
 show-migrations: ensure-atlas
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
-					 --url "sqlite://$$HOME/.config/arco/aroc.db?_fk=1"
+					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
+
+################################
+#           Checks  	       #
+################################
+
+ensure-wails:
+	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\n - install: 'go install github.com/wailsapp/wails/v2/cmd/wails@latest'\n - path: add go/bin path to env variables (https://go.dev/doc/install)\n"; exit 1; }
+
+ensure-pnpm:
+	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
+
+ensure-atlas:
+	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-atlas' to install it\n"; exit 1; }
 
 ################################
 #            Test 		       #
@@ -56,15 +66,12 @@ test:
 #            Build 		       #
 ################################
 
-build: ensure-pnpm
+build: ensure-wails ensure-pnpm
 	@wails build
 
 ################################
 #         Development 		   #
 ################################
 
-ensure-pnpm:
-	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
-
-dev: ensure-pnpm
+dev: ensure-wails ensure-pnpm
 	wails dev
