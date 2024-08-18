@@ -192,12 +192,12 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 }
 
 type ArchiveList struct {
-	Archive  string `json:"archive"`
-	Barchive string `json:"barchive"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Start    string `json:"start"`
-	Time     string `json:"time"`
+	Archive  string     `json:"archive"`
+	Barchive string     `json:"barchive"`
+	ID       string     `json:"id"`
+	Name     string     `json:"name"`
+	Start    StringTime `json:"start"`
+	Time     StringTime `json:"time"`
 }
 
 type Limits struct {

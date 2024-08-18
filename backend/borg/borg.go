@@ -62,7 +62,7 @@ func (e Env) AsList() []string {
 	sshOptions := []string{
 		"-oBatchMode=yes",
 		"-oStrictHostKeyChecking=accept-new",
-		"-i ~/sshtest/id_storage_test",
+		"-i ~/.config/arco/id_rsa",
 	}
 	env := append(
 		os.Environ(),

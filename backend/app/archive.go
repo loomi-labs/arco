@@ -67,20 +67,12 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	cntNewArchives := 0
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
-			createdAt, err := time.Parse("2006-01-02T15:04:05.000000", arch.Start)
-			if err != nil {
-				return nil, err
-			}
-			duration, err := time.Parse("2006-01-02T15:04:05.000000", arch.Time)
-			if err != nil {
-				return nil, err
-			}
 			newArchive, err := r.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
-				SetCreatedAt(createdAt).
-				SetDuration(duration).
+				SetCreatedAt(time.Time(arch.Start)).
+				SetDuration(time.Time(arch.Time)).
 				SetRepositoryID(repoId).
 				Save(r.ctx)
 			if err != nil {
