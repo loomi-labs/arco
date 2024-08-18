@@ -39,6 +39,90 @@ func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	return rc
 }
 
+// SetStatsTotalChunks sets the "stats_total_chunks" field.
+func (rc *RepositoryCreate) SetStatsTotalChunks(i int) *RepositoryCreate {
+	rc.mutation.SetStatsTotalChunks(i)
+	return rc
+}
+
+// SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsTotalChunks(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsTotalChunks(*i)
+	}
+	return rc
+}
+
+// SetStatsTotalSize sets the "stats_total_size" field.
+func (rc *RepositoryCreate) SetStatsTotalSize(i int) *RepositoryCreate {
+	rc.mutation.SetStatsTotalSize(i)
+	return rc
+}
+
+// SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsTotalSize(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsTotalSize(*i)
+	}
+	return rc
+}
+
+// SetStatsTotalCsize sets the "stats_total_csize" field.
+func (rc *RepositoryCreate) SetStatsTotalCsize(i int) *RepositoryCreate {
+	rc.mutation.SetStatsTotalCsize(i)
+	return rc
+}
+
+// SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsTotalCsize(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsTotalCsize(*i)
+	}
+	return rc
+}
+
+// SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
+func (rc *RepositoryCreate) SetStatsTotalUniqueChunks(i int) *RepositoryCreate {
+	rc.mutation.SetStatsTotalUniqueChunks(i)
+	return rc
+}
+
+// SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsTotalUniqueChunks(*i)
+	}
+	return rc
+}
+
+// SetStatsUniqueSize sets the "stats_unique_size" field.
+func (rc *RepositoryCreate) SetStatsUniqueSize(i int) *RepositoryCreate {
+	rc.mutation.SetStatsUniqueSize(i)
+	return rc
+}
+
+// SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsUniqueSize(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsUniqueSize(*i)
+	}
+	return rc
+}
+
+// SetStatsUniqueCsize sets the "stats_unique_csize" field.
+func (rc *RepositoryCreate) SetStatsUniqueCsize(i int) *RepositoryCreate {
+	rc.mutation.SetStatsUniqueCsize(i)
+	return rc
+}
+
+// SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableStatsUniqueCsize(i *int) *RepositoryCreate {
+	if i != nil {
+		rc.SetStatsUniqueCsize(*i)
+	}
+	return rc
+}
+
 // SetID sets the "id" field.
 func (rc *RepositoryCreate) SetID(i int) *RepositoryCreate {
 	rc.mutation.SetID(i)
@@ -82,6 +166,7 @@ func (rc *RepositoryCreate) Mutation() *RepositoryMutation {
 
 // Save creates the Repository in the database.
 func (rc *RepositoryCreate) Save(ctx context.Context) (*Repository, error) {
+	rc.defaults()
 	return withHooks(ctx, rc.sqlSave, rc.mutation, rc.hooks)
 }
 
@@ -107,6 +192,34 @@ func (rc *RepositoryCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (rc *RepositoryCreate) defaults() {
+	if _, ok := rc.mutation.StatsTotalChunks(); !ok {
+		v := repository.DefaultStatsTotalChunks
+		rc.mutation.SetStatsTotalChunks(v)
+	}
+	if _, ok := rc.mutation.StatsTotalSize(); !ok {
+		v := repository.DefaultStatsTotalSize
+		rc.mutation.SetStatsTotalSize(v)
+	}
+	if _, ok := rc.mutation.StatsTotalCsize(); !ok {
+		v := repository.DefaultStatsTotalCsize
+		rc.mutation.SetStatsTotalCsize(v)
+	}
+	if _, ok := rc.mutation.StatsTotalUniqueChunks(); !ok {
+		v := repository.DefaultStatsTotalUniqueChunks
+		rc.mutation.SetStatsTotalUniqueChunks(v)
+	}
+	if _, ok := rc.mutation.StatsUniqueSize(); !ok {
+		v := repository.DefaultStatsUniqueSize
+		rc.mutation.SetStatsUniqueSize(v)
+	}
+	if _, ok := rc.mutation.StatsUniqueCsize(); !ok {
+		v := repository.DefaultStatsUniqueCsize
+		rc.mutation.SetStatsUniqueCsize(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rc *RepositoryCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
@@ -117,6 +230,24 @@ func (rc *RepositoryCreate) check() error {
 	}
 	if _, ok := rc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
+	}
+	if _, ok := rc.mutation.StatsTotalChunks(); !ok {
+		return &ValidationError{Name: "stats_total_chunks", err: errors.New(`ent: missing required field "Repository.stats_total_chunks"`)}
+	}
+	if _, ok := rc.mutation.StatsTotalSize(); !ok {
+		return &ValidationError{Name: "stats_total_size", err: errors.New(`ent: missing required field "Repository.stats_total_size"`)}
+	}
+	if _, ok := rc.mutation.StatsTotalCsize(); !ok {
+		return &ValidationError{Name: "stats_total_csize", err: errors.New(`ent: missing required field "Repository.stats_total_csize"`)}
+	}
+	if _, ok := rc.mutation.StatsTotalUniqueChunks(); !ok {
+		return &ValidationError{Name: "stats_total_unique_chunks", err: errors.New(`ent: missing required field "Repository.stats_total_unique_chunks"`)}
+	}
+	if _, ok := rc.mutation.StatsUniqueSize(); !ok {
+		return &ValidationError{Name: "stats_unique_size", err: errors.New(`ent: missing required field "Repository.stats_unique_size"`)}
+	}
+	if _, ok := rc.mutation.StatsUniqueCsize(); !ok {
+		return &ValidationError{Name: "stats_unique_csize", err: errors.New(`ent: missing required field "Repository.stats_unique_csize"`)}
 	}
 	return nil
 }
@@ -161,6 +292,30 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
+	}
+	if value, ok := rc.mutation.StatsTotalChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
+		_node.StatsTotalChunks = value
+	}
+	if value, ok := rc.mutation.StatsTotalSize(); ok {
+		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
+		_node.StatsTotalSize = value
+	}
+	if value, ok := rc.mutation.StatsTotalCsize(); ok {
+		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
+		_node.StatsTotalCsize = value
+	}
+	if value, ok := rc.mutation.StatsTotalUniqueChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
+		_node.StatsTotalUniqueChunks = value
+	}
+	if value, ok := rc.mutation.StatsUniqueSize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
+		_node.StatsUniqueSize = value
+	}
+	if value, ok := rc.mutation.StatsUniqueCsize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
+		_node.StatsUniqueCsize = value
 	}
 	if nodes := rc.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -215,6 +370,7 @@ func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*RepositoryMutation)
 				if !ok {

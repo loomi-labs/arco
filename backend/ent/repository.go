@@ -22,6 +22,18 @@ type Repository struct {
 	URL string `json:"url"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
+	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
+	StatsTotalChunks int `json:"stats_total_chunks"`
+	// StatsTotalSize holds the value of the "stats_total_size" field.
+	StatsTotalSize int `json:"stats_total_size"`
+	// StatsTotalCsize holds the value of the "stats_total_csize" field.
+	StatsTotalCsize int `json:"stats_total_csize"`
+	// StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
+	StatsTotalUniqueChunks int `json:"stats_total_unique_chunks"`
+	// StatsUniqueSize holds the value of the "stats_unique_size" field.
+	StatsUniqueSize int `json:"stats_unique_size"`
+	// StatsUniqueCsize holds the value of the "stats_unique_csize" field.
+	StatsUniqueCsize int `json:"stats_unique_csize"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
 	Edges        RepositoryEdges `json:"edges"`
@@ -62,7 +74,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case repository.FieldID:
+		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
 		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
 			values[i] = new(sql.NullString)
@@ -104,6 +116,42 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
 				r.Password = value.String
+			}
+		case repository.FieldStatsTotalChunks:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_total_chunks", values[i])
+			} else if value.Valid {
+				r.StatsTotalChunks = int(value.Int64)
+			}
+		case repository.FieldStatsTotalSize:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_total_size", values[i])
+			} else if value.Valid {
+				r.StatsTotalSize = int(value.Int64)
+			}
+		case repository.FieldStatsTotalCsize:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_total_csize", values[i])
+			} else if value.Valid {
+				r.StatsTotalCsize = int(value.Int64)
+			}
+		case repository.FieldStatsTotalUniqueChunks:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_total_unique_chunks", values[i])
+			} else if value.Valid {
+				r.StatsTotalUniqueChunks = int(value.Int64)
+			}
+		case repository.FieldStatsUniqueSize:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_unique_size", values[i])
+			} else if value.Valid {
+				r.StatsUniqueSize = int(value.Int64)
+			}
+		case repository.FieldStatsUniqueCsize:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stats_unique_csize", values[i])
+			} else if value.Valid {
+				r.StatsUniqueCsize = int(value.Int64)
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -159,6 +207,24 @@ func (r *Repository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)
+	builder.WriteString(", ")
+	builder.WriteString("stats_total_chunks=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalChunks))
+	builder.WriteString(", ")
+	builder.WriteString("stats_total_size=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalSize))
+	builder.WriteString(", ")
+	builder.WriteString("stats_total_csize=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalCsize))
+	builder.WriteString(", ")
+	builder.WriteString("stats_total_unique_chunks=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalUniqueChunks))
+	builder.WriteString(", ")
+	builder.WriteString("stats_unique_size=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsUniqueSize))
+	builder.WriteString(", ")
+	builder.WriteString("stats_unique_csize=")
+	builder.WriteString(fmt.Sprintf("%v", r.StatsUniqueCsize))
 	builder.WriteByte(')')
 	return builder.String()
 }

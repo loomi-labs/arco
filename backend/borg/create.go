@@ -20,21 +20,21 @@ type BackupProgress struct {
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths []string, excludePaths []string, ch chan BackupProgress) error {
+func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
 	// Count the total files to backup
 	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, backupPaths)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Prepare backup command
-	name := fmt.Sprintf("%s-%s", prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+	archiveName := fmt.Sprintf("%s::%s-%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
 		"--log-json", // Outputs JSON log messages
-		fmt.Sprintf("%s::%s", repoUrl, name)},
-		backupPaths...,
+		archiveName,
+	}, backupPaths...,
 	)
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
@@ -56,12 +56,12 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, bac
 	// Borg streams JSON messages to stderr
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
 
 	scanner := bufio.NewScanner(stderr)
@@ -72,12 +72,13 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, bac
 	if err != nil {
 		if hasBeenCanceled {
 			b.log.LogCmdCancelled(cmd.String(), startTime)
-			return CancelErr{}
+			return archiveName, CancelErr{}
 		}
-		return b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
+
 	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	return archiveName, nil
 }
 
 // decodeBackupProgress decodes the progress messages from Borg and sends them to the channel.

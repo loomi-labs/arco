@@ -87,6 +87,12 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
+		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
+		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
+		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},
+		{Name: "stats_total_unique_chunks", Type: field.TypeInt, Default: 0},
+		{Name: "stats_unique_size", Type: field.TypeInt, Default: 0},
+		{Name: "stats_unique_csize", Type: field.TypeInt, Default: 0},
 	}
 	// RepositoriesTable holds the schema information for the "repositories" table.
 	RepositoriesTable = &schema.Table{

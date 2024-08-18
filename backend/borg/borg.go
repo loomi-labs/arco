@@ -1,6 +1,7 @@
 package borg
 
 import (
+	"errors"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
@@ -87,6 +88,18 @@ func (LockTimeout) Error() string {
 }
 
 func exitCodesToError(err error) error {
+	// Return nil if there is no error
+	if err == nil {
+		return nil
+	}
+
+	// Return the error if it is not an ExitError
+	var exitError *exec.ExitError
+	if !errors.As(err, &exitError) {
+		return err
+	}
+
+	// Return the error based on the exit code
 	switch err.(*exec.ExitError).ExitCode() {
 	case 73:
 		return LockTimeout{}

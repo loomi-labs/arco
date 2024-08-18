@@ -5,6 +5,7 @@ package runtime
 import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/repository"
 	"arco/backend/ent/schema"
 )
 
@@ -38,6 +39,32 @@ func init() {
 	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	repositoryFields := schema.Repository{}.Fields()
+	_ = repositoryFields
+	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
+	repositoryDescStatsTotalChunks := repositoryFields[4].Descriptor()
+	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
+	repository.DefaultStatsTotalChunks = repositoryDescStatsTotalChunks.Default.(int)
+	// repositoryDescStatsTotalSize is the schema descriptor for stats_total_size field.
+	repositoryDescStatsTotalSize := repositoryFields[5].Descriptor()
+	// repository.DefaultStatsTotalSize holds the default value on creation for the stats_total_size field.
+	repository.DefaultStatsTotalSize = repositoryDescStatsTotalSize.Default.(int)
+	// repositoryDescStatsTotalCsize is the schema descriptor for stats_total_csize field.
+	repositoryDescStatsTotalCsize := repositoryFields[6].Descriptor()
+	// repository.DefaultStatsTotalCsize holds the default value on creation for the stats_total_csize field.
+	repository.DefaultStatsTotalCsize = repositoryDescStatsTotalCsize.Default.(int)
+	// repositoryDescStatsTotalUniqueChunks is the schema descriptor for stats_total_unique_chunks field.
+	repositoryDescStatsTotalUniqueChunks := repositoryFields[7].Descriptor()
+	// repository.DefaultStatsTotalUniqueChunks holds the default value on creation for the stats_total_unique_chunks field.
+	repository.DefaultStatsTotalUniqueChunks = repositoryDescStatsTotalUniqueChunks.Default.(int)
+	// repositoryDescStatsUniqueSize is the schema descriptor for stats_unique_size field.
+	repositoryDescStatsUniqueSize := repositoryFields[8].Descriptor()
+	// repository.DefaultStatsUniqueSize holds the default value on creation for the stats_unique_size field.
+	repository.DefaultStatsUniqueSize = repositoryDescStatsUniqueSize.Default.(int)
+	// repositoryDescStatsUniqueCsize is the schema descriptor for stats_unique_csize field.
+	repositoryDescStatsUniqueCsize := repositoryFields[9].Descriptor()
+	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
+	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
 }
 
 const (

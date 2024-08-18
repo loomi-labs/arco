@@ -2369,22 +2369,34 @@ func (m *BackupScheduleMutation) ResetEdge(name string) error {
 // RepositoryMutation represents an operation that mutates the Repository nodes in the graph.
 type RepositoryMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	name                   *string
-	url                    *string
-	password               *string
-	clearedFields          map[string]struct{}
-	backup_profiles        map[int]struct{}
-	removedbackup_profiles map[int]struct{}
-	clearedbackup_profiles bool
-	archives               map[int]struct{}
-	removedarchives        map[int]struct{}
-	clearedarchives        bool
-	done                   bool
-	oldValue               func(context.Context) (*Repository, error)
-	predicates             []predicate.Repository
+	op                           Op
+	typ                          string
+	id                           *int
+	name                         *string
+	url                          *string
+	password                     *string
+	stats_total_chunks           *int
+	addstats_total_chunks        *int
+	stats_total_size             *int
+	addstats_total_size          *int
+	stats_total_csize            *int
+	addstats_total_csize         *int
+	stats_total_unique_chunks    *int
+	addstats_total_unique_chunks *int
+	stats_unique_size            *int
+	addstats_unique_size         *int
+	stats_unique_csize           *int
+	addstats_unique_csize        *int
+	clearedFields                map[string]struct{}
+	backup_profiles              map[int]struct{}
+	removedbackup_profiles       map[int]struct{}
+	clearedbackup_profiles       bool
+	archives                     map[int]struct{}
+	removedarchives              map[int]struct{}
+	clearedarchives              bool
+	done                         bool
+	oldValue                     func(context.Context) (*Repository, error)
+	predicates                   []predicate.Repository
 }
 
 var _ ent.Mutation = (*RepositoryMutation)(nil)
@@ -2599,6 +2611,342 @@ func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
 }
 
+// SetStatsTotalChunks sets the "stats_total_chunks" field.
+func (m *RepositoryMutation) SetStatsTotalChunks(i int) {
+	m.stats_total_chunks = &i
+	m.addstats_total_chunks = nil
+}
+
+// StatsTotalChunks returns the value of the "stats_total_chunks" field in the mutation.
+func (m *RepositoryMutation) StatsTotalChunks() (r int, exists bool) {
+	v := m.stats_total_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalChunks returns the old "stats_total_chunks" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalChunks(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalChunks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalChunks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalChunks: %w", err)
+	}
+	return oldValue.StatsTotalChunks, nil
+}
+
+// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
+func (m *RepositoryMutation) AddStatsTotalChunks(i int) {
+	if m.addstats_total_chunks != nil {
+		*m.addstats_total_chunks += i
+	} else {
+		m.addstats_total_chunks = &i
+	}
+}
+
+// AddedStatsTotalChunks returns the value that was added to the "stats_total_chunks" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalChunks() (r int, exists bool) {
+	v := m.addstats_total_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalChunks resets all changes to the "stats_total_chunks" field.
+func (m *RepositoryMutation) ResetStatsTotalChunks() {
+	m.stats_total_chunks = nil
+	m.addstats_total_chunks = nil
+}
+
+// SetStatsTotalSize sets the "stats_total_size" field.
+func (m *RepositoryMutation) SetStatsTotalSize(i int) {
+	m.stats_total_size = &i
+	m.addstats_total_size = nil
+}
+
+// StatsTotalSize returns the value of the "stats_total_size" field in the mutation.
+func (m *RepositoryMutation) StatsTotalSize() (r int, exists bool) {
+	v := m.stats_total_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalSize returns the old "stats_total_size" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalSize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalSize: %w", err)
+	}
+	return oldValue.StatsTotalSize, nil
+}
+
+// AddStatsTotalSize adds i to the "stats_total_size" field.
+func (m *RepositoryMutation) AddStatsTotalSize(i int) {
+	if m.addstats_total_size != nil {
+		*m.addstats_total_size += i
+	} else {
+		m.addstats_total_size = &i
+	}
+}
+
+// AddedStatsTotalSize returns the value that was added to the "stats_total_size" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalSize() (r int, exists bool) {
+	v := m.addstats_total_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalSize resets all changes to the "stats_total_size" field.
+func (m *RepositoryMutation) ResetStatsTotalSize() {
+	m.stats_total_size = nil
+	m.addstats_total_size = nil
+}
+
+// SetStatsTotalCsize sets the "stats_total_csize" field.
+func (m *RepositoryMutation) SetStatsTotalCsize(i int) {
+	m.stats_total_csize = &i
+	m.addstats_total_csize = nil
+}
+
+// StatsTotalCsize returns the value of the "stats_total_csize" field in the mutation.
+func (m *RepositoryMutation) StatsTotalCsize() (r int, exists bool) {
+	v := m.stats_total_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalCsize returns the old "stats_total_csize" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalCsize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalCsize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalCsize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalCsize: %w", err)
+	}
+	return oldValue.StatsTotalCsize, nil
+}
+
+// AddStatsTotalCsize adds i to the "stats_total_csize" field.
+func (m *RepositoryMutation) AddStatsTotalCsize(i int) {
+	if m.addstats_total_csize != nil {
+		*m.addstats_total_csize += i
+	} else {
+		m.addstats_total_csize = &i
+	}
+}
+
+// AddedStatsTotalCsize returns the value that was added to the "stats_total_csize" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalCsize() (r int, exists bool) {
+	v := m.addstats_total_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalCsize resets all changes to the "stats_total_csize" field.
+func (m *RepositoryMutation) ResetStatsTotalCsize() {
+	m.stats_total_csize = nil
+	m.addstats_total_csize = nil
+}
+
+// SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) SetStatsTotalUniqueChunks(i int) {
+	m.stats_total_unique_chunks = &i
+	m.addstats_total_unique_chunks = nil
+}
+
+// StatsTotalUniqueChunks returns the value of the "stats_total_unique_chunks" field in the mutation.
+func (m *RepositoryMutation) StatsTotalUniqueChunks() (r int, exists bool) {
+	v := m.stats_total_unique_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalUniqueChunks returns the old "stats_total_unique_chunks" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalUniqueChunks(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalUniqueChunks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalUniqueChunks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalUniqueChunks: %w", err)
+	}
+	return oldValue.StatsTotalUniqueChunks, nil
+}
+
+// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) AddStatsTotalUniqueChunks(i int) {
+	if m.addstats_total_unique_chunks != nil {
+		*m.addstats_total_unique_chunks += i
+	} else {
+		m.addstats_total_unique_chunks = &i
+	}
+}
+
+// AddedStatsTotalUniqueChunks returns the value that was added to the "stats_total_unique_chunks" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalUniqueChunks() (r int, exists bool) {
+	v := m.addstats_total_unique_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalUniqueChunks resets all changes to the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) ResetStatsTotalUniqueChunks() {
+	m.stats_total_unique_chunks = nil
+	m.addstats_total_unique_chunks = nil
+}
+
+// SetStatsUniqueSize sets the "stats_unique_size" field.
+func (m *RepositoryMutation) SetStatsUniqueSize(i int) {
+	m.stats_unique_size = &i
+	m.addstats_unique_size = nil
+}
+
+// StatsUniqueSize returns the value of the "stats_unique_size" field in the mutation.
+func (m *RepositoryMutation) StatsUniqueSize() (r int, exists bool) {
+	v := m.stats_unique_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsUniqueSize returns the old "stats_unique_size" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsUniqueSize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsUniqueSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsUniqueSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsUniqueSize: %w", err)
+	}
+	return oldValue.StatsUniqueSize, nil
+}
+
+// AddStatsUniqueSize adds i to the "stats_unique_size" field.
+func (m *RepositoryMutation) AddStatsUniqueSize(i int) {
+	if m.addstats_unique_size != nil {
+		*m.addstats_unique_size += i
+	} else {
+		m.addstats_unique_size = &i
+	}
+}
+
+// AddedStatsUniqueSize returns the value that was added to the "stats_unique_size" field in this mutation.
+func (m *RepositoryMutation) AddedStatsUniqueSize() (r int, exists bool) {
+	v := m.addstats_unique_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsUniqueSize resets all changes to the "stats_unique_size" field.
+func (m *RepositoryMutation) ResetStatsUniqueSize() {
+	m.stats_unique_size = nil
+	m.addstats_unique_size = nil
+}
+
+// SetStatsUniqueCsize sets the "stats_unique_csize" field.
+func (m *RepositoryMutation) SetStatsUniqueCsize(i int) {
+	m.stats_unique_csize = &i
+	m.addstats_unique_csize = nil
+}
+
+// StatsUniqueCsize returns the value of the "stats_unique_csize" field in the mutation.
+func (m *RepositoryMutation) StatsUniqueCsize() (r int, exists bool) {
+	v := m.stats_unique_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsUniqueCsize returns the old "stats_unique_csize" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsUniqueCsize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsUniqueCsize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsUniqueCsize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsUniqueCsize: %w", err)
+	}
+	return oldValue.StatsUniqueCsize, nil
+}
+
+// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
+func (m *RepositoryMutation) AddStatsUniqueCsize(i int) {
+	if m.addstats_unique_csize != nil {
+		*m.addstats_unique_csize += i
+	} else {
+		m.addstats_unique_csize = &i
+	}
+}
+
+// AddedStatsUniqueCsize returns the value that was added to the "stats_unique_csize" field in this mutation.
+func (m *RepositoryMutation) AddedStatsUniqueCsize() (r int, exists bool) {
+	v := m.addstats_unique_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsUniqueCsize resets all changes to the "stats_unique_csize" field.
+func (m *RepositoryMutation) ResetStatsUniqueCsize() {
+	m.stats_unique_csize = nil
+	m.addstats_unique_csize = nil
+}
+
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by ids.
 func (m *RepositoryMutation) AddBackupProfileIDs(ids ...int) {
 	if m.backup_profiles == nil {
@@ -2741,7 +3089,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
@@ -2750,6 +3098,24 @@ func (m *RepositoryMutation) Fields() []string {
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
+	}
+	if m.stats_total_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalChunks)
+	}
+	if m.stats_total_size != nil {
+		fields = append(fields, repository.FieldStatsTotalSize)
+	}
+	if m.stats_total_csize != nil {
+		fields = append(fields, repository.FieldStatsTotalCsize)
+	}
+	if m.stats_total_unique_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalUniqueChunks)
+	}
+	if m.stats_unique_size != nil {
+		fields = append(fields, repository.FieldStatsUniqueSize)
+	}
+	if m.stats_unique_csize != nil {
+		fields = append(fields, repository.FieldStatsUniqueCsize)
 	}
 	return fields
 }
@@ -2765,6 +3131,18 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case repository.FieldPassword:
 		return m.Password()
+	case repository.FieldStatsTotalChunks:
+		return m.StatsTotalChunks()
+	case repository.FieldStatsTotalSize:
+		return m.StatsTotalSize()
+	case repository.FieldStatsTotalCsize:
+		return m.StatsTotalCsize()
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.StatsTotalUniqueChunks()
+	case repository.FieldStatsUniqueSize:
+		return m.StatsUniqueSize()
+	case repository.FieldStatsUniqueCsize:
+		return m.StatsUniqueCsize()
 	}
 	return nil, false
 }
@@ -2780,6 +3158,18 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldURL(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
+	case repository.FieldStatsTotalChunks:
+		return m.OldStatsTotalChunks(ctx)
+	case repository.FieldStatsTotalSize:
+		return m.OldStatsTotalSize(ctx)
+	case repository.FieldStatsTotalCsize:
+		return m.OldStatsTotalCsize(ctx)
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.OldStatsTotalUniqueChunks(ctx)
+	case repository.FieldStatsUniqueSize:
+		return m.OldStatsUniqueSize(ctx)
+	case repository.FieldStatsUniqueCsize:
+		return m.OldStatsUniqueCsize(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repository field %s", name)
 }
@@ -2810,6 +3200,48 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPassword(v)
 		return nil
+	case repository.FieldStatsTotalChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalChunks(v)
+		return nil
+	case repository.FieldStatsTotalSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalSize(v)
+		return nil
+	case repository.FieldStatsTotalCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalCsize(v)
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalUniqueChunks(v)
+		return nil
+	case repository.FieldStatsUniqueSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsUniqueSize(v)
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsUniqueCsize(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)
 }
@@ -2817,13 +3249,46 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *RepositoryMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addstats_total_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalChunks)
+	}
+	if m.addstats_total_size != nil {
+		fields = append(fields, repository.FieldStatsTotalSize)
+	}
+	if m.addstats_total_csize != nil {
+		fields = append(fields, repository.FieldStatsTotalCsize)
+	}
+	if m.addstats_total_unique_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalUniqueChunks)
+	}
+	if m.addstats_unique_size != nil {
+		fields = append(fields, repository.FieldStatsUniqueSize)
+	}
+	if m.addstats_unique_csize != nil {
+		fields = append(fields, repository.FieldStatsUniqueCsize)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *RepositoryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case repository.FieldStatsTotalChunks:
+		return m.AddedStatsTotalChunks()
+	case repository.FieldStatsTotalSize:
+		return m.AddedStatsTotalSize()
+	case repository.FieldStatsTotalCsize:
+		return m.AddedStatsTotalCsize()
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.AddedStatsTotalUniqueChunks()
+	case repository.FieldStatsUniqueSize:
+		return m.AddedStatsUniqueSize()
+	case repository.FieldStatsUniqueCsize:
+		return m.AddedStatsUniqueCsize()
+	}
 	return nil, false
 }
 
@@ -2832,6 +3297,48 @@ func (m *RepositoryMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case repository.FieldStatsTotalChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalChunks(v)
+		return nil
+	case repository.FieldStatsTotalSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalSize(v)
+		return nil
+	case repository.FieldStatsTotalCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalCsize(v)
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalUniqueChunks(v)
+		return nil
+	case repository.FieldStatsUniqueSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsUniqueSize(v)
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsUniqueCsize(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Repository numeric field %s", name)
 }
@@ -2867,6 +3374,24 @@ func (m *RepositoryMutation) ResetField(name string) error {
 		return nil
 	case repository.FieldPassword:
 		m.ResetPassword()
+		return nil
+	case repository.FieldStatsTotalChunks:
+		m.ResetStatsTotalChunks()
+		return nil
+	case repository.FieldStatsTotalSize:
+		m.ResetStatsTotalSize()
+		return nil
+	case repository.FieldStatsTotalCsize:
+		m.ResetStatsTotalCsize()
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		m.ResetStatsTotalUniqueChunks()
+		return nil
+	case repository.FieldStatsUniqueSize:
+		m.ResetStatsUniqueSize()
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		m.ResetStatsUniqueCsize()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)

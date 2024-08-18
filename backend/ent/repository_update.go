@@ -71,6 +71,132 @@ func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
 	return ru
 }
 
+// SetStatsTotalChunks sets the "stats_total_chunks" field.
+func (ru *RepositoryUpdate) SetStatsTotalChunks(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsTotalChunks()
+	ru.mutation.SetStatsTotalChunks(i)
+	return ru
+}
+
+// SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsTotalChunks(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsTotalChunks(*i)
+	}
+	return ru
+}
+
+// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
+func (ru *RepositoryUpdate) AddStatsTotalChunks(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsTotalChunks(i)
+	return ru
+}
+
+// SetStatsTotalSize sets the "stats_total_size" field.
+func (ru *RepositoryUpdate) SetStatsTotalSize(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsTotalSize()
+	ru.mutation.SetStatsTotalSize(i)
+	return ru
+}
+
+// SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsTotalSize(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsTotalSize(*i)
+	}
+	return ru
+}
+
+// AddStatsTotalSize adds i to the "stats_total_size" field.
+func (ru *RepositoryUpdate) AddStatsTotalSize(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsTotalSize(i)
+	return ru
+}
+
+// SetStatsTotalCsize sets the "stats_total_csize" field.
+func (ru *RepositoryUpdate) SetStatsTotalCsize(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsTotalCsize()
+	ru.mutation.SetStatsTotalCsize(i)
+	return ru
+}
+
+// SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsTotalCsize(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsTotalCsize(*i)
+	}
+	return ru
+}
+
+// AddStatsTotalCsize adds i to the "stats_total_csize" field.
+func (ru *RepositoryUpdate) AddStatsTotalCsize(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsTotalCsize(i)
+	return ru
+}
+
+// SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
+func (ru *RepositoryUpdate) SetStatsTotalUniqueChunks(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsTotalUniqueChunks()
+	ru.mutation.SetStatsTotalUniqueChunks(i)
+	return ru
+}
+
+// SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsTotalUniqueChunks(*i)
+	}
+	return ru
+}
+
+// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
+func (ru *RepositoryUpdate) AddStatsTotalUniqueChunks(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsTotalUniqueChunks(i)
+	return ru
+}
+
+// SetStatsUniqueSize sets the "stats_unique_size" field.
+func (ru *RepositoryUpdate) SetStatsUniqueSize(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsUniqueSize()
+	ru.mutation.SetStatsUniqueSize(i)
+	return ru
+}
+
+// SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsUniqueSize(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsUniqueSize(*i)
+	}
+	return ru
+}
+
+// AddStatsUniqueSize adds i to the "stats_unique_size" field.
+func (ru *RepositoryUpdate) AddStatsUniqueSize(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsUniqueSize(i)
+	return ru
+}
+
+// SetStatsUniqueCsize sets the "stats_unique_csize" field.
+func (ru *RepositoryUpdate) SetStatsUniqueCsize(i int) *RepositoryUpdate {
+	ru.mutation.ResetStatsUniqueCsize()
+	ru.mutation.SetStatsUniqueCsize(i)
+	return ru
+}
+
+// SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableStatsUniqueCsize(i *int) *RepositoryUpdate {
+	if i != nil {
+		ru.SetStatsUniqueCsize(*i)
+	}
+	return ru
+}
+
+// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
+func (ru *RepositoryUpdate) AddStatsUniqueCsize(i int) *RepositoryUpdate {
+	ru.mutation.AddStatsUniqueCsize(i)
+	return ru
+}
+
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
 func (ru *RepositoryUpdate) AddBackupProfileIDs(ids ...int) *RepositoryUpdate {
 	ru.mutation.AddBackupProfileIDs(ids...)
@@ -192,6 +318,42 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ru.mutation.StatsTotalChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsTotalChunks(); ok {
+		_spec.AddField(repository.FieldStatsTotalChunks, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.StatsTotalSize(); ok {
+		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsTotalSize(); ok {
+		_spec.AddField(repository.FieldStatsTotalSize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.StatsTotalCsize(); ok {
+		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsTotalCsize(); ok {
+		_spec.AddField(repository.FieldStatsTotalCsize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.StatsTotalUniqueChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsTotalUniqueChunks(); ok {
+		_spec.AddField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.StatsUniqueSize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsUniqueSize(); ok {
+		_spec.AddField(repository.FieldStatsUniqueSize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.StatsUniqueCsize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedStatsUniqueCsize(); ok {
+		_spec.AddField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
 	if ru.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -342,6 +504,132 @@ func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdate
 	if s != nil {
 		ruo.SetPassword(*s)
 	}
+	return ruo
+}
+
+// SetStatsTotalChunks sets the "stats_total_chunks" field.
+func (ruo *RepositoryUpdateOne) SetStatsTotalChunks(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsTotalChunks()
+	ruo.mutation.SetStatsTotalChunks(i)
+	return ruo
+}
+
+// SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsTotalChunks(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsTotalChunks(*i)
+	}
+	return ruo
+}
+
+// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
+func (ruo *RepositoryUpdateOne) AddStatsTotalChunks(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsTotalChunks(i)
+	return ruo
+}
+
+// SetStatsTotalSize sets the "stats_total_size" field.
+func (ruo *RepositoryUpdateOne) SetStatsTotalSize(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsTotalSize()
+	ruo.mutation.SetStatsTotalSize(i)
+	return ruo
+}
+
+// SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsTotalSize(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsTotalSize(*i)
+	}
+	return ruo
+}
+
+// AddStatsTotalSize adds i to the "stats_total_size" field.
+func (ruo *RepositoryUpdateOne) AddStatsTotalSize(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsTotalSize(i)
+	return ruo
+}
+
+// SetStatsTotalCsize sets the "stats_total_csize" field.
+func (ruo *RepositoryUpdateOne) SetStatsTotalCsize(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsTotalCsize()
+	ruo.mutation.SetStatsTotalCsize(i)
+	return ruo
+}
+
+// SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsTotalCsize(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsTotalCsize(*i)
+	}
+	return ruo
+}
+
+// AddStatsTotalCsize adds i to the "stats_total_csize" field.
+func (ruo *RepositoryUpdateOne) AddStatsTotalCsize(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsTotalCsize(i)
+	return ruo
+}
+
+// SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
+func (ruo *RepositoryUpdateOne) SetStatsTotalUniqueChunks(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsTotalUniqueChunks()
+	ruo.mutation.SetStatsTotalUniqueChunks(i)
+	return ruo
+}
+
+// SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsTotalUniqueChunks(*i)
+	}
+	return ruo
+}
+
+// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
+func (ruo *RepositoryUpdateOne) AddStatsTotalUniqueChunks(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsTotalUniqueChunks(i)
+	return ruo
+}
+
+// SetStatsUniqueSize sets the "stats_unique_size" field.
+func (ruo *RepositoryUpdateOne) SetStatsUniqueSize(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsUniqueSize()
+	ruo.mutation.SetStatsUniqueSize(i)
+	return ruo
+}
+
+// SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsUniqueSize(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsUniqueSize(*i)
+	}
+	return ruo
+}
+
+// AddStatsUniqueSize adds i to the "stats_unique_size" field.
+func (ruo *RepositoryUpdateOne) AddStatsUniqueSize(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsUniqueSize(i)
+	return ruo
+}
+
+// SetStatsUniqueCsize sets the "stats_unique_csize" field.
+func (ruo *RepositoryUpdateOne) SetStatsUniqueCsize(i int) *RepositoryUpdateOne {
+	ruo.mutation.ResetStatsUniqueCsize()
+	ruo.mutation.SetStatsUniqueCsize(i)
+	return ruo
+}
+
+// SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableStatsUniqueCsize(i *int) *RepositoryUpdateOne {
+	if i != nil {
+		ruo.SetStatsUniqueCsize(*i)
+	}
+	return ruo
+}
+
+// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
+func (ruo *RepositoryUpdateOne) AddStatsUniqueCsize(i int) *RepositoryUpdateOne {
+	ruo.mutation.AddStatsUniqueCsize(i)
 	return ruo
 }
 
@@ -496,6 +784,42 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.StatsTotalChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsTotalChunks(); ok {
+		_spec.AddField(repository.FieldStatsTotalChunks, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.StatsTotalSize(); ok {
+		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsTotalSize(); ok {
+		_spec.AddField(repository.FieldStatsTotalSize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.StatsTotalCsize(); ok {
+		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsTotalCsize(); ok {
+		_spec.AddField(repository.FieldStatsTotalCsize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.StatsTotalUniqueChunks(); ok {
+		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsTotalUniqueChunks(); ok {
+		_spec.AddField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.StatsUniqueSize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsUniqueSize(); ok {
+		_spec.AddField(repository.FieldStatsUniqueSize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.StatsUniqueCsize(); ok {
+		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedStatsUniqueCsize(); ok {
+		_spec.AddField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
 	if ruo.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{

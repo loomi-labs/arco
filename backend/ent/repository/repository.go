@@ -18,6 +18,18 @@ const (
 	FieldURL = "url"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
+	FieldStatsTotalChunks = "stats_total_chunks"
+	// FieldStatsTotalSize holds the string denoting the stats_total_size field in the database.
+	FieldStatsTotalSize = "stats_total_size"
+	// FieldStatsTotalCsize holds the string denoting the stats_total_csize field in the database.
+	FieldStatsTotalCsize = "stats_total_csize"
+	// FieldStatsTotalUniqueChunks holds the string denoting the stats_total_unique_chunks field in the database.
+	FieldStatsTotalUniqueChunks = "stats_total_unique_chunks"
+	// FieldStatsUniqueSize holds the string denoting the stats_unique_size field in the database.
+	FieldStatsUniqueSize = "stats_unique_size"
+	// FieldStatsUniqueCsize holds the string denoting the stats_unique_csize field in the database.
+	FieldStatsUniqueCsize = "stats_unique_csize"
 	// EdgeBackupProfiles holds the string denoting the backup_profiles edge name in mutations.
 	EdgeBackupProfiles = "backup_profiles"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -44,6 +56,12 @@ var Columns = []string{
 	FieldName,
 	FieldURL,
 	FieldPassword,
+	FieldStatsTotalChunks,
+	FieldStatsTotalSize,
+	FieldStatsTotalCsize,
+	FieldStatsTotalUniqueChunks,
+	FieldStatsUniqueSize,
+	FieldStatsUniqueCsize,
 }
 
 var (
@@ -61,6 +79,21 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultStatsTotalChunks holds the default value on creation for the "stats_total_chunks" field.
+	DefaultStatsTotalChunks int
+	// DefaultStatsTotalSize holds the default value on creation for the "stats_total_size" field.
+	DefaultStatsTotalSize int
+	// DefaultStatsTotalCsize holds the default value on creation for the "stats_total_csize" field.
+	DefaultStatsTotalCsize int
+	// DefaultStatsTotalUniqueChunks holds the default value on creation for the "stats_total_unique_chunks" field.
+	DefaultStatsTotalUniqueChunks int
+	// DefaultStatsUniqueSize holds the default value on creation for the "stats_unique_size" field.
+	DefaultStatsUniqueSize int
+	// DefaultStatsUniqueCsize holds the default value on creation for the "stats_unique_csize" field.
+	DefaultStatsUniqueCsize int
+)
 
 // OrderOption defines the ordering options for the Repository queries.
 type OrderOption func(*sql.Selector)
@@ -83,6 +116,36 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 // ByPassword orders the results by the password field.
 func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+}
+
+// ByStatsTotalChunks orders the results by the stats_total_chunks field.
+func ByStatsTotalChunks(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsTotalChunks, opts...).ToFunc()
+}
+
+// ByStatsTotalSize orders the results by the stats_total_size field.
+func ByStatsTotalSize(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsTotalSize, opts...).ToFunc()
+}
+
+// ByStatsTotalCsize orders the results by the stats_total_csize field.
+func ByStatsTotalCsize(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsTotalCsize, opts...).ToFunc()
+}
+
+// ByStatsTotalUniqueChunks orders the results by the stats_total_unique_chunks field.
+func ByStatsTotalUniqueChunks(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsTotalUniqueChunks, opts...).ToFunc()
+}
+
+// ByStatsUniqueSize orders the results by the stats_unique_size field.
+func ByStatsUniqueSize(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsUniqueSize, opts...).ToFunc()
+}
+
+// ByStatsUniqueCsize orders the results by the stats_unique_csize field.
+func ByStatsUniqueCsize(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatsUniqueCsize, opts...).ToFunc()
 }
 
 // ByBackupProfilesCount orders the results by backup_profiles count.

@@ -69,6 +69,36 @@ func Password(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
 }
 
+// StatsTotalChunks applies equality check predicate on the "stats_total_chunks" field. It's identical to StatsTotalChunksEQ.
+func StatsTotalChunks(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalSize applies equality check predicate on the "stats_total_size" field. It's identical to StatsTotalSizeEQ.
+func StatsTotalSize(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalSize, v))
+}
+
+// StatsTotalCsize applies equality check predicate on the "stats_total_csize" field. It's identical to StatsTotalCsizeEQ.
+func StatsTotalCsize(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalUniqueChunks applies equality check predicate on the "stats_total_unique_chunks" field. It's identical to StatsTotalUniqueChunksEQ.
+func StatsTotalUniqueChunks(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsUniqueSize applies equality check predicate on the "stats_unique_size" field. It's identical to StatsUniqueSizeEQ.
+func StatsUniqueSize(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueCsize applies equality check predicate on the "stats_unique_csize" field. It's identical to StatsUniqueCsizeEQ.
+func StatsUniqueCsize(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsUniqueCsize, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldName, v))
@@ -262,6 +292,246 @@ func PasswordEqualFold(v string) predicate.Repository {
 // PasswordContainsFold applies the ContainsFold predicate on the "password" field.
 func PasswordContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
+}
+
+// StatsTotalChunksEQ applies the EQ predicate on the "stats_total_chunks" field.
+func StatsTotalChunksEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalChunksNEQ applies the NEQ predicate on the "stats_total_chunks" field.
+func StatsTotalChunksNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalChunksIn applies the In predicate on the "stats_total_chunks" field.
+func StatsTotalChunksIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsTotalChunks, vs...))
+}
+
+// StatsTotalChunksNotIn applies the NotIn predicate on the "stats_total_chunks" field.
+func StatsTotalChunksNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsTotalChunks, vs...))
+}
+
+// StatsTotalChunksGT applies the GT predicate on the "stats_total_chunks" field.
+func StatsTotalChunksGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalChunksGTE applies the GTE predicate on the "stats_total_chunks" field.
+func StatsTotalChunksGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalChunksLT applies the LT predicate on the "stats_total_chunks" field.
+func StatsTotalChunksLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalChunksLTE applies the LTE predicate on the "stats_total_chunks" field.
+func StatsTotalChunksLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsTotalChunks, v))
+}
+
+// StatsTotalSizeEQ applies the EQ predicate on the "stats_total_size" field.
+func StatsTotalSizeEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalSize, v))
+}
+
+// StatsTotalSizeNEQ applies the NEQ predicate on the "stats_total_size" field.
+func StatsTotalSizeNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsTotalSize, v))
+}
+
+// StatsTotalSizeIn applies the In predicate on the "stats_total_size" field.
+func StatsTotalSizeIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsTotalSize, vs...))
+}
+
+// StatsTotalSizeNotIn applies the NotIn predicate on the "stats_total_size" field.
+func StatsTotalSizeNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsTotalSize, vs...))
+}
+
+// StatsTotalSizeGT applies the GT predicate on the "stats_total_size" field.
+func StatsTotalSizeGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsTotalSize, v))
+}
+
+// StatsTotalSizeGTE applies the GTE predicate on the "stats_total_size" field.
+func StatsTotalSizeGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsTotalSize, v))
+}
+
+// StatsTotalSizeLT applies the LT predicate on the "stats_total_size" field.
+func StatsTotalSizeLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsTotalSize, v))
+}
+
+// StatsTotalSizeLTE applies the LTE predicate on the "stats_total_size" field.
+func StatsTotalSizeLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsTotalSize, v))
+}
+
+// StatsTotalCsizeEQ applies the EQ predicate on the "stats_total_csize" field.
+func StatsTotalCsizeEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalCsizeNEQ applies the NEQ predicate on the "stats_total_csize" field.
+func StatsTotalCsizeNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalCsizeIn applies the In predicate on the "stats_total_csize" field.
+func StatsTotalCsizeIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsTotalCsize, vs...))
+}
+
+// StatsTotalCsizeNotIn applies the NotIn predicate on the "stats_total_csize" field.
+func StatsTotalCsizeNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsTotalCsize, vs...))
+}
+
+// StatsTotalCsizeGT applies the GT predicate on the "stats_total_csize" field.
+func StatsTotalCsizeGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalCsizeGTE applies the GTE predicate on the "stats_total_csize" field.
+func StatsTotalCsizeGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalCsizeLT applies the LT predicate on the "stats_total_csize" field.
+func StatsTotalCsizeLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalCsizeLTE applies the LTE predicate on the "stats_total_csize" field.
+func StatsTotalCsizeLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsTotalCsize, v))
+}
+
+// StatsTotalUniqueChunksEQ applies the EQ predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsTotalUniqueChunksNEQ applies the NEQ predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsTotalUniqueChunksIn applies the In predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsTotalUniqueChunks, vs...))
+}
+
+// StatsTotalUniqueChunksNotIn applies the NotIn predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsTotalUniqueChunks, vs...))
+}
+
+// StatsTotalUniqueChunksGT applies the GT predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsTotalUniqueChunksGTE applies the GTE predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsTotalUniqueChunksLT applies the LT predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsTotalUniqueChunksLTE applies the LTE predicate on the "stats_total_unique_chunks" field.
+func StatsTotalUniqueChunksLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsTotalUniqueChunks, v))
+}
+
+// StatsUniqueSizeEQ applies the EQ predicate on the "stats_unique_size" field.
+func StatsUniqueSizeEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueSizeNEQ applies the NEQ predicate on the "stats_unique_size" field.
+func StatsUniqueSizeNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueSizeIn applies the In predicate on the "stats_unique_size" field.
+func StatsUniqueSizeIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsUniqueSize, vs...))
+}
+
+// StatsUniqueSizeNotIn applies the NotIn predicate on the "stats_unique_size" field.
+func StatsUniqueSizeNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsUniqueSize, vs...))
+}
+
+// StatsUniqueSizeGT applies the GT predicate on the "stats_unique_size" field.
+func StatsUniqueSizeGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueSizeGTE applies the GTE predicate on the "stats_unique_size" field.
+func StatsUniqueSizeGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueSizeLT applies the LT predicate on the "stats_unique_size" field.
+func StatsUniqueSizeLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueSizeLTE applies the LTE predicate on the "stats_unique_size" field.
+func StatsUniqueSizeLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsUniqueSize, v))
+}
+
+// StatsUniqueCsizeEQ applies the EQ predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldStatsUniqueCsize, v))
+}
+
+// StatsUniqueCsizeNEQ applies the NEQ predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeNEQ(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldStatsUniqueCsize, v))
+}
+
+// StatsUniqueCsizeIn applies the In predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldStatsUniqueCsize, vs...))
+}
+
+// StatsUniqueCsizeNotIn applies the NotIn predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeNotIn(vs ...int) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldStatsUniqueCsize, vs...))
+}
+
+// StatsUniqueCsizeGT applies the GT predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeGT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldStatsUniqueCsize, v))
+}
+
+// StatsUniqueCsizeGTE applies the GTE predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeGTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldStatsUniqueCsize, v))
+}
+
+// StatsUniqueCsizeLT applies the LT predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeLT(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldStatsUniqueCsize, v))
+}
+
+// StatsUniqueCsizeLTE applies the LTE predicate on the "stats_unique_csize" field.
+func StatsUniqueCsizeLTE(v int) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldStatsUniqueCsize, v))
 }
 
 // HasBackupProfiles applies the HasEdge predicate on the "backup_profiles" edge.

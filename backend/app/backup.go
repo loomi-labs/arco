@@ -241,6 +241,47 @@ func (b *BackupClient) sendBackupScheduleChanged() {
 }
 
 /***********************************/
+/********** Other Functions ********/
+/***********************************/
+
+func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
+	info, err := b.borg.Info(url, password)
+	if err != nil {
+		return err
+	}
+	_, err = b.db.Repository.
+		UpdateOneID(repoId).
+		SetStatsTotalSize(info.Cache.Stats.TotalSize).
+		SetStatsTotalCsize(info.Cache.Stats.TotalCSize).
+		SetStatsTotalChunks(info.Cache.Stats.TotalChunks).
+		SetStatsTotalUniqueChunks(info.Cache.Stats.TotalUniqueChunks).
+		SetStatsUniqueCsize(info.Cache.Stats.UniqueCSize).
+		SetStatsUniqueSize(info.Cache.Stats.UniqueSize).
+		Save(b.ctx)
+	return err
+}
+
+func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
+	info, err := b.borg.Info(url, password)
+	if err != nil {
+		return err
+	}
+	if len(info.Archives) == 0 {
+		return fmt.Errorf("no archives found")
+	}
+
+	_, err = b.db.Archive.
+		Create().
+		SetRepositoryID(repoId).
+		SetBorgID(info.Archives[0].ID).
+		SetName(info.Archives[0].Name).
+		SetCreatedAt(time.Time(info.Archives[0].Start)).
+		SetDuration(time.Time(info.Archives[0].Duration)).
+		Save(b.ctx)
+	return err
+}
+
+/***********************************/
 /********** Borg Commands **********/
 /***********************************/
 
@@ -266,7 +307,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
-	err = b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	archiveName, err := b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetBackupCancelled(bId, true)
@@ -280,7 +321,19 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			return state.BackupResultError, err
 		}
 	} else {
-		b.state.SetBackupCompleted(bId)
+		// Backup completed successfully
+		defer b.state.SetBackupCompleted(bId, true)
+
+		err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+		}
+
+		err = b.addNewArchive(bId.RepositoryId, archiveName, repo.Password)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+		}
+
 		return state.BackupResultSuccess, nil
 	}
 }

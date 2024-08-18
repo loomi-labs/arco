@@ -21,7 +21,7 @@ func (r *RepositoryClient) All() ([]*ent.Repository, error) {
 // TODO: remove this function or refactor it
 func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	// Check if we can connect to the repository
-	if err := r.borg.Info(url, password); err != nil {
+	if _, err := r.borg.Info(url, password); err != nil {
 		return nil, err
 	}
 
