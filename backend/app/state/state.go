@@ -175,9 +175,6 @@ func (s *State) SetStartupError(err error) {
 }
 
 func (s *State) GetStartupError() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	return s.startupError
 }
 
@@ -285,13 +282,10 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 			// If the state is already running, we don't do anything
 			return currentState.ctx
 		}
-	} else {
-		// If the backup state doesn't exist, we create it
-		s.changeBackupState(bId, BackupStateRunning)
 	}
 
+	s.changeBackupState(bId, BackupStateRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
-	s.backupStates[bId].State = BackupStateRunning
 	s.backupStates[bId].Progress = &borg.BackupProgress{}
 	s.backupStates[bId].Error = nil
 
@@ -300,20 +294,24 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 	return s.backupStates[bId].ctx
 }
 
-func (s *State) SetBackupCompleted(bId types.BackupId) {
+func (s *State) SetBackupCompleted(bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.changeBackupState(bId, BackupStateCompleted)
-	s.setRepoState(bId.RepositoryId, RepoStateIdle)
+	if setRepoStateIdle {
+		s.setRepoState(bId.RepositoryId, RepoStateIdle)
+	}
 }
 
-func (s *State) SetBackupCancelled(bId types.BackupId) {
+func (s *State) SetBackupCancelled(bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.changeBackupState(bId, BackupStateCancelled)
-	s.setRepoState(bId.RepositoryId, RepoStateIdle)
+	if setRepoStateIdle {
+		s.setRepoState(bId.RepositoryId, RepoStateIdle)
+	}
 }
 
 func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {

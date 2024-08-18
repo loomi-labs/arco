@@ -153,6 +153,7 @@ type BackupProgressResponse struct {
 	Found    bool                `json:"found"`
 }
 
+// TODO: remove?
 func (b *BackupClient) GetBackupProgress(id types.BackupId) BackupProgressResponse {
 	progress, found := b.state.GetBackupProgress(id)
 	return BackupProgressResponse{
@@ -162,6 +163,7 @@ func (b *BackupClient) GetBackupProgress(id types.BackupId) BackupProgressRespon
 	}
 }
 
+// TODO: remove?
 func (b *BackupClient) GetBackupProgresses(ids []types.BackupId) []BackupProgressResponse {
 	var progresses []BackupProgressResponse
 	for _, id := range ids {
@@ -171,7 +173,7 @@ func (b *BackupClient) GetBackupProgresses(ids []types.BackupId) []BackupProgres
 }
 
 func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
-	b.state.SetBackupCancelled(id)
+	b.state.SetBackupCancelled(id, true)
 	return nil
 }
 
@@ -267,7 +269,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	err = b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.SetBackupCancelled(bId)
+			b.state.SetBackupCancelled(bId, true)
 			return state.BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			err = fmt.Errorf("repository is locked")
