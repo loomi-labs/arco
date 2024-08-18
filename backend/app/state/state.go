@@ -252,6 +252,13 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
+func (s *State) SetBackupIdle(bId types.BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.changeBackupState(bId, BackupStateIdle)
+}
+
 func (s *State) SetBackupWaiting(bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
