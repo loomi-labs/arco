@@ -61,20 +61,20 @@ type MountState struct {
 	MountPath string `json:"mount_path"`
 }
 
-type RepoStateVal string
+type RepoStatus string
 
 const (
-	RepoStateIdle                RepoStateVal = "idle"
-	RepoStateBackingUp           RepoStateVal = "backing_up"
-	RepoStatePruning             RepoStateVal = "pruning"
-	RepoStateDeleting            RepoStateVal = "deleting"
-	RepoStatePerformingOperation RepoStateVal = "performing_operation"
-	RepoStateLocked              RepoStateVal = "locked"
+	RepoStateIdle                RepoStatus = "idle"
+	RepoStateBackingUp           RepoStatus = "backing_up"
+	RepoStatePruning             RepoStatus = "pruning"
+	RepoStateDeleting            RepoStatus = "deleting"
+	RepoStatePerformingOperation RepoStatus = "performing_operation"
+	RepoStateLocked              RepoStatus = "locked"
 )
 
 type RepoState struct {
 	mutex *sync.Mutex
-	State RepoStateVal `json:"state"`
+	State RepoStatus `json:"state"`
 }
 
 func newRepoState() *RepoState {
@@ -84,18 +84,18 @@ func newRepoState() *RepoState {
 	}
 }
 
-type BackupStateVal string
+type BackupStatus string
 
 const (
-	BackupStateIdle      BackupStateVal = "idle"
-	BackupStateWaiting   BackupStateVal = "waiting"
-	BackupStateRunning   BackupStateVal = "running"
-	BackupStateCompleted BackupStateVal = "completed"
-	BackupStateCancelled BackupStateVal = "cancelled"
-	BackupStateError     BackupStateVal = "error"
+	BackupStateIdle      BackupStatus = "idle"
+	BackupStateWaiting   BackupStatus = "waiting"
+	BackupStateRunning   BackupStatus = "running"
+	BackupStateCompleted BackupStatus = "completed"
+	BackupStateCancelled BackupStatus = "cancelled"
+	BackupStateError     BackupStatus = "error"
 )
 
-var AllBackupStates = []BackupStateVal{
+var AvailableBackupStatuses = []BackupStatus{
 	BackupStateIdle,
 	BackupStateWaiting,
 	BackupStateRunning,
@@ -104,13 +104,13 @@ var AllBackupStates = []BackupStateVal{
 	BackupStateError,
 }
 
-func (bs BackupStateVal) String() string {
+func (bs BackupStatus) String() string {
 	return string(bs)
 }
 
 type BackupState struct {
 	*cancelCtx
-	State    BackupStateVal       `json:"state"`
+	State    BackupStatus         `json:"state"`
 	Progress *borg.BackupProgress `json:"progress,omitempty"`
 	Error    error                `json:"error,omitempty"`
 }
@@ -200,14 +200,14 @@ func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 	return s.repoStates[repoId].mutex
 }
 
-func (s *State) SetRepoState(repoId int, state RepoStateVal) {
+func (s *State) SetRepoState(repoId int, state RepoStatus) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.setRepoState(repoId, state)
 }
 
-func (s *State) setRepoState(repoId int, state RepoStateVal) {
+func (s *State) setRepoState(repoId int, state RepoStatus) {
 	if rs, ok := s.repoStates[repoId]; ok {
 		if rs.State != RepoStateIdle && state == RepoStateIdle {
 			// If we are here it means:
@@ -327,7 +327,7 @@ func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle b
 	}
 }
 
-func (s *State) changeBackupState(bId types.BackupId, newState BackupStateVal) {
+func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 	currentState, ok := s.backupStates[bId]
 	if ok {
 		if currentState.State == BackupStateRunning && newState != BackupStateRunning {
