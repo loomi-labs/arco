@@ -58,7 +58,6 @@ async function runBackups() {
     const result = await backupClient.StartBackupJobs(backup.value.id);
     runningBackups.value = new Map(result.map((backupId) => [backupIdString(backupId), borg.BackupProgress.createFrom()]));
     toast.success("Backup started");
-    pollBackupProgress();
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
   }
@@ -127,29 +126,6 @@ async function deleteSchedule() {
   }
 }
 
-function pollBackupProgress() {
-  const intervalId = setInterval(async () => {
-    try {
-      if (runningBackups.value.size === 0) {
-        clearInterval(intervalId);
-        return;
-      }
-
-      const results = await backupClient.GetBackupProgresses(Array.from(runningBackups.value.keys()).map(toBackupIdentifier));
-      for (const result of results) {
-        if (result.found) {
-          runningBackups.value.set(backupIdString(result.backupId), result.progress);
-        } else {
-          runningBackups.value.delete(backupIdString(result.backupId));
-        }
-      }
-    } catch (error: any) {
-      await showAndLogError("Failed to get backup progress", error);
-      clearInterval(intervalId); // Stop polling on error as well
-    }
-  }, 200);
-}
-
 function getProgressValue(repoId: number): number {
   const progress = runningBackups.value.get(backupIdStringForRepo(repoId));
   if (!progress || progress.totalFiles === 0) {
@@ -211,7 +187,7 @@ getBackupProfile();
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- Repositories -->
         <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
-          <RepoCard :repo='repo' :backup-profile-id='backup.id'></RepoCard>
+          <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id'></RepoCard>
         </div>
       </div>
       <div class='bg-white p-6 rounded-lg shadow-md'>
