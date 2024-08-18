@@ -1,39 +1,5 @@
 export namespace app {
 	
-	export class BackupProgressResponse {
-	    backupId: types.BackupId;
-	    progress: borg.BackupProgress;
-	    found: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new BackupProgressResponse(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.backupId = this.convertValues(source["backupId"], types.BackupId);
-	        this.progress = this.convertValues(source["progress"], borg.BackupProgress);
-	        this.found = source["found"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class Env {
 	    debug: boolean;
 	    startPage: string;
@@ -282,6 +248,12 @@ export namespace ent {
 	    name: string;
 	    url: string;
 	    password: string;
+	    stats_total_chunks: number;
+	    stats_total_size: number;
+	    stats_total_csize: number;
+	    stats_total_unique_chunks: number;
+	    stats_unique_size: number;
+	    stats_unique_csize: number;
 	    edges: RepositoryEdges;
 	
 	    static createFrom(source: any = {}) {
@@ -294,6 +266,12 @@ export namespace ent {
 	        this.name = source["name"];
 	        this.url = source["url"];
 	        this.password = source["password"];
+	        this.stats_total_chunks = source["stats_total_chunks"];
+	        this.stats_total_size = source["stats_total_size"];
+	        this.stats_total_csize = source["stats_total_csize"];
+	        this.stats_total_unique_chunks = source["stats_total_unique_chunks"];
+	        this.stats_unique_size = source["stats_unique_size"];
+	        this.stats_unique_csize = source["stats_unique_csize"];
 	        this.edges = this.convertValues(source["edges"], RepositoryEdges);
 	    }
 	
@@ -398,6 +376,48 @@ export namespace ent {
 
 export namespace state {
 	
+	export enum BackupStatus {
+	    idle = "idle",
+	    waiting = "waiting",
+	    running = "running",
+	    completed = "completed",
+	    cancelled = "cancelled",
+	    error = "error",
+	}
+	export class BackupState {
+	    state: BackupStatus;
+	    progress?: borg.BackupProgress;
+	    error?: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.progress = this.convertValues(source["progress"], borg.BackupProgress);
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class MountState {
 	    is_mounted: boolean;
 	    mount_path: string;

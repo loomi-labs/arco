@@ -9,6 +9,7 @@ import Navbar from "../components/Navbar.vue";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
+import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
 
 /************
@@ -206,25 +207,11 @@ getBackupProfile();
       <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
                          @delete:schedule='deleteSchedule' />
 
-      <h2 class='text-2xl font-bold mb-6'>Stored on</h2>
+      <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-        <!-- USB Drive Card -->
-        <div class='bg-white p-6 rounded-lg shadow-md'>
-          <h3 class='text-lg font-semibold mb-4'>USB DRIVE</h3>
-          <p>Last backup TODAY</p>
-          <div class='bg-gray-200 rounded-full h-4 overflow-hidden mb-4'>
-            <div class='bg-purple-600 h-full' style='width: 50%;'></div>
-          </div>
-          <p>50GB used / 100GB free</p>
-        </div>
-        <!-- Grandma's Cloud Card -->
-        <div class='bg-white p-6 rounded-lg shadow-md'>
-          <h3 class='text-lg font-semibold mb-4'>Grandma's Cloud</h3>
-          <p>Last backup TODAY</p>
-          <div class='bg-gray-200 rounded-full h-4 overflow-hidden mb-4'>
-            <div class='bg-purple-600 h-full' style='width: 70%;'></div>
-          </div>
-          <p>70GB used / 30GB free</p>
+        <!-- Repositories -->
+        <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
+          <RepoCard :repo='repo' :backup-profile-id='backup.id'></RepoCard>
         </div>
       </div>
       <div class='bg-white p-6 rounded-lg shadow-md'>

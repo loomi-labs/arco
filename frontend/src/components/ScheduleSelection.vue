@@ -192,7 +192,7 @@ watch(cleanedSchedule, (newSchedule) => {
 </script>
 
 <template>
-  <div class='bg-base-100 p-6 rounded-3xl shadow-lg'>
+  <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
     <div class='flex items-center justify-between mb-4'>
       <h2 class='text-xl font-semibold'>{{ $t("run-periodic-backups") }}</h2>
       <input type='checkbox' class='toggle toggle-primary' v-model='isScheduleEnabled'>
