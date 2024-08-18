@@ -153,25 +153,6 @@ type BackupProgressResponse struct {
 	Found    bool                `json:"found"`
 }
 
-// TODO: remove?
-func (b *BackupClient) GetBackupProgress(id types.BackupId) BackupProgressResponse {
-	progress, found := b.state.GetBackupProgress(id)
-	return BackupProgressResponse{
-		BackupId: id,
-		Progress: progress,
-		Found:    found,
-	}
-}
-
-// TODO: remove?
-func (b *BackupClient) GetBackupProgresses(ids []types.BackupId) []BackupProgressResponse {
-	var progresses []BackupProgressResponse
-	for _, id := range ids {
-		progresses = append(progresses, b.GetBackupProgress(id))
-	}
-	return progresses
-}
-
 func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
 	b.state.SetBackupCancelled(id, true)
 	return nil

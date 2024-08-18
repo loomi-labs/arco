@@ -252,19 +252,6 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
-// TODO: remove this?
-func (s *State) GetBackupProgress(id types.BackupId) (progress borg.BackupProgress, found bool) {
-	if currentState, ok := s.backupStates[id]; ok {
-		if currentState.State == BackupStateRunning {
-			if currentState.Progress != nil {
-				return *currentState.Progress, true
-			}
-			return borg.BackupProgress{}, true
-		}
-	}
-	return borg.BackupProgress{}, false
-}
-
 func (s *State) SetBackupWaiting(bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
