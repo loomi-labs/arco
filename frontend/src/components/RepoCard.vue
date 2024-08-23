@@ -148,7 +148,7 @@ watch(backupState, async (newState) => {
   interval = setInterval(getState, pollInterval.value);
 });
 
-// poll for state
+// poll for backup state
 let interval = setInterval(getState, pollInterval.value);
 onUnmounted(() => clearInterval(interval));
 
