@@ -107,7 +107,11 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	r.state.SetRepoState(arch.Edges.Repository.ID, state.RepoStatePerformingOperation)
 	defer r.state.SetRepoState(arch.Edges.Repository.ID, state.RepoStateIdle)
 
-	return r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	err = r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	if err != nil {
+		return err
+	}
+	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
 }
 
 type PaginatedArchivesResponse struct {
