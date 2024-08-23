@@ -86,14 +86,14 @@ func (rs RepoStatus) String() string {
 }
 
 type RepoState struct {
-	mutex *sync.Mutex
-	State RepoStatus `json:"state"`
+	mutex  *sync.Mutex
+	Status RepoStatus `json:"status"`
 }
 
 func newRepoState() *RepoState {
 	return &RepoState{
-		mutex: &sync.Mutex{},
-		State: RepoStatusIdle,
+		mutex:  &sync.Mutex{},
+		Status: RepoStatusIdle,
 	}
 }
 
@@ -123,7 +123,7 @@ func (bs BackupStatus) String() string {
 
 type BackupState struct {
 	*cancelCtx
-	State    BackupStatus         `json:"state"`
+	Status   BackupStatus         `json:"status"`
 	Progress *borg.BackupProgress `json:"progress,omitempty"`
 	Error    error                `json:"error,omitempty"`
 }
@@ -131,7 +131,7 @@ type BackupState struct {
 func newBackupState() *BackupState {
 	return &BackupState{
 		cancelCtx: nil,
-		State:     BackupStatusIdle,
+		Status:    BackupStatusIdle,
 		Progress:  nil,
 		Error:     nil,
 	}
@@ -222,7 +222,7 @@ func (s *State) SetRepoStatus(repoId int, state RepoStatus) {
 
 func (s *State) setRepoState(repoId int, state RepoStatus) {
 	if rs, ok := s.repoStates[repoId]; ok {
-		if rs.State != RepoStatusIdle && state == RepoStatusIdle {
+		if rs.Status != RepoStatusIdle && state == RepoStatusIdle {
 			// If we are here it means:
 			// - the current state is not idle
 			// - the new state is idle
@@ -230,7 +230,7 @@ func (s *State) setRepoState(repoId int, state RepoStatus) {
 			rs.mutex.Unlock()
 		}
 
-		s.repoStates[repoId].State = state
+		s.repoStates[repoId].Status = state
 	} else {
 		// If the repository state doesn't exist, we create it
 		s.repoStates[repoId] = newRepoState()
@@ -253,12 +253,12 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 		return false, "Startup error"
 	}
 	if bs, ok := s.backupStates[id]; ok {
-		if bs.State == BackupStatusRunning {
+		if bs.Status == BackupStatusRunning {
 			return false, "Backup is already running"
 		}
 	}
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
-		if rs.State != RepoStatusIdle {
+		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
 		}
 	}
@@ -285,7 +285,7 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 
 	currentState, ok := s.backupStates[bId]
 	if ok {
-		if currentState.State == BackupStatusRunning {
+		if currentState.Status == BackupStatusRunning {
 			// If the state is already running, we don't do anything
 			return currentState.ctx
 		}
@@ -337,7 +337,7 @@ func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle b
 func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 	currentState, ok := s.backupStates[bId]
 	if ok {
-		if currentState.State == BackupStatusRunning && newState != BackupStatusRunning {
+		if currentState.Status == BackupStatusRunning && newState != BackupStatusRunning {
 			// If we are here it means:
 			// - the current state is running
 			// - the new state is not running (it's either completed, cancelled or errored)
@@ -351,7 +351,7 @@ func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 		s.backupStates[bId] = newBackupState()
 	}
 
-	s.backupStates[bId].State = newState
+	s.backupStates[bId].Status = newState
 }
 
 func (s *State) UpdateBackupProgress(id types.BackupId, progress borg.BackupProgress) {
@@ -359,7 +359,7 @@ func (s *State) UpdateBackupProgress(id types.BackupId, progress borg.BackupProg
 	defer s.mu.Unlock()
 
 	if currentState, ok := s.backupStates[id]; ok {
-		if currentState.State == BackupStatusRunning {
+		if currentState.Status == BackupStatusRunning {
 			currentState.Progress = &progress
 		}
 	}
@@ -384,7 +384,7 @@ func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
 		return false, "Prune job is already running"
 	}
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
-		if rs.State != RepoStatusIdle {
+		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
 		}
 	}
