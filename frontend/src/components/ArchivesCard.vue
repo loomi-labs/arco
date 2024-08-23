@@ -4,7 +4,7 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, types } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
-import { TrashIcon } from "@heroicons/vue/24/solid";
+import { TrashIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/solid";
 
 /************
  * Types
@@ -52,6 +52,15 @@ async function getPaginatedArchives() {
     };
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
+  }
+}
+
+async function deleteArchive(archiveId: number) {
+  try {
+    await repoClient.DeleteArchive(archiveId);
+    await getPaginatedArchives();
+  } catch (error: any) {
+    await showAndLogError("Failed to delete archive", error);
   }
 }
 
@@ -108,6 +117,15 @@ getPaginatedArchives();
       </tr>
       </tbody>
     </table>
+    <div class='flex justify-center items-center mt-4'>
+      <button class='btn btn-ghost' :disabled='pagination.page === 1' @click='pagination.page--; getPaginatedArchives()'>
+        <ChevronLeftIcon class='size-6 '/>
+      </button>
+      <span class='mx-4'>{{ pagination.page }}/{{ Math.ceil(pagination.total / pagination.pageSize) }}</span>
+      <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)' @click='pagination.page++; getPaginatedArchives()'>
+        <ChevronRightIcon class='size-6'/>
+      </button>
+    </div>
   </div>
 </template>
 
