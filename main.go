@@ -159,6 +159,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config) {
 		EnumBind: []interface{}{
 			toTsEnums(allWeekdays),
 			toTsEnums(state.AvailableBackupStatuses),
+			toTsEnums(state.AvailableRepoStatuses),
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),

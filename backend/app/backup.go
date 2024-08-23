@@ -329,7 +329,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	repoLock.Lock() // We might wait here for other operations to finish
 
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoState(bId.RepositoryId, state.RepoStateDeleting)
+	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusDeleting)
 	b.state.AddRunningDeleteJob(b.ctx, bId)
 	defer b.state.RemoveRunningDeleteJob(bId)
 
@@ -337,18 +337,18 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Delete job cancelled", types.LevelWarning)
-			b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
+			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			//b.state.AddBorgLock(bId.RepositoryId)
 			b.state.AddNotification("Delete job failed: repository is locked", types.LevelError)
-			b.state.SetRepoState(bId.RepositoryId, state.RepoStateLocked)
+			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusLocked)
 		} else {
 			b.state.AddNotification(err.Error(), types.LevelError)
-			b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
+			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 		}
 	} else {
 		b.state.AddNotification(fmt.Sprintf("Delete job completed"), types.LevelInfo)
-		b.state.SetRepoState(bId.RepositoryId, state.RepoStateIdle)
+		b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 	}
 }
 

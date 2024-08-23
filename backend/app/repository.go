@@ -1,6 +1,7 @@
 package app
 
 import (
+	"arco/backend/app/state"
 	"arco/backend/ent"
 	"arco/backend/ent/repository"
 )
@@ -55,4 +56,8 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 		SetPassword(password).
 		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
+}
+
+func (r *RepositoryClient) GetState(id int) state.RepoState {
+	return r.state.GetRepoState(id)
 }
