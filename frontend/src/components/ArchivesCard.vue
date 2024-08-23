@@ -5,6 +5,7 @@ import { ent, types } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import { TrashIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/solid";
+import ConfirmDialog from "./ConfirmDialog.vue";
 
 /************
  * Types
@@ -36,6 +37,8 @@ backupId.backupProfileId = props.backupProfileId ?? -1;
 backupId.repositoryId = props.repo?.id ?? -1;
 const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
+const archiveToBeDeleted = ref<number | undefined>(undefined);
+const deletedArchive = ref<number | undefined>(undefined);
 
 /************
  * Functions
@@ -55,13 +58,26 @@ async function getPaginatedArchives() {
   }
 }
 
-async function deleteArchive(archiveId: number) {
+async function deleteArchive() {
+  if (!archiveToBeDeleted.value) {
+    return;
+  }
+  const archiveId = archiveToBeDeleted.value;
   try {
     await repoClient.DeleteArchive(archiveId);
-    await getPaginatedArchives();
+    archiveToBeDeleted.value = undefined;
+    markAndFadeOutArchive(archiveId);
   } catch (error: any) {
     await showAndLogError("Failed to delete archive", error);
   }
+}
+
+function markAndFadeOutArchive(archiveId: number) {
+  deletedArchive.value = archiveId;
+  setTimeout(async () => {
+    deletedArchive.value = undefined;
+    await getPaginatedArchives();
+  }, 2000); // Adjust the timeout as needed for the fade-out effect
 }
 
 // Convert date string to a more readable format
@@ -84,9 +100,7 @@ function toHumanReadable(date: string) {
  ************/
 
 getPaginatedArchives();
-
 </script>
-
 <template>
   <div class='bg-white p-6 rounded-lg shadow-md'>
     <table class='w-full table-auto'>
@@ -101,7 +115,7 @@ getPaginatedArchives();
       </tr>
       </thead>
       <tbody>
-      <tr v-for='(archive, index) in archives' :key='index'>
+      <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }' :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
         <td class='border px-4 py-2'>
           <p>{{ archive.name }}</p>
         </td>
@@ -110,7 +124,7 @@ getPaginatedArchives();
         </td>
         <td class='flex items-center border px-4 py-2'>
           <button class='btn btn-primary'>Browse</button>
-          <button class='btn btn-outline btn-circle btn-error group ml-2'>
+          <button class='btn btn-outline btn-circle btn-error group ml-2' @click='archiveToBeDeleted = archive.id'>
             <TrashIcon class='size-6 text-error group-hover:text-error-content' />
           </button>
         </td>
@@ -127,6 +141,12 @@ getPaginatedArchives();
       </button>
     </div>
   </div>
+  <ConfirmDialog
+    message="Are you sure you want to delete this archive?"
+    :isVisible="!!archiveToBeDeleted"
+    @confirm="deleteArchive()"
+    @cancel="archiveToBeDeleted = undefined"
+  />
 </template>
 
 <style scoped>
