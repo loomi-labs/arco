@@ -134,15 +134,16 @@ watch(backupState, async (newState) => {
     // increase poll interval when backup is running
     pollInterval.value = 200;   // 200ms
   } else {
-    // reset poll interval
+    // reset poll interval otherwise
     pollInterval.value = defaultPollInterval;
 
-    // if backup is done, get the repo again to update the last backup time
+    // if backup is done, reset status and get repo again
     if (newState.state === state.BackupStatus.completed || newState.state === state.BackupStatus.error) {
       await resetStatus();
       await getRepo();
     }
   }
+
   clearInterval(interval);
   interval = setInterval(getState, pollInterval.value);
 });
@@ -150,6 +151,7 @@ watch(backupState, async (newState) => {
 // poll for state
 let interval = setInterval(getState, pollInterval.value);
 onUnmounted(() => clearInterval(interval));
+
 </script>
 
 <template>

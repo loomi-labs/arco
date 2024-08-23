@@ -30,6 +30,10 @@ export function GetArchiveMountStates(arg1) {
   return window['go']['app']['RepositoryClient']['GetArchiveMountStates'](arg1);
 }
 
+export function GetPaginatedArchives(arg1, arg2, arg3) {
+  return window['go']['app']['RepositoryClient']['GetPaginatedArchives'](arg1, arg2, arg3);
+}
+
 export function GetRepoMountState(arg1) {
   return window['go']['app']['RepositoryClient']['GetRepoMountState'](arg1);
 }

@@ -11,6 +11,7 @@ import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
+import ArchivesCard from "../components/ArchivesCard.vue";
 
 /************
  * Variables
@@ -22,6 +23,7 @@ const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const backupPaths = ref<Path[]>([]);
 const excludePaths = ref<Path[]>([]);
 const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
+const selectedRepo = ref<ent.Repository | undefined>(undefined);
 
 /************
  * Functions
@@ -48,6 +50,9 @@ async function getBackupProfile() {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     backupPaths.value = toPaths(true, backup.value.backupPaths);
     excludePaths.value = toPaths(true, backup.value.excludePaths);
+    if (backup.value.edges.repositories?.length && !selectedRepo.value) {
+      selectedRepo.value = backup.value.edges.repositories[0];
+    }
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -190,70 +195,9 @@ getBackupProfile();
           <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id'></RepoCard>
         </div>
       </div>
-      <div class='bg-white p-6 rounded-lg shadow-md'>
-        <h3 class='text-lg font-semibold mb-4'>Archives</h3>
-        <table class='w-full table-auto'>
-          <thead>
-          <tr>
-            <th class='px-4 py-2'>Name</th>
-            <th class='px-4 py-2'>Date</th>
-            <th class='px-4 py-2'>Action</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr>
-            <td class='border px-4 py-2'>Fotos</td>
-            <td class='border px-4 py-2 text-orange-500'>Today</td>
-            <td class='border px-4 py-2'>
-              <button class='btn btn-secondary'>Remove</button>
-              <button class='btn btn-error'>Delete</button>
-            </td>
-          </tr>
-          <tr>
-            <td class='border px-4 py-2'>Documentos</td>
-            <td class='border px-4 py-2'>2023</td>
-            <td class='border px-4 py-2'>
-              <button class='btn btn-secondary'>Remove</button>
-              <button class='btn btn-error'>Delete</button>
-            </td>
-          </tr>
-          <tr>
-            <td class='border px-4 py-2'>Birthdate.bak</td>
-            <td class='border px-4 py-2'>12.01.2024</td>
-            <td class='border px-4 py-2'>
-              <button class='btn btn-secondary'>Remove</button>
-              <button class='btn btn-error'>Delete</button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
+      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!'></ArchivesCard>
     </div>
   </div>
-  <!--  COPILOT MARKER -->
-  <!--    <div class='flex'></div>-->
-  <!--    <div class='flex flex-col items-center justify-center h-full'>-->
-  <!--      <h1>{{ backup.name }}</h1>-->
-  <!--      <p>{{ backup.id }}</p>-->
-  <!--      <p>{{ backup.isSetupComplete }}</p>-->
-
-  <!--      <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>-->
-  <!--        <div class='flex flex-row items-center justify-center'>-->
-  <!--          <p>{{ repo.name }}</p>-->
-  <!--          <button class='btn btn-primary' @click='router.push(withId(rRepositoryDetailPage, repo.id))'>Go to Repo</button>-->
-  <!--          <div v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='radial-progress' :style=getProgressString(repo.id) role='progressbar'>{{getProgressValue(repo.id)}}%</div>-->
-  <!--          <button v-if='runningBackups.get(backupIdStringForRepo(repo.id))' class='btn btn-error' @click='abortBackup(repo.id)'>Abort</button>-->
-  <!--        </div>-->
-  <!--      </div>-->
-
-  <!--      <button class='btn btn-neutral' @click='dryRunPruneBackups()'>Dry-Run Prune Backups</button>-->
-  <!--      <button class='btn btn-warning' @click='pruneBackups()'>Prune Backups</button>-->
-  <!--      <button class='btn btn-accent' @click='runBackups()'>Run Backups</button>-->
-  <!--      <button class='btn btn-error' @click='deleteBackupProfile()'>Delete</button>-->
-
-  <!--      <button class='btn btn-primary' @click='router.back()'>{{ $t('back') }}</button>-->
-  <!--    </div>-->
-  <!--  COPILOT MARKER -->
 </template>
 
 <style scoped>

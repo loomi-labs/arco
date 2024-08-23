@@ -13,7 +13,8 @@ import { PlusIcon } from "@heroicons/vue/24/outline";
 const props = defineProps({
   paths: {
     type: Array as () => Path[],
-    required: true
+    required: true,
+    default: [],
   },
   isBackupSelection: {
     type: Boolean,
