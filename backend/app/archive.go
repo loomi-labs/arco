@@ -2,6 +2,7 @@ package app
 
 import (
 	"arco/backend/app/state"
+	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
@@ -107,6 +108,48 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	defer r.state.SetRepoState(arch.Edges.Repository.ID, state.RepoStateIdle)
 
 	return r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+}
+
+type PaginatedArchivesResponse struct {
+	Archives []*ent.Archive `json:"archives"`
+	Total    int            `json:"total"`
+}
+
+func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
+	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	archiveQuery := r.db.Archive.Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.NameHasPrefix(backupProfile.Prefix),
+		))
+
+	total, err := archiveQuery.Count(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	archives, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.NameHasPrefix(backupProfile.Prefix),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedArchivesResponse{
+		Archives: archives,
+		Total:    total,
+	}, nil
 }
 
 func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {

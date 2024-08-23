@@ -85,6 +85,10 @@ func (a *App) BackupClient() *BackupClient {
 	return (*BackupClient)(a)
 }
 
+func (r *RepositoryClient) backupClient() *BackupClient {
+	return (*BackupClient)(r)
+}
+
 func (a *App) Startup(ctx context.Context) {
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
