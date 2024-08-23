@@ -24,6 +24,7 @@ const backupPaths = ref<Path[]>([]);
 const excludePaths = ref<Path[]>([]);
 const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
+const repoIsBusy = ref(false);
 
 /************
  * Functions
@@ -192,10 +193,10 @@ getBackupProfile();
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- Repositories -->
         <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
-          <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id'></RepoCard>
+          <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id' @repo:is-busy='repoIsBusy = $event'></RepoCard>
         </div>
       </div>
-      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!'></ArchivesCard>
+      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!' :repo-is-busy='repoIsBusy'></ArchivesCard>
     </div>
   </div>
 </template>

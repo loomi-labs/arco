@@ -38,6 +38,10 @@ export function GetRepoMountState(arg1) {
   return window['go']['app']['RepositoryClient']['GetRepoMountState'](arg1);
 }
 
+export function GetState(arg1) {
+  return window['go']['app']['RepositoryClient']['GetState'](arg1);
+}
+
 export function MountArchive(arg1) {
   return window['go']['app']['RepositoryClient']['MountArchive'](arg1);
 }

@@ -23,6 +23,8 @@ export function GetPaginatedArchives(arg1:types.BackupId,arg2:number,arg3:number
 
 export function GetRepoMountState(arg1:number):Promise<state.MountState>;
 
+export function GetState(arg1:number):Promise<state.RepoState>;
+
 export function MountArchive(arg1:number):Promise<state.MountState>;
 
 export function MountRepository(arg1:number):Promise<state.MountState>;

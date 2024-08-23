@@ -2,10 +2,11 @@
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, types } from "../../wailsjs/go/models";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import { TrashIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -29,7 +30,12 @@ const props = defineProps({
   backupProfileId: {
     type: Number,
     required: true
-  }
+  },
+  repoIsBusy: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
 });
 
 const backupId = types.BackupId.createFrom();
@@ -100,6 +106,7 @@ function toHumanReadable(date: string) {
  ************/
 
 getPaginatedArchives();
+
 </script>
 <template>
   <div class='bg-white p-6 rounded-lg shadow-md'>
@@ -124,8 +131,8 @@ getPaginatedArchives();
         </td>
         <td class='flex items-center border px-4 py-2'>
           <button class='btn btn-primary'>Browse</button>
-          <button class='btn btn-outline btn-circle btn-error group ml-2' @click='archiveToBeDeleted = archive.id'>
-            <TrashIcon class='size-6 text-error group-hover:text-error-content' />
+          <button class='btn btn-outline btn-circle btn-error group ml-2' :disabled='props.repoIsBusy' @click='archiveToBeDeleted = archive.id'>
+            <TrashIcon class='size-6' />
           </button>
         </td>
       </tr>

@@ -83,26 +83,26 @@ watch(() => props.paths, (newPaths) => {
                @change='emitUpdatePaths'
                v-model='path.path' />
       </label>
-      <button v-if='!path.isAdded' class='btn btn-outline btn-circle btn-sm btn-success group ml-2' @click='markPath(path, true)'>
-        <PlusIcon class='size-4 text-success group-hover:text-success-content' />
+      <button v-if='!path.isAdded' class='btn btn-outline btn-circle btn-sm btn-success ml-2' @click='markPath(path, true)'>
+        <PlusIcon class='size-4' />
       </button>
-      <button v-else class='btn btn-outline btn-square btn-sm btn-error group ml-2'
+      <button v-else class='btn btn-outline btn-square btn-sm btn-error ml-2'
               @click='markPath(path, false)'>
-        <XMarkIcon class='size-4 text-error group-hover:text-error-content' />
+        <XMarkIcon class='size-4' />
       </button>
     </div>
 
     <div class='flex justify-end h-full '>
-      <button class='btn btn-outline btn-circle btn-sm btn-success group'
+      <button class='btn btn-outline btn-circle btn-sm btn-success'
               @click='addEmptyPath()'>
-        <PlusIcon class='size-4 text-success group-hover:text-success-content' />
+        <PlusIcon class='size-4' />
       </button>
     </div>
 
     <div class='flex justify-end mt-4'>
-      <button class='btn btn-primary btn-sm group' @click='addDirectory()'>
+      <button class='btn btn-primary btn-sm' @click='addDirectory()'>
         {{ $t("add") }}
-        <FolderPlusIcon class='size-4 group-hover:text-primary-content' />
+        <FolderPlusIcon class='size-4' />
       </button>
     </div>
   </div>

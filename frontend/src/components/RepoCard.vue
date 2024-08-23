@@ -23,11 +23,17 @@ const props = defineProps({
   }
 });
 
+const repoIsBusyEvent = "repo:isBusy";
+const emits = defineEmits<{
+  (e: typeof repoIsBusyEvent, isBusy: boolean): void
+}>()
+
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
 backupId.repositoryId = props.repoId ?? -1;
+const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
 const defaultPollInterval = 1000; // 1 second
 const pollInterval = ref(defaultPollInterval);
@@ -80,7 +86,15 @@ async function getRepo() {
   }
 }
 
-async function getState() {
+async function getRepoState() {
+  try {
+    repoState.value = await repoClient.GetState(backupId.repositoryId);
+  } catch (error: any) {
+    await showAndLogError("Failed to get repository state", error);
+  }
+}
+
+async function getBackupState() {
   try {
     backupState.value = await backupClient.GetState(backupId);
   } catch (error: any) {
@@ -127,10 +141,10 @@ function toHumanReadableSize(size: number): string {
  ************/
 
 getRepo();
-getState();
+getBackupState();
 
 watch(backupState, async (newState) => {
-  if (newState.state === state.BackupStatus.running) {
+  if (newState.status === state.BackupStatus.running) {
     // increase poll interval when backup is running
     pollInterval.value = 200;   // 200ms
   } else {
@@ -138,19 +152,35 @@ watch(backupState, async (newState) => {
     pollInterval.value = defaultPollInterval;
 
     // if backup is done, reset status and get repo again
-    if (newState.state === state.BackupStatus.completed || newState.state === state.BackupStatus.error) {
+    if (newState.status === state.BackupStatus.completed || newState.status === state.BackupStatus.error) {
       await resetStatus();
       await getRepo();
     }
   }
 
-  clearInterval(interval);
-  interval = setInterval(getState, pollInterval.value);
+  clearInterval(backupStatePollInterval);
+  backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
+});
+
+watch(repoState, async (newState, oldState) => {
+  if (newState.status === oldState.status) {
+    return;
+  }
+
+  if (newState.status === state.RepoStatus.idle) {
+    emits(repoIsBusyEvent, false as any);
+  } else if (oldState.status === state.RepoStatus.idle) {
+    emits(repoIsBusyEvent, true as any);
+  }
 });
 
 // poll for backup state
-let interval = setInterval(getState, pollInterval.value);
-onUnmounted(() => clearInterval(interval));
+let backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
+onUnmounted(() => clearInterval(backupStatePollInterval));
+
+// poll for repo state
+let repoStatePollInterval = setInterval(getRepoState, defaultPollInterval);
+onUnmounted(() => clearInterval(repoStatePollInterval));
 
 </script>
 
@@ -169,10 +199,10 @@ onUnmounted(() => clearInterval(interval));
     <button class='btn btn-accent' @click='dryRunPruneBackup()'>Dry-Run Prune Backup</button>
     <button class='btn btn-warning' @click='pruneBackup()'>Prune Backup</button>
     <button class='btn btn-primary' @click='runBackup()'>Run Backup</button>
-    <div v-if='backupState.state === state.BackupStatus.running' class='radial-progress'
+    <div v-if='backupState.status === state.BackupStatus.running' class='radial-progress'
          :style=getProgressString() role='progressbar'>{{ getProgressValue() }}%
     </div>
-    <button v-if='backupState.state === state.BackupStatus.running' class='btn btn-error'
+    <button v-if='backupState.status === state.BackupStatus.running' class='btn btn-error'
             @click='abortBackup()'>Abort
     </button>
   </div>

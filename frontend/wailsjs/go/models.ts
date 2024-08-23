@@ -416,8 +416,16 @@ export namespace state {
 	    cancelled = "cancelled",
 	    error = "error",
 	}
+	export enum RepoStatus {
+	    idle = "idle",
+	    backing_up = "backing_up",
+	    pruning = "pruning",
+	    deleting = "deleting",
+	    performing_operation = "performing_operation",
+	    locked = "locked",
+	}
 	export class BackupState {
-	    state: BackupStatus;
+	    status: BackupStatus;
 	    progress?: borg.BackupProgress;
 	    error?: any;
 	
@@ -427,7 +435,7 @@ export namespace state {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.state = source["state"];
+	        this.status = source["status"];
 	        this.progress = this.convertValues(source["progress"], borg.BackupProgress);
 	        this.error = source["error"];
 	    }
@@ -462,6 +470,18 @@ export namespace state {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.is_mounted = source["is_mounted"];
 	        this.mount_path = source["mount_path"];
+	    }
+	}
+	export class RepoState {
+	    status: RepoStatus;
+	
+	    static createFrom(source: any = {}) {
+	        return new RepoState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
 	    }
 	}
 
