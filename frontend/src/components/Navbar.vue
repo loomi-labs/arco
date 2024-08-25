@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
 import { showAndLogError } from "../common/error";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 /************
  * Variables
@@ -39,9 +39,11 @@ async function setTheme() {
  * Lifecycle
  ************/
 
-// setTheme();
-
 watch(lightTheme, () => {
+  setTheme();
+});
+
+onMounted(() => {
   setTheme();
 });
 

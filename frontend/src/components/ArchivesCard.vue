@@ -2,7 +2,7 @@
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state, types } from "../../wailsjs/go/models";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
@@ -112,6 +112,10 @@ async function browseArchive(archiveId: number) {
 
 getPaginatedArchives();
 getArchiveMountStates();
+
+watch(() => props.repoIsBusy, async () => {
+  await getPaginatedArchives();
+});
 
 </script>
 <template>
