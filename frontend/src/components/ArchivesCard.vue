@@ -134,15 +134,15 @@ watch(() => props.repoIsBusy, async () => {
       <tbody>
       <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
           :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
-        <td class='border '>
+        <td>
           <p>{{ archive.name }}</p>
         </td>
-        <td class='border '>
+        <td>
           <span class='tooltip' :data-tip='archive.createdAt'>
             <span :class='getBadgeStyle(archive?.createdAt)'>{{ toHumanReadable(archive.createdAt) }}</span>
           </span>
         </td>
-        <td class='flex items-center border '>
+        <td class='flex items-center'>
           <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>Browse</button>
           <button class='btn btn-sm btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
                   @click='archiveToBeDeleted = archive.id'>
