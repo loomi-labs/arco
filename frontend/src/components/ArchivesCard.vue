@@ -2,11 +2,11 @@
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, types } from "../../wailsjs/go/models";
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { showAndLogError } from "../common/error";
-import { TrashIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/solid";
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
-import { LogDebug } from "../../wailsjs/runtime";
+import { toHumanReadable } from "../common/time";
 
 /************
  * Types
@@ -86,21 +86,6 @@ function markAndFadeOutArchive(archiveId: number) {
   }, 2000); // Adjust the timeout as needed for the fade-out effect
 }
 
-// Convert date string to a more readable format
-// Returns today, yesterday, [day of week], or MM/DD/YYYY
-function toHumanReadable(date: string) {
-  const today = new Date();
-  const dateObj = new Date(date);
-  const diff = today.getDate() - dateObj.getDate();
-  if (diff === 0) {
-    return "Today";
-  } else if (diff === 1) {
-    return "Yesterday";
-  } else {
-    return dateObj.toLocaleDateString();
-  }
-}
-
 /************
  * Lifecycle
  ************/
@@ -131,7 +116,7 @@ getPaginatedArchives();
         </td>
         <td class='flex items-center border px-4 py-2'>
           <button class='btn btn-primary'>Browse</button>
-          <button class='btn btn-outline btn-circle btn-error group ml-2' :disabled='props.repoIsBusy' @click='archiveToBeDeleted = archive.id'>
+          <button class='btn btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy' @click='archiveToBeDeleted = archive.id'>
             <TrashIcon class='size-6' />
           </button>
         </td>

@@ -167,7 +167,6 @@ getBackupProfile();
     <div class='container mx-auto px-4 text-left'>
       <!-- Data Section -->
       <h1 class='text-2xl font-bold mb-4'>{{ backup.name }}</h1>
-      <button class='btn btn-primary' @click='runBackups()'>Run all backups</button>
       <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
         <!-- Storage Card -->
         <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
@@ -185,7 +184,7 @@ getBackupProfile();
       </div>
 
       <!-- Schedule Section -->
-      <h1 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h1>
+      <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
       <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
                          @delete:schedule='deleteSchedule' />
 

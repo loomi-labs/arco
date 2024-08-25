@@ -7,6 +7,8 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
+import { toHumanReadable } from "../common/time";
+import { TrashIcon, ScissorsIcon } from "@heroicons/vue/24/solid";
 
 /************
  * Variables
@@ -26,13 +28,16 @@ const props = defineProps({
 const repoIsBusyEvent = "repo:isBusy";
 const emits = defineEmits<{
   (e: typeof repoIsBusyEvent, isBusy: boolean): void
-}>()
+}>();
+const repoIsBusy = ref(false);
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
 backupId.repositoryId = props.repoId ?? -1;
+const lastArchive = ref<ent.Archive | undefined>(undefined);
+
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
 const defaultPollInterval = 1000; // 1 second
@@ -60,14 +65,6 @@ async function pruneBackup() {
   }
 }
 
-async function dryRunPruneBackup() {
-  try {
-    await backupClient.DryRunPruneBackup(backupId);
-  } catch (error: any) {
-    await showAndLogError("Failed to dry run prune backups", error);
-  }
-}
-
 async function abortBackup() {
   try {
     await backupClient.AbortBackupJob(backupId);
@@ -81,6 +78,8 @@ async function getRepo() {
     repo.value = await repoClient.Get(backupId.repositoryId);
     totalSize.value = toHumanReadableSize(repo.value.stats_total_size);
     sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
+
+    lastArchive.value = await repoClient.GetLastArchive(backupId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
@@ -116,10 +115,6 @@ function getProgressValue(): number {
     return 0;
   }
   return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
-}
-
-function getProgressString(): string {
-  return `--value:${getProgressValue()};`;
 }
 
 function toHumanReadableSize(size: number): string {
@@ -162,15 +157,19 @@ watch(backupState, async (newState) => {
   backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
 });
 
+// emit repoIsBusy event when repo is busy
 watch(repoState, async (newState, oldState) => {
   if (newState.status === oldState.status) {
     return;
   }
 
+  // status changed
   if (newState.status === state.RepoStatus.idle) {
-    emits(repoIsBusyEvent, false as any);
+    repoIsBusy.value = false;
+    emits(repoIsBusyEvent, false);
   } else if (oldState.status === state.RepoStatus.idle) {
-    emits(repoIsBusyEvent, true as any);
+    repoIsBusy.value = true;
+    emits(repoIsBusyEvent, true);
   }
 });
 
@@ -185,26 +184,44 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
 </script>
 
 <template>
-  <div class='flex flex-col bg-base-100 p-10 rounded-xl shadow-lg'>
-    <p>{{ repo.name }}</p>
-    <p>Last backup: Today</p>
-    <div class='bg-gray-200 rounded-full h-4 overflow-hidden mb-4'>
-      <div class='bg-purple-600 h-full' style='width: 50%;'></div>
+  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg'>
+    <div class='flex flex-col'>
+      <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
+      <p>Last backup: {{ lastArchive ? toHumanReadable(lastArchive.createdAt) : "-" }}</p>
+      <p>Total Size: {{ totalSize }}</p>
+      <p>Size on Disk: {{ sizeOnDisk }}</p>
+      <a class='link' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>Go to Repo</a>
     </div>
-    <p>Total Size: {{ totalSize }}</p>
-    <p>Size on Disk: {{ sizeOnDisk }}</p>
-    <button class='btn btn-neutral' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>Go to
-      Repo
-    </button>
-    <button class='btn btn-accent' @click='dryRunPruneBackup()'>Dry-Run Prune Backup</button>
-    <button class='btn btn-warning' @click='pruneBackup()'>Prune Backup</button>
-    <button class='btn btn-primary' @click='runBackup()'>Run Backup</button>
-    <div v-if='backupState.status === state.BackupStatus.running' class='radial-progress'
-         :style=getProgressString() role='progressbar'>{{ getProgressValue() }}%
+    <div class='flex flex-col items-end'>
+      <div class='flex mb-2'>
+        <button class='btn btn-ghost btn-circle' :disabled='repoIsBusy'>
+          <ScissorsIcon class='size-6' />
+        </button>
+        <button class='btn btn-ghost btn-circle ml-2' :disabled='repoIsBusy'>
+          <TrashIcon class='size-6' />
+        </button>
+      </div>
+
+      <div class='w-min rounded-full border-4 p-2 group'
+           :class='[backupState.status === state.BackupStatus.running ? "border-warning": "border-success"]'
+           @click='backupState.status === state.BackupStatus.running ? abortBackup() : runBackup()'
+      >
+        <div
+          class='radial-progress btn btn-circle border-0 transition-none'
+          :class='[backupState.status === state.BackupStatus.running ? "btn-warning bg-warning text-white": "btn-success bg-success text-success hover:text-success/0"]'
+          :style='`--value: ${getProgressValue()}; --size: 5rem; --thickness: 1rem;`'
+          role='progressbar'
+        >
+          <div class='btn btn-circle m-10 border-0 transition-none'
+               :class='[backupState.status === state.BackupStatus.running ?
+        "bg-warning text-warning-content group-hover:bg-warning/0":
+        "bg-success text-success-content group-hover:bg-success/0"]'
+          >
+            {{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%`  : "Run Backup" }}
+          </div>
+        </div>
+      </div>
     </div>
-    <button v-if='backupState.status === state.BackupStatus.running' class='btn btn-error'
-            @click='abortBackup()'>Abort
-    </button>
   </div>
 </template>
 
