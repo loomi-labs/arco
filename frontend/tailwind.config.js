@@ -3,6 +3,9 @@ export default {
   content: ['./src/**/*.{vue,js,ts}'],
   darkMode: ['selector', '[data-theme="dark"]'],  // https://tailwindcss.com/docs/dark-mode#customizing-the-selector
   theme: {
+    fontFamily: {
+      'sans': ['Nunito', 'sans-serif'],
+    },
     extend: {
       colors: {
         'half-hidden': {

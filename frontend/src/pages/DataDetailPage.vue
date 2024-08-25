@@ -141,7 +141,7 @@ onMounted(() => {
             type='text'
             class='text-2xl font-bold bg-transparent w-10'
             v-model='backup.name'
-            @input='() => adjustBackupNameWidth() || saveBackupName()'
+            @input='adjustBackupNameWidth; saveBackupName'
             ref='backupNameInput'
           />
           <PencilIcon class='size-4' />
