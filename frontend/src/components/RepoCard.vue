@@ -8,7 +8,8 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
 import { toHumanReadable } from "../common/time";
-import { TrashIcon, ScissorsIcon } from "@heroicons/vue/24/solid";
+import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import { getBadgeStyle } from "../common/badge";
 
 /************
  * Variables
@@ -187,10 +188,15 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
   <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
-      <p>Last backup: {{ lastArchive ? toHumanReadable(lastArchive.createdAt) : "-" }}</p>
+      <p>Last backup:
+        <span v-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+          <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toHumanReadable(lastArchive.createdAt) }}</span>
+        </span>
+      </p>
       <p>Total Size: {{ totalSize }}</p>
       <p>Size on Disk: {{ sizeOnDisk }}</p>
-      <a class='link' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>Go to Repo</a>
+      <a class='link mt-auto' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>Go to
+        repository</a>
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>
@@ -217,7 +223,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         "bg-warning text-warning-content group-hover:bg-warning/0":
         "bg-success text-success-content group-hover:bg-success/0"]'
           >
-            {{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%`  : "Run Backup" }}
+            {{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%` : "Run Backup" }}
           </div>
         </div>
       </div>

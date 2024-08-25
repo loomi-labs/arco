@@ -7,6 +7,7 @@ import { showAndLogError } from "../common/error";
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { toHumanReadable } from "../common/time";
+import { getBadgeStyle } from "../common/badge";
 
 /************
  * Types
@@ -35,7 +36,7 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: false
-  },
+  }
 });
 
 const backupId = types.BackupId.createFrom();
@@ -57,7 +58,7 @@ async function getPaginatedArchives() {
     pagination.value = {
       page: pagination.value.page,
       pageSize: pagination.value.pageSize,
-      total: result.total,
+      total: result.total
     };
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
@@ -107,16 +108,20 @@ getPaginatedArchives();
       </tr>
       </thead>
       <tbody>
-      <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }' :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
+      <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
+          :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
         <td class='border px-4 py-2'>
           <p>{{ archive.name }}</p>
         </td>
         <td class='border px-4 py-2'>
-          <p>{{ toHumanReadable(archive.createdAt) }}</p>
+          <span class='tooltip' :data-tip='archive.createdAt'>
+            <span :class='getBadgeStyle(archive?.createdAt)'>{{ toHumanReadable(archive.createdAt) }}</span>
+          </span>
         </td>
         <td class='flex items-center border px-4 py-2'>
           <button class='btn btn-primary'>Browse</button>
-          <button class='btn btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy' @click='archiveToBeDeleted = archive.id'>
+          <button class='btn btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
+                  @click='archiveToBeDeleted = archive.id'>
             <TrashIcon class='size-6' />
           </button>
         </td>
@@ -124,20 +129,22 @@ getPaginatedArchives();
       </tbody>
     </table>
     <div class='flex justify-center items-center mt-4'>
-      <button class='btn btn-ghost' :disabled='pagination.page === 1' @click='pagination.page--; getPaginatedArchives()'>
-        <ChevronLeftIcon class='size-6 '/>
+      <button class='btn btn-ghost' :disabled='pagination.page === 1'
+              @click='pagination.page--; getPaginatedArchives()'>
+        <ChevronLeftIcon class='size-6 ' />
       </button>
       <span class='mx-4'>{{ pagination.page }}/{{ Math.ceil(pagination.total / pagination.pageSize) }}</span>
-      <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)' @click='pagination.page++; getPaginatedArchives()'>
-        <ChevronRightIcon class='size-6'/>
+      <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
+              @click='pagination.page++; getPaginatedArchives()'>
+        <ChevronRightIcon class='size-6' />
       </button>
     </div>
   </div>
   <ConfirmDialog
-    message="Are you sure you want to delete this archive?"
-    :isVisible="!!archiveToBeDeleted"
-    @confirm="deleteArchive()"
-    @cancel="archiveToBeDeleted = undefined"
+    message='Are you sure you want to delete this archive?'
+    :isVisible='!!archiveToBeDeleted'
+    @confirm='deleteArchive()'
+    @cancel='archiveToBeDeleted = undefined'
   />
 </template>
 

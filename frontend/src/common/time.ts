@@ -1,5 +1,4 @@
-import { LogDebug } from "../../wailsjs/runtime";
-import { applyOffset, format, formatStr, offset, parse, parts, removeOffset } from "@formkit/tempo";
+import { diffDays, format, parse } from "@formkit/tempo";
 
 
 /**
@@ -74,4 +73,23 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
   date.setHours(hours, minutes, 0, 0);
   setValFn(date);
   return value;
+}
+
+
+/**
+ * toHumanReadable converts a Date object to a human-readable string
+ * @param date
+ */
+export function toHumanReadable(date: Date): string {
+  const dd = diffDays(date, new Date());
+  if (dd === 0) {
+    return "Today";
+  } else if (dd === 1) {
+    return "Tomorrow";
+  } else if (dd === -1) {
+    return "Yesterday";
+  } else if (dd > 1 && dd < 7) {
+    return format(date, "dddd");
+  }
+  return format(date, "dddd, MMMM Do YYYY");
 }
