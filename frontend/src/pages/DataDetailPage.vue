@@ -129,8 +129,8 @@ onMounted(() => {
 
 <template>
   <Navbar></Navbar>
-  <div class='bg-base-200 p-10'>
-    <div class='container mx-auto px-4 text-left'>
+  <div class='bg-base-200'>
+    <div class='container text-left mx-auto pt-10'>
       <!-- Data Section -->
       <div class='tooltip tooltip-bottom tooltip-error'
            :class='validationError ? "tooltip-open" : ""'

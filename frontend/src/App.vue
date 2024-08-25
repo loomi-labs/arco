@@ -56,19 +56,6 @@ async function goToStartPage() {
   }
 }
 
-async function setTheme() {
-  try {
-    // Set theme on <html> element as data-theme attribute
-    const theme = "light"; // TODO: make this dynamic
-    const html = document.querySelector("html");
-    if (html) {
-      html.setAttribute("data-theme", theme);
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to get theme", error);
-  }
-}
-
 /************
  * Lifecycle
  ************/
@@ -77,7 +64,6 @@ async function setTheme() {
 setInterval(getNotifications, 1000);
 getStartupError();
 goToStartPage();
-setTheme();
 
 </script>
 

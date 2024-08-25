@@ -115,34 +115,34 @@ getArchiveMountStates();
 
 </script>
 <template>
-  <div class='bg-white p-6 rounded-lg shadow-md'>
-    <table class='w-full table-auto'>
+  <div class='bg-base-100 p-6 rounded-lg shadow-md'>
+    <table class='w-full table table-xs table-zebra'>
       <thead>
       <tr>
-        <th class='px-4 py-2'>
+        <th class=''>
           <h3 class='text-lg font-semibold'>Archives</h3>
           <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
         </th>
-        <th class='px-4 py-2'>Date</th>
-        <th class='px-4 py-2'>Action</th>
+        <th class=''>Date</th>
+        <th class=''>Action</th>
       </tr>
       </thead>
       <tbody>
       <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
           :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
-        <td class='border px-4 py-2'>
+        <td class='border '>
           <p>{{ archive.name }}</p>
         </td>
-        <td class='border px-4 py-2'>
+        <td class='border '>
           <span class='tooltip' :data-tip='archive.createdAt'>
             <span :class='getBadgeStyle(archive?.createdAt)'>{{ toHumanReadable(archive.createdAt) }}</span>
           </span>
         </td>
-        <td class='flex items-center border px-4 py-2'>
-          <button class='btn btn-primary' @click='browseArchive(archive.id)'>Browse</button>
-          <button class='btn btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
+        <td class='flex items-center border '>
+          <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>Browse</button>
+          <button class='btn btn-sm btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
                   @click='archiveToBeDeleted = archive.id'>
-            <TrashIcon class='size-6' />
+            <TrashIcon class='size-4' />
           </button>
         </td>
       </tr>
@@ -151,7 +151,7 @@ getArchiveMountStates();
     <div class='flex justify-center items-center mt-4'>
       <button class='btn btn-ghost' :disabled='pagination.page === 1'
               @click='pagination.page--; getPaginatedArchives()'>
-        <ChevronLeftIcon class='size-6 ' />
+        <ChevronLeftIcon class='size-6' />
       </button>
       <span class='mx-4'>{{ pagination.page }}/{{ Math.ceil(pagination.total / pagination.pageSize) }}</span>
       <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'

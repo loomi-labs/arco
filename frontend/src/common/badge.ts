@@ -5,5 +5,6 @@ export function getBadgeStyle(date: Date | undefined): string {
   if (!date) {
     return "";
   }
-  return "badge badge-outline badge-primary";
+  // TODO: fix this
+  return "badge badge-outline badge-success";
 }
