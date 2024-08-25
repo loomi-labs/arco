@@ -24,6 +24,7 @@ const excludePaths = ref<Path[]>([]);
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoIsBusy = ref(false);
 const backupNameInput = ref<HTMLInputElement | null>(null);
+const validationError = ref<string | null>(null);
 
 /************
  * Functions
@@ -95,6 +96,25 @@ function adjustBackupNameWidth() {
   }
 }
 
+function validateBackupName() {
+  if (!backup.value.name || backup.value.name.length < 3) {
+    validationError.value = "Backup name must be at least 3 characters long.";
+    return false;
+  }
+  if (backup.value.name.length > 50) {
+    validationError.value = "Backup name cannot be longer than 50 characters.";
+    return false;
+  }
+  validationError.value = null;
+  return true;
+}
+
+async function saveBackupName() {
+  if (validateBackupName()) {
+    await backupClient.SaveBackupProfile(backup.value);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -112,17 +132,22 @@ onMounted(() => {
   <div class='bg-base-200 p-10'>
     <div class='container mx-auto px-4 text-left'>
       <!-- Data Section -->
-      <label class='flex items-center gap-2 mb-4'>
-        <input
-          type='text'
-          class='text-2xl font-bold bg-transparent w-10'
-          v-model='backup.name'
-          @input='adjustBackupNameWidth'
-          @change='() => backupClient.SaveBackupProfile(backup)'
-          ref='backupNameInput'
-        />
-        <PencilIcon class='size-4 ml-2' />
-      </label>
+      <div class='tooltip tooltip-bottom tooltip-error'
+           :class='validationError ? "tooltip-open" : ""'
+           :data-tip='validationError'
+      >
+        <label class='flex items-center gap-2 mb-4'>
+          <input
+            type='text'
+            class='text-2xl font-bold bg-transparent w-10'
+            v-model='backup.name'
+            @input='() => adjustBackupNameWidth() || saveBackupName()'
+            ref='backupNameInput'
+          />
+          <PencilIcon class='size-4' />
+        </label>
+      </div>
+
       <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
         <!-- Storage Card -->
         <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
