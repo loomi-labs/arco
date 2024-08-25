@@ -1,50 +1,33 @@
 <script setup lang='ts'>
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { borg, ent, types } from "../../wailsjs/go/models";
+import { ent } from "../../wailsjs/go/models";
 import { rDataPage } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
-import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
+import { PencilIcon } from "@heroicons/vue/24/solid";
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
-const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const backupPaths = ref<Path[]>([]);
 const excludePaths = ref<Path[]>([]);
-const runningBackups = ref<Map<string, borg.BackupProgress>>(new Map());
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoIsBusy = ref(false);
+const backupNameInput = ref<HTMLInputElement | null>(null);
 
 /************
  * Functions
  ************/
-
-function backupIdString(backupId: types.BackupId) {
-  return `${backupId.backupProfileId}-${backupId.repositoryId}`;
-}
-
-function backupIdStringForRepo(repoId: number) {
-  return `${backup.value.id}-${repoId}`;
-}
-
-function toBackupIdentifier(backupIdString: string): types.BackupId {
-  const parts = backupIdString.split("-");
-  const bId = types.BackupId.createFrom();
-  bId.backupProfileId = parseInt(parts[0]);
-  bId.repositoryId = parseInt(parts[1]);
-  return bId;
-}
 
 async function getBackupProfile() {
   try {
@@ -54,45 +37,18 @@ async function getBackupProfile() {
     if (backup.value.edges.repositories?.length && !selectedRepo.value) {
       selectedRepo.value = backup.value.edges.repositories[0];
     }
+    adjustBackupNameWidth();
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
-  }
-}
-
-async function runBackups() {
-  try {
-    const result = await backupClient.StartBackupJobs(backup.value.id);
-    runningBackups.value = new Map(result.map((backupId) => [backupIdString(backupId), borg.BackupProgress.createFrom()]));
-    toast.success("Backup started");
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
   }
 }
 
 async function deleteBackupProfile() {
   try {
     await backupClient.DeleteBackupProfile(backup.value.id, true);
-    toast.success("Backup profile deleted");
     await router.push(rDataPage);
   } catch (error: any) {
     await showAndLogError("Failed to delete backup profile", error);
-  }
-}
-
-async function pruneBackups() {
-  try {
-    await backupClient.PruneBackups(backup.value.id);
-    toast.success("Pruning started");
-  } catch (error: any) {
-    await showAndLogError("Failed to prune backups", error);
-  }
-}
-
-async function dryRunPruneBackups() {
-  try {
-    await backupClient.DryRunPruneBackups(backup.value.id);
-  } catch (error: any) {
-    await showAndLogError("Failed to dry run prune backups", error);
   }
 }
 
@@ -132,24 +88,10 @@ async function deleteSchedule() {
   }
 }
 
-function getProgressValue(repoId: number): number {
-  const progress = runningBackups.value.get(backupIdStringForRepo(repoId));
-  if (!progress || progress.totalFiles === 0) {
-    return 0;
-  }
-  return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
-}
-
-function getProgressString(repoId: number): string {
-  return `--value:${getProgressValue(repoId)};`;
-}
-
-async function abortBackup(repoId: number) {
-  try {
-    await backupClient.AbortBackupJob(toBackupIdentifier(backupIdStringForRepo(repoId)));
-    toast.success("Backup aborted");
-  } catch (error: any) {
-    await showAndLogError("Failed to abort backup", error);
+function adjustBackupNameWidth() {
+  if (backupNameInput.value) {
+    backupNameInput.value.style.width = "30px";
+    backupNameInput.value.style.width = `${backupNameInput.value.scrollWidth}px`;
   }
 }
 
@@ -159,6 +101,10 @@ async function abortBackup(repoId: number) {
 
 getBackupProfile();
 
+onMounted(() => {
+  adjustBackupNameWidth();
+});
+
 </script>
 
 <template>
@@ -166,7 +112,17 @@ getBackupProfile();
   <div class='bg-base-200 p-10'>
     <div class='container mx-auto px-4 text-left'>
       <!-- Data Section -->
-      <h1 class='text-2xl font-bold mb-4'>{{ backup.name }}</h1>
+      <label class='flex items-center gap-2 mb-4'>
+        <input
+          type='text'
+          class='text-2xl font-bold bg-transparent w-10'
+          v-model='backup.name'
+          @input='adjustBackupNameWidth'
+          @change='() => backupClient.SaveBackupProfile(backup)'
+          ref='backupNameInput'
+        />
+        <PencilIcon class='size-4 ml-2' />
+      </label>
       <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
         <!-- Storage Card -->
         <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
@@ -195,7 +151,8 @@ getBackupProfile();
           <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id' @repo:is-busy='repoIsBusy = $event'></RepoCard>
         </div>
       </div>
-      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!' :repo-is-busy='repoIsBusy'></ArchivesCard>
+      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!'
+                    :repo-is-busy='repoIsBusy'></ArchivesCard>
     </div>
   </div>
 </template>
