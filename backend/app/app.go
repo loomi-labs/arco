@@ -112,7 +112,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.registerSignalHandler()
 
 	// Save mount states
-	a.RepoClient().saveMountStates()
+	a.RepoClient().setMountStates()
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {

@@ -60,16 +60,24 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, 
 		return
 	}
 
-	if err = r.borg.MountArchive(archive.Edges.Repository.URL, archive.Name, archive.Edges.Repository.Password, path); err != nil {
-		return
-	}
-
-	// Update the mount state
+	// Check current mount state
 	state, err = getMountState(path)
 	if err != nil {
 		return
 	}
-	r.state.SetArchiveMount(archive.Edges.Repository.ID, archiveId, &state)
+	if !state.IsMounted {
+		// If not mounted, mount it
+		if err = r.borg.MountArchive(archive.Edges.Repository.URL, archive.Name, archive.Edges.Repository.Password, path); err != nil {
+			return
+		}
+
+		// Update the mount state
+		state, err = getMountState(path)
+		if err != nil {
+			return
+		}
+		r.state.SetArchiveMount(archive.Edges.Repository.ID, archiveId, &state)
+	}
 
 	// Open the file manager and forget about it
 	go r.openFileManager(path)
@@ -136,8 +144,8 @@ func (r *RepositoryClient) GetArchiveMountStates(repoId int) (states map[int]sta
 	return r.state.GetArchiveMounts(repo.ID), nil
 }
 
-// saveMountStates saves the mount states of all repositories and archives
-func (r *RepositoryClient) saveMountStates() {
+// setMountStates sets the mount states of all repositories and archives to the state
+func (r *RepositoryClient) setMountStates() {
 	repos, err := r.All()
 	if err != nil {
 		r.log.Error("Error getting all repositories: ", err)

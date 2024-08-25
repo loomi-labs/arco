@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { ent, types } from "../../wailsjs/go/models";
+import { ent, state, types } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "@heroicons/vue/24/solid";
@@ -46,6 +46,7 @@ const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
+const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map<archiveId, MountState>
 
 /************
  * Functions
@@ -73,13 +74,13 @@ async function deleteArchive() {
   try {
     await repoClient.DeleteArchive(archiveId);
     archiveToBeDeleted.value = undefined;
-    markAndFadeOutArchive(archiveId);
+    markArchiveAndFadeOut(archiveId);
   } catch (error: any) {
     await showAndLogError("Failed to delete archive", error);
   }
 }
 
-function markAndFadeOutArchive(archiveId: number) {
+function markArchiveAndFadeOut(archiveId: number) {
   deletedArchive.value = archiveId;
   setTimeout(async () => {
     deletedArchive.value = undefined;
@@ -87,11 +88,30 @@ function markAndFadeOutArchive(archiveId: number) {
   }, 2000); // Adjust the timeout as needed for the fade-out effect
 }
 
+async function getArchiveMountStates() {
+  try {
+    const result = await repoClient.GetArchiveMountStates(backupId.repositoryId);
+    archiveMountStates.value = new Map(Object.entries(result).map(([k, v]) => [Number(k), v]));
+  } catch (error: any) {
+    await showAndLogError("Failed to get archive mount states", error);
+  }
+}
+
+async function browseArchive(archiveId: number) {
+  try {
+    const archiveMountState = await repoClient.MountArchive(archiveId);
+    archiveMountStates.value.set(archiveId, archiveMountState);
+  } catch (error: any) {
+    await showAndLogError("Failed to mount archive", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
 getPaginatedArchives();
+getArchiveMountStates();
 
 </script>
 <template>
@@ -119,7 +139,7 @@ getPaginatedArchives();
           </span>
         </td>
         <td class='flex items-center border px-4 py-2'>
-          <button class='btn btn-primary'>Browse</button>
+          <button class='btn btn-primary' @click='browseArchive(archive.id)'>Browse</button>
           <button class='btn btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
                   @click='archiveToBeDeleted = archive.id'>
             <TrashIcon class='size-6' />
