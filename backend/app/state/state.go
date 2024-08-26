@@ -105,7 +105,7 @@ const (
 	BackupStatusRunning   BackupStatus = "running"
 	BackupStatusCompleted BackupStatus = "completed"
 	BackupStatusCancelled BackupStatus = "cancelled"
-	BackupStatusError     BackupStatus = "error"
+	BackupStatusFailed    BackupStatus = "failed"
 )
 
 var AvailableBackupStatuses = []BackupStatus{
@@ -114,7 +114,7 @@ var AvailableBackupStatuses = []BackupStatus{
 	BackupStatusRunning,
 	BackupStatusCompleted,
 	BackupStatusCancelled,
-	BackupStatusError,
+	BackupStatusFailed,
 }
 
 func (bs BackupStatus) String() string {
@@ -125,7 +125,7 @@ type BackupState struct {
 	*cancelCtx
 	Status   BackupStatus         `json:"status"`
 	Progress *borg.BackupProgress `json:"progress,omitempty"`
-	Error    error                `json:"error,omitempty"`
+	Error    string               `json:"error,omitempty"`
 }
 
 func newBackupState() *BackupState {
@@ -133,7 +133,7 @@ func newBackupState() *BackupState {
 		cancelCtx: nil,
 		Status:    BackupStatusIdle,
 		Progress:  nil,
-		Error:     nil,
+		Error:     "",
 	}
 }
 
@@ -294,7 +294,7 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 	s.changeBackupState(bId, BackupStatusRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
 	s.backupStates[bId].Progress = &borg.BackupProgress{}
-	s.backupStates[bId].Error = nil
+	s.backupStates[bId].Error = ""
 
 	s.setRepoState(bId.RepositoryId, RepoStatusBackingUp)
 
@@ -325,8 +325,8 @@ func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle b
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.changeBackupState(bId, BackupStatusError)
-	s.backupStates[bId].Error = err
+	s.changeBackupState(bId, BackupStatusFailed)
+	s.backupStates[bId].Error = err.Error()
 	if setRepoLocked {
 		s.setRepoState(bId.RepositoryId, RepoStatusLocked)
 	} else if setRepoStateIdle {

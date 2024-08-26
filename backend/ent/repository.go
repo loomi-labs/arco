@@ -46,9 +46,11 @@ type RepositoryEdges struct {
 	BackupProfiles []*BackupProfile `json:"backup_profiles,omitempty"`
 	// Archives holds the value of the archives edge.
 	Archives []*Archive `json:"archives,omitempty"`
+	// FailedBackupRuns holds the value of the failed_backup_runs edge.
+	FailedBackupRuns []*FailedBackupRun `json:"failed_backup_runs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // BackupProfilesOrErr returns the BackupProfiles value or an error if the edge
@@ -67,6 +69,15 @@ func (e RepositoryEdges) ArchivesOrErr() ([]*Archive, error) {
 		return e.Archives, nil
 	}
 	return nil, &NotLoadedError{edge: "archives"}
+}
+
+// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
+// was not loaded in eager-loading.
+func (e RepositoryEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
+	if e.loadedTypes[2] {
+		return e.FailedBackupRuns, nil
+	}
+	return nil, &NotLoadedError{edge: "failed_backup_runs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -174,6 +185,11 @@ func (r *Repository) QueryBackupProfiles() *BackupProfileQuery {
 // QueryArchives queries the "archives" edge of the Repository entity.
 func (r *Repository) QueryArchives() *ArchiveQuery {
 	return NewRepositoryClient(r.config).QueryArchives(r)
+}
+
+// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the Repository entity.
+func (r *Repository) QueryFailedBackupRuns() *FailedBackupRunQuery {
+	return NewRepositoryClient(r.config).QueryFailedBackupRuns(r)
 }
 
 // Update returns a builder for updating this Repository.

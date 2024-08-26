@@ -16,6 +16,8 @@ var (
 		{Name: "duration", Type: field.TypeTime},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "archive_repository", Type: field.TypeInt},
+		{Name: "archive_backup_profile", Type: field.TypeInt, Nullable: true},
+		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
 	// ArchivesTable holds the schema information for the "archives" table.
 	ArchivesTable = &schema.Table{
@@ -28,6 +30,18 @@ var (
 				Columns:    []*schema.Column{ArchivesColumns[5]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "archives_backup_profiles_backup_profile",
+				Columns:    []*schema.Column{ArchivesColumns[6]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "archives_backup_profiles_archives",
+				Columns:    []*schema.Column{ArchivesColumns[7]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -81,6 +95,40 @@ var (
 			},
 		},
 	}
+	// FailedBackupRunsColumns holds the columns for the "failed_backup_runs" table.
+	FailedBackupRunsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "error", Type: field.TypeString},
+		{Name: "failed_backup_run_backup_profile", Type: field.TypeInt},
+		{Name: "failed_backup_run_repository", Type: field.TypeInt},
+	}
+	// FailedBackupRunsTable holds the schema information for the "failed_backup_runs" table.
+	FailedBackupRunsTable = &schema.Table{
+		Name:       "failed_backup_runs",
+		Columns:    FailedBackupRunsColumns,
+		PrimaryKey: []*schema.Column{FailedBackupRunsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "failed_backup_runs_backup_profiles_backup_profile",
+				Columns:    []*schema.Column{FailedBackupRunsColumns[2]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "failed_backup_runs_repositories_repository",
+				Columns:    []*schema.Column{FailedBackupRunsColumns[3]},
+				RefColumns: []*schema.Column{RepositoriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "failedbackuprun_failed_backup_run_backup_profile_failed_backup_run_repository",
+				Unique:  true,
+				Columns: []*schema.Column{FailedBackupRunsColumns[2], FailedBackupRunsColumns[3]},
+			},
+		},
+	}
 	// RepositoriesColumns holds the columns for the "repositories" table.
 	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -130,6 +178,7 @@ var (
 		ArchivesTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
+		FailedBackupRunsTable,
 		RepositoriesTable,
 		BackupProfileRepositoriesTable,
 	}
@@ -137,7 +186,11 @@ var (
 
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
+	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
+	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	FailedBackupRunsTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	FailedBackupRunsTable.ForeignKeys[1].RefTable = RepositoriesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }

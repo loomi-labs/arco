@@ -34,6 +34,8 @@ const (
 	EdgeBackupProfiles = "backup_profiles"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
 	EdgeArchives = "archives"
+	// EdgeFailedBackupRuns holds the string denoting the failed_backup_runs edge name in mutations.
+	EdgeFailedBackupRuns = "failed_backup_runs"
 	// Table holds the table name of the repository in the database.
 	Table = "repositories"
 	// BackupProfilesTable is the table that holds the backup_profiles relation/edge. The primary key declared below.
@@ -48,6 +50,13 @@ const (
 	ArchivesInverseTable = "archives"
 	// ArchivesColumn is the table column denoting the archives relation/edge.
 	ArchivesColumn = "archive_repository"
+	// FailedBackupRunsTable is the table that holds the failed_backup_runs relation/edge.
+	FailedBackupRunsTable = "failed_backup_runs"
+	// FailedBackupRunsInverseTable is the table name for the FailedBackupRun entity.
+	// It exists in this package in order to avoid circular dependency with the "failedbackuprun" package.
+	FailedBackupRunsInverseTable = "failed_backup_runs"
+	// FailedBackupRunsColumn is the table column denoting the failed_backup_runs relation/edge.
+	FailedBackupRunsColumn = "failed_backup_run_repository"
 )
 
 // Columns holds all SQL columns for repository fields.
@@ -175,6 +184,20 @@ func ByArchives(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newArchivesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByFailedBackupRunsCount orders the results by failed_backup_runs count.
+func ByFailedBackupRunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFailedBackupRunsStep(), opts...)
+	}
+}
+
+// ByFailedBackupRuns orders the results by failed_backup_runs terms.
+func ByFailedBackupRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFailedBackupRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBackupProfilesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -187,5 +210,12 @@ func newArchivesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ArchivesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, ArchivesTable, ArchivesColumn),
+	)
+}
+func newFailedBackupRunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FailedBackupRunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
 	)
 }

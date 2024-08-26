@@ -140,7 +140,7 @@ func (bsu *BackupScheduleUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsu *BackupScheduleUpdate) check() error {
-	if _, ok := bsu.mutation.BackupProfileID(); bsu.mutation.BackupProfileCleared() && !ok {
+	if bsu.mutation.BackupProfileCleared() && len(bsu.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "BackupSchedule.backup_profile"`)
 	}
 	return nil
@@ -364,7 +364,7 @@ func (bsuo *BackupScheduleUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsuo *BackupScheduleUpdateOne) check() error {
-	if _, ok := bsuo.mutation.BackupProfileID(); bsuo.mutation.BackupProfileCleared() && !ok {
+	if bsuo.mutation.BackupProfileCleared() && len(bsuo.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "BackupSchedule.backup_profile"`)
 	}
 	return nil

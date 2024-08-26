@@ -7,6 +7,7 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 	"errors"
 	"fmt"
@@ -267,6 +268,31 @@ func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
 	return err
 }
 
+func (b *BackupClient) deleteFailedBackupRun(bId types.BackupId) error {
+	_, err := b.db.FailedBackupRun.
+		Delete().
+		Where(failedbackuprun.And(
+			failedbackuprun.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+			failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+		)).
+		Exec(b.ctx)
+	return err
+}
+
+func (b *BackupClient) saveFailedBackupRun(bId types.BackupId, backupErr error) error {
+	err := b.deleteFailedBackupRun(bId)
+	if err != nil {
+		return err
+	}
+	_, err = b.db.FailedBackupRun.
+		Create().
+		SetRepositoryID(bId.RepositoryId).
+		SetBackupProfileID(bId.BackupProfileId).
+		SetError(backupErr.Error()).
+		Save(b.ctx)
+	return err
+}
+
 /***********************************/
 /********** Borg Commands **********/
 /***********************************/
@@ -300,15 +326,28 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			return state.BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			err = fmt.Errorf("repository is locked")
+			saveErr := b.saveFailedBackupRun(bId, err)
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+			}
 			b.state.SetBackupError(bId, err, false, true)
 			return state.BackupResultError, err
 		} else {
+			saveErr := b.saveFailedBackupRun(bId, err)
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+			}
 			b.state.SetBackupError(bId, err, true, false)
 			return state.BackupResultError, err
 		}
 	} else {
 		// Backup completed successfully
 		defer b.state.SetBackupCompleted(bId, true)
+
+		err = b.deleteFailedBackupRun(bId)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to delete failed backup run: %s", err))
+		}
 
 		err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
 		if err != nil {

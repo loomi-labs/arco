@@ -5,6 +5,7 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -227,6 +228,21 @@ func (ru *RepositoryUpdate) AddArchives(a ...*Archive) *RepositoryUpdate {
 	return ru.AddArchiveIDs(ids...)
 }
 
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (ru *RepositoryUpdate) AddFailedBackupRunIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.AddFailedBackupRunIDs(ids...)
+	return ru
+}
+
+// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
+func (ru *RepositoryUpdate) AddFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return ru.AddFailedBackupRunIDs(ids...)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ru *RepositoryUpdate) Mutation() *RepositoryMutation {
 	return ru.mutation
@@ -272,6 +288,27 @@ func (ru *RepositoryUpdate) RemoveArchives(a ...*Archive) *RepositoryUpdate {
 		ids[i] = a[i].ID
 	}
 	return ru.RemoveArchiveIDs(ids...)
+}
+
+// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
+func (ru *RepositoryUpdate) ClearFailedBackupRuns() *RepositoryUpdate {
+	ru.mutation.ClearFailedBackupRuns()
+	return ru
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
+func (ru *RepositoryUpdate) RemoveFailedBackupRunIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.RemoveFailedBackupRunIDs(ids...)
+	return ru
+}
+
+// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
+func (ru *RepositoryUpdate) RemoveFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return ru.RemoveFailedBackupRunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -438,6 +475,51 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !ru.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -663,6 +745,21 @@ func (ruo *RepositoryUpdateOne) AddArchives(a ...*Archive) *RepositoryUpdateOne 
 	return ruo.AddArchiveIDs(ids...)
 }
 
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (ruo *RepositoryUpdateOne) AddFailedBackupRunIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.AddFailedBackupRunIDs(ids...)
+	return ruo
+}
+
+// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
+func (ruo *RepositoryUpdateOne) AddFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return ruo.AddFailedBackupRunIDs(ids...)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ruo *RepositoryUpdateOne) Mutation() *RepositoryMutation {
 	return ruo.mutation
@@ -708,6 +805,27 @@ func (ruo *RepositoryUpdateOne) RemoveArchives(a ...*Archive) *RepositoryUpdateO
 		ids[i] = a[i].ID
 	}
 	return ruo.RemoveArchiveIDs(ids...)
+}
+
+// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
+func (ruo *RepositoryUpdateOne) ClearFailedBackupRuns() *RepositoryUpdateOne {
+	ruo.mutation.ClearFailedBackupRuns()
+	return ruo
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
+func (ruo *RepositoryUpdateOne) RemoveFailedBackupRunIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.RemoveFailedBackupRunIDs(ids...)
+	return ruo
+}
+
+// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
+func (ruo *RepositoryUpdateOne) RemoveFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return ruo.RemoveFailedBackupRunIDs(ids...)
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
@@ -904,6 +1022,51 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !ruo.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   repository.FailedBackupRunsTable,
+			Columns: []string{repository.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

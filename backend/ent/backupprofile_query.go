@@ -3,8 +3,10 @@
 package ent
 
 import (
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -12,6 +14,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -20,12 +23,14 @@ import (
 // BackupProfileQuery is the builder for querying BackupProfile entities.
 type BackupProfileQuery struct {
 	config
-	ctx                *QueryContext
-	order              []backupprofile.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.BackupProfile
-	withRepositories   *RepositoryQuery
-	withBackupSchedule *BackupScheduleQuery
+	ctx                  *QueryContext
+	order                []backupprofile.OrderOption
+	inters               []Interceptor
+	predicates           []predicate.BackupProfile
+	withRepositories     *RepositoryQuery
+	withArchives         *ArchiveQuery
+	withBackupSchedule   *BackupScheduleQuery
+	withFailedBackupRuns *FailedBackupRunQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -84,6 +89,28 @@ func (bpq *BackupProfileQuery) QueryRepositories() *RepositoryQuery {
 	return query
 }
 
+// QueryArchives chains the current query on the "archives" edge.
+func (bpq *BackupProfileQuery) QueryArchives() *ArchiveQuery {
+	query := (&ArchiveClient{config: bpq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
+			sqlgraph.To(archive.Table, archive.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backupprofile.ArchivesTable, backupprofile.ArchivesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryBackupSchedule chains the current query on the "backup_schedule" edge.
 func (bpq *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
 	query := (&BackupScheduleClient{config: bpq.config}).Query()
@@ -106,10 +133,32 @@ func (bpq *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
 	return query
 }
 
+// QueryFailedBackupRuns chains the current query on the "failed_backup_runs" edge.
+func (bpq *BackupProfileQuery) QueryFailedBackupRuns() *FailedBackupRunQuery {
+	query := (&FailedBackupRunClient{config: bpq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
+			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.FailedBackupRunsTable, backupprofile.FailedBackupRunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first BackupProfile entity from the query.
 // Returns a *NotFoundError when no BackupProfile was found.
 func (bpq *BackupProfileQuery) First(ctx context.Context) (*BackupProfile, error) {
-	nodes, err := bpq.Limit(1).All(setContextOp(ctx, bpq.ctx, "First"))
+	nodes, err := bpq.Limit(1).All(setContextOp(ctx, bpq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +181,7 @@ func (bpq *BackupProfileQuery) FirstX(ctx context.Context) *BackupProfile {
 // Returns a *NotFoundError when no BackupProfile ID was found.
 func (bpq *BackupProfileQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bpq.Limit(1).IDs(setContextOp(ctx, bpq.ctx, "FirstID")); err != nil {
+	if ids, err = bpq.Limit(1).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -155,7 +204,7 @@ func (bpq *BackupProfileQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one BackupProfile entity is found.
 // Returns a *NotFoundError when no BackupProfile entities are found.
 func (bpq *BackupProfileQuery) Only(ctx context.Context) (*BackupProfile, error) {
-	nodes, err := bpq.Limit(2).All(setContextOp(ctx, bpq.ctx, "Only"))
+	nodes, err := bpq.Limit(2).All(setContextOp(ctx, bpq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +232,7 @@ func (bpq *BackupProfileQuery) OnlyX(ctx context.Context) *BackupProfile {
 // Returns a *NotFoundError when no entities are found.
 func (bpq *BackupProfileQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bpq.Limit(2).IDs(setContextOp(ctx, bpq.ctx, "OnlyID")); err != nil {
+	if ids, err = bpq.Limit(2).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -208,7 +257,7 @@ func (bpq *BackupProfileQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of BackupProfiles.
 func (bpq *BackupProfileQuery) All(ctx context.Context) ([]*BackupProfile, error) {
-	ctx = setContextOp(ctx, bpq.ctx, "All")
+	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryAll)
 	if err := bpq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -230,7 +279,7 @@ func (bpq *BackupProfileQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if bpq.ctx.Unique == nil && bpq.path != nil {
 		bpq.Unique(true)
 	}
-	ctx = setContextOp(ctx, bpq.ctx, "IDs")
+	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryIDs)
 	if err = bpq.Select(backupprofile.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -248,7 +297,7 @@ func (bpq *BackupProfileQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (bpq *BackupProfileQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, bpq.ctx, "Count")
+	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryCount)
 	if err := bpq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -266,7 +315,7 @@ func (bpq *BackupProfileQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (bpq *BackupProfileQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, bpq.ctx, "Exist")
+	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryExist)
 	switch _, err := bpq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -293,13 +342,15 @@ func (bpq *BackupProfileQuery) Clone() *BackupProfileQuery {
 		return nil
 	}
 	return &BackupProfileQuery{
-		config:             bpq.config,
-		ctx:                bpq.ctx.Clone(),
-		order:              append([]backupprofile.OrderOption{}, bpq.order...),
-		inters:             append([]Interceptor{}, bpq.inters...),
-		predicates:         append([]predicate.BackupProfile{}, bpq.predicates...),
-		withRepositories:   bpq.withRepositories.Clone(),
-		withBackupSchedule: bpq.withBackupSchedule.Clone(),
+		config:               bpq.config,
+		ctx:                  bpq.ctx.Clone(),
+		order:                append([]backupprofile.OrderOption{}, bpq.order...),
+		inters:               append([]Interceptor{}, bpq.inters...),
+		predicates:           append([]predicate.BackupProfile{}, bpq.predicates...),
+		withRepositories:     bpq.withRepositories.Clone(),
+		withArchives:         bpq.withArchives.Clone(),
+		withBackupSchedule:   bpq.withBackupSchedule.Clone(),
+		withFailedBackupRuns: bpq.withFailedBackupRuns.Clone(),
 		// clone intermediate query.
 		sql:  bpq.sql.Clone(),
 		path: bpq.path,
@@ -317,6 +368,17 @@ func (bpq *BackupProfileQuery) WithRepositories(opts ...func(*RepositoryQuery)) 
 	return bpq
 }
 
+// WithArchives tells the query-builder to eager-load the nodes that are connected to
+// the "archives" edge. The optional arguments are used to configure the query builder of the edge.
+func (bpq *BackupProfileQuery) WithArchives(opts ...func(*ArchiveQuery)) *BackupProfileQuery {
+	query := (&ArchiveClient{config: bpq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bpq.withArchives = query
+	return bpq
+}
+
 // WithBackupSchedule tells the query-builder to eager-load the nodes that are connected to
 // the "backup_schedule" edge. The optional arguments are used to configure the query builder of the edge.
 func (bpq *BackupProfileQuery) WithBackupSchedule(opts ...func(*BackupScheduleQuery)) *BackupProfileQuery {
@@ -325,6 +387,17 @@ func (bpq *BackupProfileQuery) WithBackupSchedule(opts ...func(*BackupScheduleQu
 		opt(query)
 	}
 	bpq.withBackupSchedule = query
+	return bpq
+}
+
+// WithFailedBackupRuns tells the query-builder to eager-load the nodes that are connected to
+// the "failed_backup_runs" edge. The optional arguments are used to configure the query builder of the edge.
+func (bpq *BackupProfileQuery) WithFailedBackupRuns(opts ...func(*FailedBackupRunQuery)) *BackupProfileQuery {
+	query := (&FailedBackupRunClient{config: bpq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bpq.withFailedBackupRuns = query
 	return bpq
 }
 
@@ -406,9 +479,11 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*BackupProfile{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			bpq.withRepositories != nil,
+			bpq.withArchives != nil,
 			bpq.withBackupSchedule != nil,
+			bpq.withFailedBackupRuns != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -436,9 +511,25 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			return nil, err
 		}
 	}
+	if query := bpq.withArchives; query != nil {
+		if err := bpq.loadArchives(ctx, query, nodes,
+			func(n *BackupProfile) { n.Edges.Archives = []*Archive{} },
+			func(n *BackupProfile, e *Archive) { n.Edges.Archives = append(n.Edges.Archives, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := bpq.withBackupSchedule; query != nil {
 		if err := bpq.loadBackupSchedule(ctx, query, nodes, nil,
 			func(n *BackupProfile, e *BackupSchedule) { n.Edges.BackupSchedule = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bpq.withFailedBackupRuns; query != nil {
+		if err := bpq.loadFailedBackupRuns(ctx, query, nodes,
+			func(n *BackupProfile) { n.Edges.FailedBackupRuns = []*FailedBackupRun{} },
+			func(n *BackupProfile, e *FailedBackupRun) {
+				n.Edges.FailedBackupRuns = append(n.Edges.FailedBackupRuns, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -506,6 +597,37 @@ func (bpq *BackupProfileQuery) loadRepositories(ctx context.Context, query *Repo
 	}
 	return nil
 }
+func (bpq *BackupProfileQuery) loadArchives(ctx context.Context, query *ArchiveQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Archive)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*BackupProfile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Archive(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(backupprofile.ArchivesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.backup_profile_archives
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "backup_profile_archives" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "backup_profile_archives" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (bpq *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *BackupScheduleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *BackupSchedule)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*BackupProfile)
@@ -529,6 +651,37 @@ func (bpq *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *Ba
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "backup_profile_backup_schedule" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (bpq *BackupProfileQuery) loadFailedBackupRuns(ctx context.Context, query *FailedBackupRunQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *FailedBackupRun)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*BackupProfile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.FailedBackupRun(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(backupprofile.FailedBackupRunsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.failed_backup_run_backup_profile
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "failed_backup_run_backup_profile" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "failed_backup_run_backup_profile" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -630,7 +783,7 @@ func (bpgb *BackupProfileGroupBy) Aggregate(fns ...AggregateFunc) *BackupProfile
 
 // Scan applies the selector query and scans the result into the given value.
 func (bpgb *BackupProfileGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bpgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, bpgb.build.ctx, ent.OpQueryGroupBy)
 	if err := bpgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -678,7 +831,7 @@ func (bps *BackupProfileSelect) Aggregate(fns ...AggregateFunc) *BackupProfileSe
 
 // Scan applies the selector query and scans the result into the given value.
 func (bps *BackupProfileSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bps.ctx, "Select")
+	ctx = setContextOp(ctx, bps.ctx, ent.OpQuerySelect)
 	if err := bps.prepareQuery(ctx); err != nil {
 		return err
 	}

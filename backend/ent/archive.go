@@ -4,6 +4,7 @@ package ent
 
 import (
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
@@ -28,18 +29,22 @@ type Archive struct {
 	BorgID string `json:"borgId"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
-	Edges              ArchiveEdges `json:"edges"`
-	archive_repository *int
-	selectValues       sql.SelectValues
+	Edges                   ArchiveEdges `json:"edges"`
+	archive_repository      *int
+	archive_backup_profile  *int
+	backup_profile_archives *int
+	selectValues            sql.SelectValues
 }
 
 // ArchiveEdges holds the relations/edges for other nodes in the graph.
 type ArchiveEdges struct {
 	// Repository holds the value of the repository edge.
 	Repository *Repository `json:"repository,omitempty"`
+	// BackupProfile holds the value of the backup_profile edge.
+	BackupProfile *BackupProfile `json:"backup_profile,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // RepositoryOrErr returns the Repository value or an error if the edge
@@ -51,6 +56,17 @@ func (e ArchiveEdges) RepositoryOrErr() (*Repository, error) {
 		return nil, &NotFoundError{label: repository.Label}
 	}
 	return nil, &NotLoadedError{edge: "repository"}
+}
+
+// BackupProfileOrErr returns the BackupProfile value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ArchiveEdges) BackupProfileOrErr() (*BackupProfile, error) {
+	if e.BackupProfile != nil {
+		return e.BackupProfile, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: backupprofile.Label}
+	}
+	return nil, &NotLoadedError{edge: "backup_profile"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -65,6 +81,10 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 		case archive.FieldCreatedAt, archive.FieldDuration:
 			values[i] = new(sql.NullTime)
 		case archive.ForeignKeys[0]: // archive_repository
+			values[i] = new(sql.NullInt64)
+		case archive.ForeignKeys[1]: // archive_backup_profile
+			values[i] = new(sql.NullInt64)
+		case archive.ForeignKeys[2]: // backup_profile_archives
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -118,6 +138,20 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 				a.archive_repository = new(int)
 				*a.archive_repository = int(value.Int64)
 			}
+		case archive.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field archive_backup_profile", value)
+			} else if value.Valid {
+				a.archive_backup_profile = new(int)
+				*a.archive_backup_profile = int(value.Int64)
+			}
+		case archive.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field backup_profile_archives", value)
+			} else if value.Valid {
+				a.backup_profile_archives = new(int)
+				*a.backup_profile_archives = int(value.Int64)
+			}
 		default:
 			a.selectValues.Set(columns[i], values[i])
 		}
@@ -134,6 +168,11 @@ func (a *Archive) Value(name string) (ent.Value, error) {
 // QueryRepository queries the "repository" edge of the Archive entity.
 func (a *Archive) QueryRepository() *RepositoryQuery {
 	return NewArchiveClient(a.config).QueryRepository(a)
+}
+
+// QueryBackupProfile queries the "backup_profile" edge of the Archive entity.
+func (a *Archive) QueryBackupProfile() *BackupProfileQuery {
+	return NewArchiveClient(a.config).QueryBackupProfile(a)
 }
 
 // Update returns a builder for updating this Archive.

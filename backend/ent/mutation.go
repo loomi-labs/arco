@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -27,28 +28,31 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArchive        = "Archive"
-	TypeBackupProfile  = "BackupProfile"
-	TypeBackupSchedule = "BackupSchedule"
-	TypeRepository     = "Repository"
+	TypeArchive         = "Archive"
+	TypeBackupProfile   = "BackupProfile"
+	TypeBackupSchedule  = "BackupSchedule"
+	TypeFailedBackupRun = "FailedBackupRun"
+	TypeRepository      = "Repository"
 )
 
 // ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
 type ArchiveMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	name              *string
-	createdAt         *time.Time
-	duration          *time.Time
-	borg_id           *string
-	clearedFields     map[string]struct{}
-	repository        *int
-	clearedrepository bool
-	done              bool
-	oldValue          func(context.Context) (*Archive, error)
-	predicates        []predicate.Archive
+	op                    Op
+	typ                   string
+	id                    *int
+	name                  *string
+	createdAt             *time.Time
+	duration              *time.Time
+	borg_id               *string
+	clearedFields         map[string]struct{}
+	repository            *int
+	clearedrepository     bool
+	backup_profile        *int
+	clearedbackup_profile bool
+	done                  bool
+	oldValue              func(context.Context) (*Archive, error)
+	predicates            []predicate.Archive
 }
 
 var _ ent.Mutation = (*ArchiveMutation)(nil)
@@ -338,6 +342,45 @@ func (m *ArchiveMutation) ResetRepository() {
 	m.clearedrepository = false
 }
 
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
+func (m *ArchiveMutation) SetBackupProfileID(id int) {
+	m.backup_profile = &id
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (m *ArchiveMutation) ClearBackupProfile() {
+	m.clearedbackup_profile = true
+}
+
+// BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
+func (m *ArchiveMutation) BackupProfileCleared() bool {
+	return m.clearedbackup_profile
+}
+
+// BackupProfileID returns the "backup_profile" edge ID in the mutation.
+func (m *ArchiveMutation) BackupProfileID() (id int, exists bool) {
+	if m.backup_profile != nil {
+		return *m.backup_profile, true
+	}
+	return
+}
+
+// BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BackupProfileID instead. It exists only for internal usage by the builders.
+func (m *ArchiveMutation) BackupProfileIDs() (ids []int) {
+	if id := m.backup_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBackupProfile resets all changes to the "backup_profile" edge.
+func (m *ArchiveMutation) ResetBackupProfile() {
+	m.backup_profile = nil
+	m.clearedbackup_profile = false
+}
+
 // Where appends a list predicates to the ArchiveMutation builder.
 func (m *ArchiveMutation) Where(ps ...predicate.Archive) {
 	m.predicates = append(m.predicates, ps...)
@@ -522,9 +565,12 @@ func (m *ArchiveMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ArchiveMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.repository != nil {
 		edges = append(edges, archive.EdgeRepository)
+	}
+	if m.backup_profile != nil {
+		edges = append(edges, archive.EdgeBackupProfile)
 	}
 	return edges
 }
@@ -537,13 +583,17 @@ func (m *ArchiveMutation) AddedIDs(name string) []ent.Value {
 		if id := m.repository; id != nil {
 			return []ent.Value{*id}
 		}
+	case archive.EdgeBackupProfile:
+		if id := m.backup_profile; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ArchiveMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -555,9 +605,12 @@ func (m *ArchiveMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ArchiveMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedrepository {
 		edges = append(edges, archive.EdgeRepository)
+	}
+	if m.clearedbackup_profile {
+		edges = append(edges, archive.EdgeBackupProfile)
 	}
 	return edges
 }
@@ -568,6 +621,8 @@ func (m *ArchiveMutation) EdgeCleared(name string) bool {
 	switch name {
 	case archive.EdgeRepository:
 		return m.clearedrepository
+	case archive.EdgeBackupProfile:
+		return m.clearedbackup_profile
 	}
 	return false
 }
@@ -578,6 +633,9 @@ func (m *ArchiveMutation) ClearEdge(name string) error {
 	switch name {
 	case archive.EdgeRepository:
 		m.ClearRepository()
+		return nil
+	case archive.EdgeBackupProfile:
+		m.ClearBackupProfile()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive unique edge %s", name)
@@ -590,6 +648,9 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 	case archive.EdgeRepository:
 		m.ResetRepository()
 		return nil
+	case archive.EdgeBackupProfile:
+		m.ResetBackupProfile()
+		return nil
 	}
 	return fmt.Errorf("unknown Archive edge %s", name)
 }
@@ -597,25 +658,31 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 // BackupProfileMutation represents an operation that mutates the BackupProfile nodes in the graph.
 type BackupProfileMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	name                   *string
-	prefix                 *string
-	backup_paths           *[]string
-	appendbackup_paths     []string
-	exclude_paths          *[]string
-	appendexclude_paths    []string
-	is_setup_complete      *bool
-	clearedFields          map[string]struct{}
-	repositories           map[int]struct{}
-	removedrepositories    map[int]struct{}
-	clearedrepositories    bool
-	backup_schedule        *int
-	clearedbackup_schedule bool
-	done                   bool
-	oldValue               func(context.Context) (*BackupProfile, error)
-	predicates             []predicate.BackupProfile
+	op                        Op
+	typ                       string
+	id                        *int
+	name                      *string
+	prefix                    *string
+	backup_paths              *[]string
+	appendbackup_paths        []string
+	exclude_paths             *[]string
+	appendexclude_paths       []string
+	is_setup_complete         *bool
+	clearedFields             map[string]struct{}
+	repositories              map[int]struct{}
+	removedrepositories       map[int]struct{}
+	clearedrepositories       bool
+	archives                  map[int]struct{}
+	removedarchives           map[int]struct{}
+	clearedarchives           bool
+	backup_schedule           *int
+	clearedbackup_schedule    bool
+	failed_backup_runs        map[int]struct{}
+	removedfailed_backup_runs map[int]struct{}
+	clearedfailed_backup_runs bool
+	done                      bool
+	oldValue                  func(context.Context) (*BackupProfile, error)
+	predicates                []predicate.BackupProfile
 }
 
 var _ ent.Mutation = (*BackupProfileMutation)(nil)
@@ -1000,6 +1067,60 @@ func (m *BackupProfileMutation) ResetRepositories() {
 	m.removedrepositories = nil
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by ids.
+func (m *BackupProfileMutation) AddArchiveIDs(ids ...int) {
+	if m.archives == nil {
+		m.archives = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.archives[ids[i]] = struct{}{}
+	}
+}
+
+// ClearArchives clears the "archives" edge to the Archive entity.
+func (m *BackupProfileMutation) ClearArchives() {
+	m.clearedarchives = true
+}
+
+// ArchivesCleared reports if the "archives" edge to the Archive entity was cleared.
+func (m *BackupProfileMutation) ArchivesCleared() bool {
+	return m.clearedarchives
+}
+
+// RemoveArchiveIDs removes the "archives" edge to the Archive entity by IDs.
+func (m *BackupProfileMutation) RemoveArchiveIDs(ids ...int) {
+	if m.removedarchives == nil {
+		m.removedarchives = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.archives, ids[i])
+		m.removedarchives[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedArchives returns the removed IDs of the "archives" edge to the Archive entity.
+func (m *BackupProfileMutation) RemovedArchivesIDs() (ids []int) {
+	for id := range m.removedarchives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ArchivesIDs returns the "archives" edge IDs in the mutation.
+func (m *BackupProfileMutation) ArchivesIDs() (ids []int) {
+	for id := range m.archives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetArchives resets all changes to the "archives" edge.
+func (m *BackupProfileMutation) ResetArchives() {
+	m.archives = nil
+	m.clearedarchives = false
+	m.removedarchives = nil
+}
+
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by id.
 func (m *BackupProfileMutation) SetBackupScheduleID(id int) {
 	m.backup_schedule = &id
@@ -1037,6 +1158,60 @@ func (m *BackupProfileMutation) BackupScheduleIDs() (ids []int) {
 func (m *BackupProfileMutation) ResetBackupSchedule() {
 	m.backup_schedule = nil
 	m.clearedbackup_schedule = false
+}
+
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
+func (m *BackupProfileMutation) AddFailedBackupRunIDs(ids ...int) {
+	if m.failed_backup_runs == nil {
+		m.failed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.failed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *BackupProfileMutation) ClearFailedBackupRuns() {
+	m.clearedfailed_backup_runs = true
+}
+
+// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
+func (m *BackupProfileMutation) FailedBackupRunsCleared() bool {
+	return m.clearedfailed_backup_runs
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (m *BackupProfileMutation) RemoveFailedBackupRunIDs(ids ...int) {
+	if m.removedfailed_backup_runs == nil {
+		m.removedfailed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.failed_backup_runs, ids[i])
+		m.removedfailed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *BackupProfileMutation) RemovedFailedBackupRunsIDs() (ids []int) {
+	for id := range m.removedfailed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
+func (m *BackupProfileMutation) FailedBackupRunsIDs() (ids []int) {
+	for id := range m.failed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
+func (m *BackupProfileMutation) ResetFailedBackupRuns() {
+	m.failed_backup_runs = nil
+	m.clearedfailed_backup_runs = false
+	m.removedfailed_backup_runs = nil
 }
 
 // Where appends a list predicates to the BackupProfileMutation builder.
@@ -1249,12 +1424,18 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BackupProfileMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.repositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
+	if m.archives != nil {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
 	if m.backup_schedule != nil {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
+	}
+	if m.failed_backup_runs != nil {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1269,19 +1450,37 @@ func (m *BackupProfileMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backupprofile.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.archives))
+		for id := range m.archives {
+			ids = append(ids, id)
+		}
+		return ids
 	case backupprofile.EdgeBackupSchedule:
 		if id := m.backup_schedule; id != nil {
 			return []ent.Value{*id}
 		}
+	case backupprofile.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
+		for id := range m.failed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BackupProfileMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.removedrepositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
+	}
+	if m.removedarchives != nil {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
+	if m.removedfailed_backup_runs != nil {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1296,18 +1495,36 @@ func (m *BackupProfileMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backupprofile.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.removedarchives))
+		for id := range m.removedarchives {
+			ids = append(ids, id)
+		}
+		return ids
+	case backupprofile.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
+		for id := range m.removedfailed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BackupProfileMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedrepositories {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
+	if m.clearedarchives {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
 	if m.clearedbackup_schedule {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
+	}
+	if m.clearedfailed_backup_runs {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1318,8 +1535,12 @@ func (m *BackupProfileMutation) EdgeCleared(name string) bool {
 	switch name {
 	case backupprofile.EdgeRepositories:
 		return m.clearedrepositories
+	case backupprofile.EdgeArchives:
+		return m.clearedarchives
 	case backupprofile.EdgeBackupSchedule:
 		return m.clearedbackup_schedule
+	case backupprofile.EdgeFailedBackupRuns:
+		return m.clearedfailed_backup_runs
 	}
 	return false
 }
@@ -1342,8 +1563,14 @@ func (m *BackupProfileMutation) ResetEdge(name string) error {
 	case backupprofile.EdgeRepositories:
 		m.ResetRepositories()
 		return nil
+	case backupprofile.EdgeArchives:
+		m.ResetArchives()
+		return nil
 	case backupprofile.EdgeBackupSchedule:
 		m.ResetBackupSchedule()
+		return nil
+	case backupprofile.EdgeFailedBackupRuns:
+		m.ResetFailedBackupRuns()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile edge %s", name)
@@ -2366,6 +2593,458 @@ func (m *BackupScheduleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown BackupSchedule edge %s", name)
 }
 
+// FailedBackupRunMutation represents an operation that mutates the FailedBackupRun nodes in the graph.
+type FailedBackupRunMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int
+	error                 *string
+	clearedFields         map[string]struct{}
+	backup_profile        *int
+	clearedbackup_profile bool
+	repository            *int
+	clearedrepository     bool
+	done                  bool
+	oldValue              func(context.Context) (*FailedBackupRun, error)
+	predicates            []predicate.FailedBackupRun
+}
+
+var _ ent.Mutation = (*FailedBackupRunMutation)(nil)
+
+// failedbackuprunOption allows management of the mutation configuration using functional options.
+type failedbackuprunOption func(*FailedBackupRunMutation)
+
+// newFailedBackupRunMutation creates new mutation for the FailedBackupRun entity.
+func newFailedBackupRunMutation(c config, op Op, opts ...failedbackuprunOption) *FailedBackupRunMutation {
+	m := &FailedBackupRunMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFailedBackupRun,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFailedBackupRunID sets the ID field of the mutation.
+func withFailedBackupRunID(id int) failedbackuprunOption {
+	return func(m *FailedBackupRunMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FailedBackupRun
+		)
+		m.oldValue = func(ctx context.Context) (*FailedBackupRun, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FailedBackupRun.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFailedBackupRun sets the old FailedBackupRun of the mutation.
+func withFailedBackupRun(node *FailedBackupRun) failedbackuprunOption {
+	return func(m *FailedBackupRunMutation) {
+		m.oldValue = func(context.Context) (*FailedBackupRun, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FailedBackupRunMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FailedBackupRunMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FailedBackupRunMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FailedBackupRunMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FailedBackupRun.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetError sets the "error" field.
+func (m *FailedBackupRunMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *FailedBackupRunMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the FailedBackupRun entity.
+// If the FailedBackupRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedBackupRunMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *FailedBackupRunMutation) ResetError() {
+	m.error = nil
+}
+
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
+func (m *FailedBackupRunMutation) SetBackupProfileID(id int) {
+	m.backup_profile = &id
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (m *FailedBackupRunMutation) ClearBackupProfile() {
+	m.clearedbackup_profile = true
+}
+
+// BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
+func (m *FailedBackupRunMutation) BackupProfileCleared() bool {
+	return m.clearedbackup_profile
+}
+
+// BackupProfileID returns the "backup_profile" edge ID in the mutation.
+func (m *FailedBackupRunMutation) BackupProfileID() (id int, exists bool) {
+	if m.backup_profile != nil {
+		return *m.backup_profile, true
+	}
+	return
+}
+
+// BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BackupProfileID instead. It exists only for internal usage by the builders.
+func (m *FailedBackupRunMutation) BackupProfileIDs() (ids []int) {
+	if id := m.backup_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBackupProfile resets all changes to the "backup_profile" edge.
+func (m *FailedBackupRunMutation) ResetBackupProfile() {
+	m.backup_profile = nil
+	m.clearedbackup_profile = false
+}
+
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *FailedBackupRunMutation) SetRepositoryID(id int) {
+	m.repository = &id
+}
+
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *FailedBackupRunMutation) ClearRepository() {
+	m.clearedrepository = true
+}
+
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *FailedBackupRunMutation) RepositoryCleared() bool {
+	return m.clearedrepository
+}
+
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *FailedBackupRunMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
+	}
+	return
+}
+
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *FailedBackupRunMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRepository resets all changes to the "repository" edge.
+func (m *FailedBackupRunMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
+}
+
+// Where appends a list predicates to the FailedBackupRunMutation builder.
+func (m *FailedBackupRunMutation) Where(ps ...predicate.FailedBackupRun) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FailedBackupRunMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FailedBackupRunMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FailedBackupRun, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FailedBackupRunMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FailedBackupRunMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FailedBackupRun).
+func (m *FailedBackupRunMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FailedBackupRunMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.error != nil {
+		fields = append(fields, failedbackuprun.FieldError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FailedBackupRunMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case failedbackuprun.FieldError:
+		return m.Error()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FailedBackupRunMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case failedbackuprun.FieldError:
+		return m.OldError(ctx)
+	}
+	return nil, fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedBackupRunMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case failedbackuprun.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FailedBackupRunMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FailedBackupRunMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedBackupRunMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FailedBackupRun numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FailedBackupRunMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FailedBackupRunMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FailedBackupRunMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown FailedBackupRun nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FailedBackupRunMutation) ResetField(name string) error {
+	switch name {
+	case failedbackuprun.FieldError:
+		m.ResetError()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FailedBackupRunMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.backup_profile != nil {
+		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+	}
+	if m.repository != nil {
+		edges = append(edges, failedbackuprun.EdgeRepository)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FailedBackupRunMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		if id := m.backup_profile; id != nil {
+			return []ent.Value{*id}
+		}
+	case failedbackuprun.EdgeRepository:
+		if id := m.repository; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FailedBackupRunMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FailedBackupRunMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FailedBackupRunMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedbackup_profile {
+		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+	}
+	if m.clearedrepository {
+		edges = append(edges, failedbackuprun.EdgeRepository)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FailedBackupRunMutation) EdgeCleared(name string) bool {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		return m.clearedbackup_profile
+	case failedbackuprun.EdgeRepository:
+		return m.clearedrepository
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FailedBackupRunMutation) ClearEdge(name string) error {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		m.ClearBackupProfile()
+		return nil
+	case failedbackuprun.EdgeRepository:
+		m.ClearRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FailedBackupRunMutation) ResetEdge(name string) error {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		m.ResetBackupProfile()
+		return nil
+	case failedbackuprun.EdgeRepository:
+		m.ResetRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun edge %s", name)
+}
+
 // RepositoryMutation represents an operation that mutates the Repository nodes in the graph.
 type RepositoryMutation struct {
 	config
@@ -2394,6 +3073,9 @@ type RepositoryMutation struct {
 	archives                     map[int]struct{}
 	removedarchives              map[int]struct{}
 	clearedarchives              bool
+	failed_backup_runs           map[int]struct{}
+	removedfailed_backup_runs    map[int]struct{}
+	clearedfailed_backup_runs    bool
 	done                         bool
 	oldValue                     func(context.Context) (*Repository, error)
 	predicates                   []predicate.Repository
@@ -3055,6 +3737,60 @@ func (m *RepositoryMutation) ResetArchives() {
 	m.removedarchives = nil
 }
 
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
+func (m *RepositoryMutation) AddFailedBackupRunIDs(ids ...int) {
+	if m.failed_backup_runs == nil {
+		m.failed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.failed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *RepositoryMutation) ClearFailedBackupRuns() {
+	m.clearedfailed_backup_runs = true
+}
+
+// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
+func (m *RepositoryMutation) FailedBackupRunsCleared() bool {
+	return m.clearedfailed_backup_runs
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (m *RepositoryMutation) RemoveFailedBackupRunIDs(ids ...int) {
+	if m.removedfailed_backup_runs == nil {
+		m.removedfailed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.failed_backup_runs, ids[i])
+		m.removedfailed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *RepositoryMutation) RemovedFailedBackupRunsIDs() (ids []int) {
+	for id := range m.removedfailed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
+func (m *RepositoryMutation) FailedBackupRunsIDs() (ids []int) {
+	for id := range m.failed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
+func (m *RepositoryMutation) ResetFailedBackupRuns() {
+	m.failed_backup_runs = nil
+	m.clearedfailed_backup_runs = false
+	m.removedfailed_backup_runs = nil
+}
+
 // Where appends a list predicates to the RepositoryMutation builder.
 func (m *RepositoryMutation) Where(ps ...predicate.Repository) {
 	m.predicates = append(m.predicates, ps...)
@@ -3399,12 +4135,15 @@ func (m *RepositoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepositoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.backup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.archives != nil {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.failed_backup_runs != nil {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -3425,18 +4164,27 @@ func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
+		for id := range m.failed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepositoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedbackup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.removedarchives != nil {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.removedfailed_backup_runs != nil {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -3457,18 +4205,27 @@ func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
+		for id := range m.removedfailed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepositoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedbackup_profiles {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.clearedarchives {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.clearedfailed_backup_runs {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -3481,6 +4238,8 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 		return m.clearedbackup_profiles
 	case repository.EdgeArchives:
 		return m.clearedarchives
+	case repository.EdgeFailedBackupRuns:
+		return m.clearedfailed_backup_runs
 	}
 	return false
 }
@@ -3502,6 +4261,9 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 		return nil
 	case repository.EdgeArchives:
 		m.ResetArchives()
+		return nil
+	case repository.EdgeFailedBackupRuns:
+		m.ResetFailedBackupRuns()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository edge %s", name)

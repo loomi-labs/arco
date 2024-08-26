@@ -3,8 +3,9 @@
 package enttest
 
 import (
-	"arco/backend/ent"
 	"context"
+
+	"arco/backend/ent"
 	// required by schema hooks.
 	_ "arco/backend/ent/runtime"
 

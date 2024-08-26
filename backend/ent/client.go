@@ -14,6 +14,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 
 	"entgo.io/ent"
@@ -33,6 +34,8 @@ type Client struct {
 	BackupProfile *BackupProfileClient
 	// BackupSchedule is the client for interacting with the BackupSchedule builders.
 	BackupSchedule *BackupScheduleClient
+	// FailedBackupRun is the client for interacting with the FailedBackupRun builders.
+	FailedBackupRun *FailedBackupRunClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 }
@@ -49,6 +52,7 @@ func (c *Client) init() {
 	c.Archive = NewArchiveClient(c.config)
 	c.BackupProfile = NewBackupProfileClient(c.config)
 	c.BackupSchedule = NewBackupScheduleClient(c.config)
+	c.FailedBackupRun = NewFailedBackupRunClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
 }
 
@@ -140,12 +144,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		Archive:        NewArchiveClient(cfg),
-		BackupProfile:  NewBackupProfileClient(cfg),
-		BackupSchedule: NewBackupScheduleClient(cfg),
-		Repository:     NewRepositoryClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Archive:         NewArchiveClient(cfg),
+		BackupProfile:   NewBackupProfileClient(cfg),
+		BackupSchedule:  NewBackupScheduleClient(cfg),
+		FailedBackupRun: NewFailedBackupRunClient(cfg),
+		Repository:      NewRepositoryClient(cfg),
 	}, nil
 }
 
@@ -163,12 +168,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		Archive:        NewArchiveClient(cfg),
-		BackupProfile:  NewBackupProfileClient(cfg),
-		BackupSchedule: NewBackupScheduleClient(cfg),
-		Repository:     NewRepositoryClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Archive:         NewArchiveClient(cfg),
+		BackupProfile:   NewBackupProfileClient(cfg),
+		BackupSchedule:  NewBackupScheduleClient(cfg),
+		FailedBackupRun: NewFailedBackupRunClient(cfg),
+		Repository:      NewRepositoryClient(cfg),
 	}, nil
 }
 
@@ -200,6 +206,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Archive.Use(hooks...)
 	c.BackupProfile.Use(hooks...)
 	c.BackupSchedule.Use(hooks...)
+	c.FailedBackupRun.Use(hooks...)
 	c.Repository.Use(hooks...)
 }
 
@@ -209,6 +216,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Archive.Intercept(interceptors...)
 	c.BackupProfile.Intercept(interceptors...)
 	c.BackupSchedule.Intercept(interceptors...)
+	c.FailedBackupRun.Intercept(interceptors...)
 	c.Repository.Intercept(interceptors...)
 }
 
@@ -221,6 +229,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackupProfile.mutate(ctx, m)
 	case *BackupScheduleMutation:
 		return c.BackupSchedule.mutate(ctx, m)
+	case *FailedBackupRunMutation:
+		return c.FailedBackupRun.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
 	default:
@@ -345,6 +355,22 @@ func (c *ArchiveClient) QueryRepository(a *Archive) *RepositoryQuery {
 			sqlgraph.From(archive.Table, archive.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, archive.RepositoryTable, archive.RepositoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBackupProfile queries the backup_profile edge of a Archive.
+func (c *ArchiveClient) QueryBackupProfile(a *Archive) *BackupProfileQuery {
+	query := (&BackupProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(archive.Table, archive.FieldID, id),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, archive.BackupProfileTable, archive.BackupProfileColumn),
 		)
 		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
@@ -501,6 +527,22 @@ func (c *BackupProfileClient) QueryRepositories(bp *BackupProfile) *RepositoryQu
 	return query
 }
 
+// QueryArchives queries the archives edge of a BackupProfile.
+func (c *BackupProfileClient) QueryArchives(bp *BackupProfile) *ArchiveQuery {
+	query := (&ArchiveClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
+			sqlgraph.To(archive.Table, archive.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, backupprofile.ArchivesTable, backupprofile.ArchivesColumn),
+		)
+		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryBackupSchedule queries the backup_schedule edge of a BackupProfile.
 func (c *BackupProfileClient) QueryBackupSchedule(bp *BackupProfile) *BackupScheduleQuery {
 	query := (&BackupScheduleClient{config: c.config}).Query()
@@ -510,6 +552,22 @@ func (c *BackupProfileClient) QueryBackupSchedule(bp *BackupProfile) *BackupSche
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(backupschedule.Table, backupschedule.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.BackupScheduleTable, backupprofile.BackupScheduleColumn),
+		)
+		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFailedBackupRuns queries the failed_backup_runs edge of a BackupProfile.
+func (c *BackupProfileClient) QueryFailedBackupRuns(bp *BackupProfile) *FailedBackupRunQuery {
+	query := (&FailedBackupRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
+			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.FailedBackupRunsTable, backupprofile.FailedBackupRunsColumn),
 		)
 		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
 		return fromV, nil
@@ -692,6 +750,171 @@ func (c *BackupScheduleClient) mutate(ctx context.Context, m *BackupScheduleMuta
 	}
 }
 
+// FailedBackupRunClient is a client for the FailedBackupRun schema.
+type FailedBackupRunClient struct {
+	config
+}
+
+// NewFailedBackupRunClient returns a client for the FailedBackupRun from the given config.
+func NewFailedBackupRunClient(c config) *FailedBackupRunClient {
+	return &FailedBackupRunClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `failedbackuprun.Hooks(f(g(h())))`.
+func (c *FailedBackupRunClient) Use(hooks ...Hook) {
+	c.hooks.FailedBackupRun = append(c.hooks.FailedBackupRun, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `failedbackuprun.Intercept(f(g(h())))`.
+func (c *FailedBackupRunClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FailedBackupRun = append(c.inters.FailedBackupRun, interceptors...)
+}
+
+// Create returns a builder for creating a FailedBackupRun entity.
+func (c *FailedBackupRunClient) Create() *FailedBackupRunCreate {
+	mutation := newFailedBackupRunMutation(c.config, OpCreate)
+	return &FailedBackupRunCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FailedBackupRun entities.
+func (c *FailedBackupRunClient) CreateBulk(builders ...*FailedBackupRunCreate) *FailedBackupRunCreateBulk {
+	return &FailedBackupRunCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FailedBackupRunClient) MapCreateBulk(slice any, setFunc func(*FailedBackupRunCreate, int)) *FailedBackupRunCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FailedBackupRunCreateBulk{err: fmt.Errorf("calling to FailedBackupRunClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FailedBackupRunCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FailedBackupRunCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FailedBackupRun.
+func (c *FailedBackupRunClient) Update() *FailedBackupRunUpdate {
+	mutation := newFailedBackupRunMutation(c.config, OpUpdate)
+	return &FailedBackupRunUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FailedBackupRunClient) UpdateOne(fbr *FailedBackupRun) *FailedBackupRunUpdateOne {
+	mutation := newFailedBackupRunMutation(c.config, OpUpdateOne, withFailedBackupRun(fbr))
+	return &FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FailedBackupRunClient) UpdateOneID(id int) *FailedBackupRunUpdateOne {
+	mutation := newFailedBackupRunMutation(c.config, OpUpdateOne, withFailedBackupRunID(id))
+	return &FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FailedBackupRun.
+func (c *FailedBackupRunClient) Delete() *FailedBackupRunDelete {
+	mutation := newFailedBackupRunMutation(c.config, OpDelete)
+	return &FailedBackupRunDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FailedBackupRunClient) DeleteOne(fbr *FailedBackupRun) *FailedBackupRunDeleteOne {
+	return c.DeleteOneID(fbr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FailedBackupRunClient) DeleteOneID(id int) *FailedBackupRunDeleteOne {
+	builder := c.Delete().Where(failedbackuprun.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FailedBackupRunDeleteOne{builder}
+}
+
+// Query returns a query builder for FailedBackupRun.
+func (c *FailedBackupRunClient) Query() *FailedBackupRunQuery {
+	return &FailedBackupRunQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFailedBackupRun},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FailedBackupRun entity by its id.
+func (c *FailedBackupRunClient) Get(ctx context.Context, id int) (*FailedBackupRun, error) {
+	return c.Query().Where(failedbackuprun.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FailedBackupRunClient) GetX(ctx context.Context, id int) *FailedBackupRun {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBackupProfile queries the backup_profile edge of a FailedBackupRun.
+func (c *FailedBackupRunClient) QueryBackupProfile(fbr *FailedBackupRun) *BackupProfileQuery {
+	query := (&BackupProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := fbr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(failedbackuprun.Table, failedbackuprun.FieldID, id),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, failedbackuprun.BackupProfileTable, failedbackuprun.BackupProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(fbr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRepository queries the repository edge of a FailedBackupRun.
+func (c *FailedBackupRunClient) QueryRepository(fbr *FailedBackupRun) *RepositoryQuery {
+	query := (&RepositoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := fbr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(failedbackuprun.Table, failedbackuprun.FieldID, id),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, failedbackuprun.RepositoryTable, failedbackuprun.RepositoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(fbr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FailedBackupRunClient) Hooks() []Hook {
+	return c.hooks.FailedBackupRun
+}
+
+// Interceptors returns the client interceptors.
+func (c *FailedBackupRunClient) Interceptors() []Interceptor {
+	return c.inters.FailedBackupRun
+}
+
+func (c *FailedBackupRunClient) mutate(ctx context.Context, m *FailedBackupRunMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FailedBackupRunCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FailedBackupRunUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FailedBackupRunDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FailedBackupRun mutation op: %q", m.Op())
+	}
+}
+
 // RepositoryClient is a client for the Repository schema.
 type RepositoryClient struct {
 	config
@@ -832,6 +1055,22 @@ func (c *RepositoryClient) QueryArchives(r *Repository) *ArchiveQuery {
 	return query
 }
 
+// QueryFailedBackupRuns queries the failed_backup_runs edge of a Repository.
+func (c *RepositoryClient) QueryFailedBackupRuns(r *Repository) *FailedBackupRunQuery {
+	query := (&FailedBackupRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, id),
+			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.FailedBackupRunsTable, repository.FailedBackupRunsColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RepositoryClient) Hooks() []Hook {
 	return c.hooks.Repository
@@ -860,9 +1099,10 @@ func (c *RepositoryClient) mutate(ctx context.Context, m *RepositoryMutation) (V
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, BackupProfile, BackupSchedule, Repository []ent.Hook
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository []ent.Hook
 	}
 	inters struct {
-		Archive, BackupProfile, BackupSchedule, Repository []ent.Interceptor
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun,
+		Repository []ent.Interceptor
 	}
 )

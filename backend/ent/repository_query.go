@@ -5,6 +5,7 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -20,12 +22,13 @@ import (
 // RepositoryQuery is the builder for querying Repository entities.
 type RepositoryQuery struct {
 	config
-	ctx                *QueryContext
-	order              []repository.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.Repository
-	withBackupProfiles *BackupProfileQuery
-	withArchives       *ArchiveQuery
+	ctx                  *QueryContext
+	order                []repository.OrderOption
+	inters               []Interceptor
+	predicates           []predicate.Repository
+	withBackupProfiles   *BackupProfileQuery
+	withArchives         *ArchiveQuery
+	withFailedBackupRuns *FailedBackupRunQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -106,10 +109,32 @@ func (rq *RepositoryQuery) QueryArchives() *ArchiveQuery {
 	return query
 }
 
+// QueryFailedBackupRuns chains the current query on the "failed_backup_runs" edge.
+func (rq *RepositoryQuery) QueryFailedBackupRuns() *FailedBackupRunQuery {
+	query := (&FailedBackupRunClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
+			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.FailedBackupRunsTable, repository.FailedBackupRunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Repository entity from the query.
 // Returns a *NotFoundError when no Repository was found.
 func (rq *RepositoryQuery) First(ctx context.Context) (*Repository, error) {
-	nodes, err := rq.Limit(1).All(setContextOp(ctx, rq.ctx, "First"))
+	nodes, err := rq.Limit(1).All(setContextOp(ctx, rq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +157,7 @@ func (rq *RepositoryQuery) FirstX(ctx context.Context) *Repository {
 // Returns a *NotFoundError when no Repository ID was found.
 func (rq *RepositoryQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = rq.Limit(1).IDs(setContextOp(ctx, rq.ctx, "FirstID")); err != nil {
+	if ids, err = rq.Limit(1).IDs(setContextOp(ctx, rq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -155,7 +180,7 @@ func (rq *RepositoryQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one Repository entity is found.
 // Returns a *NotFoundError when no Repository entities are found.
 func (rq *RepositoryQuery) Only(ctx context.Context) (*Repository, error) {
-	nodes, err := rq.Limit(2).All(setContextOp(ctx, rq.ctx, "Only"))
+	nodes, err := rq.Limit(2).All(setContextOp(ctx, rq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +208,7 @@ func (rq *RepositoryQuery) OnlyX(ctx context.Context) *Repository {
 // Returns a *NotFoundError when no entities are found.
 func (rq *RepositoryQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = rq.Limit(2).IDs(setContextOp(ctx, rq.ctx, "OnlyID")); err != nil {
+	if ids, err = rq.Limit(2).IDs(setContextOp(ctx, rq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -208,7 +233,7 @@ func (rq *RepositoryQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of Repositories.
 func (rq *RepositoryQuery) All(ctx context.Context) ([]*Repository, error) {
-	ctx = setContextOp(ctx, rq.ctx, "All")
+	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryAll)
 	if err := rq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -230,7 +255,7 @@ func (rq *RepositoryQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if rq.ctx.Unique == nil && rq.path != nil {
 		rq.Unique(true)
 	}
-	ctx = setContextOp(ctx, rq.ctx, "IDs")
+	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryIDs)
 	if err = rq.Select(repository.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -248,7 +273,7 @@ func (rq *RepositoryQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (rq *RepositoryQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, rq.ctx, "Count")
+	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryCount)
 	if err := rq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -266,7 +291,7 @@ func (rq *RepositoryQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (rq *RepositoryQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, rq.ctx, "Exist")
+	ctx = setContextOp(ctx, rq.ctx, ent.OpQueryExist)
 	switch _, err := rq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -293,13 +318,14 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		return nil
 	}
 	return &RepositoryQuery{
-		config:             rq.config,
-		ctx:                rq.ctx.Clone(),
-		order:              append([]repository.OrderOption{}, rq.order...),
-		inters:             append([]Interceptor{}, rq.inters...),
-		predicates:         append([]predicate.Repository{}, rq.predicates...),
-		withBackupProfiles: rq.withBackupProfiles.Clone(),
-		withArchives:       rq.withArchives.Clone(),
+		config:               rq.config,
+		ctx:                  rq.ctx.Clone(),
+		order:                append([]repository.OrderOption{}, rq.order...),
+		inters:               append([]Interceptor{}, rq.inters...),
+		predicates:           append([]predicate.Repository{}, rq.predicates...),
+		withBackupProfiles:   rq.withBackupProfiles.Clone(),
+		withArchives:         rq.withArchives.Clone(),
+		withFailedBackupRuns: rq.withFailedBackupRuns.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -325,6 +351,17 @@ func (rq *RepositoryQuery) WithArchives(opts ...func(*ArchiveQuery)) *Repository
 		opt(query)
 	}
 	rq.withArchives = query
+	return rq
+}
+
+// WithFailedBackupRuns tells the query-builder to eager-load the nodes that are connected to
+// the "failed_backup_runs" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepositoryQuery) WithFailedBackupRuns(opts ...func(*FailedBackupRunQuery)) *RepositoryQuery {
+	query := (&FailedBackupRunClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withFailedBackupRuns = query
 	return rq
 }
 
@@ -406,9 +443,10 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 	var (
 		nodes       = []*Repository{}
 		_spec       = rq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			rq.withBackupProfiles != nil,
 			rq.withArchives != nil,
+			rq.withFailedBackupRuns != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -440,6 +478,15 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		if err := rq.loadArchives(ctx, query, nodes,
 			func(n *Repository) { n.Edges.Archives = []*Archive{} },
 			func(n *Repository, e *Archive) { n.Edges.Archives = append(n.Edges.Archives, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withFailedBackupRuns; query != nil {
+		if err := rq.loadFailedBackupRuns(ctx, query, nodes,
+			func(n *Repository) { n.Edges.FailedBackupRuns = []*FailedBackupRun{} },
+			func(n *Repository, e *FailedBackupRun) {
+				n.Edges.FailedBackupRuns = append(n.Edges.FailedBackupRuns, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -533,6 +580,37 @@ func (rq *RepositoryQuery) loadArchives(ctx context.Context, query *ArchiveQuery
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "archive_repository" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (rq *RepositoryQuery) loadFailedBackupRuns(ctx context.Context, query *FailedBackupRunQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *FailedBackupRun)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Repository)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.FailedBackupRun(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(repository.FailedBackupRunsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.failed_backup_run_repository
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "failed_backup_run_repository" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "failed_backup_run_repository" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -634,7 +712,7 @@ func (rgb *RepositoryGroupBy) Aggregate(fns ...AggregateFunc) *RepositoryGroupBy
 
 // Scan applies the selector query and scans the result into the given value.
 func (rgb *RepositoryGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, rgb.build.ctx, ent.OpQueryGroupBy)
 	if err := rgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -682,7 +760,7 @@ func (rs *RepositorySelect) Aggregate(fns ...AggregateFunc) *RepositorySelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (rs *RepositorySelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, rs.ctx, "Select")
+	ctx = setContextOp(ctx, rs.ctx, ent.OpQuerySelect)
 	if err := rs.prepareQuery(ctx); err != nil {
 		return err
 	}

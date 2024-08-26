@@ -242,6 +242,29 @@ func HasRepositoriesWith(preds ...predicate.Repository) predicate.BackupProfile 
 	})
 }
 
+// HasArchives applies the HasEdge predicate on the "archives" edge.
+func HasArchives() predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ArchivesTable, ArchivesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasArchivesWith applies the HasEdge predicate on the "archives" edge with a given conditions (other predicates).
+func HasArchivesWith(preds ...predicate.Archive) predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := newArchivesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasBackupSchedule applies the HasEdge predicate on the "backup_schedule" edge.
 func HasBackupSchedule() predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
@@ -257,6 +280,29 @@ func HasBackupSchedule() predicate.BackupProfile {
 func HasBackupScheduleWith(preds ...predicate.BackupSchedule) predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
 		step := newBackupScheduleStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasFailedBackupRuns applies the HasEdge predicate on the "failed_backup_runs" edge.
+func HasFailedBackupRuns() predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFailedBackupRunsWith applies the HasEdge predicate on the "failed_backup_runs" edge with a given conditions (other predicates).
+func HasFailedBackupRunsWith(preds ...predicate.FailedBackupRun) predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := newFailedBackupRunsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

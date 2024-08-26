@@ -308,6 +308,29 @@ func HasRepositoryWith(preds ...predicate.Repository) predicate.Archive {
 	})
 }
 
+// HasBackupProfile applies the HasEdge predicate on the "backup_profile" edge.
+func HasBackupProfile() predicate.Archive {
+	return predicate.Archive(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, BackupProfileTable, BackupProfileColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBackupProfileWith applies the HasEdge predicate on the "backup_profile" edge with a given conditions (other predicates).
+func HasBackupProfileWith(preds ...predicate.BackupProfile) predicate.Archive {
+	return predicate.Archive(func(s *sql.Selector) {
+		step := newBackupProfileStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Archive) predicate.Archive {
 	return predicate.Archive(sql.AndPredicates(predicates...))

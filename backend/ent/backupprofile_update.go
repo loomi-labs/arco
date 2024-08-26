@@ -3,8 +3,10 @@
 package ent
 
 import (
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -117,6 +119,21 @@ func (bpu *BackupProfileUpdate) AddRepositories(r ...*Repository) *BackupProfile
 	return bpu.AddRepositoryIDs(ids...)
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (bpu *BackupProfileUpdate) AddArchiveIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.AddArchiveIDs(ids...)
+	return bpu
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (bpu *BackupProfileUpdate) AddArchives(a ...*Archive) *BackupProfileUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return bpu.AddArchiveIDs(ids...)
+}
+
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
 func (bpu *BackupProfileUpdate) SetBackupScheduleID(id int) *BackupProfileUpdate {
 	bpu.mutation.SetBackupScheduleID(id)
@@ -134,6 +151,21 @@ func (bpu *BackupProfileUpdate) SetNillableBackupScheduleID(id *int) *BackupProf
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
 func (bpu *BackupProfileUpdate) SetBackupSchedule(b *BackupSchedule) *BackupProfileUpdate {
 	return bpu.SetBackupScheduleID(b.ID)
+}
+
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (bpu *BackupProfileUpdate) AddFailedBackupRunIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.AddFailedBackupRunIDs(ids...)
+	return bpu
+}
+
+// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
+func (bpu *BackupProfileUpdate) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return bpu.AddFailedBackupRunIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -162,10 +194,52 @@ func (bpu *BackupProfileUpdate) RemoveRepositories(r ...*Repository) *BackupProf
 	return bpu.RemoveRepositoryIDs(ids...)
 }
 
+// ClearArchives clears all "archives" edges to the Archive entity.
+func (bpu *BackupProfileUpdate) ClearArchives() *BackupProfileUpdate {
+	bpu.mutation.ClearArchives()
+	return bpu
+}
+
+// RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
+func (bpu *BackupProfileUpdate) RemoveArchiveIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.RemoveArchiveIDs(ids...)
+	return bpu
+}
+
+// RemoveArchives removes "archives" edges to Archive entities.
+func (bpu *BackupProfileUpdate) RemoveArchives(a ...*Archive) *BackupProfileUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return bpu.RemoveArchiveIDs(ids...)
+}
+
 // ClearBackupSchedule clears the "backup_schedule" edge to the BackupSchedule entity.
 func (bpu *BackupProfileUpdate) ClearBackupSchedule() *BackupProfileUpdate {
 	bpu.mutation.ClearBackupSchedule()
 	return bpu
+}
+
+// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
+func (bpu *BackupProfileUpdate) ClearFailedBackupRuns() *BackupProfileUpdate {
+	bpu.mutation.ClearFailedBackupRuns()
+	return bpu
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
+func (bpu *BackupProfileUpdate) RemoveFailedBackupRunIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.RemoveFailedBackupRunIDs(ids...)
+	return bpu
+}
+
+// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
+func (bpu *BackupProfileUpdate) RemoveFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return bpu.RemoveFailedBackupRunIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -277,6 +351,51 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if bpu.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !bpu.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if bpu.mutation.BackupScheduleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -299,6 +418,51 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bpu.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !bpu.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -413,6 +577,21 @@ func (bpuo *BackupProfileUpdateOne) AddRepositories(r ...*Repository) *BackupPro
 	return bpuo.AddRepositoryIDs(ids...)
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (bpuo *BackupProfileUpdateOne) AddArchiveIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.AddArchiveIDs(ids...)
+	return bpuo
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (bpuo *BackupProfileUpdateOne) AddArchives(a ...*Archive) *BackupProfileUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return bpuo.AddArchiveIDs(ids...)
+}
+
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
 func (bpuo *BackupProfileUpdateOne) SetBackupScheduleID(id int) *BackupProfileUpdateOne {
 	bpuo.mutation.SetBackupScheduleID(id)
@@ -430,6 +609,21 @@ func (bpuo *BackupProfileUpdateOne) SetNillableBackupScheduleID(id *int) *Backup
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
 func (bpuo *BackupProfileUpdateOne) SetBackupSchedule(b *BackupSchedule) *BackupProfileUpdateOne {
 	return bpuo.SetBackupScheduleID(b.ID)
+}
+
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (bpuo *BackupProfileUpdateOne) AddFailedBackupRunIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.AddFailedBackupRunIDs(ids...)
+	return bpuo
+}
+
+// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
+func (bpuo *BackupProfileUpdateOne) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return bpuo.AddFailedBackupRunIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -458,10 +652,52 @@ func (bpuo *BackupProfileUpdateOne) RemoveRepositories(r ...*Repository) *Backup
 	return bpuo.RemoveRepositoryIDs(ids...)
 }
 
+// ClearArchives clears all "archives" edges to the Archive entity.
+func (bpuo *BackupProfileUpdateOne) ClearArchives() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearArchives()
+	return bpuo
+}
+
+// RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
+func (bpuo *BackupProfileUpdateOne) RemoveArchiveIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.RemoveArchiveIDs(ids...)
+	return bpuo
+}
+
+// RemoveArchives removes "archives" edges to Archive entities.
+func (bpuo *BackupProfileUpdateOne) RemoveArchives(a ...*Archive) *BackupProfileUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return bpuo.RemoveArchiveIDs(ids...)
+}
+
 // ClearBackupSchedule clears the "backup_schedule" edge to the BackupSchedule entity.
 func (bpuo *BackupProfileUpdateOne) ClearBackupSchedule() *BackupProfileUpdateOne {
 	bpuo.mutation.ClearBackupSchedule()
 	return bpuo
+}
+
+// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
+func (bpuo *BackupProfileUpdateOne) ClearFailedBackupRuns() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearFailedBackupRuns()
+	return bpuo
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
+func (bpuo *BackupProfileUpdateOne) RemoveFailedBackupRunIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.RemoveFailedBackupRunIDs(ids...)
+	return bpuo
+}
+
+// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
+func (bpuo *BackupProfileUpdateOne) RemoveFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return bpuo.RemoveFailedBackupRunIDs(ids...)
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
@@ -603,6 +839,51 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if bpuo.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !bpuo.mutation.ArchivesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if bpuo.mutation.BackupScheduleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -625,6 +906,51 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bpuo.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !bpuo.mutation.FailedBackupRunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

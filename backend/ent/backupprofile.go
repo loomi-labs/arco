@@ -38,11 +38,15 @@ type BackupProfile struct {
 type BackupProfileEdges struct {
 	// Repositories holds the value of the repositories edge.
 	Repositories []*Repository `json:"repositories,omitempty"`
+	// Archives holds the value of the archives edge.
+	Archives []*Archive `json:"archives,omitempty"`
 	// BackupSchedule holds the value of the backup_schedule edge.
 	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
+	// FailedBackupRuns holds the value of the failed_backup_runs edge.
+	FailedBackupRuns []*FailedBackupRun `json:"failed_backup_runs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // RepositoriesOrErr returns the Repositories value or an error if the edge
@@ -54,15 +58,33 @@ func (e BackupProfileEdges) RepositoriesOrErr() ([]*Repository, error) {
 	return nil, &NotLoadedError{edge: "repositories"}
 }
 
+// ArchivesOrErr returns the Archives value or an error if the edge
+// was not loaded in eager-loading.
+func (e BackupProfileEdges) ArchivesOrErr() ([]*Archive, error) {
+	if e.loadedTypes[1] {
+		return e.Archives, nil
+	}
+	return nil, &NotLoadedError{edge: "archives"}
+}
+
 // BackupScheduleOrErr returns the BackupSchedule value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e BackupProfileEdges) BackupScheduleOrErr() (*BackupSchedule, error) {
 	if e.BackupSchedule != nil {
 		return e.BackupSchedule, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: backupschedule.Label}
 	}
 	return nil, &NotLoadedError{edge: "backup_schedule"}
+}
+
+// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
+// was not loaded in eager-loading.
+func (e BackupProfileEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
+	if e.loadedTypes[3] {
+		return e.FailedBackupRuns, nil
+	}
+	return nil, &NotLoadedError{edge: "failed_backup_runs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -151,9 +173,19 @@ func (bp *BackupProfile) QueryRepositories() *RepositoryQuery {
 	return NewBackupProfileClient(bp.config).QueryRepositories(bp)
 }
 
+// QueryArchives queries the "archives" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryArchives() *ArchiveQuery {
+	return NewBackupProfileClient(bp.config).QueryArchives(bp)
+}
+
 // QueryBackupSchedule queries the "backup_schedule" edge of the BackupProfile entity.
 func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
 	return NewBackupProfileClient(bp.config).QueryBackupSchedule(bp)
+}
+
+// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryFailedBackupRuns() *FailedBackupRunQuery {
+	return NewBackupProfileClient(bp.config).QueryFailedBackupRuns(bp)
 }
 
 // Update returns a builder for updating this BackupProfile.

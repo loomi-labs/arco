@@ -22,6 +22,8 @@ const (
 	FieldBorgID = "borg_id"
 	// EdgeRepository holds the string denoting the repository edge name in mutations.
 	EdgeRepository = "repository"
+	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
+	EdgeBackupProfile = "backup_profile"
 	// Table holds the table name of the archive in the database.
 	Table = "archives"
 	// RepositoryTable is the table that holds the repository relation/edge.
@@ -31,6 +33,13 @@ const (
 	RepositoryInverseTable = "repositories"
 	// RepositoryColumn is the table column denoting the repository relation/edge.
 	RepositoryColumn = "archive_repository"
+	// BackupProfileTable is the table that holds the backup_profile relation/edge.
+	BackupProfileTable = "archives"
+	// BackupProfileInverseTable is the table name for the BackupProfile entity.
+	// It exists in this package in order to avoid circular dependency with the "backupprofile" package.
+	BackupProfileInverseTable = "backup_profiles"
+	// BackupProfileColumn is the table column denoting the backup_profile relation/edge.
+	BackupProfileColumn = "archive_backup_profile"
 )
 
 // Columns holds all SQL columns for archive fields.
@@ -46,6 +55,8 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"archive_repository",
+	"archive_backup_profile",
+	"backup_profile_archives",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -97,10 +108,24 @@ func ByRepositoryField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRepositoryStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByBackupProfileField orders the results by backup_profile field.
+func ByBackupProfileField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBackupProfileStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newRepositoryStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RepositoryInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, RepositoryTable, RepositoryColumn),
+	)
+}
+func newBackupProfileStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BackupProfileInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, BackupProfileTable, BackupProfileColumn),
 	)
 }
