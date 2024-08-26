@@ -84,6 +84,73 @@ export namespace borg {
 
 export namespace ent {
 	
+	export class FailedBackupRunEdges {
+	    backupProfile?: BackupProfile;
+	    repository?: Repository;
+	
+	    static createFrom(source: any = {}) {
+	        return new FailedBackupRunEdges(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.backupProfile = this.convertValues(source["backupProfile"], BackupProfile);
+	        this.repository = this.convertValues(source["repository"], Repository);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class FailedBackupRun {
+	    id?: number;
+	    error: string;
+	    // Go type: FailedBackupRunEdges
+	    edges: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new FailedBackupRun(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.error = source["error"];
+	        this.edges = this.convertValues(source["edges"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class BackupScheduleEdges {
 	    backupProfile?: BackupProfile;
 	
@@ -171,7 +238,9 @@ export namespace ent {
 	}
 	export class BackupProfileEdges {
 	    repositories?: Repository[];
+	    archives?: Archive[];
 	    backupSchedule?: BackupSchedule;
+	    failed_backup_runs?: FailedBackupRun[];
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupProfileEdges(source);
@@ -180,7 +249,9 @@ export namespace ent {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.repositories = this.convertValues(source["repositories"], Repository);
+	        this.archives = this.convertValues(source["archives"], Archive);
 	        this.backupSchedule = this.convertValues(source["backupSchedule"], BackupSchedule);
+	        this.failed_backup_runs = this.convertValues(source["failed_backup_runs"], FailedBackupRun);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -246,6 +317,7 @@ export namespace ent {
 	export class RepositoryEdges {
 	    backup_profiles?: BackupProfile[];
 	    archives?: Archive[];
+	    failed_backup_runs?: FailedBackupRun[];
 	
 	    static createFrom(source: any = {}) {
 	        return new RepositoryEdges(source);
@@ -255,6 +327,7 @@ export namespace ent {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.backup_profiles = this.convertValues(source["backup_profiles"], BackupProfile);
 	        this.archives = this.convertValues(source["archives"], Archive);
+	        this.failed_backup_runs = this.convertValues(source["failed_backup_runs"], FailedBackupRun);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -327,6 +400,7 @@ export namespace ent {
 	}
 	export class ArchiveEdges {
 	    repository?: Repository;
+	    backup_profile?: BackupProfile;
 	
 	    static createFrom(source: any = {}) {
 	        return new ArchiveEdges(source);
@@ -335,6 +409,7 @@ export namespace ent {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.repository = this.convertValues(source["repository"], Repository);
+	        this.backup_profile = this.convertValues(source["backup_profile"], BackupProfile);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -414,7 +489,7 @@ export namespace state {
 	    running = "running",
 	    completed = "completed",
 	    cancelled = "cancelled",
-	    error = "error",
+	    failed = "failed",
 	}
 	export enum RepoStatus {
 	    idle = "idle",
@@ -427,7 +502,7 @@ export namespace state {
 	export class BackupState {
 	    status: BackupStatus;
 	    progress?: borg.BackupProgress;
-	    error?: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupState(source);

@@ -10,6 +10,7 @@ import { onUnmounted, ref, watch } from "vue";
 import { toHumanReadable } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
+import { useToast } from "vue-toastification";
 
 /************
  * Variables
@@ -33,11 +34,13 @@ const emits = defineEmits<{
 const repoIsBusy = ref(false);
 
 const router = useRouter();
+const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
 backupId.repositoryId = props.repoId ?? -1;
 const lastArchive = ref<ent.Archive | undefined>(undefined);
+const failedBackupRun = ref<string | undefined>(undefined);
 
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
@@ -53,6 +56,8 @@ const sizeOnDisk = ref<string>("-");
 async function runBackup() {
   try {
     await backupClient.StartBackupJob(backupId);
+    await getRepoState()
+    await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
   }
@@ -61,6 +66,8 @@ async function runBackup() {
 async function pruneBackup() {
   try {
     await backupClient.PruneBackup(backupId);
+    await getRepoState()
+    await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to prune backups", error);
   }
@@ -69,6 +76,8 @@ async function pruneBackup() {
 async function abortBackup() {
   try {
     await backupClient.AbortBackupJob(backupId);
+    await getRepoState()
+    await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to abort backup", error);
   }
@@ -76,9 +85,10 @@ async function abortBackup() {
 
 async function getRepo() {
   try {
-    repo.value = await repoClient.Get(backupId.repositoryId);
+    repo.value = await repoClient.GetByBackupId(backupId);
     totalSize.value = toHumanReadableSize(repo.value.stats_total_size);
     sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
+    failedBackupRun.value = repo.value.edges.failed_backup_runs?.[0]?.error;
 
     lastArchive.value = await repoClient.GetLastArchive(backupId);
   } catch (error: any) {
@@ -99,14 +109,6 @@ async function getBackupState() {
     backupState.value = await backupClient.GetState(backupId);
   } catch (error: any) {
     await showAndLogError("Failed to get backup state", error);
-  }
-}
-
-async function resetStatus() {
-  try {
-    backupState.value = await backupClient.ResetStatus(backupId);
-  } catch (error: any) {
-    await showAndLogError("Failed to reset backup status", error);
   }
 }
 
@@ -139,7 +141,12 @@ function toHumanReadableSize(size: number): string {
 getRepo();
 getBackupState();
 
-watch(backupState, async (newState) => {
+watch(backupState, async (newState, oldState) => {
+  // We only care about status changes
+  if (newState.status === oldState.status) {
+    return;
+  }
+
   if (newState.status === state.BackupStatus.running) {
     // increase poll interval when backup is running
     pollInterval.value = 200;   // 200ms
@@ -148,8 +155,11 @@ watch(backupState, async (newState) => {
     pollInterval.value = defaultPollInterval;
 
     // if backup is done, reset status and get repo again
-    if (newState.status === state.BackupStatus.completed || newState.status === state.BackupStatus.error) {
-      await resetStatus();
+    if (newState.status === state.BackupStatus.completed) {
+      await getRepo();
+      // await resetStatus();
+    } else if (newState.status === state.BackupStatus.failed) {
+      toast.error(`Backup failed: ${backupState.value.error}`);
       await getRepo();
     }
   }
@@ -160,6 +170,7 @@ watch(backupState, async (newState) => {
 
 // emit repoIsBusy event when repo is busy
 watch(repoState, async (newState, oldState) => {
+  // We only care about status changes
   if (newState.status === oldState.status) {
     return;
   }
@@ -189,7 +200,10 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
       <p>Last backup:
-        <span v-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+        <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
+          <span class='badge badge-outline badge-error'>Failed</span>
+        </span>
+        <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
           <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toHumanReadable(lastArchive.createdAt) }}</span>
         </span>
       </p>

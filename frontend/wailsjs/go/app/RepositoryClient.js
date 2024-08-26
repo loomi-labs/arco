@@ -30,6 +30,10 @@ export function GetArchiveMountStates(arg1) {
   return window['go']['app']['RepositoryClient']['GetArchiveMountStates'](arg1);
 }
 
+export function GetByBackupId(arg1) {
+  return window['go']['app']['RepositoryClient']['GetByBackupId'](arg1);
+}
+
 export function GetLastArchive(arg1) {
   return window['go']['app']['RepositoryClient']['GetLastArchive'](arg1);
 }
