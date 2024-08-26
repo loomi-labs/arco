@@ -11,6 +11,7 @@ import { toHumanReadable } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
 import { useToast } from "vue-toastification";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -56,7 +57,7 @@ const sizeOnDisk = ref<string>("-");
 async function runBackup() {
   try {
     await backupClient.StartBackupJob(backupId);
-    await getRepoState()
+    await getRepoState();
     await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to run backup", error);
@@ -66,7 +67,7 @@ async function runBackup() {
 async function pruneBackup() {
   try {
     await backupClient.PruneBackup(backupId);
-    await getRepoState()
+    await getRepoState();
     await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to prune backups", error);
@@ -76,7 +77,7 @@ async function pruneBackup() {
 async function abortBackup() {
   try {
     await backupClient.AbortBackupJob(backupId);
-    await getRepoState()
+    await getRepoState();
     await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to abort backup", error);

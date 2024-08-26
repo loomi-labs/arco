@@ -120,48 +120,53 @@ watch(() => props.repoIsBusy, async () => {
 </script>
 <template>
   <div class='bg-base-100 p-6 rounded-lg shadow-md'>
-    <table class='w-full table table-xs table-zebra'>
-      <thead>
-      <tr>
-        <th class=''>
-          <h3 class='text-lg font-semibold'>Archives</h3>
-          <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
-        </th>
-        <th class=''>Date</th>
-        <th class=''>Action</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
-          :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
-        <td>
-          <p>{{ archive.name }}</p>
-        </td>
-        <td>
+    <div v-if='pagination.total > 0'>
+      <table class='w-full table table-xs table-zebra'>
+        <thead>
+        <tr>
+          <th class=''>
+            <h3 class='text-lg font-semibold'>Archives</h3>
+            <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
+          </th>
+          <th class=''>Date</th>
+          <th class=''>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
+            :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
+          <td>
+            <p>{{ archive.name }}</p>
+          </td>
+          <td>
           <span class='tooltip' :data-tip='archive.createdAt'>
             <span :class='getBadgeStyle(archive?.createdAt)'>{{ toHumanReadable(archive.createdAt) }}</span>
           </span>
-        </td>
-        <td class='flex items-center'>
-          <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>Browse</button>
-          <button class='btn btn-sm btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
-                  @click='archiveToBeDeleted = archive.id'>
-            <TrashIcon class='size-4' />
-          </button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-    <div class='flex justify-center items-center mt-4'>
-      <button class='btn btn-ghost' :disabled='pagination.page === 1'
-              @click='pagination.page--; getPaginatedArchives()'>
-        <ChevronLeftIcon class='size-6' />
-      </button>
-      <span class='mx-4'>{{ pagination.page }}/{{ Math.ceil(pagination.total / pagination.pageSize) }}</span>
-      <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
-              @click='pagination.page++; getPaginatedArchives()'>
-        <ChevronRightIcon class='size-6' />
-      </button>
+          </td>
+          <td class='flex items-center'>
+            <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>Browse</button>
+            <button class='btn btn-sm btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
+                    @click='archiveToBeDeleted = archive.id'>
+              <TrashIcon class='size-4' />
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <div class='flex justify-center items-center mt-4'>
+        <button class='btn btn-ghost' :disabled='pagination.page === 1'
+                @click='pagination.page--; getPaginatedArchives()'>
+          <ChevronLeftIcon class='size-6' />
+        </button>
+        <span class='mx-4'>{{ pagination.page }}/{{ Math.ceil(pagination.total / pagination.pageSize) }}</span>
+        <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
+                @click='pagination.page++; getPaginatedArchives()'>
+          <ChevronRightIcon class='size-6' />
+        </button>
+      </div>
+    </div>
+    <div v-else>
+      <p>No archives found</p>
     </div>
   </div>
   <ConfirmDialog

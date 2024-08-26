@@ -162,7 +162,7 @@ func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive
 		return nil, err
 	}
 
-	return r.db.Archive.
+	first, err := r.db.Archive.
 		Query().
 		Where(archive.And(
 			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
@@ -170,6 +170,10 @@ func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive
 		)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(r.ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return nil, nil
+	}
+	return first, err
 }
 
 func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {
