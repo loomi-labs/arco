@@ -163,11 +163,6 @@ func (b *BackupClient) GetState(bId types.BackupId) state.BackupState {
 	return b.state.GetBackupState(bId)
 }
 
-func (b *BackupClient) ResetStatus(bId types.BackupId) state.BackupState {
-	b.state.SetBackupIdle(bId)
-	return b.GetState(bId)
-}
-
 /***********************************/
 /********** Backup Schedule ********/
 /***********************************/

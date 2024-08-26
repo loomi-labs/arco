@@ -11,7 +11,8 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
-import { PencilIcon } from "@heroicons/vue/24/solid";
+import { PencilIcon, EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
 
 /************
  * Variables
@@ -25,6 +26,7 @@ const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoIsBusy = ref(false);
 const backupNameInput = ref<HTMLInputElement | null>(null);
 const validationError = ref<string | null>(null);
+const isDeleteDialogVisible = ref(false);
 
 /************
  * Functions
@@ -132,20 +134,36 @@ onMounted(() => {
   <div class='bg-base-200'>
     <div class='container text-left mx-auto pt-10'>
       <!-- Data Section -->
-      <div class='tooltip tooltip-bottom tooltip-error'
-           :class='validationError ? "tooltip-open" : ""'
-           :data-tip='validationError'
-      >
-        <label class='flex items-center gap-2 mb-4'>
-          <input
-            type='text'
-            class='text-2xl font-bold bg-transparent w-10'
-            v-model='backup.name'
-            @input='[adjustBackupNameWidth(), saveBackupName()]'
-            ref='backupNameInput'
-          />
-          <PencilIcon class='size-4' />
-        </label>
+      <div class='flex items-center justify-between mb-4'>
+        <div class='tooltip tooltip-bottom tooltip-error'
+             :class='validationError ? "tooltip-open" : ""'
+             :data-tip='validationError'
+        >
+          <label class='flex items-center gap-2'>
+            <input
+              type='text'
+              class='text-2xl font-bold bg-transparent w-10'
+              v-model='backup.name'
+              @input='[adjustBackupNameWidth(), saveBackupName()]'
+              ref='backupNameInput'
+            />
+            <PencilIcon class='size-4' />
+          </label>
+        </div>
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn m-1">
+            <EllipsisVerticalIcon class='size-6' />
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            <li><a @click='() => isDeleteDialogVisible = true'>Delete <TrashIcon class='size-4' /></a></li>
+          </ul>
+        </div>
+        <ConfirmDialog
+          message='Are you sure you want to delete this backup profile?'
+          :isVisible='isDeleteDialogVisible'
+          @confirm='deleteBackupProfile'
+          @cancel='isDeleteDialogVisible = false'
+        />
       </div>
 
       <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>

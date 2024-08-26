@@ -28,8 +28,6 @@ export function PruneBackup(arg1:types.BackupId):Promise<void>;
 
 export function PruneBackups(arg1:number):Promise<void>;
 
-export function ResetStatus(arg1:types.BackupId):Promise<state.BackupState>;
-
 export function SaveBackupProfile(arg1:ent.BackupProfile):Promise<void>;
 
 export function SaveBackupSchedule(arg1:number,arg2:ent.BackupSchedule):Promise<void>;

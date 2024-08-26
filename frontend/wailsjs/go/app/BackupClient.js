@@ -50,10 +50,6 @@ export function PruneBackups(arg1) {
   return window['go']['app']['BackupClient']['PruneBackups'](arg1);
 }
 
-export function ResetStatus(arg1) {
-  return window['go']['app']['BackupClient']['ResetStatus'](arg1);
-}
-
 export function SaveBackupProfile(arg1) {
   return window['go']['app']['BackupClient']['SaveBackupProfile'](arg1);
 }
