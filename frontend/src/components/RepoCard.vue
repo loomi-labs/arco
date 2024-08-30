@@ -7,11 +7,12 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
-import { toHumanReadable } from "../common/time";
+import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
 import { useToast } from "vue-toastification";
-import { LogDebug } from "../../wailsjs/runtime";
+import ConfirmDialog from "./ConfirmDialog.vue";
+import { parse } from "@formkit/tempo";
 
 /************
  * Variables
@@ -49,6 +50,8 @@ const defaultPollInterval = 1000; // 1 second
 const pollInterval = ref(defaultPollInterval);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
+const showRemoveLockDialog = ref(false);
+const isLocked = ref(false);
 
 /************
  * Functions
@@ -81,6 +84,15 @@ async function abortBackup() {
     await getBackupState();
   } catch (error: any) {
     await showAndLogError("Failed to abort backup", error);
+  }
+}
+
+async function breakLock() {
+  try {
+    await repoClient.BreakLock(backupId.repositoryId);
+    await getRepoState();
+  } catch (error: any) {
+    await showAndLogError("Failed to break lock", error);
   }
 }
 
@@ -181,9 +193,13 @@ watch(repoState, async (newState, oldState) => {
     repoIsBusy.value = false;
     emits(repoIsBusyEvent, false);
   } else if (oldState.status === state.RepoStatus.idle) {
+    // every other status is considered busy
     repoIsBusy.value = true;
     emits(repoIsBusyEvent, true);
   }
+
+  // update isLocked
+  isLocked.value = newState.status === state.RepoStatus.locked;
 });
 
 // poll for backup state
@@ -205,7 +221,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
           <span class='badge badge-outline badge-error'>Failed</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-          <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toHumanReadable(lastArchive.createdAt) }}</span>
+          <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </p>
       <p>Total Size: {{ totalSize }}</p>

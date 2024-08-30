@@ -4,9 +4,9 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state, types } from "../../wailsjs/go/models";
 import { ref, watch } from "vue";
 import { showAndLogError } from "../common/error";
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, DocumentMagnifyingGlassIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
-import { toHumanReadable } from "../common/time";
+import { toRelativeTimeString } from "../common/time";
 import { getBadgeStyle } from "../common/badge";
 
 /************
@@ -140,12 +140,15 @@ watch(() => props.repoIsBusy, async () => {
           </td>
           <td>
           <span class='tooltip' :data-tip='archive.createdAt'>
-            <span :class='getBadgeStyle(archive?.createdAt)'>{{ toHumanReadable(archive.createdAt) }}</span>
+            <span :class='getBadgeStyle(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
           </span>
           </td>
           <td class='flex items-center'>
-            <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>Browse</button>
-            <button class='btn btn-sm btn-outline btn-circle btn-error ml-2' :disabled='props.repoIsBusy'
+            <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>
+            <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
+              Browse
+            </button>
+            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' :disabled='props.repoIsBusy'
                     @click='archiveToBeDeleted = archive.id'>
               <TrashIcon class='size-4' />
             </button>

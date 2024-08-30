@@ -1,4 +1,16 @@
-import { diffDays, format, parse } from "@formkit/tempo";
+import {
+  diffDays,
+  diffHours,
+  diffMinutes,
+  diffMonths,
+  diffSeconds,
+  diffWeeks,
+  diffYears,
+  isBefore,
+  offset,
+  parse,
+  removeOffset
+} from "@formkit/tempo";
 
 
 /**
@@ -77,19 +89,96 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
 
 
 /**
- * toHumanReadable converts a Date object to a human-readable string
- * @param date
+ * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.
+ * @param date The date to convert (without timezone offset)
  */
-export function toHumanReadable(date: Date): string {
-  const dd = diffDays(date, new Date());
-  if (dd === 0) {
-    return "Today";
-  } else if (dd === 1) {
-    return "Tomorrow";
-  } else if (dd === -1) {
-    return "Yesterday";
-  } else if (dd > 1 && dd < 7) {
-    return format(date, "dddd");
+export function toRelativeTimeString(date: Date): string {
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
+
+  if (isBefore(date, now)) {
+    return toPastString(date, now);
   }
-  return format(date, "dddd, MMMM Do YYYY");
+  return toFutureString(date, now);
+}
+
+/**
+ * toFutureString converts a Date object to a human-readable string that is relative to the current time.
+ * @param date The date to convert (must be in the future)
+ * @param now The current date
+ */
+function toFutureString(date: Date, now: Date): string {
+  const dSeconds = diffSeconds(now, date, "ceil");
+  if (dSeconds < 60) {
+    return `in ${dSeconds} second${dSeconds !== 1 ? "s" : ""}`;
+  }
+
+  const dMinutes = diffMinutes(now, date, "ceil");
+  if (dMinutes < 60) {
+    return `in ${dMinutes} minute${dMinutes !== 1 ? "s" : ""}`;
+  }
+
+  const dHours = diffHours(now, date, "ceil");
+  if (dHours < 24) {
+    return `in ${dHours} hour${dHours !== 1 ? "s" : ""}`;
+  }
+
+  const dDays = diffDays(now, date, "ceil");
+  if (dDays < 7) {
+    return `in ${dDays} day${dDays !== 1 ? "s" : ""}`;
+  }
+
+  const dWeeks = diffWeeks(now, date, "ceil");
+  if (dWeeks < 4) {
+    return `in ${dWeeks} week${dWeeks !== 1 ? "s" : ""}`;
+  }
+
+  const dMonths = diffMonths(now, date);
+  if (dMonths < 12) {
+    return `in ${dMonths} month${dMonths !== 1 ? "s" : ""}`;
+  }
+
+  const dYears = diffYears(now, date);
+  return `in ${dYears} year${dYears !== 1 ? "s" : ""}`;
+}
+
+/**
+ * toPastString converts a Date object to a human-readable string that is relative to the current time.
+ * @param date The date to convert (must be in the past)
+ * @param now The current date
+ */
+function toPastString(date: Date, now: Date): string {
+  const dSeconds = diffSeconds(now, date, "floor");
+  if (dSeconds < 60) {
+    return `${dSeconds} second${dSeconds !== 1 ? "s" : ""} ago`;
+  }
+
+  const dMinutes = diffMinutes(now, date, "floor");
+  if (dMinutes < 60) {
+    return `${dMinutes} minute${dMinutes !== 1 ? "s" : ""} ago`;
+  }
+
+  const dHours = diffHours(now, date, "floor");
+  if (dHours < 24) {
+    return `${dHours} hour${dHours !== 1 ? "s" : ""} ago`;
+  }
+
+  const dDays = diffDays(now, date, "floor");
+  if (dDays < 7) {
+    return `${dDays} day${dDays !== 1 ? "s" : ""} ago`;
+  }
+
+  const dWeeks = diffWeeks(now, date, "floor");
+  if (dWeeks < 4) {
+    return `${dWeeks} week${dWeeks !== 1 ? "s" : ""} ago`;
+  }
+
+  const dMonths = diffMonths(now, date);
+  if (dMonths < 12) {
+    return `${dMonths} month${dMonths !== 1 ? "s" : ""} ago`;
+  }
+
+  const dYears = diffYears(now, date);
+  return `${dYears} year${dYears !== 1 ? "s" : ""} ago`;
 }
