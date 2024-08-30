@@ -51,6 +51,7 @@ const pollInterval = ref(defaultPollInterval);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const showRemoveLockDialog = ref(false);
+const isLockButtonDisabled = ref(false);
 const isLocked = ref(false);
 
 /************
@@ -89,11 +90,13 @@ async function abortBackup() {
 
 async function breakLock() {
   try {
+    isLockButtonDisabled.value = true;
     await repoClient.BreakLock(backupId.repositoryId);
     await getRepoState();
   } catch (error: any) {
     await showAndLogError("Failed to break lock", error);
   }
+  isLockButtonDisabled.value = false;
 }
 
 async function getRepo() {
@@ -243,7 +246,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
       </div>
 
       <!-- Normal button state -->
-      <div v-if='!isLocked' class="stack">
+      <div v-if='isLocked' class="stack">
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16'
                   :class='[backupState.status === state.BackupStatus.running ? "btn-warning": "btn-success"]'
@@ -264,11 +267,13 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
       <div v-else class="stack">
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-error'
-                  @click='showRemoveLockDialog = true'>Remove Lock</button>
+                  :disabled='isLockButtonDisabled'
+                  @click='showRemoveLockDialog = true'>{{ isLockButtonDisabled ? "Removing Lock..." : "Remove Lock"}}</button>
         </div>
         <div class='relative'>
           <div
             class="radial-progress absolute bottom-[2px] left-0 text-error"
+            :class='isLockButtonDisabled ? "text-neutral" : "text-error"'
             :style='`--value:100; --size:95px; --thickness: 6px;`'
             role="progressbar">
           </div>
