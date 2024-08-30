@@ -111,7 +111,7 @@ export function toRelativeTimeString(date: Date): string {
 function toFutureString(date: Date, now: Date): string {
   const dSeconds = diffSeconds(now, date, "ceil");
   if (dSeconds < 60) {
-    return `in ${dSeconds} second${dSeconds !== 1 ? "s" : ""}`;
+    return `in less than a minute`;
   }
 
   const dMinutes = diffMinutes(now, date, "ceil");
@@ -151,7 +151,7 @@ function toFutureString(date: Date, now: Date): string {
 function toPastString(date: Date, now: Date): string {
   const dSeconds = diffSeconds(now, date, "floor");
   if (dSeconds < 60) {
-    return `${dSeconds} second${dSeconds !== 1 ? "s" : ""} ago`;
+    return `less than a minute ago`;
   }
 
   const dMinutes = diffMinutes(now, date, "floor");
