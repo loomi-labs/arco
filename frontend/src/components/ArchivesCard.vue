@@ -4,7 +4,7 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state, types } from "../../wailsjs/go/models";
 import { ref, watch } from "vue";
 import { showAndLogError } from "../common/error";
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, DocumentMagnifyingGlassIcon } from "@heroicons/vue/24/solid";
+import { ChevronLeftIcon, ChevronDoubleLeftIcon, ChevronRightIcon, ChevronDoubleRightIcon, TrashIcon, DocumentMagnifyingGlassIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { toRelativeTimeString } from "../common/time";
 import { getBadgeStyle } from "../common/badge";
@@ -158,6 +158,10 @@ watch(() => props.repoIsBusy, async () => {
       </table>
       <div class='flex justify-center items-center mt-4'>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'
+                @click='pagination.page = 0; getPaginatedArchives()'>
+          <ChevronDoubleLeftIcon class='size-6' />
+        </button>
+        <button class='btn btn-ghost' :disabled='pagination.page === 1'
                 @click='pagination.page--; getPaginatedArchives()'>
           <ChevronLeftIcon class='size-6' />
         </button>
@@ -165,6 +169,10 @@ watch(() => props.repoIsBusy, async () => {
         <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
                 @click='pagination.page++; getPaginatedArchives()'>
           <ChevronRightIcon class='size-6' />
+        </button>
+        <button class='btn btn-ghost' :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
+                @click='pagination.page = Math.ceil(pagination.total / pagination.pageSize); getPaginatedArchives()'>
+          <ChevronDoubleRightIcon class='size-6' />
         </button>
       </div>
     </div>
