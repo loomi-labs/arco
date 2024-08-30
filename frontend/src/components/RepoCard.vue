@@ -127,6 +127,9 @@ async function getBackupState() {
 
 function getProgressValue(): number {
   const progress = backupState.value.progress;
+  if (backupState.value.status !== state.BackupStatus.running) {
+    return 100;
+  }
   if (!progress || progress.totalFiles === 0) {
     return 0;
   }
@@ -240,32 +243,37 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
       </div>
 
       <!-- Normal button state -->
-      <div v-if='!isLocked'
-           class='w-min rounded-full border-4 p-2 group'
-           :class='[backupState.status === state.BackupStatus.running ? "border-warning": "border-success"]'
-           @click='backupState.status === state.BackupStatus.running ? abortBackup() : runBackup()'
-      >
-        <div
-          class='radial-progress btn btn-circle border-0 transition-none'
-          :class='[backupState.status === state.BackupStatus.running ? "btn-warning bg-warning text-white": "btn-success bg-success text-success hover:text-success/0"]'
-          :style='`--value: ${getProgressValue()}; --size: 5rem; --thickness: 1rem;`'
-          role='progressbar'
-        >
-          <div class='btn btn-circle m-10 border-0 transition-none'
-               :class='[backupState.status === state.BackupStatus.running ?
-        "bg-warning text-warning-content group-hover:bg-warning/0":
-        "bg-success text-success-content group-hover:bg-success/0"]'
-          >
-            {{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%` : "Run Backup" }}
+      <div v-if='!isLocked' class="stack">
+        <div class='flex items-center justify-center w-[94px] h-[94px]'>
+          <button class='btn btn-circle p-4 m-0 w-16 h-16'
+                  :class='[backupState.status === state.BackupStatus.running ? "btn-warning": "btn-success"]'
+                  @click='backupState.status === state.BackupStatus.running ? abortBackup() : runBackup()'
+          >{{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%` : "Run Backup" }}
+          </button>
+        </div>
+        <div class='relative'>
+          <div
+            class="radial-progress absolute bottom-[2px] left-0"
+            :class='[backupState.status === state.BackupStatus.running ? "text-warning" : "text-success"]'
+            :style='`--value:${getProgressValue()}; --size:95px; --thickness: 6px;`'
+            role="progressbar">
           </div>
         </div>
       </div>
-
       <!-- Locked button state-->
-      <button v-if='isLocked'
-              class='btn btn-circle btn-error p-10 w-[104px] h-[104px]'
-              @click='showRemoveLockDialog = true'
-      >Remove Lock</button>
+      <div v-else class="stack">
+        <div class='flex items-center justify-center w-[94px] h-[94px]'>
+          <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-error'
+                  @click='showRemoveLockDialog = true'>Remove Lock</button>
+        </div>
+        <div class='relative'>
+          <div
+            class="radial-progress absolute bottom-[2px] left-0 text-error"
+            :style='`--value:100; --size:95px; --thickness: 6px;`'
+            role="progressbar">
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <ConfirmDialog
