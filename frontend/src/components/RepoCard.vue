@@ -246,7 +246,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
       </div>
 
       <!-- Normal button state -->
-      <div v-if='isLocked' class="stack">
+      <div v-if='!isLocked' class="stack">
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16'
                   :class='[backupState.status === state.BackupStatus.running ? "btn-warning": "btn-success"]'
