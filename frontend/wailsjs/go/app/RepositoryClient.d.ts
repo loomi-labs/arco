@@ -11,6 +11,8 @@ export function AddExistingRepository(arg1:string,arg2:string,arg3:string,arg4:n
 
 export function All():Promise<Array<ent.Repository>>;
 
+export function BreakLock(arg1:number):Promise<void>;
+
 export function Create(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
 
 export function DeleteArchive(arg1:number):Promise<void>;

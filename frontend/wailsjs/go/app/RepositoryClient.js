@@ -14,6 +14,10 @@ export function All() {
   return window['go']['app']['RepositoryClient']['All']();
 }
 
+export function BreakLock(arg1) {
+  return window['go']['app']['RepositoryClient']['BreakLock'](arg1);
+}
+
 export function Create(arg1, arg2, arg3, arg4) {
   return window['go']['app']['RepositoryClient']['Create'](arg1, arg2, arg3, arg4);
 }

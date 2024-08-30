@@ -239,7 +239,9 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         </button>
       </div>
 
-      <div class='w-min rounded-full border-4 p-2 group'
+      <!-- Normal button state -->
+      <div v-if='!isLocked'
+           class='w-min rounded-full border-4 p-2 group'
            :class='[backupState.status === state.BackupStatus.running ? "border-warning": "border-success"]'
            @click='backupState.status === state.BackupStatus.running ? abortBackup() : runBackup()'
       >
@@ -258,8 +260,22 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
           </div>
         </div>
       </div>
+
+      <!-- Locked button state-->
+      <button v-if='isLocked'
+              class='btn btn-circle btn-error p-10 w-[104px] h-[104px]'
+              @click='showRemoveLockDialog = true'
+      >Remove Lock</button>
     </div>
   </div>
+  <ConfirmDialog
+    message='Make sure that no other process (borg, arco, etc.) is running on this repository before removing the lock!'
+    subMessage='Are you sure you want to remove the lock?'
+    confirm-text='Remove Lock'
+    :isVisible='showRemoveLockDialog'
+    @confirm='showRemoveLockDialog = false; breakLock()'
+    @cancel='showRemoveLockDialog = false'
+  />
 </template>
 
 <style scoped>

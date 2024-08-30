@@ -91,3 +91,17 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 func (r *RepositoryClient) GetState(id int) state.RepoState {
 	return r.state.GetRepoState(id)
 }
+
+func (r *RepositoryClient) BreakLock(id int) error {
+	repo, err := r.Get(id)
+	if err != nil {
+		return err
+	}
+
+	err = r.borg.BreakLock(r.ctx, repo.URL, repo.Password)
+	if err != nil {
+		return err
+	}
+	r.state.SetRepoStatus(id, state.RepoStatusIdle)
+	return nil
+}
