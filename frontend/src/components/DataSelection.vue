@@ -75,7 +75,7 @@ watch(() => props.paths, (newPaths) => {
 
 <template>
   <div class='flex flex-col bg-base-100 p-10 rounded-xl shadow-lg'>
-    <h2 class='text-lg font-semibold mb-4'>{{ props.isBackupSelection ? $t("data-to-backup") : $t("data-to-ignore") }}</h2>
+    <h2 class='text-lg font-semibold mb-4'>{{ props.isBackupSelection ? $t("data_to_backup") : $t("data_to_ignore") }}</h2>
     <div class='flex justify-between' v-for='(path, index) in paths' :key='index'>
       <label class='form-control w-full max-w-xs mb-1'>
         <input type='text' class='input input-sm w-full max-w-xs text-base'
