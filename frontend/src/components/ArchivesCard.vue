@@ -10,7 +10,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DocumentMagnifyingGlassIcon,
-  TrashIcon
+  TrashIcon,
+  CloudArrowDownIcon
 } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { toRelativeTimeString } from "../common/time";
@@ -143,7 +144,7 @@ watch(() => props.repo, async () => {
         <thead>
         <tr>
           <th>
-            <h3 class='text-lg font-semibold'>Archives</h3>
+            <h3 class='text-lg font-semibold text-base-content'>Archives</h3>
             <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
           <th>Date</th>
@@ -151,10 +152,13 @@ watch(() => props.repo, async () => {
         </tr>
         </thead>
         <tbody>
-        <tr v-for='(archive, index) in archives' :key='index' :class='{ "bg-red-100": deletedArchive === archive.id }'
+        <tr v-for='(archive, index) in archives' :key='index' :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
-          <td>
+          <td class='flex items-center'>
             <p>{{ archive.name }}</p>
+            <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip' :data-tip='`Archive is mounted at ${archiveMountStates.get(archive.id)?.mount_path}`'>
+              <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
+            </span>
           </td>
           <td>
           <span class='tooltip' :data-tip='archive.createdAt'>
@@ -169,7 +173,8 @@ watch(() => props.repo, async () => {
               Browse
             </button>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
-                    :disabled='props.repoStatus !== state.RepoStatus.mounted'
+                    :disabled='props.repoStatus === state.RepoStatus.mounted ||
+                    (props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted)'
                     @click='archiveToBeDeleted = archive.id'>
               <TrashIcon class='size-4' />
             </button>
@@ -177,7 +182,7 @@ watch(() => props.repo, async () => {
         </tr>
         </tbody>
       </table>
-      <div class='flex justify-center items-center mt-4'>
+      <div v-if='Math.ceil(pagination.total / pagination.pageSize) > 1' class='flex justify-center items-center mt-4'>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'
                 @click='pagination.page = 1; getPaginatedArchives()'>
           <ChevronDoubleLeftIcon class='size-6' />
