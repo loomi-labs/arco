@@ -104,8 +104,10 @@ func (r *RepositoryClient) UnmountAllForRepo(repoId int) error {
 		return err
 	} else {
 		for archiveId := range states {
-			if _, err = r.UnmountArchive(archiveId); err != nil {
-				return err
+			if states[archiveId].IsMounted {
+				if _, err = r.UnmountArchive(archiveId); err != nil {
+					return err
+				}
 			}
 		}
 	}
