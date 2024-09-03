@@ -158,7 +158,7 @@ watch(() => props.repoIsBusy, async () => {
       </table>
       <div class='flex justify-center items-center mt-4'>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'
-                @click='pagination.page = 0; getPaginatedArchives()'>
+                @click='pagination.page = 1; getPaginatedArchives()'>
           <ChevronDoubleLeftIcon class='size-6' />
         </button>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'

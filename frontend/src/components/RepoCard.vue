@@ -12,7 +12,6 @@ import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
 import { useToast } from "vue-toastification";
 import ConfirmDialog from "./ConfirmDialog.vue";
-import { parse } from "@formkit/tempo";
 
 /************
  * Variables
@@ -246,7 +245,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
       </div>
 
       <!-- Normal button state -->
-      <div v-if='!isLocked' class="stack">
+      <div v-if='!isLocked' class='stack'>
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16'
                   :class='[backupState.status === state.BackupStatus.running ? "btn-warning": "btn-success"]'
@@ -256,26 +255,40 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         </div>
         <div class='relative'>
           <div
-            class="radial-progress absolute bottom-[2px] left-0"
+            class='radial-progress absolute bottom-[2px] left-0'
             :class='[backupState.status === state.BackupStatus.running ? "text-warning" : "text-success"]'
             :style='`--value:${getProgressValue()}; --size:95px; --thickness: 6px;`'
-            role="progressbar">
+            role='progressbar'>
           </div>
         </div>
       </div>
       <!-- Locked button state-->
-      <div v-else class="stack">
+      <div v-else class='stack'>
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-error'
                   :disabled='isLockButtonDisabled'
-                  @click='showRemoveLockDialog = true'>{{ isLockButtonDisabled ? "Removing Lock..." : "Remove Lock"}}</button>
+                  @click='showRemoveLockDialog = true'>{{ isLockButtonDisabled ? "Removing Lock..." : "Remove Lock" }}
+          </button>
         </div>
         <div class='relative'>
           <div
-            class="radial-progress absolute bottom-[2px] left-0 text-error"
+            class='radial-progress absolute bottom-[2px] left-0 text-error'
             :class='isLockButtonDisabled ? "text-neutral" : "text-error"'
             :style='`--value:100; --size:95px; --thickness: 6px;`'
-            role="progressbar">
+            role='progressbar'>
+          </div>
+        </div>
+      </div>
+      <!-- Repo is busy but not from this backup -->
+      <div v-if='!isLocked && repoIsBusy && backupState.status !== state.BackupStatus.running' class='stack'>
+        <div class='flex items-center justify-center w-[94px] h-[94px]'>
+          <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-neutral' disabled>Busy</button>
+        </div>
+        <div class='relative'>
+          <div
+            class='radial-progress absolute bottom-[2px] left-0 text-neutral'
+            :style='`--value:100; --size:95px; --thickness: 6px;`'
+            role='progressbar'>
           </div>
         </div>
       </div>
