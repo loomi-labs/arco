@@ -14,6 +14,18 @@ import { useToast } from "vue-toastification";
 import ConfirmDialog from "./ConfirmDialog.vue";
 
 /************
+ * Types
+ ************/
+
+enum ButtonState {
+  unknown,
+  runBackup,
+  abortBackup,
+  locked,
+  unmount,
+}
+
+/************
  * Variables
  ************/
 
@@ -50,13 +62,14 @@ const pollInterval = ref(defaultPollInterval);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const showRemoveLockDialog = ref(false);
-const isLockButtonDisabled = ref(false);
-const isLocked = ref(false);
+const buttonState = ref<ButtonState>(ButtonState.unknown);
+const showProgressSpinner = ref(false);
 
 /************
  * Functions
  ************/
 
+// Button actions
 async function runBackup() {
   try {
     await backupClient.StartBackupJob(backupId);
@@ -89,14 +102,25 @@ async function abortBackup() {
 
 async function breakLock() {
   try {
-    isLockButtonDisabled.value = true;
+    showProgressSpinner.value = true;
     await repoClient.BreakLock(backupId.repositoryId);
     await getRepoState();
   } catch (error: any) {
     await showAndLogError("Failed to break lock", error);
   }
-  isLockButtonDisabled.value = false;
+  showProgressSpinner.value = false;
 }
+
+async function unmountAll() {
+  try {
+    await repoClient.UnmountAllForRepo(backupId.repositoryId);
+    await getRepoState();
+  } catch (error: any) {
+    await showAndLogError("Failed to unmount all", error);
+  }
+}
+
+// End button actions
 
 async function getRepo() {
   try {
@@ -152,11 +176,76 @@ function toHumanReadableSize(size: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
+async function runButtonAction() {
+  if (buttonState.value === ButtonState.runBackup) {
+    await runBackup();
+  } else if (buttonState.value === ButtonState.abortBackup) {
+    await abortBackup();
+  } else if (buttonState.value === ButtonState.locked) {
+    showRemoveLockDialog.value = true;
+  } else if (buttonState.value === ButtonState.unmount) {
+    await unmountAll();
+  }
+}
+
+// Styling
+
+function getButtonText() {
+  if (buttonState.value === ButtonState.runBackup) {
+    return "Run Backup";
+  } else if (buttonState.value === ButtonState.abortBackup) {
+    return `Abort ${getProgressValue()}%`;
+  } else if (buttonState.value === ButtonState.locked) {
+    return "Remove Lock";
+  } else if (buttonState.value === ButtonState.unmount) {
+    return "Stop Browsing";
+  } else {
+    return "Busy";
+  }
+}
+
+function getButtonColor() {
+  if (buttonState.value === ButtonState.runBackup) {
+    return "btn-success";
+  } else if (buttonState.value === ButtonState.abortBackup) {
+    return "btn-warning";
+  } else if (buttonState.value === ButtonState.locked) {
+    return "btn-error";
+  } else if (buttonState.value === ButtonState.unmount) {
+    return "btn-info";
+  } else {
+    return "btn-neutral";
+  }
+}
+
+function getButtonTextColor() {
+  if (buttonState.value === ButtonState.runBackup) {
+    return "text-success";
+  } else if (buttonState.value === ButtonState.abortBackup) {
+    return "text-warning";
+  } else if (buttonState.value === ButtonState.locked) {
+    return "text-error";
+  } else if (buttonState.value === ButtonState.unmount) {
+    return "text-info";
+  } else {
+    return "text-neutral";
+  }
+}
+
+function getButtonDisabled() {
+  if (buttonState.value === ButtonState.unknown) {
+    return true;
+  }
+}
+
+// End Styling
+
 /************
  * Lifecycle
  ************/
 
 getRepo();
+getRepoState();
 getBackupState();
 
 watch(backupState, async (newState, oldState) => {
@@ -168,6 +257,7 @@ watch(backupState, async (newState, oldState) => {
   if (newState.status === state.BackupStatus.running) {
     // increase poll interval when backup is running
     pollInterval.value = 200;   // 200ms
+    buttonState.value = ButtonState.abortBackup;
   } else {
     // reset poll interval otherwise
     pollInterval.value = defaultPollInterval;
@@ -175,13 +265,16 @@ watch(backupState, async (newState, oldState) => {
     // if backup is done, reset status and get repo again
     if (newState.status === state.BackupStatus.completed) {
       await getRepo();
+      buttonState.value = ButtonState.runBackup;
       // await resetStatus();
     } else if (newState.status === state.BackupStatus.failed) {
       toast.error(`Backup failed: ${backupState.value.error}`);
+      buttonState.value = ButtonState.unknown;
       await getRepo();
     }
   }
 
+  // set next poll interval
   clearInterval(backupStatePollInterval);
   backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
 });
@@ -203,8 +296,14 @@ watch(repoState, async (newState, oldState) => {
     emits(repoIsBusyEvent, true);
   }
 
-  // update isLocked
-  isLocked.value = newState.status === state.RepoStatus.locked;
+  // update button state
+  if (newState.status === state.RepoStatus.locked) {
+    buttonState.value = ButtonState.locked;
+  } else if (newState.status === state.RepoStatus.mounted) {
+    buttonState.value = ButtonState.unmount;
+  } else if (newState.status === state.RepoStatus.idle) {
+    buttonState.value = ButtonState.runBackup;
+  }
 });
 
 // poll for backup state
@@ -244,54 +343,32 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         </button>
       </div>
 
-      <!-- Normal button state -->
-      <div v-if='!isLocked' class='stack'>
+      <!-- ButtonState is runBackup or abortBackup -->
+      <div class='stack'>
         <div class='flex items-center justify-center w-[94px] h-[94px]'>
           <button class='btn btn-circle p-4 m-0 w-16 h-16'
-                  :class='[backupState.status === state.BackupStatus.running ? "btn-warning": "btn-success"]'
-                  @click='backupState.status === state.BackupStatus.running ? abortBackup() : runBackup()'
-          >{{ backupState.status === state.BackupStatus.running ? `Abort ${getProgressValue()}%` : "Run Backup" }}
+                  :class='getButtonColor()'
+                  :disabled='getButtonDisabled()'
+                  @click='runButtonAction()'
+          >{{ getButtonText() }}
           </button>
         </div>
         <div class='relative'>
           <div
             class='radial-progress absolute bottom-[2px] left-0'
-            :class='[backupState.status === state.BackupStatus.running ? "text-warning" : "text-success"]'
+            :class='getButtonTextColor()'
             :style='`--value:${getProgressValue()}; --size:95px; --thickness: 6px;`'
             role='progressbar'>
           </div>
         </div>
       </div>
-      <!-- Locked button state-->
-      <div v-else class='stack'>
-        <div class='flex items-center justify-center w-[94px] h-[94px]'>
-          <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-error'
-                  :disabled='isLockButtonDisabled'
-                  @click='showRemoveLockDialog = true'>{{ isLockButtonDisabled ? "Removing Lock..." : "Remove Lock" }}
-          </button>
-        </div>
-        <div class='relative'>
-          <div
-            class='radial-progress absolute bottom-[2px] left-0 text-error'
-            :class='isLockButtonDisabled ? "text-neutral" : "text-error"'
-            :style='`--value:100; --size:95px; --thickness: 6px;`'
-            role='progressbar'>
-          </div>
-        </div>
-      </div>
-      <!-- Repo is busy but not from this backup -->
-      <div v-if='!isLocked && repoIsBusy && backupState.status !== state.BackupStatus.running' class='stack'>
-        <div class='flex items-center justify-center w-[94px] h-[94px]'>
-          <button class='btn btn-circle p-4 m-0 w-16 h-16 btn-neutral' disabled>Busy</button>
-        </div>
-        <div class='relative'>
-          <div
-            class='radial-progress absolute bottom-[2px] left-0 text-neutral'
-            :style='`--value:100; --size:95px; --thickness: 6px;`'
-            role='progressbar'>
-          </div>
-        </div>
-      </div>
+    </div>
+  </div>
+  <div v-if='showProgressSpinner'
+       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
+    <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
+      <p class='mb-4'>Breaking lock</p>
+      <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
   <ConfirmDialog

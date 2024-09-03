@@ -4,7 +4,14 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state, types } from "../../wailsjs/go/models";
 import { ref, watch } from "vue";
 import { showAndLogError } from "../common/error";
-import { ChevronLeftIcon, ChevronDoubleLeftIcon, ChevronRightIcon, ChevronDoubleRightIcon, TrashIcon, DocumentMagnifyingGlassIcon } from "@heroicons/vue/24/solid";
+import {
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DocumentMagnifyingGlassIcon,
+  TrashIcon
+} from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { toRelativeTimeString } from "../common/time";
 import { getBadgeStyle } from "../common/badge";
@@ -47,6 +54,7 @@ const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
 const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map<archiveId, MountState>
+const showProgressSpinner = ref<boolean>(false);
 
 /************
  * Functions
@@ -71,11 +79,15 @@ async function deleteArchive() {
     return;
   }
   const archiveId = archiveToBeDeleted.value;
+  archiveToBeDeleted.value = undefined;
+
   try {
+    showProgressSpinner.value = true;
     await repoClient.DeleteArchive(archiveId);
-    archiveToBeDeleted.value = undefined;
+    showProgressSpinner.value = false;
     markArchiveAndFadeOut(archiveId);
   } catch (error: any) {
+    showProgressSpinner.value = false;
     await showAndLogError("Failed to delete archive", error);
   }
 }
@@ -124,12 +136,12 @@ watch(() => props.repoIsBusy, async () => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th class=''>
+          <th>
             <h3 class='text-lg font-semibold'>Archives</h3>
             <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
-          <th class=''>Date</th>
-          <th class=''>Action</th>
+          <th>Date</th>
+          <th>Action</th>
         </tr>
         </thead>
         <tbody>
@@ -144,8 +156,10 @@ watch(() => props.repoIsBusy, async () => {
           </span>
           </td>
           <td class='flex items-center'>
-            <button class='btn btn-sm btn-primary' @click='browseArchive(archive.id)'>
-            <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
+            <button class='btn btn-sm btn-primary'
+                    :disabled='props.repoIsBusy'
+                    @click='browseArchive(archive.id)'>
+              <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               Browse
             </button>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' :disabled='props.repoIsBusy'
@@ -178,6 +192,14 @@ watch(() => props.repoIsBusy, async () => {
     </div>
     <div v-else>
       <p>No archives found</p>
+    </div>
+  </div>
+
+  <div v-if='showProgressSpinner'
+       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
+    <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
+      <p class='mb-4'>Deleting archive</p>
+      <span class="loading loading-dots loading-md"></span>
     </div>
   </div>
   <ConfirmDialog

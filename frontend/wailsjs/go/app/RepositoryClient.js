@@ -66,6 +66,10 @@ export function RefreshArchives(arg1) {
   return window['go']['app']['RepositoryClient']['RefreshArchives'](arg1);
 }
 
+export function UnmountAllForRepo(arg1) {
+  return window['go']['app']['RepositoryClient']['UnmountAllForRepo'](arg1);
+}
+
 export function UnmountArchive(arg1) {
   return window['go']['app']['RepositoryClient']['UnmountArchive'](arg1);
 }

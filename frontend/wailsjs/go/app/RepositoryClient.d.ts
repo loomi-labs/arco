@@ -37,6 +37,8 @@ export function MountRepository(arg1:number):Promise<state.MountState>;
 
 export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 
+export function UnmountAllForRepo(arg1:number):Promise<void>;
+
 export function UnmountArchive(arg1:number):Promise<state.MountState>;
 
 export function UnmountRepository(arg1:number):Promise<state.MountState>;

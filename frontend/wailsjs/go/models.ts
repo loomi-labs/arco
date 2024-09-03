@@ -496,6 +496,7 @@ export namespace state {
 	    backing_up = "backing_up",
 	    pruning = "pruning",
 	    deleting = "deleting",
+	    mounted = "mounted",
 	    performing_operation = "performing_operation",
 	    locked = "locked",
 	}
