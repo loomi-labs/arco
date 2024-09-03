@@ -137,7 +137,7 @@ watch(() => props.repo, async () => {
 
 </script>
 <template>
-  <div class='bg-base-100 p-6 rounded-lg shadow-md'
+  <div class='bg-base-100 p-6 rounded-lg shadow-lg'
        :class='{ "border-2 border-primary": props.highlight }'>
     <div v-if='pagination.total > 0'>
       <table class='w-full table table-xs table-zebra'>
