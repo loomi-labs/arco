@@ -13,7 +13,7 @@ const options: PluginOptions = {
   // Set options for the toast here
 };
 
-const i18n = createI18n({
+export const i18n = createI18n({
   locale: "en",
   fallbackLocale: "en",
   messages: {

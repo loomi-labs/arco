@@ -144,11 +144,11 @@ watch(() => props.repo, async () => {
         <thead>
         <tr>
           <th>
-            <h3 class='text-lg font-semibold text-base-content'>Archives</h3>
+            <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
-          <th>Date</th>
-          <th>Action</th>
+          <th>{{ $t("date") }}</th>
+          <th>{{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -170,7 +170,7 @@ watch(() => props.repo, async () => {
                     :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
                     @click='browseArchive(archive.id)'>
               <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
-              Browse
+              {{ $t("browse") }}
             </button>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
@@ -202,19 +202,20 @@ watch(() => props.repo, async () => {
       </div>
     </div>
     <div v-else>
-      <p>No archives found</p>
+      <p>{{ $t("no_archives_found") }}</p>
     </div>
   </div>
 
   <div v-if='showProgressSpinner'
        class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
-      <p class='mb-4'>Deleting archive</p>
+      <p class='mb-4'>{{ $t("deleting_archive") }}</p>
       <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
   <ConfirmDialog
-    message='Are you sure you want to delete this archive?'
+    :message='$t("confirm_delete_archive")'
+    :confirm-text='$t("delete")'
     :isVisible='!!archiveToBeDeleted'
     @confirm='deleteArchive()'
     @cancel='archiveToBeDeleted = undefined'

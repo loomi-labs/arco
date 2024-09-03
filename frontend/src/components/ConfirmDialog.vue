@@ -1,29 +1,34 @@
 <script setup lang='ts'>
+import { i18n } from '../main';
 
-const props = defineProps({
-  message: {
-    type: String,
-    required: true
-  },
-  subMessage: {
-    type: String,
-    default: ''
-  },
-  confirmText: {
-    type: String,
-    default: 'Confirm'
-  },
-  cancelText: {
-    type: String,
-    default: 'Cancel'
-  },
-  isVisible: {
-    type: Boolean,
-    required: true
-  }
-});
+/************
+ * Types
+ ************/
+
+interface Props {
+  message: string;
+  subMessage?: string;
+  confirmText?: string;
+  cancelText?: string;
+  isVisible: boolean;
+}
+
+
+/************
+ * Variables
+ ************/
+
+const props = defineProps<Props>();
+
+const { t } = i18n.global;
+const cancelText = props.cancelText ?? t('cancel');
+const confirmText = props.confirmText ?? t('confirm');
 
 const emit = defineEmits(['confirm', 'cancel']);
+
+/************
+ * Functions
+ ************/
 
 function handleConfirm() {
   emit('confirm');

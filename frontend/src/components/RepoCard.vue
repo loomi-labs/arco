@@ -12,6 +12,7 @@ import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
 import { useToast } from "vue-toastification";
 import ConfirmDialog from "./ConfirmDialog.vue";
+import { i18n } from '../main';
 
 /************
  * Types
@@ -44,6 +45,7 @@ const emits = defineEmits<{
   (e: typeof clickEmit): void
 }>();
 
+const { t } = i18n.global;
 const router = useRouter();
 const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
@@ -190,15 +192,15 @@ async function runButtonAction() {
 
 function getButtonText() {
   if (buttonState.value === ButtonState.runBackup) {
-    return "Run Backup";
+    return t("run_backup");
   } else if (buttonState.value === ButtonState.abortBackup) {
-    return `Abort ${getProgressValue()}%`;
+    return `${t("abort")} ${getProgressValue()}%`;
   } else if (buttonState.value === ButtonState.locked) {
-    return "Remove Lock";
+    return t("remove_lock");
   } else if (buttonState.value === ButtonState.unmount) {
-    return "Stop Browsing";
+    return t("stop_browsing");
   } else {
-    return "Busy";
+    return t("busy");
   }
 }
 
@@ -313,18 +315,17 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
-      <p>Last backup:
+      <p>{{ $t("last_backup") }}:
         <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-          <span class='badge badge-outline badge-error'>Failed</span>
+          <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
           <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </p>
-      <p>Total Size: {{ totalSize }}</p>
-      <p>Size on Disk: {{ sizeOnDisk }}</p>
-      <a class='link mt-auto' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>Go to
-        repository</a>
+      <p>{{ $t("total_size") }}: {{ totalSize }}</p>
+      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
+      <a class='link mt-auto' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>
@@ -360,14 +361,14 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
   <div v-if='showProgressSpinner'
        class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
-      <p class='mb-4'>Breaking lock</p>
+      <p class='mb-4'>{{ $t("breaking_lock") }}</p>
       <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
   <ConfirmDialog
-    message='Make sure that no other process (borg, arco, etc.) is running on this repository before removing the lock!'
-    subMessage='Are you sure you want to remove the lock?'
-    confirm-text='Remove Lock'
+    :message='$t("remove_lock_warning")'
+    :subMessage='$t("remove_lock_confirmation")'
+    confirm-text='{{ $t("remove_lock") }}'
     :isVisible='showRemoveLockDialog'
     @confirm='showRemoveLockDialog = false; breakLock()'
     @cancel='showRemoveLockDialog = false'
