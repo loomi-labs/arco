@@ -56,8 +56,8 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, 
 		return
 	}
 	repoLock := r.state.GetRepoLock(archive.Edges.Repository.ID)
-	repoLock.Lock() // We might wait here for other operations to finish
-	defer repoLock.Unlock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
 	path, err := getArchiveMountPath(archive)
 	if err != nil {

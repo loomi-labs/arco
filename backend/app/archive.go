@@ -18,7 +18,8 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	repoLock := r.state.GetRepoLock(repoId)
-	repoLock.Lock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
 	// Wait to acquire the lock and then set the repo as fetching info
 	r.state.SetRepoStatus(repoId, state.RepoStatusPerformingOperation)
@@ -104,7 +105,8 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	}
 
 	repoLock := r.state.GetRepoLock(arch.Edges.Repository.ID)
-	repoLock.Lock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
 	// Wait to acquire the lock and then set the repo as locked
 	r.state.SetRepoStatus(arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)

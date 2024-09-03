@@ -80,7 +80,9 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 
 func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
 	// Wait to acquire the lock and then set the repo as locked
 	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPruning)
 	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
@@ -163,7 +165,8 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch cha
 
 func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
 	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPerformingOperation)
 	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
