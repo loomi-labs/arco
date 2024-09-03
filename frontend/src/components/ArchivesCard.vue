@@ -173,8 +173,7 @@ watch(() => props.repo, async () => {
               Browse
             </button>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
-                    :disabled='props.repoStatus === state.RepoStatus.mounted ||
-                    (props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted)'
+                    :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='archiveToBeDeleted = archive.id'>
               <TrashIcon class='size-4' />
             </button>
