@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ent } from "../../wailsjs/go/models";
+import { ent, state } from "../../wailsjs/go/models";
 import { rDataPage } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
@@ -11,7 +11,7 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
-import { PencilIcon, EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 
 /************
@@ -23,7 +23,7 @@ const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const backupPaths = ref<Path[]>([]);
 const excludePaths = ref<Path[]>([]);
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
-const repoIsBusy = ref(false);
+const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const backupNameInput = ref<HTMLInputElement | null>(null);
 const validationError = ref<string | null>(null);
 const isDeleteDialogVisible = ref(false);
@@ -37,8 +37,13 @@ async function getBackupProfile() {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     backupPaths.value = toPaths(true, backup.value.backupPaths);
     excludePaths.value = toPaths(true, backup.value.excludePaths);
-    if (backup.value.edges.repositories?.length && !selectedRepo.value) {
+    if (backup.value.edges?.repositories?.length && !selectedRepo.value) {
+      // Select the first repo by default
       selectedRepo.value = backup.value.edges.repositories[0];
+    }
+    for (const repo of backup.value?.edges?.repositories ?? []) {
+      // Set all repo statuses to idle
+      repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
     adjustBackupNameWidth();
   } catch (error: any) {
@@ -150,12 +155,14 @@ onMounted(() => {
             <PencilIcon class='size-4' />
           </label>
         </div>
-        <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn m-1">
+        <div class='dropdown dropdown-end'>
+          <div tabindex='0' role='button' class='btn m-1'>
             <EllipsisVerticalIcon class='size-6' />
           </div>
-          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-            <li><a @click='() => isDeleteDialogVisible = true'>Delete <TrashIcon class='size-4' /></a></li>
+          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
+            <li><a @click='() => isDeleteDialogVisible = true'>Delete
+              <TrashIcon class='size-4' />
+            </a></li>
           </ul>
         </div>
         <ConfirmDialog
@@ -191,11 +198,18 @@ onMounted(() => {
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- Repositories -->
         <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
-          <RepoCard :repo-id='repo.id' :backup-profile-id='backup.id' @repo:is-busy='repoIsBusy = $event'></RepoCard>
+          <RepoCard
+            :repo-id='repo.id'
+            :backup-profile-id='backup.id'
+            @repo:status='repoStatuses.set(repo.id, $event)'>
+          </RepoCard>
         </div>
       </div>
-      <ArchivesCard v-if='selectedRepo' :backup-profile-id='backup.id' :repo='selectedRepo!'
-                    :repo-is-busy='repoIsBusy'></ArchivesCard>
+      <ArchivesCard v-if='selectedRepo'
+                    :backup-profile-id='backup.id'
+                    :repo='selectedRepo!'
+                    :repo-status='repoStatuses.get(selectedRepo.id)!'>
+      </ArchivesCard>
     </div>
   </div>
 </template>

@@ -26,25 +26,17 @@ type Pagination = {
   total: number;
 };
 
+export interface Props {
+  repo: ent.Repository;
+  backupProfileId: number;
+  repoStatus: state.RepoStatus;
+}
+
 /************
  * Variables
  ************/
 
-const props = defineProps({
-  repo: {
-    type: ent.Repository,
-    required: true
-  },
-  backupProfileId: {
-    type: Number,
-    required: true
-  },
-  repoIsBusy: {
-    type: Boolean,
-    required: false,
-    default: false
-  }
-});
+const props = defineProps<Props>();
 
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
@@ -125,7 +117,7 @@ async function browseArchive(archiveId: number) {
 getPaginatedArchives();
 getArchiveMountStates();
 
-watch(() => props.repoIsBusy, async () => {
+watch(() => props.repoStatus, async () => {
   await getPaginatedArchives();
 });
 
@@ -157,12 +149,12 @@ watch(() => props.repoIsBusy, async () => {
           </td>
           <td class='flex items-center'>
             <button class='btn btn-sm btn-primary'
-                    :disabled='props.repoIsBusy'
+                    :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
                     @click='browseArchive(archive.id)'>
               <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               Browse
             </button>
-            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' :disabled='props.repoIsBusy'
+            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' :disabled='props.repoStatus !== state.RepoStatus.mounted'
                     @click='archiveToBeDeleted = archive.id'>
               <TrashIcon class='size-4' />
             </button>

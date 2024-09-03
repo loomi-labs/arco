@@ -40,11 +40,10 @@ const props = defineProps({
   }
 });
 
-const repoIsBusyEvent = "repo:isBusy";
+const repoStatusEmit = "repo:status";
 const emits = defineEmits<{
-  (e: typeof repoIsBusyEvent, isBusy: boolean): void
+  (e: typeof repoStatusEmit, status: state.RepoStatus): void
 }>();
-const repoIsBusy = ref(false);
 
 const router = useRouter();
 const toast = useToast();
@@ -116,7 +115,7 @@ async function unmountAll() {
     await repoClient.UnmountAllForRepo(backupId.repositoryId);
     await getRepoState();
   } catch (error: any) {
-    await showAndLogError("Failed to unmount all", error);
+    await showAndLogError("Failed to unmount directories", error);
   }
 }
 
@@ -287,14 +286,7 @@ watch(repoState, async (newState, oldState) => {
   }
 
   // status changed
-  if (newState.status === state.RepoStatus.idle) {
-    repoIsBusy.value = false;
-    emits(repoIsBusyEvent, false);
-  } else if (oldState.status === state.RepoStatus.idle) {
-    // every other status is considered busy
-    repoIsBusy.value = true;
-    emits(repoIsBusyEvent, true);
-  }
+  emits(repoStatusEmit, newState.status);
 
   // update button state
   if (newState.status === state.RepoStatus.locked) {
@@ -335,10 +327,10 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>
-        <button class='btn btn-ghost btn-circle' :disabled='repoIsBusy'>
+        <button class='btn btn-ghost btn-circle' :disabled='repoState.status !== state.RepoStatus.idle'>
           <ScissorsIcon class='size-6' />
         </button>
-        <button class='btn btn-ghost btn-circle ml-2' :disabled='repoIsBusy'>
+        <button class='btn btn-ghost btn-circle ml-2' :disabled='repoState.status !== state.RepoStatus.idle'>
           <TrashIcon class='size-6' />
         </button>
       </div>
