@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { i18n } from '../main';
+import { useI18n } from "vue-i18n";
 
 /************
  * Types
@@ -13,14 +13,13 @@ interface Props {
   isVisible: boolean;
 }
 
-
 /************
  * Variables
  ************/
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 
-const { t } = i18n.global;
 const cancelText = props.cancelText ?? t('cancel');
 const confirmText = props.confirmText ?? t('confirm');
 

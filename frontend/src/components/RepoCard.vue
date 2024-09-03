@@ -12,7 +12,7 @@ import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { getBadgeStyle } from "../common/badge";
 import { useToast } from "vue-toastification";
 import ConfirmDialog from "./ConfirmDialog.vue";
-import { i18n } from '../main';
+import { useI18n } from "vue-i18n";
 
 /************
  * Types
@@ -46,9 +46,9 @@ const emits = defineEmits<{
   (e: typeof clickEmit): void
 }>();
 
-const { t } = i18n.global;
 const router = useRouter();
 const toast = useToast();
+const { t } = useI18n();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
