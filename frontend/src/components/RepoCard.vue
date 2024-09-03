@@ -25,24 +25,23 @@ enum ButtonState {
   unmount,
 }
 
+export interface Props {
+  repoId: number;
+  backupProfileId: number;
+  highlight: boolean;
+}
+
 /************
  * Variables
  ************/
 
-const props = defineProps({
-  repoId: {
-    type: Number,
-    required: true
-  },
-  backupProfileId: {
-    type: Number,
-    required: true
-  }
-});
+const props = defineProps<Props>();
 
 const repoStatusEmit = "repo:status";
+const clickEmit = "click";
 const emits = defineEmits<{
   (e: typeof repoStatusEmit, status: state.RepoStatus): void
+  (e: typeof clickEmit): void
 }>();
 
 const router = useRouter();
@@ -309,7 +308,9 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
 </script>
 
 <template>
-  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg'>
+  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight }'
+       @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
       <p>Last backup:

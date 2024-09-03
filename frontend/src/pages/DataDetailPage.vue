@@ -201,6 +201,8 @@ onMounted(() => {
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backup.id'
+            :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+            @click='() => selectedRepo = repo'
             @repo:status='repoStatuses.set(repo.id, $event)'>
           </RepoCard>
         </div>
@@ -208,7 +210,8 @@ onMounted(() => {
       <ArchivesCard v-if='selectedRepo'
                     :backup-profile-id='backup.id'
                     :repo='selectedRepo!'
-                    :repo-status='repoStatuses.get(selectedRepo.id)!'>
+                    :repo-status='repoStatuses.get(selectedRepo.id)!'
+                    :highlight='(backup.edges.repositories?.length ?? 0) > 1'>
       </ArchivesCard>
     </div>
   </div>

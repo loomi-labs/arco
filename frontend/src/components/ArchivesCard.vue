@@ -30,6 +30,7 @@ export interface Props {
   repo: ent.Repository;
   backupProfileId: number;
   repoStatus: state.RepoStatus;
+  highlight: boolean;
 }
 
 /************
@@ -38,9 +39,6 @@ export interface Props {
 
 const props = defineProps<Props>();
 
-const backupId = types.BackupId.createFrom();
-backupId.backupProfileId = props.backupProfileId ?? -1;
-backupId.repositoryId = props.repo?.id ?? -1;
 const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
@@ -54,6 +52,9 @@ const showProgressSpinner = ref<boolean>(false);
 
 async function getPaginatedArchives() {
   try {
+    const backupId = types.BackupId.createFrom();
+    backupId.backupProfileId = props.backupProfileId ?? -1;
+    backupId.repositoryId = props.repo?.id ?? -1;
     const result = await repoClient.GetPaginatedArchives(backupId, pagination.value.page, pagination.value.pageSize);
     archives.value = result.archives;
     pagination.value = {
@@ -61,6 +62,12 @@ async function getPaginatedArchives() {
       pageSize: pagination.value.pageSize,
       total: result.total
     };
+
+    // If there are no archives on the current page, go back to the first page
+    if (archives.value.length === 0 && pagination.value.page > 1) {
+      pagination.value.page = 1;
+      await getPaginatedArchives();
+    }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
   }
@@ -94,7 +101,7 @@ function markArchiveAndFadeOut(archiveId: number) {
 
 async function getArchiveMountStates() {
   try {
-    const result = await repoClient.GetArchiveMountStates(backupId.repositoryId);
+    const result = await repoClient.GetArchiveMountStates(props.repo.id);
     archiveMountStates.value = new Map(Object.entries(result).map(([k, v]) => [Number(k), v]));
   } catch (error: any) {
     await showAndLogError("Failed to get archive mount states", error);
@@ -119,11 +126,18 @@ getArchiveMountStates();
 
 watch(() => props.repoStatus, async () => {
   await getPaginatedArchives();
+  await getArchiveMountStates();
+});
+
+watch(() => props.repo, async () => {
+    await getPaginatedArchives();
+    await getArchiveMountStates();
 });
 
 </script>
 <template>
-  <div class='bg-base-100 p-6 rounded-lg shadow-md'>
+  <div class='bg-base-100 p-6 rounded-lg shadow-md'
+       :class='{ "border-2 border-primary": props.highlight }'>
     <div v-if='pagination.total > 0'>
       <table class='w-full table table-xs table-zebra'>
         <thead>
@@ -154,7 +168,8 @@ watch(() => props.repoStatus, async () => {
               <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               Browse
             </button>
-            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' :disabled='props.repoStatus !== state.RepoStatus.mounted'
+            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
+                    :disabled='props.repoStatus !== state.RepoStatus.mounted'
                     @click='archiveToBeDeleted = archive.id'>
               <TrashIcon class='size-4' />
             </button>
@@ -191,7 +206,7 @@ watch(() => props.repoStatus, async () => {
        class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
       <p class='mb-4'>Deleting archive</p>
-      <span class="loading loading-dots loading-md"></span>
+      <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
   <ConfirmDialog
