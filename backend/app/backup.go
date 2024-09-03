@@ -304,7 +304,8 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	b.state.SetBackupWaiting(bId)
 
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock() // We might wait here for other operations to finish
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
 	// Wait to acquire the lock and then set the backup as running
 	ctx := b.state.SetBackupRunning(b.ctx, bId)
@@ -358,9 +359,11 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	}
 }
 
+// TODO: do we need this function? Maybe refactor it to?
 func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock() // We might wait here for other operations to finish
+	defer repoLock.Unlock()
 
 	// Wait to acquire the lock and then set the repo as locked
 	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusDeleting)

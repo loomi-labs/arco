@@ -68,6 +68,7 @@ const (
 	RepoStatusBackingUp           RepoStatus = "backing_up"
 	RepoStatusPruning             RepoStatus = "pruning"
 	RepoStatusDeleting            RepoStatus = "deleting"
+	RepoStatusMounted             RepoStatus = "mounted"
 	RepoStatusPerformingOperation RepoStatus = "performing_operation"
 	RepoStatusLocked              RepoStatus = "locked"
 )
@@ -77,6 +78,7 @@ var AvailableRepoStatuses = []RepoStatus{
 	RepoStatusBackingUp,
 	RepoStatusPruning,
 	RepoStatusDeleting,
+	RepoStatusMounted,
 	RepoStatusPerformingOperation,
 	RepoStatusLocked,
 }
@@ -221,15 +223,7 @@ func (s *State) SetRepoStatus(repoId int, state RepoStatus) {
 }
 
 func (s *State) setRepoState(repoId int, state RepoStatus) {
-	if rs, ok := s.repoStates[repoId]; ok {
-		if rs.Status != RepoStatusIdle && state == RepoStatusIdle {
-			// If we are here it means:
-			// - the current state is not idle
-			// - the new state is idle
-			// Therefore we unlock the repository
-			rs.mutex.Unlock()
-		}
-
+	if _, ok := s.repoStates[repoId]; ok {
 		s.repoStates[repoId].Status = state
 	} else {
 		// If the repository state doesn't exist, we create it
@@ -457,6 +451,18 @@ func (s *State) SetDryRunPruneResult(id types.BackupId, result PruneJobResult) {
 /********** Delete Jobs ************/
 /***********************************/
 
+func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
+	if s.startupError != nil {
+		return false, "Startup error"
+	}
+	if rs, ok := s.repoStates[repoId]; ok {
+		if rs.Status != RepoStatusIdle {
+			return false, "Repository is busy"
+		}
+	}
+	return true, ""
+}
+
 func (s *State) AddRunningDeleteJob(ctx context.Context, id types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -503,6 +509,19 @@ func (s *State) GetAndDeleteNotifications() []types.Notification {
 /************* Mounts **************/
 /***********************************/
 
+func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
+	if s.startupError != nil {
+		return false, "Startup error"
+	}
+	if rs, ok := s.repoStates[id]; ok {
+		// We can only mount a repository if it's idle or mounting
+		if rs.Status != RepoStatusIdle && rs.Status != RepoStatusMounted {
+			return false, "Repository is busy"
+		}
+	}
+	return true, ""
+}
+
 func (s *State) SetRepoMount(id int, state *MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -513,6 +532,21 @@ func (s *State) SetRepoMount(id int, state *MountState) {
 
 	s.repoMounts[id].IsMounted = state.IsMounted
 	s.repoMounts[id].MountPath = state.MountPath
+
+	if state.IsMounted {
+		s.setRepoState(id, RepoStatusMounted)
+	} else {
+		hasOtherMounts := false
+		for _, aState := range s.archiveMounts[id] {
+			if aState.IsMounted {
+				hasOtherMounts = true
+				break
+			}
+		}
+		if !hasOtherMounts {
+			s.setRepoState(id, RepoStatusIdle)
+		}
+	}
 }
 
 func (s *State) setArchiveMount(repoId int, archiveId int, state *MountState) {
@@ -525,6 +559,21 @@ func (s *State) setArchiveMount(repoId int, archiveId int, state *MountState) {
 
 	s.archiveMounts[repoId][archiveId].IsMounted = state.IsMounted
 	s.archiveMounts[repoId][archiveId].MountPath = state.MountPath
+
+	if state.IsMounted {
+		s.setRepoState(repoId, RepoStatusMounted)
+	} else {
+		hasOtherMounts := false
+		for _, aState := range s.archiveMounts[repoId] {
+			if aState.IsMounted {
+				hasOtherMounts = true
+				break
+			}
+		}
+		if !hasOtherMounts {
+			s.setRepoState(repoId, RepoStatusIdle)
+		}
+	}
 }
 
 func (s *State) SetArchiveMount(repoId int, archiveId int, state *MountState) {

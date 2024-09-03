@@ -99,6 +99,9 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	if err != nil {
 		return err
 	}
+	if canRun, reason := r.state.CanRunDeleteJob(arch.Edges.Repository.ID); !canRun {
+		return fmt.Errorf("can not delete archive: %s", reason)
+	}
 
 	repoLock := r.state.GetRepoLock(arch.Edges.Repository.ID)
 	repoLock.Lock()

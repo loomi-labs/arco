@@ -4,6 +4,7 @@ import (
 	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/ent"
+	"fmt"
 	"github.com/prometheus/procfs"
 	"os"
 	"os/exec"
@@ -50,6 +51,14 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, 
 		return
 	}
 
+	if canMount, reason := r.state.CanMountRepo(archive.Edges.Repository.ID); !canMount {
+		err = fmt.Errorf("can not mount archive: %s", reason)
+		return
+	}
+	repoLock := r.state.GetRepoLock(archive.Edges.Repository.ID)
+	repoLock.Lock() // We might wait here for other operations to finish
+	defer repoLock.Unlock()
+
 	path, err := getArchiveMountPath(archive)
 	if err != nil {
 		return
@@ -82,6 +91,25 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, 
 	// Open the file manager and forget about it
 	go r.openFileManager(path)
 	return
+}
+
+func (r *RepositoryClient) UnmountAllForRepo(repoId int) error {
+	mount := r.GetRepoMountState(repoId)
+	if mount.IsMounted {
+		if _, err := r.UnmountRepository(repoId); err != nil {
+			return err
+		}
+	}
+	if states, err := r.GetArchiveMountStates(repoId); err != nil {
+		return err
+	} else {
+		for archiveId := range states {
+			if _, err = r.UnmountArchive(archiveId); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *RepositoryClient) UnmountRepository(repoId int) (state state.MountState, err error) {
