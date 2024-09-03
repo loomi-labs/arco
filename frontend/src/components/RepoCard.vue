@@ -30,6 +30,7 @@ export interface Props {
   repoId: number;
   backupProfileId: number;
   highlight: boolean;
+  showHover: boolean;
 }
 
 /************
@@ -310,8 +311,8 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
 </script>
 
 <template>
-  <div class='flex justify-between bg-base-100 hover:bg-base-100/50 p-10 rounded-xl shadow-lg border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight }'
+  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "hover:bg-base-100/50": showHover }'
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>

@@ -202,6 +202,7 @@ onMounted(() => {
             :repo-id='repo.id'
             :backup-profile-id='backup.id'
             :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+            :show-hover='(backup.edges.repositories?.length ?? 0)  > 1'
             @click='() => selectedRepo = repo'
             @repo:status='repoStatuses.set(repo.id, $event)'>
           </RepoCard>
