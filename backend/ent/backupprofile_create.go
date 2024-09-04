@@ -3,8 +3,10 @@
 package ent
 
 import (
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
@@ -33,9 +35,15 @@ func (bpc *BackupProfileCreate) SetPrefix(s string) *BackupProfileCreate {
 	return bpc
 }
 
-// SetDirectories sets the "directories" field.
-func (bpc *BackupProfileCreate) SetDirectories(s []string) *BackupProfileCreate {
-	bpc.mutation.SetDirectories(s)
+// SetBackupPaths sets the "backup_paths" field.
+func (bpc *BackupProfileCreate) SetBackupPaths(s []string) *BackupProfileCreate {
+	bpc.mutation.SetBackupPaths(s)
+	return bpc
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (bpc *BackupProfileCreate) SetExcludePaths(s []string) *BackupProfileCreate {
+	bpc.mutation.SetExcludePaths(s)
 	return bpc
 }
 
@@ -74,6 +82,21 @@ func (bpc *BackupProfileCreate) AddRepositories(r ...*Repository) *BackupProfile
 	return bpc.AddRepositoryIDs(ids...)
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
+func (bpc *BackupProfileCreate) AddArchiveIDs(ids ...int) *BackupProfileCreate {
+	bpc.mutation.AddArchiveIDs(ids...)
+	return bpc
+}
+
+// AddArchives adds the "archives" edges to the Archive entity.
+func (bpc *BackupProfileCreate) AddArchives(a ...*Archive) *BackupProfileCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return bpc.AddArchiveIDs(ids...)
+}
+
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
 func (bpc *BackupProfileCreate) SetBackupScheduleID(id int) *BackupProfileCreate {
 	bpc.mutation.SetBackupScheduleID(id)
@@ -91,6 +114,21 @@ func (bpc *BackupProfileCreate) SetNillableBackupScheduleID(id *int) *BackupProf
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
 func (bpc *BackupProfileCreate) SetBackupSchedule(b *BackupSchedule) *BackupProfileCreate {
 	return bpc.SetBackupScheduleID(b.ID)
+}
+
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (bpc *BackupProfileCreate) AddFailedBackupRunIDs(ids ...int) *BackupProfileCreate {
+	bpc.mutation.AddFailedBackupRunIDs(ids...)
+	return bpc
+}
+
+// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
+func (bpc *BackupProfileCreate) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileCreate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return bpc.AddFailedBackupRunIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -128,6 +166,14 @@ func (bpc *BackupProfileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bpc *BackupProfileCreate) defaults() {
+	if _, ok := bpc.mutation.BackupPaths(); !ok {
+		v := backupprofile.DefaultBackupPaths
+		bpc.mutation.SetBackupPaths(v)
+	}
+	if _, ok := bpc.mutation.ExcludePaths(); !ok {
+		v := backupprofile.DefaultExcludePaths
+		bpc.mutation.SetExcludePaths(v)
+	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		v := backupprofile.DefaultIsSetupComplete
 		bpc.mutation.SetIsSetupComplete(v)
@@ -142,8 +188,8 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupProfile.prefix"`)}
 	}
-	if _, ok := bpc.mutation.Directories(); !ok {
-		return &ValidationError{Name: "directories", err: errors.New(`ent: missing required field "BackupProfile.directories"`)}
+	if _, ok := bpc.mutation.BackupPaths(); !ok {
+		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
 	}
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		return &ValidationError{Name: "is_setup_complete", err: errors.New(`ent: missing required field "BackupProfile.is_setup_complete"`)}
@@ -188,9 +234,13 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 		_node.Prefix = value
 	}
-	if value, ok := bpc.mutation.Directories(); ok {
-		_spec.SetField(backupprofile.FieldDirectories, field.TypeJSON, value)
-		_node.Directories = value
+	if value, ok := bpc.mutation.BackupPaths(); ok {
+		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
+		_node.BackupPaths = value
+	}
+	if value, ok := bpc.mutation.ExcludePaths(); ok {
+		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
+		_node.ExcludePaths = value
 	}
 	if value, ok := bpc.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
@@ -212,6 +262,22 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := bpc.mutation.ArchivesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   backupprofile.ArchivesTable,
+			Columns: []string{backupprofile.ArchivesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := bpc.mutation.BackupScheduleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -221,6 +287,22 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bpc.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.FailedBackupRunsTable,
+			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

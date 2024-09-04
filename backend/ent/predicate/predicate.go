@@ -15,5 +15,8 @@ type BackupProfile func(*sql.Selector)
 // BackupSchedule is the predicate function for backupschedule builders.
 type BackupSchedule func(*sql.Selector)
 
+// FailedBackupRun is the predicate function for failedbackuprun builders.
+type FailedBackupRun func(*sql.Selector)
+
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)

@@ -217,7 +217,7 @@ func (bsc *BackupScheduleCreate) check() error {
 			return &ValidationError{Name: "monthday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.monthday": %w`, err)}
 		}
 	}
-	if _, ok := bsc.mutation.BackupProfileID(); !ok {
+	if len(bsc.mutation.BackupProfileIDs()) == 0 {
 		return &ValidationError{Name: "backup_profile", err: errors.New(`ent: missing required edge "BackupSchedule.backup_profile"`)}
 	}
 	return nil

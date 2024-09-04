@@ -1,16 +1,47 @@
 package app
 
 import (
+	"arco/backend/app/state"
+	"arco/backend/app/types"
 	"arco/backend/ent"
+	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 )
 
 func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		WithBackupProfiles().
-		WithArchives().
 		Where(repository.ID(id)).
+		Only(r.ctx)
+}
+
+func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, error) {
+	return r.db.Repository.
+		Query().
+		WithBackupProfiles(func(query *ent.BackupProfileQuery) {
+			query.Where(backupprofile.And(
+				backupprofile.ID(bId.BackupProfileId)),
+				backupprofile.HasRepositoriesWith(repository.ID(bId.RepositoryId)),
+			)
+		}).
+		WithArchives(func(query *ent.ArchiveQuery) {
+			query.Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+			))
+		}).
+		WithFailedBackupRuns(func(query *ent.FailedBackupRunQuery) {
+			query.Where(failedbackuprun.And(
+				failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				failedbackuprun.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+			))
+		}).
+		Where(repository.And(
+			repository.ID(bId.RepositoryId),
+			repository.HasBackupProfilesWith(backupprofile.ID(bId.BackupProfileId)),
+		)).
 		Only(r.ctx)
 }
 
@@ -21,7 +52,7 @@ func (r *RepositoryClient) All() ([]*ent.Repository, error) {
 // TODO: remove this function or refactor it
 func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	// Check if we can connect to the repository
-	if err := r.borg.Info(url, password); err != nil {
+	if _, err := r.borg.Info(url, password); err != nil {
 		return nil, err
 	}
 
@@ -55,4 +86,22 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 		SetPassword(password).
 		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
+}
+
+func (r *RepositoryClient) GetState(id int) state.RepoState {
+	return r.state.GetRepoState(id)
+}
+
+func (r *RepositoryClient) BreakLock(id int) error {
+	repo, err := r.Get(id)
+	if err != nil {
+		return err
+	}
+
+	err = r.borg.BreakLock(r.ctx, repo.URL, repo.Password)
+	if err != nil {
+		return err
+	}
+	r.state.SetRepoStatus(id, state.RepoStatusIdle)
+	return nil
 }

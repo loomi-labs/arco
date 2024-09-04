@@ -33,5 +33,7 @@ func (Archive) Edges() []ent.Edge {
 		edge.To("repository", Repository.Type).
 			Required().
 			Unique(),
+		edge.To("backup_profile", BackupProfile.Type).
+			Unique(),
 	}
 }

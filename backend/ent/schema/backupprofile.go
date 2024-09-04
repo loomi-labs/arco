@@ -21,8 +21,10 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"name"`),
 		field.String("prefix").
 			StructTag(`json:"prefix"`),
-		field.Strings("directories").
-			StructTag(`json:"directories"`),
+		field.Strings("backup_paths").
+			StructTag(`json:"backupPaths"`).Default([]string{}),
+		field.Strings("exclude_paths").
+			StructTag(`json:"excludePaths"`).Optional().Default([]string{}),
 		field.Bool("is_setup_complete").
 			StructTag(`json:"isSetupComplete"`).
 			Default(false),
@@ -33,8 +35,12 @@ func (BackupProfile) Fields() []ent.Field {
 func (BackupProfile) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("repositories", Repository.Type),
+		edge.To("archives", Archive.Type),
 		edge.To("backup_schedule", BackupSchedule.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)).
+			StructTag(`json:"backupSchedule,omitempty"`).
 			Unique(),
+		edge.From("failed_backup_runs", FailedBackupRun.Type).
+			Ref("backup_profile"),
 	}
 }

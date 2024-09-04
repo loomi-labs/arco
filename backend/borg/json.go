@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-// JSONTime wraps time.Time to provide custom unmashalling of Unix timestamps.
-type JSONTime time.Time
+// UnixTime wraps time.Time to provide custom unmarshalling of Unix timestamps.
+type UnixTime time.Time
 
 // UnmarshalJSON converts a float64 Unix timestamp to a time.Time object.
-func (jt *JSONTime) UnmarshalJSON(b []byte) error {
+func (jt *UnixTime) UnmarshalJSON(b []byte) error {
 	var timestamp *float64
 
 	// Unmarshal the JSON number into a *float64.
@@ -24,7 +24,30 @@ func (jt *JSONTime) UnmarshalJSON(b []byte) error {
 	if timestamp != nil {
 		sec, dec := math.Modf(*timestamp)
 		t := time.Unix(int64(sec), int64(dec*1e9))
-		*jt = JSONTime(t)
+		*jt = UnixTime(t)
+	}
+
+	return nil
+}
+
+// StringTime wraps time.Time to provide custom unmarshalling of string timestamps.
+type StringTime time.Time
+
+// UnmarshalJSON converts a string timestamp to a time.Time object.
+func (st *StringTime) UnmarshalJSON(b []byte) error {
+	var timestamp *string
+
+	// Unmarshal the JSON string into a *string.
+	if err := json.Unmarshal(b, &timestamp); err != nil {
+		return err
+	}
+
+	if timestamp != nil {
+		t, err := time.Parse("2006-01-02T15:04:05.000000", *timestamp)
+		if err != nil {
+			return err
+		}
+		*st = StringTime(t)
 	}
 
 	return nil
@@ -50,7 +73,7 @@ type ArchiveProgress struct {
 	DeduplicatedSize int64    `json:"deduplicated_size,omitempty"`
 	NFiles           int      `json:"nfiles,omitempty"`
 	Path             string   `json:"path,omitempty"`
-	Time             JSONTime `json:"time,omitempty"`
+	Time             UnixTime `json:"time,omitempty"`
 	Finished         bool     `json:"finished,omitempty"`
 }
 
@@ -64,7 +87,7 @@ type ProgressMessage struct {
 	MsgID     string   `json:"msgid,omitempty"`
 	Finished  bool     `json:"finished"`
 	Message   string   `json:"message,omitempty"`
-	Time      JSONTime `json:"time,omitempty"`
+	Time      UnixTime `json:"time,omitempty"`
 }
 
 func (pm ProgressMessage) String() string {
@@ -80,7 +103,7 @@ type ProgressPercent struct {
 	Current   int      `json:"current,omitempty"`
 	Info      []string `json:"info,omitempty"`
 	Total     int      `json:"total,omitempty"`
-	Time      JSONTime `json:"time,omitempty"`
+	Time      UnixTime `json:"time,omitempty"`
 }
 
 func (pp ProgressPercent) String() string {
@@ -98,7 +121,7 @@ func (fs FileStatus) String() string {
 }
 
 type LogMessage struct {
-	Time      JSONTime `json:"time"`
+	Time      UnixTime `json:"time"`
 	LevelName string   `json:"levelname"`
 	Name      string   `json:"name"`
 	Message   string   `json:"message"`
@@ -166,4 +189,63 @@ func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
 			ch <- logMessage
 		}
 	}
+}
+
+type ArchiveList struct {
+	Archive  string     `json:"archive"`
+	Barchive string     `json:"barchive"`
+	ID       string     `json:"id"`
+	Name     string     `json:"name"`
+	Start    StringTime `json:"start"`
+	Time     StringTime `json:"time"`
+}
+
+type Limits struct {
+	MaxArchiveSize float64 `json:"max_archive_size"`
+}
+
+type ArchiveStats struct {
+	CompressedSize   int `json:"compressed_size"`
+	DeduplicatedSize int `json:"deduplicated_size"`
+	NFiles           int `json:"nfiles"`
+	OriginalSize     int `json:"original_size"`
+}
+
+type ArchiveInfo struct {
+	ChunkerParams []interface{} `json:"chunker_params"`
+	CommandLine   []string      `json:"command_line"`
+	Comment       string        `json:"comment"`
+	Duration      UnixTime      `json:"duration"`
+	End           StringTime    `json:"end"`
+	Hostname      string        `json:"hostname"`
+	ID            string        `json:"id"`
+	Limits        Limits        `json:"limits"`
+	Name          string        `json:"name"`
+	Start         StringTime    `json:"start"`
+	Stats         ArchiveStats  `json:"stats"`
+	Username      string        `json:"username"`
+}
+
+type Encryption struct {
+	Mode string `json:"mode"`
+}
+
+type Repository struct {
+	ID           string `json:"id"`
+	LastModified string `json:"last_modified"`
+	Location     string `json:"location"`
+}
+
+type Stats struct {
+	TotalChunks       int `json:"total_chunks"`        // Number of chunks
+	TotalSize         int `json:"total_size"`          // Total uncompressed size of all chunks multiplied with their reference counts
+	TotalCSize        int `json:"total_csize"`         // Total compressed and encrypted size of all chunks multiplied with their reference counts
+	TotalUniqueChunks int `json:"total_unique_chunks"` // Number of unique chunks
+	UniqueSize        int `json:"unique_size"`         // Uncompressed size of all chunks
+	UniqueCSize       int `json:"unique_csize"`        // Compressed and encrypted size of all chunks
+}
+
+type Cache struct {
+	Path  string `json:"path"`
+	Stats Stats  `json:"stats"`
 }

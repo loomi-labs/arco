@@ -14,6 +14,10 @@ export function All() {
   return window['go']['app']['RepositoryClient']['All']();
 }
 
+export function BreakLock(arg1) {
+  return window['go']['app']['RepositoryClient']['BreakLock'](arg1);
+}
+
 export function Create(arg1, arg2, arg3, arg4) {
   return window['go']['app']['RepositoryClient']['Create'](arg1, arg2, arg3, arg4);
 }
@@ -30,8 +34,24 @@ export function GetArchiveMountStates(arg1) {
   return window['go']['app']['RepositoryClient']['GetArchiveMountStates'](arg1);
 }
 
+export function GetByBackupId(arg1) {
+  return window['go']['app']['RepositoryClient']['GetByBackupId'](arg1);
+}
+
+export function GetLastArchive(arg1) {
+  return window['go']['app']['RepositoryClient']['GetLastArchive'](arg1);
+}
+
+export function GetPaginatedArchives(arg1, arg2, arg3) {
+  return window['go']['app']['RepositoryClient']['GetPaginatedArchives'](arg1, arg2, arg3);
+}
+
 export function GetRepoMountState(arg1) {
   return window['go']['app']['RepositoryClient']['GetRepoMountState'](arg1);
+}
+
+export function GetState(arg1) {
+  return window['go']['app']['RepositoryClient']['GetState'](arg1);
 }
 
 export function MountArchive(arg1) {
@@ -44,6 +64,10 @@ export function MountRepository(arg1) {
 
 export function RefreshArchives(arg1) {
   return window['go']['app']['RepositoryClient']['RefreshArchives'](arg1);
+}
+
+export function UnmountAllForRepo(arg1) {
+  return window['go']['app']['RepositoryClient']['UnmountAllForRepo'](arg1);
 }
 
 export function UnmountArchive(arg1) {

@@ -1,11 +1,20 @@
 package borg
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 )
 
-func (b *Borg) Info(url, password string) error {
+type InfoResponse struct {
+	Archives    []ArchiveInfo `json:"archives"`
+	Cache       Cache         `json:"cache"`
+	Encryption  Encryption    `json:"encryption"`
+	Repository  Repository    `json:"repository"`
+	SecurityDir string        `json:"security_dir"`
+}
+
+func (b *Borg) Info(url, password string) (*InfoResponse, error) {
 	cmd := exec.Command(b.path, "info", "--json", url)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
@@ -13,8 +22,15 @@ func (b *Borg) Info(url, password string) error {
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return nil, b.log.LogCmdError(cmd.String(), startTime, err)
 	}
+
+	var info InfoResponse
+	err = json.Unmarshal(out, &info)
+	if err != nil {
+		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("failed to parse borg info output: %w", err))
+	}
+
 	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	return &info, nil
 }

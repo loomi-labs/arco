@@ -5,9 +5,6 @@ import * as appClient from "../wailsjs/go/app/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
-import app from "./App.vue";
-import { LogInfo } from "../wailsjs/runtime";
-import { getCurrentInstance } from 'vue';
 
 /************
  * Variables

@@ -16,14 +16,20 @@ const (
 	FieldName = "name"
 	// FieldPrefix holds the string denoting the prefix field in the database.
 	FieldPrefix = "prefix"
-	// FieldDirectories holds the string denoting the directories field in the database.
-	FieldDirectories = "directories"
+	// FieldBackupPaths holds the string denoting the backup_paths field in the database.
+	FieldBackupPaths = "backup_paths"
+	// FieldExcludePaths holds the string denoting the exclude_paths field in the database.
+	FieldExcludePaths = "exclude_paths"
 	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
 	FieldIsSetupComplete = "is_setup_complete"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
+	// EdgeArchives holds the string denoting the archives edge name in mutations.
+	EdgeArchives = "archives"
 	// EdgeBackupSchedule holds the string denoting the backup_schedule edge name in mutations.
 	EdgeBackupSchedule = "backup_schedule"
+	// EdgeFailedBackupRuns holds the string denoting the failed_backup_runs edge name in mutations.
+	EdgeFailedBackupRuns = "failed_backup_runs"
 	// Table holds the table name of the backupprofile in the database.
 	Table = "backup_profiles"
 	// RepositoriesTable is the table that holds the repositories relation/edge. The primary key declared below.
@@ -31,6 +37,13 @@ const (
 	// RepositoriesInverseTable is the table name for the Repository entity.
 	// It exists in this package in order to avoid circular dependency with the "repository" package.
 	RepositoriesInverseTable = "repositories"
+	// ArchivesTable is the table that holds the archives relation/edge.
+	ArchivesTable = "archives"
+	// ArchivesInverseTable is the table name for the Archive entity.
+	// It exists in this package in order to avoid circular dependency with the "archive" package.
+	ArchivesInverseTable = "archives"
+	// ArchivesColumn is the table column denoting the archives relation/edge.
+	ArchivesColumn = "backup_profile_archives"
 	// BackupScheduleTable is the table that holds the backup_schedule relation/edge.
 	BackupScheduleTable = "backup_schedules"
 	// BackupScheduleInverseTable is the table name for the BackupSchedule entity.
@@ -38,6 +51,13 @@ const (
 	BackupScheduleInverseTable = "backup_schedules"
 	// BackupScheduleColumn is the table column denoting the backup_schedule relation/edge.
 	BackupScheduleColumn = "backup_profile_backup_schedule"
+	// FailedBackupRunsTable is the table that holds the failed_backup_runs relation/edge.
+	FailedBackupRunsTable = "failed_backup_runs"
+	// FailedBackupRunsInverseTable is the table name for the FailedBackupRun entity.
+	// It exists in this package in order to avoid circular dependency with the "failedbackuprun" package.
+	FailedBackupRunsInverseTable = "failed_backup_runs"
+	// FailedBackupRunsColumn is the table column denoting the failed_backup_runs relation/edge.
+	FailedBackupRunsColumn = "failed_backup_run_backup_profile"
 )
 
 // Columns holds all SQL columns for backupprofile fields.
@@ -45,7 +65,8 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldPrefix,
-	FieldDirectories,
+	FieldBackupPaths,
+	FieldExcludePaths,
 	FieldIsSetupComplete,
 }
 
@@ -66,6 +87,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultBackupPaths holds the default value on creation for the "backup_paths" field.
+	DefaultBackupPaths []string
+	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
+	DefaultExcludePaths []string
 	// DefaultIsSetupComplete holds the default value on creation for the "is_setup_complete" field.
 	DefaultIsSetupComplete bool
 )
@@ -107,10 +132,38 @@ func ByRepositories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByArchivesCount orders the results by archives count.
+func ByArchivesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newArchivesStep(), opts...)
+	}
+}
+
+// ByArchives orders the results by archives terms.
+func ByArchives(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newArchivesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByBackupScheduleField orders the results by backup_schedule field.
 func ByBackupScheduleField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newBackupScheduleStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByFailedBackupRunsCount orders the results by failed_backup_runs count.
+func ByFailedBackupRunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFailedBackupRunsStep(), opts...)
+	}
+}
+
+// ByFailedBackupRuns orders the results by failed_backup_runs terms.
+func ByFailedBackupRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFailedBackupRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newRepositoriesStep() *sqlgraph.Step {
@@ -120,10 +173,24 @@ func newRepositoriesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, false, RepositoriesTable, RepositoriesPrimaryKey...),
 	)
 }
+func newArchivesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ArchivesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ArchivesTable, ArchivesColumn),
+	)
+}
 func newBackupScheduleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackupScheduleInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, BackupScheduleTable, BackupScheduleColumn),
+	)
+}
+func newFailedBackupRunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FailedBackupRunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
 	)
 }

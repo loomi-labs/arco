@@ -1,6 +1,8 @@
 package app
 
 import (
+	"arco/backend/app/state"
+	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
@@ -16,10 +18,12 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	repoLock := r.state.GetRepoLock(repoId)
-	repoLock.Lock()
-	// Wait to acquire the lock and then set the repo as locked
-	r.state.SetRepoLocked(repoId)
-	defer r.state.UnlockRepo(repoId)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	// Wait to acquire the lock and then set the repo as fetching info
+	r.state.SetRepoStatus(repoId, state.RepoStatusPerformingOperation)
+	defer r.state.SetRepoStatus(repoId, state.RepoStatusIdle)
 
 	listResponse, err := r.borg.List(repo.URL, repo.Password)
 	if err != nil {
@@ -65,20 +69,12 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	cntNewArchives := 0
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
-			createdAt, err := time.Parse("2006-01-02T15:04:05.000000", arch.Start)
-			if err != nil {
-				return nil, err
-			}
-			duration, err := time.Parse("2006-01-02T15:04:05.000000", arch.Time)
-			if err != nil {
-				return nil, err
-			}
 			newArchive, err := r.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
-				SetCreatedAt(createdAt).
-				SetDuration(duration).
+				SetCreatedAt(time.Time(arch.Start)).
+				SetDuration(time.Time(arch.Time)).
 				SetRepositoryID(repoId).
 				Save(r.ctx)
 			if err != nil {
@@ -104,14 +100,85 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	if err != nil {
 		return err
 	}
+	if canRun, reason := r.state.CanRunDeleteJob(arch.Edges.Repository.ID); !canRun {
+		return fmt.Errorf("can not delete archive: %s", reason)
+	}
 
 	repoLock := r.state.GetRepoLock(arch.Edges.Repository.ID)
-	repoLock.Lock()
-	// Wait to acquire the lock and then set the repo as locked
-	r.state.SetRepoLocked(arch.Edges.Repository.ID)
-	defer r.state.UnlockRepo(arch.Edges.Repository.ID)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
 
-	return r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	// Wait to acquire the lock and then set the repo as locked
+	r.state.SetRepoStatus(arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)
+	defer r.state.SetRepoStatus(arch.Edges.Repository.ID, state.RepoStatusIdle)
+
+	err = r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	if err != nil {
+		return err
+	}
+	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
+}
+
+type PaginatedArchivesResponse struct {
+	Archives []*ent.Archive `json:"archives"`
+	Total    int            `json:"total"`
+}
+
+func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
+	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	archiveQuery := r.db.Archive.Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.NameHasPrefix(backupProfile.Prefix),
+		))
+
+	total, err := archiveQuery.Count(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	archives, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.NameHasPrefix(backupProfile.Prefix),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedArchivesResponse{
+		Archives: archives,
+		Total:    total,
+	}, nil
+}
+
+func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive, error) {
+	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	first, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.NameHasPrefix(backupProfile.Prefix),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(r.ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return nil, nil
+	}
+	return first, err
 }
 
 func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {

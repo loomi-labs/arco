@@ -4,12 +4,14 @@ package ent
 
 import (
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -18,12 +20,13 @@ import (
 // ArchiveQuery is the builder for querying Archive entities.
 type ArchiveQuery struct {
 	config
-	ctx            *QueryContext
-	order          []archive.OrderOption
-	inters         []Interceptor
-	predicates     []predicate.Archive
-	withRepository *RepositoryQuery
-	withFKs        bool
+	ctx               *QueryContext
+	order             []archive.OrderOption
+	inters            []Interceptor
+	predicates        []predicate.Archive
+	withRepository    *RepositoryQuery
+	withBackupProfile *BackupProfileQuery
+	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -82,10 +85,32 @@ func (aq *ArchiveQuery) QueryRepository() *RepositoryQuery {
 	return query
 }
 
+// QueryBackupProfile chains the current query on the "backup_profile" edge.
+func (aq *ArchiveQuery) QueryBackupProfile() *BackupProfileQuery {
+	query := (&BackupProfileClient{config: aq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(archive.Table, archive.FieldID, selector),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, archive.BackupProfileTable, archive.BackupProfileColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Archive entity from the query.
 // Returns a *NotFoundError when no Archive was found.
 func (aq *ArchiveQuery) First(ctx context.Context) (*Archive, error) {
-	nodes, err := aq.Limit(1).All(setContextOp(ctx, aq.ctx, "First"))
+	nodes, err := aq.Limit(1).All(setContextOp(ctx, aq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +133,7 @@ func (aq *ArchiveQuery) FirstX(ctx context.Context) *Archive {
 // Returns a *NotFoundError when no Archive ID was found.
 func (aq *ArchiveQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = aq.Limit(1).IDs(setContextOp(ctx, aq.ctx, "FirstID")); err != nil {
+	if ids, err = aq.Limit(1).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -131,7 +156,7 @@ func (aq *ArchiveQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one Archive entity is found.
 // Returns a *NotFoundError when no Archive entities are found.
 func (aq *ArchiveQuery) Only(ctx context.Context) (*Archive, error) {
-	nodes, err := aq.Limit(2).All(setContextOp(ctx, aq.ctx, "Only"))
+	nodes, err := aq.Limit(2).All(setContextOp(ctx, aq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +184,7 @@ func (aq *ArchiveQuery) OnlyX(ctx context.Context) *Archive {
 // Returns a *NotFoundError when no entities are found.
 func (aq *ArchiveQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = aq.Limit(2).IDs(setContextOp(ctx, aq.ctx, "OnlyID")); err != nil {
+	if ids, err = aq.Limit(2).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -184,7 +209,7 @@ func (aq *ArchiveQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of Archives.
 func (aq *ArchiveQuery) All(ctx context.Context) ([]*Archive, error) {
-	ctx = setContextOp(ctx, aq.ctx, "All")
+	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryAll)
 	if err := aq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -206,7 +231,7 @@ func (aq *ArchiveQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if aq.ctx.Unique == nil && aq.path != nil {
 		aq.Unique(true)
 	}
-	ctx = setContextOp(ctx, aq.ctx, "IDs")
+	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryIDs)
 	if err = aq.Select(archive.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -224,7 +249,7 @@ func (aq *ArchiveQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (aq *ArchiveQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, aq.ctx, "Count")
+	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryCount)
 	if err := aq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -242,7 +267,7 @@ func (aq *ArchiveQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (aq *ArchiveQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, aq.ctx, "Exist")
+	ctx = setContextOp(ctx, aq.ctx, ent.OpQueryExist)
 	switch _, err := aq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -269,12 +294,13 @@ func (aq *ArchiveQuery) Clone() *ArchiveQuery {
 		return nil
 	}
 	return &ArchiveQuery{
-		config:         aq.config,
-		ctx:            aq.ctx.Clone(),
-		order:          append([]archive.OrderOption{}, aq.order...),
-		inters:         append([]Interceptor{}, aq.inters...),
-		predicates:     append([]predicate.Archive{}, aq.predicates...),
-		withRepository: aq.withRepository.Clone(),
+		config:            aq.config,
+		ctx:               aq.ctx.Clone(),
+		order:             append([]archive.OrderOption{}, aq.order...),
+		inters:            append([]Interceptor{}, aq.inters...),
+		predicates:        append([]predicate.Archive{}, aq.predicates...),
+		withRepository:    aq.withRepository.Clone(),
+		withBackupProfile: aq.withBackupProfile.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
@@ -289,6 +315,17 @@ func (aq *ArchiveQuery) WithRepository(opts ...func(*RepositoryQuery)) *ArchiveQ
 		opt(query)
 	}
 	aq.withRepository = query
+	return aq
+}
+
+// WithBackupProfile tells the query-builder to eager-load the nodes that are connected to
+// the "backup_profile" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *ArchiveQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *ArchiveQuery {
+	query := (&BackupProfileClient{config: aq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withBackupProfile = query
 	return aq
 }
 
@@ -371,11 +408,12 @@ func (aq *ArchiveQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Arch
 		nodes       = []*Archive{}
 		withFKs     = aq.withFKs
 		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			aq.withRepository != nil,
+			aq.withBackupProfile != nil,
 		}
 	)
-	if aq.withRepository != nil {
+	if aq.withRepository != nil || aq.withBackupProfile != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -402,6 +440,12 @@ func (aq *ArchiveQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Arch
 	if query := aq.withRepository; query != nil {
 		if err := aq.loadRepository(ctx, query, nodes, nil,
 			func(n *Archive, e *Repository) { n.Edges.Repository = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := aq.withBackupProfile; query != nil {
+		if err := aq.loadBackupProfile(ctx, query, nodes, nil,
+			func(n *Archive, e *BackupProfile) { n.Edges.BackupProfile = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -433,6 +477,38 @@ func (aq *ArchiveQuery) loadRepository(ctx context.Context, query *RepositoryQue
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "archive_repository" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (aq *ArchiveQuery) loadBackupProfile(ctx context.Context, query *BackupProfileQuery, nodes []*Archive, init func(*Archive), assign func(*Archive, *BackupProfile)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Archive)
+	for i := range nodes {
+		if nodes[i].archive_backup_profile == nil {
+			continue
+		}
+		fk := *nodes[i].archive_backup_profile
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(backupprofile.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "archive_backup_profile" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -536,7 +612,7 @@ func (agb *ArchiveGroupBy) Aggregate(fns ...AggregateFunc) *ArchiveGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (agb *ArchiveGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, agb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, agb.build.ctx, ent.OpQueryGroupBy)
 	if err := agb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -584,7 +660,7 @@ func (as *ArchiveSelect) Aggregate(fns ...AggregateFunc) *ArchiveSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (as *ArchiveSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, as.ctx, "Select")
+	ctx = setContextOp(ctx, as.ctx, ent.OpQuerySelect)
 	if err := as.prepareQuery(ctx); err != nil {
 		return err
 	}

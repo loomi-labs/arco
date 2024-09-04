@@ -14,8 +14,8 @@ export function DeleteBackupSchedule(arg1) {
   return window['go']['app']['BackupClient']['DeleteBackupSchedule'](arg1);
 }
 
-export function DryRunPruneBackup(arg1, arg2) {
-  return window['go']['app']['BackupClient']['DryRunPruneBackup'](arg1, arg2);
+export function DryRunPruneBackup(arg1) {
+  return window['go']['app']['BackupClient']['DryRunPruneBackup'](arg1);
 }
 
 export function DryRunPruneBackups(arg1) {
@@ -30,24 +30,20 @@ export function GetBackupProfiles() {
   return window['go']['app']['BackupClient']['GetBackupProfiles']();
 }
 
-export function GetBackupProgress(arg1) {
-  return window['go']['app']['BackupClient']['GetBackupProgress'](arg1);
-}
-
-export function GetBackupProgresses(arg1) {
-  return window['go']['app']['BackupClient']['GetBackupProgresses'](arg1);
-}
-
 export function GetDirectorySuggestions() {
   return window['go']['app']['BackupClient']['GetDirectorySuggestions']();
+}
+
+export function GetState(arg1) {
+  return window['go']['app']['BackupClient']['GetState'](arg1);
 }
 
 export function NewBackupProfile() {
   return window['go']['app']['BackupClient']['NewBackupProfile']();
 }
 
-export function PruneBackup(arg1, arg2) {
-  return window['go']['app']['BackupClient']['PruneBackup'](arg1, arg2);
+export function PruneBackup(arg1) {
+  return window['go']['app']['BackupClient']['PruneBackup'](arg1);
 }
 
 export function PruneBackups(arg1) {

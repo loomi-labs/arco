@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
@@ -72,14 +73,15 @@ var (
 	columnCheck sql.ColumnCheck
 )
 
-// columnChecker checks if the column exists in the given table.
+// checkColumn checks if the column exists in the given table.
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			archive.Table:        archive.ValidColumn,
-			backupprofile.Table:  backupprofile.ValidColumn,
-			backupschedule.Table: backupschedule.ValidColumn,
-			repository.Table:     repository.ValidColumn,
+			archive.Table:         archive.ValidColumn,
+			backupprofile.Table:   backupprofile.ValidColumn,
+			backupschedule.Table:  backupschedule.ValidColumn,
+			failedbackuprun.Table: failedbackuprun.ValidColumn,
+			repository.Table:      repository.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

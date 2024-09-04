@@ -22,8 +22,10 @@ type BackupProfile struct {
 	Name string `json:"name"`
 	// Prefix holds the value of the "prefix" field.
 	Prefix string `json:"prefix"`
-	// Directories holds the value of the "directories" field.
-	Directories []string `json:"directories"`
+	// BackupPaths holds the value of the "backup_paths" field.
+	BackupPaths []string `json:"backupPaths"`
+	// ExcludePaths holds the value of the "exclude_paths" field.
+	ExcludePaths []string `json:"excludePaths"`
 	// IsSetupComplete holds the value of the "is_setup_complete" field.
 	IsSetupComplete bool `json:"isSetupComplete"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -36,11 +38,15 @@ type BackupProfile struct {
 type BackupProfileEdges struct {
 	// Repositories holds the value of the repositories edge.
 	Repositories []*Repository `json:"repositories,omitempty"`
+	// Archives holds the value of the archives edge.
+	Archives []*Archive `json:"archives,omitempty"`
 	// BackupSchedule holds the value of the backup_schedule edge.
-	BackupSchedule *BackupSchedule `json:"backup_schedule,omitempty"`
+	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
+	// FailedBackupRuns holds the value of the failed_backup_runs edge.
+	FailedBackupRuns []*FailedBackupRun `json:"failed_backup_runs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // RepositoriesOrErr returns the Repositories value or an error if the edge
@@ -52,15 +58,33 @@ func (e BackupProfileEdges) RepositoriesOrErr() ([]*Repository, error) {
 	return nil, &NotLoadedError{edge: "repositories"}
 }
 
+// ArchivesOrErr returns the Archives value or an error if the edge
+// was not loaded in eager-loading.
+func (e BackupProfileEdges) ArchivesOrErr() ([]*Archive, error) {
+	if e.loadedTypes[1] {
+		return e.Archives, nil
+	}
+	return nil, &NotLoadedError{edge: "archives"}
+}
+
 // BackupScheduleOrErr returns the BackupSchedule value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e BackupProfileEdges) BackupScheduleOrErr() (*BackupSchedule, error) {
 	if e.BackupSchedule != nil {
 		return e.BackupSchedule, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: backupschedule.Label}
 	}
 	return nil, &NotLoadedError{edge: "backup_schedule"}
+}
+
+// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
+// was not loaded in eager-loading.
+func (e BackupProfileEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
+	if e.loadedTypes[3] {
+		return e.FailedBackupRuns, nil
+	}
+	return nil, &NotLoadedError{edge: "failed_backup_runs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -68,7 +92,7 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backupprofile.FieldDirectories:
+		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
 		case backupprofile.FieldIsSetupComplete:
 			values[i] = new(sql.NullBool)
@@ -109,12 +133,20 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				bp.Prefix = value.String
 			}
-		case backupprofile.FieldDirectories:
+		case backupprofile.FieldBackupPaths:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field directories", values[i])
+				return fmt.Errorf("unexpected type %T for field backup_paths", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &bp.Directories); err != nil {
-					return fmt.Errorf("unmarshal field directories: %w", err)
+				if err := json.Unmarshal(*value, &bp.BackupPaths); err != nil {
+					return fmt.Errorf("unmarshal field backup_paths: %w", err)
+				}
+			}
+		case backupprofile.FieldExcludePaths:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field exclude_paths", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &bp.ExcludePaths); err != nil {
+					return fmt.Errorf("unmarshal field exclude_paths: %w", err)
 				}
 			}
 		case backupprofile.FieldIsSetupComplete:
@@ -141,9 +173,19 @@ func (bp *BackupProfile) QueryRepositories() *RepositoryQuery {
 	return NewBackupProfileClient(bp.config).QueryRepositories(bp)
 }
 
+// QueryArchives queries the "archives" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryArchives() *ArchiveQuery {
+	return NewBackupProfileClient(bp.config).QueryArchives(bp)
+}
+
 // QueryBackupSchedule queries the "backup_schedule" edge of the BackupProfile entity.
 func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
 	return NewBackupProfileClient(bp.config).QueryBackupSchedule(bp)
+}
+
+// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryFailedBackupRuns() *FailedBackupRunQuery {
+	return NewBackupProfileClient(bp.config).QueryFailedBackupRuns(bp)
 }
 
 // Update returns a builder for updating this BackupProfile.
@@ -175,8 +217,11 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString("prefix=")
 	builder.WriteString(bp.Prefix)
 	builder.WriteString(", ")
-	builder.WriteString("directories=")
-	builder.WriteString(fmt.Sprintf("%v", bp.Directories))
+	builder.WriteString("backup_paths=")
+	builder.WriteString(fmt.Sprintf("%v", bp.BackupPaths))
+	builder.WriteString(", ")
+	builder.WriteString("exclude_paths=")
+	builder.WriteString(fmt.Sprintf("%v", bp.ExcludePaths))
 	builder.WriteString(", ")
 	builder.WriteString("is_setup_complete=")
 	builder.WriteString(fmt.Sprintf("%v", bp.IsSetupComplete))

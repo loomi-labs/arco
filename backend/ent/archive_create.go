@@ -4,6 +4,7 @@ package ent
 
 import (
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
@@ -62,6 +63,25 @@ func (ac *ArchiveCreate) SetRepository(r *Repository) *ArchiveCreate {
 	return ac.SetRepositoryID(r.ID)
 }
 
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
+func (ac *ArchiveCreate) SetBackupProfileID(id int) *ArchiveCreate {
+	ac.mutation.SetBackupProfileID(id)
+	return ac
+}
+
+// SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
+func (ac *ArchiveCreate) SetNillableBackupProfileID(id *int) *ArchiveCreate {
+	if id != nil {
+		ac = ac.SetBackupProfileID(*id)
+	}
+	return ac
+}
+
+// SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
+func (ac *ArchiveCreate) SetBackupProfile(b *BackupProfile) *ArchiveCreate {
+	return ac.SetBackupProfileID(b.ID)
+}
+
 // Mutation returns the ArchiveMutation object of the builder.
 func (ac *ArchiveCreate) Mutation() *ArchiveMutation {
 	return ac.mutation
@@ -108,7 +128,7 @@ func (ac *ArchiveCreate) check() error {
 	if _, ok := ac.mutation.BorgID(); !ok {
 		return &ValidationError{Name: "borg_id", err: errors.New(`ent: missing required field "Archive.borg_id"`)}
 	}
-	if _, ok := ac.mutation.RepositoryID(); !ok {
+	if len(ac.mutation.RepositoryIDs()) == 0 {
 		return &ValidationError{Name: "repository", err: errors.New(`ent: missing required edge "Archive.repository"`)}
 	}
 	return nil
@@ -174,6 +194,23 @@ func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.archive_repository = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ac.mutation.BackupProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   archive.BackupProfileTable,
+			Columns: []string{archive.BackupProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.archive_backup_profile = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

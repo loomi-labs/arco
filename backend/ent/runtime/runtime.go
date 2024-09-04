@@ -5,6 +5,7 @@ package runtime
 import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/repository"
 	"arco/backend/ent/schema"
 )
 
@@ -14,8 +15,16 @@ import (
 func init() {
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
+	// backupprofileDescBackupPaths is the schema descriptor for backup_paths field.
+	backupprofileDescBackupPaths := backupprofileFields[3].Descriptor()
+	// backupprofile.DefaultBackupPaths holds the default value on creation for the backup_paths field.
+	backupprofile.DefaultBackupPaths = backupprofileDescBackupPaths.Default.([]string)
+	// backupprofileDescExcludePaths is the schema descriptor for exclude_paths field.
+	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
+	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
+	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
 	// backupprofileDescIsSetupComplete is the schema descriptor for is_setup_complete field.
-	backupprofileDescIsSetupComplete := backupprofileFields[4].Descriptor()
+	backupprofileDescIsSetupComplete := backupprofileFields[5].Descriptor()
 	// backupprofile.DefaultIsSetupComplete holds the default value on creation for the is_setup_complete field.
 	backupprofile.DefaultIsSetupComplete = backupprofileDescIsSetupComplete.Default.(bool)
 	backupscheduleHooks := schema.BackupSchedule{}.Hooks()
@@ -30,9 +39,35 @@ func init() {
 	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	repositoryFields := schema.Repository{}.Fields()
+	_ = repositoryFields
+	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
+	repositoryDescStatsTotalChunks := repositoryFields[4].Descriptor()
+	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
+	repository.DefaultStatsTotalChunks = repositoryDescStatsTotalChunks.Default.(int)
+	// repositoryDescStatsTotalSize is the schema descriptor for stats_total_size field.
+	repositoryDescStatsTotalSize := repositoryFields[5].Descriptor()
+	// repository.DefaultStatsTotalSize holds the default value on creation for the stats_total_size field.
+	repository.DefaultStatsTotalSize = repositoryDescStatsTotalSize.Default.(int)
+	// repositoryDescStatsTotalCsize is the schema descriptor for stats_total_csize field.
+	repositoryDescStatsTotalCsize := repositoryFields[6].Descriptor()
+	// repository.DefaultStatsTotalCsize holds the default value on creation for the stats_total_csize field.
+	repository.DefaultStatsTotalCsize = repositoryDescStatsTotalCsize.Default.(int)
+	// repositoryDescStatsTotalUniqueChunks is the schema descriptor for stats_total_unique_chunks field.
+	repositoryDescStatsTotalUniqueChunks := repositoryFields[7].Descriptor()
+	// repository.DefaultStatsTotalUniqueChunks holds the default value on creation for the stats_total_unique_chunks field.
+	repository.DefaultStatsTotalUniqueChunks = repositoryDescStatsTotalUniqueChunks.Default.(int)
+	// repositoryDescStatsUniqueSize is the schema descriptor for stats_unique_size field.
+	repositoryDescStatsUniqueSize := repositoryFields[8].Descriptor()
+	// repository.DefaultStatsUniqueSize holds the default value on creation for the stats_unique_size field.
+	repository.DefaultStatsUniqueSize = repositoryDescStatsUniqueSize.Default.(int)
+	// repositoryDescStatsUniqueCsize is the schema descriptor for stats_unique_csize field.
+	repositoryDescStatsUniqueCsize := repositoryFields[9].Descriptor()
+	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
+	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
 }
 
 const (
-	Version = "v0.13.1"                                         // Version of ent codegen.
-	Sum     = "h1:uD8QwN1h6SNphdCCzmkMN3feSUzNnVvV/WIkHKMbzOE=" // Sum of ent codegen.
+	Version = "v0.14.0"                                         // Version of ent codegen.
+	Sum     = "h1:EO3Z9aZ5bXJatJeGqu/EVdnNr6K4mRq3rWe5owt0MC4=" // Sum of ent codegen.
 )

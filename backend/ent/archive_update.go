@@ -4,6 +4,7 @@ package ent
 
 import (
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -96,6 +97,25 @@ func (au *ArchiveUpdate) SetRepository(r *Repository) *ArchiveUpdate {
 	return au.SetRepositoryID(r.ID)
 }
 
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
+func (au *ArchiveUpdate) SetBackupProfileID(id int) *ArchiveUpdate {
+	au.mutation.SetBackupProfileID(id)
+	return au
+}
+
+// SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
+func (au *ArchiveUpdate) SetNillableBackupProfileID(id *int) *ArchiveUpdate {
+	if id != nil {
+		au = au.SetBackupProfileID(*id)
+	}
+	return au
+}
+
+// SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
+func (au *ArchiveUpdate) SetBackupProfile(b *BackupProfile) *ArchiveUpdate {
+	return au.SetBackupProfileID(b.ID)
+}
+
 // Mutation returns the ArchiveMutation object of the builder.
 func (au *ArchiveUpdate) Mutation() *ArchiveMutation {
 	return au.mutation
@@ -104,6 +124,12 @@ func (au *ArchiveUpdate) Mutation() *ArchiveMutation {
 // ClearRepository clears the "repository" edge to the Repository entity.
 func (au *ArchiveUpdate) ClearRepository() *ArchiveUpdate {
 	au.mutation.ClearRepository()
+	return au
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (au *ArchiveUpdate) ClearBackupProfile() *ArchiveUpdate {
+	au.mutation.ClearBackupProfile()
 	return au
 }
 
@@ -136,7 +162,7 @@ func (au *ArchiveUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (au *ArchiveUpdate) check() error {
-	if _, ok := au.mutation.RepositoryID(); au.mutation.RepositoryCleared() && !ok {
+	if au.mutation.RepositoryCleared() && len(au.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Archive.repository"`)
 	}
 	return nil
@@ -188,6 +214,35 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if au.mutation.BackupProfileCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   archive.BackupProfileTable,
+			Columns: []string{archive.BackupProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.BackupProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   archive.BackupProfileTable,
+			Columns: []string{archive.BackupProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -282,6 +337,25 @@ func (auo *ArchiveUpdateOne) SetRepository(r *Repository) *ArchiveUpdateOne {
 	return auo.SetRepositoryID(r.ID)
 }
 
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
+func (auo *ArchiveUpdateOne) SetBackupProfileID(id int) *ArchiveUpdateOne {
+	auo.mutation.SetBackupProfileID(id)
+	return auo
+}
+
+// SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
+func (auo *ArchiveUpdateOne) SetNillableBackupProfileID(id *int) *ArchiveUpdateOne {
+	if id != nil {
+		auo = auo.SetBackupProfileID(*id)
+	}
+	return auo
+}
+
+// SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
+func (auo *ArchiveUpdateOne) SetBackupProfile(b *BackupProfile) *ArchiveUpdateOne {
+	return auo.SetBackupProfileID(b.ID)
+}
+
 // Mutation returns the ArchiveMutation object of the builder.
 func (auo *ArchiveUpdateOne) Mutation() *ArchiveMutation {
 	return auo.mutation
@@ -290,6 +364,12 @@ func (auo *ArchiveUpdateOne) Mutation() *ArchiveMutation {
 // ClearRepository clears the "repository" edge to the Repository entity.
 func (auo *ArchiveUpdateOne) ClearRepository() *ArchiveUpdateOne {
 	auo.mutation.ClearRepository()
+	return auo
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (auo *ArchiveUpdateOne) ClearBackupProfile() *ArchiveUpdateOne {
+	auo.mutation.ClearBackupProfile()
 	return auo
 }
 
@@ -335,7 +415,7 @@ func (auo *ArchiveUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (auo *ArchiveUpdateOne) check() error {
-	if _, ok := auo.mutation.RepositoryID(); auo.mutation.RepositoryCleared() && !ok {
+	if auo.mutation.RepositoryCleared() && len(auo.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Archive.repository"`)
 	}
 	return nil
@@ -404,6 +484,35 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if auo.mutation.BackupProfileCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   archive.BackupProfileTable,
+			Columns: []string{archive.BackupProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.BackupProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   archive.BackupProfileTable,
+			Columns: []string{archive.BackupProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

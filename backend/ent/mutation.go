@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -27,28 +28,31 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArchive        = "Archive"
-	TypeBackupProfile  = "BackupProfile"
-	TypeBackupSchedule = "BackupSchedule"
-	TypeRepository     = "Repository"
+	TypeArchive         = "Archive"
+	TypeBackupProfile   = "BackupProfile"
+	TypeBackupSchedule  = "BackupSchedule"
+	TypeFailedBackupRun = "FailedBackupRun"
+	TypeRepository      = "Repository"
 )
 
 // ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
 type ArchiveMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	name              *string
-	createdAt         *time.Time
-	duration          *time.Time
-	borg_id           *string
-	clearedFields     map[string]struct{}
-	repository        *int
-	clearedrepository bool
-	done              bool
-	oldValue          func(context.Context) (*Archive, error)
-	predicates        []predicate.Archive
+	op                    Op
+	typ                   string
+	id                    *int
+	name                  *string
+	createdAt             *time.Time
+	duration              *time.Time
+	borg_id               *string
+	clearedFields         map[string]struct{}
+	repository            *int
+	clearedrepository     bool
+	backup_profile        *int
+	clearedbackup_profile bool
+	done                  bool
+	oldValue              func(context.Context) (*Archive, error)
+	predicates            []predicate.Archive
 }
 
 var _ ent.Mutation = (*ArchiveMutation)(nil)
@@ -338,6 +342,45 @@ func (m *ArchiveMutation) ResetRepository() {
 	m.clearedrepository = false
 }
 
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
+func (m *ArchiveMutation) SetBackupProfileID(id int) {
+	m.backup_profile = &id
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (m *ArchiveMutation) ClearBackupProfile() {
+	m.clearedbackup_profile = true
+}
+
+// BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
+func (m *ArchiveMutation) BackupProfileCleared() bool {
+	return m.clearedbackup_profile
+}
+
+// BackupProfileID returns the "backup_profile" edge ID in the mutation.
+func (m *ArchiveMutation) BackupProfileID() (id int, exists bool) {
+	if m.backup_profile != nil {
+		return *m.backup_profile, true
+	}
+	return
+}
+
+// BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BackupProfileID instead. It exists only for internal usage by the builders.
+func (m *ArchiveMutation) BackupProfileIDs() (ids []int) {
+	if id := m.backup_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBackupProfile resets all changes to the "backup_profile" edge.
+func (m *ArchiveMutation) ResetBackupProfile() {
+	m.backup_profile = nil
+	m.clearedbackup_profile = false
+}
+
 // Where appends a list predicates to the ArchiveMutation builder.
 func (m *ArchiveMutation) Where(ps ...predicate.Archive) {
 	m.predicates = append(m.predicates, ps...)
@@ -522,9 +565,12 @@ func (m *ArchiveMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ArchiveMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.repository != nil {
 		edges = append(edges, archive.EdgeRepository)
+	}
+	if m.backup_profile != nil {
+		edges = append(edges, archive.EdgeBackupProfile)
 	}
 	return edges
 }
@@ -537,13 +583,17 @@ func (m *ArchiveMutation) AddedIDs(name string) []ent.Value {
 		if id := m.repository; id != nil {
 			return []ent.Value{*id}
 		}
+	case archive.EdgeBackupProfile:
+		if id := m.backup_profile; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ArchiveMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -555,9 +605,12 @@ func (m *ArchiveMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ArchiveMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedrepository {
 		edges = append(edges, archive.EdgeRepository)
+	}
+	if m.clearedbackup_profile {
+		edges = append(edges, archive.EdgeBackupProfile)
 	}
 	return edges
 }
@@ -568,6 +621,8 @@ func (m *ArchiveMutation) EdgeCleared(name string) bool {
 	switch name {
 	case archive.EdgeRepository:
 		return m.clearedrepository
+	case archive.EdgeBackupProfile:
+		return m.clearedbackup_profile
 	}
 	return false
 }
@@ -578,6 +633,9 @@ func (m *ArchiveMutation) ClearEdge(name string) error {
 	switch name {
 	case archive.EdgeRepository:
 		m.ClearRepository()
+		return nil
+	case archive.EdgeBackupProfile:
+		m.ClearBackupProfile()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive unique edge %s", name)
@@ -590,6 +648,9 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 	case archive.EdgeRepository:
 		m.ResetRepository()
 		return nil
+	case archive.EdgeBackupProfile:
+		m.ResetBackupProfile()
+		return nil
 	}
 	return fmt.Errorf("unknown Archive edge %s", name)
 }
@@ -597,23 +658,31 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 // BackupProfileMutation represents an operation that mutates the BackupProfile nodes in the graph.
 type BackupProfileMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	name                   *string
-	prefix                 *string
-	directories            *[]string
-	appenddirectories      []string
-	is_setup_complete      *bool
-	clearedFields          map[string]struct{}
-	repositories           map[int]struct{}
-	removedrepositories    map[int]struct{}
-	clearedrepositories    bool
-	backup_schedule        *int
-	clearedbackup_schedule bool
-	done                   bool
-	oldValue               func(context.Context) (*BackupProfile, error)
-	predicates             []predicate.BackupProfile
+	op                        Op
+	typ                       string
+	id                        *int
+	name                      *string
+	prefix                    *string
+	backup_paths              *[]string
+	appendbackup_paths        []string
+	exclude_paths             *[]string
+	appendexclude_paths       []string
+	is_setup_complete         *bool
+	clearedFields             map[string]struct{}
+	repositories              map[int]struct{}
+	removedrepositories       map[int]struct{}
+	clearedrepositories       bool
+	archives                  map[int]struct{}
+	removedarchives           map[int]struct{}
+	clearedarchives           bool
+	backup_schedule           *int
+	clearedbackup_schedule    bool
+	failed_backup_runs        map[int]struct{}
+	removedfailed_backup_runs map[int]struct{}
+	clearedfailed_backup_runs bool
+	done                      bool
+	oldValue                  func(context.Context) (*BackupProfile, error)
+	predicates                []predicate.BackupProfile
 }
 
 var _ ent.Mutation = (*BackupProfileMutation)(nil)
@@ -792,55 +861,120 @@ func (m *BackupProfileMutation) ResetPrefix() {
 	m.prefix = nil
 }
 
-// SetDirectories sets the "directories" field.
-func (m *BackupProfileMutation) SetDirectories(s []string) {
-	m.directories = &s
-	m.appenddirectories = nil
+// SetBackupPaths sets the "backup_paths" field.
+func (m *BackupProfileMutation) SetBackupPaths(s []string) {
+	m.backup_paths = &s
+	m.appendbackup_paths = nil
 }
 
-// Directories returns the value of the "directories" field in the mutation.
-func (m *BackupProfileMutation) Directories() (r []string, exists bool) {
-	v := m.directories
+// BackupPaths returns the value of the "backup_paths" field in the mutation.
+func (m *BackupProfileMutation) BackupPaths() (r []string, exists bool) {
+	v := m.backup_paths
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDirectories returns the old "directories" field's value of the BackupProfile entity.
+// OldBackupPaths returns the old "backup_paths" field's value of the BackupProfile entity.
 // If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupProfileMutation) OldDirectories(ctx context.Context) (v []string, err error) {
+func (m *BackupProfileMutation) OldBackupPaths(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDirectories is only allowed on UpdateOne operations")
+		return v, errors.New("OldBackupPaths is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDirectories requires an ID field in the mutation")
+		return v, errors.New("OldBackupPaths requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDirectories: %w", err)
+		return v, fmt.Errorf("querying old value for OldBackupPaths: %w", err)
 	}
-	return oldValue.Directories, nil
+	return oldValue.BackupPaths, nil
 }
 
-// AppendDirectories adds s to the "directories" field.
-func (m *BackupProfileMutation) AppendDirectories(s []string) {
-	m.appenddirectories = append(m.appenddirectories, s...)
+// AppendBackupPaths adds s to the "backup_paths" field.
+func (m *BackupProfileMutation) AppendBackupPaths(s []string) {
+	m.appendbackup_paths = append(m.appendbackup_paths, s...)
 }
 
-// AppendedDirectories returns the list of values that were appended to the "directories" field in this mutation.
-func (m *BackupProfileMutation) AppendedDirectories() ([]string, bool) {
-	if len(m.appenddirectories) == 0 {
+// AppendedBackupPaths returns the list of values that were appended to the "backup_paths" field in this mutation.
+func (m *BackupProfileMutation) AppendedBackupPaths() ([]string, bool) {
+	if len(m.appendbackup_paths) == 0 {
 		return nil, false
 	}
-	return m.appenddirectories, true
+	return m.appendbackup_paths, true
 }
 
-// ResetDirectories resets all changes to the "directories" field.
-func (m *BackupProfileMutation) ResetDirectories() {
-	m.directories = nil
-	m.appenddirectories = nil
+// ResetBackupPaths resets all changes to the "backup_paths" field.
+func (m *BackupProfileMutation) ResetBackupPaths() {
+	m.backup_paths = nil
+	m.appendbackup_paths = nil
+}
+
+// SetExcludePaths sets the "exclude_paths" field.
+func (m *BackupProfileMutation) SetExcludePaths(s []string) {
+	m.exclude_paths = &s
+	m.appendexclude_paths = nil
+}
+
+// ExcludePaths returns the value of the "exclude_paths" field in the mutation.
+func (m *BackupProfileMutation) ExcludePaths() (r []string, exists bool) {
+	v := m.exclude_paths
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExcludePaths returns the old "exclude_paths" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldExcludePaths(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExcludePaths is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExcludePaths requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExcludePaths: %w", err)
+	}
+	return oldValue.ExcludePaths, nil
+}
+
+// AppendExcludePaths adds s to the "exclude_paths" field.
+func (m *BackupProfileMutation) AppendExcludePaths(s []string) {
+	m.appendexclude_paths = append(m.appendexclude_paths, s...)
+}
+
+// AppendedExcludePaths returns the list of values that were appended to the "exclude_paths" field in this mutation.
+func (m *BackupProfileMutation) AppendedExcludePaths() ([]string, bool) {
+	if len(m.appendexclude_paths) == 0 {
+		return nil, false
+	}
+	return m.appendexclude_paths, true
+}
+
+// ClearExcludePaths clears the value of the "exclude_paths" field.
+func (m *BackupProfileMutation) ClearExcludePaths() {
+	m.exclude_paths = nil
+	m.appendexclude_paths = nil
+	m.clearedFields[backupprofile.FieldExcludePaths] = struct{}{}
+}
+
+// ExcludePathsCleared returns if the "exclude_paths" field was cleared in this mutation.
+func (m *BackupProfileMutation) ExcludePathsCleared() bool {
+	_, ok := m.clearedFields[backupprofile.FieldExcludePaths]
+	return ok
+}
+
+// ResetExcludePaths resets all changes to the "exclude_paths" field.
+func (m *BackupProfileMutation) ResetExcludePaths() {
+	m.exclude_paths = nil
+	m.appendexclude_paths = nil
+	delete(m.clearedFields, backupprofile.FieldExcludePaths)
 }
 
 // SetIsSetupComplete sets the "is_setup_complete" field.
@@ -933,6 +1067,60 @@ func (m *BackupProfileMutation) ResetRepositories() {
 	m.removedrepositories = nil
 }
 
+// AddArchiveIDs adds the "archives" edge to the Archive entity by ids.
+func (m *BackupProfileMutation) AddArchiveIDs(ids ...int) {
+	if m.archives == nil {
+		m.archives = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.archives[ids[i]] = struct{}{}
+	}
+}
+
+// ClearArchives clears the "archives" edge to the Archive entity.
+func (m *BackupProfileMutation) ClearArchives() {
+	m.clearedarchives = true
+}
+
+// ArchivesCleared reports if the "archives" edge to the Archive entity was cleared.
+func (m *BackupProfileMutation) ArchivesCleared() bool {
+	return m.clearedarchives
+}
+
+// RemoveArchiveIDs removes the "archives" edge to the Archive entity by IDs.
+func (m *BackupProfileMutation) RemoveArchiveIDs(ids ...int) {
+	if m.removedarchives == nil {
+		m.removedarchives = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.archives, ids[i])
+		m.removedarchives[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedArchives returns the removed IDs of the "archives" edge to the Archive entity.
+func (m *BackupProfileMutation) RemovedArchivesIDs() (ids []int) {
+	for id := range m.removedarchives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ArchivesIDs returns the "archives" edge IDs in the mutation.
+func (m *BackupProfileMutation) ArchivesIDs() (ids []int) {
+	for id := range m.archives {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetArchives resets all changes to the "archives" edge.
+func (m *BackupProfileMutation) ResetArchives() {
+	m.archives = nil
+	m.clearedarchives = false
+	m.removedarchives = nil
+}
+
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by id.
 func (m *BackupProfileMutation) SetBackupScheduleID(id int) {
 	m.backup_schedule = &id
@@ -972,6 +1160,60 @@ func (m *BackupProfileMutation) ResetBackupSchedule() {
 	m.clearedbackup_schedule = false
 }
 
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
+func (m *BackupProfileMutation) AddFailedBackupRunIDs(ids ...int) {
+	if m.failed_backup_runs == nil {
+		m.failed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.failed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *BackupProfileMutation) ClearFailedBackupRuns() {
+	m.clearedfailed_backup_runs = true
+}
+
+// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
+func (m *BackupProfileMutation) FailedBackupRunsCleared() bool {
+	return m.clearedfailed_backup_runs
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (m *BackupProfileMutation) RemoveFailedBackupRunIDs(ids ...int) {
+	if m.removedfailed_backup_runs == nil {
+		m.removedfailed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.failed_backup_runs, ids[i])
+		m.removedfailed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *BackupProfileMutation) RemovedFailedBackupRunsIDs() (ids []int) {
+	for id := range m.removedfailed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
+func (m *BackupProfileMutation) FailedBackupRunsIDs() (ids []int) {
+	for id := range m.failed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
+func (m *BackupProfileMutation) ResetFailedBackupRuns() {
+	m.failed_backup_runs = nil
+	m.clearedfailed_backup_runs = false
+	m.removedfailed_backup_runs = nil
+}
+
 // Where appends a list predicates to the BackupProfileMutation builder.
 func (m *BackupProfileMutation) Where(ps ...predicate.BackupProfile) {
 	m.predicates = append(m.predicates, ps...)
@@ -1006,15 +1248,18 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
 	if m.prefix != nil {
 		fields = append(fields, backupprofile.FieldPrefix)
 	}
-	if m.directories != nil {
-		fields = append(fields, backupprofile.FieldDirectories)
+	if m.backup_paths != nil {
+		fields = append(fields, backupprofile.FieldBackupPaths)
+	}
+	if m.exclude_paths != nil {
+		fields = append(fields, backupprofile.FieldExcludePaths)
 	}
 	if m.is_setup_complete != nil {
 		fields = append(fields, backupprofile.FieldIsSetupComplete)
@@ -1031,8 +1276,10 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case backupprofile.FieldPrefix:
 		return m.Prefix()
-	case backupprofile.FieldDirectories:
-		return m.Directories()
+	case backupprofile.FieldBackupPaths:
+		return m.BackupPaths()
+	case backupprofile.FieldExcludePaths:
+		return m.ExcludePaths()
 	case backupprofile.FieldIsSetupComplete:
 		return m.IsSetupComplete()
 	}
@@ -1048,8 +1295,10 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldName(ctx)
 	case backupprofile.FieldPrefix:
 		return m.OldPrefix(ctx)
-	case backupprofile.FieldDirectories:
-		return m.OldDirectories(ctx)
+	case backupprofile.FieldBackupPaths:
+		return m.OldBackupPaths(ctx)
+	case backupprofile.FieldExcludePaths:
+		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIsSetupComplete:
 		return m.OldIsSetupComplete(ctx)
 	}
@@ -1075,12 +1324,19 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPrefix(v)
 		return nil
-	case backupprofile.FieldDirectories:
+	case backupprofile.FieldBackupPaths:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDirectories(v)
+		m.SetBackupPaths(v)
+		return nil
+	case backupprofile.FieldExcludePaths:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExcludePaths(v)
 		return nil
 	case backupprofile.FieldIsSetupComplete:
 		v, ok := value.(bool)
@@ -1118,7 +1374,11 @@ func (m *BackupProfileMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *BackupProfileMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(backupprofile.FieldExcludePaths) {
+		fields = append(fields, backupprofile.FieldExcludePaths)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1131,6 +1391,11 @@ func (m *BackupProfileMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *BackupProfileMutation) ClearField(name string) error {
+	switch name {
+	case backupprofile.FieldExcludePaths:
+		m.ClearExcludePaths()
+		return nil
+	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
 }
 
@@ -1144,8 +1409,11 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 	case backupprofile.FieldPrefix:
 		m.ResetPrefix()
 		return nil
-	case backupprofile.FieldDirectories:
-		m.ResetDirectories()
+	case backupprofile.FieldBackupPaths:
+		m.ResetBackupPaths()
+		return nil
+	case backupprofile.FieldExcludePaths:
+		m.ResetExcludePaths()
 		return nil
 	case backupprofile.FieldIsSetupComplete:
 		m.ResetIsSetupComplete()
@@ -1156,12 +1424,18 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BackupProfileMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.repositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
+	if m.archives != nil {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
 	if m.backup_schedule != nil {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
+	}
+	if m.failed_backup_runs != nil {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1176,19 +1450,37 @@ func (m *BackupProfileMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backupprofile.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.archives))
+		for id := range m.archives {
+			ids = append(ids, id)
+		}
+		return ids
 	case backupprofile.EdgeBackupSchedule:
 		if id := m.backup_schedule; id != nil {
 			return []ent.Value{*id}
 		}
+	case backupprofile.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
+		for id := range m.failed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BackupProfileMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.removedrepositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
+	}
+	if m.removedarchives != nil {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
+	if m.removedfailed_backup_runs != nil {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1203,18 +1495,36 @@ func (m *BackupProfileMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backupprofile.EdgeArchives:
+		ids := make([]ent.Value, 0, len(m.removedarchives))
+		for id := range m.removedarchives {
+			ids = append(ids, id)
+		}
+		return ids
+	case backupprofile.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
+		for id := range m.removedfailed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BackupProfileMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedrepositories {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
+	if m.clearedarchives {
+		edges = append(edges, backupprofile.EdgeArchives)
+	}
 	if m.clearedbackup_schedule {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
+	}
+	if m.clearedfailed_backup_runs {
+		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -1225,8 +1535,12 @@ func (m *BackupProfileMutation) EdgeCleared(name string) bool {
 	switch name {
 	case backupprofile.EdgeRepositories:
 		return m.clearedrepositories
+	case backupprofile.EdgeArchives:
+		return m.clearedarchives
 	case backupprofile.EdgeBackupSchedule:
 		return m.clearedbackup_schedule
+	case backupprofile.EdgeFailedBackupRuns:
+		return m.clearedfailed_backup_runs
 	}
 	return false
 }
@@ -1249,8 +1563,14 @@ func (m *BackupProfileMutation) ResetEdge(name string) error {
 	case backupprofile.EdgeRepositories:
 		m.ResetRepositories()
 		return nil
+	case backupprofile.EdgeArchives:
+		m.ResetArchives()
+		return nil
 	case backupprofile.EdgeBackupSchedule:
 		m.ResetBackupSchedule()
+		return nil
+	case backupprofile.EdgeFailedBackupRuns:
+		m.ResetFailedBackupRuns()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile edge %s", name)
@@ -2273,25 +2593,492 @@ func (m *BackupScheduleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown BackupSchedule edge %s", name)
 }
 
+// FailedBackupRunMutation represents an operation that mutates the FailedBackupRun nodes in the graph.
+type FailedBackupRunMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int
+	error                 *string
+	clearedFields         map[string]struct{}
+	backup_profile        *int
+	clearedbackup_profile bool
+	repository            *int
+	clearedrepository     bool
+	done                  bool
+	oldValue              func(context.Context) (*FailedBackupRun, error)
+	predicates            []predicate.FailedBackupRun
+}
+
+var _ ent.Mutation = (*FailedBackupRunMutation)(nil)
+
+// failedbackuprunOption allows management of the mutation configuration using functional options.
+type failedbackuprunOption func(*FailedBackupRunMutation)
+
+// newFailedBackupRunMutation creates new mutation for the FailedBackupRun entity.
+func newFailedBackupRunMutation(c config, op Op, opts ...failedbackuprunOption) *FailedBackupRunMutation {
+	m := &FailedBackupRunMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFailedBackupRun,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFailedBackupRunID sets the ID field of the mutation.
+func withFailedBackupRunID(id int) failedbackuprunOption {
+	return func(m *FailedBackupRunMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FailedBackupRun
+		)
+		m.oldValue = func(ctx context.Context) (*FailedBackupRun, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FailedBackupRun.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFailedBackupRun sets the old FailedBackupRun of the mutation.
+func withFailedBackupRun(node *FailedBackupRun) failedbackuprunOption {
+	return func(m *FailedBackupRunMutation) {
+		m.oldValue = func(context.Context) (*FailedBackupRun, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FailedBackupRunMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FailedBackupRunMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FailedBackupRunMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FailedBackupRunMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FailedBackupRun.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetError sets the "error" field.
+func (m *FailedBackupRunMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *FailedBackupRunMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the FailedBackupRun entity.
+// If the FailedBackupRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FailedBackupRunMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *FailedBackupRunMutation) ResetError() {
+	m.error = nil
+}
+
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
+func (m *FailedBackupRunMutation) SetBackupProfileID(id int) {
+	m.backup_profile = &id
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (m *FailedBackupRunMutation) ClearBackupProfile() {
+	m.clearedbackup_profile = true
+}
+
+// BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
+func (m *FailedBackupRunMutation) BackupProfileCleared() bool {
+	return m.clearedbackup_profile
+}
+
+// BackupProfileID returns the "backup_profile" edge ID in the mutation.
+func (m *FailedBackupRunMutation) BackupProfileID() (id int, exists bool) {
+	if m.backup_profile != nil {
+		return *m.backup_profile, true
+	}
+	return
+}
+
+// BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BackupProfileID instead. It exists only for internal usage by the builders.
+func (m *FailedBackupRunMutation) BackupProfileIDs() (ids []int) {
+	if id := m.backup_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBackupProfile resets all changes to the "backup_profile" edge.
+func (m *FailedBackupRunMutation) ResetBackupProfile() {
+	m.backup_profile = nil
+	m.clearedbackup_profile = false
+}
+
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *FailedBackupRunMutation) SetRepositoryID(id int) {
+	m.repository = &id
+}
+
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *FailedBackupRunMutation) ClearRepository() {
+	m.clearedrepository = true
+}
+
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *FailedBackupRunMutation) RepositoryCleared() bool {
+	return m.clearedrepository
+}
+
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *FailedBackupRunMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
+	}
+	return
+}
+
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *FailedBackupRunMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRepository resets all changes to the "repository" edge.
+func (m *FailedBackupRunMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
+}
+
+// Where appends a list predicates to the FailedBackupRunMutation builder.
+func (m *FailedBackupRunMutation) Where(ps ...predicate.FailedBackupRun) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FailedBackupRunMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FailedBackupRunMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FailedBackupRun, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FailedBackupRunMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FailedBackupRunMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FailedBackupRun).
+func (m *FailedBackupRunMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FailedBackupRunMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.error != nil {
+		fields = append(fields, failedbackuprun.FieldError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FailedBackupRunMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case failedbackuprun.FieldError:
+		return m.Error()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FailedBackupRunMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case failedbackuprun.FieldError:
+		return m.OldError(ctx)
+	}
+	return nil, fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedBackupRunMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case failedbackuprun.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FailedBackupRunMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FailedBackupRunMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FailedBackupRunMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FailedBackupRun numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FailedBackupRunMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FailedBackupRunMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FailedBackupRunMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown FailedBackupRun nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FailedBackupRunMutation) ResetField(name string) error {
+	switch name {
+	case failedbackuprun.FieldError:
+		m.ResetError()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FailedBackupRunMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.backup_profile != nil {
+		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+	}
+	if m.repository != nil {
+		edges = append(edges, failedbackuprun.EdgeRepository)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FailedBackupRunMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		if id := m.backup_profile; id != nil {
+			return []ent.Value{*id}
+		}
+	case failedbackuprun.EdgeRepository:
+		if id := m.repository; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FailedBackupRunMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FailedBackupRunMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FailedBackupRunMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedbackup_profile {
+		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+	}
+	if m.clearedrepository {
+		edges = append(edges, failedbackuprun.EdgeRepository)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FailedBackupRunMutation) EdgeCleared(name string) bool {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		return m.clearedbackup_profile
+	case failedbackuprun.EdgeRepository:
+		return m.clearedrepository
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FailedBackupRunMutation) ClearEdge(name string) error {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		m.ClearBackupProfile()
+		return nil
+	case failedbackuprun.EdgeRepository:
+		m.ClearRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FailedBackupRunMutation) ResetEdge(name string) error {
+	switch name {
+	case failedbackuprun.EdgeBackupProfile:
+		m.ResetBackupProfile()
+		return nil
+	case failedbackuprun.EdgeRepository:
+		m.ResetRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown FailedBackupRun edge %s", name)
+}
+
 // RepositoryMutation represents an operation that mutates the Repository nodes in the graph.
 type RepositoryMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	name                   *string
-	url                    *string
-	password               *string
-	clearedFields          map[string]struct{}
-	backup_profiles        map[int]struct{}
-	removedbackup_profiles map[int]struct{}
-	clearedbackup_profiles bool
-	archives               map[int]struct{}
-	removedarchives        map[int]struct{}
-	clearedarchives        bool
-	done                   bool
-	oldValue               func(context.Context) (*Repository, error)
-	predicates             []predicate.Repository
+	op                           Op
+	typ                          string
+	id                           *int
+	name                         *string
+	url                          *string
+	password                     *string
+	stats_total_chunks           *int
+	addstats_total_chunks        *int
+	stats_total_size             *int
+	addstats_total_size          *int
+	stats_total_csize            *int
+	addstats_total_csize         *int
+	stats_total_unique_chunks    *int
+	addstats_total_unique_chunks *int
+	stats_unique_size            *int
+	addstats_unique_size         *int
+	stats_unique_csize           *int
+	addstats_unique_csize        *int
+	clearedFields                map[string]struct{}
+	backup_profiles              map[int]struct{}
+	removedbackup_profiles       map[int]struct{}
+	clearedbackup_profiles       bool
+	archives                     map[int]struct{}
+	removedarchives              map[int]struct{}
+	clearedarchives              bool
+	failed_backup_runs           map[int]struct{}
+	removedfailed_backup_runs    map[int]struct{}
+	clearedfailed_backup_runs    bool
+	done                         bool
+	oldValue                     func(context.Context) (*Repository, error)
+	predicates                   []predicate.Repository
 }
 
 var _ ent.Mutation = (*RepositoryMutation)(nil)
@@ -2506,6 +3293,342 @@ func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
 }
 
+// SetStatsTotalChunks sets the "stats_total_chunks" field.
+func (m *RepositoryMutation) SetStatsTotalChunks(i int) {
+	m.stats_total_chunks = &i
+	m.addstats_total_chunks = nil
+}
+
+// StatsTotalChunks returns the value of the "stats_total_chunks" field in the mutation.
+func (m *RepositoryMutation) StatsTotalChunks() (r int, exists bool) {
+	v := m.stats_total_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalChunks returns the old "stats_total_chunks" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalChunks(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalChunks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalChunks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalChunks: %w", err)
+	}
+	return oldValue.StatsTotalChunks, nil
+}
+
+// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
+func (m *RepositoryMutation) AddStatsTotalChunks(i int) {
+	if m.addstats_total_chunks != nil {
+		*m.addstats_total_chunks += i
+	} else {
+		m.addstats_total_chunks = &i
+	}
+}
+
+// AddedStatsTotalChunks returns the value that was added to the "stats_total_chunks" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalChunks() (r int, exists bool) {
+	v := m.addstats_total_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalChunks resets all changes to the "stats_total_chunks" field.
+func (m *RepositoryMutation) ResetStatsTotalChunks() {
+	m.stats_total_chunks = nil
+	m.addstats_total_chunks = nil
+}
+
+// SetStatsTotalSize sets the "stats_total_size" field.
+func (m *RepositoryMutation) SetStatsTotalSize(i int) {
+	m.stats_total_size = &i
+	m.addstats_total_size = nil
+}
+
+// StatsTotalSize returns the value of the "stats_total_size" field in the mutation.
+func (m *RepositoryMutation) StatsTotalSize() (r int, exists bool) {
+	v := m.stats_total_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalSize returns the old "stats_total_size" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalSize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalSize: %w", err)
+	}
+	return oldValue.StatsTotalSize, nil
+}
+
+// AddStatsTotalSize adds i to the "stats_total_size" field.
+func (m *RepositoryMutation) AddStatsTotalSize(i int) {
+	if m.addstats_total_size != nil {
+		*m.addstats_total_size += i
+	} else {
+		m.addstats_total_size = &i
+	}
+}
+
+// AddedStatsTotalSize returns the value that was added to the "stats_total_size" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalSize() (r int, exists bool) {
+	v := m.addstats_total_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalSize resets all changes to the "stats_total_size" field.
+func (m *RepositoryMutation) ResetStatsTotalSize() {
+	m.stats_total_size = nil
+	m.addstats_total_size = nil
+}
+
+// SetStatsTotalCsize sets the "stats_total_csize" field.
+func (m *RepositoryMutation) SetStatsTotalCsize(i int) {
+	m.stats_total_csize = &i
+	m.addstats_total_csize = nil
+}
+
+// StatsTotalCsize returns the value of the "stats_total_csize" field in the mutation.
+func (m *RepositoryMutation) StatsTotalCsize() (r int, exists bool) {
+	v := m.stats_total_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalCsize returns the old "stats_total_csize" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalCsize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalCsize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalCsize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalCsize: %w", err)
+	}
+	return oldValue.StatsTotalCsize, nil
+}
+
+// AddStatsTotalCsize adds i to the "stats_total_csize" field.
+func (m *RepositoryMutation) AddStatsTotalCsize(i int) {
+	if m.addstats_total_csize != nil {
+		*m.addstats_total_csize += i
+	} else {
+		m.addstats_total_csize = &i
+	}
+}
+
+// AddedStatsTotalCsize returns the value that was added to the "stats_total_csize" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalCsize() (r int, exists bool) {
+	v := m.addstats_total_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalCsize resets all changes to the "stats_total_csize" field.
+func (m *RepositoryMutation) ResetStatsTotalCsize() {
+	m.stats_total_csize = nil
+	m.addstats_total_csize = nil
+}
+
+// SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) SetStatsTotalUniqueChunks(i int) {
+	m.stats_total_unique_chunks = &i
+	m.addstats_total_unique_chunks = nil
+}
+
+// StatsTotalUniqueChunks returns the value of the "stats_total_unique_chunks" field in the mutation.
+func (m *RepositoryMutation) StatsTotalUniqueChunks() (r int, exists bool) {
+	v := m.stats_total_unique_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsTotalUniqueChunks returns the old "stats_total_unique_chunks" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsTotalUniqueChunks(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsTotalUniqueChunks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsTotalUniqueChunks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsTotalUniqueChunks: %w", err)
+	}
+	return oldValue.StatsTotalUniqueChunks, nil
+}
+
+// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) AddStatsTotalUniqueChunks(i int) {
+	if m.addstats_total_unique_chunks != nil {
+		*m.addstats_total_unique_chunks += i
+	} else {
+		m.addstats_total_unique_chunks = &i
+	}
+}
+
+// AddedStatsTotalUniqueChunks returns the value that was added to the "stats_total_unique_chunks" field in this mutation.
+func (m *RepositoryMutation) AddedStatsTotalUniqueChunks() (r int, exists bool) {
+	v := m.addstats_total_unique_chunks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsTotalUniqueChunks resets all changes to the "stats_total_unique_chunks" field.
+func (m *RepositoryMutation) ResetStatsTotalUniqueChunks() {
+	m.stats_total_unique_chunks = nil
+	m.addstats_total_unique_chunks = nil
+}
+
+// SetStatsUniqueSize sets the "stats_unique_size" field.
+func (m *RepositoryMutation) SetStatsUniqueSize(i int) {
+	m.stats_unique_size = &i
+	m.addstats_unique_size = nil
+}
+
+// StatsUniqueSize returns the value of the "stats_unique_size" field in the mutation.
+func (m *RepositoryMutation) StatsUniqueSize() (r int, exists bool) {
+	v := m.stats_unique_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsUniqueSize returns the old "stats_unique_size" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsUniqueSize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsUniqueSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsUniqueSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsUniqueSize: %w", err)
+	}
+	return oldValue.StatsUniqueSize, nil
+}
+
+// AddStatsUniqueSize adds i to the "stats_unique_size" field.
+func (m *RepositoryMutation) AddStatsUniqueSize(i int) {
+	if m.addstats_unique_size != nil {
+		*m.addstats_unique_size += i
+	} else {
+		m.addstats_unique_size = &i
+	}
+}
+
+// AddedStatsUniqueSize returns the value that was added to the "stats_unique_size" field in this mutation.
+func (m *RepositoryMutation) AddedStatsUniqueSize() (r int, exists bool) {
+	v := m.addstats_unique_size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsUniqueSize resets all changes to the "stats_unique_size" field.
+func (m *RepositoryMutation) ResetStatsUniqueSize() {
+	m.stats_unique_size = nil
+	m.addstats_unique_size = nil
+}
+
+// SetStatsUniqueCsize sets the "stats_unique_csize" field.
+func (m *RepositoryMutation) SetStatsUniqueCsize(i int) {
+	m.stats_unique_csize = &i
+	m.addstats_unique_csize = nil
+}
+
+// StatsUniqueCsize returns the value of the "stats_unique_csize" field in the mutation.
+func (m *RepositoryMutation) StatsUniqueCsize() (r int, exists bool) {
+	v := m.stats_unique_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatsUniqueCsize returns the old "stats_unique_csize" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldStatsUniqueCsize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatsUniqueCsize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatsUniqueCsize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatsUniqueCsize: %w", err)
+	}
+	return oldValue.StatsUniqueCsize, nil
+}
+
+// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
+func (m *RepositoryMutation) AddStatsUniqueCsize(i int) {
+	if m.addstats_unique_csize != nil {
+		*m.addstats_unique_csize += i
+	} else {
+		m.addstats_unique_csize = &i
+	}
+}
+
+// AddedStatsUniqueCsize returns the value that was added to the "stats_unique_csize" field in this mutation.
+func (m *RepositoryMutation) AddedStatsUniqueCsize() (r int, exists bool) {
+	v := m.addstats_unique_csize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatsUniqueCsize resets all changes to the "stats_unique_csize" field.
+func (m *RepositoryMutation) ResetStatsUniqueCsize() {
+	m.stats_unique_csize = nil
+	m.addstats_unique_csize = nil
+}
+
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by ids.
 func (m *RepositoryMutation) AddBackupProfileIDs(ids ...int) {
 	if m.backup_profiles == nil {
@@ -2614,6 +3737,60 @@ func (m *RepositoryMutation) ResetArchives() {
 	m.removedarchives = nil
 }
 
+// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
+func (m *RepositoryMutation) AddFailedBackupRunIDs(ids ...int) {
+	if m.failed_backup_runs == nil {
+		m.failed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.failed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *RepositoryMutation) ClearFailedBackupRuns() {
+	m.clearedfailed_backup_runs = true
+}
+
+// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
+func (m *RepositoryMutation) FailedBackupRunsCleared() bool {
+	return m.clearedfailed_backup_runs
+}
+
+// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
+func (m *RepositoryMutation) RemoveFailedBackupRunIDs(ids ...int) {
+	if m.removedfailed_backup_runs == nil {
+		m.removedfailed_backup_runs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.failed_backup_runs, ids[i])
+		m.removedfailed_backup_runs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
+func (m *RepositoryMutation) RemovedFailedBackupRunsIDs() (ids []int) {
+	for id := range m.removedfailed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
+func (m *RepositoryMutation) FailedBackupRunsIDs() (ids []int) {
+	for id := range m.failed_backup_runs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
+func (m *RepositoryMutation) ResetFailedBackupRuns() {
+	m.failed_backup_runs = nil
+	m.clearedfailed_backup_runs = false
+	m.removedfailed_backup_runs = nil
+}
+
 // Where appends a list predicates to the RepositoryMutation builder.
 func (m *RepositoryMutation) Where(ps ...predicate.Repository) {
 	m.predicates = append(m.predicates, ps...)
@@ -2648,7 +3825,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
@@ -2657,6 +3834,24 @@ func (m *RepositoryMutation) Fields() []string {
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
+	}
+	if m.stats_total_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalChunks)
+	}
+	if m.stats_total_size != nil {
+		fields = append(fields, repository.FieldStatsTotalSize)
+	}
+	if m.stats_total_csize != nil {
+		fields = append(fields, repository.FieldStatsTotalCsize)
+	}
+	if m.stats_total_unique_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalUniqueChunks)
+	}
+	if m.stats_unique_size != nil {
+		fields = append(fields, repository.FieldStatsUniqueSize)
+	}
+	if m.stats_unique_csize != nil {
+		fields = append(fields, repository.FieldStatsUniqueCsize)
 	}
 	return fields
 }
@@ -2672,6 +3867,18 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case repository.FieldPassword:
 		return m.Password()
+	case repository.FieldStatsTotalChunks:
+		return m.StatsTotalChunks()
+	case repository.FieldStatsTotalSize:
+		return m.StatsTotalSize()
+	case repository.FieldStatsTotalCsize:
+		return m.StatsTotalCsize()
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.StatsTotalUniqueChunks()
+	case repository.FieldStatsUniqueSize:
+		return m.StatsUniqueSize()
+	case repository.FieldStatsUniqueCsize:
+		return m.StatsUniqueCsize()
 	}
 	return nil, false
 }
@@ -2687,6 +3894,18 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldURL(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
+	case repository.FieldStatsTotalChunks:
+		return m.OldStatsTotalChunks(ctx)
+	case repository.FieldStatsTotalSize:
+		return m.OldStatsTotalSize(ctx)
+	case repository.FieldStatsTotalCsize:
+		return m.OldStatsTotalCsize(ctx)
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.OldStatsTotalUniqueChunks(ctx)
+	case repository.FieldStatsUniqueSize:
+		return m.OldStatsUniqueSize(ctx)
+	case repository.FieldStatsUniqueCsize:
+		return m.OldStatsUniqueCsize(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repository field %s", name)
 }
@@ -2717,6 +3936,48 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPassword(v)
 		return nil
+	case repository.FieldStatsTotalChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalChunks(v)
+		return nil
+	case repository.FieldStatsTotalSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalSize(v)
+		return nil
+	case repository.FieldStatsTotalCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalCsize(v)
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsTotalUniqueChunks(v)
+		return nil
+	case repository.FieldStatsUniqueSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsUniqueSize(v)
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatsUniqueCsize(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)
 }
@@ -2724,13 +3985,46 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *RepositoryMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addstats_total_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalChunks)
+	}
+	if m.addstats_total_size != nil {
+		fields = append(fields, repository.FieldStatsTotalSize)
+	}
+	if m.addstats_total_csize != nil {
+		fields = append(fields, repository.FieldStatsTotalCsize)
+	}
+	if m.addstats_total_unique_chunks != nil {
+		fields = append(fields, repository.FieldStatsTotalUniqueChunks)
+	}
+	if m.addstats_unique_size != nil {
+		fields = append(fields, repository.FieldStatsUniqueSize)
+	}
+	if m.addstats_unique_csize != nil {
+		fields = append(fields, repository.FieldStatsUniqueCsize)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *RepositoryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case repository.FieldStatsTotalChunks:
+		return m.AddedStatsTotalChunks()
+	case repository.FieldStatsTotalSize:
+		return m.AddedStatsTotalSize()
+	case repository.FieldStatsTotalCsize:
+		return m.AddedStatsTotalCsize()
+	case repository.FieldStatsTotalUniqueChunks:
+		return m.AddedStatsTotalUniqueChunks()
+	case repository.FieldStatsUniqueSize:
+		return m.AddedStatsUniqueSize()
+	case repository.FieldStatsUniqueCsize:
+		return m.AddedStatsUniqueCsize()
+	}
 	return nil, false
 }
 
@@ -2739,6 +4033,48 @@ func (m *RepositoryMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case repository.FieldStatsTotalChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalChunks(v)
+		return nil
+	case repository.FieldStatsTotalSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalSize(v)
+		return nil
+	case repository.FieldStatsTotalCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalCsize(v)
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsTotalUniqueChunks(v)
+		return nil
+	case repository.FieldStatsUniqueSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsUniqueSize(v)
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatsUniqueCsize(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Repository numeric field %s", name)
 }
@@ -2775,18 +4111,39 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldPassword:
 		m.ResetPassword()
 		return nil
+	case repository.FieldStatsTotalChunks:
+		m.ResetStatsTotalChunks()
+		return nil
+	case repository.FieldStatsTotalSize:
+		m.ResetStatsTotalSize()
+		return nil
+	case repository.FieldStatsTotalCsize:
+		m.ResetStatsTotalCsize()
+		return nil
+	case repository.FieldStatsTotalUniqueChunks:
+		m.ResetStatsTotalUniqueChunks()
+		return nil
+	case repository.FieldStatsUniqueSize:
+		m.ResetStatsUniqueSize()
+		return nil
+	case repository.FieldStatsUniqueCsize:
+		m.ResetStatsUniqueCsize()
+		return nil
 	}
 	return fmt.Errorf("unknown Repository field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepositoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.backup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.archives != nil {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.failed_backup_runs != nil {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -2807,18 +4164,27 @@ func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
+		for id := range m.failed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepositoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedbackup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.removedarchives != nil {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.removedfailed_backup_runs != nil {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -2839,18 +4205,27 @@ func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeFailedBackupRuns:
+		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
+		for id := range m.removedfailed_backup_runs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepositoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedbackup_profiles {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
 	if m.clearedarchives {
 		edges = append(edges, repository.EdgeArchives)
+	}
+	if m.clearedfailed_backup_runs {
+		edges = append(edges, repository.EdgeFailedBackupRuns)
 	}
 	return edges
 }
@@ -2863,6 +4238,8 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 		return m.clearedbackup_profiles
 	case repository.EdgeArchives:
 		return m.clearedarchives
+	case repository.EdgeFailedBackupRuns:
+		return m.clearedfailed_backup_runs
 	}
 	return false
 }
@@ -2884,6 +4261,9 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 		return nil
 	case repository.EdgeArchives:
 		m.ResetArchives()
+		return nil
+	case repository.EdgeFailedBackupRuns:
+		m.ResetFailedBackupRuns()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository edge %s", name)

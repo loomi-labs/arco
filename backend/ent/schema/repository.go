@@ -23,6 +23,26 @@ func (Repository) Fields() []ent.Field {
 			Unique(),
 		field.String("password").
 			StructTag(`json:"password"`),
+
+		// Stats
+		field.Int("stats_total_chunks").
+			Default(0).
+			StructTag(`json:"stats_total_chunks"`),
+		field.Int("stats_total_size").
+			Default(0).
+			StructTag(`json:"stats_total_size"`),
+		field.Int("stats_total_csize").
+			Default(0).
+			StructTag(`json:"stats_total_csize"`),
+		field.Int("stats_total_unique_chunks").
+			Default(0).
+			StructTag(`json:"stats_total_unique_chunks"`),
+		field.Int("stats_unique_size").
+			Default(0).
+			StructTag(`json:"stats_unique_size"`),
+		field.Int("stats_unique_csize").
+			Default(0).
+			StructTag(`json:"stats_unique_csize"`),
 	}
 }
 
@@ -32,6 +52,8 @@ func (Repository) Edges() []ent.Edge {
 		edge.From("backup_profiles", BackupProfile.Type).
 			Ref("repositories"),
 		edge.From("archives", Archive.Type).
+			Ref("repository"),
+		edge.From("failed_backup_runs", FailedBackupRun.Type).
 			Ref("repository"),
 	}
 }

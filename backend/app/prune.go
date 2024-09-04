@@ -10,17 +10,13 @@ import (
 	"fmt"
 )
 
-func (b *BackupClient) PruneBackup(backupProfileId int, repositoryId int) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+func (b *BackupClient) PruneBackup(bId types.BackupId) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := types.BackupId{
-		BackupProfileId: backupProfileId,
-		RepositoryId:    repositoryId,
-	}
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
@@ -39,7 +35,8 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.PruneBackup(backupProfileId, repo.ID)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		err := b.PruneBackup(bId)
 		if err != nil {
 			return err
 		}
@@ -47,17 +44,13 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	return nil
 }
 
-func (b *BackupClient) DryRunPruneBackup(backupProfileId int, repositoryId int) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(repositoryId, backupProfileId)
+func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
+	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 
-	bId := types.BackupId{
-		BackupProfileId: backupProfileId,
-		RepositoryId:    repositoryId,
-	}
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
 		return fmt.Errorf(reason)
 	}
@@ -76,7 +69,8 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
-		err := b.DryRunPruneBackup(backupProfileId, repo.ID)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		err := b.DryRunPruneBackup(bId)
 		if err != nil {
 			return err
 		}
@@ -86,12 +80,14 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 
 func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoLocked(bId.RepositoryId)
-	defer b.state.UnlockRepo(bId.RepositoryId)
+	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPruning)
+	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 	b.state.AddRunningPruneJob(b.ctx, bId)
-	defer b.state.RemoveRunningBackup(bId)
+	defer b.state.RemoveRunningPruneJob(bId)
 
 	// Create go routine to save prune result
 	ch := make(chan borg.PruneResult)
@@ -102,7 +98,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.AddNotification("Prune job was canceled", types.LevelWarning)
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			b.state.AddBorgLock(bId.RepositoryId)
+			//b.state.AddBorgLock(bId.RepositoryId) 	// TODO: fix this
 			b.state.AddNotification("Repository is locked by another operation", types.LevelError)
 		} else {
 			b.state.AddNotification(err.Error(), types.LevelError)
@@ -169,8 +165,11 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch cha
 
 func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()
-	defer b.state.SetRepoLocked(bId.RepositoryId)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPerformingOperation)
+	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 	b.state.AddRunningDryRunPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningDryRunPruneJob(bId)
 
