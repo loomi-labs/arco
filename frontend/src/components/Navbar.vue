@@ -31,7 +31,7 @@ async function setTheme() {
       html.setAttribute("data-theme", theme);
     }
   } catch (error: any) {
-    await showAndLogError("Failed to get theme", error);
+    await showAndLogError("Failed to set theme", error);
   }
 }
 
