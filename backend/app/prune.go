@@ -18,7 +18,7 @@ func (b *BackupClient) PruneBackup(bId types.BackupId) error {
 	backupProfile := repo.Edges.BackupProfiles[0]
 
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
-		return fmt.Errorf(reason)
+		return errors.New(reason)
 	}
 
 	go b.runPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
@@ -52,7 +52,7 @@ func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
 	backupProfile := repo.Edges.BackupProfiles[0]
 
 	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
-		return fmt.Errorf(reason)
+		return errors.New(reason)
 	}
 
 	go b.dryRunPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
@@ -104,7 +104,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 			b.state.AddNotification(err.Error(), types.LevelError)
 		}
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Prune job completed"), types.LevelInfo)
+		b.state.AddNotification("Prune job completed", types.LevelInfo)
 	}
 }
 
@@ -181,6 +181,6 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, passwo
 	if err != nil {
 		b.state.AddNotification(err.Error(), types.LevelError)
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Dry-run prune job completed"), types.LevelInfo)
+		b.state.AddNotification("Dry-run prune job completed", types.LevelInfo)
 	}
 }

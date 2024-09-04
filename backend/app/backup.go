@@ -113,7 +113,7 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 // StartBackupJob starts a backup job for the given repository and backup profile.
 func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
-		return fmt.Errorf(reason)
+		return errors.New(reason)
 	}
 
 	go func() {
@@ -387,7 +387,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 		}
 	} else {
-		b.state.AddNotification(fmt.Sprintf("Delete job completed"), types.LevelInfo)
+		b.state.AddNotification("Delete job completed", types.LevelInfo)
 		b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 	}
 }

@@ -35,11 +35,6 @@ type cancelCtx struct {
 	cancel context.CancelFunc
 }
 
-type BackupJob struct {
-	*cancelCtx
-	progress borg.BackupProgress
-}
-
 type KeepArchive struct {
 	Id     int    `json:"id"`
 	Name   string `json:"name"`

@@ -50,7 +50,7 @@ func (a *App) scheduleBackups() []*time.Timer {
 
 func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *time.Timer {
 	// Calculate the duration until the next backup
-	durationUntilNextBackup := bs.NextRun.Sub(time.Now())
+	durationUntilNextBackup := time.Until(bs.NextRun)
 	if durationUntilNextBackup < 0 {
 		// If the duration is negative, schedule the backup immediately
 		durationUntilNextBackup = 0
