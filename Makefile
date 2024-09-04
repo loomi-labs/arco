@@ -1,7 +1,7 @@
 
-########################################
-# Ent database (https://entgo.io/docs) #
-########################################
+############################################
+### Ent database (https://entgo.io/docs) ###
+############################################
 
 create-new-ent-model:
 ifndef model
@@ -16,12 +16,7 @@ generate-models:
 	@cd backend && go generate ./ent
 	@echo "✅ Done!"
 
-install-atlas:
-	@echo "Installing atlas..."
-	@curl -sSf https://atlasgo.sh | sh
-	@echo "✅ Done!"
-
-generate-migrations: ensure-atlas
+generate-migrations: ensure-tools
 	@echo "Creating ent migration..."
 	@cd backend && atlas migrate diff migration_name \
                      --dir "file://ent/migrate/migrations" \
@@ -29,49 +24,83 @@ generate-migrations: ensure-atlas
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
-apply-migrations: ensure-atlas
+apply-migrations: ensure-tools
 	@echo "Migrating ent schema..."
 	@atlas migrate apply \
                      --dir "file://backend/ent/migrate/migrations" \
                      --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
 
-show-migrations: ensure-atlas
+show-migrations: ensure-tools
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
 					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
 
-################################
-#           Checks  	       #
-################################
-
-ensure-wails:
-	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\n - install: 'go install github.com/wailsapp/wails/v2/cmd/wails@latest'\n - path: add go/bin path to env variables (https://go.dev/doc/install)\n"; exit 1; }
+#################################
+###          Checks           ###
+#################################
 
 ensure-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
 
-ensure-atlas:
-	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-atlas' to install it\n"; exit 1; }
+ensure-tools:
+	@missing_tools=0; \
+	for tool in $$(cat tools.go | grep _ | awk '{print $$3}' | tr -d '"'); do \
+		if ! command -v $$(basename $$tool) >/dev/null 2>&1; then \
+			printf >&2 "❌ $$tool not found.\n"; \
+			missing_tools=1; \
+		fi; \
+	done; \
+	if [ $$missing_tools -eq 1 ]; then \
+		printf >&2 "Please run 'make install-tools' to install missing tools.\n"; \
+		exit 1; \
+	fi
+	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 
-################################
-#            Test 		       #
-################################
+#################################
+###   Formatting & Linting	  ###
+#################################
+
+format: ensure-tools
+	@echo "🧹 Running formatter..."
+	@gofmt -l -w .
+	@echo "✅ Completed formatting!"
+
+lint: ensure-tools
+	@echo "🔍 Running linter..."
+	@golangci-lint run --skip-dirs scripts --timeout=10m
+	@echo "✅ Completed linting!"
+
+#################################
+###           Test            ###
+#################################
 
 test:
 	@go test -v ./...
 
-################################
-#            Build 		       #
-################################
+#################################
+###           Build           ###
+#################################
 
-build: ensure-wails ensure-pnpm
+.phony: build
+build: ensure-tools ensure-pnpm
+	@echo "🏗️ Building..."
 	@wails build
+	@echo "✅ Done!"
 
-################################
-#         Development 		   #
-################################
+#################################
+###        Development        ###
+#################################
 
-dev: ensure-wails ensure-pnpm
+install-tools:
+	@echo "🛠️ Installing tools..."
+	@for tool in $$(cat tools.go | grep _ | awk '{print $$3}' | tr -d '"'); do \
+		go install $${tool}@latest; \
+	done
+	@echo "🌍 Installing atlas..."
+	@curl -sSf https://atlasgo.sh | sh
+	@echo "✅ Done!"
+
+dev: ensure-tools ensure-pnpm
 	wails dev
