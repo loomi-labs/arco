@@ -117,7 +117,10 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	}
 
 	go func() {
-		_, _ = b.runBorgCreate(bId)
+		_, err := b.runBorgCreate(bId)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Backup job failed: %s", err))
+		}
 	}()
 
 	return nil
