@@ -39,7 +39,7 @@ function handleCancel() {
 </script>
 
 <template>
-  <div v-if="isVisible" class="fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75">
+  <div v-if="isVisible" role="dialog" class="fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75">
     <div class="flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md">
       <p class="mb-4">{{ message }}</p>
       <p class="mb-4">{{ subMessage }}</p>
