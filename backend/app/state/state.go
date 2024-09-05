@@ -60,11 +60,11 @@ type RepoStatus string
 
 const (
 	RepoStatusIdle                RepoStatus = "idle"
-	RepoStatusBackingUp           RepoStatus = "backing_up"
+	RepoStatusBackingUp           RepoStatus = "backingUp"
 	RepoStatusPruning             RepoStatus = "pruning"
 	RepoStatusDeleting            RepoStatus = "deleting"
 	RepoStatusMounted             RepoStatus = "mounted"
-	RepoStatusPerformingOperation RepoStatus = "performing_operation"
+	RepoStatusPerformingOperation RepoStatus = "performingOperation"
 	RepoStatusLocked              RepoStatus = "locked"
 )
 
@@ -143,6 +143,30 @@ const (
 )
 
 func (b BackupResult) String() string {
+	return string(b)
+}
+
+type BackupButtonStatus string
+
+const (
+	BackupButtonStatusRunBackup BackupButtonStatus = "runBackup"
+	BackupButtonStatusWaiting   BackupButtonStatus = "waiting"
+	BackupButtonStatusAbort     BackupButtonStatus = "abort"
+	BackupButtonStatusLocked    BackupButtonStatus = "locked"
+	BackupButtonStatusUnmount   BackupButtonStatus = "unmount"
+	BackupButtonStatusBusy      BackupButtonStatus = "busy"
+)
+
+var AvailableBackupButtonStatuses = []BackupButtonStatus{
+	BackupButtonStatusRunBackup,
+	BackupButtonStatusWaiting,
+	BackupButtonStatusAbort,
+	BackupButtonStatusLocked,
+	BackupButtonStatusUnmount,
+	BackupButtonStatusBusy,
+}
+
+func (b BackupButtonStatus) String() string {
 	return string(b)
 }
 
@@ -588,9 +612,6 @@ func (s *State) SetArchiveMounts(repoId int, states map[int]*MountState) {
 }
 
 func (s *State) GetRepoMount(id int) MountState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if state, ok := s.repoMounts[id]; ok {
 		return *state
 	}
@@ -598,9 +619,6 @@ func (s *State) GetRepoMount(id int) MountState {
 }
 
 func (s *State) GetArchiveMounts(repoId int) (states map[int]MountState) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	states = make(map[int]MountState)
 	for rId, state := range s.archiveMounts {
 		if rId == repoId {
@@ -610,4 +628,48 @@ func (s *State) GetArchiveMounts(repoId int) (states map[int]MountState) {
 		}
 	}
 	return states
+}
+
+/***********************************/
+/********** Backup Button **********/
+/***********************************/
+
+func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
+	// If the repository is locked, we can't do anything
+	if rs, ok := s.repoStates[id.RepositoryId]; ok {
+		if rs.Status == RepoStatusLocked {
+			return BackupButtonStatusLocked
+		}
+	}
+
+	// If the repository or any of it's archives is mounted, we have to unmount it before doing anything
+	if repoMount := s.GetRepoMount(id.RepositoryId); repoMount.IsMounted {
+		return BackupButtonStatusUnmount
+	}
+	if archiveMounts := s.GetArchiveMounts(id.RepositoryId); len(archiveMounts) > 0 {
+		for _, state := range archiveMounts {
+			if state.IsMounted {
+				return BackupButtonStatusUnmount
+			}
+		}
+	}
+
+	bs := s.GetBackupState(id)
+	switch bs.Status {
+	case BackupStatusWaiting:
+		return BackupButtonStatusWaiting
+	case BackupStatusRunning:
+		return BackupButtonStatusAbort
+	case BackupStatusIdle, BackupStatusCompleted, BackupStatusCancelled, BackupStatusFailed:
+		if rs, ok := s.repoStates[id.RepositoryId]; ok {
+			if rs.Status != RepoStatusIdle {
+				// If the repository is busy from another backup profile, we can't do anything
+				return BackupButtonStatusBusy
+			}
+		}
+		return BackupButtonStatusRunBackup
+	default:
+		// If we are here, we probably missed a case or introduced a horrible bug
+		return BackupButtonStatusRunBackup
+	}
 }
