@@ -50,6 +50,7 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().
 		WithBackupSchedule().
+		WithRepositories().
 		All(b.ctx)
 }
 

@@ -4,7 +4,6 @@ import (
 	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/ent"
-	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
@@ -20,18 +19,6 @@ func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
 func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		WithBackupProfiles(func(query *ent.BackupProfileQuery) {
-			query.Where(backupprofile.And(
-				backupprofile.ID(bId.BackupProfileId)),
-				backupprofile.HasRepositoriesWith(repository.ID(bId.RepositoryId)),
-			)
-		}).
-		WithArchives(func(query *ent.ArchiveQuery) {
-			query.Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			))
-		}).
 		WithFailedBackupRuns(func(query *ent.FailedBackupRunQuery) {
 			query.Where(failedbackuprun.And(
 				failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
