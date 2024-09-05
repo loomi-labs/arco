@@ -112,11 +112,8 @@ getRepos();
           <div v-for='(backup, index) in backups' :key='index'
                class='carousel-item w-1/3'
                :id='`backup-profile-${index}`'>
-            <BackupCard :backup='backup' class='mx-4'
-                        :class='{
-                          "ml-0": index === indexOfFirstVisibleBackup,
-                          "mr-0": index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1
-                        }'>
+            <BackupCard :backup='backup' class=''
+                        :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'>
             </BackupCard>
           </div>
         </div>
