@@ -175,6 +175,10 @@ func (b *BackupClient) GetBackupButtonState(bId types.BackupId) state.BackupButt
 	return b.state.GetBackupButtonStatus(bId)
 }
 
+func (b *BackupClient) GetBackupAllButtonState(bId types.BackupId) state.BackupButtonStatus {
+	return b.state.GetBackupButtonStatus(bId)
+}
+
 /***********************************/
 /********** Backup Schedule ********/
 /***********************************/
