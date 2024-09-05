@@ -9,7 +9,7 @@ import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
 import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { getBadgeStyle } from "../common/badge";
+import { toDurationBadge } from "../common/badge";
 import { useToast } from "vue-toastification";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { useI18n } from "vue-i18n";
@@ -321,7 +321,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
           <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-          <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>

@@ -5,7 +5,7 @@ import { diffDays, diffHours, offset, removeOffset } from "@formkit/tempo";
  * Returns the style for a badge based on the difference between the current date and the given date.
  * @param date The date to compare with the current date.
  */
-export function getBadgeStyle(date: Date | undefined): string {
+export function toDurationBadge(date: Date | undefined): string {
   if (!date) {
     return "";
   }

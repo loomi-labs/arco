@@ -8,7 +8,7 @@ import { showAndLogError } from "../common/error";
 import { ref } from "vue";
 import { rDataDetailPage, withId } from "../router";
 import { useRouter } from "vue-router";
-import { getBadgeStyle } from "../common/badge";
+import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
 
 /************
@@ -100,7 +100,7 @@ getLastArchives();
               <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-            <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{
+            <span :class='toDurationBadge(lastArchive?.createdAt)'>{{
                 toRelativeTimeString(lastArchive.createdAt)
               }}</span>
           </span>
