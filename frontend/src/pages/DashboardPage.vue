@@ -133,11 +133,11 @@ onUnmounted(() => {
 
         <div
           class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
-          <button class='btn btn-circle btn-primary pointer-events-auto'
+          <button class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
                   :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
                   @click='slideToBackupProfile({prev: true})'>❮
           </button>
-          <button class='btn btn-circle btn-primary pointer-events-auto'
+          <button class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
                   :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfBackupCardsPerPage? "visible" : "hidden"};`'
                   @click='slideToBackupProfile({next: true})'>❯
           </button>
