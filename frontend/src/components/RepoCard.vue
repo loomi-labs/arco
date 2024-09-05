@@ -312,7 +312,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
 
 <template>
   <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "hover:bg-base-100/50": showHover }'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "cursor-pointer hover:bg-base-100/50": showHover && !props.highlight }'
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
@@ -344,7 +344,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
           <button class='btn btn-circle p-4 m-0 w-16 h-16'
                   :class='getButtonColor()'
                   :disabled='getButtonDisabled()'
-                  @click='runButtonAction()'
+                  @click.stop='runButtonAction()'
           >{{ getButtonText() }}
           </button>
         </div>

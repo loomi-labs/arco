@@ -7,8 +7,10 @@ import DataDetailPage from "./pages/DataDetailPage.vue";
 import RepositoryPage from "./pages/RepositoryPage.vue";
 import RepositoryDetailPage from "./pages/RepositoryDetailPage.vue";
 import ErrorPage from "./pages/ErrorPage.vue";
+import DashboardPage from "./pages/DashboardPage.vue";
 
 export const rWelcomePage = '/'
+export const rDashboardPage = '/dashboard'
 export const rErrorPage = '/error'
 export const rAddBackupPage = '/add-backup'
 export const rDataPage = '/data'
@@ -18,6 +20,7 @@ export const rRepositoryDetailPage = '/repository/:id'
 
 const routes: RouteRecordRaw[] = [
   { path: rWelcomePage, component: WelcomePage },
+  { path: rDashboardPage, component: DashboardPage },
   { path: rErrorPage, component: ErrorPage },
   { path: rAddBackupPage, component: AddBackup },
   { path: rDataPage, component: DataPage },

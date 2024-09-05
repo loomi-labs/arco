@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { rAddBackupPage, rDataPage, rRepositoryPage, rWelcomePage } from "../router";
+import { rAddBackupPage, rDashboardPage, rDataPage, rRepositoryPage, rWelcomePage } from "../router";
 import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
@@ -56,7 +56,8 @@ onMounted(() => {
       <div class='flex-grow'></div>
       <button class='btn btn-neutral' @click='router.push(rWelcomePage)'>Welcome</button>
       <button class='btn btn-neutral' @click='router.push(rAddBackupPage)'>Add Backup</button>
-      <button class='btn btn-neutral' @click='router.push(rDataPage)'>Data</button>
+      <button class='btn btn-neutral' @click='router.push(rDataPage)'>Old Data</button>
+      <button class='btn btn-neutral' @click='router.push(rDashboardPage)'>Dashboard</button>
       <button class='btn btn-neutral' @click='router.push(rRepositoryPage)'>Repository</button>
       <button class='btn btn-neutral' @click='hide()'>Hide</button>
 
