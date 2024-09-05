@@ -3,7 +3,7 @@ import { useRouter } from "vue-router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import BackupCard from "../components/BackupCard.vue";
@@ -21,11 +21,10 @@ interface Slide {
  * Variables
  ************/
 
-const nbrOfBackupCardsPerPage = 3;
-
 const router = useRouter();
 const backups = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
+const nbrOfBackupCardsPerPage = ref(2);
 const indexOfFirstVisibleBackup = ref(0);
 
 /************
@@ -35,8 +34,6 @@ const indexOfFirstVisibleBackup = ref(0);
 async function getBackupProfiles() {
   try {
     backups.value = await backupClient.GetBackupProfiles();
-    // TODO: remove this filter
-    backups.value = backups.value.filter((b) => b.isSetupComplete);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profiles", error);
   }
@@ -54,7 +51,7 @@ function slideToBackupProfile(slide: Slide) {
   let newCard = 0;
   if (slide.next) {
     // Return if we are out of bounds
-    if (indexOfFirstVisibleBackup.value === backups.value.length - nbrOfBackupCardsPerPage) {
+    if (indexOfFirstVisibleBackup.value === backups.value.length - nbrOfBackupCardsPerPage.value) {
       return;
     }
 
@@ -64,7 +61,7 @@ function slideToBackupProfile(slide: Slide) {
     // | Backup Card |  | Backup Card |  | Backup Card |  |   ...
     // +-------------+  +-------------+  +-------------+  +-- ...
     // index + nbrOfBackupCardsPerPage = newCard
-    newCard = indexOfFirstVisibleBackup.value + nbrOfBackupCardsPerPage;
+    newCard = indexOfFirstVisibleBackup.value + nbrOfBackupCardsPerPage.value;
 
     indexOfFirstVisibleBackup.value++;
   } else if (slide.prev) {
@@ -90,6 +87,14 @@ function slideToBackupProfile(slide: Slide) {
   }
 }
 
+function updateNbrOfBackupCardsPerPage() {
+  const screenWidth = window.innerWidth;
+  if (screenWidth >= 1280) { // xl breakpoint
+    nbrOfBackupCardsPerPage.value = 3;
+  } else {
+    nbrOfBackupCardsPerPage.value = 2;
+  }
+}
 
 /************
  * Lifecycle
@@ -98,6 +103,15 @@ function slideToBackupProfile(slide: Slide) {
 getBackupProfiles();
 getRepos();
 
+onMounted(() => {
+  updateNbrOfBackupCardsPerPage();
+  window.addEventListener("resize", updateNbrOfBackupCardsPerPage);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updateNbrOfBackupCardsPerPage);
+});
+
 </script>
 
 <template>
@@ -105,12 +119,11 @@ getRepos();
   <div class='bg-base-200'>
     <div class='container text-left mx-auto pt-10'>
       <h1 class='text-4xl font-bold'>Backups</h1>
-
       <div class='group/carousel relative pt-4'>
         <div class='carousel w-full'>
           <!-- Backup Card -->
           <div v-for='(backup, index) in backups' :key='index'
-               class='carousel-item w-1/3'
+               class='carousel-item w-1/2 xl:w-1/3'
                :id='`backup-profile-${index}`'>
             <BackupCard :backup='backup' class=''
                         :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'>
