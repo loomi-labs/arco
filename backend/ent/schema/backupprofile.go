@@ -41,6 +41,7 @@ func (BackupProfile) Edges() []ent.Edge {
 			StructTag(`json:"backupSchedule,omitempty"`).
 			Unique(),
 		edge.From("failed_backup_runs", FailedBackupRun.Type).
+			StructTag(`json:"failedBackupRuns,omitempty"`).
 			Ref("backup_profile"),
 	}
 }

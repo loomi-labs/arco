@@ -43,7 +43,7 @@ type BackupProfileEdges struct {
 	// BackupSchedule holds the value of the backup_schedule edge.
 	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
 	// FailedBackupRuns holds the value of the failed_backup_runs edge.
-	FailedBackupRuns []*FailedBackupRun `json:"failed_backup_runs,omitempty"`
+	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [4]bool
