@@ -167,16 +167,32 @@ func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
 	return nil
 }
 
+func (b *BackupClient) AbortBackupJobs(bIds []types.BackupId) error {
+	for _, bId := range bIds {
+		if b.state.GetBackupState(bId).Status == state.BackupStatusRunning {
+			err := b.AbortBackupJob(bId)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (b *BackupClient) GetState(bId types.BackupId) state.BackupState {
 	return b.state.GetBackupState(bId)
 }
 
-func (b *BackupClient) GetBackupButtonState(bId types.BackupId) state.BackupButtonStatus {
+func (b *BackupClient) GetBackupButtonStatus(bId types.BackupId) state.BackupButtonStatus {
 	return b.state.GetBackupButtonStatus(bId)
 }
 
-func (b *BackupClient) GetBackupAllButtonState(bId types.BackupId) state.BackupButtonStatus {
-	return b.state.GetBackupButtonStatus(bId)
+func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) borg.BackupProgress {
+	return b.state.GetCombinedBackupProgress(bIds)
+}
+
+func (b *BackupClient) GetCombinedBackupButtonStatus(bIds []types.BackupId) state.BackupButtonStatus {
+	return b.state.GetCombinedBackupButtonStatus(bIds)
 }
 
 /***********************************/
