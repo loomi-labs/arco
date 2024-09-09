@@ -55,7 +55,7 @@ async function getBackupProfile() {
 
 async function deleteBackupProfile() {
   try {
-    await backupClient.DeleteBackupProfile(backup.value.id, true);
+    await backupClient.DeleteBackupProfile(backup.value.id, false);
     await toast.success("Backup profile deleted");
     await router.push(rDashboardPage);
   } catch (error: any) {

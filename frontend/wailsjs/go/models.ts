@@ -240,7 +240,7 @@ export namespace ent {
 	    repositories?: Repository[];
 	    archives?: Archive[];
 	    backupSchedule?: BackupSchedule;
-	    failed_backup_runs?: FailedBackupRun[];
+	    failedBackupRuns?: FailedBackupRun[];
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupProfileEdges(source);
@@ -251,7 +251,7 @@ export namespace ent {
 	        this.repositories = this.convertValues(source["repositories"], Repository);
 	        this.archives = this.convertValues(source["archives"], Archive);
 	        this.backupSchedule = this.convertValues(source["backupSchedule"], BackupSchedule);
-	        this.failed_backup_runs = this.convertValues(source["failed_backup_runs"], FailedBackupRun);
+	        this.failedBackupRuns = this.convertValues(source["failedBackupRuns"], FailedBackupRun);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -483,6 +483,14 @@ export namespace ent {
 
 export namespace state {
 	
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
+	}
 	export enum BackupStatus {
 	    idle = "idle",
 	    waiting = "waiting",
@@ -499,14 +507,6 @@ export namespace state {
 	    mounted = "mounted",
 	    performingOperation = "performingOperation",
 	    locked = "locked",
-	}
-	export enum BackupButtonStatus {
-	    runBackup = "runBackup",
-	    waiting = "waiting",
-	    abort = "abort",
-	    locked = "locked",
-	    unmount = "unmount",
-	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;

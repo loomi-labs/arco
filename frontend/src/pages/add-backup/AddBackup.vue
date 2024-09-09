@@ -74,7 +74,8 @@ async function createBackupProfile() {
   try {
     LogDebug("Creating backup profile");
     // Create a new backup profile
-    backupProfile.value = await backupClient.NewBackupProfile();
+    // backupProfile.value = await backupClient.NewBackupProfile();
+    backupProfile.value = ent.BackupProfile.createFrom();
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
   }

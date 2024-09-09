@@ -7,6 +7,8 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import BackupCard from "../components/BackupCard.vue";
+import { PlusCircleIcon } from "@heroicons/vue/24/solid";
+import { rAddBackupPage } from "../router";
 
 /************
  * Types
@@ -51,7 +53,7 @@ function slideToBackupProfile(slide: Slide) {
   let newCard = 0;
   if (slide.next) {
     // Return if we are out of bounds
-    if (indexOfFirstVisibleBackup.value === backups.value.length - nbrOfBackupCardsPerPage.value) {
+    if (indexOfFirstVisibleBackup.value === backups.value.length - nbrOfBackupCardsPerPage.value + 1) {
       return;
     }
 
@@ -129,17 +131,30 @@ onUnmounted(() => {
                         :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'>
             </BackupCard>
           </div>
+          <div class='carousel-item w-1/2 xl:w-1/3'
+               :id='`backup-profile-${backups.length}`'>
+            <div
+              class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
+                      border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
+              @click='router.push(rAddBackupPage)'
+              >
+              <PlusCircleIcon class='size-12' />
+              <div class='pl-2 text-lg font-semibold'>Add Backup</div>
+            </div>
+          </div>
         </div>
 
         <div
           class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
-          <button class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-                  :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
-                  @click='slideToBackupProfile({prev: true})'>❮
+          <button
+            class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+            :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
+            @click='slideToBackupProfile({prev: true})'>❮
           </button>
-          <button class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-                  :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfBackupCardsPerPage? "visible" : "hidden"};`'
-                  @click='slideToBackupProfile({next: true})'>❯
+          <button
+            class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+            :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfBackupCardsPerPage + 1? "visible" : "hidden"};`'
+            @click='slideToBackupProfile({next: true})'>❯
           </button>
         </div>
       </div>
