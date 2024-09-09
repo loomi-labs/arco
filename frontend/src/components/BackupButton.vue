@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { state } from "../../wailsjs/go/models";
+import { borg, state } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
 
 /************
@@ -8,8 +8,8 @@ import { useI18n } from "vue-i18n";
  ************/
 
 export interface Props {
-  backupState: state.BackupState;
-  buttonStatus: state.BackupButtonStatus;
+  backupProgress?: borg.BackupProgress;
+  buttonStatus?: state.BackupButtonStatus;
 }
 
 /************
@@ -30,11 +30,11 @@ const { t } = useI18n();
  ************/
 
 function getProgressValue(): number {
-  const progress = props.backupState.progress;
-  if (props.backupState.status !== state.BackupStatus.running) {
+  const progress = props.backupProgress;
+  if (!progress) {
     return 100;
   }
-  if (!progress || progress.totalFiles === 0) {
+  if (progress.totalFiles === 0) {
     return 0;
   }
   return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
@@ -96,7 +96,7 @@ function getButtonDisabled() {
 </script>
 
 <template>
-  <div class='stack'>
+  <div v-if='buttonStatus' class='stack'>
     <div class='flex items-center justify-center w-[94px] h-[94px]'>
       <button class='btn btn-circle p-4 m-0 w-16 h-16'
               :class='getButtonColor()'
@@ -113,6 +113,9 @@ function getButtonDisabled() {
         role='progressbar'>
       </div>
     </div>
+  </div>
+  <div v-else>
+    <span class="loading loading-ring w-[94px] h-[94px]"></span>
   </div>
 </template>
 

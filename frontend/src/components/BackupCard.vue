@@ -1,15 +1,19 @@
 <script setup lang='ts'>
 import { useI18n } from "vue-i18n";
-import { HomeIcon, ShieldCheckIcon, NoSymbolIcon } from "@heroicons/vue/24/solid";
-import { ent, types } from "../../wailsjs/go/models";
+import { HomeIcon, NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
+import { borg, ent, state, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
-import { ref } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { rDataDetailPage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import { LogDebug } from "../../wailsjs/runtime";
+import BackupButton from "./BackupButton.vue";
+import { polling } from "../common/polling";
 
 /************
  * Types
@@ -29,6 +33,18 @@ const { t } = useI18n();
 const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
+
+const defaultPollInterval = 1000; // 1 second
+const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
+const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
+
+const bIds = props.backup.edges?.repositories?.map((r) => {
+  const backupId = types.BackupId.createFrom();
+  backupId.backupProfileId = props.backup.id;
+  backupId.repositoryId = r.id;
+  return backupId;
+}) ?? [];
+let pollBackupProgressIntervalId = <any | undefined>undefined;  // poll interval ID for backup progress (undefined = not polling)
 
 /************
  * Functions
@@ -73,12 +89,81 @@ async function getLastArchives() {
   }
 }
 
+async function getButtonStatus() {
+  try {
+    buttonStatus.value = await backupClient.GetCombinedBackupButtonStatus(bIds);
+    if (buttonStatus.value === state.BackupButtonStatus.abort) {
+      backupProgress.value = await backupClient.GetCombinedBackupProgress(bIds);
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup state", error);
+  }
+}
+
+async function getBackupProgress() {
+  try {
+    backupProgress.value = await backupClient.GetCombinedBackupProgress(bIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup progress", error);
+  }
+}
+
+async function runBackups() {
+  try {
+    await backupClient.StartBackupJobs(props.backup.id);
+  } catch (error: any) {
+    await showAndLogError("Failed to run backup", error);
+  }
+}
+
+async function abortBackups() {
+  try {
+    await backupClient.AbortBackupJobs(bIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to run backup", error);
+  }
+}
+
+async function runButtonAction() {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+    await runBackups();
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    await abortBackups();
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+    // TODO: FIX THIS
+    LogDebug("locked button");
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+    // TODO: FIX THIS
+    LogDebug("unmount button");
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
 getFailedBackupRun();
 getLastArchives();
+getButtonStatus();
+
+watch(buttonStatus, async () => {
+  if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    pollBackupProgressIntervalId = setInterval(getBackupProgress, polling.fastPollInterval);
+  } else {
+    clearInterval(pollBackupProgressIntervalId);
+    pollBackupProgressIntervalId = undefined;
+    backupProgress.value = undefined;
+  }
+
+  await getFailedBackupRun();
+  await getLastArchives();
+});
+
+// poll for button status
+let buttonStatusPollInterval = setInterval(getButtonStatus, defaultPollInterval);
+onUnmounted(() => clearInterval(buttonStatusPollInterval));
+
+onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
 
 </script>
 
@@ -123,28 +208,15 @@ getLastArchives();
           </div>
           <div>
             <ul>
-              <li v-for='(repo, index) in props.backup.edges?.repositories ?? []' :key='index' class='badge badge-outline mx-1'>
+              <li v-for='(repo, index) in props.backup.edges?.repositories ?? []' :key='index'
+                  class='badge badge-outline mx-1'>
                 {{ repo.name }}
               </li>
             </ul>
           </div>
         </div>
       </div>
-      <!-- Button -->
-      <div class='stack'>
-        <div class='flex items-center justify-center w-[94px] h-[94px]'>
-          <button class='btn btn-circle p-4 m-0 w-16 h-16'
-          >The Button
-          </button>
-        </div>
-        <div class='relative'>
-          <div
-            class='radial-progress absolute bottom-[2px] left-0'
-            :style='`--value:100; --size:95px; --thickness: 6px;`'
-            role='progressbar'>
-          </div>
-        </div>
-      </div>
+      <BackupButton :button-status='buttonStatus' :backup-progress='backupProgress' @click='runButtonAction' />
     </div>
   </div>
 

@@ -12,6 +12,7 @@ import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import BackupButton from "./BackupButton.vue";
+import { polling } from "../common/polling";
 
 /************
  * Types
@@ -47,12 +48,10 @@ const failedBackupRun = ref<string | undefined>(undefined);
 
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
-const defaultPollInterval = 1000; // 1 second
-const pollInterval = ref(defaultPollInterval);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const showRemoveLockDialog = ref(false);
-const buttonStatus = ref<state.BackupButtonStatus>(state.BackupButtonStatus.runBackup);
+const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const showProgressSpinner = ref(false);
 
 /************
@@ -143,7 +142,7 @@ async function getBackupState() {
 
 async function getBackupButtonStatus() {
   try {
-    buttonStatus.value = await backupClient.GetBackupButtonState(backupId);
+    buttonStatus.value = await backupClient.GetBackupButtonStatus(backupId);
   } catch (error: any) {
     await showAndLogError("Failed to get backup button state", error);
   }
@@ -189,20 +188,16 @@ watch(backupState, async (newState, oldState) => {
     return;
   }
 
-  if (newState.status === state.BackupStatus.running) {
-    // increase poll interval when backup is running
-    pollInterval.value = 200;   // 200ms
-  } else {
-    // reset poll interval otherwise
-    pollInterval.value = defaultPollInterval;
-  }
-
   await getRepo();
   await getBackupButtonStatus();
 
   // set next poll interval
-  clearInterval(backupStatePollInterval);
-  backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
+  clearInterval(backupStatePollIntervalId);
+  backupStatePollIntervalId = setInterval(getBackupState,
+    newState.status === state.BackupStatus.running ?
+      polling.fastPollInterval :  // fast poll interval when backup is running
+      polling.normalPollInterval  // normal poll interval otherwise
+  );
 });
 
 // emit repoIsBusy event when repo is busy
@@ -220,12 +215,12 @@ watch(repoState, async (newState, oldState) => {
 });
 
 // poll for backup state
-let backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
-onUnmounted(() => clearInterval(backupStatePollInterval));
+let backupStatePollIntervalId = setInterval(getBackupState, polling.normalPollInterval);
+onUnmounted(() => clearInterval(backupStatePollIntervalId));
 
 // poll for repo state
-let repoStatePollInterval = setInterval(getRepoState, defaultPollInterval);
-onUnmounted(() => clearInterval(repoStatePollInterval));
+let repoStatePollIntervalId = setInterval(getRepoState, polling.normalPollInterval);
+onUnmounted(() => clearInterval(repoStatePollIntervalId));
 
 </script>
 
@@ -257,7 +252,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         </button>
       </div>
 
-      <BackupButton :button-status='buttonStatus' :backup-state='backupState' @click='runButtonAction' />
+      <BackupButton :button-status='buttonStatus' :backup-progress='backupState.progress' @click='runButtonAction' />
     </div>
   </div>
   <div v-if='showProgressSpinner'

@@ -493,12 +493,20 @@ export namespace state {
 	}
 	export enum RepoStatus {
 	    idle = "idle",
-	    backing_up = "backing_up",
+	    backingUp = "backingUp",
 	    pruning = "pruning",
 	    deleting = "deleting",
 	    mounted = "mounted",
-	    performing_operation = "performing_operation",
+	    performingOperation = "performingOperation",
 	    locked = "locked",
+	}
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;

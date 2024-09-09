@@ -6,6 +6,10 @@ export function AbortBackupJob(arg1) {
   return window['go']['app']['BackupClient']['AbortBackupJob'](arg1);
 }
 
+export function AbortBackupJobs(arg1) {
+  return window['go']['app']['BackupClient']['AbortBackupJobs'](arg1);
+}
+
 export function DeleteBackupProfile(arg1, arg2) {
   return window['go']['app']['BackupClient']['DeleteBackupProfile'](arg1, arg2);
 }
@@ -22,12 +26,24 @@ export function DryRunPruneBackups(arg1) {
   return window['go']['app']['BackupClient']['DryRunPruneBackups'](arg1);
 }
 
+export function GetBackupButtonStatus(arg1) {
+  return window['go']['app']['BackupClient']['GetBackupButtonStatus'](arg1);
+}
+
 export function GetBackupProfile(arg1) {
   return window['go']['app']['BackupClient']['GetBackupProfile'](arg1);
 }
 
 export function GetBackupProfiles() {
   return window['go']['app']['BackupClient']['GetBackupProfiles']();
+}
+
+export function GetCombinedBackupButtonStatus(arg1) {
+  return window['go']['app']['BackupClient']['GetCombinedBackupButtonStatus'](arg1);
+}
+
+export function GetCombinedBackupProgress(arg1) {
+  return window['go']['app']['BackupClient']['GetCombinedBackupProgress'](arg1);
 }
 
 export function GetDirectorySuggestions() {
