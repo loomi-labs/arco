@@ -10,6 +10,7 @@ import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
 import { rAddBackupPage } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -18,6 +19,8 @@ import RepoCardSimple from "../components/RepoCardSimple.vue";
 interface Slide {
   next?: boolean;
   prev?: boolean;
+  backup?: boolean;
+  repo?: boolean;
 }
 
 /************
@@ -27,7 +30,7 @@ interface Slide {
 const router = useRouter();
 const backups = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
-const nbrOfBackupCardsPerPage = ref(2);
+const nbrOfCardsPerPage = ref(2);
 const indexOfFirstVisibleBackup = ref(0);
 const indexOfFirstVisibleRepo = ref(0);
 
@@ -52,51 +55,52 @@ async function getRepos() {
 }
 
 function slideToBackupProfile(slide: Slide) {
+  const indexOfFirstCard = slide.backup ? indexOfFirstVisibleBackup : indexOfFirstVisibleRepo;
   let newCard = 0;
   if (slide.next) {
     // Return if we are out of bounds
-    if (indexOfFirstVisibleBackup.value === backups.value.length - nbrOfBackupCardsPerPage.value + 1) {
+    if (indexOfFirstCard.value === backups.value.length - nbrOfCardsPerPage.value + 1) {
       return;
     }
 
-    // <------------------- Visible ------------------->
-    //     <index>                                        <next card>
-    // +-------------+  +-------------+  +-------------+  +-- ...
-    // | Backup Card |  | Backup Card |  | Backup Card |  |   ...
-    // +-------------+  +-------------+  +-------------+  +-- ...
-    // index + nbrOfBackupCardsPerPage = newCard
-    newCard = indexOfFirstVisibleBackup.value + nbrOfBackupCardsPerPage.value;
+    // <------------------- Visible --------------------------->
+    // <indexOfFirstCard>                                        <next card>
+    // +----------------+  +----------------+ +----------------+ +-- ...
+    // |      Card      |  |      Card      | |      Card      | |   ...
+    // +----------------+  +----------------+ +----------------+ +-- ...
+    // indexOfFirstCard + nbrOfCardsPerPage = newCard
+    newCard = indexOfFirstCard.value + nbrOfCardsPerPage.value;
 
-    indexOfFirstVisibleBackup.value++;
+    indexOfFirstCard.value++;
   } else if (slide.prev) {
     // Return if we are out of bounds
-    if (indexOfFirstVisibleBackup.value === 0) {
+    if (indexOfFirstCard.value === 0) {
       return;
     }
 
-    //                   <------------------- Visible ------------------->
-    //      <prev card>      <index>
-    //          ... --+  +-------------+  +-------------+  +-------------+
-    //          ...   |  | Backup Card |  | Backup Card |  | Backup Card |
-    //          ... --+  +-------------+  +-------------+  +-------------+
-    // index - 1 = newCard
-    newCard = indexOfFirstVisibleBackup.value - 1;
+    //                   <------------------- Visible --------------------------->
+    //      <prev card>  <indexOfFirstCard>
+    //          ... --+  +----------------+  +----------------+ +----------------+
+    //          ...   |  |      Card      |  |      Card      | |      Card      |
+    //          ... --+  +----------------+  +----------------+ +----------------+
+    // indexOfFirstCard - 1 = newCard
+    newCard = indexOfFirstCard.value - 1;
 
-    indexOfFirstVisibleBackup.value--;
+    indexOfFirstCard.value--;
   }
 
-  const backupProfile = document.getElementById(`backup-profile-${newCard}`);
-  if (backupProfile) {
-    backupProfile.scrollIntoView({ behavior: "smooth" });
+  const elementById = document.getElementById(slide.backup ? `backup-profile-${newCard}` : `repository-${newCard}`);
+  if (elementById) {
+    elementById.scrollIntoView({ behavior: "smooth" });
   }
 }
 
-function updateNbrOfBackupCardsPerPage() {
+function updateNbrOfCardsPerPage() {
   const screenWidth = window.innerWidth;
   if (screenWidth >= 1280) { // xl breakpoint
-    nbrOfBackupCardsPerPage.value = 3;
+    nbrOfCardsPerPage.value = 3;
   } else {
-    nbrOfBackupCardsPerPage.value = 2;
+    nbrOfCardsPerPage.value = 2;
   }
 }
 
@@ -108,12 +112,12 @@ getBackupProfiles();
 getRepos();
 
 onMounted(() => {
-  updateNbrOfBackupCardsPerPage();
-  window.addEventListener("resize", updateNbrOfBackupCardsPerPage);
+  updateNbrOfCardsPerPage();
+  window.addEventListener("resize", updateNbrOfCardsPerPage);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", updateNbrOfBackupCardsPerPage);
+  window.removeEventListener("resize", updateNbrOfCardsPerPage);
 });
 
 </script>
@@ -131,7 +135,7 @@ onUnmounted(() => {
                class='carousel-item w-1/2 xl:w-1/3'
                :id='`backup-profile-${index}`'>
             <BackupCard :backup='backup'
-                        :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'>
+                        :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'>
             </BackupCard>
           </div>
           <!-- Add Backup Card -->
@@ -154,12 +158,12 @@ onUnmounted(() => {
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
             :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
-            @click='slideToBackupProfile({prev: true})'>❮
+            @click='slideToBackupProfile({prev: true, backup: true})'>❮
           </button>
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-            :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfBackupCardsPerPage + 1? "visible" : "hidden"};`'
-            @click='slideToBackupProfile({next: true})'>❯
+            :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
+            @click='slideToBackupProfile({next: true, backup: true})'>❯
           </button>
         </div>
       </div>
@@ -174,9 +178,36 @@ onUnmounted(() => {
                  class='carousel-item w-1/2 xl:w-1/3'
                  :id='`repository-${index}`'>
               <RepoCardSimple :repo='repo'
-                              :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'
+                              :class='index === indexOfFirstVisibleRepo + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
               ></RepoCardSimple>
             </div>
+            <!-- Add Repository Card -->
+            <div class='carousel-item w-1/2 xl:w-1/3'
+                 :id='`repository-${repos.length}`'>
+              <div
+                class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
+                        border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
+                @click='LogDebug("Add Repository clicked")'
+              >
+                <PlusCircleIcon class='size-12' />
+                <div class='pl-2 text-lg font-semibold'>Add Repository</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carousel Controls -->
+          <div
+            class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
+            <button
+              class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+              :style='`visibility: ${indexOfFirstVisibleRepo === 0 ? "hidden" : "visible"};`'
+              @click='slideToBackupProfile({prev: true, repo: true})'>❮
+            </button>
+            <button
+              class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+              :style='`visibility: ${indexOfFirstVisibleRepo < repos.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
+              @click='slideToBackupProfile({next: true, repo: true})'>❯
+            </button>
           </div>
         </div>
       </div>
