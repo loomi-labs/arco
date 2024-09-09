@@ -9,6 +9,7 @@ import Navbar from "../components/Navbar.vue";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
 import { rAddBackupPage } from "../router";
+import RepoCardSimple from "../components/RepoCardSimple.vue";
 
 /************
  * Types
@@ -28,6 +29,7 @@ const backups = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
 const nbrOfBackupCardsPerPage = ref(2);
 const indexOfFirstVisibleBackup = ref(0);
+const indexOfFirstVisibleRepo = ref(0);
 
 /************
  * Functions
@@ -118,7 +120,8 @@ onUnmounted(() => {
 
 <template>
   <Navbar></Navbar>
-  <div class='bg-base-200'>
+  <div class='bg-base-200 w-screen h-screen'>
+    <!-- Backups -->
     <div class='container text-left mx-auto pt-10'>
       <h1 class='text-4xl font-bold'>Backups</h1>
       <div class='group/carousel relative pt-4'>
@@ -127,23 +130,25 @@ onUnmounted(() => {
           <div v-for='(backup, index) in backups' :key='index'
                class='carousel-item w-1/2 xl:w-1/3'
                :id='`backup-profile-${index}`'>
-            <BackupCard :backup='backup' class=''
+            <BackupCard :backup='backup'
                         :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'>
             </BackupCard>
           </div>
+          <!-- Add Backup Card -->
           <div class='carousel-item w-1/2 xl:w-1/3'
                :id='`backup-profile-${backups.length}`'>
             <div
               class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
                       border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
               @click='router.push(rAddBackupPage)'
-              >
+            >
               <PlusCircleIcon class='size-12' />
               <div class='pl-2 text-lg font-semibold'>Add Backup</div>
             </div>
           </div>
         </div>
 
+        <!-- Carousel Controls -->
         <div
           class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
           <button
@@ -156,6 +161,23 @@ onUnmounted(() => {
             :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfBackupCardsPerPage + 1? "visible" : "hidden"};`'
             @click='slideToBackupProfile({next: true})'>❯
           </button>
+        </div>
+      </div>
+
+      <!-- Repositories -->
+      <div class='container text-left mx-auto pt-10'>
+        <h1 class='text-4xl font-bold'>Repositories</h1>
+        <div class='group/carousel relative pt-4'>
+          <div class='carousel w-full'>
+            <!-- Repository Card -->
+            <div v-for='(repo, index) in repos' :key='index'
+                 class='carousel-item w-1/2 xl:w-1/3'
+                 :id='`repository-${index}`'>
+              <RepoCardSimple :repo='repo'
+                              :class='index === indexOfFirstVisibleBackup + nbrOfBackupCardsPerPage -1 ? "mr-0" : "mr-8"'
+              ></RepoCardSimple>
+            </div>
+          </div>
         </div>
       </div>
     </div>

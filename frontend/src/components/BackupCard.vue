@@ -59,8 +59,8 @@ async function getFailedBackupRun() {
       const repo = await repoClient.GetByBackupId(backupId);
 
       // We only care about the first failed backup run
-      if (repo.edges.failed_backup_runs?.length) {
-        failedBackupRun.value = repo.edges.failed_backup_runs?.[0]?.error;
+      if (repo.edges.failedBackupRuns?.length) {
+        failedBackupRun.value = repo.edges.failedBackupRuns?.[0]?.error;
         return;
       }
     } catch (error: any) {
@@ -77,7 +77,7 @@ async function getLastArchives() {
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
       const archive = await repoClient.GetLastArchive(backupId);
-      if (archive.id) {
+      if (archive?.id) {
         if (!newLastArchive || isAfter(archive.createdAt, newLastArchive.createdAt)) {
           newLastArchive = archive;
         }
