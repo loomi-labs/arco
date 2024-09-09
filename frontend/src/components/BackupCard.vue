@@ -34,7 +34,6 @@ const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 
-const defaultPollInterval = 1000; // 1 second
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
 
@@ -44,6 +43,7 @@ const bIds = props.backup.edges?.repositories?.map((r) => {
   backupId.repositoryId = r.id;
   return backupId;
 }) ?? [];
+let buttonStatusPollIntervalId = <any | undefined>undefined;  // poll interval ID for button status (undefined = not polling)
 let pollBackupProgressIntervalId = <any | undefined>undefined;  // poll interval ID for backup progress (undefined = not polling)
 
 /************
@@ -92,9 +92,6 @@ async function getLastArchives() {
 async function getButtonStatus() {
   try {
     buttonStatus.value = await backupClient.GetCombinedBackupButtonStatus(bIds);
-    if (buttonStatus.value === state.BackupButtonStatus.abort) {
-      backupProgress.value = await backupClient.GetCombinedBackupProgress(bIds);
-    }
   } catch (error: any) {
     await showAndLogError("Failed to get backup state", error);
   }
@@ -148,8 +145,20 @@ getButtonStatus();
 
 watch(buttonStatus, async () => {
   if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    // Abort status means we are running a backup
+    // That's why we want fast polling
+    clearInterval(buttonStatusPollIntervalId);
+    buttonStatusPollIntervalId = setInterval(getButtonStatus, polling.fastPollInterval);
+
+    // We also want to poll for backup progress
     pollBackupProgressIntervalId = setInterval(getBackupProgress, polling.fastPollInterval);
   } else {
+    // Every other status means we are not running a backup
+    // That's why we want normal polling
+    clearInterval(buttonStatusPollIntervalId);
+    buttonStatusPollIntervalId = setInterval(getButtonStatus, polling.normalPollInterval);
+
+    // Stop polling for backup progress
     clearInterval(pollBackupProgressIntervalId);
     pollBackupProgressIntervalId = undefined;
     backupProgress.value = undefined;
@@ -159,9 +168,8 @@ watch(buttonStatus, async () => {
   await getLastArchives();
 });
 
-// poll for button status
-let buttonStatusPollInterval = setInterval(getButtonStatus, defaultPollInterval);
-onUnmounted(() => clearInterval(buttonStatusPollInterval));
+// Clear all intervals on unmount
+onUnmounted(() => clearInterval(buttonStatusPollIntervalId));
 
 onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
 
