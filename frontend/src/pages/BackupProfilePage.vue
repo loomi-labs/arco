@@ -3,7 +3,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
-import { rDataPage } from "../router";
+import { rDashboardPage, rDataPage } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import DataSelection from "../components/DataSelection.vue";
@@ -13,12 +13,14 @@ import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
+const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const backupPaths = ref<Path[]>([]);
 const excludePaths = ref<Path[]>([]);
@@ -54,7 +56,8 @@ async function getBackupProfile() {
 async function deleteBackupProfile() {
   try {
     await backupClient.DeleteBackupProfile(backup.value.id, true);
-    await router.push(rDataPage);
+    await toast.success("Backup profile deleted");
+    await router.push(rDashboardPage);
   } catch (error: any) {
     await showAndLogError("Failed to delete backup profile", error);
   }

@@ -6,7 +6,7 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
-import { rDataDetailPage, withId } from "../router";
+import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
@@ -177,7 +177,7 @@ onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
 
 <template>
   <div class='group/backup bg-base-100 hover:bg-base-100/50 rounded-xl shadow-lg h-full w-full cursor-pointer'
-       @click='router.push(withId(rDataDetailPage, backup.id.toString()))'>
+       @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
     <div
       class='flex justify-between bg-primary text-primary-content group-hover/backup:bg-primary/70 rounded-t-xl px-6 pt-4 pb-2'>
       {{ props.backup.name }}

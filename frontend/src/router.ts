@@ -3,7 +3,7 @@ import { createMemoryHistory, createRouter, RouteRecordRaw } from "vue-router";
 import WelcomePage from "./pages/WelcomePage.vue";
 import AddBackup from "./pages/add-backup/AddBackup.vue";
 import DataPage from "./pages/DataPage.vue";
-import DataDetailPage from "./pages/DataDetailPage.vue";
+import BackupProfilePage from "./pages/BackupProfilePage.vue";
 import RepositoryPage from "./pages/RepositoryPage.vue";
 import RepositoryDetailPage from "./pages/RepositoryDetailPage.vue";
 import ErrorPage from "./pages/ErrorPage.vue";
@@ -14,7 +14,7 @@ export const rDashboardPage = '/dashboard'
 export const rErrorPage = '/error'
 export const rAddBackupPage = '/add-backup'
 export const rDataPage = '/data'
-export const rDataDetailPage = '/data/:id'
+export const rBackupProfilePage = '/backup-profile/:id'
 export const rRepositoryPage = '/repository'
 export const rRepositoryDetailPage = '/repository/:id'
 
@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
   { path: rErrorPage, component: ErrorPage },
   { path: rAddBackupPage, component: AddBackup },
   { path: rDataPage, component: DataPage },
-  { path: rDataDetailPage, component: DataDetailPage },
+  { path: rBackupProfilePage, component: BackupProfilePage },
   { path: rRepositoryPage, component: RepositoryPage },
   { path: rRepositoryDetailPage, component: RepositoryDetailPage },
 ]

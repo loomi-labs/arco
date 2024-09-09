@@ -2,7 +2,7 @@
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { rDataDetailPage, withId } from "../router";
+import { rBackupProfilePage, withId } from "../router";
 import Navbar from "../components/Navbar.vue";
 import { showAndLogError } from "../common/error";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
@@ -42,7 +42,7 @@ getBackupProfiles();
     <div v-for='(backup, index) in backups' :key='index'>
       <div class='flex flex-row items-center justify-center'>
         <p>{{ backup.name }}</p>
-        <button class='btn btn-primary' @click='router.push(withId(rDataDetailPage, backup.id.toString()))'>View
+        <button class='btn btn-primary' @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>View
         </button>
       </div>
     </div>
