@@ -29,7 +29,7 @@ var (
 				Symbol:     "archives_repositories_repository",
 				Columns:    []*schema.Column{ArchivesColumns[5]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_backup_profile",

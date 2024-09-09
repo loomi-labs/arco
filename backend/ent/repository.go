@@ -43,11 +43,11 @@ type Repository struct {
 // RepositoryEdges holds the relations/edges for other nodes in the graph.
 type RepositoryEdges struct {
 	// BackupProfiles holds the value of the backup_profiles edge.
-	BackupProfiles []*BackupProfile `json:"backup_profiles,omitempty"`
+	BackupProfiles []*BackupProfile `json:"backupProfiles,omitempty"`
 	// Archives holds the value of the archives edge.
 	Archives []*Archive `json:"archives,omitempty"`
 	// FailedBackupRuns holds the value of the failed_backup_runs edge.
-	FailedBackupRuns []*FailedBackupRun `json:"failed_backup_runs,omitempty"`
+	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool

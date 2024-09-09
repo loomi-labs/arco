@@ -4,15 +4,16 @@ import (
 	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/ent"
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 )
 
-func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
+func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		Where(repository.ID(id)).
+		Where(repository.ID(repoId)).
 		Only(r.ctx)
 }
 
@@ -33,7 +34,16 @@ func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, e
 }
 
 func (r *RepositoryClient) All() ([]*ent.Repository, error) {
-	return r.db.Repository.Query().All(r.ctx)
+	return r.db.Repository.
+		Query().
+		All(r.ctx)
+}
+
+func (r *RepositoryClient) GetNbrOfArchives(repoId int) (int, error) {
+	return r.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Count(r.ctx)
 }
 
 // TODO: remove this function or refactor it
