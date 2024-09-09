@@ -381,17 +381,22 @@ func (s *State) GetBackupState(id types.BackupId) BackupState {
 	return *newBackupState()
 }
 
-func (s *State) GetCombinedBackupProgress(ids []types.BackupId) borg.BackupProgress {
+func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borg.BackupProgress {
 	var totalFiles, processedFiles int
+	found := false
 	for _, id := range ids {
 		if bs, ok := s.backupStates[id]; ok {
 			if bs.Progress != nil {
+				found = true
 				totalFiles += bs.Progress.TotalFiles
 				processedFiles += bs.Progress.ProcessedFiles
 			}
 		}
 	}
-	return borg.BackupProgress{
+	if !found {
+		return nil
+	}
+	return &borg.BackupProgress{
 		TotalFiles:     totalFiles,
 		ProcessedFiles: processedFiles,
 	}

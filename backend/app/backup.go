@@ -187,7 +187,7 @@ func (b *BackupClient) GetBackupButtonStatus(bId types.BackupId) state.BackupBut
 	return b.state.GetBackupButtonStatus(bId)
 }
 
-func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) borg.BackupProgress {
+func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.BackupProgress {
 	return b.state.GetCombinedBackupProgress(bIds)
 }
 
