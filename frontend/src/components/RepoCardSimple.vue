@@ -1,12 +1,13 @@
 <script setup lang='ts'>
 
-import { ent } from "../../wailsjs/go/models";
+import { ent, state } from "../../wailsjs/go/models";
 import { useRouter } from "vue-router";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { ref } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { rRepositoryDetailPage, withId } from "../router";
+import { polling } from "../common/polling";
 
 /************
  * Types
@@ -29,6 +30,7 @@ const props = defineProps<Props>();
 
 const router = useRouter();
 const nbrOfArchives = ref<number>(0);
+const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const location = ref<Location>(getLocation() );
 
 /************
@@ -40,6 +42,14 @@ async function getNbrOfArchives() {
     nbrOfArchives.value = await repoClient.GetNbrOfArchives(props.repo.id);
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
+  }
+}
+
+async function getRepoState() {
+  try {
+    repoState.value = await repoClient.GetState(props.repo.id);
+  } catch (error: any) {
+    await showAndLogError("Failed to get repository state", error);
   }
 }
 
@@ -68,6 +78,20 @@ function getBadgeColor(): string {
  ************/
 
 getNbrOfArchives();
+getRepoState();
+
+watch(repoState, async (newState, oldState) => {
+  // We only care about status changes
+  if (newState.status === oldState.status) {
+    return;
+  }
+
+  await getNbrOfArchives();
+});
+
+// poll for repo state
+let repoStatePollIntervalId = setInterval(getRepoState, polling.normalPollInterval);
+onUnmounted(() => clearInterval(repoStatePollIntervalId));
 
 </script>
 

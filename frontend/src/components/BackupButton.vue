@@ -2,6 +2,7 @@
 
 import { borg, state } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
+import { computed } from "vue";
 
 /************
  * Types
@@ -25,11 +26,7 @@ const emits = defineEmits<{
 
 const { t } = useI18n();
 
-/************
- * Functions
- ************/
-
-function getProgressValue(): number {
+const progress = computed(() => {
   const progress = props.backupProgress;
   if (!progress) {
     return 100;
@@ -38,7 +35,11 @@ function getProgressValue(): number {
     return 0;
   }
   return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
-}
+});
+
+/************
+ * Functions
+ ************/
 
 function getButtonText() {
   if (props.buttonStatus === state.BackupButtonStatus.runBackup) {
@@ -46,7 +47,7 @@ function getButtonText() {
   } else if (props.buttonStatus === state.BackupButtonStatus.waiting) {
     return t("waiting");
   } else if (props.buttonStatus === state.BackupButtonStatus.abort) {
-    return `${t("abort")} ${getProgressValue()}%`;
+    return `${t("abort")} ${progress.value}%`;
   } else if (props.buttonStatus === state.BackupButtonStatus.locked) {
     return t("remove_lock");
   } else if (props.buttonStatus === state.BackupButtonStatus.unmount) {
@@ -109,13 +110,13 @@ function getButtonDisabled() {
       <div
         class='radial-progress absolute bottom-[2px] left-0'
         :class='getButtonTextColor()'
-        :style='`--value:${getProgressValue()}; --size:95px; --thickness: 6px;`'
+        :style='`--value:${progress}; --size:95px; --thickness: 6px;`'
         role='progressbar'>
       </div>
     </div>
   </div>
   <div v-else>
-    <span class="loading loading-ring w-[94px] h-[94px]"></span>
+    <span class='loading loading-ring w-[94px] h-[94px]'></span>
   </div>
 </template>
 

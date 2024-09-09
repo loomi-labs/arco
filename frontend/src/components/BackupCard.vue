@@ -183,7 +183,7 @@ onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
       {{ props.backup.name }}
       <HomeIcon class='size-8' />
     </div>
-    <div class='flex justify-between items-center px-6 pt-6'>
+    <div class='flex justify-between items-center p-6'>
       <div class='w-full pr-6'>
         <!-- Info -->
         <div class='flex justify-between'>
