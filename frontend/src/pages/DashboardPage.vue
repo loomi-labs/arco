@@ -123,8 +123,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Navbar></Navbar>
   <div class='bg-base-200 w-screen h-screen'>
+    <Navbar></Navbar>
     <!-- Backups -->
     <div class='container text-left mx-auto pt-10'>
       <h1 class='text-4xl font-bold'>Backups</h1>

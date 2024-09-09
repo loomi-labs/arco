@@ -48,19 +48,19 @@ function getLocation(): Location {
 }
 
 function getBgColor(): string {
-  return location.value === Location.Local ? "bg-orange-500 group-hover/repo:bg-orange-500/70" : "bg-blue-500 group-hover/repo:bg-blue-500/70";
+  return location.value === Location.Local ? "bg-secondary group-hover/repo:bg-secondary/70" : "bg-info group-hover/repo:bg-info/70";
 }
 
 function getTextColor(): string {
-  return location.value === Location.Local ? "text-orange-500" : "text-blue-500";
+  return location.value === Location.Local ? "text-secondary" : "text-info";
 }
 
 function getTooltipColor(): string {
-  return location.value === Location.Local ? "tooltip-success" : "tooltip-info";
+  return location.value === Location.Local ? "tooltip-secondary" : "tooltip-info";
 }
 
 function getBadgeColor(): string {
-  return location.value === Location.Local ? "badge-success" : "badge-info";
+  return location.value === Location.Local ? "badge-secondary" : "badge-info";
 }
 
 /************

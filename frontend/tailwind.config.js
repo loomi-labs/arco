@@ -4,17 +4,17 @@ export default {
   darkMode: ['selector', '[data-theme="dark"]'],  // https://tailwindcss.com/docs/dark-mode#customizing-the-selector
   theme: {
     fontFamily: {
-      'sans': ['Nunito', 'sans-serif'],
+      'sans': ['Nunito', 'sans-serif']
     },
     extend: {
       colors: {
         'half-hidden': {
-          light: "#8C8C8C",
-          dark: "#ff0000",
-        },
+          light: '#8C8C8C',
+          dark: '#ff0000'
+        }
       },
       borderRadius: {
-        '4xl': '3rem',
+        '4xl': '3rem'
       }
     }
   },
@@ -23,18 +23,22 @@ export default {
     themes: [
       {
         light: {
-          ...require("daisyui/src/theming/themes")["light"],
-          primary: "4C1062",
-          'base-100': "#FFFFFF",
-          'base-200': "#F7F7F7",
-          'base-300': "#C086D6",
+          ...require('daisyui/src/theming/themes')['light'],
+          primary: '4C1062',
+          'secondary': '#F97316',
+          'secondary-content': '#190211',
+          'base-100': '#FFFFFF',
+          'base-200': '#F7F7F7',
+          'base-300': '#C086D6'
         },
         dark: {
-          ...require("daisyui/src/theming/themes")["dark"],
-          primary: "4C1062",
-        },
-      },
-    ],
+          ...require('daisyui/src/theming/themes')['dark'],
+          primary: '4C1062',
+          'secondary': '#F97316',
+          'secondary-content': '#190211',
+        }
+      }
+    ]
   }
 };
 
