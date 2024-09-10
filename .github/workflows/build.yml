@@ -1,27 +1,29 @@
-name: Wails build
+name: Build
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
+        # Build Arco for Linux and MacOS
         build: [
-          {name: arco, platform: linux/amd64, os: ubuntu-latest},
-          {name: arco, platform: darwin/universal, os: macos-latest}
+          { name: arco, platform: linux/amd64, os: ubuntu-latest },
+          { name: arco, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
+      # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
+      # Setup pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+      # Build Arco with Wails
       - name: Build Arco
         uses: dAppServer/wails-build-action@v2.2
         with:

@@ -70,7 +70,7 @@ lint: ensure-tools
 #################################
 
 test:
-	@go test -v ./...
+	@go test -cover -mod=readonly ./...
 
 #################################
 ###           Build           ###
