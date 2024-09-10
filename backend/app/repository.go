@@ -10,28 +10,16 @@ import (
 	"arco/backend/ent/repository"
 )
 
-func (r *RepositoryClient) Get(id int) (*ent.Repository, error) {
+func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		Where(repository.ID(id)).
+		Where(repository.ID(repoId)).
 		Only(r.ctx)
 }
 
 func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		WithBackupProfiles(func(query *ent.BackupProfileQuery) {
-			query.Where(backupprofile.And(
-				backupprofile.ID(bId.BackupProfileId)),
-				backupprofile.HasRepositoriesWith(repository.ID(bId.RepositoryId)),
-			)
-		}).
-		WithArchives(func(query *ent.ArchiveQuery) {
-			query.Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			))
-		}).
 		WithFailedBackupRuns(func(query *ent.FailedBackupRunQuery) {
 			query.Where(failedbackuprun.And(
 				failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
@@ -46,7 +34,16 @@ func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, e
 }
 
 func (r *RepositoryClient) All() ([]*ent.Repository, error) {
-	return r.db.Repository.Query().All(r.ctx)
+	return r.db.Repository.
+		Query().
+		All(r.ctx)
+}
+
+func (r *RepositoryClient) GetNbrOfArchives(repoId int) (int, error) {
+	return r.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Count(r.ctx)
 }
 
 // TODO: remove this function or refactor it

@@ -9,22 +9,14 @@ import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
 import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { getBadgeStyle } from "../common/badge";
-import { useToast } from "vue-toastification";
+import { toDurationBadge } from "../common/badge";
 import ConfirmDialog from "./ConfirmDialog.vue";
-import { useI18n } from "vue-i18n";
+import BackupButton from "./BackupButton.vue";
+import { polling } from "../common/polling";
 
 /************
  * Types
  ************/
-
-enum ButtonState {
-  unknown,
-  runBackup,
-  abortBackup,
-  locked,
-  unmount,
-}
 
 export interface Props {
   repoId: number;
@@ -47,8 +39,6 @@ const emits = defineEmits<{
 }>();
 
 const router = useRouter();
-const toast = useToast();
-const { t } = useI18n();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId ?? -1;
@@ -58,12 +48,10 @@ const failedBackupRun = ref<string | undefined>(undefined);
 
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
-const defaultPollInterval = 1000; // 1 second
-const pollInterval = ref(defaultPollInterval);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const showRemoveLockDialog = ref(false);
-const buttonState = ref<ButtonState>(ButtonState.unknown);
+const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const showProgressSpinner = ref(false);
 
 /************
@@ -128,7 +116,7 @@ async function getRepo() {
     repo.value = await repoClient.GetByBackupId(backupId);
     totalSize.value = toHumanReadableSize(repo.value.stats_total_size);
     sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
-    failedBackupRun.value = repo.value.edges.failed_backup_runs?.[0]?.error;
+    failedBackupRun.value = repo.value.edges.failedBackupRuns?.[0]?.error;
 
     lastArchive.value = await repoClient.GetLastArchive(backupId);
   } catch (error: any) {
@@ -152,15 +140,12 @@ async function getBackupState() {
   }
 }
 
-function getProgressValue(): number {
-  const progress = backupState.value.progress;
-  if (backupState.value.status !== state.BackupStatus.running) {
-    return 100;
+async function getBackupButtonStatus() {
+  try {
+    buttonStatus.value = await backupClient.GetBackupButtonStatus(backupId);
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup button state", error);
   }
-  if (!progress || progress.totalFiles === 0) {
-    return 0;
-  }
-  return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
 }
 
 function toHumanReadableSize(size: number): string {
@@ -178,68 +163,16 @@ function toHumanReadableSize(size: number): string {
 }
 
 async function runButtonAction() {
-  if (buttonState.value === ButtonState.runBackup) {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
     await runBackup();
-  } else if (buttonState.value === ButtonState.abortBackup) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
     await abortBackup();
-  } else if (buttonState.value === ButtonState.locked) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
     showRemoveLockDialog.value = true;
-  } else if (buttonState.value === ButtonState.unmount) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
     await unmountAll();
   }
 }
-
-// Styling
-
-function getButtonText() {
-  if (buttonState.value === ButtonState.runBackup) {
-    return t("run_backup");
-  } else if (buttonState.value === ButtonState.abortBackup) {
-    return `${t("abort")} ${getProgressValue()}%`;
-  } else if (buttonState.value === ButtonState.locked) {
-    return t("remove_lock");
-  } else if (buttonState.value === ButtonState.unmount) {
-    return t("stop_browsing");
-  } else {
-    return t("busy");
-  }
-}
-
-function getButtonColor() {
-  if (buttonState.value === ButtonState.runBackup) {
-    return "btn-success";
-  } else if (buttonState.value === ButtonState.abortBackup) {
-    return "btn-warning";
-  } else if (buttonState.value === ButtonState.locked) {
-    return "btn-error";
-  } else if (buttonState.value === ButtonState.unmount) {
-    return "btn-info";
-  } else {
-    return "btn-neutral";
-  }
-}
-
-function getButtonTextColor() {
-  if (buttonState.value === ButtonState.runBackup) {
-    return "text-success";
-  } else if (buttonState.value === ButtonState.abortBackup) {
-    return "text-warning";
-  } else if (buttonState.value === ButtonState.locked) {
-    return "text-error";
-  } else if (buttonState.value === ButtonState.unmount) {
-    return "text-info";
-  } else {
-    return "text-neutral";
-  }
-}
-
-function getButtonDisabled() {
-  if (buttonState.value === ButtonState.unknown) {
-    return true;
-  }
-}
-
-// End Styling
 
 /************
  * Lifecycle
@@ -255,29 +188,16 @@ watch(backupState, async (newState, oldState) => {
     return;
   }
 
-  if (newState.status === state.BackupStatus.running) {
-    // increase poll interval when backup is running
-    pollInterval.value = 200;   // 200ms
-    buttonState.value = ButtonState.abortBackup;
-  } else {
-    // reset poll interval otherwise
-    pollInterval.value = defaultPollInterval;
-
-    // if backup is done, reset status and get repo again
-    if (newState.status === state.BackupStatus.completed) {
-      await getRepo();
-      buttonState.value = ButtonState.runBackup;
-      // await resetStatus();
-    } else if (newState.status === state.BackupStatus.failed) {
-      toast.error(`Backup failed: ${backupState.value.error}`);
-      buttonState.value = ButtonState.unknown;
-      await getRepo();
-    }
-  }
+  await getRepo();
+  await getBackupButtonStatus();
 
   // set next poll interval
-  clearInterval(backupStatePollInterval);
-  backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
+  clearInterval(backupStatePollIntervalId);
+  backupStatePollIntervalId = setInterval(getBackupState,
+    newState.status === state.BackupStatus.running ?
+      polling.fastPollInterval :  // fast poll interval when backup is running
+      polling.normalPollInterval  // normal poll interval otherwise
+  );
 });
 
 // emit repoIsBusy event when repo is busy
@@ -291,28 +211,22 @@ watch(repoState, async (newState, oldState) => {
   emits(repoStatusEmit, newState.status);
 
   // update button state
-  if (newState.status === state.RepoStatus.locked) {
-    buttonState.value = ButtonState.locked;
-  } else if (newState.status === state.RepoStatus.mounted) {
-    buttonState.value = ButtonState.unmount;
-  } else if (newState.status === state.RepoStatus.idle) {
-    buttonState.value = ButtonState.runBackup;
-  }
+  await getBackupButtonStatus();
 });
 
 // poll for backup state
-let backupStatePollInterval = setInterval(getBackupState, pollInterval.value);
-onUnmounted(() => clearInterval(backupStatePollInterval));
+let backupStatePollIntervalId = setInterval(getBackupState, polling.normalPollInterval);
+onUnmounted(() => clearInterval(backupStatePollIntervalId));
 
 // poll for repo state
-let repoStatePollInterval = setInterval(getRepoState, defaultPollInterval);
-onUnmounted(() => clearInterval(repoStatePollInterval));
+let repoStatePollIntervalId = setInterval(getRepoState, polling.normalPollInterval);
+onUnmounted(() => clearInterval(repoStatePollIntervalId));
 
 </script>
 
 <template>
   <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "hover:bg-base-100/50": showHover }'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "cursor-pointer hover:bg-base-100/50": showHover && !props.highlight }'
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
@@ -321,7 +235,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
           <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-          <span :class='getBadgeStyle(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
@@ -338,25 +252,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
         </button>
       </div>
 
-      <!-- ButtonState is runBackup or abortBackup -->
-      <div class='stack'>
-        <div class='flex items-center justify-center w-[94px] h-[94px]'>
-          <button class='btn btn-circle p-4 m-0 w-16 h-16'
-                  :class='getButtonColor()'
-                  :disabled='getButtonDisabled()'
-                  @click='runButtonAction()'
-          >{{ getButtonText() }}
-          </button>
-        </div>
-        <div class='relative'>
-          <div
-            class='radial-progress absolute bottom-[2px] left-0'
-            :class='getButtonTextColor()'
-            :style='`--value:${getProgressValue()}; --size:95px; --thickness: 6px;`'
-            role='progressbar'>
-          </div>
-        </div>
-      </div>
+      <BackupButton :button-status='buttonStatus' :backup-progress='backupState.progress' @click='runButtonAction' />
     </div>
   </div>
   <div v-if='showProgressSpinner'
@@ -369,7 +265,7 @@ onUnmounted(() => clearInterval(repoStatePollInterval));
   <ConfirmDialog
     :message='$t("remove_lock_warning")'
     :subMessage='$t("remove_lock_confirmation")'
-    confirm-text='{{ $t("remove_lock") }}'
+    :confirm-text='$t("remove_lock")'
     :isVisible='showRemoveLockDialog'
     @confirm='showRemoveLockDialog = false; breakLock()'
     @cancel='showRemoveLockDialog = false'

@@ -29,7 +29,7 @@ var (
 				Symbol:     "archives_repositories_repository",
 				Columns:    []*schema.Column{ArchivesColumns[5]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_backup_profile",
@@ -112,13 +112,13 @@ var (
 				Symbol:     "failed_backup_runs_backup_profiles_backup_profile",
 				Columns:    []*schema.Column{FailedBackupRunsColumns[2]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "failed_backup_runs_repositories_repository",
 				Columns:    []*schema.Column{FailedBackupRunsColumns[3]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{

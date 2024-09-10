@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -30,11 +31,13 @@ func (FailedBackupRun) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("backup_profile", BackupProfile.Type).
 			StructTag(`json:"backupProfile,omitempty"`).
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Unique().
 			Immutable().
 			Required(),
 		edge.To("repository", Repository.Type).
 			StructTag(`json:"repository,omitempty"`).
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Unique().
 			Immutable().
 			Required(),

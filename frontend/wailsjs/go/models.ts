@@ -240,7 +240,7 @@ export namespace ent {
 	    repositories?: Repository[];
 	    archives?: Archive[];
 	    backupSchedule?: BackupSchedule;
-	    failed_backup_runs?: FailedBackupRun[];
+	    failedBackupRuns?: FailedBackupRun[];
 	
 	    static createFrom(source: any = {}) {
 	        return new BackupProfileEdges(source);
@@ -251,7 +251,7 @@ export namespace ent {
 	        this.repositories = this.convertValues(source["repositories"], Repository);
 	        this.archives = this.convertValues(source["archives"], Archive);
 	        this.backupSchedule = this.convertValues(source["backupSchedule"], BackupSchedule);
-	        this.failed_backup_runs = this.convertValues(source["failed_backup_runs"], FailedBackupRun);
+	        this.failedBackupRuns = this.convertValues(source["failedBackupRuns"], FailedBackupRun);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -315,9 +315,9 @@ export namespace ent {
 		}
 	}
 	export class RepositoryEdges {
-	    backup_profiles?: BackupProfile[];
+	    backupProfiles?: BackupProfile[];
 	    archives?: Archive[];
-	    failed_backup_runs?: FailedBackupRun[];
+	    failedBackupRuns?: FailedBackupRun[];
 	
 	    static createFrom(source: any = {}) {
 	        return new RepositoryEdges(source);
@@ -325,9 +325,9 @@ export namespace ent {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.backup_profiles = this.convertValues(source["backup_profiles"], BackupProfile);
+	        this.backupProfiles = this.convertValues(source["backupProfiles"], BackupProfile);
 	        this.archives = this.convertValues(source["archives"], Archive);
-	        this.failed_backup_runs = this.convertValues(source["failed_backup_runs"], FailedBackupRun);
+	        this.failedBackupRuns = this.convertValues(source["failedBackupRuns"], FailedBackupRun);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -400,7 +400,7 @@ export namespace ent {
 	}
 	export class ArchiveEdges {
 	    repository?: Repository;
-	    backup_profile?: BackupProfile;
+	    backupProfile?: BackupProfile;
 	
 	    static createFrom(source: any = {}) {
 	        return new ArchiveEdges(source);
@@ -409,7 +409,7 @@ export namespace ent {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.repository = this.convertValues(source["repository"], Repository);
-	        this.backup_profile = this.convertValues(source["backup_profile"], BackupProfile);
+	        this.backupProfile = this.convertValues(source["backupProfile"], BackupProfile);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -493,12 +493,20 @@ export namespace state {
 	}
 	export enum RepoStatus {
 	    idle = "idle",
-	    backing_up = "backing_up",
+	    backingUp = "backingUp",
 	    pruning = "pruning",
 	    deleting = "deleting",
 	    mounted = "mounted",
-	    performing_operation = "performing_operation",
+	    performingOperation = "performingOperation",
 	    locked = "locked",
+	}
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;

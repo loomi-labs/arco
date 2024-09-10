@@ -50,10 +50,12 @@ func (Repository) Fields() []ent.Field {
 func (Repository) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("backup_profiles", BackupProfile.Type).
+			StructTag(`json:"backupProfiles,omitempty"`).
 			Ref("repositories"),
 		edge.From("archives", Archive.Type).
 			Ref("repository"),
 		edge.From("failed_backup_runs", FailedBackupRun.Type).
+			StructTag(`json:"failedBackupRuns,omitempty"`).
 			Ref("repository"),
 	}
 }

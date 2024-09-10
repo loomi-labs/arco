@@ -42,5 +42,9 @@
   "run_backup": "Run Backup",
   "abort": "Abort",
   "stop_browsing": "Stop Browsing",
-  "busy": "Busy"
+  "busy": "Busy",
+  "waiting": "Waiting",
+  "location": "Location",
+  "local": "Local",
+  "remote": "Remote"
 }

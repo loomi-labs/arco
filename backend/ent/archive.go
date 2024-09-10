@@ -41,7 +41,7 @@ type ArchiveEdges struct {
 	// Repository holds the value of the repository edge.
 	Repository *Repository `json:"repository,omitempty"`
 	// BackupProfile holds the value of the backup_profile edge.
-	BackupProfile *BackupProfile `json:"backup_profile,omitempty"`
+	BackupProfile *BackupProfile `json:"backupProfile,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

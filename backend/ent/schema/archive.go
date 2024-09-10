@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
@@ -32,8 +33,10 @@ func (Archive) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("repository", Repository.Type).
 			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Unique(),
 		edge.To("backup_profile", BackupProfile.Type).
+			StructTag(`json:"backupProfile,omitempty"`).
 			Unique(),
 	}
 }

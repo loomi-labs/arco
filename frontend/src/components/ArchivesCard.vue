@@ -15,7 +15,7 @@ import {
 } from "@heroicons/vue/24/solid";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import { toRelativeTimeString } from "../common/time";
-import { getBadgeStyle } from "../common/badge";
+import { toDurationBadge } from "../common/badge";
 
 /************
  * Types
@@ -162,7 +162,7 @@ watch(() => props.repo, async () => {
           </td>
           <td>
           <span class='tooltip' :data-tip='archive.createdAt'>
-            <span :class='getBadgeStyle(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
+            <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
           </span>
           </td>
           <td class='flex items-center'>

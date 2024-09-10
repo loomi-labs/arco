@@ -45,17 +45,10 @@ ensure-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
 
 ensure-tools:
-	@missing_tools=0; \
-	for tool in $$(cat tools.go | grep _ | awk '{print $$3}' | tr -d '"'); do \
-		if ! command -v $$(basename $$tool) >/dev/null 2>&1; then \
-			printf >&2 "❌ $$tool not found.\n"; \
-			missing_tools=1; \
-		fi; \
-	done; \
-	if [ $$missing_tools -eq 1 ]; then \
-		printf >&2 "Please run 'make install-tools' to install missing tools.\n"; \
-		exit 1; \
-	fi
+	@command -v go >/dev/null 2>&1 || { printf >&2 "❌ go not found.\nPlease install it\n"; exit 1; }
+	@command -v gofmt >/dev/null 2>&1 || { printf >&2 "❌ gofmt not found.\nPlease install it\n"; exit 1; }
+	@command -v golangci-lint >/dev/null 2>&1 || { printf >&2 "❌ golangci-lint not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
+	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 
 #################################

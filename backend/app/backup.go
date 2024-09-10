@@ -50,6 +50,7 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().
 		WithBackupSchedule().
+		WithRepositories().
 		All(b.ctx)
 }
 
@@ -110,6 +111,10 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	return repo, nil
 }
 
+/***********************************/
+/********** Backup Functions *******/
+/***********************************/
+
 // StartBackupJob starts a backup job for the given repository and backup profile.
 func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
@@ -162,8 +167,32 @@ func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
 	return nil
 }
 
+func (b *BackupClient) AbortBackupJobs(bIds []types.BackupId) error {
+	for _, bId := range bIds {
+		if b.state.GetBackupState(bId).Status == state.BackupStatusRunning {
+			err := b.AbortBackupJob(bId)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (b *BackupClient) GetState(bId types.BackupId) state.BackupState {
 	return b.state.GetBackupState(bId)
+}
+
+func (b *BackupClient) GetBackupButtonStatus(bId types.BackupId) state.BackupButtonStatus {
+	return b.state.GetBackupButtonStatus(bId)
+}
+
+func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.BackupProgress {
+	return b.state.GetCombinedBackupProgress(bIds)
+}
+
+func (b *BackupClient) GetCombinedBackupButtonStatus(bIds []types.BackupId) state.BackupButtonStatus {
+	return b.state.GetCombinedBackupButtonStatus(bIds)
 }
 
 /***********************************/
@@ -301,6 +330,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		b.state.SetBackupError(bId, err, false, false)
+		b.state.AddNotification(fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return state.BackupResultError, err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
@@ -330,6 +360,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
 			}
 			b.state.SetBackupError(bId, err, false, true)
+			b.state.AddNotification(fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
 			return state.BackupResultError, err
 		} else {
 			saveErr := b.saveFailedBackupRun(bId, err)
@@ -337,6 +368,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
 			}
 			b.state.SetBackupError(bId, err, true, false)
+			b.state.AddNotification(fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
 			return state.BackupResultError, err
 		}
 	} else {
