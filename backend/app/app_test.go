@@ -6,26 +6,13 @@ import (
 	"arco/backend/ent/enttest"
 	"context"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"testing"
-
-	_ "github.com/mattn/go-sqlite3"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
-func TestApp(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "app test suite")
-}
-
-type TestingT interface {
-	enttest.TestingT
-	Log(args ...any)
-}
-
-func NewTestApp(t TestingT) *App {
+func NewTestApp(t *testing.T) *App {
 	logConfig := zap.NewDevelopmentConfig()
 	logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	log, err := logConfig.Build()
@@ -36,6 +23,8 @@ func NewTestApp(t TestingT) *App {
 	a := NewApp(log.Sugar(), &types.Config{})
 	a.ctx = context.Background()
 	a.config = nil
+	close(a.backupScheduleChangedCh)
+	a.backupScheduleChangedCh = nil
 
 	opts := []enttest.Option{
 		enttest.WithOptions(ent.Log(t.Log)),

@@ -251,6 +251,9 @@ func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
 }
 
 func (b *BackupClient) sendBackupScheduleChanged() {
+	if b.backupScheduleChangedCh == nil {
+		return
+	}
 	b.backupScheduleChangedCh <- struct{}{}
 }
 
