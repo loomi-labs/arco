@@ -15,6 +15,9 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+      # Create frontend/dist directory
+      - name: Create frontend/dist directory
+        run: mkdir -p frontend/dist
       # Test & coverage report creation
       - name: Test & coverage report creation
         run: go test -cover -mod=readonly ./...
