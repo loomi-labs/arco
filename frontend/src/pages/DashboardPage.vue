@@ -54,7 +54,7 @@ async function getRepos() {
   }
 }
 
-function slideToBackupProfile(slide: Slide) {
+function slide(slide: Slide) {
   const indexOfFirstCard = slide.backup ? indexOfFirstVisibleBackup : indexOfFirstVisibleRepo;
   let newCard = 0;
   if (slide.next) {
@@ -158,12 +158,12 @@ onUnmounted(() => {
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
             :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
-            @click='slideToBackupProfile({prev: true, backup: true})'>❮
+            @click='slide({prev: true, backup: true})'>❮
           </button>
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
             :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
-            @click='slideToBackupProfile({next: true, backup: true})'>❯
+            @click='slide({next: true, backup: true})'>❯
           </button>
         </div>
       </div>
@@ -201,12 +201,12 @@ onUnmounted(() => {
             <button
               class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
               :style='`visibility: ${indexOfFirstVisibleRepo === 0 ? "hidden" : "visible"};`'
-              @click='slideToBackupProfile({prev: true, repo: true})'>❮
+              @click='slide({prev: true, repo: true})'>❮
             </button>
             <button
               class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
               :style='`visibility: ${indexOfFirstVisibleRepo < repos.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
-              @click='slideToBackupProfile({next: true, repo: true})'>❯
+              @click='slide({next: true, repo: true})'>❯
             </button>
           </div>
         </div>
