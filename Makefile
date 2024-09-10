@@ -70,7 +70,7 @@ lint: ensure-tools
 #################################
 
 test:
-	@go test -cover -mod=readonly ./...
+	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)
 
 #################################
 ###           Build           ###

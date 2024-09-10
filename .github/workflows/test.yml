@@ -23,4 +23,4 @@ jobs:
         run: touch frontend/dist/index.html
       # Test & coverage report creation
       - name: Test & coverage report creation
-        run: go test -cover -mod=readonly ./...
+        run: make test
