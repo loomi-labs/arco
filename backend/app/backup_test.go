@@ -4,6 +4,7 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -39,9 +40,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	setup := func(t *testing.T) {
 		a = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
-		if err != nil {
-			t.Fatalf("Failed to create new backup profile: %v", err)
-		}
+		assert.NoError(t, err, "Failed to create new backup profile")
 		profile = p
 		now = time.Now()
 	}
@@ -77,8 +76,10 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 			err := a.BackupClient().SaveBackupSchedule(profile.ID, tt.schedule)
 
 			// ASSERT
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SaveBackupSchedule() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+			} else {
+				assert.NoError(t, err, "Expected no error, got %v", err)
 			}
 		})
 	}
@@ -88,9 +89,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		// ARRANGE
 		schedule := ent.BackupSchedule{DailyAt: &now}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
-		}
+		assert.NoError(t, err, "Expected no error, got %v", err)
 		bsId1 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		// ACT
@@ -102,21 +101,11 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		profile = a.db.BackupProfile.Query().Where(backupprofile.ID(profile.ID)).WithBackupSchedule().OnlyX(a.ctx)
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if a.db.BackupSchedule.Query().CountX(a.ctx) != 1 {
-			t.Errorf("Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
-		}
-		if bsId1 == bsId2 {
-			t.Errorf("Expected different backup schedule IDs, got the same")
-		}
-		if profile.Edges.BackupSchedule.ID != bsId2 {
-			t.Errorf("Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
-		}
-		if profile.Edges.BackupSchedule.DailyAt.Unix() != updatedHour.Unix() {
-			t.Errorf("Expected updated hour %v, got %v", updatedHour, profile.Edges.BackupSchedule.DailyAt)
-		}
+		assert.NoError(t, err, "Expected no error, got %v", err)
+		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
+		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.Equal(t, updatedHour.Unix(), profile.Edges.BackupSchedule.DailyAt.Unix(), "Expected updated hour %v, got %v", updatedHour, profile.Edges.BackupSchedule.DailyAt)
 	})
 
 	t.Run("SaveBackupSchedule with an updated weekly schedule (to hourly)", func(t *testing.T) {
@@ -125,9 +114,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		weekday := backupschedule.WeekdayWednesday
 		schedule := ent.BackupSchedule{Weekday: &weekday, WeeklyAt: &now}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
-		}
+		assert.NoError(t, err, "Expected no error, got %v", err)
 		bsId1 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		// ACT
@@ -140,23 +127,11 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		profile = a.db.BackupProfile.Query().Where(backupprofile.ID(profile.ID)).WithBackupSchedule().OnlyX(a.ctx)
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if a.db.BackupSchedule.Query().CountX(a.ctx) != 1 {
-			t.Errorf("Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
-		}
-		if bsId1 == bsId2 {
-			t.Errorf("Expected different backup schedule IDs, got the same")
-		}
-		if profile.Edges.BackupSchedule.ID != bsId2 {
-			t.Errorf("Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
-		}
-		if !profile.Edges.BackupSchedule.Hourly {
-			t.Errorf("Expected hourly schedule to be true, got false")
-		}
-		if profile.Edges.BackupSchedule.WeeklyAt != nil {
-			t.Errorf("Expected weekly schedule to be nil, got %v", profile.Edges.BackupSchedule.WeeklyAt)
-		}
+		assert.NoError(t, err, "Expected no error, got %v", err)
+		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
+		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.True(t, profile.Edges.BackupSchedule.Hourly, "Expected hourly schedule to be true, got false")
+		assert.Nil(t, profile.Edges.BackupSchedule.WeeklyAt, "Expected weekly schedule to be nil, got %v", profile.Edges.BackupSchedule.WeeklyAt)
 	})
 }

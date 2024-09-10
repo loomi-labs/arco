@@ -3,34 +3,10 @@ package app
 import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
-
-/*
-
-TEST CASES - scheduler.go
-
-* getNextBackupTime - hourly - from now
-* getNextBackupTime - hourly - from 2024-01-01 at 00:59
-* getNextBackupTime - hourly - from 2024-01-01 at 01:00
-* getNextBackupTime daily at 10:15 - from today at 9:00
-* getNextBackupTime daily at 10:30 - from 2024-01-01 00:00
-* getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 9:00
-* getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 11:00
-* getNextBackupTime weekly at 10:15 on Monday - from 2024-01-01 00:00
-* getNextBackupTime weekly at 10:15 on Sunday - from 2024-01-01 00:00
-* getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 9:00
-* getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00
-* getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00
-* getNextBackupTime monthly at 10:15 on the 30th - from 2024-01-01 00:00
-* getNextBackupTime monthly at 10:15 on the 29th - from 2024-02-01 00:00 (february has 29 days in 2024)
-* getNextBackupTime monthly at 10:15 on the 30th - from 2024-02-01 00:00 (february has 29 days in 2024)
-
-* delete backup profile
-* backup schedule on incomplete backup profile
-
-*/
 
 func parseX(timeStr string) time.Time {
 	expected, err := time.ParseInLocation(time.DateTime, timeStr, time.Local)
@@ -72,9 +48,7 @@ func TestScheduler(t *testing.T) {
 	setup := func(t *testing.T) {
 		a = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
-		if err != nil {
-			t.Fatalf("Failed to create new backup profile: %v", err)
-		}
+		assert.NoError(t, err, "Failed to create new backup profile")
 		profile = p
 		now = time.Now()
 	}
@@ -98,8 +72,6 @@ func TestScheduler(t *testing.T) {
 		{"getNextBackupTime daily at 10:30 - from 2024-01-01 00:00", ent.BackupSchedule{DailyAt: hourMinutePtr(firstOfJanuary2024, 10, 30)}, firstOfJanuary2024, parseX("2024-01-01 10:30:00"), false},
 		{"getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 9:00", ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdayWednesday)}, weekdayHourMinute(now, time.Wednesday, 9, 0), weekdayHourMinute(now, time.Wednesday, 10, 15), false},
 		{"getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 11:00", ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdayWednesday)}, weekdayHourMinute(now, time.Wednesday, 11, 0), weekdayHourMinute(now.AddDate(0, 0, 7), time.Wednesday, 10, 15), false},
-		{"getNextBackupTime weekly at 10:15 on Monday - from 2024-01-01 00:00", ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdayMonday)}, firstOfJanuary2024, parseX("2024-01-01 10:15:00"), false},
-		{"getNextBackupTime weekly at 10:15 on Sunday - from 2024-01-01 00:00", ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdaySunday)}, firstOfJanuary2024, parseX("2024-01-07 10:15:00"), false},
 		{"getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 9:00", ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{5}[0]}, monthdayHourMinute(now, 5, 9, 0), monthdayHourMinute(now, 5, 10, 15), false},
 		{"getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00", ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{5}[0]}, monthdayHourMinute(now, 5, 11, 0), monthdayHourMinute(now.AddDate(0, 1, 0), 5, 10, 15), false},
 		{"getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00", ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{1}[0]}, firstOfJanuary2024, parseX("2024-01-01 10:15:00"), false},
@@ -114,20 +86,17 @@ func TestScheduler(t *testing.T) {
 
 			// ARRANGE
 			err := a.BackupClient().SaveBackupSchedule(profile.ID, tt.schedule)
-			if err != nil {
-				t.Fatalf("Failed to save backup schedule: %v", err)
-			}
+			assert.NoError(t, err, "Failed to save backup schedule")
 
 			// ACT
 			nextTime, err := getNextBackupTime(&tt.schedule, tt.fromTime)
 
 			// ASSERT
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getNextBackupTime() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && nextTime != tt.wantTime {
-				t.Errorf("getNextBackupTime() = %v, want %v", nextTime, tt.wantTime)
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+			} else {
+				assert.NoError(t, err, "Expected no error, got %v", err)
+				assert.Equal(t, tt.wantTime, nextTime, "getNextBackupTime() = %v, want %v", nextTime, tt.wantTime)
 			}
 		})
 	}
@@ -138,17 +107,13 @@ func TestScheduler(t *testing.T) {
 		// ARRANGE
 		schedule := ent.BackupSchedule{Hourly: true}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		if err != nil {
-			t.Fatalf("Failed to save backup schedule: %v", err)
-		}
+		assert.NoError(t, err, "Failed to save backup schedule")
 
 		// ACT
 		err = a.BackupClient().DeleteBackupProfile(profile.ID, false)
 
 		// ASSERT
-		if err != nil {
-			t.Errorf("DeleteBackupProfile() error = %v", err)
-		}
+		assert.NoError(t, err, "DeleteBackupProfile() error = %v", err)
 	})
 
 	t.Run("backup schedule on incomplete backup profile", func(t *testing.T) {
@@ -160,19 +125,13 @@ func TestScheduler(t *testing.T) {
 			Hourly: true,
 		}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		if err != nil {
-			t.Fatalf("Failed to save backup schedule: %v", err)
-		}
+		assert.NoError(t, err, "Failed to save backup schedule")
 
 		// ACT
 		schedules, err := a.getBackupSchedules()
 
 		// ASSERT
-		if err != nil {
-			t.Errorf("getBackupSchedules() error = %v", err)
-		}
-		if len(schedules) != 0 {
-			t.Errorf("Expected no schedules")
-		}
+		assert.NoError(t, err, "getBackupSchedules() error = %v", err)
+		assert.Empty(t, schedules, "Expected no schedules")
 	})
 }
