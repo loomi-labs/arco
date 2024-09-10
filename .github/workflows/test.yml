@@ -18,6 +18,9 @@ jobs:
       # Create frontend/dist directory
       - name: Create frontend/dist directory
         run: mkdir -p frontend/dist
+      # Create empty index.html file (required for main.go to build)
+      - name: Create empty index.html file
+        run: touch frontend/dist/index.html
       # Test & coverage report creation
       - name: Test & coverage report creation
         run: go test -cover -mod=readonly ./...
