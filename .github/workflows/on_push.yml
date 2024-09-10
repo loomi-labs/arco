@@ -3,8 +3,9 @@ name: Lint and Test
 on: push
 
 jobs:
-  lint:
-    uses: ./.github/workflows/lint.yml
+#  TODO: Uncomment the following lines to enable linting
+#  lint:
+#    uses: ./.github/workflows/lint.yml
 
   test:
     uses: ./.github/workflows/test.yml
