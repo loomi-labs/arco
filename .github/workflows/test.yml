@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      # Setup Golang
+      - name: 🐿 Setup Golang
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      # Create frontend/dist directory
+      - name: Create frontend/dist directory
+        run: mkdir -p frontend/dist
+      # Create empty index.html file (required for main.go to build)
+      - name: Create empty index.html file
+        run: touch frontend/dist/index.html
+      # Test & coverage report creation
+      - name: Test & coverage report creation
+        run: make test

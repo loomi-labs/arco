@@ -4,8 +4,8 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"testing"
 	"time"
 )
 
@@ -26,220 +26,70 @@ TEST CASES - backup.go
 * SaveBackupSchedule with daily and weekly schedule
 * SaveBackupSchedule with daily and monthly schedule
 * SaveBackupSchedule with weekly and monthly schedule
+
 * SaveBackupSchedule with an updated daily schedule
 * SaveBackupSchedule with an updated weekly schedule (to hourly)
 
 */
 
-var _ = Describe("backup.go", Ordered, func() {
-
+func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	var a *App
 	var profile *ent.BackupProfile
 	var now = time.Time{}
 
-	BeforeEach(func() {
-		a = NewTestApp(GinkgoT())
+	setup := func(t *testing.T) {
+		a = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
-		Expect(err).To(BeNil())
+		assert.NoError(t, err, "Failed to create new backup profile")
 		profile = p
 		now = time.Now()
-	})
+	}
 
-	It("SaveBackupSchedule with default values", func() {
+	weekdayPtr := func(w backupschedule.Weekday) *backupschedule.Weekday {
+		return &w
+	}
+
+	tests := []struct {
+		name     string
+		schedule ent.BackupSchedule
+		wantErr  bool
+	}{
+		{"SaveBackupSchedule with default values", ent.BackupSchedule{}, true},
+		{"SaveBackupSchedule with hourly schedule", ent.BackupSchedule{Hourly: true}, false},
+		{"SaveBackupSchedule with daily schedule", ent.BackupSchedule{DailyAt: &now}, false},
+		{"SaveBackupSchedule with weekly schedule", ent.BackupSchedule{Weekday: weekdayPtr(backupschedule.WeekdayMonday), WeeklyAt: &now}, false},
+		{"SaveBackupSchedule with invalid weekly schedule", ent.BackupSchedule{Weekday: weekdayPtr("invalid"), WeeklyAt: &now}, true},
+		{"SaveBackupSchedule with monthly schedule", ent.BackupSchedule{Monthday: &[]uint8{1}[0], MonthlyAt: &now}, false},
+		{"SaveBackupSchedule with invalid monthly schedule", ent.BackupSchedule{Monthday: &[]uint8{32}[0], MonthlyAt: &now}, true},
+		{"SaveBackupSchedule with hourly and daily schedule", ent.BackupSchedule{Hourly: true, DailyAt: &now}, true},
+		{"SaveBackupSchedule with hourly and weekly schedule", ent.BackupSchedule{Hourly: true, Weekday: weekdayPtr(backupschedule.WeekdayMonday), WeeklyAt: &now}, true},
+		{"SaveBackupSchedule with hourly and monthly schedule", ent.BackupSchedule{Hourly: true, Monthday: &[]uint8{1}[0], MonthlyAt: &now}, true},
+		{"SaveBackupSchedule with daily and weekly schedule", ent.BackupSchedule{DailyAt: &now, Weekday: weekdayPtr(backupschedule.WeekdayMonday), WeeklyAt: &now}, true},
+		{"SaveBackupSchedule with daily and monthly schedule", ent.BackupSchedule{DailyAt: &now, Monthday: &[]uint8{1}[0], MonthlyAt: &now}, true},
+		{"SaveBackupSchedule with weekly and monthly schedule", ent.BackupSchedule{Weekday: weekdayPtr(backupschedule.WeekdayMonday), WeeklyAt: &now, Monthday: &[]uint8{1}[0], MonthlyAt: &now}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setup(t)
+			// ACT
+			err := a.BackupClient().SaveBackupSchedule(profile.ID, tt.schedule)
+
+			// ASSERT
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+			} else {
+				assert.NoError(t, err, "Expected no error, got %v", err)
+			}
+		})
+	}
+
+	t.Run("SaveBackupSchedule with an updated schedule", func(t *testing.T) {
+		setup(t)
 		// ARRANGE
-		schedule := ent.BackupSchedule{}
-
-		// ACT
+		schedule := ent.BackupSchedule{DailyAt: &now}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with hourly schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			Hourly: true,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(BeNil())
-	})
-
-	It("SaveBackupSchedule with daily schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			DailyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(BeNil())
-	})
-
-	It("SaveBackupSchedule with weekly schedule", func() {
-		// ARRANGE
-		weekday := backupschedule.WeekdayMonday
-		schedule := ent.BackupSchedule{
-			Weekday:  &weekday,
-			WeeklyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(BeNil())
-	})
-
-	It("SaveBackupSchedule with invalid weekly schedule", func() {
-		// ARRANGE
-		weekday := backupschedule.Weekday("invalid")
-		schedule := ent.BackupSchedule{
-			Weekday:  &weekday,
-			WeeklyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with monthly schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			Monthday:  &[]uint8{1}[0],
-			MonthlyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(BeNil())
-	})
-
-	It("SaveBackupSchedule with invalid monthly schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			Monthday:  &[]uint8{32}[0],
-			MonthlyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with hourly and daily schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			Hourly:  true,
-			DailyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with hourly and weekly schedule", func() {
-		// ARRANGE
-		weekday := backupschedule.WeekdayMonday
-		schedule := ent.BackupSchedule{
-			Hourly:   true,
-			Weekday:  &weekday,
-			WeeklyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with hourly and monthly schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			Hourly:    true,
-			Monthday:  &[]uint8{1}[0],
-			MonthlyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with daily and weekly schedule", func() {
-		// ARRANGE
-		weekday := backupschedule.WeekdayMonday
-		schedule := ent.BackupSchedule{
-			DailyAt:  &now,
-			Weekday:  &weekday,
-			WeeklyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with daily and monthly schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			DailyAt:   &now,
-			Monthday:  &[]uint8{1}[0],
-			MonthlyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with weekly and monthly schedule", func() {
-		// ARRANGE
-		weekday := backupschedule.WeekdayMonday
-		schedule := ent.BackupSchedule{
-			Weekday:   &weekday,
-			WeeklyAt:  &now,
-			Monthday:  &[]uint8{1}[0],
-			MonthlyAt: &now,
-		}
-
-		// ACT
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-
-		// ASSERT
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("SaveBackupSchedule with an updated schedule", func() {
-		// ARRANGE
-		schedule := ent.BackupSchedule{
-			DailyAt: &now,
-		}
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		Expect(err).To(BeNil())
+		assert.NoError(t, err, "Expected no error, got %v", err)
 		bsId1 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		// ACT
@@ -251,22 +101,20 @@ var _ = Describe("backup.go", Ordered, func() {
 		profile = a.db.BackupProfile.Query().Where(backupprofile.ID(profile.ID)).WithBackupSchedule().OnlyX(a.ctx)
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
-		Expect(err).To(BeNil())
-		Expect(a.db.BackupSchedule.Query().CountX(a.ctx)).To(Equal(1))
-		Expect(bsId1).NotTo(Equal(bsId2))
-		Expect(profile.Edges.BackupSchedule.ID).To(Equal(bsId2))
-		Expect(profile.Edges.BackupSchedule.DailyAt.Unix()).To(Equal(updatedHour.Unix()))
+		assert.NoError(t, err, "Expected no error, got %v", err)
+		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
+		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.Equal(t, updatedHour.Unix(), profile.Edges.BackupSchedule.DailyAt.Unix(), "Expected updated hour %v, got %v", updatedHour, profile.Edges.BackupSchedule.DailyAt)
 	})
 
-	It("SaveBackupSchedule with an updated weekly schedule (to hourly)", func() {
+	t.Run("SaveBackupSchedule with an updated weekly schedule (to hourly)", func(t *testing.T) {
+		setup(t)
 		// ARRANGE
 		weekday := backupschedule.WeekdayWednesday
-		schedule := ent.BackupSchedule{
-			Weekday:  &weekday,
-			WeeklyAt: &now,
-		}
+		schedule := ent.BackupSchedule{Weekday: &weekday, WeeklyAt: &now}
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		Expect(err).To(BeNil())
+		assert.NoError(t, err, "Expected no error, got %v", err)
 		bsId1 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		// ACT
@@ -279,11 +127,11 @@ var _ = Describe("backup.go", Ordered, func() {
 		profile = a.db.BackupProfile.Query().Where(backupprofile.ID(profile.ID)).WithBackupSchedule().OnlyX(a.ctx)
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
-		Expect(err).To(BeNil())
-		Expect(a.db.BackupSchedule.Query().CountX(a.ctx)).To(Equal(1))
-		Expect(bsId1).NotTo(Equal(bsId2))
-		Expect(profile.Edges.BackupSchedule.ID).To(Equal(bsId2))
-		Expect(profile.Edges.BackupSchedule.Hourly).To(BeTrue())
-		Expect(profile.Edges.BackupSchedule.WeeklyAt).To(BeNil())
+		assert.NoError(t, err, "Expected no error, got %v", err)
+		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
+		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.True(t, profile.Edges.BackupSchedule.Hourly, "Expected hourly schedule to be true, got false")
+		assert.Nil(t, profile.Edges.BackupSchedule.WeeklyAt, "Expected weekly schedule to be nil, got %v", profile.Edges.BackupSchedule.WeeklyAt)
 	})
-})
+}
