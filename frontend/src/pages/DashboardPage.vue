@@ -34,6 +34,10 @@ const nbrOfCardsPerPage = ref(2);
 const indexOfFirstVisibleBackup = ref(0);
 const indexOfFirstVisibleRepo = ref(0);
 
+// Tailwind classes for carousel (do not remove since they are used dynamically)
+// noinspection JSUnusedGlobalSymbols
+const _stringForTailwind = "w-1/2 w-1/3 w-1/4 w-1/5";
+
 /************
  * Functions
  ************/
@@ -98,9 +102,9 @@ function slide(slide: Slide) {
 function updateNbrOfCardsPerPage() {
   const screenWidth = window.innerWidth;
   if (screenWidth >= 1280) { // xl breakpoint
-    nbrOfCardsPerPage.value = 3;
+    nbrOfCardsPerPage.value = 3;  // Add w-1/<nbr> to _stringForTailwind
   } else {
-    nbrOfCardsPerPage.value = 2;
+    nbrOfCardsPerPage.value = 2;  // Add w-1/<nbr> to _stringForTailwind
   }
 }
 
@@ -132,14 +136,16 @@ onUnmounted(() => {
         <div class='carousel w-full'>
           <!-- Backup Card -->
           <div v-for='(backup, index) in backups' :key='index'
-               class='carousel-item w-1/2 xl:w-1/3'
+               class='carousel-item'
+               :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`backup-profile-${index}`'>
             <BackupCard :backup='backup'
                         :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'>
             </BackupCard>
           </div>
           <!-- Add Backup Card -->
-          <div class='carousel-item w-1/2 xl:w-1/3'
+          <div class='carousel-item'
+               :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`backup-profile-${backups.length}`'>
             <div
               class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
@@ -175,14 +181,16 @@ onUnmounted(() => {
           <div class='carousel w-full'>
             <!-- Repository Card -->
             <div v-for='(repo, index) in repos' :key='index'
-                 class='carousel-item w-1/2 xl:w-1/3'
+                 class='carousel-item'
+                 :class='`w-1/${nbrOfCardsPerPage}`'
                  :id='`repository-${index}`'>
               <RepoCardSimple :repo='repo'
                               :class='index === indexOfFirstVisibleRepo + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
               ></RepoCardSimple>
             </div>
             <!-- Add Repository Card -->
-            <div class='carousel-item w-1/2 xl:w-1/3'
+            <div class='carousel-item'
+                 :class='`w-1/${nbrOfCardsPerPage}`'
                  :id='`repository-${repos.length}`'>
               <div
                 class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
