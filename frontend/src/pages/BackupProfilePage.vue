@@ -3,7 +3,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
-import { rDashboardPage, rDataPage } from "../router";
+import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import DataSelection from "../components/DataSelection.vue";

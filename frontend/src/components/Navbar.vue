@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { rAddBackupPage, rDashboardPage, rDataPage, rRepositoryPage, rWelcomePage } from "../router";
+import { rDashboardPage } from "../router";
 import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
@@ -50,17 +50,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class='container mx-auto'>
-    <div class='flex items-center'>
-      <p>ARCO</p>
-      <div class='flex-grow'></div>
-      <button class='btn btn-neutral' @click='router.push(rWelcomePage)'>Welcome</button>
-      <button class='btn btn-neutral' @click='router.push(rAddBackupPage)'>Add Backup</button>
-      <button class='btn btn-neutral' @click='router.push(rDataPage)'>Old Data</button>
-      <button class='btn btn-neutral' @click='router.push(rDashboardPage)'>Dashboard</button>
-      <button class='btn btn-neutral' @click='router.push(rRepositoryPage)'>Repository</button>
-      <button class='btn btn-neutral' @click='hide()'>Hide</button>
-
+  <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
+    <div class='flex items-center justify-between px-5'>
+      <button class='btn btn-ghost uppercase' @click='router.push(rDashboardPage)'>Arco</button>
       <label class='swap swap-rotate'>
         <!-- this hidden checkbox controls the state -->
         <input type='checkbox' v-model='lightTheme'>

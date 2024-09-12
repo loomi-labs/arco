@@ -5,7 +5,7 @@ import * as repoClient from "../../../wailsjs/go/app/RepositoryClient";
 import { backupschedule, ent } from "../../../wailsjs/go/models";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { rDataPage } from "../../router";
+import { rDashboardPage } from "../../router";
 import Navbar from "../../components/Navbar.vue";
 import { LogDebug } from "../../../wailsjs/runtime";
 import { showAndLogError } from "../../common/error";
@@ -225,7 +225,7 @@ const finish = async () => {
   if (await saveBackupProfile()) {
     toast.success("Backup profile saved successfully");
   }
-  await router.push(rDataPage);
+  await router.push(rDashboardPage);
 };
 
 /************
