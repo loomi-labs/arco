@@ -227,7 +227,6 @@ onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
       <BackupButton :button-status='buttonStatus' :backup-progress='backupProgress' @click='runButtonAction' />
     </div>
   </div>
-
 </template>
 
 <style scoped>

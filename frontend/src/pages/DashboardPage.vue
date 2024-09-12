@@ -136,15 +136,16 @@ onUnmounted(() => {
         <div class='carousel w-full'>
           <!-- Backup Card -->
           <div v-for='(backup, index) in backups' :key='index'
-               class='carousel-item'
+               class='carousel-item py-4'
                :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`backup-profile-${index}`'>
-            <BackupCard :backup='backup'
-                        :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'>
+            <BackupCard
+              :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
+              :backup='backup'>
             </BackupCard>
           </div>
           <!-- Add Backup Card -->
-          <div class='carousel-item'
+          <div class='carousel-item py-4'
                :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`backup-profile-${backups.length}`'>
             <div
@@ -181,7 +182,7 @@ onUnmounted(() => {
           <div class='carousel w-full'>
             <!-- Repository Card -->
             <div v-for='(repo, index) in repos' :key='index'
-                 class='carousel-item'
+                 class='carousel-item py-4'
                  :class='`w-1/${nbrOfCardsPerPage}`'
                  :id='`repository-${index}`'>
               <RepoCardSimple :repo='repo'
@@ -189,7 +190,7 @@ onUnmounted(() => {
               ></RepoCardSimple>
             </div>
             <!-- Add Repository Card -->
-            <div class='carousel-item'
+            <div class='carousel-item py-4'
                  :class='`w-1/${nbrOfCardsPerPage}`'
                  :id='`repository-${repos.length}`'>
               <div
