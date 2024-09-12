@@ -29,13 +29,16 @@ export default {
           "secondary-content": "#190211",
           "base-100": "#FFFFFF",
           "base-200": "#F7F7F7",
-          "base-300": "#C086D6"
+          "base-300": "#FF0000"
         },
         dark: {
           ...require("daisyui/src/theming/themes")["dark"],
           primary: "4C1062",
           "secondary": "#F97316",   // could also be ffc107
-          "secondary-content": "#190211"
+          "secondary-content": "#190211",
+          "base-100": "#241D4D",
+          "base-200": "#21093F",
+          "base-300": "#FF0000"
         }
       }
     ]
