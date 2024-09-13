@@ -10,7 +10,7 @@ export default {
       colors: {
         "half-hidden": {
           light: "#8C8C8C",
-          dark: "#ff0000"
+          dark: "#8C8C8C"
         }
       },
       borderRadius: {
@@ -29,7 +29,7 @@ export default {
           "secondary-content": "#190211",
           "base-100": "#FFFFFF",
           "base-200": "#F7F7F7",
-          "base-300": "#FF0000"
+          "base-300": "#E5E6E6"
         },
         dark: {
           ...require("daisyui/src/theming/themes")["dark"],
@@ -38,7 +38,7 @@ export default {
           "secondary-content": "#190211",
           "base-100": "#241D4D",
           "base-200": "#21093F",
-          "base-300": "#FF0000"
+          "base-300": "#140428"
         }
       }
     ]

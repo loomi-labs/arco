@@ -49,6 +49,19 @@ export namespace app {
 
 }
 
+export namespace backupprofile {
+	
+	export enum Icon {
+	    home = "home",
+	    briefcase = "briefcase",
+	    book = "book",
+	    envelope = "envelope",
+	    camera = "camera",
+	    fire = "fire",
+	}
+
+}
+
 export namespace backupschedule {
 	
 	export enum Weekday {
@@ -279,6 +292,7 @@ export namespace ent {
 	    backupPaths: string[];
 	    excludePaths: string[];
 	    isSetupComplete: boolean;
+	    icon: backupprofile.Icon;
 	    edges: BackupProfileEdges;
 	
 	    static createFrom(source: any = {}) {
@@ -293,6 +307,7 @@ export namespace ent {
 	        this.backupPaths = source["backupPaths"];
 	        this.excludePaths = source["excludePaths"];
 	        this.isSetupComplete = source["isSetupComplete"];
+	        this.icon = source["icon"];
 	        this.edges = this.convertValues(source["edges"], BackupProfileEdges);
 	    }
 	
@@ -483,15 +498,6 @@ export namespace ent {
 
 export namespace state {
 	
-	export enum RepoStatus {
-	    idle = "idle",
-	    backingUp = "backingUp",
-	    pruning = "pruning",
-	    deleting = "deleting",
-	    mounted = "mounted",
-	    performingOperation = "performingOperation",
-	    locked = "locked",
-	}
 	export enum BackupButtonStatus {
 	    runBackup = "runBackup",
 	    waiting = "waiting",
@@ -507,6 +513,15 @@ export namespace state {
 	    completed = "completed",
 	    cancelled = "cancelled",
 	    failed = "failed",
+	}
+	export enum RepoStatus {
+	    idle = "idle",
+	    backingUp = "backingUp",
+	    pruning = "pruning",
+	    deleting = "deleting",
+	    mounted = "mounted",
+	    performingOperation = "performingOperation",
+	    locked = "locked",
 	}
 	export class BackupState {
 	    status: BackupStatus;

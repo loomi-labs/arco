@@ -8,7 +8,7 @@ import { showAndLogError } from "../common/error";
 import Navbar from "../components/Navbar.vue";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { rAddBackupPage } from "../router";
+import { rAddBackupProfilePage } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { LogDebug } from "../../wailsjs/runtime";
 
@@ -127,10 +127,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='bg-base-200 w-screen h-screen'>
+  <div class='bg-base-200 w-svw h-svh'>
     <Navbar></Navbar>
     <!-- Backups -->
-    <div class='container text-left mx-auto pt-10'>
+    <div class='container mx-auto text-left pt-10'>
       <h1 class='text-4xl font-bold'>Backups</h1>
       <div class='group/carousel relative pt-4'>
         <div class='carousel w-full'>
@@ -151,7 +151,7 @@ onUnmounted(() => {
             <div
               class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
                       border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
-              @click='router.push(rAddBackupPage)'
+              @click='router.push(rAddBackupProfilePage)'
             >
               <PlusCircleIcon class='size-12' />
               <div class='pl-2 text-lg font-semibold'>Add Backup</div>

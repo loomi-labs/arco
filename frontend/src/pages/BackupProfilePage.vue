@@ -139,8 +139,8 @@ onMounted(() => {
 
 <template>
   <Navbar></Navbar>
-  <div class='bg-base-200'>
-    <div class='container text-left mx-auto pt-10'>
+  <div class='bg-base-200 w-svw h-svh'>
+    <div class='container mx-auto text-left pt-10'>
       <!-- Data Section -->
       <div class='flex items-center justify-between mb-4'>
         <div class='tooltip tooltip-bottom tooltip-error'
