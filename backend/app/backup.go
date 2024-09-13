@@ -21,13 +21,42 @@ import (
 /***********************************/
 
 func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
-	hostname, _ := os.Hostname()
-	return b.db.BackupProfile.Create().
-		SetName(hostname).
-		SetPrefix(hostname).
-		SetBackupPaths([]string{}).
-		SetExcludePaths([]string{}).
-		Save(b.ctx)
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	// Choose the first icon that is not already in use
+	all, err := b.db.BackupProfile.
+		Query().
+		Select(backupprofile.FieldIcon).
+		All(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+	icons := make(map[backupprofile.Icon]bool)
+	for _, p := range all {
+		icons[p.Icon] = true
+	}
+	selectedIcon := backupprofile.IconHome
+	for _, icon := range types.AllIcons {
+		if !icons[icon] {
+			selectedIcon = icon
+			break
+		}
+	}
+
+	return &ent.BackupProfile{
+		ID:           0,
+		Name:         "",
+		Prefix:       hostname,
+		BackupPaths:  make([]string, 0),
+		ExcludePaths: make([]string, 0),
+		// TODO: remove isSetupComplete completely
+		IsSetupComplete: false,
+		Icon:            selectedIcon,
+		Edges:           ent.BackupProfileEdges{},
+	}, nil
 }
 
 func (b *BackupClient) GetDirectorySuggestions() []string {
@@ -54,9 +83,20 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		All(b.ctx)
 }
 
-func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
+func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
 	b.log.Debug(fmt.Sprintf("Saving backup profile %d", backup.ID))
-	_, err := b.db.BackupProfile.
+	if backup.ID == 0 {
+		return b.db.BackupProfile.
+			Create().
+			SetName(backup.Name).
+			SetPrefix(backup.Prefix).
+			SetBackupPaths(backup.BackupPaths).
+			SetExcludePaths(backup.ExcludePaths).
+			SetIsSetupComplete(backup.IsSetupComplete).
+			SetIcon(backup.Icon).
+			Save(b.ctx)
+	}
+	return b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
@@ -64,7 +104,6 @@ func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
 		SetExcludePaths(backup.ExcludePaths).
 		SetIsSetupComplete(backup.IsSetupComplete).
 		Save(b.ctx)
-	return err
 }
 
 func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {

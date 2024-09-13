@@ -3,6 +3,8 @@
 package backupprofile
 
 import (
+	"fmt"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -22,6 +24,8 @@ const (
 	FieldExcludePaths = "exclude_paths"
 	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
 	FieldIsSetupComplete = "is_setup_complete"
+	// FieldIcon holds the string denoting the icon field in the database.
+	FieldIcon = "icon"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -68,6 +72,7 @@ var Columns = []string{
 	FieldBackupPaths,
 	FieldExcludePaths,
 	FieldIsSetupComplete,
+	FieldIcon,
 }
 
 var (
@@ -95,6 +100,33 @@ var (
 	DefaultIsSetupComplete bool
 )
 
+// Icon defines the type for the "icon" enum field.
+type Icon string
+
+// Icon values.
+const (
+	IconHome      Icon = "home"
+	IconBriefcase Icon = "briefcase"
+	IconBook      Icon = "book"
+	IconEnvelope  Icon = "envelope"
+	IconCamera    Icon = "camera"
+	IconFire      Icon = "fire"
+)
+
+func (i Icon) String() string {
+	return string(i)
+}
+
+// IconValidator is a validator for the "icon" field enum values. It is called by the builders before save.
+func IconValidator(i Icon) error {
+	switch i {
+	case IconHome, IconBriefcase, IconBook, IconEnvelope, IconCamera, IconFire:
+		return nil
+	default:
+		return fmt.Errorf("backupprofile: invalid enum value for icon field: %q", i)
+	}
+}
+
 // OrderOption defines the ordering options for the BackupProfile queries.
 type OrderOption func(*sql.Selector)
 
@@ -116,6 +148,11 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 // ByIsSetupComplete orders the results by the is_setup_complete field.
 func ByIsSetupComplete(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsSetupComplete, opts...).ToFunc()
+}
+
+// ByIcon orders the results by the icon field.
+func ByIcon(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIcon, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

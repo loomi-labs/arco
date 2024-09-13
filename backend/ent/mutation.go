@@ -668,6 +668,7 @@ type BackupProfileMutation struct {
 	exclude_paths             *[]string
 	appendexclude_paths       []string
 	is_setup_complete         *bool
+	icon                      *backupprofile.Icon
 	clearedFields             map[string]struct{}
 	repositories              map[int]struct{}
 	removedrepositories       map[int]struct{}
@@ -1013,6 +1014,42 @@ func (m *BackupProfileMutation) ResetIsSetupComplete() {
 	m.is_setup_complete = nil
 }
 
+// SetIcon sets the "icon" field.
+func (m *BackupProfileMutation) SetIcon(b backupprofile.Icon) {
+	m.icon = &b
+}
+
+// Icon returns the value of the "icon" field in the mutation.
+func (m *BackupProfileMutation) Icon() (r backupprofile.Icon, exists bool) {
+	v := m.icon
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIcon returns the old "icon" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldIcon(ctx context.Context) (v backupprofile.Icon, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIcon is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIcon requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIcon: %w", err)
+	}
+	return oldValue.Icon, nil
+}
+
+// ResetIcon resets all changes to the "icon" field.
+func (m *BackupProfileMutation) ResetIcon() {
+	m.icon = nil
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
 func (m *BackupProfileMutation) AddRepositoryIDs(ids ...int) {
 	if m.repositories == nil {
@@ -1248,7 +1285,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
@@ -1263,6 +1300,9 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.is_setup_complete != nil {
 		fields = append(fields, backupprofile.FieldIsSetupComplete)
+	}
+	if m.icon != nil {
+		fields = append(fields, backupprofile.FieldIcon)
 	}
 	return fields
 }
@@ -1282,6 +1322,8 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIsSetupComplete:
 		return m.IsSetupComplete()
+	case backupprofile.FieldIcon:
+		return m.Icon()
 	}
 	return nil, false
 }
@@ -1301,6 +1343,8 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIsSetupComplete:
 		return m.OldIsSetupComplete(ctx)
+	case backupprofile.FieldIcon:
+		return m.OldIcon(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1344,6 +1388,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIsSetupComplete(v)
+		return nil
+	case backupprofile.FieldIcon:
+		v, ok := value.(backupprofile.Icon)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIcon(v)
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
@@ -1417,6 +1468,9 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldIsSetupComplete:
 		m.ResetIsSetupComplete()
+		return nil
+	case backupprofile.FieldIcon:
+		m.ResetIcon()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)

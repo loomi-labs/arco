@@ -41,7 +41,9 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		a = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
-		profile = p
+		profile, err = a.BackupClient().SaveBackupProfile(*p)
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
 		now = time.Now()
 	}
 

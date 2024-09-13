@@ -61,6 +61,12 @@ func (bpc *BackupProfileCreate) SetNillableIsSetupComplete(b *bool) *BackupProfi
 	return bpc
 }
 
+// SetIcon sets the "icon" field.
+func (bpc *BackupProfileCreate) SetIcon(b backupprofile.Icon) *BackupProfileCreate {
+	bpc.mutation.SetIcon(b)
+	return bpc
+}
+
 // SetID sets the "id" field.
 func (bpc *BackupProfileCreate) SetID(i int) *BackupProfileCreate {
 	bpc.mutation.SetID(i)
@@ -194,6 +200,14 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
 		return &ValidationError{Name: "is_setup_complete", err: errors.New(`ent: missing required field "BackupProfile.is_setup_complete"`)}
 	}
+	if _, ok := bpc.mutation.Icon(); !ok {
+		return &ValidationError{Name: "icon", err: errors.New(`ent: missing required field "BackupProfile.icon"`)}
+	}
+	if v, ok := bpc.mutation.Icon(); ok {
+		if err := backupprofile.IconValidator(v); err != nil {
+			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -245,6 +259,10 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 	if value, ok := bpc.mutation.IsSetupComplete(); ok {
 		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 		_node.IsSetupComplete = value
+	}
+	if value, ok := bpc.mutation.Icon(); ok {
+		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+		_node.Icon = value
 	}
 	if nodes := bpc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

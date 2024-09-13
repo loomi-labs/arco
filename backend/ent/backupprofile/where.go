@@ -219,6 +219,26 @@ func IsSetupCompleteNEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNEQ(FieldIsSetupComplete, v))
 }
 
+// IconEQ applies the EQ predicate on the "icon" field.
+func IconEQ(v Icon) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldIcon, v))
+}
+
+// IconNEQ applies the NEQ predicate on the "icon" field.
+func IconNEQ(v Icon) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldIcon, v))
+}
+
+// IconIn applies the In predicate on the "icon" field.
+func IconIn(vs ...Icon) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldIn(FieldIcon, vs...))
+}
+
+// IconNotIn applies the NotIn predicate on the "icon" field.
+func IconNotIn(vs ...Icon) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNotIn(FieldIcon, vs...))
+}
+
 // HasRepositories applies the HasEdge predicate on the "repositories" edge.
 func HasRepositories() predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
