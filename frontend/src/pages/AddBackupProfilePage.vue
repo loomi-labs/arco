@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { backupprofile, backupschedule, ent } from "../../wailsjs/go/models";
+import { backupprofile, ent } from "../../wailsjs/go/models";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { rDashboardPage } from "../router";
@@ -11,18 +11,11 @@ import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import { Path, toPaths } from "../common/types";
 import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
+import ScheduleSelection from "../components/ScheduleSelection.vue";
 
 /************
  * Types
  ************/
-
-enum BackupFrequency {
-  None = "none",
-  Hourly = "hourly",
-  Daily = "daily",
-  Weekly = "weekly",
-  Monthly = "monthly",
-}
 
 enum Step {
   SelectData = 0,
@@ -84,14 +77,6 @@ const isExcludePathsValid = ref(false);
 const isBackupNameValid = ref(false);
 const selectedIcon = ref<Icon>(icons[0]);
 
-// Step 2
-const backupSchedule = ref<ent.BackupSchedule | undefined>(undefined);
-const runPeriodicBackups = ref(false);
-const backupFrequency = ref<BackupFrequency>(BackupFrequency.None);
-const timeOfDay = ref<Date>(new Date());
-const weekday = ref<backupschedule.Weekday>(backupschedule.Weekday.monday);
-const monthday = ref(1);
-
 // Step 3
 const repositories = ref<ent.Repository[]>([]);
 const showConnectRepoModal = ref(false);
@@ -103,13 +88,6 @@ const repoName = ref("");
 /************
  * Functions
  ************/
-
-
-
-//  todo: Replace with tailwindcss
-function capitalize(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 // Step 1
 function saveBackupPaths(paths: Path[]) {
@@ -147,15 +125,6 @@ function validateBackupName() {
   isBackupNameValid.value = backupProfile.value.name.length > 0;
 }
 
-// async function getDirectorySuggestions() {
-//   try {
-//     const result = await backupClient.GetDirectorySuggestions();
-//     directorySuggestions.value = toPaths(false, result);
-//   } catch (error: any) {
-//     await showAndLogError("Failed to get directory suggestions", error);
-//   }
-// }
-
 async function saveBackupProfile(): Promise<boolean> {
   try {
     // await backupClient.SaveBackupProfile(backupProfile.value);
@@ -164,10 +133,6 @@ async function saveBackupProfile(): Promise<boolean> {
     return false;
   }
   return true;
-}
-
-function handleDirectoryUpdate(directories: Path[]) {
-  backupProfile.value.backupPaths = directories.filter((dir) => dir.isAdded).map((dir) => dir.path);
 }
 
 async function getExistingRepositories() {
@@ -179,51 +144,8 @@ async function getExistingRepositories() {
 }
 
 // Step 2
-const monthdayAsString = (num: number) => {
-  switch (num) {
-    case 1:
-      return "1st";
-    case 2:
-      return "2nd";
-    case 3:
-      return "3rd";
-    default:
-      return `${num}th`;
-  }
-};
-
-async function saveBackupSchedule(): Promise<boolean> {
-  if (!runPeriodicBackups.value) {
-    backupSchedule.value = undefined;
-
-    try {
-      await backupClient.DeleteBackupSchedule(backupProfile.value.id);
-    } catch (error: any) {
-      await showAndLogError("Failed to delete backup schedule", error);
-      return false;
-    }
-  } else {
-    backupSchedule.value = ent.BackupSchedule.createFrom();
-    if (backupFrequency.value === BackupFrequency.Hourly) {
-      backupSchedule.value.hourly = true;
-    } else if (backupFrequency.value === BackupFrequency.Daily) {
-      backupSchedule.value.dailyAt = timeOfDay.value;
-    } else if (backupFrequency.value === BackupFrequency.Weekly) {
-      backupSchedule.value.weekday = weekday.value;
-      backupSchedule.value.weeklyAt = timeOfDay.value;
-    } else if (backupFrequency.value === BackupFrequency.Monthly) {
-      backupSchedule.value.monthday = monthday.value;
-      backupSchedule.value.monthlyAt = timeOfDay.value;
-    }
-
-    try {
-      await backupClient.SaveBackupSchedule(backupProfile.value.id, backupSchedule.value);
-    } catch (error: any) {
-      await showAndLogError("Failed to save backup schedule", error);
-      return false;
-    }
-  }
-  return true;
+function saveSchedule(schedule: ent.BackupSchedule | undefined) {
+  backupProfile.value.edges.backupSchedule = schedule;
 }
 
 // Step 3
@@ -307,6 +229,8 @@ const isStep1Valid = computed(() => {
   return isBackupPathsValid.value && isExcludePathsValid && isBackupNameValid.value;
 });
 
+currentStep.value = Step.Schedule;
+
 </script>
 
 <template>
@@ -323,6 +247,7 @@ const isStep1Valid = computed(() => {
         <li class='step' :class="{'step-primary': currentStep >= 2}">Repository</li>
       </ul>
 
+      <!-- 1. Step - Data Selection -->
       <template v-if='currentStep === Step.SelectData'>
         <!-- Data to backup Card -->
         <h2 class='text-3xl py-4'>Data to backup</h2>
@@ -396,67 +321,17 @@ const isStep1Valid = computed(() => {
         </div>
       </template>
 
+      <!-- 2. Step - Schedule -->
       <template v-if='currentStep === Step.Schedule'>
-        <h2>Do you want to run periodic backups?</h2>
-        <div class='flex flex-col items-center'>
-          <label>
-            <input type='checkbox' class='toggle' v-model='runPeriodicBackups' />
-            Run Periodic Backups
-          </label>
-          <p>Every</p>
-          <div class='flex'>
+        <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
+        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule'
+                           @update:schedule='saveSchedule'
+                           @delete:schedule='() => saveSchedule(undefined)' />
 
-            <div class='flex flex-col'>
-              <div class='flex'>
-                <label for='hourly'>Hour</label>
-                <input type='radio' class='radio' id='hourly' :value='BackupFrequency.Hourly'
-                       v-model='backupFrequency' />
-              </div>
-            </div>
-
-            <div class='flex flex-col'>
-              <div>
-                <label for='daily'>Day</label>
-                <input type='radio' class='radio' id='daily' :value='BackupFrequency.Daily'
-                       v-model='backupFrequency' />
-              </div>
-              <input type='time' v-model='timeOfDay'>
-            </div>
-
-            <div class='flex flex-col'>
-              <div>
-                <label for='weekly'>Week</label>
-                <input type='radio' class='radio' id='weekly' :value='BackupFrequency.Weekly'
-                       v-model='backupFrequency' />
-              </div>
-              <select v-model='weekday'>
-                <option v-for='option in backupschedule.Weekday' :key='option' :value='option'>
-                  {{ capitalize(option) }}
-                </option>
-              </select>
-              <input type='time' v-model='timeOfDay'>
-            </div>
-
-            <div class='flex flex-col'>
-              <div>
-                <label for='monthly'>Month</label>
-                <input type='radio' class='radio' id='monthly' :value='BackupFrequency.Monthly'
-                       v-model='backupFrequency' />
-              </div>
-              <select v-model='monthday'>
-                <option v-for='option in 31' :key='option' :value='option'>
-                  {{ monthdayAsString(option) }}
-                </option>
-              </select>
-              <input type='time' v-model='timeOfDay'>
-            </div>
-          </div>
+        <div class='flex justify-center gap-6 py-10'>
+          <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
+          <button class='btn btn-primary min-w-24' @click='nextStep'>Next</button>
         </div>
-
-        <div style='height: 20px'></div>
-
-        <button class='btn btn-outline' @click='previousStep'>Back</button>
-        <button class='btn btn-primary' @click='nextStep'>Next</button>
       </template>
 
       <template v-if='currentStep === Step.Repository'>

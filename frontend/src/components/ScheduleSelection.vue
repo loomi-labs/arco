@@ -194,31 +194,35 @@ watch(cleanedSchedule, (newSchedule) => {
 <template>
   <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
     <div class='flex items-center justify-between mb-4'>
-      <h2 class='text-xl font-semibold'>{{ $t("run_periodic_backups") }}</h2>
-      <input type='checkbox' class='toggle toggle-primary' v-model='isScheduleEnabled'>
+      <h3 class='text-xl font-semibold'>{{ $t("run_periodic_backups") }}</h3>
+      <input type='checkbox' class='toggle toggle-secondary' v-model='isScheduleEnabled'>
     </div>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold mb-4'>{{ $t("every") }}</h3>
       <div class='flex w-full'>
         <!-- Hourly -->
-        <div class='flex space-x-2 w-40'>
-          <input type='radio' name='backupFrequency' class='radio radio-primary' id='hourly'
+        <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
+             :class='backupFrequency !== BackupFrequency.Hourly ? "cursor-pointer hover:bg-secondary/50" : ""'
+             @click='() => backupFrequency = BackupFrequency.Hourly'>
+          <label for='hourly'>{{ $t("hour") }}</label>
+          <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
                  :value='BackupFrequency.Hourly'
                  @change='backupFrequencyChanged'
                  v-model='backupFrequency'>
-          <label for='hourly'>{{ $t("hour") }}</label>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Daily -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='daily'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='backupFrequency !== BackupFrequency.Daily ? "cursor-pointer hover:bg-secondary/50" : ""'
+             @click='() => backupFrequency = BackupFrequency.Daily'>
+          <div class='flex justify-between space-x-2'>
+            <label for='daily'>{{ $t("day") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Daily'
                    v-model='backupFrequency'>
-            <label for='daily'>{{ $t("day") }}</label>
           </div>
           <input type='time' class='input input-bordered input-sm text-base w-20'
                  :disabled='!isScheduleEnabled  || backupFrequency !== BackupFrequency.Daily'
@@ -227,13 +231,15 @@ watch(cleanedSchedule, (newSchedule) => {
         <div class='divider divider-horizontal'></div>
 
         <!-- Weekly -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='weekly'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='backupFrequency !== BackupFrequency.Weekly ? "cursor-pointer hover:bg-secondary/50" : ""'
+             @click='() => backupFrequency = BackupFrequency.Weekly'>
+          <div class='flex justify-between space-x-2'>
+            <label for='weekly'>{{ $t("week") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Weekly'
                    v-model='backupFrequency'>
-            <label for='weekly'>{{ $t("week") }}</label>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
@@ -242,20 +248,22 @@ watch(cleanedSchedule, (newSchedule) => {
               {{ $t(`types.${option}`) }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
+          <input type='time' class='input input-bordered input-sm text-base'
                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
                  v-model='weeklyAtDateTime'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Monthly -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='monthly'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='backupFrequency !== BackupFrequency.Monthly ? "cursor-pointer hover:bg-secondary/50" : ""'
+             @click='() => backupFrequency = BackupFrequency.Monthly'>
+          <div class='flex justify-between space-x-2'>
+            <label for='monthly'>{{ $t("month") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Monthly'
                    v-model='backupFrequency'>
-            <label for='monthly'>{{ $t("month") }}</label>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
@@ -264,7 +272,7 @@ watch(cleanedSchedule, (newSchedule) => {
               {{ option }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
+          <input type='time' class='input input-bordered input-sm text-base'
                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
                  v-model='monthlyAtDateTime'>
         </div>
