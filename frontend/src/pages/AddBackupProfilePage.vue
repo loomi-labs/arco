@@ -2,16 +2,15 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, backupschedule, ent } from "../../wailsjs/go/models";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { rDashboardPage } from "../router";
 import Navbar from "../components/Navbar.vue";
-import { LogDebug } from "../../wailsjs/runtime";
 import { showAndLogError } from "../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import { Path, toPaths } from "../common/types";
-import { CameraIcon, BookOpenIcon, BriefcaseIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
+import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
 
 /************
  * Types
@@ -43,12 +42,32 @@ interface Icon {
  ************/
 
 const icons: Icon[] = [
-  { type: backupprofile.Icon.home, color: "bg-blue-500 hover:bg-blue-500/50 text-dark dark:text-white", html: HomeIcon },
-  { type: backupprofile.Icon.briefcase, color: "bg-indigo-500 hover:bg-indigo-500/50 text-dark dark:text-white", html: BriefcaseIcon },
-  { type: backupprofile.Icon.book, color: "bg-purple-500 hover:bg-purple-500/50 text-dark dark:text-white", html: BookOpenIcon },
-  { type: backupprofile.Icon.envelope, color: "bg-green-500 hover:bg-green-500/50 text-dark dark:text-white", html: EnvelopeIcon },
-  { type: backupprofile.Icon.camera, color: "bg-yellow-500 hover:bg-yellow-500/50 text-dark dark:text-white", html: CameraIcon },
-  { type: backupprofile.Icon.fire, color: "bg-red-500 hover:bg-red-500/50 text-dark dark:text-white", html: FireIcon },
+  {
+    type: backupprofile.Icon.home,
+    color: "bg-blue-500 hover:bg-blue-500/50 text-dark dark:text-white",
+    html: HomeIcon
+  },
+  {
+    type: backupprofile.Icon.briefcase,
+    color: "bg-indigo-500 hover:bg-indigo-500/50 text-dark dark:text-white",
+    html: BriefcaseIcon
+  },
+  {
+    type: backupprofile.Icon.book,
+    color: "bg-purple-500 hover:bg-purple-500/50 text-dark dark:text-white",
+    html: BookOpenIcon
+  },
+  {
+    type: backupprofile.Icon.envelope,
+    color: "bg-green-500 hover:bg-green-500/50 text-dark dark:text-white",
+    html: EnvelopeIcon
+  },
+  {
+    type: backupprofile.Icon.camera,
+    color: "bg-yellow-500 hover:bg-yellow-500/50 text-dark dark:text-white",
+    html: CameraIcon
+  },
+  { type: backupprofile.Icon.fire, color: "bg-red-500 hover:bg-red-500/50 text-dark dark:text-white", html: FireIcon }
 ];
 
 const router = useRouter();
@@ -61,6 +80,7 @@ const runValidation = ref(false);
 // Step 1
 const directorySuggestions = ref<Path[]>([]);
 const isBackupPathsValid = ref(false);
+const isExcludePathsValid = ref(false);
 const isBackupNameValid = ref(false);
 const selectedIcon = ref<Icon>(icons[0]);
 
@@ -94,6 +114,12 @@ function capitalize(text: string) {
 // Step 1
 function saveBackupPaths(paths: Path[]) {
   backupProfile.value.backupPaths = paths.map((dir) => dir.path);
+
+  // If we don't have a name yet, suggest one based on the first path
+  if (!backupProfile.value.name && backupProfile.value.backupPaths.length > 0) {
+    backupProfile.value.name = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
+    validateBackupName();
+  }
 }
 
 function saveExcludePaths(paths: Path[]) {
@@ -117,6 +143,10 @@ async function createBackupProfile() {
   }
 }
 
+function validateBackupName() {
+  isBackupNameValid.value = backupProfile.value.name.length > 0;
+}
+
 // async function getDirectorySuggestions() {
 //   try {
 //     const result = await backupClient.GetDirectorySuggestions();
@@ -128,7 +158,7 @@ async function createBackupProfile() {
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
-    await backupClient.SaveBackupProfile(backupProfile.value);
+    // await backupClient.SaveBackupProfile(backupProfile.value);
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
@@ -244,10 +274,10 @@ const nextStep = () => {
   runValidation.value = true;
   switch (currentStep.value) {
     case Step.SelectData:
-      LogDebug(`isStep1Valid: ${isStep1Valid.value}`);
       if (!isStep1Valid.value) {
         return;
       }
+      currentStep.value++;
       break;
     case Step.Repository:
       currentStep.value++;
@@ -271,24 +301,10 @@ const finish = async () => {
  ************/
 
 createBackupProfile();
-// getDirectorySuggestions();
 getExistingRepositories();
 
-watch(() => backupProfile, (_) => {
-  LogDebug(`backupProfile: ${backupProfile.value}`);
-
-  isBackupPathsValid.value = backupProfile.value.backupPaths.length > 0;
-
-  isBackupNameValid.value = backupProfile.value.name.length > 0;
-
-  // isStep1Valid.value = isBackupPathsValid.value && isBackupNameValid.value;
-
-  LogDebug(`isBackupPathsValid: ${isBackupPathsValid.value}`);
-  LogDebug(`isBackupNameValid: ${isBackupNameValid.value}`);
-});
-
 const isStep1Valid = computed(() => {
-  return isBackupPathsValid.value && isBackupNameValid.value;
+  return isBackupPathsValid.value && isExcludePathsValid && isBackupNameValid.value;
 });
 
 </script>
@@ -314,12 +330,9 @@ const isStep1Valid = computed(() => {
           :paths='directorySuggestions'
           :is-backup-selection='true'
           :show-title='false'
-          @update:paths='saveBackupPaths' />
-        <div
-          class='text-error pt-2'
-          :class="{'invisible': !runValidation || isBackupPathsValid}">
-          Please select at least one directory to backup
-        </div>
+          :run-min-one-path-validation='runValidation'
+          @update:paths='saveBackupPaths'
+          @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
         <!-- Data to ignore Card -->
         <h2 class='text-3xl pt-8 pb-4'>Data to ignore</h2>
@@ -327,18 +340,21 @@ const isStep1Valid = computed(() => {
           :paths='[]'
           :is-backup-selection='false'
           :show-title='false'
-          @update:paths='saveExcludePaths' />
+          @update:paths='saveExcludePaths'
+          @update:is-valid='(isValid) => isExcludePathsValid = isValid' />
 
         <!-- Name and Logo Selection Card-->
         <h2 class='text-3xl pt-8 pb-4'>Name</h2>
-        <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-5 gap-5'>
+        <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-10 py-2 gap-5'>
 
           <!-- Name -->
           <label class='form-control w-full '>
             <!-- Hack-span to align input with other elements -->
             <span class='label invisible'><span class='label-text-alt'>-</span></span>
             <label class='input input-bordered flex items-center gap-2'>
-              <input v-model='backupProfile.name' type='text' class='grow' placeholder='fancy-pants-backup'/>
+              <input type='text' class='grow' placeholder='fancy-pants-backup'
+                     v-model='backupProfile.name'
+                     @change='validateBackupName' />
             </label>
             <span class='label' :class="{'invisible': !runValidation || isBackupNameValid}">
               <span class='label-text-alt text-error'>Please choose a name for your backup profile</span>

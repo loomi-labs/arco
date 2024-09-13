@@ -187,9 +187,18 @@ onMounted(() => {
           </ul>
         </div>
         <!-- Data to backup Card -->
-        <DataSelection :paths='backupPaths' :is-backup-selection='true' @update:paths='saveBackupPaths' />
+        <DataSelection
+          :paths='backupPaths'
+          :is-backup-selection='true'
+          :run-min-one-path-validation='true'
+          @update:paths='saveBackupPaths'
+        />
         <!-- Data to ignore Card -->
-        <DataSelection :paths='excludePaths' :is-backup-selection='false' @update:paths='saveExcludePaths' />
+        <DataSelection
+          :paths='excludePaths'
+          :is-backup-selection='false'
+          @update:paths='saveExcludePaths'
+        />
       </div>
 
       <!-- Schedule Section -->
