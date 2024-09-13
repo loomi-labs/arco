@@ -18,6 +18,10 @@ export function DeleteBackupSchedule(arg1) {
   return window['go']['app']['BackupClient']['DeleteBackupSchedule'](arg1);
 }
 
+export function DoesPathExist(arg1) {
+  return window['go']['app']['BackupClient']['DoesPathExist'](arg1);
+}
+
 export function DryRunPruneBackup(arg1) {
   return window['go']['app']['BackupClient']['DryRunPruneBackup'](arg1);
 }

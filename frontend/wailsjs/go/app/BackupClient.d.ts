@@ -13,6 +13,8 @@ export function DeleteBackupProfile(arg1:number,arg2:boolean):Promise<void>;
 
 export function DeleteBackupSchedule(arg1:number):Promise<void>;
 
+export function DoesPathExist(arg1:string):Promise<boolean>;
+
 export function DryRunPruneBackup(arg1:types.BackupId):Promise<void>;
 
 export function DryRunPruneBackups(arg1:number):Promise<void>;

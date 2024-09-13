@@ -67,6 +67,11 @@ func (b *BackupClient) GetDirectorySuggestions() []string {
 	return []string{}
 }
 
+func (b *BackupClient) DoesPathExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 	return b.db.BackupProfile.
 		Query().

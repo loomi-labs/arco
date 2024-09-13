@@ -1,6 +1,7 @@
 export interface Path {
   path: string;
   isAdded: boolean;
+  validationError?: string;
 }
 
 /* toPaths takes a string array and returns an array of Path objects */
