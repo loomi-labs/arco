@@ -33,13 +33,14 @@ const props = defineProps({
   }
 });
 
+const emitUpdatePathsStr = "update:paths";
+const emitIsValidStr = "update:is-valid";
+const emit = defineEmits([emitUpdatePathsStr, emitIsValidStr]);
+
 const paths = ref<Path[]>(props.paths);
 const newPath = ref<string>("");
 const newPathError = ref<string | null>(null);
 const minOnePathError = ref<string | null>(null);
-const emitString = "update:paths";
-const isValidString = "is-valid";
-const emit = defineEmits([emitString, isValidString]);
 
 /************
  * Functions
@@ -64,6 +65,8 @@ async function swapPathState(path: Path) {
 }
 
 function isDuplicatePath(path: string, maxOccurrences = 1): boolean {
+  // Check if the path is already added
+  // Set maxOccurrences to 0 if the path is not yet added
   return paths.value.filter((p) => p.isAdded).filter((p) => p.path === path).length > maxOccurrences;
 }
 
@@ -154,9 +157,9 @@ async function addNewPath() {
 
 function emitResults(allValid: boolean) {
   if (allValid) {
-    emit(emitString, paths.value);
+    emit(emitUpdatePathsStr, paths.value);
   }
-  emit(isValidString, allValid);
+  emit(emitIsValidStr, allValid);
 }
 
 /************
@@ -173,6 +176,8 @@ watch(() => props.runMinOnePathValidation, async (_) => {
   await runFullValidation();
 });
 
+runFullValidation();
+
 </script>
 
 <template>
@@ -188,7 +193,7 @@ watch(() => props.runMinOnePathValidation, async (_) => {
           <label class='form-control'>
             <input type='text' class='input input-sm min-w-full'
                    :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !path.isAdded }"
-                   @change="() => { path.isAdded = true; runFullValidation(); }"
+                   @change='() => { path.isAdded = true; runFullValidation(); }'
                    v-model='path.path' />
             <span v-if='path.validationError' class='label'>
               <span class='label text-xs text-error'>{{ path.validationError }}</span>
