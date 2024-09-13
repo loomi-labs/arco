@@ -5,7 +5,6 @@ import { ref, watch } from "vue";
 import { Path } from "../common/types";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
-import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -26,14 +25,21 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true
+  },
+  runMinOnePathValidation: {
+    type: Boolean,
+    required: false,
+    default: false
   }
 });
 
 const paths = ref<Path[]>(props.paths);
 const newPath = ref<string>("");
 const newPathError = ref<string | null>(null);
+const minOnePathError = ref<string | null>(null);
 const emitString = "update:paths";
-const emit = defineEmits([emitString]);
+const isValidString = "is-valid";
+const emit = defineEmits([emitString, isValidString]);
 
 /************
  * Functions
@@ -68,8 +74,8 @@ async function sanitizeAndValidate(path: Path) {
     return;
   }
 
-  // Remove trailing slash from backup selections
-  if (path.path.endsWith("/") && props.isBackupSelection) {
+  // Remove trailing slash if it's a backup selection and the path is not the root
+  if (path.path.endsWith("/") && path.path.length > 1 && props.isBackupSelection) {
     path.path = path.path.slice(0, -1);
   }
 
@@ -85,6 +91,18 @@ async function sanitizeAndValidate(path: Path) {
   }
 }
 
+function validateMinOnePath() {
+  if (props.runMinOnePathValidation) {
+    if (paths.value.filter((p) => p.isAdded).length === 0) {
+      minOnePathError.value = "At least one path must be selected";
+    } else {
+      minOnePathError.value = null;
+    }
+  } else {
+    minOnePathError.value = null;
+  }
+}
+
 async function runFullValidation() {
   let allValid = true;
   for (const path of paths.value) {
@@ -94,9 +112,12 @@ async function runFullValidation() {
     }
   }
 
-  if (allValid) {
-    emitUpdatePaths();
+  validateMinOnePath();
+  if (minOnePathError.value) {
+    allValid = false;
   }
+
+  emitResults(allValid);
 }
 
 async function addDirectory() {
@@ -131,9 +152,11 @@ async function addNewPath() {
   await runFullValidation();
 }
 
-function emitUpdatePaths() {
-  emit(emitString, paths.value);
-  LogDebug(`Emitted paths: ${JSON.stringify(paths.value)}`);
+function emitResults(allValid: boolean) {
+  if (allValid) {
+    emit(emitString, paths.value);
+  }
+  emit(isValidString, allValid);
 }
 
 /************
@@ -143,6 +166,11 @@ function emitUpdatePaths() {
 // Watch for changes to props.paths
 watch(() => props.paths, (newPaths) => {
   paths.value = newPaths;
+});
+
+// Watch for changes to props.runMinOnePathValidation
+watch(() => props.runMinOnePathValidation, async (_) => {
+  await runFullValidation();
 });
 
 </script>
@@ -158,18 +186,18 @@ watch(() => props.paths, (newPaths) => {
       <tr v-for='(path, index) in paths' :key='index'>
         <td>
           <label class='form-control'>
-            <input type='text' class='input input-sm'
+            <input type='text' class='input input-sm min-w-full'
                    :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !path.isAdded }"
-                   @change='runFullValidation'
+                   @change="() => { path.isAdded = true; runFullValidation(); }"
                    v-model='path.path' />
             <span v-if='path.validationError' class='label'>
               <span class='label text-xs text-error'>{{ path.validationError }}</span>
             </span>
           </label>
         </td>
-        <td>
-          <label class='btn btn-sm btn-circle btn-outline swap swap-rotate'
-                 :class='{"swap-active btn-error": path.isAdded, "btn-success": !path.isAdded}'
+        <td class='text-right'>
+          <label class='btn btn-sm btn-circle swap swap-rotate'
+                 :class='{"swap-active btn-outline btn-error": path.isAdded, "btn-success": !path.isAdded}'
                  @click='swapPathState(path)'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
@@ -186,10 +214,10 @@ watch(() => props.paths, (newPaths) => {
                    v-model='newPath' />
           </label>
           <span v-if='newPathError' class='label'>
-              <span class='label text-xs text-error'>{{ newPathError }}</span>
-            </span>
+            <span class='label text-xs text-error'>{{ newPathError }}</span>
+          </span>
         </td>
-        <td>
+        <td class='text-right'>
           <button class='btn btn-success btn-sm' @click='addDirectory()'>
             {{ $t("add") }}
             <PlusIcon class='size-4' />
@@ -198,6 +226,9 @@ watch(() => props.paths, (newPaths) => {
       </tr>
       </tbody>
     </table>
+    <span v-if='minOnePathError' class='label'>
+      <span class='label text-xs text-error'>{{ minOnePathError }}</span>
+    </span>
   </div>
 </template>
 
