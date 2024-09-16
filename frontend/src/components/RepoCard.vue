@@ -225,8 +225,8 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
 </script>
 
 <template>
-  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "cursor-pointer hover:bg-base-100/50": showHover && !props.highlight }'
+  <div class='flex justify-between ac-card p-10 border-2 h-full'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "ac-card-hover": showHover && !props.highlight }'
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>

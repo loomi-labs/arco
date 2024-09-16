@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles */
+@layer components {
+  .ac-card {
+    @apply bg-base-100 shadow-md rounded-lg overflow-hidden;
+  }
+
+  .ac-card-hover {
+    @apply cursor-pointer hover:bg-base-100/50;
+  }
+}

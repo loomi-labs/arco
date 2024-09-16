@@ -181,7 +181,7 @@ runFullValidation();
 </script>
 
 <template>
-  <div class='flex flex-col bg-base-100 p-10 rounded-xl shadow-lg'>
+  <div class='flex flex-col ac-card p-10'>
     <h2 v-if='showTitle' class='text-lg font-semibold mb-4'>
       {{ props.isBackupSelection ? $t("data_to_backup") : $t("data_to_ignore") }}</h2>
 
