@@ -5,7 +5,6 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
 import { onMounted, onUnmounted, ref } from "vue";
 import { showAndLogError } from "../common/error";
-import Navbar from "../components/Navbar.vue";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
 import { rAddBackupProfilePage } from "../router";
@@ -127,33 +126,75 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='bg-base-200 w-svw h-svh'>
-    <Navbar></Navbar>
-    <!-- Backups -->
-    <div class='container mx-auto text-left pt-10'>
-      <h1 class='text-4xl font-bold'>Backups</h1>
+  <!-- Backups -->
+  <div class='container mx-auto text-left pt-10'>
+    <h1 class='text-4xl font-bold'>Backups</h1>
+    <div class='group/carousel relative pt-4'>
+      <div class='carousel w-full'>
+        <!-- Backup Card -->
+        <div v-for='(backup, index) in backups' :key='index'
+             class='carousel-item py-4'
+             :class='`w-1/${nbrOfCardsPerPage}`'
+             :id='`backup-profile-${index}`'>
+          <BackupCard
+            :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
+            :backup='backup'>
+          </BackupCard>
+        </div>
+        <!-- Add Backup Card -->
+        <div class='carousel-item py-4'
+             :class='`w-1/${nbrOfCardsPerPage}`'
+             :id='`backup-profile-${backups.length}`'>
+          <div
+            class='flex justify-center items-center h-full w-full ac-card-dotted'
+            @click='router.push(rAddBackupProfilePage)'
+          >
+            <PlusCircleIcon class='size-12' />
+            <div class='pl-2 text-lg font-semibold'>Add Backup</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carousel Controls -->
+      <div
+        class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
+        <button
+          class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+          :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
+          @click='slide({prev: true, backup: true})'>❮
+        </button>
+        <button
+          class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
+          :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
+          @click='slide({next: true, backup: true})'>❯
+        </button>
+      </div>
+    </div>
+
+    <!-- Repositories -->
+    <div class='container text-left mx-auto pt-10'>
+      <h1 class='text-4xl font-bold'>Repositories</h1>
       <div class='group/carousel relative pt-4'>
         <div class='carousel w-full'>
-          <!-- Backup Card -->
-          <div v-for='(backup, index) in backups' :key='index'
+          <!-- Repository Card -->
+          <div v-for='(repo, index) in repos' :key='index'
                class='carousel-item py-4'
                :class='`w-1/${nbrOfCardsPerPage}`'
-               :id='`backup-profile-${index}`'>
-            <BackupCard
-              :class='index === indexOfFirstVisibleBackup + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
-              :backup='backup'>
-            </BackupCard>
+               :id='`repository-${index}`'>
+            <RepoCardSimple :repo='repo'
+                            :class='index === indexOfFirstVisibleRepo + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
+            ></RepoCardSimple>
           </div>
-          <!-- Add Backup Card -->
+          <!-- Add Repository Card -->
           <div class='carousel-item py-4'
                :class='`w-1/${nbrOfCardsPerPage}`'
-               :id='`backup-profile-${backups.length}`'>
+               :id='`repository-${repos.length}`'>
             <div
               class='flex justify-center items-center h-full w-full ac-card-dotted'
-              @click='router.push(rAddBackupProfilePage)'
+              @click='LogDebug("Add Repository clicked")'
             >
               <PlusCircleIcon class='size-12' />
-              <div class='pl-2 text-lg font-semibold'>Add Backup</div>
+              <div class='pl-2 text-lg font-semibold'>Add Repository</div>
             </div>
           </div>
         </div>
@@ -163,59 +204,14 @@ onUnmounted(() => {
           class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-            :style='`visibility: ${indexOfFirstVisibleBackup === 0 ? "hidden" : "visible"};`'
-            @click='slide({prev: true, backup: true})'>❮
+            :style='`visibility: ${indexOfFirstVisibleRepo === 0 ? "hidden" : "visible"};`'
+            @click='slide({prev: true, repo: true})'>❮
           </button>
           <button
             class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-            :style='`visibility: ${indexOfFirstVisibleBackup < backups.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
-            @click='slide({next: true, backup: true})'>❯
+            :style='`visibility: ${indexOfFirstVisibleRepo < repos.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
+            @click='slide({next: true, repo: true})'>❯
           </button>
-        </div>
-      </div>
-
-      <!-- Repositories -->
-      <div class='container text-left mx-auto pt-10'>
-        <h1 class='text-4xl font-bold'>Repositories</h1>
-        <div class='group/carousel relative pt-4'>
-          <div class='carousel w-full'>
-            <!-- Repository Card -->
-            <div v-for='(repo, index) in repos' :key='index'
-                 class='carousel-item py-4'
-                 :class='`w-1/${nbrOfCardsPerPage}`'
-                 :id='`repository-${index}`'>
-              <RepoCardSimple :repo='repo'
-                              :class='index === indexOfFirstVisibleRepo + nbrOfCardsPerPage -1 ? "mr-0" : "mr-8"'
-              ></RepoCardSimple>
-            </div>
-            <!-- Add Repository Card -->
-            <div class='carousel-item py-4'
-                 :class='`w-1/${nbrOfCardsPerPage}`'
-                 :id='`repository-${repos.length}`'>
-              <div
-                class='flex justify-center items-center h-full w-full ac-card-dotted'
-                @click='LogDebug("Add Repository clicked")'
-              >
-                <PlusCircleIcon class='size-12' />
-                <div class='pl-2 text-lg font-semibold'>Add Repository</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Carousel Controls -->
-          <div
-            class='hidden group-hover/carousel:flex absolute left-5 right-5 top-1/2 -translate-y-1/2 transform justify-between z-10 pointer-events-none'>
-            <button
-              class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-              :style='`visibility: ${indexOfFirstVisibleRepo === 0 ? "hidden" : "visible"};`'
-              @click='slide({prev: true, repo: true})'>❮
-            </button>
-            <button
-              class='btn btn-lg btn-circle btn-primary hover:bg-primary/50 bg-transparent border-transparent text-2xl pointer-events-auto'
-              :style='`visibility: ${indexOfFirstVisibleRepo < repos.length -nbrOfCardsPerPage + 1? "visible" : "hidden"};`'
-              @click='slide({next: true, repo: true})'>❯
-            </button>
-          </div>
         </div>
       </div>
     </div>

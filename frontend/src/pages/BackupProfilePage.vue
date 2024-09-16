@@ -5,7 +5,6 @@ import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
-import Navbar from "../components/Navbar.vue";
 import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
@@ -138,95 +137,92 @@ onMounted(() => {
 </script>
 
 <template>
-  <Navbar></Navbar>
-  <div class='bg-base-200 min-w-svw min-h-svh'>
-    <div class='container mx-auto text-left pt-10'>
-      <!-- Data Section -->
-      <div class='flex items-center justify-between mb-4'>
-        <div class='tooltip tooltip-bottom tooltip-error'
-             :class='validationError ? "tooltip-open" : ""'
-             :data-tip='validationError'
-        >
-          <label class='flex items-center gap-2'>
-            <input
-              type='text'
-              class='text-2xl font-bold bg-transparent w-10'
-              v-model='backup.name'
-              @input='[adjustBackupNameWidth(), saveBackupName()]'
-              ref='backupNameInput'
-            />
-            <PencilIcon class='size-4' />
-          </label>
-        </div>
-        <div class='dropdown dropdown-end'>
-          <div tabindex='0' role='button' class='btn m-1'>
-            <EllipsisVerticalIcon class='size-6' />
-          </div>
-          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
-            <li><a @click='() => isDeleteDialogVisible = true'>Delete
-              <TrashIcon class='size-4' />
-            </a></li>
-          </ul>
-        </div>
-        <ConfirmDialog
-          message='Are you sure you want to delete this backup profile?'
-          :isVisible='isDeleteDialogVisible'
-          @confirm='deleteBackupProfile'
-          @cancel='isDeleteDialogVisible = false'
-        />
+  <div class='container mx-auto text-left pt-10'>
+    <!-- Data Section -->
+    <div class='flex items-center justify-between mb-4'>
+      <div class='tooltip tooltip-bottom tooltip-error'
+           :class='validationError ? "tooltip-open" : ""'
+           :data-tip='validationError'
+      >
+        <label class='flex items-center gap-2'>
+          <input
+            type='text'
+            class='text-2xl font-bold bg-transparent w-10'
+            v-model='backup.name'
+            @input='[adjustBackupNameWidth(), saveBackupName()]'
+            ref='backupNameInput'
+          />
+          <PencilIcon class='size-4' />
+        </label>
       </div>
-
-      <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
-        <!-- Storage Card -->
-        <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
-          <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
-          <ul>
-            <li>600 GB</li>
-            <li>15603 Files</li>
-            <li>Prefix: {{ backup.prefix }}</li>
-          </ul>
+      <div class='dropdown dropdown-end'>
+        <div tabindex='0' role='button' class='btn m-1'>
+          <EllipsisVerticalIcon class='size-6' />
         </div>
-        <!-- Data to backup Card -->
-        <DataSelection
-          :paths='backupPaths'
-          :is-backup-selection='true'
-          :run-min-one-path-validation='true'
-          @update:paths='saveBackupPaths'
-        />
-        <!-- Data to ignore Card -->
-        <DataSelection
-          :paths='excludePaths'
-          :is-backup-selection='false'
-          @update:paths='saveExcludePaths'
-        />
+        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
+          <li><a @click='() => isDeleteDialogVisible = true'>Delete
+            <TrashIcon class='size-4' />
+          </a></li>
+        </ul>
       </div>
-
-      <!-- Schedule Section -->
-      <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-      <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
-                         @delete:schedule='deleteSchedule' />
-
-      <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
-      <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-        <!-- Repositories -->
-        <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
-          <RepoCard
-            :repo-id='repo.id'
-            :backup-profile-id='backup.id'
-            :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
-            :show-hover='(backup.edges.repositories?.length ?? 0)  > 1'
-            @click='() => selectedRepo = repo'
-            @repo:status='repoStatuses.set(repo.id, $event)'>
-          </RepoCard>
-        </div>
-      </div>
-      <ArchivesCard v-if='selectedRepo'
-                    :backup-profile-id='backup.id'
-                    :repo='selectedRepo!'
-                    :repo-status='repoStatuses.get(selectedRepo.id)!'
-                    :highlight='(backup.edges.repositories?.length ?? 0) > 1'>
-      </ArchivesCard>
+      <ConfirmDialog
+        message='Are you sure you want to delete this backup profile?'
+        :isVisible='isDeleteDialogVisible'
+        @confirm='deleteBackupProfile'
+        @cancel='isDeleteDialogVisible = false'
+      />
     </div>
+
+    <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
+      <!-- Storage Card -->
+      <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
+        <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
+        <ul>
+          <li>600 GB</li>
+          <li>15603 Files</li>
+          <li>Prefix: {{ backup.prefix }}</li>
+        </ul>
+      </div>
+      <!-- Data to backup Card -->
+      <DataSelection
+        :paths='backupPaths'
+        :is-backup-selection='true'
+        :run-min-one-path-validation='true'
+        @update:paths='saveBackupPaths'
+      />
+      <!-- Data to ignore Card -->
+      <DataSelection
+        :paths='excludePaths'
+        :is-backup-selection='false'
+        @update:paths='saveExcludePaths'
+      />
+    </div>
+
+    <!-- Schedule Section -->
+    <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
+    <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
+                       @delete:schedule='deleteSchedule' />
+
+    <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
+    <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
+      <!-- Repositories -->
+      <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
+        <RepoCard
+          :repo-id='repo.id'
+          :backup-profile-id='backup.id'
+          :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+          :show-hover='(backup.edges.repositories?.length ?? 0)  > 1'
+          @click='() => selectedRepo = repo'
+          @repo:status='repoStatuses.set(repo.id, $event)'>
+        </RepoCard>
+      </div>
+    </div>
+    <ArchivesCard v-if='selectedRepo'
+                  :backup-profile-id='backup.id'
+                  :repo='selectedRepo!'
+                  :repo-status='repoStatuses.get(selectedRepo.id)!'
+                  :highlight='(backup.edges.repositories?.length ?? 0) > 1'>
+    </ArchivesCard>
   </div>
 </template>
 
