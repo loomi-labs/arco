@@ -4,11 +4,16 @@
 
 /* Custom styles */
 @layer components {
-  .ac-card {
-    @apply bg-base-100 shadow-md rounded-lg overflow-hidden;
-  }
+    /* Use ac-prefix because card is already taken by daisUI */
+    .ac-card {
+        @apply bg-base-100 shadow-lg rounded-2xl overflow-hidden;
+    }
 
-  .ac-card-hover {
-    @apply cursor-pointer hover:bg-base-100/50;
-  }
+    .ac-card-hover {
+        @apply ac-card cursor-pointer hover:bg-base-100/50;
+    }
+
+    .ac-card-dotted {
+        @apply ac-card bg-transparent border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400
+    }
 }

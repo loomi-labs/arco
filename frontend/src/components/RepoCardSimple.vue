@@ -96,9 +96,9 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
 </script>
 
 <template>
-  <div class='group/repo flex justify-between ac-card ac-card-hover h-full w-full'
+  <div class='group/repo flex justify-between ac-card-hover h-full w-full'
     @click='router.push(withId(rRepositoryDetailPage, repo.id))'>
-    <div class='flex flex-col w-full rounded-l-xl p-6'>
+    <div class='flex flex-col w-full p-6'>
       <div class='flex-grow text-xl font-semibold pb-6' :class='getTextColor()'>{{ repo.name }}</div>
       <div class='flex justify-between'>
         <div>{{ $t("archives") }}</div>
@@ -113,8 +113,8 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 dark:text-white h-full w-full max-w-40 py-6 rounded-r-xl' :class='getBgColor()'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 dark:text-white h-full w-full max-w-40 py-6 rounded-r-xl' :class='getBgColor()'/>
+    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 dark:text-white h-full w-full max-w-40 py-6' :class='getBgColor()'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 dark:text-white h-full w-full max-w-40 py-6' :class='getBgColor()'/>
   </div>
 </template>
 

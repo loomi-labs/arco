@@ -149,8 +149,7 @@ onUnmounted(() => {
                :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`backup-profile-${backups.length}`'>
             <div
-              class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
-                      border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
+              class='flex justify-center items-center h-full w-full ac-card-dotted'
               @click='router.push(rAddBackupProfilePage)'
             >
               <PlusCircleIcon class='size-12' />
@@ -194,8 +193,7 @@ onUnmounted(() => {
                  :class='`w-1/${nbrOfCardsPerPage}`'
                  :id='`repository-${repos.length}`'>
               <div
-                class='flex justify-center items-center h-full w-full rounded-xl shadow-lg cursor-pointer
-                        border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400'
+                class='flex justify-center items-center h-full w-full ac-card-dotted'
                 @click='LogDebug("Add Repository clicked")'
               >
                 <PlusCircleIcon class='size-12' />
