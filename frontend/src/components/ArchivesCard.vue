@@ -137,7 +137,7 @@ watch(() => props.repo, async () => {
 
 </script>
 <template>
-  <div class='ac-card'
+  <div class='ac-card p-10'
        :class='{ "border-2 border-primary": props.highlight }'>
     <div v-if='pagination.total > 0'>
       <table class='w-full table table-xs table-zebra'>

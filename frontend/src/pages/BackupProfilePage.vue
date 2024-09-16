@@ -139,7 +139,7 @@ onMounted(() => {
 
 <template>
   <Navbar></Navbar>
-  <div class='bg-base-200 w-svw h-svh'>
+  <div class='bg-base-200 min-w-svw min-h-svh'>
     <div class='container mx-auto text-left pt-10'>
       <!-- Data Section -->
       <div class='flex items-center justify-between mb-4'>
