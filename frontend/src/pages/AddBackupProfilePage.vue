@@ -42,10 +42,17 @@ interface Icon {
   html: any;
 }
 
+enum SelectedRepoAction {
+  None = "none",
+  ConnectExisting = "connect-existing",
+  CreateNew = "create-new",
+}
+
 enum SelectedRepoType {
   None = "none",
-  Existing = "existing",
-  New = "new",
+  Local = "local",
+  Remote = "remote",
+  ArcoCloud = "arco-cloud",
 }
 
 /************
@@ -103,7 +110,7 @@ const repoUrl = ref("");
 const repoPassword = ref("");
 const repoName = ref("");
 
-// new
+const selectedRepoAction = ref(SelectedRepoAction.None);
 const selectedRepoType = ref(SelectedRepoType.None);
 
 /************
@@ -372,10 +379,11 @@ currentStep.value = Step.Repository;
         <div class='flex gap-4 pt-10 pb-6'>
           <!-- Add new Repository Card -->
           <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.New }'
-               @click='selectedRepoType = SelectedRepoType.New'>
+               :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.CreateNew }'
+               @click='selectedRepoAction = SelectedRepoAction.CreateNew'>
             <p>Add new repository</p>
-            <div class='relative size-24 group-hover:text-secondary'>
+            <div class='relative size-24 group-hover:text-secondary'
+                 :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.CreateNew}'>
               <CircleStackIcon class='absolute inset-0 size-24 z-10' />
               <div
                 class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
@@ -385,10 +393,11 @@ currentStep.value = Step.Repository;
           </div>
           <!-- Connect to existing Repository Card -->
           <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Existing }'
-               @click='selectedRepoType = SelectedRepoType.Existing'>
+               :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.ConnectExisting }'
+               @click='selectedRepoAction = SelectedRepoAction.ConnectExisting; selectedRepoType = SelectedRepoType.None'>
             <p>Connect to existing repository</p>
-            <div class='relative size-24 group-hover:text-secondary'>
+            <div class='relative size-24 group-hover:text-secondary'
+                 :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.ConnectExisting}'>
               <ArrowRightCircleIcon class='absolute inset-0 size-24 z-10' />
             </div>
           </div>
@@ -396,24 +405,33 @@ currentStep.value = Step.Repository;
 
         <!-- New Repository Options -->
         <div class='flex gap-4 w-1/2 pr-2 transition-all'
-             :class='{"hidden": selectedRepoType !== SelectedRepoType.New}'>
+             :class='{"hidden": selectedRepoAction !== SelectedRepoAction.CreateNew}'>
           <!-- Local Repository Card -->
-          <div class='group flex flex-col ac-card-hover p-10 w-full'>
-            <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4' />
+          <div class='group flex flex-col ac-card-hover p-10 w-full'
+               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'
+               @click='selectedRepoType = SelectedRepoType.Local'>
+            <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
+                                 :class='{"text-secondary": selectedRepoType === SelectedRepoType.Local}' />
             <p>Local Repository</p>
             <div class='divider'></div>
             <p>Store your backups on a local drive.</p>
           </div>
           <!-- Remote Repository Card -->
-          <div class='group flex flex-col ac-card-hover p-10 w-full'>
-            <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4' />
+          <div class='group flex flex-col ac-card-hover p-10 w-full'
+               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Remote }'
+               @click='selectedRepoType = SelectedRepoType.Remote'>
+            <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
+                                   :class='{"text-secondary": selectedRepoType === SelectedRepoType.Remote}' />
             <p>Remote Repository</p>
             <div class='divider'></div>
             <p>Store your backups on a remote server.</p>
           </div>
           <!-- Arco Cloud Card -->
-          <div class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'>
-            <FireIcon class='size-24 self-center mb-4' />
+          <div class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'
+               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.ArcoCloud }'
+               @click='selectedRepoType = SelectedRepoType.ArcoCloud'>
+            <FireIcon class='size-24 self-center mb-4'
+                      :class='{"text-secondary": selectedRepoType === SelectedRepoType.ArcoCloud}' />
             <p>Arco Cloud</p>
             <div class='divider'></div>
             <p>Store your backups in Arco Cloud.</p>
