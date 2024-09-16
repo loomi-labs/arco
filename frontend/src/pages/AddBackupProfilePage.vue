@@ -10,7 +10,19 @@ import { showAndLogError } from "../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
 import { Path, toPaths } from "../common/types";
-import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
+import {
+  ArrowRightCircleIcon,
+  BookOpenIcon,
+  BriefcaseIcon,
+  CameraIcon,
+  CircleStackIcon,
+  ComputerDesktopIcon,
+  EnvelopeIcon,
+  FireIcon,
+  GlobeEuropeAfricaIcon,
+  HomeIcon,
+  PlusCircleIcon
+} from "@heroicons/vue/24/solid";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 
 /************
@@ -28,6 +40,12 @@ interface Icon {
   type: backupprofile.Icon;
   color: string;
   html: any;
+}
+
+enum SelectedRepoType {
+  None = "none",
+  Existing = "existing",
+  New = "new",
 }
 
 /************
@@ -85,9 +103,21 @@ const repoUrl = ref("");
 const repoPassword = ref("");
 const repoName = ref("");
 
+// new
+const selectedRepoType = ref(SelectedRepoType.None);
+
 /************
  * Functions
  ************/
+
+function getMaxWithPerStep(): string {
+  switch (currentStep.value) {
+    case Step.Repository:
+      return "";
+    default:
+      return "max-w-[600px]";
+  }
+}
 
 // Step 1
 function saveBackupPaths(paths: Path[]) {
@@ -229,19 +259,19 @@ const isStep1Valid = computed(() => {
   return isBackupPathsValid.value && isExcludePathsValid && isBackupNameValid.value;
 });
 
-currentStep.value = Step.Schedule;
+currentStep.value = Step.Repository;
 
 </script>
 
 <template>
   <div class='bg-base-200 min-w-svw min-h-svh'>
     <Navbar></Navbar>
-    <div class='container mx-auto max-w-[600px] text-left flex flex-col'>
+    <div class='container mx-auto text-left flex flex-col' :class='getMaxWithPerStep()'>
 
       <h1 class='text-4xl font-bold text-center pt-10'>New Backup Profile</h1>
 
       <!-- Stepper -->
-      <ul class='steps py-10'>
+      <ul class='steps max-w-[600px] w-full self-center py-10'>
         <li class='step' :class="{'step-primary': currentStep >= 0}">Select data</li>
         <li class='step' :class="{'step-primary': currentStep >= 1}">Schedule</li>
         <li class='step' :class="{'step-primary': currentStep >= 2}">Repository</li>
@@ -334,8 +364,66 @@ currentStep.value = Step.Schedule;
         </div>
       </template>
 
+      <!-- 3. Step - Repository -->
       <template v-if='currentStep === Step.Repository'>
-        <div class='flex flex-col items-center'>
+        <h2 class='text-3xl py-4'>Connect Repositories</h2>
+        <p class='text-lg'>Choose the repositories where you want to store your backups</p>
+
+        <div class='flex gap-4 pt-10 pb-6'>
+          <!-- Add new Repository Card -->
+          <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
+               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.New }'
+               @click='selectedRepoType = SelectedRepoType.New'>
+            <p>Add new repository</p>
+            <div class='relative size-24 group-hover:text-secondary'>
+              <CircleStackIcon class='absolute inset-0 size-24 z-10' />
+              <div
+                class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
+                <PlusCircleIcon class='size-10' />
+              </div>
+            </div>
+          </div>
+          <!-- Connect to existing Repository Card -->
+          <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
+               :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Existing }'
+               @click='selectedRepoType = SelectedRepoType.Existing'>
+            <p>Connect to existing repository</p>
+            <div class='relative size-24 group-hover:text-secondary'>
+              <ArrowRightCircleIcon class='absolute inset-0 size-24 z-10' />
+            </div>
+          </div>
+        </div>
+
+        <!-- New Repository Options -->
+        <div class='flex gap-4 w-1/2 pr-2 transition-all'
+             :class='{"hidden": selectedRepoType !== SelectedRepoType.New}'>
+          <!-- Local Repository Card -->
+          <div class='group flex flex-col ac-card-hover p-10 w-full'>
+            <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4' />
+            <p>Local Repository</p>
+            <div class='divider'></div>
+            <p>Store your backups on a local drive.</p>
+          </div>
+          <!-- Remote Repository Card -->
+          <div class='group flex flex-col ac-card-hover p-10 w-full'>
+            <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4' />
+            <p>Remote Repository</p>
+            <div class='divider'></div>
+            <p>Store your backups on a remote server.</p>
+          </div>
+          <!-- Arco Cloud Card -->
+          <div class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'>
+            <FireIcon class='size-24 self-center mb-4' />
+            <p>Arco Cloud</p>
+            <div class='divider'></div>
+            <p>Store your backups in Arco Cloud.</p>
+            <p>Coming Soon</p>
+          </div>
+        </div>
+
+
+        <div class=' flex flex-col items-center
+          '>
 
           <h2>Existing Repositories</h2>
           <div class='flex flex-col' v-for='(repository, index) in existingRepositories' :key='index'>
@@ -425,6 +513,7 @@ currentStep.value = Step.Schedule;
         <button class='btn btn-primary' @click='nextStep'>Next</button>
       </template>
 
+      <!-- 4. Step - Summary -->
       <template v-if='currentStep === Step.Summary'>
         <div class='flex items-center'>
           <h2>Summary</h2>
