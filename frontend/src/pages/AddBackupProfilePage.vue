@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
@@ -23,7 +23,6 @@ import {
   PlusCircleIcon
 } from "@heroicons/vue/24/solid";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
-import ConfirmModal from "../components/common/ConfirmModal.vue";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 
@@ -270,10 +269,9 @@ currentStep.value = Step.Repository;
 selectedRepoType.value = SelectedRepoType.Local;
 selectedRepoAction.value = SelectedRepoAction.CreateNew;
 
-
-const modal = ref<InstanceType<typeof ConfirmModal>>();
-
-const showModal = () => modal.value?.showModal();
+onMounted(() => {
+  createLocalRepoModal?.value?.showModal();
+});
 
 </script>
 
