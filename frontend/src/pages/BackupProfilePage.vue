@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
@@ -11,8 +11,8 @@ import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useToast } from "vue-toastification";
+import ConfirmModal from "../components/ConfirmModal.vue";
 
 /************
  * Variables
@@ -28,6 +28,8 @@ const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const backupNameInput = ref<HTMLInputElement | null>(null);
 const validationError = ref<string | null>(null);
 const isDeleteDialogVisible = ref(false);
+const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
+const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
 /************
  * Functions
@@ -160,17 +162,19 @@ onMounted(() => {
           <EllipsisVerticalIcon class='size-6' />
         </div>
         <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
-          <li><a @click='() => isDeleteDialogVisible = true'>Delete
+          <li><a @click='() => confirmDeleteModal?.show()'>Delete
             <TrashIcon class='size-4' />
           </a></li>
         </ul>
       </div>
-      <ConfirmDialog
-        message='Are you sure you want to delete this backup profile?'
-        :isVisible='isDeleteDialogVisible'
-        @confirm='deleteBackupProfile'
-        @cancel='isDeleteDialogVisible = false'
-      />
+      <ConfirmModal :ref='confirmDeleteModalKey'
+                    confirm-class='btn-error'
+                    :confirm-text='$t("delete")'
+                    @confirm='deleteBackupProfile'
+                    @cancel='isDeleteDialogVisible = false'
+      >
+        <p>Are you sure you want to delete this backup profile?</p>
+      </ConfirmModal>
     </div>
 
     <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
