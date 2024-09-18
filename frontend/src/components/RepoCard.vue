@@ -12,7 +12,7 @@ import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { polling } from "../common/polling";
-import ConfirmModal from "./ConfirmModal.vue";
+import ConfirmModal from "./common/ConfirmModal.vue";
 
 /************
  * Types

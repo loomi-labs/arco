@@ -12,7 +12,7 @@ import { Path, toPaths } from "../common/types";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { useToast } from "vue-toastification";
-import ConfirmModal from "../components/ConfirmModal.vue";
+import ConfirmModal from "../components/common/ConfirmModal.vue";
 
 /************
  * Variables

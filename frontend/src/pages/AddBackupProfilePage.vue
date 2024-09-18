@@ -2,13 +2,13 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
-import { NewRepo, Path, toPaths } from "../common/types";
+import { Path, toPaths } from "../common/types";
 import {
   ArrowRightCircleIcon,
   BookOpenIcon,
@@ -23,8 +23,9 @@ import {
   PlusCircleIcon
 } from "@heroicons/vue/24/solid";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
-import CreateRepositoryModal from "../components/CreateRepositoryModal.vue";
-import { LogDebug } from "../../wailsjs/runtime";
+import ConfirmModal from "../components/common/ConfirmModal.vue";
+import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
+import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 
 /************
  * Types
@@ -105,6 +106,8 @@ const selectedIcon = ref<Icon>(icons[0]);
 
 // Step 3
 const repositories = ref<ent.Repository[]>([]);
+
+// TODO: remove this stuff
 const showConnectRepoModal = ref(false);
 const showAddNewRepoModal = ref(false);
 const repoUrl = ref("");
@@ -113,6 +116,10 @@ const repoName = ref("");
 
 const selectedRepoAction = ref(SelectedRepoAction.None);
 const selectedRepoType = ref(SelectedRepoType.None);
+const createLocalRepoModalKey = "create_local_repo_modal";
+const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
+const createRemoteRepoModalKey = "create_remote_repo_modal";
+const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
 
 /************
  * Functions
@@ -211,18 +218,6 @@ const connectExistingRemoteRepo = async () => {
   }
 };
 
-const createNewRepo = async () => {
-  try {
-    const repo = await repoClient.Create(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
-    repositories.value.push(repo);
-
-    showAddNewRepoModal.value = false;
-    toast.success(`Created new repository ${repo.name}`);
-  } catch (error: any) {
-    await showAndLogError("Failed to init new repository", error);
-  }
-};
-
 const addRepo = (repo: ent.Repository) => {
   repositories.value.push(repo);
 };
@@ -272,6 +267,13 @@ const isStep1Valid = computed(() => {
 });
 
 currentStep.value = Step.Repository;
+selectedRepoType.value = SelectedRepoType.Local;
+selectedRepoAction.value = SelectedRepoAction.CreateNew;
+
+
+const modal = ref<InstanceType<typeof ConfirmModal>>();
+
+const showModal = () => modal.value?.showModal();
 
 </script>
 
@@ -412,7 +414,10 @@ currentStep.value = Step.Repository;
         <!-- Local Repository Card -->
         <div class='group flex flex-col ac-card-hover p-10 w-full'
              :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'
-             @click='selectedRepoType = SelectedRepoType.Local'>
+             @click='() => {
+                selectedRepoType = SelectedRepoType.Local;
+                createLocalRepoModal?.showModal();
+             }'>
           <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
                                :class='{"text-secondary": selectedRepoType === SelectedRepoType.Local}' />
           <p>Local Repository</p>
@@ -422,7 +427,10 @@ currentStep.value = Step.Repository;
         <!-- Remote Repository Card -->
         <div class='group flex flex-col ac-card-hover p-10 w-full'
              :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Remote }'
-             @click='selectedRepoType = SelectedRepoType.Remote'>
+             @click='() => {
+                selectedRepoType = SelectedRepoType.Remote;
+                createRemoteRepoModal?.showModal();
+             }'>
           <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
                                  :class='{"text-secondary": selectedRepoType === SelectedRepoType.Remote}' />
           <p>Remote Repository</p>
@@ -442,10 +450,13 @@ currentStep.value = Step.Repository;
         </div>
       </div>
 
-      <CreateRepositoryModal :class='{"modal-open": selectedRepoType === SelectedRepoType.Local}'
-                             :backup-profile-id='backupProfile.id'
+      <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
                              @close='selectedRepoType = SelectedRepoType.None'
-                             @update:repo-created='addRepo' />
+                             @update:repo-created='(repo) => addRepo(repo)'/>
+
+      <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
+                                  @close='selectedRepoType = SelectedRepoType.None'
+                                  @update:repo-created='(repo) => addRepo(repo)'/>
 
 
       <div class=' flex flex-col items-center

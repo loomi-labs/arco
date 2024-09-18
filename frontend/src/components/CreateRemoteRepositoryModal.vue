@@ -8,8 +8,8 @@ import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import FormField from "./FormField.vue";
 import { formInputClass } from "../common/form";
+import FormField from "./common/FormField.vue";
 
 /************
  * Types
@@ -93,7 +93,7 @@ defineExpose({
     @close='cancel'
   >
     <div class='modal-box'>
-      <h2 class='text-2xl'>Add a new repository</h2>
+      <h2 class='text-2xl'>Add a new remote repository</h2>
       <VeeForm class='flex flex-col'
                :validation-schema='values'>
 

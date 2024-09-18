@@ -15,7 +15,7 @@ import {
 } from "@heroicons/vue/24/solid";
 import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
-import ConfirmModal from "./ConfirmModal.vue";
+import ConfirmModal from "./common/ConfirmModal.vue";
 
 /************
  * Types

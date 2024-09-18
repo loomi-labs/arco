@@ -15,7 +15,7 @@ export interface Props {
  * Variables
  ************/
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 /************
  * Functions
