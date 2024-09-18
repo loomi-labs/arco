@@ -9,6 +9,7 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
+	"arco/backend/util"
 	"errors"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -68,8 +69,37 @@ func (b *BackupClient) GetDirectorySuggestions() []string {
 }
 
 func (b *BackupClient) DoesPathExist(path string) bool {
-	_, err := os.Stat(path)
+	_, err := os.Stat(util.ExpandPath(path))
 	return err == nil
+}
+
+func (b *BackupClient) IsDirectory(path string) bool {
+	info, err := os.Stat(util.ExpandPath(path))
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func (b *BackupClient) IsDirectoryEmpty(path string) bool {
+	path = util.ExpandPath(path)
+	if !b.IsDirectory(path) {
+		return false
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	return err != nil
+}
+
+func (b *BackupClient) CreateDirectory(path string) error {
+	return os.MkdirAll(util.ExpandPath(path), 0755)
 }
 
 func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {

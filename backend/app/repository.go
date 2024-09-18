@@ -8,6 +8,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
+	"arco/backend/util"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -70,8 +71,8 @@ func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.R
 		Save(r.ctx)
 }
 
-func (r *RepositoryClient) Create(name, url, password string) (*ent.Repository, error) {
-	if err := r.borg.Init(url, password); err != nil {
+func (r *RepositoryClient) Create(name, path, password string, noPassword bool) (*ent.Repository, error) {
+	if err := r.borg.Init(util.ExpandPath(path), password, noPassword); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +80,7 @@ func (r *RepositoryClient) Create(name, url, password string) (*ent.Repository, 
 	return r.db.Repository.
 		Create().
 		SetName(name).
-		SetURL(url).
+		SetURL(path).
 		SetPassword(password).
 		Save(r.ctx)
 }

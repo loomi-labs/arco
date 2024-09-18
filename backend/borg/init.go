@@ -5,8 +5,16 @@ import (
 	"os/exec"
 )
 
-func (b *Borg) Init(url, password string) error {
-	cmd := exec.Command(b.path, "init", "--encryption=repokey-blake2", url)
+func (b *Borg) Init(url, password string, noPassword bool) error {
+	cmdList := []string{"init"}
+	if noPassword {
+		cmdList = append(cmdList, "--encryption=none")
+	} else {
+		cmdList = append(cmdList, "--encryption=repokey-blake2")
+	}
+	cmdList = append(cmdList, url)
+
+	cmd := exec.Command(b.path, cmdList...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
