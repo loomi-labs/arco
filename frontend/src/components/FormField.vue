@@ -29,14 +29,14 @@ const props = defineProps<Props>();
 
 <template>
   <label class='label'>
-    <span class='label-text'>{{ props.label }}</span>
+    <span class='label-text'>{{ label }}</span>
   </label>
   <label class='input input-bordered flex items-center gap-2'>
     <slot />
-    <ExclamationCircleIcon v-if='props.error' class='size-6 text-error' />
+    <ExclamationCircleIcon v-if='error' class='size-6 text-error' />
   </label>
   <div class='label'>
-    <span class='text-error text-sm min-h-5'>{{ props.error }}</span>
+    <span class='text-error text-sm min-h-5'>{{ error }}</span>
   </div>
 </template>
 

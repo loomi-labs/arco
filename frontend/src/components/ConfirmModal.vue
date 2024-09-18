@@ -41,8 +41,7 @@ function showModal() {
 }
 
 defineExpose({
-  // todo: RENAME
-  show: showModal,
+  showModal,
   close: (returnVal?: string): void => dialog.value?.close(returnVal)
 });
 

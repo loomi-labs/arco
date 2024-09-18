@@ -169,7 +169,7 @@ async function runButtonAction() {
   } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
     await abortBackup();
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    confirmRemoveLockModal.value?.show();
+    confirmRemoveLockModal.value?.showModal();
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
     await unmountAll();
   }

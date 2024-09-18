@@ -19,11 +19,9 @@ import { formInputClass } from "../common/form";
  * Variables
  ************/
 
-const emitCancelStr = "close";
 const emitCreateRepoStr = "update:repo-created";
 const emit = defineEmits<{
   (e: typeof emitCreateRepoStr, repo: ent.Repository): void
-  (e: typeof emitCancelStr): void
 }>();
 
 // Captures ssh url with optional port and path (see: https://borgbackup.readthedocs.io/en/stable/usage/general.html#repository-urls)
@@ -56,11 +54,9 @@ const dialog = ref<HTMLDialogElement>();
 
 function cancel() {
   resetForm();
-  emit(emitCancelStr);
 }
 
 function showModal() {
-  resetForm();
   dialog.value?.showModal();
 }
 
@@ -81,9 +77,7 @@ async function createRepo() {
 }
 
 defineExpose({
-  // TODO: rename to showModal
-  show: showModal,
-  resetForm
+  showModal,
 });
 
 /************
@@ -116,10 +110,12 @@ defineExpose({
         </FormField>
 
         <div class='modal-action'>
-          <button class='btn' type='reset' @click.prevent='dialog?.close()'>
+          <button class='btn' type='reset'
+                  @click.prevent='cancel(); dialog?.close();'>
             Cancel
           </button>
-          <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating' @click='createRepo()'>
+          <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating'
+                  @click.prevent='createRepo()'>
             Create
             <span v-if='isCreating' class='loading loading-spinner'></span>
           </button>

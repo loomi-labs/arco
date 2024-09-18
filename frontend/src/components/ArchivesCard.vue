@@ -180,7 +180,7 @@ watch(() => props.repo, async () => {
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='() => {
                       archiveToBeDeleted = archive.id;
-                      confirmDeleteModal?.show();
+                      confirmDeleteModal?.showModal();
                     }'>
               <TrashIcon class='size-4' />
             </button>

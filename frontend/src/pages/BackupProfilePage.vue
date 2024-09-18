@@ -161,7 +161,7 @@ onMounted(() => {
           <EllipsisVerticalIcon class='size-6' />
         </div>
         <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
-          <li><a @click='() => confirmDeleteModal?.show()'>Delete
+          <li><a @click='() => confirmDeleteModal?.showModal()'>Delete
             <TrashIcon class='size-4' />
           </a></li>
         </ul>
