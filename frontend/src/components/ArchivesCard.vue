@@ -224,7 +224,7 @@ watch(() => props.repo, async () => {
                 :confirmText='$t("delete")'
                 confirm-class='btn-error'
                 @confirm='deleteArchive()'
-                @cancel='archiveToBeDeleted = undefined'
+                @close='archiveToBeDeleted = undefined'
   >
     <p>{{ $t("confirm_delete_archive") }}</p>
   </ConfirmModal>

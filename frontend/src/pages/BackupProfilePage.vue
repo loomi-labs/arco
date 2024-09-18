@@ -27,7 +27,6 @@ const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const backupNameInput = ref<HTMLInputElement | null>(null);
 const validationError = ref<string | null>(null);
-const isDeleteDialogVisible = ref(false);
 const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
@@ -171,7 +170,6 @@ onMounted(() => {
                     confirm-class='btn-error'
                     :confirm-text='$t("delete")'
                     @confirm='deleteBackupProfile'
-                    @cancel='isDeleteDialogVisible = false'
       >
         <p>Are you sure you want to delete this backup profile?</p>
       </ConfirmModal>

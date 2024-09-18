@@ -20,9 +20,9 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm or cancel)
 const emitConfirmStr = "confirm";
-const emitCancelStr = "cancel";
-const emit = defineEmits([emitConfirmStr, emitCancelStr]);
+const emit = defineEmits([emitConfirmStr]);
 
 const dialog = ref<HTMLDialogElement>();
 const { t } = useI18n();
@@ -31,29 +31,20 @@ const { t } = useI18n();
  * Functions
  ************/
 
-const cancel = () => {
-  dialog.value?.close();
-  emit(emitCancelStr);
-};
-
-const confirm = () => {
+function confirm() {
   dialog.value?.close();
   emit(emitConfirmStr);
-};
+}
 
-const visible = ref(false);
-
-const showModal = () => {
+function showModal() {
   dialog.value?.showModal();
-  visible.value = true;
-};
+}
 
 defineExpose({
+  // todo: RENAME
   show: showModal,
-  close: (returnVal?: string): void => dialog.value?.close(returnVal),
-  visible
+  close: (returnVal?: string): void => dialog.value?.close(returnVal)
 });
-
 
 /************
  * Lifecycle
@@ -65,10 +56,9 @@ defineExpose({
   <dialog
     ref='dialog'
     class='modal'
-    @close='visible = false'
+    @close='dialog?.close()'
   >
     <form
-      v-if='visible'
       method='dialog'
       class='modal-box flex flex-col p-6'
       :class='props.formClass'
@@ -83,7 +73,6 @@ defineExpose({
               value='false'
               class='btn btn-outline'
               :class='props.cancelClass'
-              @click.prevent='cancel'
             >
               {{ props.cancelText ?? $t("cancel") }}
             </button>

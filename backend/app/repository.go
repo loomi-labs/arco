@@ -70,7 +70,7 @@ func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.R
 		Save(r.ctx)
 }
 
-func (r *RepositoryClient) Create(name, url, password string, backupProfileId int) (*ent.Repository, error) {
+func (r *RepositoryClient) Create(name, url, password string) (*ent.Repository, error) {
 	if err := r.borg.Init(url, password); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,6 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 		SetName(name).
 		SetURL(url).
 		SetPassword(password).
-		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
 }
 
