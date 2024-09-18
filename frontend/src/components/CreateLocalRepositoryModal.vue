@@ -34,17 +34,32 @@ const dialog = ref<HTMLDialogElement>();
 const isEncrypted = ref(true);
 const isNameTouchedByUser = ref(false);
 
-const { meta, values, errors, resetForm, defineField, validate } = useForm({
+const pathDoesNotExistMsg = "Path does not exist";
+
+const { meta, values, errors, resetForm, defineField } = useForm({
   validationSchema: computed(() => toTypedSchema(zod.object({
       name: zod.string({ required_error: "Enter a name for this repository" })
         .min(1, { message: "Enter a name for this repository" })
         .max(25, { message: "Name is too long" }),
       location: zod.string({ required_error: "Enter an existing location for this repository" })
+        .refine((path) => path.startsWith('/') || path.startsWith('~'),
+          { message: "Path must start with / or ~" }
+        )
         .refine(
           async (path) => {
             return await backupClient.DoesPathExist(path);
           },
-          { message: "Path does not exist" }
+          { message: pathDoesNotExistMsg }
+        ).refine(
+          async (path) => {
+            return await backupClient.IsDirectory(path);
+          },
+          { message: "Path is not a directory" }
+        ).refine(
+          async (path) => {
+            return await backupClient.IsDirectoryEmpty(path);
+          },
+          { message: "Directory must be empty" }
         ),
       password: zod.string()
         .optional()
@@ -70,10 +85,6 @@ const [password, passwordAttrs] = defineField("password", { validateOnBlur: true
  * Functions
  ************/
 
-function cancel() {
-  resetForm();
-}
-
 function showModal() {
   isEncrypted.value = true;
   isNameTouchedByUser.value = false;
@@ -84,36 +95,23 @@ function showModal() {
 async function createRepo() {
   try {
     isCreating.value = true;
+    const noPassword = !isEncrypted.value;
     const repo = await repoClient.Create(
       values.name as string,
       values.location as string,
-      values.password as string
+      values.password as string,
+      noPassword
     );
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
+    dialog.value?.close();
   } catch (error: any) {
     await showAndLogError("Failed to init new repository", error);
   }
   isCreating.value = false;
 }
 
-async function selectDirectory() {
-  const pathStr = await backupClient.SelectDirectory();
-  if (pathStr) {
-    location.value = pathStr;
-  }
-}
-
-defineExpose({
-  showModal
-});
-
-/************
- * Lifecycle
- ************/
-
-// When the location changes, we want to set the name based on the last part of the path
-watch(() => values.location, async (newLocation) => {
+async function setNameFromLocation(newLocation: string | undefined) {
   // If the user has touched the name field, we don't want to change it
   if (!newLocation || isNameTouchedByUser.value) {
     return;
@@ -130,15 +128,37 @@ watch(() => values.location, async (newLocation) => {
       name.value = newName.charAt(0).toUpperCase() + newName.slice(1);
     }
   }
+}
+
+async function selectDirectory() {
+  const pathStr = await backupClient.SelectDirectory();
+  if (pathStr) {
+    location.value = pathStr;
+  }
+}
+
+async function createDir() {
+  try {
+    const path = location.value?.toString() ?? "";
+    LogDebug(`Creating directory ${path}`);
+    await backupClient.CreateDirectory(path);
+    location.value = path;
+    await setNameFromLocation(path);
+  } catch (error: any) {
+    await showAndLogError("Failed to create directory", error);
+  }
+}
+
+defineExpose({
+  showModal
 });
 
-watch(() => isEncrypted.value, async () => {
-  LogDebug(`isEncrypted changed to ${isEncrypted.value}`);
-  // validate();
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  password.value = "";
-  // validate();
-});
+/************
+ * Lifecycle
+ ************/
+
+// When the location changes, we want to set the name based on the last part of the path
+watch(() => values.location, async (newLocation) => setNameFromLocation(newLocation));
 
 </script>
 
@@ -146,7 +166,7 @@ watch(() => isEncrypted.value, async () => {
   <dialog
     ref='dialog'
     class='modal'
-    @close='cancel'
+    @close='resetForm();'
   >
     <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl'>Add a new local repository</h2>
@@ -156,6 +176,11 @@ watch(() => isEncrypted.value, async () => {
           <div class='flex flex-col w-full pr-4'>
             <FormField label='Location' :error='errors.location'>
               <input :class='formInputClass' type='text' v-model='location' v-bind='locationAttrs' />
+              <template #labelRight v-if='errors.location === pathDoesNotExistMsg'>
+                <button class='btn btn-outline btn-warning btn-xs' @click.prevent='createDir()'>
+                  Create
+                </button>
+              </template>
             </FormField>
           </div>
 
@@ -190,7 +215,7 @@ watch(() => isEncrypted.value, async () => {
 
         <div class='modal-action'>
           <button class='btn' type='reset'
-                  @click.prevent='cancel(); dialog?.close();'>
+                  @click.prevent='dialog?.close();'>
             Cancel
           </button>
           <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating'

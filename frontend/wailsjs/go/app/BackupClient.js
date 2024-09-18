@@ -10,6 +10,10 @@ export function AbortBackupJobs(arg1) {
   return window['go']['app']['BackupClient']['AbortBackupJobs'](arg1);
 }
 
+export function CreateDirectory(arg1) {
+  return window['go']['app']['BackupClient']['CreateDirectory'](arg1);
+}
+
 export function DeleteBackupProfile(arg1, arg2) {
   return window['go']['app']['BackupClient']['DeleteBackupProfile'](arg1, arg2);
 }
@@ -56,6 +60,14 @@ export function GetDirectorySuggestions() {
 
 export function GetState(arg1) {
   return window['go']['app']['BackupClient']['GetState'](arg1);
+}
+
+export function IsDirectory(arg1) {
+  return window['go']['app']['BackupClient']['IsDirectory'](arg1);
+}
+
+export function IsDirectoryEmpty(arg1) {
+  return window['go']['app']['BackupClient']['IsDirectoryEmpty'](arg1);
 }
 
 export function NewBackupProfile() {

@@ -36,8 +36,9 @@ defineProps<Props>();
     <slot />
     <ExclamationCircleIcon v-if='error && !hideError' class='size-6 text-error' />
   </label>
-  <div class='label'>
+  <div class='label max-h-9'>
     <span class='text-error text-sm min-h-5' :class='{"invisible": hideError}'>{{ error }}</span>
+    <slot name='labelRight' />
   </div>
 </template>
 

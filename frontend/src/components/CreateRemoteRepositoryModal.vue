@@ -52,10 +52,6 @@ const dialog = ref<HTMLDialogElement>();
  * Functions
  ************/
 
-function cancel() {
-  resetForm();
-}
-
 function showModal() {
   dialog.value?.showModal();
 }
@@ -66,10 +62,12 @@ async function createRepo() {
     const repo = await repoClient.Create(
       values.name as string,
       values.ssh as string,
-      values.password as string
+      values.password as string,
+      false,
     );
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
+    dialog.value?.close();
   } catch (error: any) {
     await showAndLogError("Failed to init new repository", error);
   }
@@ -90,7 +88,7 @@ defineExpose({
   <dialog
     ref='dialog'
     class='modal'
-    @close='cancel'
+    @close='resetForm()'
   >
     <div class='modal-box'>
       <h2 class='text-2xl'>Add a new remote repository</h2>
@@ -111,7 +109,7 @@ defineExpose({
 
         <div class='modal-action'>
           <button class='btn' type='reset'
-                  @click.prevent='cancel(); dialog?.close();'>
+                  @click.prevent='resetForm(); dialog?.close();'>
             Cancel
           </button>
           <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating'

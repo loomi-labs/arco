@@ -9,6 +9,8 @@ export function AbortBackupJob(arg1:types.BackupId):Promise<void>;
 
 export function AbortBackupJobs(arg1:Array<types.BackupId>):Promise<void>;
 
+export function CreateDirectory(arg1:string):Promise<void>;
+
 export function DeleteBackupProfile(arg1:number,arg2:boolean):Promise<void>;
 
 export function DeleteBackupSchedule(arg1:number):Promise<void>;
@@ -32,6 +34,10 @@ export function GetCombinedBackupProgress(arg1:Array<types.BackupId>):Promise<bo
 export function GetDirectorySuggestions():Promise<Array<string>>;
 
 export function GetState(arg1:types.BackupId):Promise<state.BackupState>;
+
+export function IsDirectory(arg1:string):Promise<boolean>;
+
+export function IsDirectoryEmpty(arg1:string):Promise<boolean>;
 
 export function NewBackupProfile():Promise<ent.BackupProfile>;
 
