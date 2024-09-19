@@ -5,6 +5,7 @@ import { ref, watch } from "vue";
 import { Path } from "../common/types";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -35,7 +36,10 @@ const props = defineProps({
 
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
-const emit = defineEmits([emitUpdatePathsStr, emitIsValidStr]);
+const emit = defineEmits<{
+  (e: typeof emitUpdatePathsStr, paths: Path[]): Path[]
+  (e: typeof emitIsValidStr, isValid: boolean): boolean
+}>();
 
 const paths = ref<Path[]>(props.paths);
 const newPath = ref<string>("");
@@ -157,7 +161,7 @@ async function addNewPath() {
 
 function emitResults(allValid: boolean) {
   if (allValid) {
-    emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded).map((p) => p.path));
+    emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded));
   }
   emit(emitIsValidStr, allValid);
 }
