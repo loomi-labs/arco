@@ -2,9 +2,9 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
-import { rDashboardPage } from "../router";
+import { rBackupProfilePage, rDashboardPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
@@ -93,7 +93,7 @@ const router = useRouter();
 const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
-const existingRepositories = ref<ent.Repository[]>([]);
+const existingRepos = ref<ent.Repository[]>([]);
 const runValidation = ref(false);
 
 // Step 1
@@ -102,9 +102,11 @@ const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(false);
 const isBackupNameValid = ref(false);
 const selectedIcon = ref<Icon>(icons[0]);
+const selectIconModalKey = "select_icon_modal";
+const selectIconModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(selectIconModalKey);
 
 // Step 3
-const repositories = ref<ent.Repository[]>([]);
+const connectedRepos = ref<ent.Repository[]>([]);
 
 // TODO: remove this stuff
 const showConnectRepoModal = ref(false);
@@ -171,7 +173,11 @@ function validateBackupName() {
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
-    // await backupClient.SaveBackupProfile(backupProfile.value);
+    backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
+    backupProfile.value = await backupClient.SaveBackupProfile(backupProfile.value);
+    for (const repo of connectedRepos.value) {
+      await repoClient.AddBackupProfile(repo.id, backupProfile.value.id);
+    }
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
@@ -181,7 +187,7 @@ async function saveBackupProfile(): Promise<boolean> {
 
 async function getExistingRepositories() {
   try {
-    existingRepositories.value = await repoClient.All();
+    existingRepos.value = await repoClient.All();
   } catch (error: any) {
     await showAndLogError("Failed to get existing repositories", error);
   }
@@ -196,7 +202,7 @@ function saveSchedule(schedule: ent.BackupSchedule | undefined) {
 async function connectExistingRepo(repoId: number) {
   try {
     const repo = await repoClient.AddBackupProfile(repoId, backupProfile.value.id);
-    repositories.value.push(repo);
+    connectedRepos.value.push(repo);
 
     showConnectRepoModal.value = false;
     toast.success(`Added repository ${repo.name}`);
@@ -208,7 +214,7 @@ async function connectExistingRepo(repoId: number) {
 const connectExistingRemoteRepo = async () => {
   try {
     const repo = await repoClient.AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
-    repositories.value.push(repo);
+    connectedRepos.value.push(repo);
 
     showConnectRepoModal.value = false;
     toast.success(`Added repository ${repo.name}`);
@@ -218,17 +224,24 @@ const connectExistingRemoteRepo = async () => {
 };
 
 const addRepo = (repo: ent.Repository) => {
-  repositories.value.push(repo);
+  existingRepos.value.push(repo);
+  connectedRepos.value.push(repo);
 };
+
+async function create() {
+  try {
+    await backupClient.SaveBackupProfile(backupProfile.value);
+  } catch (error: any) {
+    await showAndLogError("Failed to save backup profile", error);
+  }
+}
 
 // Navigation
 const previousStep = async () => {
-  if (await saveBackupProfile()) {
-    currentStep.value--;
-  }
+  currentStep.value--;
 };
 
-const nextStep = () => {
+const nextStep = async () => {
   runValidation.value = true;
   switch (currentStep.value) {
     case Step.SelectData:
@@ -237,22 +250,27 @@ const nextStep = () => {
       }
       currentStep.value++;
       break;
-    case Step.Repository:
-      currentStep.value++;
-      break;
     case Step.Schedule:
       currentStep.value++;
+      break;
+    case Step.Repository:
+      if (!isStep3Valid.value) {
+        return;
+      }
+      if (await saveBackupProfile()) {
+        currentStep.value++;
+      }
       break;
   }
 };
 
-const finish = async () => {
-  backupProfile.value.isSetupComplete = true;
-  if (await saveBackupProfile()) {
-    toast.success("Backup profile saved successfully");
-  }
-  await router.push(rDashboardPage);
-};
+// const finish = async () => {
+//   backupProfile.value.isSetupComplete = true;
+//   if (await saveBackupProfile()) {
+//     toast.success("Backup profile saved successfully");
+//   }
+//   await router.push(rDashboardPage);
+// };
 
 /************
  * Lifecycle
@@ -265,13 +283,24 @@ const isStep1Valid = computed(() => {
   return isBackupPathsValid.value && isExcludePathsValid && isBackupNameValid.value;
 });
 
-currentStep.value = Step.Repository;
-selectedRepoType.value = SelectedRepoType.Local;
-selectedRepoAction.value = SelectedRepoAction.CreateNew;
-
-onMounted(() => {
-  createLocalRepoModal?.value?.showModal();
+const isStep3Valid = computed(() => {
+  return connectedRepos.value.length > 0;
 });
+
+// selectedRepoType.value = SelectedRepoType.Local;
+// selectedRepoAction.value = SelectedRepoAction.CreateNew;
+
+// onMounted(() => {
+//   // currentStep.value = Step.Repository;
+//   // createLocalRepoModal?.value?.showModal();
+// });
+//
+// // TODO: remove this stuff
+// watch(backupProfile, async (newProfile) => {
+//   // if (newProfile.name === "") {
+//   //   backupProfile.value.name = "fancy-pants-backup";
+//   // }
+// });
 
 </script>
 
@@ -330,10 +359,10 @@ onMounted(() => {
         <button
           class='btn btn-square'
           :class='selectedIcon.color'
-          onclick='selectLogoModal.showModal()'>
+          @click='selectIconModal?.showModal()'>
           <component :is='selectedIcon.html' class='size-8' />
         </button>
-        <dialog id='selectLogoModal' class='modal' autofocus>
+        <dialog class='modal' autofocus :ref='selectIconModalKey'>
           <div class='modal-box text-center min-w-fit p-10'>
             <h3 class='text-lg font-bold pb-6'>Select an icon for this backup profile</h3>
 
@@ -352,6 +381,9 @@ onMounted(() => {
               </div>
             </form>
           </div>
+          <form method='dialog' class='modal-backdrop'>
+            <button>close</button>
+          </form>
         </dialog>
       </div>
 
@@ -378,6 +410,15 @@ onMounted(() => {
     <template v-if='currentStep === Step.Repository'>
       <h2 class='text-3xl py-4'>Connect Repositories</h2>
       <p class='text-lg'>Choose the repositories where you want to store your backups</p>
+
+      <div class='flex gap-4'>
+        <div class='hover:bg-success/50 p-4' v-for='(repo, index) in existingRepos' :key='index'
+             :class='{"bg-success": connectedRepos.some(r => r.id === repo.id)}'
+              @click='connectedRepos.some(r => r.id === repo.id) ? connectedRepos = connectedRepos.filter(r => r.id !== repo.id) : connectedRepos.push(repo)'
+        >
+            {{ repo.name }}
+        </div>
+      </div>
 
       <div class='flex gap-4 pt-10 pb-6'>
         <!-- Add new Repository Card -->
@@ -449,103 +490,17 @@ onMounted(() => {
       </div>
 
       <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
-                             @close='selectedRepoType = SelectedRepoType.None'
-                             @update:repo-created='(repo) => addRepo(repo)'/>
+                                  @close='selectedRepoType = SelectedRepoType.None'
+                                  @update:repo-created='(repo) => addRepo(repo)' />
 
       <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
-                                  @close='selectedRepoType = SelectedRepoType.None'
-                                  @update:repo-created='(repo) => addRepo(repo)'/>
+                                   @close='selectedRepoType = SelectedRepoType.None'
+                                   @update:repo-created='(repo) => addRepo(repo)' />
 
-
-      <div class=' flex flex-col items-center
-          '>
-
-        <h2>Existing Repositories</h2>
-        <div class='flex flex-col' v-for='(repository, index) in existingRepositories' :key='index'>
-          <div>{{ repository.name }}</div>
-          <div>{{ repository.location }}</div>
-          <button class='btn btn-primary' @click='connectExistingRepo(repository.id)'>Connect</button>
-        </div>
-
-        <h2>Repositories</h2>
-        <div class='flex flex-col' v-for='(repository, index) in repositories' :key='index'>
-          <div>{{ repository.name }}</div>
-          <div>{{ repository.location }}</div>
-        </div>
-
-        <button class='btn btn-primary' @click='showAddNewRepoModal = true'>Add new repository</button>
-        <button class='btn btn-primary' @click='showConnectRepoModal = true'>Add existing repository</button>
+      <div class='flex justify-center gap-6 py-10'>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
+        <button class='btn btn-primary min-w-24' :disabled='!isStep3Valid' @click='nextStep'>Create</button>
       </div>
-
-      <div v-if='showConnectRepoModal' class='modal modal-open'>
-        <div class='modal-box'>
-          <h2 class='text-2xl'>Connect to an existing repository</h2>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Name</span>
-            </label>
-            <input type='text' class='input' v-model='repoName' placeholder='Enter repository name' />
-          </div>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Repository URL</span>
-            </label>
-            <input type='text' class='input' v-model='repoUrl' placeholder='Enter repository URL' />
-          </div>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Password</span>
-            </label>
-            <input type='password' class='input' v-model='repoPassword' placeholder='Enter password' />
-          </div>
-
-          <div class='modal-action'>
-            <button class='btn' @click='showConnectRepoModal = false'>Cancel</button>
-            <button class='btn btn-primary' @click='connectExistingRemoteRepo'>Connect</button>
-          </div>
-        </div>
-      </div>
-
-      <div v-if='showAddNewRepoModal' class='modal modal-open'>
-        <div class='modal-box'>
-          <h2 class='text-2xl'>Add a new repository</h2>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Name</span>
-            </label>
-            <input type='text' class='input' v-model='repoName' placeholder='Enter repository name' />
-          </div>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Repository URL</span>
-            </label>
-            <input type='text' class='input' v-model='repoUrl' placeholder='Enter repository URL' />
-          </div>
-
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Password</span>
-            </label>
-            <input type='password' class='input' v-model='repoPassword' placeholder='Enter password' />
-          </div>
-
-          <div class='modal-action'>
-            <button class='btn' @click='showAddNewRepoModal = false'>Cancel</button>
-            <!--              <button class='btn btn-primary' @click='createNewRepo'>Connect</button>-->
-          </div>
-        </div>
-      </div>
-
-
-      <div style='height: 20px'></div>
-
-      <button class='btn btn-outline' @click='previousStep'>Back</button>
-      <button class='btn btn-primary' @click='nextStep'>Next</button>
     </template>
 
     <!-- 4. Step - Summary -->
@@ -557,10 +512,10 @@ onMounted(() => {
         <div>{{ backupProfile.backupPaths }}</div>
       </div>
 
-      <div style='height: 20px'></div>
-
-      <button class='btn btn-outline' @click='previousStep'>Back</button>
-      <button class='btn btn-primary' @click='finish'>Finish</button>
+      <div class='flex justify-center gap-6 py-10'>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='router.push(rDashboardPage)'>Go to Dashboard</button>
+        <button class='btn btn-primary min-w-24' @click='router.push(withId(rBackupProfilePage, backupProfile.id.toString()))'>Go to Backup Profile</button>
+      </div>
     </template>
   </div>
 </template>

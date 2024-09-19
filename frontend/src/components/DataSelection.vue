@@ -157,7 +157,7 @@ async function addNewPath() {
 
 function emitResults(allValid: boolean) {
   if (allValid) {
-    emit(emitUpdatePathsStr, paths.value);
+    emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded).map((p) => p.path));
   }
   emit(emitIsValidStr, allValid);
 }

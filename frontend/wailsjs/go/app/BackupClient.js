@@ -58,6 +58,10 @@ export function GetDirectorySuggestions() {
   return window['go']['app']['BackupClient']['GetDirectorySuggestions']();
 }
 
+export function GetPrefixSuggestion(arg1) {
+  return window['go']['app']['BackupClient']['GetPrefixSuggestion'](arg1);
+}
+
 export function GetState(arg1) {
   return window['go']['app']['BackupClient']['GetState'](arg1);
 }

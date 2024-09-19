@@ -33,6 +33,8 @@ export function GetCombinedBackupProgress(arg1:Array<types.BackupId>):Promise<bo
 
 export function GetDirectorySuggestions():Promise<Array<string>>;
 
+export function GetPrefixSuggestion(arg1:string):Promise<string>;
+
 export function GetState(arg1:types.BackupId):Promise<state.BackupState>;
 
 export function IsDirectory(arg1:string):Promise<boolean>;

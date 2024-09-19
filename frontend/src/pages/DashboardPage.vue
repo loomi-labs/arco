@@ -61,8 +61,9 @@ function slide(slide: Slide) {
   const indexOfFirstCard = slide.backup ? indexOfFirstVisibleBackup : indexOfFirstVisibleRepo;
   let newCard = 0;
   if (slide.next) {
+    const length = slide.backup ? backups.value.length : repos.value.length;
     // Return if we are out of bounds
-    if (indexOfFirstCard.value === backups.value.length - nbrOfCardsPerPage.value + 1) {
+    if (indexOfFirstCard.value === length - nbrOfCardsPerPage.value + 1) {
       return;
     }
 
@@ -146,7 +147,7 @@ onUnmounted(() => {
              :class='`w-1/${nbrOfCardsPerPage}`'
              :id='`backup-profile-${backups.length}`'>
           <div
-            class='flex justify-center items-center h-full w-full ac-card-dotted'
+            class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'
             @click='router.push(rAddBackupProfilePage)'
           >
             <PlusCircleIcon class='size-12' />
@@ -190,7 +191,7 @@ onUnmounted(() => {
                :class='`w-1/${nbrOfCardsPerPage}`'
                :id='`repository-${repos.length}`'>
             <div
-              class='flex justify-center items-center h-full w-full ac-card-dotted'
+              class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'
               @click='LogDebug("Add Repository clicked")'
             >
               <PlusCircleIcon class='size-12' />
