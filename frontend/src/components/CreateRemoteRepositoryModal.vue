@@ -66,9 +66,9 @@ async function createRepo() {
   try {
     isCreating.value = true;
     const repo = await repoClient.Create(
-      values.name as string,
-      values.ssh as string,
-      values.password as string,
+      values.name!,
+      values.ssh!,
+      values.password!,
       false,
     );
     emit(emitCreateRepoStr, repo);

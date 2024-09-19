@@ -102,9 +102,9 @@ async function createRepo() {
     isCreating.value = true;
     const noPassword = !isEncrypted.value;
     const repo = await repoClient.Create(
-      values.name as string,
-      values.location as string,
-      values.password as string,
+      values.name!,
+      values.location!,
+      values.password!,
       noPassword
     );
     emit(emitCreateRepoStr, repo);
