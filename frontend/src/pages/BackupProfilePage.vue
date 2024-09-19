@@ -143,7 +143,8 @@ async function saveBackupName() {
 
 getBackupProfile();
 
-onMounted(() => {
+watch(name, () => {
+  saveBackupName();
   adjustBackupNameWidth();
 });
 
