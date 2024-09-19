@@ -86,10 +86,13 @@ const [password, passwordAttrs] = defineField("password", { validateOnBlur: true
  ************/
 
 function showModal() {
+  dialog.value?.showModal();
+}
+
+function resetAll() {
+  resetForm();
   isEncrypted.value = true;
   isNameTouchedByUser.value = false;
-
-  dialog.value?.showModal();
 }
 
 async function createRepo() {
@@ -166,7 +169,7 @@ watch(() => values.location, async (newLocation) => setNameFromLocation(newLocat
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetForm();'
+    @close='resetAll();'
   >
     <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl'>Add a new local repository</h2>

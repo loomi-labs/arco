@@ -152,7 +152,7 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 				BackupProfileId: id,
 				RepositoryId:    repo.ID,
 			}
-			go b.runBorgDelete(bId, repo.URL, repo.Password, backupProfile.Prefix)
+			go b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
 		}
 	}
 	err := b.db.BackupProfile.
@@ -425,7 +425,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
-	archiveName, err := b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	archiveName, err := b.borg.Create(ctx, repo.Location, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetBackupCancelled(bId, true)
@@ -457,7 +457,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			b.log.Error(fmt.Sprintf("Failed to delete failed backup run: %s", err))
 		}
 
-		err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
+		err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}

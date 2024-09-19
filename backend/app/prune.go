@@ -21,7 +21,7 @@ func (b *BackupClient) PruneBackup(bId types.BackupId) error {
 		return errors.New(reason)
 	}
 
-	go b.runPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
+	go b.runPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
 	return nil
 }
 
@@ -55,7 +55,7 @@ func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
 		return errors.New(reason)
 	}
 
-	go b.dryRunPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
+	go b.dryRunPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
 	return nil
 }
 

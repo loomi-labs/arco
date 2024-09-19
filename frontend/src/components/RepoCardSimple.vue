@@ -54,7 +54,7 @@ async function getRepoState() {
 }
 
 function getLocation(): Location {
-  return props.repo.url.startsWith("ssh://") || props.repo.url.includes("@") ? Location.Remote : Location.Local;
+  return props.repo.location.startsWith("ssh://") || props.repo.location.includes("@") ? Location.Remote : Location.Local;
 }
 
 function getBgColor(): string {
@@ -107,7 +107,7 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
       <div class='divider'></div>
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
-        <span class='tooltip' :class='getTooltipColor()' :data-tip='repo.url'>
+        <span class='tooltip' :class='getTooltipColor()' :data-tip='repo.location'>
           <span class='badge badge-outline' :class='getBadgeColor()'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>

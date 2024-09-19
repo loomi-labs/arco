@@ -126,7 +126,7 @@ getArchiveMountStates();
   <Navbar></Navbar>
   <div class='flex flex-col items-center justify-center h-full'>
     <p>{{ repo.id }}</p>
-    <p>{{ repo.url }}</p>
+    <p>{{ repo.location }}</p>
 
     <h2>Archives</h2>
     <div v-for='(archive, index) in archives' :key='index'>

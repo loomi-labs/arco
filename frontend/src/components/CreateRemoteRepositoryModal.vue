@@ -56,6 +56,10 @@ function showModal() {
   dialog.value?.showModal();
 }
 
+function resetAll() {
+  resetForm();
+}
+
 async function createRepo() {
   try {
     isCreating.value = true;
@@ -88,7 +92,7 @@ defineExpose({
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetForm()'
+    @close='resetAll()'
   >
     <div class='modal-box'>
       <h2 class='text-2xl'>Add a new remote repository</h2>

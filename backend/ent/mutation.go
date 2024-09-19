@@ -3106,7 +3106,7 @@ type RepositoryMutation struct {
 	typ                          string
 	id                           *int
 	name                         *string
-	url                          *string
+	location                     *string
 	password                     *string
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
@@ -3275,40 +3275,40 @@ func (m *RepositoryMutation) ResetName() {
 	m.name = nil
 }
 
-// SetURL sets the "url" field.
-func (m *RepositoryMutation) SetURL(s string) {
-	m.url = &s
+// SetLocation sets the "location" field.
+func (m *RepositoryMutation) SetLocation(s string) {
+	m.location = &s
 }
 
-// URL returns the value of the "url" field in the mutation.
-func (m *RepositoryMutation) URL() (r string, exists bool) {
-	v := m.url
+// Location returns the value of the "location" field in the mutation.
+func (m *RepositoryMutation) Location() (r string, exists bool) {
+	v := m.location
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldURL returns the old "url" field's value of the Repository entity.
+// OldLocation returns the old "location" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldURL(ctx context.Context) (v string, err error) {
+func (m *RepositoryMutation) OldLocation(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldLocation is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldURL requires an ID field in the mutation")
+		return v, errors.New("OldLocation requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldLocation: %w", err)
 	}
-	return oldValue.URL, nil
+	return oldValue.Location, nil
 }
 
-// ResetURL resets all changes to the "url" field.
-func (m *RepositoryMutation) ResetURL() {
-	m.url = nil
+// ResetLocation resets all changes to the "location" field.
+func (m *RepositoryMutation) ResetLocation() {
+	m.location = nil
 }
 
 // SetPassword sets the "password" field.
@@ -3883,8 +3883,8 @@ func (m *RepositoryMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
-	if m.url != nil {
-		fields = append(fields, repository.FieldURL)
+	if m.location != nil {
+		fields = append(fields, repository.FieldLocation)
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
@@ -3917,8 +3917,8 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case repository.FieldName:
 		return m.Name()
-	case repository.FieldURL:
-		return m.URL()
+	case repository.FieldLocation:
+		return m.Location()
 	case repository.FieldPassword:
 		return m.Password()
 	case repository.FieldStatsTotalChunks:
@@ -3944,8 +3944,8 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 	switch name {
 	case repository.FieldName:
 		return m.OldName(ctx)
-	case repository.FieldURL:
-		return m.OldURL(ctx)
+	case repository.FieldLocation:
+		return m.OldLocation(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
 	case repository.FieldStatsTotalChunks:
@@ -3976,12 +3976,12 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
-	case repository.FieldURL:
+	case repository.FieldLocation:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetURL(v)
+		m.SetLocation(v)
 		return nil
 	case repository.FieldPassword:
 		v, ok := value.(string)
@@ -4159,8 +4159,8 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldName:
 		m.ResetName()
 		return nil
-	case repository.FieldURL:
-		m.ResetURL()
+	case repository.FieldLocation:
+		m.ResetLocation()
 		return nil
 	case repository.FieldPassword:
 		m.ResetPassword()

@@ -463,14 +463,14 @@ onMounted(() => {
         <h2>Existing Repositories</h2>
         <div class='flex flex-col' v-for='(repository, index) in existingRepositories' :key='index'>
           <div>{{ repository.name }}</div>
-          <div>{{ repository.url }}</div>
+          <div>{{ repository.location }}</div>
           <button class='btn btn-primary' @click='connectExistingRepo(repository.id)'>Connect</button>
         </div>
 
         <h2>Repositories</h2>
         <div class='flex flex-col' v-for='(repository, index) in repositories' :key='index'>
           <div>{{ repository.name }}</div>
-          <div>{{ repository.url }}</div>
+          <div>{{ repository.location }}</div>
         </div>
 
         <button class='btn btn-primary' @click='showAddNewRepoModal = true'>Add new repository</button>

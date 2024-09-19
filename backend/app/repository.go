@@ -58,7 +58,7 @@ func (r *RepositoryClient) AddExistingRepository(name, url, password string, bac
 	return r.db.Repository.
 		Create().
 		SetName(name).
-		SetURL(url).
+		SetLocation(url).
 		SetPassword(password).
 		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
@@ -71,8 +71,8 @@ func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.R
 		Save(r.ctx)
 }
 
-func (r *RepositoryClient) Create(name, path, password string, noPassword bool) (*ent.Repository, error) {
-	if err := r.borg.Init(util.ExpandPath(path), password, noPassword); err != nil {
+func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
+	if err := r.borg.Init(util.ExpandPath(location), password, noPassword); err != nil {
 		return nil, err
 	}
 
@@ -80,7 +80,7 @@ func (r *RepositoryClient) Create(name, path, password string, noPassword bool) 
 	return r.db.Repository.
 		Create().
 		SetName(name).
-		SetURL(path).
+		SetLocation(location).
 		SetPassword(password).
 		Save(r.ctx)
 }
@@ -95,7 +95,7 @@ func (r *RepositoryClient) BreakLock(id int) error {
 		return err
 	}
 
-	err = r.borg.BreakLock(r.ctx, repo.URL, repo.Password)
+	err = r.borg.BreakLock(r.ctx, repo.Location, repo.Password)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ func (r *RepositoryClient) MountRepository(repoId int) (state state.MountState, 
 		return
 	}
 
-	if err = r.borg.MountRepository(repo.URL, repo.Password, path); err != nil {
+	if err = r.borg.MountRepository(repo.Location, repo.Password, path); err != nil {
 		return
 	}
 
@@ -76,7 +76,7 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, 
 	}
 	if !state.IsMounted {
 		// If not mounted, mount it
-		if err = r.borg.MountArchive(archive.Edges.Repository.URL, archive.Name, archive.Edges.Repository.Password, path); err != nil {
+		if err = r.borg.MountArchive(archive.Edges.Repository.Location, archive.Name, archive.Edges.Repository.Password, path); err != nil {
 			return
 		}
 

@@ -18,8 +18,8 @@ type Repository struct {
 	ID int `json:"id"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name"`
-	// URL holds the value of the "url" field.
-	URL string `json:"url"`
+	// Location holds the value of the "location" field.
+	Location string `json:"location"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
 	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
@@ -87,7 +87,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
-		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
+		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -116,11 +116,11 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.Name = value.String
 			}
-		case repository.FieldURL:
+		case repository.FieldLocation:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field url", values[i])
+				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
-				r.URL = value.String
+				r.Location = value.String
 			}
 		case repository.FieldPassword:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -218,8 +218,8 @@ func (r *Repository) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
 	builder.WriteString(", ")
-	builder.WriteString("url=")
-	builder.WriteString(r.URL)
+	builder.WriteString("location=")
+	builder.WriteString(r.Location)
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)
