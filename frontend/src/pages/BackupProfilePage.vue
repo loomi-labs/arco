@@ -1,18 +1,23 @@
 <script setup lang='ts'>
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { onMounted, ref, useTemplateRef } from "vue";
+import * as zod from "zod";
+import { object } from "zod";
+import { onMounted, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
-import ScheduleSelection from "../components/ScheduleSelection.vue";
-import RepoCard from "../components/RepoCard.vue";
 import { Path, toPaths } from "../common/types";
-import ArchivesCard from "../components/ArchivesCard.vue";
 import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { useToast } from "vue-toastification";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
+import { LogDebug } from "../../wailsjs/runtime";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import ScheduleSelection from "../components/ScheduleSelection.vue";
+import RepoCard from "../components/RepoCard.vue";
+import ArchivesCard from "../components/ArchivesCard.vue";
 
 /************
  * Variables
@@ -27,8 +32,23 @@ const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const backupNameInput = ref<HTMLInputElement | null>(null);
 const validationError = ref<string | null>(null);
+
+const nameInputKey = "name_input";
+const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
 const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
+
+const { meta, errors, defineField } = useForm({
+  validationSchema: toTypedSchema(
+    object({
+      name: zod.string({ required_error: "Enter a name for this backup profile" })
+        .min(3, { message: "Name length must be at least 3" })
+        .max(30, { message: "Name is too long" })
+    })
+  )
+});
+
+const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 /************
  * Functions
@@ -37,6 +57,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(con
 async function getBackupProfile() {
   try {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
+    name.value = backup.value.name;
     backupPaths.value = toPaths(true, backup.value.backupPaths);
     excludePaths.value = toPaths(true, backup.value.excludePaths);
     if (backup.value.edges?.repositories?.length && !selectedRepo.value) {
@@ -47,6 +68,9 @@ async function getBackupProfile() {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
+
+    // Wait a bit for the name input to be rendered
+    await new Promise((resolve) => setTimeout(resolve, 100));
     adjustBackupNameWidth();
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
@@ -68,7 +92,7 @@ async function saveBackupPaths(paths: Path[]) {
     backup.value.backupPaths = paths.map((dir) => dir.path);
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
-    await showAndLogError("Failed to update backup profile", error);
+    await showAndLogError("Failed to save backup paths", error);
   }
 }
 
@@ -77,7 +101,7 @@ async function saveExcludePaths(paths: Path[]) {
     backup.value.excludePaths = paths.map((dir) => dir.path);
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
-    await showAndLogError("Failed to update backup profile", error);
+    await showAndLogError("Failed to save exclude paths", error);
   }
 }
 
@@ -86,7 +110,7 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
     await backupClient.SaveBackupSchedule(backup.value.id, schedule);
     backup.value.edges.backupSchedule = schedule;
   } catch (error: any) {
-    await showAndLogError("Failed to update backup profile", error);
+    await showAndLogError("Failed to save schedule", error);
   }
 }
 
@@ -100,28 +124,16 @@ async function deleteSchedule() {
 }
 
 function adjustBackupNameWidth() {
-  if (backupNameInput.value) {
-    backupNameInput.value.style.width = "30px";
-    backupNameInput.value.style.width = `${backupNameInput.value.scrollWidth}px`;
+  if (nameInput.value) {
+    LogDebug(`Adjusting backup name width: ${nameInput.value.scrollWidth}`);
+    nameInput.value.style.width = "30px";
+    nameInput.value.style.width = `${nameInput.value.scrollWidth}px`;
   }
-}
-
-function validateBackupName() {
-  if (!backup.value.name || backup.value.name.length < 3) {
-    validationError.value = "Backup name must be at least 3 characters long.";
-    return false;
-  }
-  if (backup.value.name.length > 50) {
-    validationError.value = "Backup name cannot be longer than 50 characters.";
-    return false;
-  }
-  validationError.value = null;
-  return true;
 }
 
 async function saveBackupName() {
-  if (validateBackupName()) {
-    await backupClient.SaveBackupProfile(backup.value);
+  if (meta.value.valid && name.value !== backup.value.name) {
+    backup.value = await backupClient.SaveBackupProfile(backup.value);
   }
 }
 
@@ -141,21 +153,18 @@ onMounted(() => {
   <div class='container mx-auto text-left pt-10'>
     <!-- Data Section -->
     <div class='flex items-center justify-between mb-4'>
-      <div class='tooltip tooltip-bottom tooltip-error'
-           :class='validationError ? "tooltip-open" : ""'
-           :data-tip='validationError'
-      >
-        <label class='flex items-center gap-2'>
-          <input
-            type='text'
-            class='text-2xl font-bold bg-transparent w-10'
-            v-model='backup.name'
-            @input='[adjustBackupNameWidth(), saveBackupName()]'
-            ref='backupNameInput'
-          />
-          <PencilIcon class='size-4' />
-        </label>
-      </div>
+      <label class='flex items-center gap-2'>
+        <input :ref='nameInputKey'
+               type='text'
+               class='text-2xl font-bold bg-transparent w-10'
+               v-model='name'
+               v-bind='nameAttrs'
+               @input='adjustBackupNameWidth'
+        />
+        <PencilIcon class='size-4' />
+        <span class='text-error'>{{ errors.name }}</span>
+      </label>
+
       <div class='dropdown dropdown-end'>
         <div tabindex='0' role='button' class='btn m-1'>
           <EllipsisVerticalIcon class='size-6' />
@@ -202,7 +211,7 @@ onMounted(() => {
 
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <ScheduleSelection :schedule='backup.edges.backupSchedule' @update:schedule='saveSchedule'
+    <ScheduleSelection :schedule='backup.edges?.backupSchedule' @update:schedule='saveSchedule'
                        @delete:schedule='deleteSchedule' />
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
@@ -215,7 +224,7 @@ onMounted(() => {
           :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
           :show-hover='(backup.edges.repositories?.length ?? 0)  > 1'
           @click='() => selectedRepo = repo'
-          @repo:status='repoStatuses.set(repo.id, $event)'>
+          @repo:status='(event) => repoStatuses.set(repo.id, event)'>
         </RepoCard>
       </div>
     </div>
