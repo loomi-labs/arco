@@ -5,6 +5,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"regexp"
 )
 
 // BackupProfile holds the schema definition for the BackupProfile entity.
@@ -18,9 +19,17 @@ func (BackupProfile) Fields() []ent.Field {
 		field.Int("id").
 			StructTag(`json:"id"`),
 		field.String("name").
-			StructTag(`json:"name"`),
+			StructTag(`json:"name"`).
+			MinLen(1).
+			MaxLen(30),
 		field.String("prefix").
-			StructTag(`json:"prefix"`),
+			StructTag(`json:"prefix"`).
+			// Match the prefix to be an alphanumeric string ending with a hyphen
+			Match(regexp.MustCompile("^[a-zA-Z0-9]+-$")).
+			// The prefix must be unique to ensure that archives belong to a single profile
+			Unique().
+			// To simplify the rules, the prefix is immutable
+			Immutable(),
 		field.Strings("backup_paths").
 			StructTag(`json:"backupPaths"`).
 			Default([]string{}),

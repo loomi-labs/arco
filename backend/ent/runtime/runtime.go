@@ -15,6 +15,10 @@ import (
 func init() {
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
+	// backupprofileDescPrefix is the schema descriptor for prefix field.
+	backupprofileDescPrefix := backupprofileFields[2].Descriptor()
+	// backupprofile.PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
+	backupprofile.PrefixValidator = backupprofileDescPrefix.Validators[0].(func(string) error)
 	// backupprofileDescBackupPaths is the schema descriptor for backup_paths field.
 	backupprofileDescBackupPaths := backupprofileFields[3].Descriptor()
 	// backupprofile.DefaultBackupPaths holds the default value on creation for the backup_paths field.

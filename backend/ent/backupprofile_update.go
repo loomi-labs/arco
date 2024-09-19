@@ -285,6 +285,11 @@ func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpu *BackupProfileUpdate) check() error {
+	if v, ok := bpu.mutation.Prefix(); ok {
+		if err := backupprofile.PrefixValidator(v); err != nil {
+			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+		}
+	}
 	if v, ok := bpu.mutation.Icon(); ok {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
@@ -786,6 +791,11 @@ func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpuo *BackupProfileUpdateOne) check() error {
+	if v, ok := bpuo.mutation.Prefix(); ok {
+		if err := backupprofile.PrefixValidator(v); err != nil {
+			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+		}
+	}
 	if v, ok := bpuo.mutation.Icon(); ok {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}

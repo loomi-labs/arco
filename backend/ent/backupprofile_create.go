@@ -194,6 +194,11 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupProfile.prefix"`)}
 	}
+	if v, ok := bpc.mutation.Prefix(); ok {
+		if err := backupprofile.PrefixValidator(v); err != nil {
+			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+		}
+	}
 	if _, ok := bpc.mutation.BackupPaths(); !ok {
 		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
 	}

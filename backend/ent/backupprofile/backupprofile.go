@@ -92,6 +92,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
+	PrefixValidator func(string) error
 	// DefaultBackupPaths holds the default value on creation for the "backup_paths" field.
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.

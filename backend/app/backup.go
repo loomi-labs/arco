@@ -13,7 +13,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"math/rand"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -21,12 +23,24 @@ import (
 /********** Backup Profile *********/
 /***********************************/
 
-func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
+func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+	return b.db.BackupProfile.
+		Query().
+		WithRepositories().
+		WithBackupSchedule().
+		Where(backupprofile.ID(id)).
+		Only(b.ctx)
+}
 
+func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+	return b.db.BackupProfile.
+		Query().
+		WithRepositories().
+		WithBackupSchedule().
+		All(b.ctx)
+}
+
+func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	// Choose the first icon that is not already in use
 	all, err := b.db.BackupProfile.
 		Query().
@@ -50,7 +64,7 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	return &ent.BackupProfile{
 		ID:           0,
 		Name:         "",
-		Prefix:       hostname,
+		Prefix:       "",
 		BackupPaths:  make([]string, 0),
 		ExcludePaths: make([]string, 0),
 		// TODO: remove isSetupComplete completely
@@ -102,20 +116,34 @@ func (b *BackupClient) CreateDirectory(path string) error {
 	return os.MkdirAll(util.ExpandPath(path), 0755)
 }
 
-func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
-	return b.db.BackupProfile.
-		Query().
-		WithRepositories().
-		WithBackupSchedule().
-		Where(backupprofile.ID(id)).Only(b.ctx)
-}
+func (b *BackupClient) GetPrefixSuggestion(name string) (string, error) {
+	if name == "" {
+		return "", errors.New("name cannot be empty")
+	}
 
-func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
-	return b.db.BackupProfile.
+	// Remove all non-alphanumeric characters
+	re := regexp.MustCompile("[^a-zA-Z0-9]")
+	prefix := re.ReplaceAllString(name, "")
+
+	if prefix == "" {
+		return "", errors.New("name must contain at least one alphanumeric character")
+	}
+
+	fullPrefix := prefix + "-"
+
+	exist, err := b.db.BackupProfile.
 		Query().
-		WithBackupSchedule().
-		WithRepositories().
-		All(b.ctx)
+		Where(backupprofile.Prefix(fullPrefix)).
+		Exist(b.ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		// If the prefix already exists, we create a new one by appending a random number
+		prefix = fmt.Sprintf("%s_%d", prefix, rand.Intn(1000))
+		return b.GetPrefixSuggestion(prefix)
+	}
+	return fullPrefix, nil
 }
 
 func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
