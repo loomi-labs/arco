@@ -8,6 +8,15 @@ import { applyOffset, offset, removeOffset } from "@formkit/tempo";
  * Types
  ************/
 
+interface Props {
+  schedule?: ent.BackupSchedule;
+}
+
+interface Emits {
+  (event: typeof emitUpdate, schedule: ent.BackupSchedule): void;
+  (event: typeof emitDelete): void;
+}
+
 enum BackupFrequency {
   Hourly = "hourly",
   Daily = "daily",
@@ -19,12 +28,11 @@ enum BackupFrequency {
  * Variables
  ************/
 
-const props = defineProps({
-  schedule: {
-    type: ent.BackupSchedule,
-    required: false
-  }
-});
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
+
+const emitUpdate = "update:schedule";
+const emitDelete = "delete:schedule";
 
 // We have to remove the timezone offset from the date when showing it in the UI
 // and add it back when saving it to the schedule
@@ -35,10 +43,6 @@ const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || 
 
 // Create a cleaned schedule that only contains the necessary fields
 const cleanedSchedule = ref<ent.BackupSchedule>(getCleanedSchedule());
-
-const emitUpdate = "update:schedule";
-const emitDelete = "delete:schedule";
-const emit = defineEmits([emitUpdate, emitDelete]);
 
 const dailyAtDateTime = defineModel("dailyAtDateTime", {
   get() {

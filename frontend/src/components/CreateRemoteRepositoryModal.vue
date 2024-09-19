@@ -15,14 +15,16 @@ import FormField from "./common/FormField.vue";
  * Types
  ************/
 
+interface Emits {
+  (event: typeof emitCreateRepoStr, repo: ent.Repository): void
+}
+
 /************
  * Variables
  ************/
 
+const emit = defineEmits<Emits>();
 const emitCreateRepoStr = "update:repo-created";
-const emit = defineEmits<{
-  (e: typeof emitCreateRepoStr, repo: ent.Repository): void
-}>();
 
 // Captures ssh url with optional port and path (see: https://borgbackup.readthedocs.io/en/stable/usage/general.html#repository-urls)
 const regex = /^(\/|~(?:[a-zA-Z0-9._-]+)?\/)[^\s]+|(?:ssh:\/\/)?[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+(?::\d+)?:(\/|~(?:[a-zA-Z0-9._-]+)?\/|\.\/)?[^\s]+$/;

@@ -18,11 +18,16 @@ import ConfirmModal from "./common/ConfirmModal.vue";
  * Types
  ************/
 
-export interface Props {
+interface Props {
   repoId: number;
   backupProfileId: number;
   highlight: boolean;
   showHover: boolean;
+}
+
+interface Emits {
+  (event: typeof repoStatusEmit, status: state.RepoStatus): void
+  (event: typeof clickEmit): void
 }
 
 /************
@@ -30,13 +35,10 @@ export interface Props {
  ************/
 
 const props = defineProps<Props>();
+const emits = defineEmits<Emits>();
 
 const repoStatusEmit = "repo:status";
 const clickEmit = "click";
-const emits = defineEmits<{
-  (e: typeof repoStatusEmit, status: state.RepoStatus): void
-  (e: typeof clickEmit): void
-}>();
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());

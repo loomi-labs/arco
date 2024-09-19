@@ -18,14 +18,16 @@ import { LogDebug } from "../../wailsjs/runtime";
  * Types
  ************/
 
+interface Emits {
+  (event: typeof emitCreateRepoStr, repo: ent.Repository): void
+}
+
 /************
  * Variables
  ************/
 
+const emit = defineEmits<Emits>();
 const emitCreateRepoStr = "update:repo-created";
-const emit = defineEmits<{
-  (e: typeof emitCreateRepoStr, repo: ent.Repository): void
-}>();
 
 const toast = useToast();
 const { t } = useI18n();

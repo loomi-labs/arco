@@ -8,38 +8,29 @@ import { PlusIcon } from "@heroicons/vue/24/outline";
 import { LogDebug } from "../../wailsjs/runtime";
 
 /************
+ * Types
+ ************/
+
+interface Props {
+  paths: Path[];
+  isBackupSelection?: boolean;
+  showTitle?: boolean;
+  runMinOnePathValidation?: boolean;
+}
+
+interface Emits {
+  (event: typeof emitUpdatePathsStr, paths: Path[]): void;
+  (event: typeof emitIsValidStr, isValid: boolean): void;
+}
+
+/************
  * Variables
  ************/
 
-const props = defineProps({
-  paths: {
-    type: Array as () => Path[],
-    required: true,
-    default: []
-  },
-  isBackupSelection: {
-    type: Boolean,
-    required: false,
-    default: true
-  },
-  showTitle: {
-    type: Boolean,
-    required: false,
-    default: true
-  },
-  runMinOnePathValidation: {
-    type: Boolean,
-    required: false,
-    default: false
-  }
-});
-
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
-const emit = defineEmits<{
-  (e: typeof emitUpdatePathsStr, paths: Path[]): Path[]
-  (e: typeof emitIsValidStr, isValid: boolean): boolean
-}>();
 
 const paths = ref<Path[]>(props.paths);
 const newPath = ref<string>("");
@@ -99,6 +90,7 @@ async function sanitizeAndValidate(path: Path) {
 }
 
 function validateMinOnePath() {
+  LogDebug("Validating min one path");
   if (props.runMinOnePathValidation) {
     if (paths.value.filter((p) => p.isAdded).length === 0) {
       minOnePathError.value = "At least one path must be selected";
@@ -111,6 +103,7 @@ function validateMinOnePath() {
 }
 
 async function runFullValidation() {
+  LogDebug("Running full validation");
   let allValid = true;
   for (const path of paths.value) {
     await sanitizeAndValidate(path);

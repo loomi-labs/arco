@@ -291,7 +291,6 @@ export namespace ent {
 	    prefix: string;
 	    backupPaths: string[];
 	    excludePaths: string[];
-	    isSetupComplete: boolean;
 	    icon: backupprofile.Icon;
 	    edges: BackupProfileEdges;
 	
@@ -306,7 +305,6 @@ export namespace ent {
 	        this.prefix = source["prefix"];
 	        this.backupPaths = source["backupPaths"];
 	        this.excludePaths = source["excludePaths"];
-	        this.isSetupComplete = source["isSetupComplete"];
 	        this.icon = source["icon"];
 	        this.edges = this.convertValues(source["edges"], BackupProfileEdges);
 	    }
@@ -498,14 +496,6 @@ export namespace ent {
 
 export namespace state {
 	
-	export enum BackupButtonStatus {
-	    runBackup = "runBackup",
-	    waiting = "waiting",
-	    abort = "abort",
-	    locked = "locked",
-	    unmount = "unmount",
-	    busy = "busy",
-	}
 	export enum BackupStatus {
 	    idle = "idle",
 	    waiting = "waiting",
@@ -522,6 +512,14 @@ export namespace state {
 	    mounted = "mounted",
 	    performingOperation = "performingOperation",
 	    locked = "locked",
+	}
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;

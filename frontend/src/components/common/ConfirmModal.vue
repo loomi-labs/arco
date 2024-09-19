@@ -14,15 +14,19 @@ interface Props {
   confirmClass?: string;
 }
 
+interface Emits {
+  (event: typeof emitConfirmStr): void;
+}
+
 /************
  * Variables
  ************/
 
 const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm or cancel)
 const emitConfirmStr = "confirm";
-const emit = defineEmits([emitConfirmStr]);
 
 const dialog = ref<HTMLDialogElement>();
 const { t } = useI18n();
