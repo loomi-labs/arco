@@ -37,9 +37,6 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"excludePaths"`).
 			Optional().
 			Default([]string{}),
-		field.Bool("is_setup_complete").
-			StructTag(`json:"isSetupComplete"`).
-			Default(false),
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),

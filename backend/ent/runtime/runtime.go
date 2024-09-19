@@ -15,6 +15,24 @@ import (
 func init() {
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
+	// backupprofileDescName is the schema descriptor for name field.
+	backupprofileDescName := backupprofileFields[1].Descriptor()
+	// backupprofile.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	backupprofile.NameValidator = func() func(string) error {
+		validators := backupprofileDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// backupprofileDescPrefix is the schema descriptor for prefix field.
 	backupprofileDescPrefix := backupprofileFields[2].Descriptor()
 	// backupprofile.PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
@@ -27,10 +45,6 @@ func init() {
 	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
 	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
 	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
-	// backupprofileDescIsSetupComplete is the schema descriptor for is_setup_complete field.
-	backupprofileDescIsSetupComplete := backupprofileFields[5].Descriptor()
-	// backupprofile.DefaultIsSetupComplete holds the default value on creation for the is_setup_complete field.
-	backupprofile.DefaultIsSetupComplete = backupprofileDescIsSetupComplete.Default.(bool)
 	backupscheduleHooks := schema.BackupSchedule{}.Hooks()
 	backupschedule.Hooks[0] = backupscheduleHooks[0]
 	backupscheduleFields := schema.BackupSchedule{}.Fields()

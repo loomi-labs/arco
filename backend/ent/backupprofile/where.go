@@ -64,11 +64,6 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
-// IsSetupComplete applies equality check predicate on the "is_setup_complete" field. It's identical to IsSetupCompleteEQ.
-func IsSetupComplete(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
-}
-
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldName, v))
@@ -207,16 +202,6 @@ func ExcludePathsIsNil() predicate.BackupProfile {
 // ExcludePathsNotNil applies the NotNil predicate on the "exclude_paths" field.
 func ExcludePathsNotNil() predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotNull(FieldExcludePaths))
-}
-
-// IsSetupCompleteEQ applies the EQ predicate on the "is_setup_complete" field.
-func IsSetupCompleteEQ(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldIsSetupComplete, v))
-}
-
-// IsSetupCompleteNEQ applies the NEQ predicate on the "is_setup_complete" field.
-func IsSetupCompleteNEQ(v bool) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNEQ(FieldIsSetupComplete, v))
 }
 
 // IconEQ applies the EQ predicate on the "icon" field.

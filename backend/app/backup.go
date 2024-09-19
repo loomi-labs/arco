@@ -67,10 +67,8 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Prefix:       "",
 		BackupPaths:  make([]string, 0),
 		ExcludePaths: make([]string, 0),
-		// TODO: remove isSetupComplete completely
-		IsSetupComplete: false,
-		Icon:            selectedIcon,
-		Edges:           ent.BackupProfileEdges{},
+		Icon:         selectedIcon,
+		Edges:        ent.BackupProfileEdges{},
 	}, nil
 }
 
@@ -155,17 +153,14 @@ func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) (*ent.BackupP
 			SetPrefix(backup.Prefix).
 			SetBackupPaths(backup.BackupPaths).
 			SetExcludePaths(backup.ExcludePaths).
-			SetIsSetupComplete(backup.IsSetupComplete).
 			SetIcon(backup.Icon).
 			Save(b.ctx)
 	}
 	return b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
-		SetPrefix(backup.Prefix).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
-		SetIsSetupComplete(backup.IsSetupComplete).
 		Save(b.ctx)
 }
 
@@ -207,9 +202,6 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	if len(repo.Edges.BackupProfiles) != 1 {
 		return nil, fmt.Errorf("repository does not have the backup profile")
 	}
-	if !repo.Edges.BackupProfiles[0].IsSetupComplete {
-		return nil, fmt.Errorf("backup profile is not complete")
-	}
 	return repo, nil
 }
 
@@ -237,9 +229,6 @@ func (b *BackupClient) StartBackupJobs(backupProfileId int) ([]types.BackupId, e
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return nil, err
-	}
-	if !backupProfile.IsSetupComplete {
-		return nil, fmt.Errorf("backup profile is not setup")
 	}
 
 	var bIds []types.BackupId

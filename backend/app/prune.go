@@ -7,7 +7,6 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
 	"errors"
-	"fmt"
 )
 
 func (b *BackupClient) PruneBackup(bId types.BackupId) error {
@@ -29,9 +28,6 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
-	}
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not setup")
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
@@ -63,9 +59,6 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
-	}
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not setup")
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {

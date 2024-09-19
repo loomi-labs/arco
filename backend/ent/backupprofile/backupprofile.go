@@ -22,8 +22,6 @@ const (
 	FieldBackupPaths = "backup_paths"
 	// FieldExcludePaths holds the string denoting the exclude_paths field in the database.
 	FieldExcludePaths = "exclude_paths"
-	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
-	FieldIsSetupComplete = "is_setup_complete"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
@@ -71,7 +69,6 @@ var Columns = []string{
 	FieldPrefix,
 	FieldBackupPaths,
 	FieldExcludePaths,
-	FieldIsSetupComplete,
 	FieldIcon,
 }
 
@@ -92,14 +89,14 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
 	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
 	PrefixValidator func(string) error
 	// DefaultBackupPaths holds the default value on creation for the "backup_paths" field.
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
 	DefaultExcludePaths []string
-	// DefaultIsSetupComplete holds the default value on creation for the "is_setup_complete" field.
-	DefaultIsSetupComplete bool
 )
 
 // Icon defines the type for the "icon" enum field.
@@ -145,11 +142,6 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByPrefix orders the results by the prefix field.
 func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
-}
-
-// ByIsSetupComplete orders the results by the is_setup_complete field.
-func ByIsSetupComplete(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsSetupComplete, opts...).ToFunc()
 }
 
 // ByIcon orders the results by the icon field.

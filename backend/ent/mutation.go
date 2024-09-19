@@ -667,7 +667,6 @@ type BackupProfileMutation struct {
 	appendbackup_paths        []string
 	exclude_paths             *[]string
 	appendexclude_paths       []string
-	is_setup_complete         *bool
 	icon                      *backupprofile.Icon
 	clearedFields             map[string]struct{}
 	repositories              map[int]struct{}
@@ -978,42 +977,6 @@ func (m *BackupProfileMutation) ResetExcludePaths() {
 	delete(m.clearedFields, backupprofile.FieldExcludePaths)
 }
 
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (m *BackupProfileMutation) SetIsSetupComplete(b bool) {
-	m.is_setup_complete = &b
-}
-
-// IsSetupComplete returns the value of the "is_setup_complete" field in the mutation.
-func (m *BackupProfileMutation) IsSetupComplete() (r bool, exists bool) {
-	v := m.is_setup_complete
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIsSetupComplete returns the old "is_setup_complete" field's value of the BackupProfile entity.
-// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupProfileMutation) OldIsSetupComplete(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIsSetupComplete is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIsSetupComplete requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIsSetupComplete: %w", err)
-	}
-	return oldValue.IsSetupComplete, nil
-}
-
-// ResetIsSetupComplete resets all changes to the "is_setup_complete" field.
-func (m *BackupProfileMutation) ResetIsSetupComplete() {
-	m.is_setup_complete = nil
-}
-
 // SetIcon sets the "icon" field.
 func (m *BackupProfileMutation) SetIcon(b backupprofile.Icon) {
 	m.icon = &b
@@ -1285,7 +1248,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
@@ -1297,9 +1260,6 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.exclude_paths != nil {
 		fields = append(fields, backupprofile.FieldExcludePaths)
-	}
-	if m.is_setup_complete != nil {
-		fields = append(fields, backupprofile.FieldIsSetupComplete)
 	}
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
@@ -1320,8 +1280,6 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.BackupPaths()
 	case backupprofile.FieldExcludePaths:
 		return m.ExcludePaths()
-	case backupprofile.FieldIsSetupComplete:
-		return m.IsSetupComplete()
 	case backupprofile.FieldIcon:
 		return m.Icon()
 	}
@@ -1341,8 +1299,6 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldBackupPaths(ctx)
 	case backupprofile.FieldExcludePaths:
 		return m.OldExcludePaths(ctx)
-	case backupprofile.FieldIsSetupComplete:
-		return m.OldIsSetupComplete(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
 	}
@@ -1381,13 +1337,6 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExcludePaths(v)
-		return nil
-	case backupprofile.FieldIsSetupComplete:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIsSetupComplete(v)
 		return nil
 	case backupprofile.FieldIcon:
 		v, ok := value.(backupprofile.Icon)
@@ -1465,9 +1414,6 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldExcludePaths:
 		m.ResetExcludePaths()
-		return nil
-	case backupprofile.FieldIsSetupComplete:
-		m.ResetIsSetupComplete()
 		return nil
 	case backupprofile.FieldIcon:
 		m.ResetIcon()

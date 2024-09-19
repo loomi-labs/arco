@@ -46,20 +46,6 @@ func (bpu *BackupProfileUpdate) SetNillableName(s *string) *BackupProfileUpdate 
 	return bpu
 }
 
-// SetPrefix sets the "prefix" field.
-func (bpu *BackupProfileUpdate) SetPrefix(s string) *BackupProfileUpdate {
-	bpu.mutation.SetPrefix(s)
-	return bpu
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillablePrefix(s *string) *BackupProfileUpdate {
-	if s != nil {
-		bpu.SetPrefix(*s)
-	}
-	return bpu
-}
-
 // SetBackupPaths sets the "backup_paths" field.
 func (bpu *BackupProfileUpdate) SetBackupPaths(s []string) *BackupProfileUpdate {
 	bpu.mutation.SetBackupPaths(s)
@@ -87,20 +73,6 @@ func (bpu *BackupProfileUpdate) AppendExcludePaths(s []string) *BackupProfileUpd
 // ClearExcludePaths clears the value of the "exclude_paths" field.
 func (bpu *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
 	bpu.mutation.ClearExcludePaths()
-	return bpu
-}
-
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (bpu *BackupProfileUpdate) SetIsSetupComplete(b bool) *BackupProfileUpdate {
-	bpu.mutation.SetIsSetupComplete(b)
-	return bpu
-}
-
-// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdate {
-	if b != nil {
-		bpu.SetIsSetupComplete(*b)
-	}
 	return bpu
 }
 
@@ -285,9 +257,9 @@ func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpu *BackupProfileUpdate) check() error {
-	if v, ok := bpu.mutation.Prefix(); ok {
-		if err := backupprofile.PrefixValidator(v); err != nil {
-			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+	if v, ok := bpu.mutation.Name(); ok {
+		if err := backupprofile.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
 		}
 	}
 	if v, ok := bpu.mutation.Icon(); ok {
@@ -313,9 +285,6 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := bpu.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 	}
-	if value, ok := bpu.mutation.Prefix(); ok {
-		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
-	}
 	if value, ok := bpu.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
@@ -334,9 +303,6 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if bpu.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
-	}
-	if value, ok := bpu.mutation.IsSetupComplete(); ok {
-		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 	}
 	if value, ok := bpu.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
@@ -539,20 +505,6 @@ func (bpuo *BackupProfileUpdateOne) SetNillableName(s *string) *BackupProfileUpd
 	return bpuo
 }
 
-// SetPrefix sets the "prefix" field.
-func (bpuo *BackupProfileUpdateOne) SetPrefix(s string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetPrefix(s)
-	return bpuo
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillablePrefix(s *string) *BackupProfileUpdateOne {
-	if s != nil {
-		bpuo.SetPrefix(*s)
-	}
-	return bpuo
-}
-
 // SetBackupPaths sets the "backup_paths" field.
 func (bpuo *BackupProfileUpdateOne) SetBackupPaths(s []string) *BackupProfileUpdateOne {
 	bpuo.mutation.SetBackupPaths(s)
@@ -580,20 +532,6 @@ func (bpuo *BackupProfileUpdateOne) AppendExcludePaths(s []string) *BackupProfil
 // ClearExcludePaths clears the value of the "exclude_paths" field.
 func (bpuo *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne {
 	bpuo.mutation.ClearExcludePaths()
-	return bpuo
-}
-
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (bpuo *BackupProfileUpdateOne) SetIsSetupComplete(b bool) *BackupProfileUpdateOne {
-	bpuo.mutation.SetIsSetupComplete(b)
-	return bpuo
-}
-
-// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdateOne {
-	if b != nil {
-		bpuo.SetIsSetupComplete(*b)
-	}
 	return bpuo
 }
 
@@ -791,9 +729,9 @@ func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpuo *BackupProfileUpdateOne) check() error {
-	if v, ok := bpuo.mutation.Prefix(); ok {
-		if err := backupprofile.PrefixValidator(v); err != nil {
-			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+	if v, ok := bpuo.mutation.Name(); ok {
+		if err := backupprofile.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
 		}
 	}
 	if v, ok := bpuo.mutation.Icon(); ok {
@@ -836,9 +774,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	if value, ok := bpuo.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 	}
-	if value, ok := bpuo.mutation.Prefix(); ok {
-		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
-	}
 	if value, ok := bpuo.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
@@ -857,9 +792,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	}
 	if bpuo.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
-	}
-	if value, ok := bpuo.mutation.IsSetupComplete(); ok {
-		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
 	}
 	if value, ok := bpuo.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
