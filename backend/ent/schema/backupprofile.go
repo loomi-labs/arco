@@ -20,7 +20,7 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"id"`),
 		field.String("name").
 			StructTag(`json:"name"`).
-			MinLen(1).
+			MinLen(3).
 			MaxLen(30),
 		field.String("prefix").
 			StructTag(`json:"prefix"`).
