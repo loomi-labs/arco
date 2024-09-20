@@ -7,7 +7,6 @@ import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
-import { LogDebug } from "../../wailsjs/runtime";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
 
@@ -41,6 +40,52 @@ const emitIsValidStr = "update:is-valid";
 const suggestions = ref<string[]>(props.suggestions ?? []);
 const acceptedSuggestions = ref<string[]>([]);
 
+const pathSchema = yup.string()
+  .required("Path is required")
+  .test("doesPathExist", "Path does not exist", async (path) => {
+    return await doesPathExist(path);
+  })
+  .transform((path) => sanitizePath(path));
+
+const pathsSchema = yup.object({
+  paths: yup.array().of(
+    pathSchema
+      .test("isDuplicatePath", "Path has already been added", (path) => {
+        return !isDuplicatePath(path, 1);
+      })
+  ).test("minOnePath", "At least one path is required", (paths) => {
+    if (props.runMinOnePathValidation) {
+      if (!paths || paths.length === 0) {
+        return false;
+      }
+
+      // Check if all paths are suggestions
+      return !paths.every((path) => suggestions.value.includes(path));
+    }
+    return true;
+  })
+});
+
+const { meta, errors, values } = useForm({
+  validationSchema: computed(() => pathsSchema)
+});
+
+const { remove, push, fields, replace } = useFieldArray<string>("paths");
+
+const npForm = useForm({
+  validationSchema: yup.object({
+    newPath: pathSchema
+      .test("isDuplicatePath", "Path has already been added", (path) => {
+        return !isDuplicatePath(path, 0);
+      })
+  })
+});
+
+const [newPath, newPathAttrs] = npForm.defineField("newPath", {
+  validateOnBlur: false,
+  validateOnModelUpdate: false
+});
+
 /************
  * Functions
  ************/
@@ -70,27 +115,25 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
   return false;
 }
 
-function removeField(field: FieldEntry<string>, index: number) {
+async function removeField(field: FieldEntry<string>, index: number) {
   const path = field.value as string;
   acceptedSuggestions.value = acceptedSuggestions.value.filter((p) => p !== path);
   suggestions.value = suggestions.value.filter((p) => p !== path);
   remove(index);
-  // await npForm.validate();
+  await npForm.validate();
 }
 
-function setAccepted(field: FieldEntry<string>) {
+async function setAccepted(field: FieldEntry<string>) {
   const path = field.value as string;
   if (isSuggestion(field)) {
     acceptedSuggestions.value.push(path);
     suggestions.value = suggestions.value.filter((p) => p !== path);
-    // await npForm.validate();
+    await npForm.validate();
   }
 }
 
 function sanitizePath(path: string) {
-  LogDebug(`Sanitizing path: ${path}`);
   if (path.endsWith("/") && path.length > 1 && props.isBackupSelection) {
-    LogDebug(`Removing trailing slash from path: ${path}`);
     return path.slice(0, -1);
   }
   return path;
@@ -100,90 +143,38 @@ async function addDirectory() {
   const pathStr = await backupClient.SelectDirectory();
   if (pathStr) {
     newPath.value = pathStr;
-    LogDebug(`Adding path: ${pathStr}`);
     await npForm.validate();
   }
 }
-
-// function emitResults(allValid: boolean) {
-//   if (allValid) {
-//     emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded));
-//   }
-//   emit(emitIsValidStr, allValid);
-// }
-
-/************
- * Lifecycle
- ************/
 
 function isSuggestion(field: FieldEntry<string> | string): boolean {
   const path = typeof field === "string" ? field : field.value;
   return suggestions.value.includes(path) && !acceptedSuggestions.value.includes(path);
 }
 
-const pathSchema = yup.string()
-  .required("Path is required")
-  .test("doesPathExist", "Path does not exist", async (path) => {
-    return await doesPathExist(path);
-  })
-  .transform((path) => sanitizePath(path));
-
-const pathsSchema = yup.object({
-  paths: yup.array().of(
-    pathSchema
-      .test("isDuplicatePath", "Path has already been added", (path) => {
-        return !isDuplicatePath(path, 1);
-      })
-  ).test("minOnePath", "At least one path is required", (paths) => {
-    LogDebug(`Run min one path validation: ${props.runMinOnePathValidation}`);
-    if (props.runMinOnePathValidation) {
-      if (!paths || paths.length === 0) {
-        return false;
-      }
-    }
-    return true;
-  })
-});
-
-
-const { meta, errors, values } = useForm({
-  validationSchema: computed(() => pathsSchema)
-});
-
-const { remove, push, fields, update } = useFieldArray<string>("paths");
-
-watch(values, (newFields) => {
-  LogDebug(`Values: ${JSON.stringify(newFields, null, 2)}`);
-});
-
-watch(errors, (newErrors) => {
-  LogDebug(`Errors: ${JSON.stringify(newErrors, null, 2)}`);
-});
-
 function getError(index: number): string {
   return (errors.value as any)[`paths[${index}]`] ?? "";
 }
 
-const npForm = useForm({
-  validationSchema: yup.object({
-    newPath: pathSchema
-      .test("isDuplicatePath", "Path has already been added", (path) => {
-        return !isDuplicatePath(path, 0);
-      })
-  })
-});
+function emitResults(allValid: boolean) {
+  if (allValid) {
+    // TODO: get transformed paths
+    emit(emitUpdatePathsStr, fields.value.map((field) => {
+      return { path: field.value, isAdded: !isSuggestion(field) };
+    }));
+  }
+  emit(emitIsValidStr, allValid);
+}
 
-const [newPath, newPathAttrs] = npForm.defineField("newPath", {
-  validateOnBlur: false,
-  validateOnModelUpdate: false
-});
+/************
+ * Lifecycle
+ ************/
 
-watch(npForm.meta, async (ngMeta) => {
-  LogDebug(`New path meta: ${JSON.stringify(ngMeta, null, 2)}`);
 
+watch(npForm.meta, async (newMeta) => {
   // We have to wait a bit for the validation to run
   // await new Promise((resolve) => setTimeout(resolve, 100));
-  if (ngMeta.valid && ngMeta.dirty && !ngMeta.pending) {
+  if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     const newPathValue = newPath.value as string;
     newPath.value = "";
     npForm.resetForm();
@@ -192,23 +183,28 @@ watch(npForm.meta, async (ngMeta) => {
 });
 
 watch(() => props.paths, (newPaths) => {
-  LogDebug(`Paths: ${JSON.stringify(newPaths, null, 2)}`);
-  props.paths.forEach((path) => {
-    push(path.path);
-  });
+  replace(newPaths.map((path) => (path.path)));
 });
 
+// TODO: maybe we have to change this
 watch(() => props.suggestions, (newSuggestions) => {
   if (!newSuggestions) {
     return;
   }
-  LogDebug(`Suggestions: ${JSON.stringify(newSuggestions, null, 2)}`);
 
   suggestions.value = newSuggestions;
 
   props.suggestions?.forEach((suggestion) => {
     push(suggestion);
   });
+});
+
+watch(() => meta.value, (newMeta) => {
+  if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
+    emitResults(true);
+  } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
+    emitResults(false);
+  }
 });
 
 </script>
