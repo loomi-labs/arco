@@ -27,7 +27,7 @@ type Pagination = {
   total: number;
 };
 
-export interface Props {
+interface Props {
   repo: ent.Repository;
   backupProfileId: number;
   repoStatus: state.RepoStatus;

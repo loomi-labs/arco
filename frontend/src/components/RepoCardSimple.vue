@@ -13,7 +13,7 @@ import { polling } from "../common/polling";
  * Types
  ************/
 
-export interface Props {
+interface Props {
   repo: ent.Repository;
 }
 

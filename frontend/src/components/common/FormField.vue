@@ -6,7 +6,7 @@ import { ExclamationCircleIcon } from "@heroicons/vue/24/outline";
  * Types
  ************/
 
-export interface Props {
+interface Props {
   label: string;
   error: string | undefined;
   hideError?: boolean;
