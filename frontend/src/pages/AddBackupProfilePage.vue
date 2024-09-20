@@ -25,6 +25,7 @@ import {
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -97,7 +98,7 @@ const existingRepos = ref<ent.Repository[]>([]);
 const runValidation = ref(false);
 
 // Step 1
-const directorySuggestions = ref<Path[]>([]);
+const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(false);
 const isBackupNameValid = ref(false);
@@ -136,18 +137,22 @@ function getMaxWithPerStep(): string {
 }
 
 // Step 1
-function saveBackupPaths(paths: Path[]) {
-  backupProfile.value.backupPaths = paths.map((dir) => dir.path);
+function saveBackupPaths(paths: string[]) {
+  backupProfile.value.backupPaths = paths;
+
+  LogDebug(`Backup paths: ${backupProfile.value.backupPaths}`);
 
   // If we don't have a name yet, suggest one based on the first path
   if (!backupProfile.value.name && backupProfile.value.backupPaths.length > 0) {
-    backupProfile.value.name = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
+    // Set name to the last part of the first path (capitalize first letter)
+    const name = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
+    backupProfile.value.name = name.charAt(0).toUpperCase() + name.slice(1);
     validateBackupName();
   }
 }
 
-function saveExcludePaths(paths: Path[]) {
-  backupProfile.value.excludePaths = paths.map((dir) => dir.path);
+function saveExcludePaths(paths: string[]) {
+  backupProfile.value.excludePaths = paths;
 }
 
 function selectIcon(icon: Icon) {
@@ -160,8 +165,7 @@ async function createBackupProfile() {
     backupProfile.value = await backupClient.NewBackupProfile();
     selectedIcon.value = icons.find((icon) => icon.type === backupProfile.value.icon) ?? icons[0];
 
-    const result = await backupClient.GetDirectorySuggestions();
-    directorySuggestions.value = toPaths(false, result);
+    directorySuggestions.value = await backupClient.GetDirectorySuggestions();
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
   }
@@ -239,10 +243,13 @@ async function create() {
 // Navigation
 const previousStep = async () => {
   currentStep.value--;
+  LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
 };
 
 const nextStep = async () => {
   runValidation.value = true;
+
+  LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
   switch (currentStep.value) {
     case Step.SelectData:
       if (!isStep1Valid.value) {
@@ -321,17 +328,18 @@ const isStep3Valid = computed(() => {
       <!-- Data to backup Card -->
       <h2 class='text-3xl py-4'>Data to backup</h2>
       <DataSelection
-        :paths='directorySuggestions'
+        :paths='backupProfile.backupPaths'
+        :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
-        :run-min-one-path-validation='runValidation'
+        :run-min-one-path-validation='true'
         @update:paths='saveBackupPaths'
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
       <h2 class='text-3xl pt-8 pb-4'>Data to ignore</h2>
       <DataSelection
-        :paths='[]'
+        :paths='backupProfile.excludePaths'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'

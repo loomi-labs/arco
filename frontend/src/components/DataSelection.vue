@@ -2,20 +2,20 @@
 
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { computed, ref, watch } from "vue";
-import { Path } from "../common/types";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
  ************/
 
 interface Props {
-  paths: Path[];
+  paths: string[];
   suggestions?: string[];
   isBackupSelection?: boolean;
   showTitle?: boolean;
@@ -23,7 +23,7 @@ interface Props {
 }
 
 interface Emits {
-  (event: typeof emitUpdatePathsStr, paths: Path[]): void;
+  (event: typeof emitUpdatePathsStr, paths: string[]): void;
 
   (event: typeof emitIsValidStr, isValid: boolean): void;
 }
@@ -41,7 +41,6 @@ const suggestions = ref<string[]>(props.suggestions ?? []);
 const acceptedSuggestions = ref<string[]>([]);
 
 const pathSchema = yup.string()
-  .required("Path is required")
   .test("doesPathExist", "Path does not exist", async (path) => {
     return await doesPathExist(path);
   })
@@ -50,6 +49,7 @@ const pathSchema = yup.string()
 const pathsSchema = yup.object({
   paths: yup.array().of(
     pathSchema
+      .required("Path is required")
       .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 1);
       })
@@ -66,18 +66,27 @@ const pathsSchema = yup.object({
   })
 });
 
-const { meta, errors, values } = useForm({
+const { meta, errors, values, defineField } = useForm({
   validationSchema: computed(() => pathsSchema)
+});
+
+defineField("paths", {
+  validateOnBlur: false,
+  validateOnModelUpdate: false
 });
 
 const { remove, push, fields, replace } = useFieldArray<string>("paths");
 
 const npForm = useForm({
   validationSchema: yup.object({
-    newPath: pathSchema
+    newPath: yup.string()
+      .test("doesPathExist", "Path does not exist", async (path) => {
+        return await doesPathExist(path);
+      })
       .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 0);
       })
+      .transform((path) => sanitizePath(path))
   })
 });
 
@@ -132,7 +141,11 @@ async function setAccepted(field: FieldEntry<string>) {
   }
 }
 
-function sanitizePath(path: string) {
+function sanitizePath(path: string | undefined): string | undefined {
+  if (!path) {
+    return path;
+  }
+
   if (path.endsWith("/") && path.length > 1 && props.isBackupSelection) {
     return path.slice(0, -1);
   }
@@ -159,9 +172,12 @@ function getError(index: number): string {
 function emitResults(allValid: boolean) {
   if (allValid) {
     // TODO: get transformed paths
-    emit(emitUpdatePathsStr, fields.value.map((field) => {
-      return { path: field.value, isAdded: !isSuggestion(field) };
-    }));
+
+    // filter out the not accepted suggestions
+    const paths = values.paths = fields.value.map((field) => field.value)
+      .filter((path) => !suggestions.value.includes(path) || acceptedSuggestions.value.includes(path));
+
+    emit(emitUpdatePathsStr, paths);
   }
   emit(emitIsValidStr, allValid);
 }
@@ -182,8 +198,16 @@ watch(npForm.meta, async (newMeta) => {
   }
 });
 
+watch(newPath.value, (newPath) => {
+  LogDebug(`newPath: ${newPath}`);
+  if (newPath === "") {
+    npForm.resetForm();
+  }
+});
+
 watch(() => props.paths, (newPaths) => {
-  replace(newPaths.map((path) => (path.path)));
+  LogDebug(`newPaths: ${newPaths}`);
+  replace(newPaths);
 });
 
 // TODO: maybe we have to change this

@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as zod from "zod";
 import { object } from "zod";
-import { onMounted, ref, useTemplateRef, watch } from "vue";
+import { ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
@@ -26,12 +26,8 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 const router = useRouter();
 const toast = useToast();
 const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
-const backupPaths = ref<Path[]>([]);
-const excludePaths = ref<Path[]>([]);
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
-const backupNameInput = ref<HTMLInputElement | null>(null);
-const validationError = ref<string | null>(null);
 
 const nameInputKey = "name_input";
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -58,8 +54,6 @@ async function getBackupProfile() {
   try {
     backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     name.value = backup.value.name;
-    backupPaths.value = toPaths(true, backup.value.backupPaths);
-    excludePaths.value = toPaths(true, backup.value.excludePaths);
     if (backup.value.edges?.repositories?.length && !selectedRepo.value) {
       // Select the first repo by default
       selectedRepo.value = backup.value.edges.repositories[0];
@@ -87,18 +81,18 @@ async function deleteBackupProfile() {
   }
 }
 
-async function saveBackupPaths(paths: Path[]) {
+async function saveBackupPaths(paths: string[]) {
   try {
-    backup.value.backupPaths = paths.map((dir) => dir.path);
+    backup.value.backupPaths = paths;
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to save backup paths", error);
   }
 }
 
-async function saveExcludePaths(paths: Path[]) {
+async function saveExcludePaths(paths: string[]) {
   try {
-    backup.value.excludePaths = paths.map((dir) => dir.path);
+    backup.value.excludePaths = paths;
     await backupClient.SaveBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to save exclude paths", error);
@@ -197,14 +191,14 @@ watch(name, () => {
       </div>
       <!-- Data to backup Card -->
       <DataSelection
-        :paths='backupPaths'
+        :paths='backup.backupPaths'
         :is-backup-selection='true'
         :run-min-one-path-validation='true'
         @update:paths='saveBackupPaths'
       />
       <!-- Data to ignore Card -->
       <DataSelection
-        :paths='excludePaths'
+        :paths='backup.excludePaths'
         :is-backup-selection='false'
         @update:paths='saveExcludePaths'
       />
