@@ -20,6 +20,7 @@
     "vue-i18n": "^9.14.0",
     "vue-router": "^4.4.3",
     "vue-toastification": "2.0.0-rc.5",
+    "yup": "^1.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

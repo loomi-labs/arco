@@ -6,9 +6,7 @@ import { Path } from "../common/types";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
-import * as zod from "zod";
-import { object } from "zod";
-import { toTypedSchema } from "@vee-validate/zod";
+import * as yup from "yup";
 import { LogDebug } from "../../wailsjs/runtime";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
@@ -27,6 +25,7 @@ interface Props {
 
 interface Emits {
   (event: typeof emitUpdatePathsStr, paths: Path[]): void;
+
   (event: typeof emitIsValidStr, isValid: boolean): void;
 }
 
@@ -46,7 +45,11 @@ const acceptedSuggestions = ref<string[]>([]);
  * Functions
  ************/
 
-async function doesPathExist(path: string): Promise<boolean> {
+async function doesPathExist(path: string | undefined): Promise<boolean> {
+  if (!path) {
+    return false;
+  }
+
   // Only check if path exists if it's a backup selection
   if (props.isBackupSelection) {
     return await backupClient.DoesPathExist(path);
@@ -62,7 +65,7 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
   // Check if the path is already added
   // Set maxOccurrences to 0 if the path is not yet added
   if (values.paths) {
-    return values.paths.filter((p) => p === path).length > maxOccurrences;
+    return (values.paths as string[]).filter((p) => p === path).length > maxOccurrences;
   }
   return false;
 }
@@ -85,8 +88,9 @@ function setAccepted(field: FieldEntry<string>) {
 }
 
 function sanitizePath(path: string) {
-  // Remove trailing slash if it's a backup selection and the path is not the root
+  LogDebug(`Sanitizing path: ${path}`);
   if (path.endsWith("/") && path.length > 1 && props.isBackupSelection) {
+    LogDebug(`Removing trailing slash from path: ${path}`);
     return path.slice(0, -1);
   }
   return path;
@@ -98,7 +102,6 @@ async function addDirectory() {
     newPath.value = pathStr;
     LogDebug(`Adding path: ${pathStr}`);
     await npForm.validate();
-    // push(pathStr);
   }
 }
 
@@ -115,34 +118,39 @@ async function addDirectory() {
 
 function isSuggestion(field: FieldEntry<string> | string): boolean {
   const path = typeof field === "string" ? field : field.value;
-  // LogDebug(`Checking if ${path} is a suggestion`);
-  // LogDebug(`Suggestions: ${JSON.stringify(suggestions.value, null, 2)}`);
-  // LogDebug(`Accepted suggestions: ${JSON.stringify(acceptedSuggestions.value, null, 2)}`);
   return suggestions.value.includes(path) && !acceptedSuggestions.value.includes(path);
 }
 
-const pathSchema = zod.string()
-  .refine(async (path) => {
+const pathSchema = yup.string()
+  .required("Path is required")
+  .test("doesPathExist", "Path does not exist", async (path) => {
     return await doesPathExist(path);
-  }, { message: "Path does not exist" });
-// .transform((path) => sanitizePath(path));
+  })
+  .transform((path) => sanitizePath(path));
 
-const pathsSchema = object({
-  paths: zod.array(
+const pathsSchema = yup.object({
+  paths: yup.array().of(
     pathSchema
-      .refine((path) => {
+      .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 1);
-      }, { message: "Path has already been added" }))
-}).refine((value) => {
-  return value.paths.length > 0;
-}, { message: "At least one path must be selected" });
+      })
+  ).test("minOnePath", "At least one path is required", (paths) => {
+    LogDebug(`Run min one path validation: ${props.runMinOnePathValidation}`);
+    if (props.runMinOnePathValidation) {
+      if (!paths || paths.length === 0) {
+        return false;
+      }
+    }
+    return true;
+  })
+});
+
 
 const { meta, errors, values } = useForm({
-  validationSchema: computed(() => toTypedSchema(pathsSchema))
+  validationSchema: computed(() => pathsSchema)
 });
 
 const { remove, push, fields, update } = useFieldArray<string>("paths");
-
 
 watch(values, (newFields) => {
   LogDebug(`Values: ${JSON.stringify(newFields, null, 2)}`);
@@ -157,17 +165,16 @@ function getError(index: number): string {
 }
 
 const npForm = useForm({
-  validationSchema: toTypedSchema(object({
+  validationSchema: yup.object({
     newPath: pathSchema
-      .refine((path) => {
+      .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 0);
-      }, { message: "Path has already been added" })
-  }))
+      })
+  })
 });
 
 const [newPath, newPathAttrs] = npForm.defineField("newPath", {
   validateOnBlur: false,
-  // validateOnInput: false, validateOnChange: false,
   validateOnModelUpdate: false
 });
 
@@ -186,8 +193,6 @@ watch(npForm.meta, async (ngMeta) => {
 
 watch(() => props.paths, (newPaths) => {
   LogDebug(`Paths: ${JSON.stringify(newPaths, null, 2)}`);
-  // paths.value = newPaths;
-
   props.paths.forEach((path) => {
     push(path.path);
   });
@@ -207,7 +212,6 @@ watch(() => props.suggestions, (newSuggestions) => {
 });
 
 </script>
-
 <template>
   <div class='flex flex-col ac-card p-10'>
     <h2 v-if='showTitle' class='text-lg font-semibold mb-4'>
@@ -240,7 +244,7 @@ watch(() => props.suggestions, (newSuggestions) => {
             <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
           </FormFieldSmall>
         </td>
-        <td class='text-right'>
+        <td class='text-right align-top'>
           <button class='btn btn-success btn-sm' @click='addDirectory()'>
             {{ $t("add") }}
             <PlusIcon class='size-4' />
@@ -249,9 +253,9 @@ watch(() => props.suggestions, (newSuggestions) => {
       </tr>
       </tbody>
     </table>
-    <!--    <span v-if='minOnePathError' class='label'>-->
-    <!--      <span class='label text-xs text-error'>{{ minOnePathError }}</span>-->
-    <!--    </span>-->
+    <span v-if='errors?.paths' class='label'>
+      <span class='label text-sm text-error'>{{ errors.paths }}</span>
+    </span>
   </div>
 </template>
 
