@@ -1,11 +1,17 @@
 <script setup lang='ts'>
 
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { Path } from "../common/types";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
+import { FieldEntry, useFieldArray, useForm } from "vee-validate";
+import * as zod from "zod";
+import { object } from "zod";
+import { toTypedSchema } from "@vee-validate/zod";
 import { LogDebug } from "../../wailsjs/runtime";
+import FormFieldSmall from "./common/FormFieldSmall.vue";
+import { formInputClass } from "../common/form";
 
 /************
  * Types
@@ -13,6 +19,7 @@ import { LogDebug } from "../../wailsjs/runtime";
 
 interface Props {
   paths: Path[];
+  suggestions?: string[];
   isBackupSelection?: boolean;
   showTitle?: boolean;
   runMinOnePathValidation?: boolean;
@@ -32,10 +39,8 @@ const emit = defineEmits<Emits>();
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
 
-const paths = ref<Path[]>(props.paths);
-const newPath = ref<string>("");
-const newPathError = ref<string | null>(null);
-const minOnePathError = ref<string | null>(null);
+const suggestions = ref<string[]>(props.suggestions ?? []);
+const acceptedSuggestions = ref<string[]>([]);
 
 /************
  * Functions
@@ -49,131 +54,157 @@ async function doesPathExist(path: string): Promise<boolean> {
   return true;
 }
 
-async function swapPathState(path: Path) {
-  if (!path.isAdded) {
-    path.isAdded = true;
-  } else {
-    paths.value = paths.value.filter((p) => p !== path);
-
+function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean {
+  if (!path) {
+    return false;
   }
-  await runFullValidation();
-}
 
-function isDuplicatePath(path: string, maxOccurrences = 1): boolean {
   // Check if the path is already added
   // Set maxOccurrences to 0 if the path is not yet added
-  return paths.value.filter((p) => p.isAdded).filter((p) => p.path === path).length > maxOccurrences;
+  if (values.paths) {
+    return values.paths.filter((p) => p === path).length > maxOccurrences;
+  }
+  return false;
 }
 
-async function sanitizeAndValidate(path: Path) {
-  // Remove empty paths from the list
-  if (!path.path) {
-    paths.value = paths.value.filter((p) => p !== path);
-    return;
-  }
+function removeField(field: FieldEntry<string>, index: number) {
+  const path = field.value as string;
+  acceptedSuggestions.value = acceptedSuggestions.value.filter((p) => p !== path);
+  suggestions.value = suggestions.value.filter((p) => p !== path);
+  remove(index);
+  // await npForm.validate();
+}
 
+function setAccepted(field: FieldEntry<string>) {
+  const path = field.value as string;
+  if (isSuggestion(field)) {
+    acceptedSuggestions.value.push(path);
+    suggestions.value = suggestions.value.filter((p) => p !== path);
+    // await npForm.validate();
+  }
+}
+
+function sanitizePath(path: string) {
   // Remove trailing slash if it's a backup selection and the path is not the root
-  if (path.path.endsWith("/") && path.path.length > 1 && props.isBackupSelection) {
-    path.path = path.path.slice(0, -1);
+  if (path.endsWith("/") && path.length > 1 && props.isBackupSelection) {
+    return path.slice(0, -1);
   }
-
-  // Validate path
-  if (!path.path) {
-    path.validationError = "Path cannot be empty";
-  } else if (isDuplicatePath(path.path)) {
-    path.validationError = "Path has already been added";
-  } else if (!(await doesPathExist(path.path))) {
-    path.validationError = "Path does not exist";
-  } else {
-    path.validationError = undefined;
-  }
-}
-
-function validateMinOnePath() {
-  LogDebug("Validating min one path");
-  if (props.runMinOnePathValidation) {
-    if (paths.value.filter((p) => p.isAdded).length === 0) {
-      minOnePathError.value = "At least one path must be selected";
-    } else {
-      minOnePathError.value = null;
-    }
-  } else {
-    minOnePathError.value = null;
-  }
-}
-
-async function runFullValidation() {
-  LogDebug("Running full validation");
-  let allValid = true;
-  for (const path of paths.value) {
-    await sanitizeAndValidate(path);
-    if (path.validationError) {
-      allValid = false;
-    }
-  }
-
-  validateMinOnePath();
-  if (minOnePathError.value) {
-    allValid = false;
-  }
-
-  emitResults(allValid);
+  return path;
 }
 
 async function addDirectory() {
   const pathStr = await backupClient.SelectDirectory();
   if (pathStr) {
     newPath.value = pathStr;
-    await addNewPath();
+    LogDebug(`Adding path: ${pathStr}`);
+    await npForm.validate();
+    // push(pathStr);
   }
 }
 
-async function addNewPath() {
-  if (!newPath.value) {
-    newPathError.value = null;
-    return;
-  }
-
-  if (isDuplicatePath(newPath.value, 0)) {
-    newPathError.value = "Path has already been added";
-    return;
-  }
-  if (!(await doesPathExist(newPath.value))) {
-    newPathError.value = "Path does not exist";
-    return;
-  }
-
-  paths.value.push({
-    path: newPath.value,
-    isAdded: true
-  });
-  newPath.value = "";
-  newPathError.value = null;
-  await runFullValidation();
-}
-
-function emitResults(allValid: boolean) {
-  if (allValid) {
-    emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded));
-  }
-  emit(emitIsValidStr, allValid);
-}
+// function emitResults(allValid: boolean) {
+//   if (allValid) {
+//     emit(emitUpdatePathsStr, paths.value.filter((p) => p.isAdded));
+//   }
+//   emit(emitIsValidStr, allValid);
+// }
 
 /************
  * Lifecycle
  ************/
 
-// Watch for changes to props.paths
+function isSuggestion(field: FieldEntry<string> | string): boolean {
+  const path = typeof field === "string" ? field : field.value;
+  // LogDebug(`Checking if ${path} is a suggestion`);
+  // LogDebug(`Suggestions: ${JSON.stringify(suggestions.value, null, 2)}`);
+  // LogDebug(`Accepted suggestions: ${JSON.stringify(acceptedSuggestions.value, null, 2)}`);
+  return suggestions.value.includes(path) && !acceptedSuggestions.value.includes(path);
+}
+
+const pathSchema = zod.string()
+  .refine(async (path) => {
+    return await doesPathExist(path);
+  }, { message: "Path does not exist" });
+// .transform((path) => sanitizePath(path));
+
+const pathsSchema = object({
+  paths: zod.array(
+    pathSchema
+      .refine((path) => {
+        return !isDuplicatePath(path, 1);
+      }, { message: "Path has already been added" }))
+}).refine((value) => {
+  return value.paths.length > 0;
+}, { message: "At least one path must be selected" });
+
+const { meta, errors, values } = useForm({
+  validationSchema: computed(() => toTypedSchema(pathsSchema))
+});
+
+const { remove, push, fields, update } = useFieldArray<string>("paths");
+
+
+watch(values, (newFields) => {
+  LogDebug(`Values: ${JSON.stringify(newFields, null, 2)}`);
+});
+
+watch(errors, (newErrors) => {
+  LogDebug(`Errors: ${JSON.stringify(newErrors, null, 2)}`);
+});
+
+function getError(index: number): string {
+  return (errors.value as any)[`paths[${index}]`] ?? "";
+}
+
+const npForm = useForm({
+  validationSchema: toTypedSchema(object({
+    newPath: pathSchema
+      .refine((path) => {
+        return !isDuplicatePath(path, 0);
+      }, { message: "Path has already been added" })
+  }))
+});
+
+const [newPath, newPathAttrs] = npForm.defineField("newPath", {
+  validateOnBlur: false,
+  // validateOnInput: false, validateOnChange: false,
+  validateOnModelUpdate: false
+});
+
+watch(npForm.meta, async (ngMeta) => {
+  LogDebug(`New path meta: ${JSON.stringify(ngMeta, null, 2)}`);
+
+  // We have to wait a bit for the validation to run
+  // await new Promise((resolve) => setTimeout(resolve, 100));
+  if (ngMeta.valid && ngMeta.dirty && !ngMeta.pending) {
+    const newPathValue = newPath.value as string;
+    newPath.value = "";
+    npForm.resetForm();
+    push(newPathValue);
+  }
+});
+
 watch(() => props.paths, (newPaths) => {
-  paths.value = newPaths;
+  LogDebug(`Paths: ${JSON.stringify(newPaths, null, 2)}`);
+  // paths.value = newPaths;
+
+  props.paths.forEach((path) => {
+    push(path.path);
+  });
 });
 
-// Watch for changes to props.runMinOnePathValidation
-watch(() => props.runMinOnePathValidation, async (_) => {
-  await runFullValidation();
-});
+watch(() => props.suggestions, (newSuggestions) => {
+  if (!newSuggestions) {
+    return;
+  }
+  LogDebug(`Suggestions: ${JSON.stringify(newSuggestions, null, 2)}`);
 
-runFullValidation();
+  suggestions.value = newSuggestions;
+
+  props.suggestions?.forEach((suggestion) => {
+    push(suggestion);
+  });
+});
 
 </script>
 
@@ -185,22 +216,17 @@ runFullValidation();
     <table class='w-full table table-xs'>
       <tbody>
       <!-- Paths -->
-      <tr v-for='(path, index) in paths' :key='index'>
+      <tr v-for='(field, index) in fields' :key='field.key'>
         <td>
-          <label class='form-control'>
-            <input type='text' class='input input-sm min-w-full'
-                   :class="{ 'text-half-hidden-light dark:text-half-hidden-dark': !path.isAdded }"
-                   @change='() => { path.isAdded = true; runFullValidation(); }'
-                   v-model='path.path' />
-            <span v-if='path.validationError' class='label'>
-              <span class='label text-xs text-error'>{{ path.validationError }}</span>
-            </span>
-          </label>
+          <FormFieldSmall :error='getError(index)'>
+            <input type='text' v-model='field.value'
+                   :class='formInputClass + (isSuggestion(field) ? "text-half-hidden-light dark:text-half-hidden-dark" : "")' />
+          </FormFieldSmall>
         </td>
-        <td class='text-right'>
+        <td class='text-right align-top'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
-                 :class='{"swap-active btn-outline btn-error": path.isAdded, "btn-success": !path.isAdded}'
-                 @click='swapPathState(path)'>
+                 :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
+                 @click='() => isSuggestion(field) ? setAccepted(field) : removeField(field, index)'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
           </label>
@@ -210,14 +236,9 @@ runFullValidation();
       <!-- Empty path -->
       <tr>
         <td>
-          <label class='form-control'>
-            <input type='text' class='input input-sm'
-                   @change='addNewPath'
-                   v-model='newPath' />
-          </label>
-          <span v-if='newPathError' class='label'>
-            <span class='label text-xs text-error'>{{ newPathError }}</span>
-          </span>
+          <FormFieldSmall :error='npForm.errors.value.newPath'>
+            <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
+          </FormFieldSmall>
         </td>
         <td class='text-right'>
           <button class='btn btn-success btn-sm' @click='addDirectory()'>
@@ -228,9 +249,9 @@ runFullValidation();
       </tr>
       </tbody>
     </table>
-    <span v-if='minOnePathError' class='label'>
-      <span class='label text-xs text-error'>{{ minOnePathError }}</span>
-    </span>
+    <!--    <span v-if='minOnePathError' class='label'>-->
+    <!--      <span class='label text-xs text-error'>{{ minOnePathError }}</span>-->
+    <!--    </span>-->
   </div>
 </template>
 
