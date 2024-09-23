@@ -333,6 +333,7 @@ const isStep3Valid = computed(() => {
         :is-backup-selection='true'
         :show-title='false'
         :run-min-one-path-validation='true'
+        :show-min-one-path-error-only-after-touch='true'
         @update:paths='saveBackupPaths'
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
@@ -397,7 +398,7 @@ const isStep3Valid = computed(() => {
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='router.back()'>Cancel</button>
-        <button class='btn btn-primary min-w-24' @click='nextStep'>Next</button>
+        <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
 

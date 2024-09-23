@@ -20,6 +20,7 @@ interface Props {
   isBackupSelection?: boolean;
   showTitle?: boolean;
   runMinOnePathValidation?: boolean;
+  showMinOnePathErrorOnlyAfterTouch?: boolean;
 }
 
 interface Emits {
@@ -38,33 +39,32 @@ const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
 
 const suggestions = ref<string[]>([]);
+const touched = ref(false);
 
-const pathsSchema = yup.object({
-  paths: yup.array().of(
-    yup.string()
-      .required("Path is required")
-      .test("doesPathExist", "Path does not exist", async (path) => {
-        return await doesPathExist(path);
-      })
-      .test("isDuplicatePath", "Path has already been added", (path) => {
-        return !isDuplicatePath(path, 1);
-      })
-      .transform((path) => sanitizePath(path))
-  ).test("minOnePath", "At least one path is required", (paths) => {
-    if (props.runMinOnePathValidation) {
-      if (!paths || paths.length === 0) {
-        return false;
+const { meta, errors, values, validate } = useForm({
+  validationSchema: computed(() => yup.object({
+    paths: yup.array().of(
+      yup.string()
+        .required("Path is required")
+        .test("doesPathExist", "Path does not exist", async (path) => {
+          return await doesPathExist(path);
+        })
+        .test("isDuplicatePath", "Path has already been added", (path) => {
+          return !isDuplicatePath(path, 1);
+        })
+        .transform((path) => sanitizePath(path))
+    ).test("minOnePath", "At least one path is required", (paths) => {
+      if (props.runMinOnePathValidation) {
+        if (!paths || paths.length === 0) {
+          return false;
+        }
+
+        // Check if all paths are suggestions
+        return !paths.every((path) => suggestions.value.includes(path));
       }
-
-      // Check if all paths are suggestions
-      return !paths.every((path) => suggestions.value.includes(path));
-    }
-    return true;
-  })
-});
-
-const { meta, errors, values } = useForm({
-  validationSchema: computed(() => pathsSchema)
+      return true;
+    })
+  }))
 });
 
 const { remove, push, fields, replace } = useFieldArray<string>("paths");
@@ -121,11 +121,17 @@ async function removeField(field: FieldEntry<string>, index: number) {
   suggestions.value = suggestions.value.filter((p) => p !== path);
   remove(index);
   await newPathForm.validate();
+  await validate();
 }
 
-async function setAccepted(field: FieldEntry<string>, index: number) {
-  suggestions.value.splice(suggestions.value.indexOf(field.value), 1);
+async function setAccepted(index: number) {
+  if (index < 0 || index >= suggestions.value.length) {
+    return;
+  }
+
+  suggestions.value.splice(index, 1);
   await newPathForm.validate();
+  await validate();
 }
 
 function sanitizePath(path: string | undefined): string | undefined {
@@ -211,11 +217,19 @@ watch(newPath, async (newPath) => {
 
 // Emit results when pathsForm meta changes
 watch(() => meta.value, (newMeta) => {
+  LogDebug(`Paths meta changed: ${JSON.stringify(newMeta)}`);
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(true);
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(false);
   }
+});
+
+const showMinOnePathError = computed(() => {
+  if (props.showMinOnePathErrorOnlyAfterTouch) {
+    return !!errors.value?.paths && touched.value;
+  }
+  return !!errors.value?.paths;
 });
 
 </script>
@@ -231,13 +245,20 @@ watch(() => meta.value, (newMeta) => {
         <td>
           <FormFieldSmall :error='getError(index)'>
             <input type='text' v-model='field.value'
+                   @input='() => {
+                     setAccepted(index);
+                     touched = true;
+                   }'
                    :class='formInputClass + (isSuggestion(field) ? "text-half-hidden-light dark:text-half-hidden-dark" : "")' />
           </FormFieldSmall>
         </td>
         <td class='text-right align-top'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
                  :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
-                 @click='() => isSuggestion(field) ? setAccepted(index) : removeField(field, index)'>
+                 @click='() => {
+                   isSuggestion(field) ? setAccepted(index) : removeField(field, index)
+                   touched = true;
+                 }'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
           </label>
@@ -260,7 +281,7 @@ watch(() => meta.value, (newMeta) => {
       </tr>
       </tbody>
     </table>
-    <span v-if='errors?.paths' class='label'>
+    <span v-if='showMinOnePathError' class='label'>
       <span class='label text-sm text-error'>{{ errors.paths }}</span>
     </span>
   </div>
