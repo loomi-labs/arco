@@ -4,7 +4,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { computed, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
-import { FieldEntry, useFieldArray, useForm } from "vee-validate";
+import { FieldArrayContext, FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
@@ -38,7 +38,6 @@ const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
 
 const suggestions = ref<string[]>(props.suggestions ?? []);
-const acceptedSuggestions = ref<string[]>([]);
 
 const pathsSchema = yup.object({
   paths: yup.array().of(
@@ -64,18 +63,18 @@ const pathsSchema = yup.object({
   })
 });
 
-const { meta, errors, values, defineField } = useForm({
+const pathsForm = useForm({
   validationSchema: computed(() => pathsSchema)
 });
 
-defineField("paths", {
-  validateOnBlur: false,
-  validateOnModelUpdate: false
+pathsForm.defineField("paths", {
+  // validateOnBlur: false,
+  // validateOnModelUpdate: false
 });
 
-const { remove, push, fields, replace } = useFieldArray<string>("paths");
+const pathsFieldArray: FieldArrayContext<string> = useFieldArray<string>("paths");
 
-const npForm = useForm({
+const newPathForm = useForm({
   validationSchema: yup.object({
     newPath: yup.string()
       .required("Path is required")
@@ -89,7 +88,7 @@ const npForm = useForm({
   })
 });
 
-const [newPath, newPathAttrs] = npForm.defineField("newPath", {
+const [newPath, newPathAttrs] = newPathForm.defineField("newPath", {
   validateOnBlur: false,
   validateOnModelUpdate: false
 });
@@ -116,28 +115,22 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
   }
 
   // Check if the path is already added
-  // Set maxOccurrences to 0 if the path is not yet added
-  if (values.paths) {
-    return (values.paths as string[]).filter((p) => p === path).length > maxOccurrences;
+  if (pathsForm.values.paths) {
+    return (pathsForm.values.paths as string[]).filter((p) => p === path).length > maxOccurrences;
   }
   return false;
 }
 
 async function removeField(field: FieldEntry<string>, index: number) {
   const path = field.value as string;
-  acceptedSuggestions.value = acceptedSuggestions.value.filter((p) => p !== path);
   suggestions.value = suggestions.value.filter((p) => p !== path);
-  remove(index);
-  await npForm.validate();
+  pathsFieldArray.remove(index);
+  await newPathForm.validate();
 }
 
-async function setAccepted(field: FieldEntry<string>) {
-  const path = field.value as string;
-  if (isSuggestion(field)) {
-    acceptedSuggestions.value.push(path);
-    suggestions.value = suggestions.value.filter((p) => p !== path);
-    await npForm.validate();
-  }
+async function setAccepted(field: FieldEntry<string>, index: number) {
+  suggestions.value.splice(suggestions.value.indexOf(field.value), 1);
+  await newPathForm.validate();
 }
 
 function sanitizePath(path: string | undefined): string | undefined {
@@ -155,17 +148,17 @@ async function addDirectory() {
   const pathStr = await backupClient.SelectDirectory();
   if (pathStr) {
     newPath.value = pathStr;
-    await npForm.validate();
+    await newPathForm.validate();
   }
 }
 
 function isSuggestion(field: FieldEntry<string> | string): boolean {
   const path = typeof field === "string" ? field : field.value;
-  return suggestions.value.includes(path) && !acceptedSuggestions.value.includes(path);
+  return suggestions.value.includes(path);
 }
 
 function getError(index: number): string {
-  return (errors.value as any)[`paths[${index}]`] ?? "";
+  return (pathsForm.errors.value as any)[`paths[${index}]`] ?? "";
 }
 
 function emitResults(allValid: boolean) {
@@ -173,8 +166,8 @@ function emitResults(allValid: boolean) {
     // TODO: get transformed paths
 
     // filter out the not accepted suggestions
-    const paths = values.paths = fields.value.map((field) => field.value)
-      .filter((path) => !suggestions.value.includes(path) || acceptedSuggestions.value.includes(path));
+    const paths = pathsForm.values.paths = pathsFieldArray.fields.value.map((field) => field.value)
+      .filter((path) => !suggestions.value.includes(path));
 
     emit(emitUpdatePathsStr, paths);
   }
@@ -186,39 +179,36 @@ function emitResults(allValid: boolean) {
  ************/
 
 
-watch(npForm.meta, async (newMeta) => {
+watch(newPathForm.meta, async (newMeta) => {
   // We have to wait a bit for the validation to run
   // await new Promise((resolve) => setTimeout(resolve, 100));
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    push(newPath.value as string);
-    npForm.resetForm();
+    pathsFieldArray.push(newPath.value as string);
+    newPathForm.resetForm();
   }
 });
 
 watch(newPath, async (newPath) => {
-  if (!newPath && npForm.meta.value.dirty) {
-    npForm.resetForm();
+  if (!newPath && newPathForm.meta.value.dirty) {
+    newPathForm.resetForm();
   }
 });
 
 watch(() => props.paths, (newPaths) => {
-  replace(newPaths);
+  const sug = suggestions.value.filter((s) => !newPaths.includes(s)) ?? [];
+  pathsFieldArray.replace(sug.concat(newPaths));
 });
 
-// TODO: maybe we have to change this
 watch(() => props.suggestions, (newSuggestions) => {
-  if (!newSuggestions) {
-    return;
-  }
-
-  suggestions.value = newSuggestions;
+  suggestions.value = newSuggestions ?? [];
 
   props.suggestions?.forEach((suggestion) => {
-    push(suggestion);
+    pathsFieldArray.push(suggestion);
   });
 });
 
-watch(() => meta.value, (newMeta) => {
+watch(() => pathsForm.meta.value, (newMeta) => {
+  LogDebug(`Paths form meta: ${JSON.stringify(newMeta)}`);
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(true);
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
@@ -235,7 +225,7 @@ watch(() => meta.value, (newMeta) => {
     <table class='w-full table table-xs'>
       <tbody>
       <!-- Paths -->
-      <tr v-for='(field, index) in fields' :key='field.key'>
+      <tr v-for='(field, index) in pathsFieldArray.fields.value' :key='field.key'>
         <td>
           <FormFieldSmall :error='getError(index)'>
             <input type='text' v-model='field.value'
@@ -245,7 +235,7 @@ watch(() => meta.value, (newMeta) => {
         <td class='text-right align-top'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
                  :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
-                 @click='() => isSuggestion(field) ? setAccepted(field) : removeField(field, index)'>
+                 @click='() => isSuggestion(field) ? setAccepted(field, index) : removeField(field, index)'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
           </label>
@@ -255,7 +245,7 @@ watch(() => meta.value, (newMeta) => {
       <!-- Empty path -->
       <tr>
         <td>
-          <FormFieldSmall :error='!!newPath ? npForm.errors.value.newPath : undefined'>
+          <FormFieldSmall :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
             <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
           </FormFieldSmall>
         </td>
@@ -268,8 +258,8 @@ watch(() => meta.value, (newMeta) => {
       </tr>
       </tbody>
     </table>
-    <span v-if='errors?.paths' class='label'>
-      <span class='label text-sm text-error'>{{ errors.paths }}</span>
+    <span v-if='newPathForm.errors?.value.paths' class='label'>
+      <span class='label text-sm text-error'>{{ newPathForm.errors.value.paths }}</span>
     </span>
   </div>
 </template>
