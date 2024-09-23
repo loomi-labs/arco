@@ -40,19 +40,17 @@ const emitIsValidStr = "update:is-valid";
 const suggestions = ref<string[]>(props.suggestions ?? []);
 const acceptedSuggestions = ref<string[]>([]);
 
-const pathSchema = yup.string()
-  .test("doesPathExist", "Path does not exist", async (path) => {
-    return await doesPathExist(path);
-  })
-  .transform((path) => sanitizePath(path));
-
 const pathsSchema = yup.object({
   paths: yup.array().of(
-    pathSchema
+    yup.string()
       .required("Path is required")
+      .test("doesPathExist", "Path does not exist", async (path) => {
+        return await doesPathExist(path);
+      })
       .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 1);
       })
+      .transform((path) => sanitizePath(path))
   ).test("minOnePath", "At least one path is required", (paths) => {
     if (props.runMinOnePathValidation) {
       if (!paths || paths.length === 0) {
@@ -80,6 +78,7 @@ const { remove, push, fields, replace } = useFieldArray<string>("paths");
 const npForm = useForm({
   validationSchema: yup.object({
     newPath: yup.string()
+      .required("Path is required")
       .test("doesPathExist", "Path does not exist", async (path) => {
         return await doesPathExist(path);
       })
@@ -191,22 +190,18 @@ watch(npForm.meta, async (newMeta) => {
   // We have to wait a bit for the validation to run
   // await new Promise((resolve) => setTimeout(resolve, 100));
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    const newPathValue = newPath.value as string;
-    newPath.value = "";
+    push(newPath.value as string);
     npForm.resetForm();
-    push(newPathValue);
   }
 });
 
-watch(newPath.value, (newPath) => {
-  LogDebug(`newPath: ${newPath}`);
-  if (newPath === "") {
+watch(newPath, async (newPath) => {
+  if (!newPath && npForm.meta.value.dirty) {
     npForm.resetForm();
   }
 });
 
 watch(() => props.paths, (newPaths) => {
-  LogDebug(`newPaths: ${newPaths}`);
   replace(newPaths);
 });
 
@@ -260,7 +255,7 @@ watch(() => meta.value, (newMeta) => {
       <!-- Empty path -->
       <tr>
         <td>
-          <FormFieldSmall :error='npForm.errors.value.newPath'>
+          <FormFieldSmall :error='!!newPath ? npForm.errors.value.newPath : undefined'>
             <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
           </FormFieldSmall>
         </td>
