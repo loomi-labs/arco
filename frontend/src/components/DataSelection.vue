@@ -167,7 +167,7 @@ function emitResults(allValid: boolean) {
     // TODO: get transformed paths
 
     // filter out the not accepted suggestions
-    const paths = values.paths = fields.value.map((field) => field.value)
+    const paths = fields.value.map((field) => field.value)
       .filter((path) => !suggestions.value.includes(path));
 
     emit(emitUpdatePathsStr, paths);

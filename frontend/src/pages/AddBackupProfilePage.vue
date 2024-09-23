@@ -328,7 +328,7 @@ const isStep3Valid = computed(() => {
       <!-- Data to backup Card -->
       <h2 class='text-3xl py-4'>Data to backup</h2>
       <DataSelection
-        :paths='backupProfile.backupPaths'
+        :paths='backupProfile.backupPaths ?? []'
         :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
@@ -340,7 +340,7 @@ const isStep3Valid = computed(() => {
       <!-- Data to ignore Card -->
       <h2 class='text-3xl pt-8 pb-4'>Data to ignore</h2>
       <DataSelection
-        :paths='backupProfile.excludePaths'
+        :paths='backupProfile.excludePaths ?? []'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'

@@ -191,14 +191,14 @@ watch(name, () => {
       </div>
       <!-- Data to backup Card -->
       <DataSelection
-        :paths='backup.backupPaths'
+        :paths='backup.backupPaths ?? []'
         :is-backup-selection='true'
         :run-min-one-path-validation='true'
         @update:paths='saveBackupPaths'
       />
       <!-- Data to ignore Card -->
       <DataSelection
-        :paths='backup.excludePaths'
+        :paths='backup.excludePaths ?? []'
         :is-backup-selection='false'
         @update:paths='saveExcludePaths'
       />
