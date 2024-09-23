@@ -360,8 +360,8 @@ const isStep3Valid = computed(() => {
                    @change='validateBackupName' />
           </label>
           <span class='label' :class="{'invisible': !runValidation || isBackupNameValid}">
-              <span class='label-text-alt text-error'>Please choose a name for your backup profile</span>
-            </span>
+            <span class='label-text-alt text-error'>Please choose a name for your backup profile</span>
+          </span>
         </label>
 
         <!-- Logo -->
