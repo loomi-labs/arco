@@ -153,6 +153,12 @@ async function addDirectory() {
   }
 }
 
+async function setTouched() {
+  // Delay to allow the form to update
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  touched.value = true;
+}
+
 function isSuggestion(field: FieldEntry<string> | string): boolean {
   const path = typeof field === "string" ? field : field.value;
   return suggestions.value.includes(path);
@@ -247,7 +253,7 @@ const showMinOnePathError = computed(() => {
             <input type='text' v-model='field.value'
                    @input='() => {
                      setAccepted(index);
-                     touched = true;
+                     setTouched();
                    }'
                    :class='formInputClass + (isSuggestion(field) ? "text-half-hidden-light dark:text-half-hidden-dark" : "")' />
           </FormFieldSmall>
@@ -257,7 +263,7 @@ const showMinOnePathError = computed(() => {
                  :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
                  @click='() => {
                    isSuggestion(field) ? setAccepted(index) : removeField(field, index)
-                   touched = true;
+                   setTouched();
                  }'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
