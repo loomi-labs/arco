@@ -4,7 +4,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { computed, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
-import { FieldArrayContext, FieldEntry, useFieldArray, useForm } from "vee-validate";
+import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
@@ -37,7 +37,7 @@ const emit = defineEmits<Emits>();
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
 
-const suggestions = ref<string[]>(props.suggestions ?? []);
+const suggestions = ref<string[]>([]);
 
 const pathsSchema = yup.object({
   paths: yup.array().of(
@@ -63,16 +63,11 @@ const pathsSchema = yup.object({
   })
 });
 
-const pathsForm = useForm({
+const { meta, errors, values } = useForm({
   validationSchema: computed(() => pathsSchema)
 });
 
-pathsForm.defineField("paths", {
-  // validateOnBlur: false,
-  // validateOnModelUpdate: false
-});
-
-const pathsFieldArray: FieldArrayContext<string> = useFieldArray<string>("paths");
+const { remove, push, fields, replace } = useFieldArray<string>("paths");
 
 const newPathForm = useForm({
   validationSchema: yup.object({
@@ -115,8 +110,8 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
   }
 
   // Check if the path is already added
-  if (pathsForm.values.paths) {
-    return (pathsForm.values.paths as string[]).filter((p) => p === path).length > maxOccurrences;
+  if (values.paths) {
+    return (values.paths as string[]).filter((p) => p === path).length > maxOccurrences;
   }
   return false;
 }
@@ -124,7 +119,7 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
 async function removeField(field: FieldEntry<string>, index: number) {
   const path = field.value as string;
   suggestions.value = suggestions.value.filter((p) => p !== path);
-  pathsFieldArray.remove(index);
+  remove(index);
   await newPathForm.validate();
 }
 
@@ -158,7 +153,7 @@ function isSuggestion(field: FieldEntry<string> | string): boolean {
 }
 
 function getError(index: number): string {
-  return (pathsForm.errors.value as any)[`paths[${index}]`] ?? "";
+  return (errors.value as any)[`paths[${index}]`] ?? "";
 }
 
 function emitResults(allValid: boolean) {
@@ -166,7 +161,7 @@ function emitResults(allValid: boolean) {
     // TODO: get transformed paths
 
     // filter out the not accepted suggestions
-    const paths = pathsForm.values.paths = pathsFieldArray.fields.value.map((field) => field.value)
+    const paths = values.paths = fields.value.map((field) => field.value)
       .filter((path) => !suggestions.value.includes(path));
 
     emit(emitUpdatePathsStr, paths);
@@ -181,7 +176,13 @@ function emitResults(allValid: boolean) {
 // Watch paths prop
 watch(() => props.paths, (newPaths) => {
   const sug = suggestions.value.filter((s) => !newPaths.includes(s)) ?? [];
-  pathsFieldArray.replace(sug.concat(newPaths));
+  const all = sug.concat(newPaths);
+
+  // Compare newPaths with current paths if they are different replace them
+  const paths = values.paths as string[];
+  if (paths && paths.length !== all.length) {
+    replace(all);
+  }
 });
 
 // Watch suggestions prop
@@ -189,14 +190,14 @@ watch(() => props.suggestions, (newSuggestions) => {
   suggestions.value = newSuggestions ?? [];
 
   props.suggestions?.forEach((suggestion) => {
-    pathsFieldArray.push(suggestion);
+    push(suggestion);
   });
 });
 
 // Add valid new path to pathsFieldArray
 watch(newPathForm.meta, async (newMeta) => {
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    pathsFieldArray.push(newPath.value as string);
+    push(newPath.value as string);
     newPathForm.resetForm();
   }
 });
@@ -209,16 +210,13 @@ watch(newPath, async (newPath) => {
 });
 
 // Emit results when pathsForm meta changes
-watch(() => pathsForm.meta.value, (newMeta) => {
+watch(() => meta.value, (newMeta) => {
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(true);
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(false);
   }
-
 });
-
-const fields = pathsFieldArray.fields;
 
 </script>
 <template>
@@ -239,7 +237,7 @@ const fields = pathsFieldArray.fields;
         <td class='text-right align-top'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
                  :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
-                 @click='() => isSuggestion(field) ? setAccepted(field, index) : removeField(field, index)'>
+                 @click='() => isSuggestion(field) ? setAccepted(index) : removeField(field, index)'>
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
           </label>
@@ -262,8 +260,8 @@ const fields = pathsFieldArray.fields;
       </tr>
       </tbody>
     </table>
-    <span v-if='newPathForm.errors?.value.paths' class='label'>
-      <span class='label text-sm text-error'>{{ newPathForm.errors.value.paths }}</span>
+    <span v-if='errors?.paths' class='label'>
+      <span class='label text-sm text-error'>{{ errors.paths }}</span>
     </span>
   </div>
 </template>
