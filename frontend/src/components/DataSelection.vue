@@ -178,27 +178,13 @@ function emitResults(allValid: boolean) {
  * Lifecycle
  ************/
 
-
-watch(newPathForm.meta, async (newMeta) => {
-  // We have to wait a bit for the validation to run
-  // await new Promise((resolve) => setTimeout(resolve, 100));
-  if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    pathsFieldArray.push(newPath.value as string);
-    newPathForm.resetForm();
-  }
-});
-
-watch(newPath, async (newPath) => {
-  if (!newPath && newPathForm.meta.value.dirty) {
-    newPathForm.resetForm();
-  }
-});
-
+// Watch paths prop
 watch(() => props.paths, (newPaths) => {
   const sug = suggestions.value.filter((s) => !newPaths.includes(s)) ?? [];
   pathsFieldArray.replace(sug.concat(newPaths));
 });
 
+// Watch suggestions prop
 watch(() => props.suggestions, (newSuggestions) => {
   suggestions.value = newSuggestions ?? [];
 
@@ -207,14 +193,32 @@ watch(() => props.suggestions, (newSuggestions) => {
   });
 });
 
+// Add valid new path to pathsFieldArray
+watch(newPathForm.meta, async (newMeta) => {
+  if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
+    pathsFieldArray.push(newPath.value as string);
+    newPathForm.resetForm();
+  }
+});
+
+// Reset newPathForm when newPath is empty
+watch(newPath, async (newPath) => {
+  if (!newPath && newPathForm.meta.value.dirty) {
+    newPathForm.resetForm();
+  }
+});
+
+// Emit results when pathsForm meta changes
 watch(() => pathsForm.meta.value, (newMeta) => {
-  LogDebug(`Paths form meta: ${JSON.stringify(newMeta)}`);
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(true);
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(false);
   }
+
 });
+
+const fields = pathsFieldArray.fields;
 
 </script>
 <template>
@@ -225,7 +229,7 @@ watch(() => pathsForm.meta.value, (newMeta) => {
     <table class='w-full table table-xs'>
       <tbody>
       <!-- Paths -->
-      <tr v-for='(field, index) in pathsFieldArray.fields.value' :key='field.key'>
+      <tr v-for='(field, index) in fields' :key='field.key'>
         <td>
           <FormFieldSmall :error='getError(index)'>
             <input type='text' v-model='field.value'
