@@ -186,7 +186,7 @@ watch(() => props.paths, (newPaths) => {
 
   // Compare newPaths with current paths if they are different replace them
   const paths = values.paths as string[];
-  if (paths && paths.length !== all.length) {
+  if (!paths || paths.length !== all.length) {
     replace(all);
   }
 });
