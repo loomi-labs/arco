@@ -8,6 +8,7 @@ import { ExclamationCircleIcon } from "@heroicons/vue/24/outline";
 
 interface Props {
   label: string;
+  labelClass?: string;
   error: string | undefined;
   hideError?: boolean;
 }
@@ -29,7 +30,7 @@ defineProps<Props>();
 </script>
 
 <template>
-  <label class='label'>
+  <label class='label' :class='labelClass'>
     <span class='label-text'>{{ label }}</span>
   </label>
   <label class='input input-bordered flex items-center gap-2'>

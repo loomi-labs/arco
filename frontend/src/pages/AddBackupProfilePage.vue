@@ -8,7 +8,6 @@ import { rBackupProfilePage, rDashboardPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import { useToast } from "vue-toastification";
 import DataSelection from "../components/DataSelection.vue";
-import { Path, toPaths } from "../common/types";
 import {
   ArrowRightCircleIcon,
   BookOpenIcon,
@@ -26,6 +25,10 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import { LogDebug } from "../../wailsjs/runtime";
+import { formInputClass } from "../common/form";
+import FormField from "../components/common/FormField.vue";
+import { useForm } from "vee-validate";
+import * as yup from "yup";
 
 /************
  * Types
@@ -101,10 +104,27 @@ const runValidation = ref(false);
 const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(false);
-const isBackupNameValid = ref(false);
 const selectedIcon = ref<Icon>(icons[0]);
 const selectIconModalKey = "select_icon_modal";
 const selectIconModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(selectIconModalKey);
+
+const step1Form = useForm({
+  validationSchema: yup.object({
+    name: yup.string()
+      .required("Please choose a name for your backup profile")
+      .min(3, "Name is too short")
+      .max(30, "Name is too long")
+  })
+});
+
+const [name, nameAttrs] = step1Form.defineField("name", {
+  validateOnBlur: false,
+  validateOnModelUpdate: false
+});
+
+const isStep1Valid = computed(() => {
+  return step1Form.meta.value.valid && isBackupPathsValid.value && isExcludePathsValid.value;
+});
 
 // Step 3
 const connectedRepos = ref<ent.Repository[]>([]);
@@ -116,12 +136,16 @@ const repoUrl = ref("");
 const repoPassword = ref("");
 const repoName = ref("");
 
-const selectedRepoAction = ref(SelectedRepoAction.None);
-const selectedRepoType = ref(SelectedRepoType.None);
+const selectedRepoAction = ref<SelectedRepoAction>(SelectedRepoAction.None);
+const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
 const createLocalRepoModalKey = "create_local_repo_modal";
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
 const createRemoteRepoModalKey = "create_remote_repo_modal";
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
+
+const isStep3Valid = computed(() => {
+  return connectedRepos.value.length > 0;
+});
 
 /************
  * Functions
@@ -142,12 +166,19 @@ function saveBackupPaths(paths: string[]) {
 
   LogDebug(`Backup paths: ${backupProfile.value.backupPaths}`);
 
-  // If we don't have a name yet, suggest one based on the first path
-  if (!backupProfile.value.name && backupProfile.value.backupPaths.length > 0) {
+  // If the name hasn't been set manually yet, suggest one based on the first path
+  if (!step1Form.meta.value.touched && backupProfile.value.backupPaths.length > 0) {
+    LogDebug(`Setting name to ${backupProfile.value.backupPaths[0]}`);
     // Set name to the last part of the first path (capitalize first letter)
-    const name = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
-    backupProfile.value.name = name.charAt(0).toUpperCase() + name.slice(1);
-    validateBackupName();
+    const path = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
+
+    // If the path is too short, don't suggest it as a name
+    if (path.length < 3) {
+      return;
+    }
+
+    name.value = path.charAt(0).toUpperCase() + path.slice(1);
+    step1Form.validate();
   }
 }
 
@@ -169,10 +200,6 @@ async function createBackupProfile() {
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
   }
-}
-
-function validateBackupName() {
-  isBackupNameValid.value = backupProfile.value.name.length > 0;
 }
 
 async function saveBackupProfile(): Promise<boolean> {
@@ -286,13 +313,6 @@ const nextStep = async () => {
 createBackupProfile();
 getExistingRepositories();
 
-const isStep1Valid = computed(() => {
-  return isBackupPathsValid.value && isExcludePathsValid && isBackupNameValid.value;
-});
-
-const isStep3Valid = computed(() => {
-  return connectedRepos.value.length > 0;
-});
 
 // selectedRepoType.value = SelectedRepoType.Local;
 // selectedRepoAction.value = SelectedRepoAction.CreateNew;
@@ -351,17 +371,12 @@ const isStep3Valid = computed(() => {
       <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-10 py-2 gap-5'>
 
         <!-- Name -->
-        <label class='form-control w-full '>
-          <!-- Hack-span to align input with other elements -->
-          <span class='label invisible'><span class='label-text-alt'>-</span></span>
-          <label class='input input-bordered flex items-center gap-2'>
-            <input type='text' class='grow' placeholder='fancy-pants-backup'
-                   v-model='backupProfile.name'
-                   @change='validateBackupName' />
-          </label>
-          <span class='label' :class="{'invisible': !runValidation || isBackupNameValid}">
-            <span class='label-text-alt text-error'>Please choose a name for your backup profile</span>
-          </span>
+        <label class='w-full '>
+          <FormField :error='step1Form.errors.value.name' label='-' label-class='invisible'>
+            <input :class='formInputClass' type='text' placeholder='fancy-pants-backup'
+                   v-model='name'
+                   v-bind='nameAttrs' />
+          </FormField>
         </label>
 
         <!-- Logo -->
@@ -423,9 +438,9 @@ const isStep3Valid = computed(() => {
       <div class='flex gap-4'>
         <div class='hover:bg-success/50 p-4' v-for='(repo, index) in existingRepos' :key='index'
              :class='{"bg-success": connectedRepos.some(r => r.id === repo.id)}'
-              @click='connectedRepos.some(r => r.id === repo.id) ? connectedRepos = connectedRepos.filter(r => r.id !== repo.id) : connectedRepos.push(repo)'
+             @click='connectedRepos.some(r => r.id === repo.id) ? connectedRepos = connectedRepos.filter(r => r.id !== repo.id) : connectedRepos.push(repo)'
         >
-            {{ repo.name }}
+          {{ repo.name }}
         </div>
       </div>
 
@@ -522,8 +537,11 @@ const isStep3Valid = computed(() => {
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.push(rDashboardPage)'>Go to Dashboard</button>
-        <button class='btn btn-primary min-w-24' @click='router.push(withId(rBackupProfilePage, backupProfile.id.toString()))'>Go to Backup Profile</button>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='router.push(rDashboardPage)'>Go to Dashboard
+        </button>
+        <button class='btn btn-primary min-w-24'
+                @click='router.push(withId(rBackupProfilePage, backupProfile.id.toString()))'>Go to Backup Profile
+        </button>
       </div>
     </template>
   </div>
