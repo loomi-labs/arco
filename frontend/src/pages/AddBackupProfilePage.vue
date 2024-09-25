@@ -102,7 +102,7 @@ const existingRepos = ref<ent.Repository[]>([]);
 // Step 1
 const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
-const isExcludePathsValid = ref(false);
+const isExcludePathsValid = ref(true);
 const selectedIcon = ref<Icon>(icons[0]);
 const selectIconModalKey = "select_icon_modal";
 const selectIconModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(selectIconModalKey);
@@ -193,9 +193,9 @@ function selectIcon(icon: Icon) {
 async function createBackupProfile() {
   try {
     backupProfile.value = await backupClient.NewBackupProfile();
-    selectedIcon.value = icons.find((icon) => icon.type === backupProfile.value.icon) ?? icons[0];
-
     directorySuggestions.value = await backupClient.GetDirectorySuggestions();
+
+    selectedIcon.value = icons.find((icon) => icon.type === backupProfile.value.icon) ?? icons[0];
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
   }
@@ -346,7 +346,7 @@ getExistingRepositories();
       <!-- Data to backup Card -->
       <h2 class='text-3xl py-4'>Data to backup</h2>
       <DataSelection
-        :paths='backupProfile.backupPaths ?? []'
+        :paths='backupProfile.backupPaths'
         :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
@@ -358,7 +358,7 @@ getExistingRepositories();
       <!-- Data to ignore Card -->
       <h2 class='text-3xl pt-8 pb-4'>Data to ignore</h2>
       <DataSelection
-        :paths='backupProfile.excludePaths ?? []'
+        :paths='backupProfile.excludePaths'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'

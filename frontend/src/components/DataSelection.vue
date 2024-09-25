@@ -9,6 +9,7 @@ import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
 import deepEqual from "deep-equal";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -17,8 +18,8 @@ import deepEqual from "deep-equal";
 interface Props {
   paths: string[];
   suggestions?: string[];
-  isBackupSelection?: boolean;
-  showTitle?: boolean;
+  isBackupSelection: boolean;
+  showTitle: boolean;
   runMinOnePathValidation?: boolean;
   showMinOnePathErrorOnlyAfterTouch?: boolean;
 }
@@ -35,9 +36,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(),
   {
-    suggestions: [],
-    isBackupSelection: true,
-    showTitle: true,
+    suggestions: () => [],
     runMinOnePathValidation: false,
     showMinOnePathErrorOnlyAfterTouch: false
   }
@@ -239,6 +238,7 @@ watch(newPathForm.meta, async (newMeta) => {
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     push(newPath.value as string);
     newPathForm.resetForm();
+    await validate();
   }
 });
 
