@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { Form as VeeForm, useForm } from "vee-validate";
+import { Form as VeeForm, useForm, useValidateField } from "vee-validate";
 import * as zod from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
@@ -19,7 +19,7 @@ import { LogDebug } from "../../wailsjs/runtime";
  ************/
 
 interface Emits {
-  (event: typeof emitCreateRepoStr, repo: ent.Repository): void
+  (event: typeof emitCreateRepoStr, repo: ent.Repository): void;
 }
 
 /************
@@ -28,6 +28,10 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 const emitCreateRepoStr = "update:repo-created";
+
+defineExpose({
+  showModal
+});
 
 const toast = useToast();
 const { t } = useI18n();
@@ -38,13 +42,13 @@ const isNameTouchedByUser = ref(false);
 
 const pathDoesNotExistMsg = "Path does not exist";
 
-const { meta, values, errors, resetForm, defineField } = useForm({
+const { meta, values, errors, resetForm, defineField, validate } = useForm({
   validationSchema: computed(() => toTypedSchema(zod.object({
       name: zod.string({ required_error: "Enter a name for this repository" })
         .min(1, { message: "Enter a name for this repository" })
         .max(25, { message: "Name is too long" }),
       location: zod.string({ required_error: "Enter an existing location for this repository" })
-        .refine((path) => path.startsWith('/') || path.startsWith('~'),
+        .refine((path) => path.startsWith("/") || path.startsWith("~"),
           { message: "Path must start with / or ~" }
         )
         .refine(
@@ -79,9 +83,9 @@ const { meta, values, errors, resetForm, defineField } = useForm({
   )
 });
 
-const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 const [location, locationAttrs] = defineField("location", { validateOnBlur: false });
 const [password, passwordAttrs] = defineField("password", { validateOnBlur: true });
+const [name, nameAttrs] = defineField("name", { validateOnBlur: true });
 
 /************
  * Functions
@@ -154,9 +158,14 @@ async function createDir() {
   }
 }
 
-defineExpose({
-  showModal
-});
+async function toggleEncrypted() {
+  isEncrypted.value = !isEncrypted.value;
+
+  // Run validation only if it was run before (dirty)
+  if (meta.value.dirty) {
+    await validate();
+  }
+}
 
 /************
  * Lifecycle
@@ -203,15 +212,13 @@ watch(() => values.location, async (newLocation) => setNameFromLocation(newLocat
             </FormField>
           </div>
 
-          <div class='tooltip tooltip-left min-w-max' data-tip='Use a password to protect your backups with encryption'>
-            <button class='btn btn-outline'
-                    :class='{"btn-success": isEncrypted}'
-                    @click='isEncrypted = !isEncrypted' @click.prevent>
-              Encrypted
-              <LockClosedIcon class='size-6' v-if='isEncrypted' />
-              <LockOpenIcon class='size-6' v-else />
-            </button>
-          </div>
+          <button class='btn btn-outline min-w-44'
+                  :class='{"btn-success": isEncrypted}'
+                  @click.prevent='toggleEncrypted()'>
+            {{ isEncrypted ? "Encrypted" : "Not encrypted" }}
+            <LockClosedIcon class='size-6' v-if='isEncrypted' />
+            <LockOpenIcon class='size-6' v-else />
+          </button>
         </div>
 
         <FormField label='Name' :error='errors.name'>

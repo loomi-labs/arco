@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { rBackupProfilePage, rDashboardPage, withId } from "../router";
 import { showAndLogError } from "../common/error";
@@ -312,10 +312,15 @@ getExistingRepositories();
 // selectedRepoType.value = SelectedRepoType.Local;
 // selectedRepoAction.value = SelectedRepoAction.CreateNew;
 
-// onMounted(() => {
-//   // currentStep.value = Step.Repository;
-//   // createLocalRepoModal?.value?.showModal();
-// });
+// TODO: remove this stuff
+onMounted(() => {
+  backupProfile.value.name = "fancy-pants-backup";
+  backupProfile.value.icon = backupprofile.Icon.home;
+  backupProfile.value.backupPaths = ["/home/rapha"];
+  backupProfile.value.excludePaths = ["/home/rapha/exclude"];
+  currentStep.value = Step.Repository;
+  createLocalRepoModal?.value?.showModal();
+});
 //
 // // TODO: remove this stuff
 // watch(backupProfile, async (newProfile) => {
