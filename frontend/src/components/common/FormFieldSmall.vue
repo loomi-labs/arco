@@ -27,7 +27,7 @@ defineProps<Props>();
 </script>
 
 <template>
-  <label class='input input-sm input-bordered flex items-center gap-2'>
+  <label class='input input-sm input-bordered flex items-center gap-2' :class='{"input-error": error}'>
     <slot />
     <ExclamationCircleIcon v-if='error' class='size-5 text-error' />
   </label>

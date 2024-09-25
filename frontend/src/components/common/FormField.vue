@@ -33,7 +33,7 @@ defineProps<Props>();
   <label class='label' :class='labelClass'>
     <span class='label-text'>{{ label }}</span>
   </label>
-  <label class='input input-bordered flex items-center gap-2'>
+  <label class='input input-bordered flex items-center gap-2' :class='{"input-error": error}'>
     <slot />
     <ExclamationCircleIcon v-if='error && !hideError' class='size-6 text-error' />
   </label>
