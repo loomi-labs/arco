@@ -8,7 +8,7 @@ import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
-import { LogDebug } from "../../wailsjs/runtime";
+import deepEqual from "deep-equal";
 
 /************
  * Types
@@ -33,7 +33,15 @@ interface Emits {
  * Variables
  ************/
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(),
+  {
+    suggestions: [],
+    isBackupSelection: true,
+    showTitle: true,
+    runMinOnePathValidation: false,
+    showMinOnePathErrorOnlyAfterTouch: false
+  }
+);
 const emit = defineEmits<Emits>();
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
@@ -88,9 +96,36 @@ const [newPath, newPathAttrs] = newPathForm.defineField("newPath", {
   validateOnModelUpdate: false
 });
 
+const showMinOnePathError = computed(() => {
+  if (props.showMinOnePathErrorOnlyAfterTouch) {
+    return !!errors.value?.paths && touched.value;
+  }
+  return !!errors.value?.paths;
+});
+
 /************
  * Functions
  ************/
+
+function getPathsFromProps() {
+  const sug = suggestions.value.filter((s) => !props.paths.includes(s)) ?? [];
+  const all = sug.concat(props.paths);
+
+  // Compare newPaths with current paths if they are different replace them
+  const paths = values.paths as string[];
+  if (!paths || paths.length !== all.length) {
+    replace(all);
+  }
+  validate();
+}
+
+function getSuggestionsFromProps() {
+  suggestions.value = props.suggestions ?? [];
+  props.suggestions?.forEach((suggestion) => {
+    push(suggestion);
+  });
+  validate();
+}
 
 async function doesPathExist(path: string | undefined): Promise<boolean> {
   if (!path) {
@@ -186,27 +221,20 @@ function emitResults(allValid: boolean) {
  ************/
 
 // Watch paths prop
-watch(() => props.paths, (newPaths) => {
-  const sug = suggestions.value.filter((s) => !newPaths.includes(s)) ?? [];
-  const all = sug.concat(newPaths);
-
-  // Compare newPaths with current paths if they are different replace them
-  const paths = values.paths as string[];
-  if (!paths || paths.length !== all.length) {
-    replace(all);
+watch(() => props.paths, (newPaths, oldPaths) => {
+  if (!deepEqual(newPaths, oldPaths)) {
+    getPathsFromProps();
   }
 });
 
 // Watch suggestions prop
-watch(() => props.suggestions, (newSuggestions) => {
-  suggestions.value = newSuggestions ?? [];
-
-  props.suggestions?.forEach((suggestion) => {
-    push(suggestion);
-  });
+watch(() => props.suggestions, (newSuggestions, oldSuggestions) => {
+  if (!deepEqual(newSuggestions, oldSuggestions)) {
+    getSuggestionsFromProps();
+  }
 });
 
-// Add valid new path to pathsFieldArray
+// Add new path to paths when new path is valid
 watch(newPathForm.meta, async (newMeta) => {
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     push(newPath.value as string);
@@ -223,19 +251,11 @@ watch(newPath, async (newPath) => {
 
 // Emit results when pathsForm meta changes
 watch(() => meta.value, (newMeta) => {
-  LogDebug(`Paths meta changed: ${JSON.stringify(newMeta)}`);
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(true);
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(false);
   }
-});
-
-const showMinOnePathError = computed(() => {
-  if (props.showMinOnePathErrorOnlyAfterTouch) {
-    return !!errors.value?.paths && touched.value;
-  }
-  return !!errors.value?.paths;
 });
 
 </script>

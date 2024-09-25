@@ -14,7 +14,9 @@
   "dependencies": {
     "@formkit/tempo": "^0.1.2",
     "@heroicons/vue": "^2.1.5",
+    "@types/deep-equal": "^1.0.4",
     "@vee-validate/zod": "^4.13.2",
+    "deep-equal": "^2.2.3",
     "vee-validate": "^4.13.2",
     "vue": "^3.5.0",
     "vue-i18n": "^9.14.0",

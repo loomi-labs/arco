@@ -98,7 +98,6 @@ const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
-const runValidation = ref(false);
 
 // Step 1
 const directorySuggestions = ref<string[]>([]);
@@ -274,14 +273,13 @@ const previousStep = async () => {
 };
 
 const nextStep = async () => {
-  runValidation.value = true;
-
   LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
   switch (currentStep.value) {
     case Step.SelectData:
       if (!isStep1Valid.value) {
         return;
       }
+      backupProfile.value.name = step1Form.values.name;
       currentStep.value++;
       break;
     case Step.Schedule:
