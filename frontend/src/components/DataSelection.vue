@@ -58,7 +58,6 @@ const { meta, errors, values, validate } = useForm({
         .test("isDuplicatePath", "Path has already been added", (path) => {
           return !isDuplicatePath(path, 1);
         })
-        .transform((path) => sanitizePath(path))
     ).test("minOnePath", "At least one path is required", (paths) => {
       if (props.runMinOnePathValidation) {
         if (!paths || paths.length === 0) {
@@ -85,7 +84,6 @@ const newPathForm = useForm({
       .test("isDuplicatePath", "Path has already been added", (path) => {
         return !isDuplicatePath(path, 0);
       })
-      .transform((path) => sanitizePath(path))
   })
 });
 
@@ -101,6 +99,8 @@ const showMinOnePathError = computed(() => {
   return !!errors.value?.paths;
 });
 
+const isValid = computed(() => meta.value.valid && !meta.value.pending);
+
 /************
  * Functions
  ************/
@@ -113,6 +113,7 @@ function getPathsFromProps() {
   const paths = values.paths as string[];
   if (!paths || paths.length !== all.length) {
     replace(all);
+    meta.value.dirty = false;
   }
   validate();
 }
@@ -121,6 +122,7 @@ function getSuggestionsFromProps() {
   suggestions.value = props.suggestions ?? [];
   props.suggestions?.forEach((suggestion) => {
     push(suggestion);
+    meta.value.dirty = false;
   });
   validate();
 }
@@ -155,6 +157,7 @@ async function removeField(field: FieldEntry<string>, index: number) {
   remove(index);
   await newPathForm.validate();
   await validate();
+  emitResults();
 }
 
 async function setAccepted(index: number) {
@@ -165,9 +168,10 @@ async function setAccepted(index: number) {
   suggestions.value.splice(index, 1);
   await newPathForm.validate();
   await validate();
+  emitResults();
 }
 
-function sanitizePath(path: string | undefined): string | undefined {
+function sanitizePath(path: string): string {
   if (!path) {
     return path;
   }
@@ -183,6 +187,7 @@ async function addDirectory() {
   if (pathStr) {
     newPath.value = pathStr;
     await newPathForm.validate();
+    emitResults();
   }
 }
 
@@ -201,17 +206,27 @@ function getError(index: number): string {
   return (errors.value as any)[`paths[${index}]`] ?? "";
 }
 
-function emitResults(allValid: boolean) {
-  if (allValid) {
-    // TODO: get transformed paths
-
-    // filter out the not accepted suggestions
+function emitResults() {
+  if (isValid.value) {
     const paths = fields.value.map((field) => field.value)
-      .filter((path) => !suggestions.value.includes(path));
+      // filter out the suggestions
+      .filter((path) => !suggestions.value.includes(path))
+      // sanitize the paths if it's a backup selection
+      .map((path) => props.isBackupSelection ? sanitizePath(path) : path);
 
     emit(emitUpdatePathsStr, paths);
   }
-  emit(emitIsValidStr, allValid);
+  emit(emitIsValidStr, isValid.value);
+}
+
+async function onPathInput(index: number) {
+  await setAccepted(index);
+  await setTouched();
+}
+
+async function onPathChange() {
+  await validate();
+  emitResults();
 }
 
 /************
@@ -239,6 +254,7 @@ watch(newPathForm.meta, async (newMeta) => {
     newPathForm.resetForm();
     meta.value.touched = true;
     await validate();
+    emitResults();
   }
 });
 
@@ -246,15 +262,6 @@ watch(newPathForm.meta, async (newMeta) => {
 watch(newPath, async (newPath) => {
   if (!newPath && newPathForm.meta.value.dirty) {
     newPathForm.resetForm();
-  }
-});
-
-// Emit results when pathsForm meta changes
-watch(() => meta.value, (newMeta) => {
-  if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    emitResults(true);
-  } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
-    emitResults(false);
   }
 });
 
@@ -276,10 +283,8 @@ onMounted(() => {
         <td>
           <FormFieldSmall :error='getError(index)'>
             <input type='text' v-model='field.value'
-                   @input='() => {
-                     setAccepted(index);
-                     setTouched();
-                   }'
+                   @change='() => onPathChange()'
+                   @input='() => onPathInput(index)'
                    :class='formInputClass + (isSuggestion(field) ? "text-half-hidden-light dark:text-half-hidden-dark" : "")' />
           </FormFieldSmall>
         </td>
