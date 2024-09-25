@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { backupschedule, ent } from "../../wailsjs/go/models";
-import { ref, watch, watchEffect } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { applyOffset, offset, removeOffset } from "@formkit/tempo";
 
@@ -14,6 +14,7 @@ interface Props {
 
 interface Emits {
   (event: typeof emitUpdate, schedule: ent.BackupSchedule): void;
+
   (event: typeof emitDelete): void;
 }
 
@@ -40,6 +41,11 @@ const offsetToUtc = offset(new Date());
 const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
 const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
 const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
+
+const isHourly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Hourly);
+const isDaily = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Daily);
+const isWeekly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Weekly);
+const isMonthly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Monthly);
 
 // Create a cleaned schedule that only contains the necessary fields
 const cleanedSchedule = ref<ent.BackupSchedule>(getCleanedSchedule());
@@ -160,6 +166,14 @@ function backupFrequencyChanged() {
   }
 }
 
+function setBackupFrequency(frequency: BackupFrequency) {
+  if (!isScheduleEnabled.value) {
+    return;
+  }
+
+  backupFrequency.value = frequency;
+}
+
 function emitUpdateSchedule(schedule: ent.BackupSchedule) {
   emit(emitUpdate, schedule);
 }
@@ -206,8 +220,8 @@ watch(cleanedSchedule, (newSchedule) => {
       <div class='flex w-full'>
         <!-- Hourly -->
         <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
-             :class='backupFrequency !== BackupFrequency.Hourly ? "cursor-pointer hover:bg-secondary/50" : ""'
-             @click='() => backupFrequency = BackupFrequency.Hourly'>
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isHourly}'
+             @click='() => setBackupFrequency(BackupFrequency.Hourly)'>
           <label for='hourly'>{{ $t("hour") }}</label>
           <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
@@ -219,8 +233,8 @@ watch(cleanedSchedule, (newSchedule) => {
 
         <!-- Daily -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
-             :class='backupFrequency !== BackupFrequency.Daily ? "cursor-pointer hover:bg-secondary/50" : ""'
-             @click='() => backupFrequency = BackupFrequency.Daily'>
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isDaily}'
+             @click='() => setBackupFrequency(BackupFrequency.Daily)'>
           <div class='flex justify-between space-x-2'>
             <label for='daily'>{{ $t("day") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
@@ -228,16 +242,16 @@ watch(cleanedSchedule, (newSchedule) => {
                    :value='BackupFrequency.Daily'
                    v-model='backupFrequency'>
           </div>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
-                 :disabled='!isScheduleEnabled  || backupFrequency !== BackupFrequency.Daily'
+          <input type='time' class='input input-bordered input-sm w-20'
+                 :disabled='!isScheduleEnabled'
                  v-model='dailyAtDateTime'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Weekly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
-             :class='backupFrequency !== BackupFrequency.Weekly ? "cursor-pointer hover:bg-secondary/50" : ""'
-             @click='() => backupFrequency = BackupFrequency.Weekly'>
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isWeekly}'
+             @click='() => setBackupFrequency(BackupFrequency.Weekly)'>
           <div class='flex justify-between space-x-2'>
             <label for='weekly'>{{ $t("week") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
@@ -246,22 +260,22 @@ watch(cleanedSchedule, (newSchedule) => {
                    v-model='backupFrequency'>
           </div>
           <select class='select select-bordered select-sm'
-                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
+                  :disabled='!isScheduleEnabled'
                   v-model='schedule.weekday'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base'
-                 :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
+          <input type='time' class='input input-bordered input-sm'
+                 :disabled='!isScheduleEnabled'
                  v-model='weeklyAtDateTime'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Monthly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
-             :class='backupFrequency !== BackupFrequency.Monthly ? "cursor-pointer hover:bg-secondary/50" : ""'
-             @click='() => backupFrequency = BackupFrequency.Monthly'>
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isMonthly}'
+             @click='() => setBackupFrequency(BackupFrequency.Monthly)'>
           <div class='flex justify-between space-x-2'>
             <label for='monthly'>{{ $t("month") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
@@ -270,14 +284,14 @@ watch(cleanedSchedule, (newSchedule) => {
                    v-model='backupFrequency'>
           </div>
           <select class='select select-bordered select-sm'
-                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
+                  :disabled='!isScheduleEnabled'
                   v-model='schedule.monthday'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base'
-                 :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
+          <input type='time' class='input input-bordered input-sm'
+                 :disabled='!isScheduleEnabled'
                  v-model='monthlyAtDateTime'>
         </div>
       </div>
