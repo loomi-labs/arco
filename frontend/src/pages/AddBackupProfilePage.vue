@@ -163,11 +163,8 @@ function getMaxWithPerStep(): string {
 function saveBackupPaths(paths: string[]) {
   backupProfile.value.backupPaths = paths;
 
-  LogDebug(`Backup paths: ${backupProfile.value.backupPaths}`);
-
   // If the name hasn't been set manually yet, suggest one based on the first path
   if (!step1Form.meta.value.touched && backupProfile.value.backupPaths.length > 0) {
-    LogDebug(`Setting name to ${backupProfile.value.backupPaths[0]}`);
     // Set name to the last part of the first path (capitalize first letter)
     const path = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
 
@@ -268,8 +265,8 @@ async function create() {
 
 // Navigation
 const previousStep = async () => {
-  currentStep.value--;
   LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
+  currentStep.value--;
 };
 
 const nextStep = async () => {

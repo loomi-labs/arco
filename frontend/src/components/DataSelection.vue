@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
@@ -9,7 +9,6 @@ import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
 import deepEqual from "deep-equal";
-import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -238,6 +237,7 @@ watch(newPathForm.meta, async (newMeta) => {
   if (newMeta.valid && newMeta.dirty && !newMeta.pending) {
     push(newPath.value as string);
     newPathForm.resetForm();
+    meta.value.touched = true;
     await validate();
   }
 });
@@ -256,6 +256,11 @@ watch(() => meta.value, (newMeta) => {
   } else if (!newMeta.valid && newMeta.dirty && !newMeta.pending) {
     emitResults(false);
   }
+});
+
+onMounted(() => {
+  getPathsFromProps();
+  getSuggestionsFromProps();
 });
 
 </script>
