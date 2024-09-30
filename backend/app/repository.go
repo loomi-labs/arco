@@ -9,6 +9,7 @@ import (
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
+	"strings"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -101,4 +102,43 @@ func (r *RepositoryClient) BreakLock(id int) error {
 	}
 	r.state.SetRepoStatus(id, state.RepoStatusIdle)
 	return nil
+}
+
+func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
+	repos, err := r.db.Repository.Query().
+		Where(repository.LocationContains("@")).
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// user@host:~/path/to/repo -> user@host:port
+	// ssh://user@host:port/./path/to/repo -> user@host:port
+	hosts := make(map[string]struct{})
+	for _, repo := range repos {
+		// Extract user, host and port from location
+		user, hostAndPort, found := strings.Cut(repo.Location, "@")
+		if !found {
+			continue
+		}
+		host, remainder, found2 := strings.Cut(hostAndPort, ":")
+		if !found2 {
+			continue
+		}
+
+		port, _, found3 := strings.Cut(remainder, "/")
+		if !found3 {
+			port = ""
+		}
+
+		// Add host to map
+		hosts[user+"@"+host+":"+port] = struct{}{}
+	}
+
+	// Convert map to slice
+	result := make([]string, 0, len(hosts))
+	for host := range hosts {
+		result = append(result, host)
+	}
+	return result, nil
 }
