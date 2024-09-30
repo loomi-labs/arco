@@ -61,6 +61,10 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		}
 	}
 
+	schedule := &ent.BackupSchedule{
+		Hourly: true,
+	}
+
 	return &ent.BackupProfile{
 		ID:           0,
 		Name:         "",
@@ -68,7 +72,9 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		BackupPaths:  make([]string, 0),
 		ExcludePaths: make([]string, 0),
 		Icon:         selectedIcon,
-		Edges:        ent.BackupProfileEdges{},
+		Edges: ent.BackupProfileEdges{
+			BackupSchedule: schedule,
+		},
 	}, nil
 }
 
