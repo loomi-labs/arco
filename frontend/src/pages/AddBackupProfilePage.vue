@@ -94,7 +94,6 @@ const icons: Icon[] = [
 ];
 
 const router = useRouter();
-const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
@@ -127,14 +126,6 @@ const isStep1Valid = computed(() => {
 
 // Step 3
 const connectedRepos = ref<ent.Repository[]>([]);
-
-// TODO: remove this stuff
-const showConnectRepoModal = ref(false);
-const showAddNewRepoModal = ref(false);
-const repoUrl = ref("");
-const repoPassword = ref("");
-const repoName = ref("");
-
 const selectedRepoAction = ref<SelectedRepoAction>(SelectedRepoAction.None);
 const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
 const createLocalRepoModalKey = "create_local_repo_modal";
@@ -187,7 +178,7 @@ function selectIcon(icon: Icon) {
   selectedIcon.value = icon;
 }
 
-async function createBackupProfile() {
+async function newBackupProfile() {
   try {
     backupProfile.value = await backupClient.NewBackupProfile();
     directorySuggestions.value = await backupClient.GetDirectorySuggestions();
@@ -197,6 +188,25 @@ async function createBackupProfile() {
     await showAndLogError("Failed to create backup profile", error);
   }
 }
+
+async function getExistingRepositories() {
+  try {
+    existingRepos.value = await repoClient.All();
+  } catch (error: any) {
+    await showAndLogError("Failed to get existing repositories", error);
+  }
+}
+
+// Step 2
+function saveSchedule(schedule: ent.BackupSchedule | undefined) {
+  backupProfile.value.edges.backupSchedule = schedule;
+}
+
+// Step 3
+const addRepo = (repo: ent.Repository) => {
+  existingRepos.value.push(repo);
+  connectedRepos.value.push(repo);
+};
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
@@ -217,57 +227,6 @@ async function saveBackupProfile(): Promise<boolean> {
     return false;
   }
   return true;
-}
-
-async function getExistingRepositories() {
-  try {
-    existingRepos.value = await repoClient.All();
-  } catch (error: any) {
-    await showAndLogError("Failed to get existing repositories", error);
-  }
-}
-
-// Step 2
-function saveSchedule(schedule: ent.BackupSchedule | undefined) {
-  backupProfile.value.edges.backupSchedule = schedule;
-}
-
-// Step 3
-async function connectExistingRepo(repoId: number) {
-  try {
-    const repo = await repoClient.AddBackupProfile(repoId, backupProfile.value.id);
-    connectedRepos.value.push(repo);
-
-    showConnectRepoModal.value = false;
-    toast.success(`Added repository ${repo.name}`);
-  } catch (error: any) {
-    await showAndLogError("Failed to connect to existing repository", error);
-  }
-}
-
-const connectExistingRemoteRepo = async () => {
-  try {
-    const repo = await repoClient.AddExistingRepository(repoName.value, repoUrl.value, repoPassword.value, backupProfile.value.id);
-    connectedRepos.value.push(repo);
-
-    showConnectRepoModal.value = false;
-    toast.success(`Added repository ${repo.name}`);
-  } catch (error: any) {
-    await showAndLogError("Failed to connect to existing repository", error);
-  }
-};
-
-const addRepo = (repo: ent.Repository) => {
-  existingRepos.value.push(repo);
-  connectedRepos.value.push(repo);
-};
-
-async function create() {
-  try {
-    await backupClient.SaveBackupProfile(backupProfile.value);
-  } catch (error: any) {
-    await showAndLogError("Failed to save backup profile", error);
-  }
 }
 
 // Navigation
@@ -300,24 +259,12 @@ const nextStep = async () => {
   }
 };
 
-// const finish = async () => {
-//   backupProfile.value.isSetupComplete = true;
-//   if (await saveBackupProfile()) {
-//     toast.success("Backup profile saved successfully");
-//   }
-//   await router.push(rDashboardPage);
-// };
-
 /************
  * Lifecycle
  ************/
 
-createBackupProfile();
+newBackupProfile();
 getExistingRepositories();
-
-
-// selectedRepoType.value = SelectedRepoType.Local;
-// selectedRepoAction.value = SelectedRepoAction.CreateNew;
 
 // TODO: remove this stuff
 onMounted(() => {
@@ -326,7 +273,7 @@ onMounted(() => {
   backupProfile.value.backupPaths = ["/home/rapha"];
   backupProfile.value.excludePaths = ["/home/rapha/exclude"];
   currentStep.value = Step.Repository;
-  createLocalRepoModal?.value?.showModal();
+  // createLocalRepoModal?.value?.showModal();
 });
 //
 // // TODO: remove this stuff
