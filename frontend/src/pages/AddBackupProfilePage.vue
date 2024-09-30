@@ -266,23 +266,6 @@ const nextStep = async () => {
 newBackupProfile();
 getExistingRepositories();
 
-// TODO: remove this stuff
-onMounted(() => {
-  backupProfile.value.name = "fancy-pants-backup";
-  backupProfile.value.icon = backupprofile.Icon.home;
-  backupProfile.value.backupPaths = ["/home/rapha"];
-  backupProfile.value.excludePaths = ["/home/rapha/exclude"];
-  currentStep.value = Step.Repository;
-  // createLocalRepoModal?.value?.showModal();
-});
-//
-// // TODO: remove this stuff
-// watch(backupProfile, async (newProfile) => {
-//   // if (newProfile.name === "") {
-//   //   backupProfile.value.name = "fancy-pants-backup";
-//   // }
-// });
-
 </script>
 
 <template>
