@@ -86,13 +86,15 @@ build: ensure-tools ensure-pnpm
 ###        Development        ###
 #################################
 
-install-tools:
+download:
+	@echo "📥 Downloading dependencies..."
+	@go mod download
+
+install-tools: download
 	@echo "🛠️ Installing tools..."
 	@for tool in $$(cat tools/tools.go | grep _ | awk '{print $$2}' | tr -d '"'); do \
 		go install $${tool}@latest; \
 	done
-	@echo "🌍 Installing atlas..."
-	@curl -sSf https://atlasgo.sh | sh
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
