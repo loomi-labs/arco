@@ -208,7 +208,8 @@ watch(name, () => {
 
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <ScheduleSelection :schedule='backup.edges?.backupSchedule' @update:schedule='saveSchedule'
+    <ScheduleSelection :schedule='backup.edges?.backupSchedule'
+                       @update:schedule='saveSchedule'
                        @delete:schedule='deleteSchedule' />
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>

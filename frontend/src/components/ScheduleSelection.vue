@@ -3,6 +3,8 @@ import { backupschedule, ent } from "../../wailsjs/go/models";
 import { computed, ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { applyOffset, offset, removeOffset } from "@formkit/tempo";
+import { LogDebug } from "../../wailsjs/runtime";
+import deepEqual from "deep-equal";
 
 /************
  * Types
@@ -38,9 +40,9 @@ const emitDelete = "delete:schedule";
 // We have to remove the timezone offset from the date when showing it in the UI
 // and add it back when saving it to the schedule
 const offsetToUtc = offset(new Date());
-const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
-const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
-const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
+const schedule = ref<ent.BackupSchedule>(ent.BackupSchedule.createFrom());
+const isScheduleEnabled = ref<boolean>(false);
+const backupFrequency = ref<BackupFrequency>(BackupFrequency.Hourly);
 
 const isHourly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Hourly);
 const isDaily = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Daily);
@@ -68,12 +70,32 @@ const weeklyAtDateTime = defineModel("weeklyAtDateTime", {
   }
 });
 
+const weekday = defineModel("weekday", {
+  get() {
+    return schedule.value.weekday?.toString();
+  },
+  set(value: string) {
+    schedule.value.weekday = backupschedule.Weekday[value as keyof typeof backupschedule.Weekday];
+    return schedule.value.weekday;
+  }
+});
+
 const monthlyAtDateTime = defineModel("monthlyAtDateTime", {
   get() {
     return getTime(() => schedule.value.monthlyAt);
   },
   set(value: string) {
     return setTime((date: Date) => schedule.value.monthlyAt = date, value);
+  }
+});
+
+const monthday = defineModel("monthday", {
+  get() {
+    return schedule.value.monthday?.toString();
+  },
+  set(value: string) {
+    schedule.value.monthday = parseInt(value);
+    return schedule.value.monthday;
   }
 });
 
@@ -186,6 +208,17 @@ function emitDeleteSchedule() {
  * Lifecycle
  ************/
 
+// Watch for changes to props.schedule
+watch(() => props.schedule, (newSchedule, oldSchedule) => {
+  if (deepEqual(newSchedule, oldSchedule)) {
+    return;
+  }
+
+  schedule.value = getBackupScheduleFromProps();
+  isScheduleEnabled.value = getScheduleType(newSchedule) !== undefined;
+  backupFrequency.value = getScheduleType(newSchedule) || BackupFrequency.Hourly;
+});
+
 // Watch for changes to schedule
 // When schedule changes, update cleanedSchedule
 watchEffect(() => {
@@ -197,13 +230,15 @@ watchEffect(() => {
 
 // Watch for changes to cleanedSchedule
 // When cleanedSchedule changes, emit the new schedule or emit delete
-watch(cleanedSchedule, (newSchedule) => {
-  if (JSON.stringify(newSchedule) !== JSON.stringify(schedule.value)) {
-    if (getScheduleType(newSchedule) === undefined) {
-      emitDeleteSchedule();
-    } else {
-      emitUpdateSchedule(cleanedSchedule.value);
-    }
+watch(cleanedSchedule, (newSchedule, oldSchedule) => {
+  if (deepEqual(newSchedule, oldSchedule)) {
+    return;
+  }
+
+  if (getScheduleType(newSchedule) === undefined) {
+    emitDeleteSchedule();
+  } else {
+    emitUpdateSchedule(cleanedSchedule.value);
   }
 });
 
@@ -261,7 +296,8 @@ watch(cleanedSchedule, (newSchedule) => {
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
-                  v-model='schedule.weekday'>
+                  v-model='weekday'
+                  @focus='() => setBackupFrequency(BackupFrequency.Weekly)'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
@@ -285,7 +321,8 @@ watch(cleanedSchedule, (newSchedule) => {
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
-                  v-model='schedule.monthday'>
+                  v-model='monthday'
+                  @focus='() => setBackupFrequency(BackupFrequency.Monthly)'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>
