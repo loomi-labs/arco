@@ -23,6 +23,8 @@ export function GetArchiveMountStates(arg1:number):Promise<{[key: number]: state
 
 export function GetByBackupId(arg1:types.BackupId):Promise<ent.Repository>;
 
+export function GetConnectedRemoteHosts():Promise<Array<string>>;
+
 export function GetLastArchive(arg1:types.BackupId):Promise<ent.Archive>;
 
 export function GetNbrOfArchives(arg1:number):Promise<number>;

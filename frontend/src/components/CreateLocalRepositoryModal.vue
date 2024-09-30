@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { Form as VeeForm, useForm, useValidateField } from "vee-validate";
+import { Form as VeeForm, useForm } from "vee-validate";
 import * as zod from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
@@ -12,7 +12,6 @@ import { formInputClass } from "../common/form";
 import { FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { useI18n } from "vue-i18n";
-import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -149,7 +148,6 @@ async function selectDirectory() {
 async function createDir() {
   try {
     const path = location.value?.toString() ?? "";
-    LogDebug(`Creating directory ${path}`);
     await backupClient.CreateDirectory(path);
     location.value = path;
     await setNameFromLocation(path);
