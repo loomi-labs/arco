@@ -93,7 +93,19 @@ download:
 install-tools: download
 	@echo "🛠️ Installing tools..."
 	@for tool in $$(cat tools/tools.go | grep _ | awk '{print $$2}' | tr -d '"'); do \
-		go install $${tool}@latest; \
+		version=""; \
+		toolInGoMod=$$tool; \
+		while [ -z "$$version" ] && [ "$${toolInGoMod}" != "" ]; do \
+			version=$$(grep -E "$${toolInGoMod} v" go.mod | awk '{print $$2}'); \
+			if [ -z "$$version" ]; then \
+				toolInGoMod=$$(echo "$${toolInGoMod}" | sed 's/\/[^\/]*$$//'); \
+			fi; \
+		done; \
+		if [ -n "$$version" ]; then \
+			go install "$${tool}@$$version"; \
+		else \
+			echo "❌ Could not find version for tool: $${tool}"; \
+		fi; \
 	done
 	@echo "✅ Done!"
 
