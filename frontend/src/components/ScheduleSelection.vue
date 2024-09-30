@@ -3,7 +3,6 @@ import { backupschedule, ent } from "../../wailsjs/go/models";
 import { computed, ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { applyOffset, offset, removeOffset } from "@formkit/tempo";
-import { LogDebug } from "../../wailsjs/runtime";
 import deepEqual from "deep-equal";
 
 /************
@@ -40,9 +39,10 @@ const emitDelete = "delete:schedule";
 // We have to remove the timezone offset from the date when showing it in the UI
 // and add it back when saving it to the schedule
 const offsetToUtc = offset(new Date());
-const schedule = ref<ent.BackupSchedule>(ent.BackupSchedule.createFrom());
-const isScheduleEnabled = ref<boolean>(false);
-const backupFrequency = ref<BackupFrequency>(BackupFrequency.Hourly);
+const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
+const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
+const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
+const isInitializing = ref<boolean>(false);
 
 const isHourly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Hourly);
 const isDaily = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Daily);
@@ -209,14 +209,19 @@ function emitDeleteSchedule() {
  ************/
 
 // Watch for changes to props.schedule
-watch(() => props.schedule, (newSchedule, oldSchedule) => {
+watch(() => props.schedule, async (newSchedule, oldSchedule) => {
   if (deepEqual(newSchedule, oldSchedule)) {
     return;
   }
 
+  isInitializing.value = true;
   schedule.value = getBackupScheduleFromProps();
   isScheduleEnabled.value = getScheduleType(newSchedule) !== undefined;
   backupFrequency.value = getScheduleType(newSchedule) || BackupFrequency.Hourly;
+
+  // Wait a bit for the schedule to be rendered
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  isInitializing.value = false;
 });
 
 // Watch for changes to schedule
@@ -231,7 +236,8 @@ watchEffect(() => {
 // Watch for changes to cleanedSchedule
 // When cleanedSchedule changes, emit the new schedule or emit delete
 watch(cleanedSchedule, (newSchedule, oldSchedule) => {
-  if (deepEqual(newSchedule, oldSchedule)) {
+  // Don't emit if the schedule is initializing or if the new schedule is the same as the old schedule
+  if (isInitializing.value || deepEqual(newSchedule, oldSchedule)) {
     return;
   }
 

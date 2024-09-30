@@ -201,10 +201,17 @@ async function createBackupProfile() {
 async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
-    backupProfile.value = await backupClient.SaveBackupProfile(backupProfile.value);
-    for (const repo of connectedRepos.value) {
-      await repoClient.AddBackupProfile(repo.id, backupProfile.value.id);
+    const savedBackupProfile = await backupClient.SaveBackupProfile(backupProfile.value);
+
+    if (backupProfile.value.edges.backupSchedule) {
+      await backupClient.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
     }
+
+    for (const repo of connectedRepos.value) {
+      await repoClient.AddBackupProfile(repo.id, savedBackupProfile.id);
+    }
+
+    backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id);
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
     return false;

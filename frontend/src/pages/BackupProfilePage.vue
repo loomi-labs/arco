@@ -119,7 +119,6 @@ async function deleteSchedule() {
 
 function adjustBackupNameWidth() {
   if (nameInput.value) {
-    LogDebug(`Adjusting backup name width: ${nameInput.value.scrollWidth}`);
     nameInput.value.style.width = "30px";
     nameInput.value.style.width = `${nameInput.value.scrollWidth}px`;
   }
