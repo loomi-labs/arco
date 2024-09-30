@@ -283,7 +283,7 @@ watch(cleanedSchedule, (newSchedule, oldSchedule) => {
                    :value='BackupFrequency.Daily'
                    v-model='backupFrequency'>
           </div>
-          <input type='time' class='input input-bordered input-sm w-20'
+          <input type='time' class='input input-bordered input-sm'
                  :disabled='!isScheduleEnabled'
                  v-model='dailyAtDateTime'>
         </div>
