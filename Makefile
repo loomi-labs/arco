@@ -88,7 +88,7 @@ build: ensure-tools ensure-pnpm
 
 install-tools:
 	@echo "🛠️ Installing tools..."
-	@for tool in $$(cat tools.go | grep _ | awk '{print $$3}' | tr -d '"'); do \
+	@for tool in $$(cat tools/tools.go | grep _ | awk '{print $$2}' | tr -d '"'); do \
 		go install $${tool}@latest; \
 	done
 	@echo "🌍 Installing atlas..."
