@@ -10,6 +10,10 @@ export function AbortBackupJobs(arg1) {
   return window['go']['app']['BackupClient']['AbortBackupJobs'](arg1);
 }
 
+export function CreateBackupProfile(arg1, arg2) {
+  return window['go']['app']['BackupClient']['CreateBackupProfile'](arg1, arg2);
+}
+
 export function CreateDirectory(arg1) {
   return window['go']['app']['BackupClient']['CreateDirectory'](arg1);
 }
@@ -86,10 +90,6 @@ export function PruneBackups(arg1) {
   return window['go']['app']['BackupClient']['PruneBackups'](arg1);
 }
 
-export function SaveBackupProfile(arg1) {
-  return window['go']['app']['BackupClient']['SaveBackupProfile'](arg1);
-}
-
 export function SaveBackupSchedule(arg1, arg2) {
   return window['go']['app']['BackupClient']['SaveBackupSchedule'](arg1, arg2);
 }
@@ -104,4 +104,8 @@ export function StartBackupJob(arg1) {
 
 export function StartBackupJobs(arg1) {
   return window['go']['app']['BackupClient']['StartBackupJobs'](arg1);
+}
+
+export function UpdateBackupProfile(arg1) {
+  return window['go']['app']['BackupClient']['UpdateBackupProfile'](arg1);
 }

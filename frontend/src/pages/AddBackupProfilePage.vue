@@ -211,14 +211,11 @@ const addRepo = (repo: ent.Repository) => {
 async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
-    const savedBackupProfile = await backupClient.SaveBackupProfile(backupProfile.value);
+    backupProfile.value.edges.repositories = connectedRepos.value;
+    const savedBackupProfile = await backupClient.CreateBackupProfile(backupProfile.value, backupProfile.value.edges.repositories.map((r) => r.id));
 
     if (backupProfile.value.edges.backupSchedule) {
       await backupClient.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
-    }
-
-    for (const repo of connectedRepos.value) {
-      await repoClient.AddBackupProfile(repo.id, savedBackupProfile.id);
     }
 
     backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id);

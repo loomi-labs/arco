@@ -82,7 +82,7 @@ async function deleteBackupProfile() {
 async function saveBackupPaths(paths: string[]) {
   try {
     backup.value.backupPaths = paths;
-    await backupClient.SaveBackupProfile(backup.value);
+    await backupClient.UpdateBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to save backup paths", error);
   }
@@ -91,7 +91,7 @@ async function saveBackupPaths(paths: string[]) {
 async function saveExcludePaths(paths: string[]) {
   try {
     backup.value.excludePaths = paths;
-    await backupClient.SaveBackupProfile(backup.value);
+    await backupClient.UpdateBackupProfile(backup.value);
   } catch (error: any) {
     await showAndLogError("Failed to save exclude paths", error);
   }
@@ -124,7 +124,8 @@ function adjustBackupNameWidth() {
 
 async function saveBackupName() {
   if (meta.value.valid && name.value !== backup.value.name) {
-    backup.value = await backupClient.SaveBackupProfile(backup.value);
+    backup.value.name = name.value ?? "";
+    await backupClient.UpdateBackupProfile(backup.value);
   }
 }
 
