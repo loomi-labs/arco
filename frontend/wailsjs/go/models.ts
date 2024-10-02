@@ -496,6 +496,15 @@ export namespace ent {
 
 export namespace state {
 	
+	export enum RepoStatus {
+	    idle = "idle",
+	    backingUp = "backingUp",
+	    pruning = "pruning",
+	    deleting = "deleting",
+	    mounted = "mounted",
+	    performingOperation = "performingOperation",
+	    locked = "locked",
+	}
 	export enum BackupButtonStatus {
 	    runBackup = "runBackup",
 	    waiting = "waiting",
@@ -511,15 +520,6 @@ export namespace state {
 	    completed = "completed",
 	    cancelled = "cancelled",
 	    failed = "failed",
-	}
-	export enum RepoStatus {
-	    idle = "idle",
-	    backingUp = "backingUp",
-	    pruning = "pruning",
-	    deleting = "deleting",
-	    mounted = "mounted",
-	    performingOperation = "performingOperation",
-	    locked = "locked",
 	}
 	export class BackupState {
 	    status: BackupStatus;
@@ -586,6 +586,9 @@ export namespace state {
 
 export namespace types {
 	
+	export enum Event {
+	    notificationAvailable = "notificationAvailable",
+	}
 	export class BackupId {
 	    backupProfileId: number;
 	    repositoryId: number;

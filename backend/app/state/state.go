@@ -4,6 +4,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/borg"
 	"context"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"sync"
 )
@@ -529,6 +530,7 @@ func (s *State) RemoveRunningDeleteJob(id types.BackupId) {
 func (s *State) AddNotification(msg string, level types.NotificationLevel) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(context.TODO(), types.EventNotificationAvailable.String())
 
 	s.notifications = append(s.notifications, types.Notification{
 		Message: msg,

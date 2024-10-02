@@ -4,7 +4,6 @@ import (
 	"arco/backend/app"
 	"arco/backend/app/state"
 	"arco/backend/app/types"
-	"arco/backend/ent/backupschedule"
 	_ "arco/backend/ent/runtime" // required to allow cyclic imports
 	"embed"
 	"fmt"
@@ -115,16 +114,6 @@ func toTsEnums[T Stringer](states []T) []struct {
 	return allBs
 }
 
-var allWeekdays = []backupschedule.Weekday{
-	backupschedule.WeekdayMonday,
-	backupschedule.WeekdayTuesday,
-	backupschedule.WeekdayWednesday,
-	backupschedule.WeekdayThursday,
-	backupschedule.WeekdayFriday,
-	backupschedule.WeekdaySaturday,
-	backupschedule.WeekdaySunday,
-}
-
 func startApp(log *zap.SugaredLogger, config *types.Config) {
 	arco := app.NewApp(log, config)
 
@@ -157,11 +146,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config) {
 			arco.RepoClient(),
 		},
 		EnumBind: []interface{}{
-			toTsEnums(allWeekdays),
+			toTsEnums(types.AllWeekdays),
 			toTsEnums(types.AllIcons),
 			toTsEnums(state.AvailableBackupStatuses),
 			toTsEnums(state.AvailableRepoStatuses),
 			toTsEnums(state.AvailableBackupButtonStatuses),
+			toTsEnums(types.AllEvents),
 		},
 		LogLevel: logLevel,
 		Logger:   NewZapLogWrapper(log.Desugar()),
