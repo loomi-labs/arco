@@ -2,7 +2,7 @@ package app
 
 import (
 	"arco/backend/app/types"
-	mock_borg "arco/backend/borg/mock"
+	"arco/backend/borg/mockborg"
 	"arco/backend/ent"
 	"arco/backend/ent/enttest"
 	"context"
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func NewTestApp(t *testing.T) (*App, *mock_borg.MockBorg) {
+func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg) {
 	logConfig := zap.NewDevelopmentConfig()
 	logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	log, err := logConfig.Build()
@@ -29,7 +29,7 @@ func NewTestApp(t *testing.T) (*App, *mock_borg.MockBorg) {
 	a.backupScheduleChangedCh = nil
 
 	ctrl := gomock.NewController(t)
-	mockBorg := mock_borg.NewMockBorg(ctrl)
+	mockBorg := mockborg.NewMockBorg(ctrl)
 	a.borg = mockBorg
 
 	opts := []enttest.Option{

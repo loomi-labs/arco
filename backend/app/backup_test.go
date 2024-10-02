@@ -1,7 +1,7 @@
 package app
 
 import (
-	mock_borg "arco/backend/borg/mock"
+	"arco/backend/borg/mockborg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
@@ -43,7 +43,7 @@ TestBackupClient_GetPrefixSuggestions
 
 func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	var a *App
-	var mockBorg *mock_borg.MockBorg
+	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Time{}
 
@@ -157,7 +157,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 
 func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 	var a *App
-	var mockBorg *mock_borg.MockBorg
+	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
 
 	setup := func(t *testing.T) {

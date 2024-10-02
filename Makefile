@@ -78,7 +78,7 @@ lint: ensure-tools
 #################################
 
 mockgen:
-	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mock/mock_borg.go
+	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
 
 
 test: mockgen

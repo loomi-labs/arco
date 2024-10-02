@@ -1,7 +1,7 @@
 package app
 
 import (
-	mock_borg "arco/backend/borg/mock"
+	"arco/backend/borg/mockborg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +67,7 @@ func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) ti
 
 func TestScheduler(t *testing.T) {
 	var a *App
-	var mockBorg *mock_borg.MockBorg
+	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Now()
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
