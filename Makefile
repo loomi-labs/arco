@@ -80,8 +80,7 @@ lint: ensure-tools
 mockgen:
 	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
 
-
-test: mockgen
+test: ensure-tools mockgen
 	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)
 
 #################################
@@ -120,7 +119,7 @@ install-tools: download
 		fi; \
 	done
 	@echo "🌍 Installing atlas..."
-	@curl -sSf https://atlasgo.sh | sh
+	@curl -sSf https://atlasgo.sh | sh -s -- -y
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
