@@ -18,9 +18,9 @@ generate-models:
 
 generate-migrations: ensure-tools
 	@echo "Creating ent migration..."
-	@cd backend && atlas migrate diff migration_name \
-                     --dir "file://ent/migrate/migrations" \
-                     --to "ent://ent/schema" \
+	@atlas migrate diff migration_name \
+                     --dir "file://backend/ent/migrate/migrations" \
+                     --to "ent://backend/ent/schema" \
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
@@ -35,6 +35,14 @@ show-migrations: ensure-tools
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
 					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
+	@echo "✅ Done!"
+
+lint-migrations: ensure-tools
+	@echo "Linting ent migrations..."
+	@atlas migrate lint \
+       --dev-url="sqlite://file?mode=memory" \
+       --dir="file://backend/ent/migrate/migrations" \
+       --latest=1
 	@echo "✅ Done!"
 
 #################################
@@ -107,6 +115,8 @@ install-tools: download
 			echo "❌ Could not find version for tool: $${tool}"; \
 		fi; \
 	done
+	@echo "🌍 Installing atlas..."
+	@curl -sSf https://atlasgo.sh | sh
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
