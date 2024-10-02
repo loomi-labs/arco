@@ -150,18 +150,21 @@ func (b *BackupClient) GetPrefixSuggestion(name string) (string, error) {
 	return fullPrefix, nil
 }
 
-func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
-	b.log.Debug(fmt.Sprintf("Saving backup profile %d", backup.ID))
-	if backup.ID == 0 {
-		return b.db.BackupProfile.
-			Create().
-			SetName(backup.Name).
-			SetPrefix(backup.Prefix).
-			SetBackupPaths(backup.BackupPaths).
-			SetExcludePaths(backup.ExcludePaths).
-			SetIcon(backup.Icon).
-			Save(b.ctx)
-	}
+func (b *BackupClient) CreateBackupProfile(backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
+	b.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
+	return b.db.BackupProfile.
+		Create().
+		SetName(backup.Name).
+		SetPrefix(backup.Prefix).
+		SetBackupPaths(backup.BackupPaths).
+		SetExcludePaths(backup.ExcludePaths).
+		SetIcon(backup.Icon).
+		AddRepositoryIDs(repositoryIds...).
+		Save(b.ctx)
+}
+
+func (b *BackupClient) UpdateBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
+	b.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
 	return b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).

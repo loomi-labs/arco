@@ -197,6 +197,9 @@ func (bpc *BackupProfileCreate) check() error {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
 	}
+	if len(bpc.mutation.RepositoriesIDs()) == 0 {
+		return &ValidationError{Name: "repositories", err: errors.New(`ent: missing required edge "BackupProfile.repositories"`)}
+	}
 	return nil
 }
 

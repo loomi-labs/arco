@@ -46,7 +46,8 @@ func (BackupProfile) Fields() []ent.Field {
 // Edges of the BackupProfile.
 func (BackupProfile) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("repositories", Repository.Type),
+		edge.To("repositories", Repository.Type).
+			Required(),
 		edge.To("archives", Archive.Type),
 		edge.To("backup_schedule", BackupSchedule.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)).
