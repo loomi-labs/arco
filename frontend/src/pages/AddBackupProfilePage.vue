@@ -203,6 +203,16 @@ function saveSchedule(schedule: ent.BackupSchedule | undefined) {
 }
 
 // Step 3
+function selectLocalRepo() {
+  selectedRepoType.value = SelectedRepoType.Local;
+  createLocalRepoModal.value?.showModal();
+}
+
+function selectRemoteRepo() {
+  selectedRepoType.value = SelectedRepoType.Remote;
+  createRemoteRepoModal.value?.showModal();
+}
+
 const addRepo = (repo: ent.Repository) => {
   existingRepos.value.push(repo);
   connectedRepos.value.push(repo);
@@ -411,10 +421,7 @@ getExistingRepositories();
         <!-- Local Repository Card -->
         <div class='group flex flex-col ac-card-hover p-10 w-full'
              :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'
-             @click='() => {
-                selectedRepoType = SelectedRepoType.Local;
-                createLocalRepoModal?.showModal();
-             }'>
+             @click='selectLocalRepo'>
           <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
                                :class='{"text-secondary": selectedRepoType === SelectedRepoType.Local}' />
           <p>Local Repository</p>
@@ -424,10 +431,7 @@ getExistingRepositories();
         <!-- Remote Repository Card -->
         <div class='group flex flex-col ac-card-hover p-10 w-full'
              :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Remote }'
-             @click='() => {
-                selectedRepoType = SelectedRepoType.Remote;
-                createRemoteRepoModal?.showModal();
-             }'>
+             @click='selectRemoteRepo'>
           <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
                                  :class='{"text-secondary": selectedRepoType === SelectedRepoType.Remote}' />
           <p>Remote Repository</p>

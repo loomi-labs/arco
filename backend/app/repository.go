@@ -9,7 +9,7 @@ import (
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
-	"strings"
+	"net/url"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -117,22 +117,17 @@ func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
 	hosts := make(map[string]struct{})
 	for _, repo := range repos {
 		// Extract user, host and port from location
-		user, hostAndPort, found := strings.Cut(repo.Location, "@")
-		if !found {
+		parsedURL, err := url.Parse(repo.Location)
+		if err != nil {
 			continue
 		}
-		host, remainder, found2 := strings.Cut(hostAndPort, ":")
-		if !found2 {
-			continue
+		userInfo := ""
+		if parsedURL.User != nil {
+			userInfo = parsedURL.User.String() + "@"
 		}
-
-		port, _, found3 := strings.Cut(remainder, "/")
-		if !found3 {
-			port = ""
-		}
-
+		host := parsedURL.Host
 		// Add host to map
-		hosts[user+"@"+host+":"+port] = struct{}{}
+		hosts[userInfo+host] = struct{}{}
 	}
 
 	// Convert map to slice
