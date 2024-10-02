@@ -77,7 +77,11 @@ lint: ensure-tools
 ###           Test            ###
 #################################
 
-test:
+mockgen:
+	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mock/mock_borg.go
+
+
+test: mockgen
 	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)
 
 #################################

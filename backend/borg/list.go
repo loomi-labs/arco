@@ -12,7 +12,7 @@ type ListResponse struct {
 	Repository Repository    `json:"repository"`
 }
 
-func (b *Borg) List(repoUrl string, password string) (*ListResponse, error) {
+func (b *borg) List(repoUrl string, password string) (*ListResponse, error) {
 	cmd := exec.Command(b.path, "list", "--json", repoUrl)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 

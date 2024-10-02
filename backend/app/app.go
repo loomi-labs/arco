@@ -38,7 +38,7 @@ type App struct {
 	log                     *zap.SugaredLogger
 	config                  *types.Config
 	state                   *appstate.State
-	borg                    *borg.Borg
+	borg                    borg.Borg
 	backupScheduleChangedCh chan struct{}
 
 	// Startup

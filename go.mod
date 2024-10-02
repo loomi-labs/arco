@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/procfs v0.15.1
 	github.com/stretchr/testify v1.9.0
 	github.com/wailsapp/wails/v2 v2.9.2
+	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
 )
 

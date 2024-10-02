@@ -1,9 +1,11 @@
 package app
 
 import (
+	mock_borg "arco/backend/borg/mock"
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 )
@@ -65,15 +67,23 @@ func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) ti
 
 func TestScheduler(t *testing.T) {
 	var a *App
+	var mockBorg *mock_borg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Now()
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 
 	setup := func(t *testing.T) {
-		a = NewTestApp(t)
+		a, mockBorg = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
-		profile, err = a.BackupClient().SaveBackupProfile(*p)
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
 		assert.NoError(t, err, "Failed to save backup profile")
 		assert.NotNil(t, profile, "Expected backup profile, got nil")
 		now = time.Now()

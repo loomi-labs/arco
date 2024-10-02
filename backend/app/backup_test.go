@@ -1,10 +1,12 @@
 package app
 
 import (
+	mock_borg "arco/backend/borg/mock"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 )
@@ -41,16 +43,22 @@ TestBackupClient_GetPrefixSuggestions
 
 func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	var a *App
+	var mockBorg *mock_borg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Time{}
 
 	setup := func(t *testing.T) {
-		a = NewTestApp(t)
+		a, mockBorg = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
+		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
 		p.Prefix = "test-"
-		assert.NoError(t, err, "Failed to create new backup profile")
-		profile, err = a.BackupClient().SaveBackupProfile(*p)
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
 		assert.NoError(t, err, "Failed to save backup profile")
 		assert.NotNil(t, profile, "Expected backup profile, got nil")
 		now = time.Now()
@@ -149,15 +157,21 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 
 func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 	var a *App
+	var mockBorg *mock_borg.MockBorg
 	var profile *ent.BackupProfile
 
 	setup := func(t *testing.T) {
-		a = NewTestApp(t)
+		a, mockBorg = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
+		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
 		p.Prefix = "test-"
-		assert.NoError(t, err, "Failed to create new backup profile")
-		profile, err = a.BackupClient().SaveBackupProfile(*p)
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
 		assert.NoError(t, err, "Failed to save backup profile")
 		assert.NotNil(t, profile, "Expected backup profile, got nil")
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 // Compact runs the borg compact command to free up space in the repository
-func (b *Borg) Compact(ctx context.Context, repoUrl string, repoPassword string) error {
+func (b *borg) Compact(ctx context.Context, repoUrl string, repoPassword string) error {
 	// Prepare compact command
 	cmd := exec.CommandContext(ctx, b.path, "compact", repoUrl)
 	cmd.Env = Env{}.WithPassword(repoPassword).AsList()

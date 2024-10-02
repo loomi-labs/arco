@@ -1,6 +1,7 @@
 package borg
 
 import (
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
@@ -8,13 +9,28 @@ import (
 	"time"
 )
 
-type Borg struct {
+type Borg interface {
+	Compact(ctx context.Context, repoUrl string, repoPassword string) error
+	Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
+	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
+	DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error
+	Info(url, password string) (*InfoResponse, error)
+	Init(url, password string, noPassword bool) error
+	List(repoUrl string, password string) (*ListResponse, error)
+	MountRepository(repoUrl string, password string, mountPath string) error
+	MountArchive(repoUrl string, archive string, password string, mountPath string) error
+	Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan PruneResult) error
+	BreakLock(ctx context.Context, repository string, password string) error
+	Umount(path string) error
+}
+
+type borg struct {
 	path string
 	log  *CmdLogger
 }
 
-func NewBorg(path string, log *zap.SugaredLogger) *Borg {
-	return &Borg{
+func NewBorg(path string, log *zap.SugaredLogger) Borg {
+	return &borg{
 		path: path,
 		log:  NewCmdLogger(log),
 	}

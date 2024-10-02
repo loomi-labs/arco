@@ -7,7 +7,7 @@ import (
 )
 
 // DeleteArchive deletes a single archive from the repository
-func (b *Borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) error {
+func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) error {
 	cmd := exec.CommandContext(ctx, b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
@@ -22,7 +22,7 @@ func (b *Borg) DeleteArchive(ctx context.Context, repository string, archive str
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
 // It is long running and should be run in a goroutine.
-func (b *Borg) DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error {
+func (b *borg) DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error {
 	// Prepare delete command
 	cmd := exec.CommandContext(ctx, b.path,
 		"delete",

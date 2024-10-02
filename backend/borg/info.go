@@ -14,7 +14,7 @@ type InfoResponse struct {
 	SecurityDir string        `json:"security_dir"`
 }
 
-func (b *Borg) Info(url, password string) (*InfoResponse, error) {
+func (b *borg) Info(url, password string) (*InfoResponse, error) {
 	cmd := exec.Command(b.path, "info", "--json", url)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 

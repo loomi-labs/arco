@@ -33,7 +33,7 @@ var pruneOptions = []string{
 	"4",
 }
 
-func (b *Borg) Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan PruneResult) error {
+func (b *borg) Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan PruneResult) error {
 	defer close(ch)
 
 	// Prepare prune command
@@ -86,7 +86,7 @@ func (b *Borg) Prune(ctx context.Context, repoUrl, password, prefix string, isDr
 	}
 }
 
-// decodeBackupProgress decodes the progress messages from Borg and sends them to the channel.
+// decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
 func decodePruneOutput(scanner *bufio.Scanner, isDryRun bool) PruneResult {
 	var prunedArchives []*PruneArchive
 	var keptArchives []*KeepArchive

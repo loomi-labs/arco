@@ -5,7 +5,7 @@ import (
 	"os/exec"
 )
 
-func (b *Borg) Init(url, password string, noPassword bool) error {
+func (b *borg) Init(url, password string, noPassword bool) error {
 	cmdList := []string{"init"}
 	if noPassword {
 		cmdList = append(cmdList, "--encryption=none")
