@@ -13,7 +13,7 @@ export function All():Promise<Array<ent.Repository>>;
 
 export function BreakLock(arg1:number):Promise<void>;
 
-export function Create(arg1:string,arg2:string,arg3:string,arg4:number):Promise<ent.Repository>;
+export function Create(arg1:string,arg2:string,arg3:string,arg4:boolean):Promise<ent.Repository>;
 
 export function DeleteArchive(arg1:number):Promise<void>;
 
@@ -22,6 +22,8 @@ export function Get(arg1:number):Promise<ent.Repository>;
 export function GetArchiveMountStates(arg1:number):Promise<{[key: number]: state.MountState}>;
 
 export function GetByBackupId(arg1:types.BackupId):Promise<ent.Repository>;
+
+export function GetConnectedRemoteHosts():Promise<Array<string>>;
 
 export function GetLastArchive(arg1:types.BackupId):Promise<ent.Archive>;
 

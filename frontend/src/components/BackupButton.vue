@@ -8,9 +8,13 @@ import { computed } from "vue";
  * Types
  ************/
 
-export interface Props {
+interface Props {
   backupProgress?: borg.BackupProgress;
   buttonStatus?: state.BackupButtonStatus;
+}
+
+interface Emits {
+  (event: typeof clickEmit): void
 }
 
 /************
@@ -18,11 +22,8 @@ export interface Props {
  ************/
 
 const props = defineProps<Props>();
-
+const emits = defineEmits<Emits>();
 const clickEmit = "click";
-const emits = defineEmits<{
-  (e: typeof clickEmit): void
-}>();
 
 const { t } = useI18n();
 

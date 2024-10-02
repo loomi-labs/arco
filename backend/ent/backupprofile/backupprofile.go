@@ -3,6 +3,8 @@
 package backupprofile
 
 import (
+	"fmt"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -20,8 +22,8 @@ const (
 	FieldBackupPaths = "backup_paths"
 	// FieldExcludePaths holds the string denoting the exclude_paths field in the database.
 	FieldExcludePaths = "exclude_paths"
-	// FieldIsSetupComplete holds the string denoting the is_setup_complete field in the database.
-	FieldIsSetupComplete = "is_setup_complete"
+	// FieldIcon holds the string denoting the icon field in the database.
+	FieldIcon = "icon"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -67,7 +69,7 @@ var Columns = []string{
 	FieldPrefix,
 	FieldBackupPaths,
 	FieldExcludePaths,
-	FieldIsSetupComplete,
+	FieldIcon,
 }
 
 var (
@@ -87,13 +89,42 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
+	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
+	PrefixValidator func(string) error
 	// DefaultBackupPaths holds the default value on creation for the "backup_paths" field.
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
 	DefaultExcludePaths []string
-	// DefaultIsSetupComplete holds the default value on creation for the "is_setup_complete" field.
-	DefaultIsSetupComplete bool
 )
+
+// Icon defines the type for the "icon" enum field.
+type Icon string
+
+// Icon values.
+const (
+	IconHome      Icon = "home"
+	IconBriefcase Icon = "briefcase"
+	IconBook      Icon = "book"
+	IconEnvelope  Icon = "envelope"
+	IconCamera    Icon = "camera"
+	IconFire      Icon = "fire"
+)
+
+func (i Icon) String() string {
+	return string(i)
+}
+
+// IconValidator is a validator for the "icon" field enum values. It is called by the builders before save.
+func IconValidator(i Icon) error {
+	switch i {
+	case IconHome, IconBriefcase, IconBook, IconEnvelope, IconCamera, IconFire:
+		return nil
+	default:
+		return fmt.Errorf("backupprofile: invalid enum value for icon field: %q", i)
+	}
+}
 
 // OrderOption defines the ordering options for the BackupProfile queries.
 type OrderOption func(*sql.Selector)
@@ -113,9 +144,9 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
 }
 
-// ByIsSetupComplete orders the results by the is_setup_complete field.
-func ByIsSetupComplete(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsSetupComplete, opts...).ToFunc()
+// ByIcon orders the results by the icon field.
+func ByIcon(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIcon, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

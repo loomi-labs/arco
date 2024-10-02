@@ -8,6 +8,8 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
+	"arco/backend/util"
+	"net/url"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -57,7 +59,7 @@ func (r *RepositoryClient) AddExistingRepository(name, url, password string, bac
 	return r.db.Repository.
 		Create().
 		SetName(name).
-		SetURL(url).
+		SetLocation(url).
 		SetPassword(password).
 		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
@@ -70,8 +72,8 @@ func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.R
 		Save(r.ctx)
 }
 
-func (r *RepositoryClient) Create(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	if err := r.borg.Init(url, password); err != nil {
+func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
+	if err := r.borg.Init(util.ExpandPath(location), password, noPassword); err != nil {
 		return nil, err
 	}
 
@@ -79,9 +81,8 @@ func (r *RepositoryClient) Create(name, url, password string, backupProfileId in
 	return r.db.Repository.
 		Create().
 		SetName(name).
-		SetURL(url).
+		SetLocation(location).
 		SetPassword(password).
-		AddBackupProfileIDs(backupProfileId).
 		Save(r.ctx)
 }
 
@@ -95,10 +96,44 @@ func (r *RepositoryClient) BreakLock(id int) error {
 		return err
 	}
 
-	err = r.borg.BreakLock(r.ctx, repo.URL, repo.Password)
+	err = r.borg.BreakLock(r.ctx, repo.Location, repo.Password)
 	if err != nil {
 		return err
 	}
 	r.state.SetRepoStatus(id, state.RepoStatusIdle)
 	return nil
+}
+
+func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
+	repos, err := r.db.Repository.Query().
+		Where(repository.LocationContains("@")).
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// user@host:~/path/to/repo -> user@host:port
+	// ssh://user@host:port/./path/to/repo -> user@host:port
+	hosts := make(map[string]struct{})
+	for _, repo := range repos {
+		// Extract user, host and port from location
+		parsedURL, err := url.Parse(repo.Location)
+		if err != nil {
+			continue
+		}
+		userInfo := ""
+		if parsedURL.User != nil {
+			userInfo = parsedURL.User.String() + "@"
+		}
+		host := parsedURL.Host
+		// Add host to map
+		hosts[userInfo+host] = struct{}{}
+	}
+
+	// Convert map to slice
+	result := make([]string, 0, len(hosts))
+	for host := range hosts {
+		result = append(result, host)
+	}
+	return result, nil
 }

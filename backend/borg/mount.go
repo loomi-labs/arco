@@ -5,15 +5,15 @@ import (
 	"os/exec"
 )
 
-func (b *Borg) MountRepository(repoUrl string, password string, mountPath string) error {
+func (b *borg) MountRepository(repoUrl string, password string, mountPath string) error {
 	return b.mount(repoUrl, nil, password, mountPath)
 }
 
-func (b *Borg) MountArchive(repoUrl string, archive string, password string, mountPath string) error {
+func (b *borg) MountArchive(repoUrl string, archive string, password string, mountPath string) error {
 	return b.mount(repoUrl, &archive, password, mountPath)
 }
 
-func (b *Borg) mount(repoUrl string, archive *string, password string, mountPath string) error {
+func (b *borg) mount(repoUrl string, archive *string, password string, mountPath string) error {
 	archiveOrRepo := repoUrl
 	if archive != nil {
 		archiveOrRepo = fmt.Sprintf("%s::%s", repoUrl, *archive)
@@ -31,7 +31,7 @@ func (b *Borg) mount(repoUrl string, archive *string, password string, mountPath
 	return nil
 }
 
-func (b *Borg) Umount(path string) error {
+func (b *borg) Umount(path string) error {
 	cmd := exec.Command(b.path, "umount", path)
 
 	startTime := b.log.LogCmdStart(cmd.String())

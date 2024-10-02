@@ -176,10 +176,10 @@ onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
 </script>
 
 <template>
-  <div class='group/backup bg-base-100 hover:bg-base-100/50 rounded-xl shadow-lg h-full w-full cursor-pointer'
+  <div class='group/backup ac-card-hover h-full w-full'
        @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
     <div
-      class='flex justify-between bg-primary text-primary-content group-hover/backup:bg-primary/70 rounded-t-xl px-6 pt-4 pb-2'>
+      class='flex justify-between bg-primary text-primary-content group-hover/backup:bg-primary/70 px-6 pt-4 pb-2'>
       {{ props.backup.name }}
       <HomeIcon class='size-8' />
     </div>

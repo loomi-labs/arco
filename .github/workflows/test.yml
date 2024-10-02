@@ -21,6 +21,9 @@ jobs:
       # Create empty index.html file (required for main.go to build)
       - name: Create empty index.html file
         run: touch frontend/dist/index.html
+      # Install tools
+      - name: Install tools
+        run: make install-tools
       # Test & coverage report creation
       - name: Test & coverage report creation
         run: make test

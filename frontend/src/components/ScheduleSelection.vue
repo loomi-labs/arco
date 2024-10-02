@@ -1,12 +1,23 @@
 <script setup lang='ts'>
 import { backupschedule, ent } from "../../wailsjs/go/models";
-import { ref, watch, watchEffect } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { applyOffset, offset, removeOffset } from "@formkit/tempo";
+import deepEqual from "deep-equal";
 
 /************
  * Types
  ************/
+
+interface Props {
+  schedule?: ent.BackupSchedule;
+}
+
+interface Emits {
+  (event: typeof emitUpdate, schedule: ent.BackupSchedule): void;
+
+  (event: typeof emitDelete): void;
+}
 
 enum BackupFrequency {
   Hourly = "hourly",
@@ -19,12 +30,11 @@ enum BackupFrequency {
  * Variables
  ************/
 
-const props = defineProps({
-  schedule: {
-    type: ent.BackupSchedule,
-    required: false
-  }
-});
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
+
+const emitUpdate = "update:schedule";
+const emitDelete = "delete:schedule";
 
 // We have to remove the timezone offset from the date when showing it in the UI
 // and add it back when saving it to the schedule
@@ -32,13 +42,15 @@ const offsetToUtc = offset(new Date());
 const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
 const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
 const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
+const isInitializing = ref<boolean>(false);
+
+const isHourly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Hourly);
+const isDaily = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Daily);
+const isWeekly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Weekly);
+const isMonthly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Monthly);
 
 // Create a cleaned schedule that only contains the necessary fields
 const cleanedSchedule = ref<ent.BackupSchedule>(getCleanedSchedule());
-
-const emitUpdate = "update:schedule";
-const emitDelete = "delete:schedule";
-const emit = defineEmits([emitUpdate, emitDelete]);
 
 const dailyAtDateTime = defineModel("dailyAtDateTime", {
   get() {
@@ -58,12 +70,32 @@ const weeklyAtDateTime = defineModel("weeklyAtDateTime", {
   }
 });
 
+const weekday = defineModel("weekday", {
+  get() {
+    return schedule.value.weekday?.toString();
+  },
+  set(value: string) {
+    schedule.value.weekday = backupschedule.Weekday[value as keyof typeof backupschedule.Weekday];
+    return schedule.value.weekday;
+  }
+});
+
 const monthlyAtDateTime = defineModel("monthlyAtDateTime", {
   get() {
     return getTime(() => schedule.value.monthlyAt);
   },
   set(value: string) {
     return setTime((date: Date) => schedule.value.monthlyAt = date, value);
+  }
+});
+
+const monthday = defineModel("monthday", {
+  get() {
+    return schedule.value.monthday?.toString();
+  },
+  set(value: string) {
+    schedule.value.monthday = parseInt(value);
+    return schedule.value.monthday;
   }
 });
 
@@ -156,6 +188,14 @@ function backupFrequencyChanged() {
   }
 }
 
+function setBackupFrequency(frequency: BackupFrequency) {
+  if (!isScheduleEnabled.value) {
+    return;
+  }
+
+  backupFrequency.value = frequency;
+}
+
 function emitUpdateSchedule(schedule: ent.BackupSchedule) {
   emit(emitUpdate, schedule);
 }
@@ -168,6 +208,22 @@ function emitDeleteSchedule() {
  * Lifecycle
  ************/
 
+// Watch for changes to props.schedule
+watch(() => props.schedule, async (newSchedule, oldSchedule) => {
+  if (deepEqual(newSchedule, oldSchedule)) {
+    return;
+  }
+
+  isInitializing.value = true;
+  schedule.value = getBackupScheduleFromProps();
+  isScheduleEnabled.value = getScheduleType(newSchedule) !== undefined;
+  backupFrequency.value = getScheduleType(newSchedule) || BackupFrequency.Hourly;
+
+  // Wait a bit for the schedule to be rendered
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  isInitializing.value = false;
+});
+
 // Watch for changes to schedule
 // When schedule changes, update cleanedSchedule
 watchEffect(() => {
@@ -179,93 +235,106 @@ watchEffect(() => {
 
 // Watch for changes to cleanedSchedule
 // When cleanedSchedule changes, emit the new schedule or emit delete
-watch(cleanedSchedule, (newSchedule) => {
-  if (JSON.stringify(newSchedule) !== JSON.stringify(schedule.value)) {
-    if (getScheduleType(newSchedule) === undefined) {
-      emitDeleteSchedule();
-    } else {
-      emitUpdateSchedule(cleanedSchedule.value);
-    }
+watch(cleanedSchedule, (newSchedule, oldSchedule) => {
+  // Don't emit if the schedule is initializing or if the new schedule is the same as the old schedule
+  if (isInitializing.value || deepEqual(newSchedule, oldSchedule)) {
+    return;
+  }
+
+  if (getScheduleType(newSchedule) === undefined) {
+    emitDeleteSchedule();
+  } else {
+    emitUpdateSchedule(cleanedSchedule.value);
   }
 });
 
 </script>
 
 <template>
-  <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
+  <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
-      <h2 class='text-xl font-semibold'>{{ $t("run_periodic_backups") }}</h2>
-      <input type='checkbox' class='toggle toggle-primary' v-model='isScheduleEnabled'>
+      <h3 class='text-xl font-semibold'>{{ $t("run_periodic_backups") }}</h3>
+      <input type='checkbox' class='toggle toggle-secondary' v-model='isScheduleEnabled'>
     </div>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold mb-4'>{{ $t("every") }}</h3>
       <div class='flex w-full'>
         <!-- Hourly -->
-        <div class='flex space-x-2 w-40'>
-          <input type='radio' name='backupFrequency' class='radio radio-primary' id='hourly'
+        <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isHourly}'
+             @click='() => setBackupFrequency(BackupFrequency.Hourly)'>
+          <label for='hourly'>{{ $t("hour") }}</label>
+          <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
                  :value='BackupFrequency.Hourly'
                  @change='backupFrequencyChanged'
                  v-model='backupFrequency'>
-          <label for='hourly'>{{ $t("hour") }}</label>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Daily -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='daily'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isDaily}'
+             @click='() => setBackupFrequency(BackupFrequency.Daily)'>
+          <div class='flex justify-between space-x-2'>
+            <label for='daily'>{{ $t("day") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Daily'
                    v-model='backupFrequency'>
-            <label for='daily'>{{ $t("day") }}</label>
           </div>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
-                 :disabled='!isScheduleEnabled  || backupFrequency !== BackupFrequency.Daily'
+          <input type='time' class='input input-bordered input-sm'
+                 :disabled='!isScheduleEnabled'
                  v-model='dailyAtDateTime'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Weekly -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='weekly'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isWeekly}'
+             @click='() => setBackupFrequency(BackupFrequency.Weekly)'>
+          <div class='flex justify-between space-x-2'>
+            <label for='weekly'>{{ $t("week") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Weekly'
                    v-model='backupFrequency'>
-            <label for='weekly'>{{ $t("week") }}</label>
           </div>
           <select class='select select-bordered select-sm'
-                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
-                  v-model='schedule.weekday'>
+                  :disabled='!isScheduleEnabled'
+                  v-model='weekday'
+                  @focus='() => setBackupFrequency(BackupFrequency.Weekly)'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
-                 :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Weekly'
+          <input type='time' class='input input-bordered input-sm'
+                 :disabled='!isScheduleEnabled'
                  v-model='weeklyAtDateTime'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Monthly -->
-        <div class='flex flex-col space-y-3 w-40'>
-          <div class='flex space-x-2'>
-            <input type='radio' name='backupFrequency' class='radio radio-primary' id='monthly'
+        <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
+             :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isMonthly}'
+             @click='() => setBackupFrequency(BackupFrequency.Monthly)'>
+          <div class='flex justify-between space-x-2'>
+            <label for='monthly'>{{ $t("month") }}</label>
+            <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
                    :disabled='!isScheduleEnabled'
                    :value='BackupFrequency.Monthly'
                    v-model='backupFrequency'>
-            <label for='monthly'>{{ $t("month") }}</label>
           </div>
           <select class='select select-bordered select-sm'
-                  :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
-                  v-model='schedule.monthday'>
+                  :disabled='!isScheduleEnabled'
+                  v-model='monthday'
+                  @focus='() => setBackupFrequency(BackupFrequency.Monthly)'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>
           </select>
-          <input type='time' class='input input-bordered input-sm text-base w-20'
-                 :disabled='!isScheduleEnabled || backupFrequency !== BackupFrequency.Monthly'
+          <input type='time' class='input input-bordered input-sm'
+                 :disabled='!isScheduleEnabled'
                  v-model='monthlyAtDateTime'>
         </div>
       </div>

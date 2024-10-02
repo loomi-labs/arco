@@ -46,20 +46,6 @@ func (bpu *BackupProfileUpdate) SetNillableName(s *string) *BackupProfileUpdate 
 	return bpu
 }
 
-// SetPrefix sets the "prefix" field.
-func (bpu *BackupProfileUpdate) SetPrefix(s string) *BackupProfileUpdate {
-	bpu.mutation.SetPrefix(s)
-	return bpu
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillablePrefix(s *string) *BackupProfileUpdate {
-	if s != nil {
-		bpu.SetPrefix(*s)
-	}
-	return bpu
-}
-
 // SetBackupPaths sets the "backup_paths" field.
 func (bpu *BackupProfileUpdate) SetBackupPaths(s []string) *BackupProfileUpdate {
 	bpu.mutation.SetBackupPaths(s)
@@ -90,16 +76,16 @@ func (bpu *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
 	return bpu
 }
 
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (bpu *BackupProfileUpdate) SetIsSetupComplete(b bool) *BackupProfileUpdate {
-	bpu.mutation.SetIsSetupComplete(b)
+// SetIcon sets the "icon" field.
+func (bpu *BackupProfileUpdate) SetIcon(b backupprofile.Icon) *BackupProfileUpdate {
+	bpu.mutation.SetIcon(b)
 	return bpu
 }
 
-// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdate {
+// SetNillableIcon sets the "icon" field if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillableIcon(b *backupprofile.Icon) *BackupProfileUpdate {
 	if b != nil {
-		bpu.SetIsSetupComplete(*b)
+		bpu.SetIcon(*b)
 	}
 	return bpu
 }
@@ -269,7 +255,25 @@ func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (bpu *BackupProfileUpdate) check() error {
+	if v, ok := bpu.mutation.Name(); ok {
+		if err := backupprofile.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
+		}
+	}
+	if v, ok := bpu.mutation.Icon(); ok {
+		if err := backupprofile.IconValidator(v); err != nil {
+			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := bpu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(backupprofile.Table, backupprofile.Columns, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
 	if ps := bpu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -280,9 +284,6 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := bpu.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
-	}
-	if value, ok := bpu.mutation.Prefix(); ok {
-		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 	}
 	if value, ok := bpu.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
@@ -303,8 +304,8 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if bpu.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
-	if value, ok := bpu.mutation.IsSetupComplete(); ok {
-		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
+	if value, ok := bpu.mutation.Icon(); ok {
+		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
 	if bpu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -504,20 +505,6 @@ func (bpuo *BackupProfileUpdateOne) SetNillableName(s *string) *BackupProfileUpd
 	return bpuo
 }
 
-// SetPrefix sets the "prefix" field.
-func (bpuo *BackupProfileUpdateOne) SetPrefix(s string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetPrefix(s)
-	return bpuo
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillablePrefix(s *string) *BackupProfileUpdateOne {
-	if s != nil {
-		bpuo.SetPrefix(*s)
-	}
-	return bpuo
-}
-
 // SetBackupPaths sets the "backup_paths" field.
 func (bpuo *BackupProfileUpdateOne) SetBackupPaths(s []string) *BackupProfileUpdateOne {
 	bpuo.mutation.SetBackupPaths(s)
@@ -548,16 +535,16 @@ func (bpuo *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne 
 	return bpuo
 }
 
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (bpuo *BackupProfileUpdateOne) SetIsSetupComplete(b bool) *BackupProfileUpdateOne {
-	bpuo.mutation.SetIsSetupComplete(b)
+// SetIcon sets the "icon" field.
+func (bpuo *BackupProfileUpdateOne) SetIcon(b backupprofile.Icon) *BackupProfileUpdateOne {
+	bpuo.mutation.SetIcon(b)
 	return bpuo
 }
 
-// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableIsSetupComplete(b *bool) *BackupProfileUpdateOne {
+// SetNillableIcon sets the "icon" field if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillableIcon(b *backupprofile.Icon) *BackupProfileUpdateOne {
 	if b != nil {
-		bpuo.SetIsSetupComplete(*b)
+		bpuo.SetIcon(*b)
 	}
 	return bpuo
 }
@@ -740,7 +727,25 @@ func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (bpuo *BackupProfileUpdateOne) check() error {
+	if v, ok := bpuo.mutation.Name(); ok {
+		if err := backupprofile.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
+		}
+	}
+	if v, ok := bpuo.mutation.Icon(); ok {
+		if err := backupprofile.IconValidator(v); err != nil {
+			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupProfile, err error) {
+	if err := bpuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(backupprofile.Table, backupprofile.Columns, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
 	id, ok := bpuo.mutation.ID()
 	if !ok {
@@ -769,9 +774,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	if value, ok := bpuo.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 	}
-	if value, ok := bpuo.mutation.Prefix(); ok {
-		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
-	}
 	if value, ok := bpuo.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
@@ -791,8 +793,8 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	if bpuo.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
-	if value, ok := bpuo.mutation.IsSetupComplete(); ok {
-		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
+	if value, ok := bpuo.mutation.Icon(); ok {
+		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
 	if bpuo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

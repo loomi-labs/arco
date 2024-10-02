@@ -7,7 +7,7 @@ import (
 )
 
 // BreakLock deletes the lock for the given repository.
-func (b *Borg) BreakLock(ctx context.Context, repository string, password string) error {
+func (b *borg) BreakLock(ctx context.Context, repository string, password string) error {
 	cmd := exec.CommandContext(ctx, b.path, "break-lock", repository)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 

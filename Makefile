@@ -18,9 +18,9 @@ generate-models:
 
 generate-migrations: ensure-tools
 	@echo "Creating ent migration..."
-	@cd backend && atlas migrate diff migration_name \
-                     --dir "file://ent/migrate/migrations" \
-                     --to "ent://ent/schema" \
+	@atlas migrate diff migration_name \
+                     --dir "file://backend/ent/migrate/migrations" \
+                     --to "ent://backend/ent/schema" \
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
@@ -35,6 +35,14 @@ show-migrations: ensure-tools
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
 					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
+	@echo "✅ Done!"
+
+lint-migrations: ensure-tools
+	@echo "Linting ent migrations..."
+	@atlas migrate lint \
+       --dev-url="sqlite://file?mode=memory" \
+       --dir="file://backend/ent/migrate/migrations" \
+       --latest=1
 	@echo "✅ Done!"
 
 #################################
@@ -69,7 +77,10 @@ lint: ensure-tools
 ###           Test            ###
 #################################
 
-test:
+mockgen:
+	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
+
+test: ensure-tools mockgen
 	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)
 
 #################################
@@ -86,13 +97,29 @@ build: ensure-tools ensure-pnpm
 ###        Development        ###
 #################################
 
-install-tools:
+download:
+	@echo "📥 Downloading dependencies..."
+	@go mod download
+
+install-tools: download
 	@echo "🛠️ Installing tools..."
 	@for tool in $$(cat tools/tools.go | grep _ | awk '{print $$2}' | tr -d '"'); do \
-		go install $${tool}@latest; \
+		version=""; \
+		toolInGoMod=$$tool; \
+		while [ -z "$$version" ] && [ "$${toolInGoMod}" != "" ]; do \
+			version=$$(grep -E "$${toolInGoMod} v" go.mod | awk '{print $$2}'); \
+			if [ -z "$$version" ]; then \
+				toolInGoMod=$$(echo "$${toolInGoMod}" | sed 's/\/[^\/]*$$//'); \
+			fi; \
+		done; \
+		if [ -n "$$version" ]; then \
+			go install "$${tool}@$$version"; \
+		else \
+			echo "❌ Could not find version for tool: $${tool}"; \
+		fi; \
 	done
 	@echo "🌍 Installing atlas..."
-	@curl -sSf https://atlasgo.sh | sh
+	@curl -sSf https://atlasgo.sh | sh -s -- -y
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm

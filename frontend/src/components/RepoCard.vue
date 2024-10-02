@@ -6,23 +6,28 @@ import { rRepositoryDetailPage, withId } from "../router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { onUnmounted, ref, watch } from "vue";
+import { onUnmounted, ref, useTemplateRef, watch } from "vue";
 import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
-import ConfirmDialog from "./ConfirmDialog.vue";
 import BackupButton from "./BackupButton.vue";
 import { polling } from "../common/polling";
+import ConfirmModal from "./common/ConfirmModal.vue";
 
 /************
  * Types
  ************/
 
-export interface Props {
+interface Props {
   repoId: number;
   backupProfileId: number;
   highlight: boolean;
   showHover: boolean;
+}
+
+interface Emits {
+  (event: typeof repoStatusEmit, status: state.RepoStatus): void
+  (event: typeof clickEmit): void
 }
 
 /************
@@ -30,13 +35,10 @@ export interface Props {
  ************/
 
 const props = defineProps<Props>();
+const emits = defineEmits<Emits>();
 
 const repoStatusEmit = "repo:status";
 const clickEmit = "click";
-const emits = defineEmits<{
-  (e: typeof repoStatusEmit, status: state.RepoStatus): void
-  (e: typeof clickEmit): void
-}>();
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
@@ -50,9 +52,10 @@ const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
-const showRemoveLockDialog = ref(false);
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const showProgressSpinner = ref(false);
+const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
+const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
 
 /************
  * Functions
@@ -168,7 +171,7 @@ async function runButtonAction() {
   } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
     await abortBackup();
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    showRemoveLockDialog.value = true;
+    confirmRemoveLockModal.value?.showModal();
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
     await unmountAll();
   }
@@ -225,8 +228,8 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
 </script>
 
 <template>
-  <div class='flex justify-between bg-base-100 p-10 rounded-xl shadow-lg border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "cursor-pointer hover:bg-base-100/50": showHover && !props.highlight }'
+  <div class='flex justify-between ac-card p-10 border-2 h-full'
+       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "ac-card-hover": showHover && !props.highlight }'
        @click='emits(clickEmit)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
@@ -235,12 +238,14 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
           <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
+            }}</span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
-      <a class='link mt-auto' @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
+      <a class='link mt-auto'
+         @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>
@@ -262,14 +267,13 @@ onUnmounted(() => clearInterval(repoStatePollIntervalId));
       <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
-  <ConfirmDialog
-    :message='$t("remove_lock_warning")'
-    :subMessage='$t("remove_lock_confirmation")'
-    :confirm-text='$t("remove_lock")'
-    :isVisible='showRemoveLockDialog'
-    @confirm='showRemoveLockDialog = false; breakLock()'
-    @cancel='showRemoveLockDialog = false'
-  />
+  <ConfirmModal :ref='confirmRemoveLockModalKey'
+                :confirm-text='$t("remove_lock")'
+                confirm-class='btn-error'
+                @confirm='breakLock()'>
+    <p class='mb-4'>{{ $t("remove_lock_warning") }}</p>
+    <p class='mb-4'>{{ $t("remove_lock_confirmation") }}</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

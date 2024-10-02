@@ -26,8 +26,8 @@ type BackupProfile struct {
 	BackupPaths []string `json:"backupPaths"`
 	// ExcludePaths holds the value of the "exclude_paths" field.
 	ExcludePaths []string `json:"excludePaths"`
-	// IsSetupComplete holds the value of the "is_setup_complete" field.
-	IsSetupComplete bool `json:"isSetupComplete"`
+	// Icon holds the value of the "icon" field.
+	Icon backupprofile.Icon `json:"icon"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -94,11 +94,9 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
-		case backupprofile.FieldIsSetupComplete:
-			values[i] = new(sql.NullBool)
 		case backupprofile.FieldID:
 			values[i] = new(sql.NullInt64)
-		case backupprofile.FieldName, backupprofile.FieldPrefix:
+		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -149,11 +147,11 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field exclude_paths: %w", err)
 				}
 			}
-		case backupprofile.FieldIsSetupComplete:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_setup_complete", values[i])
+		case backupprofile.FieldIcon:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field icon", values[i])
 			} else if value.Valid {
-				bp.IsSetupComplete = value.Bool
+				bp.Icon = backupprofile.Icon(value.String)
 			}
 		default:
 			bp.selectValues.Set(columns[i], values[i])
@@ -223,8 +221,8 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString("exclude_paths=")
 	builder.WriteString(fmt.Sprintf("%v", bp.ExcludePaths))
 	builder.WriteString(", ")
-	builder.WriteString("is_setup_complete=")
-	builder.WriteString(fmt.Sprintf("%v", bp.IsSetupComplete))
+	builder.WriteString("icon=")
+	builder.WriteString(fmt.Sprintf("%v", bp.Icon))
 	builder.WriteByte(')')
 	return builder.String()
 }

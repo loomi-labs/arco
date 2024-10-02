@@ -47,17 +47,9 @@ func (bpc *BackupProfileCreate) SetExcludePaths(s []string) *BackupProfileCreate
 	return bpc
 }
 
-// SetIsSetupComplete sets the "is_setup_complete" field.
-func (bpc *BackupProfileCreate) SetIsSetupComplete(b bool) *BackupProfileCreate {
-	bpc.mutation.SetIsSetupComplete(b)
-	return bpc
-}
-
-// SetNillableIsSetupComplete sets the "is_setup_complete" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableIsSetupComplete(b *bool) *BackupProfileCreate {
-	if b != nil {
-		bpc.SetIsSetupComplete(*b)
-	}
+// SetIcon sets the "icon" field.
+func (bpc *BackupProfileCreate) SetIcon(b backupprofile.Icon) *BackupProfileCreate {
+	bpc.mutation.SetIcon(b)
 	return bpc
 }
 
@@ -174,10 +166,6 @@ func (bpc *BackupProfileCreate) defaults() {
 		v := backupprofile.DefaultExcludePaths
 		bpc.mutation.SetExcludePaths(v)
 	}
-	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
-		v := backupprofile.DefaultIsSetupComplete
-		bpc.mutation.SetIsSetupComplete(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -185,14 +173,32 @@ func (bpc *BackupProfileCreate) check() error {
 	if _, ok := bpc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "BackupProfile.name"`)}
 	}
+	if v, ok := bpc.mutation.Name(); ok {
+		if err := backupprofile.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
+		}
+	}
 	if _, ok := bpc.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupProfile.prefix"`)}
+	}
+	if v, ok := bpc.mutation.Prefix(); ok {
+		if err := backupprofile.PrefixValidator(v); err != nil {
+			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
+		}
 	}
 	if _, ok := bpc.mutation.BackupPaths(); !ok {
 		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
 	}
-	if _, ok := bpc.mutation.IsSetupComplete(); !ok {
-		return &ValidationError{Name: "is_setup_complete", err: errors.New(`ent: missing required field "BackupProfile.is_setup_complete"`)}
+	if _, ok := bpc.mutation.Icon(); !ok {
+		return &ValidationError{Name: "icon", err: errors.New(`ent: missing required field "BackupProfile.icon"`)}
+	}
+	if v, ok := bpc.mutation.Icon(); ok {
+		if err := backupprofile.IconValidator(v); err != nil {
+			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
+		}
+	}
+	if len(bpc.mutation.RepositoriesIDs()) == 0 {
+		return &ValidationError{Name: "repositories", err: errors.New(`ent: missing required edge "BackupProfile.repositories"`)}
 	}
 	return nil
 }
@@ -242,9 +248,9 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
 		_node.ExcludePaths = value
 	}
-	if value, ok := bpc.mutation.IsSetupComplete(); ok {
-		_spec.SetField(backupprofile.FieldIsSetupComplete, field.TypeBool, value)
-		_node.IsSetupComplete = value
+	if value, ok := bpc.mutation.Icon(); ok {
+		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+		_node.Icon = value
 	}
 	if nodes := bpc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

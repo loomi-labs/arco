@@ -9,10 +9,13 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
+	"arco/backend/util"
 	"errors"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"math/rand"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -20,14 +23,59 @@ import (
 /********** Backup Profile *********/
 /***********************************/
 
+func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+	return b.db.BackupProfile.
+		Query().
+		WithRepositories().
+		WithBackupSchedule().
+		Where(backupprofile.ID(id)).
+		Only(b.ctx)
+}
+
+func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+	return b.db.BackupProfile.
+		Query().
+		WithRepositories().
+		WithBackupSchedule().
+		All(b.ctx)
+}
+
 func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
-	hostname, _ := os.Hostname()
-	return b.db.BackupProfile.Create().
-		SetName(hostname).
-		SetPrefix(hostname).
-		SetBackupPaths([]string{}).
-		SetExcludePaths([]string{}).
-		Save(b.ctx)
+	// Choose the first icon that is not already in use
+	all, err := b.db.BackupProfile.
+		Query().
+		Select(backupprofile.FieldIcon).
+		All(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+	icons := make(map[backupprofile.Icon]bool)
+	for _, p := range all {
+		icons[p.Icon] = true
+	}
+	selectedIcon := backupprofile.IconHome
+	for _, icon := range types.AllIcons {
+		if !icons[icon] {
+			selectedIcon = icon
+			break
+		}
+	}
+
+	schedule := &ent.BackupSchedule{
+		Hourly: true,
+	}
+
+	return &ent.BackupProfile{
+		ID:           0,
+		Name:         "",
+		Prefix:       "",
+		BackupPaths:  make([]string, 0),
+		ExcludePaths: make([]string, 0),
+		Icon:         selectedIcon,
+		Edges: ent.BackupProfileEdges{
+			BackupSchedule: schedule,
+		},
+	}, nil
 }
 
 func (b *BackupClient) GetDirectorySuggestions() []string {
@@ -38,33 +86,91 @@ func (b *BackupClient) GetDirectorySuggestions() []string {
 	return []string{}
 }
 
-func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
-	return b.db.BackupProfile.
-		Query().
-		WithRepositories().
-		WithBackupSchedule().
-		Where(backupprofile.ID(id)).Only(b.ctx)
+func (b *BackupClient) DoesPathExist(path string) bool {
+	_, err := os.Stat(util.ExpandPath(path))
+	return err == nil
 }
 
-func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
-	return b.db.BackupProfile.
-		Query().
-		WithBackupSchedule().
-		WithRepositories().
-		All(b.ctx)
+func (b *BackupClient) IsDirectory(path string) bool {
+	info, err := os.Stat(util.ExpandPath(path))
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
-func (b *BackupClient) SaveBackupProfile(backup ent.BackupProfile) error {
-	b.log.Debug(fmt.Sprintf("Saving backup profile %d", backup.ID))
-	_, err := b.db.BackupProfile.
-		UpdateOneID(backup.ID).
+func (b *BackupClient) IsDirectoryEmpty(path string) bool {
+	path = util.ExpandPath(path)
+	if !b.IsDirectory(path) {
+		return false
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	return err != nil
+}
+
+func (b *BackupClient) CreateDirectory(path string) error {
+	return os.MkdirAll(util.ExpandPath(path), 0755)
+}
+
+func (b *BackupClient) GetPrefixSuggestion(name string) (string, error) {
+	if name == "" {
+		return "", errors.New("name cannot be empty")
+	}
+
+	// Remove all non-alphanumeric characters
+	re := regexp.MustCompile("[^a-zA-Z0-9]")
+	prefix := re.ReplaceAllString(name, "")
+
+	if prefix == "" {
+		return "", errors.New("name must contain at least one alphanumeric character")
+	}
+
+	fullPrefix := prefix + "-"
+
+	exist, err := b.db.BackupProfile.
+		Query().
+		Where(backupprofile.Prefix(fullPrefix)).
+		Exist(b.ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		// If the prefix already exists, we create a new one by appending a random number
+		prefix = fmt.Sprintf("%s_%d", prefix, rand.Intn(1000))
+		return b.GetPrefixSuggestion(prefix)
+	}
+	return fullPrefix, nil
+}
+
+func (b *BackupClient) CreateBackupProfile(backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
+	b.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
+	return b.db.BackupProfile.
+		Create().
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
-		SetIsSetupComplete(backup.IsSetupComplete).
+		SetIcon(backup.Icon).
+		AddRepositoryIDs(repositoryIds...).
 		Save(b.ctx)
-	return err
+}
+
+func (b *BackupClient) UpdateBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
+	b.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
+	return b.db.BackupProfile.
+		UpdateOneID(backup.ID).
+		SetName(backup.Name).
+		SetBackupPaths(backup.BackupPaths).
+		SetExcludePaths(backup.ExcludePaths).
+		Save(b.ctx)
 }
 
 func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
@@ -78,7 +184,7 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 				BackupProfileId: id,
 				RepositoryId:    repo.ID,
 			}
-			go b.runBorgDelete(bId, repo.URL, repo.Password, backupProfile.Prefix)
+			go b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
 		}
 	}
 	err := b.db.BackupProfile.
@@ -104,9 +210,6 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 	}
 	if len(repo.Edges.BackupProfiles) != 1 {
 		return nil, fmt.Errorf("repository does not have the backup profile")
-	}
-	if !repo.Edges.BackupProfiles[0].IsSetupComplete {
-		return nil, fmt.Errorf("backup profile is not complete")
 	}
 	return repo, nil
 }
@@ -135,9 +238,6 @@ func (b *BackupClient) StartBackupJobs(backupProfileId int) ([]types.BackupId, e
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return nil, err
-	}
-	if !backupProfile.IsSetupComplete {
-		return nil, fmt.Errorf("backup profile is not setup")
 	}
 
 	var bIds []types.BackupId
@@ -351,7 +451,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
-	archiveName, err := b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	archiveName, err := b.borg.Create(ctx, repo.Location, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetBackupCancelled(bId, true)
@@ -383,7 +483,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			b.log.Error(fmt.Sprintf("Failed to delete failed backup run: %s", err))
 		}
 
-		err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
+		err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}

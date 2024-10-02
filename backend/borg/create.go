@@ -20,7 +20,7 @@ type BackupProgress struct {
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
+func (b *borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
 	// Count the total files to backup
 	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, backupPaths)
 	if err != nil {
@@ -53,7 +53,7 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, bac
 	// Run backup command
 	startTime := b.log.LogCmdStart(cmd.String())
 
-	// Borg streams JSON messages to stderr
+	// borg streams JSON messages to stderr
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
@@ -81,7 +81,7 @@ func (b *Borg) Create(ctx context.Context, repoUrl, password, prefix string, bac
 	return archiveName, nil
 }
 
-// decodeBackupProgress decodes the progress messages from Borg and sends them to the channel.
+// decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
 func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- BackupProgress) {
 	for scanner.Scan() {
 		data := scanner.Text()
@@ -114,7 +114,7 @@ func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- Back
 
 // countBackupFiles counts the number of files that will be backed up.
 // We use the --dry-run flag to simulate the backup and count the files.
-func (b *Borg) countBackupFiles(ctx context.Context, repoUrl, password, prefix string, directories []string) (int, error) {
+func (b *borg) countBackupFiles(ctx context.Context, repoUrl, password, prefix string, directories []string) (int, error) {
 	name := fmt.Sprintf("%s-%s", prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 	cmd := exec.CommandContext(ctx, b.path, append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create

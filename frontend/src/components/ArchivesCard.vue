@@ -2,20 +2,20 @@
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state, types } from "../../wailsjs/go/models";
-import { ref, watch } from "vue";
+import { ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
-  TrashIcon,
-  CloudArrowDownIcon
+  TrashIcon
 } from "@heroicons/vue/24/solid";
-import ConfirmDialog from "./ConfirmDialog.vue";
 import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
+import ConfirmModal from "./common/ConfirmModal.vue";
 
 /************
  * Types
@@ -27,7 +27,7 @@ type Pagination = {
   total: number;
 };
 
-export interface Props {
+interface Props {
   repo: ent.Repository;
   backupProfileId: number;
   repoStatus: state.RepoStatus;
@@ -46,6 +46,8 @@ const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
 const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map<archiveId, MountState>
 const showProgressSpinner = ref<boolean>(false);
+const confirmDeleteModalKey = "confirm_delete_archive_modal";
+const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
 /************
  * Functions
@@ -131,13 +133,13 @@ watch(() => props.repoStatus, async () => {
 });
 
 watch(() => props.repo, async () => {
-    await getPaginatedArchives();
-    await getArchiveMountStates();
+  await getPaginatedArchives();
+  await getArchiveMountStates();
 });
 
 </script>
 <template>
-  <div class='bg-base-100 p-6 rounded-lg shadow-lg'
+  <div class='ac-card p-10'
        :class='{ "border-2 border-primary": props.highlight }'>
     <div v-if='pagination.total > 0'>
       <table class='w-full table table-xs table-zebra'>
@@ -152,11 +154,13 @@ watch(() => props.repo, async () => {
         </tr>
         </thead>
         <tbody>
-        <tr v-for='(archive, index) in archives' :key='index' :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
+        <tr v-for='(archive, index) in archives' :key='index'
+            :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
-            <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip' :data-tip='`Archive is mounted at ${archiveMountStates.get(archive.id)?.mount_path}`'>
+            <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip'
+                  :data-tip='`Archive is mounted at ${archiveMountStates.get(archive.id)?.mount_path}`'>
               <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
             </span>
           </td>
@@ -174,7 +178,10 @@ watch(() => props.repo, async () => {
             </button>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
-                    @click='archiveToBeDeleted = archive.id'>
+                    @click='() => {
+                      archiveToBeDeleted = archive.id;
+                      confirmDeleteModal?.showModal();
+                    }'>
               <TrashIcon class='size-4' />
             </button>
           </td>
@@ -213,13 +220,14 @@ watch(() => props.repo, async () => {
       <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
-  <ConfirmDialog
-    :message='$t("confirm_delete_archive")'
-    :confirm-text='$t("delete")'
-    :isVisible='!!archiveToBeDeleted'
-    @confirm='deleteArchive()'
-    @cancel='archiveToBeDeleted = undefined'
-  />
+  <ConfirmModal :ref='confirmDeleteModalKey'
+                :confirmText='$t("delete")'
+                confirm-class='btn-error'
+                @confirm='deleteArchive()'
+                @close='archiveToBeDeleted = undefined'
+  >
+    <p>{{ $t("confirm_delete_archive") }}</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

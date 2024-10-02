@@ -7,7 +7,6 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/repository"
 	"errors"
-	"fmt"
 )
 
 func (b *BackupClient) PruneBackup(bId types.BackupId) error {
@@ -21,7 +20,7 @@ func (b *BackupClient) PruneBackup(bId types.BackupId) error {
 		return errors.New(reason)
 	}
 
-	go b.runPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
+	go b.runPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
 	return nil
 }
 
@@ -29,9 +28,6 @@ func (b *BackupClient) PruneBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
-	}
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not setup")
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {
@@ -55,7 +51,7 @@ func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
 		return errors.New(reason)
 	}
 
-	go b.dryRunPruneJob(bId, repo.URL, repo.Password, backupProfile.Prefix)
+	go b.dryRunPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
 	return nil
 }
 
@@ -63,9 +59,6 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
-	}
-	if !backupProfile.IsSetupComplete {
-		return fmt.Errorf("backup profile is not setup")
 	}
 
 	for _, repo := range backupProfile.Edges.Repositories {

@@ -14,8 +14,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldURL holds the string denoting the url field in the database.
-	FieldURL = "url"
+	// FieldLocation holds the string denoting the location field in the database.
+	FieldLocation = "location"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
 	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
@@ -63,7 +63,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
-	FieldURL,
+	FieldLocation,
 	FieldPassword,
 	FieldStatsTotalChunks,
 	FieldStatsTotalSize,
@@ -117,9 +117,9 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByURL orders the results by the url field.
-func ByURL(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldURL, opts...).ToFunc()
+// ByLocation orders the results by the location field.
+func ByLocation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLocation, opts...).ToFunc()
 }
 
 // ByPassword orders the results by the password field.

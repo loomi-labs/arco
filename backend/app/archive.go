@@ -25,7 +25,7 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	r.state.SetRepoStatus(repoId, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(repoId, state.RepoStatusIdle)
 
-	listResponse, err := r.borg.List(repo.URL, repo.Password)
+	listResponse, err := r.borg.List(repo.Location, repo.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	r.state.SetRepoStatus(arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(arch.Edges.Repository.ID, state.RepoStatusIdle)
 
-	err = r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
+	err = r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password)
 	if err != nil {
 		return err
 	}

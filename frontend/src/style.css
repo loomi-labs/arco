@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles */
+@layer components {
+    /* Use ac-prefix because card is already taken by daisUI */
+    .ac-card {
+        @apply bg-base-100 shadow-lg rounded-md overflow-hidden;
+    }
+
+    .ac-card-hover {
+        @apply ac-card cursor-pointer hover:bg-base-100/50;
+    }
+
+    .ac-card-selected {
+        @apply ac-card bg-base-100/50;
+    }
+
+    .ac-card-dotted {
+        @apply ac-card bg-transparent border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400
+    }
+
+    /*.input {*/
+    /*    @apply bg-base-300;*/
+    /*}*/
+}

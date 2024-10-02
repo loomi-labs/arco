@@ -44,16 +44,16 @@ func (ru *RepositoryUpdate) SetNillableName(s *string) *RepositoryUpdate {
 	return ru
 }
 
-// SetURL sets the "url" field.
-func (ru *RepositoryUpdate) SetURL(s string) *RepositoryUpdate {
-	ru.mutation.SetURL(s)
+// SetLocation sets the "location" field.
+func (ru *RepositoryUpdate) SetLocation(s string) *RepositoryUpdate {
+	ru.mutation.SetLocation(s)
 	return ru
 }
 
-// SetNillableURL sets the "url" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableURL(s *string) *RepositoryUpdate {
+// SetNillableLocation sets the "location" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableLocation(s *string) *RepositoryUpdate {
 	if s != nil {
-		ru.SetURL(*s)
+		ru.SetLocation(*s)
 	}
 	return ru
 }
@@ -350,8 +350,8 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.URL(); ok {
-		_spec.SetField(repository.FieldURL, field.TypeString, value)
+	if value, ok := ru.mutation.Location(); ok {
+		_spec.SetField(repository.FieldLocation, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
@@ -561,16 +561,16 @@ func (ruo *RepositoryUpdateOne) SetNillableName(s *string) *RepositoryUpdateOne 
 	return ruo
 }
 
-// SetURL sets the "url" field.
-func (ruo *RepositoryUpdateOne) SetURL(s string) *RepositoryUpdateOne {
-	ruo.mutation.SetURL(s)
+// SetLocation sets the "location" field.
+func (ruo *RepositoryUpdateOne) SetLocation(s string) *RepositoryUpdateOne {
+	ruo.mutation.SetLocation(s)
 	return ruo
 }
 
-// SetNillableURL sets the "url" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableURL(s *string) *RepositoryUpdateOne {
+// SetNillableLocation sets the "location" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableLocation(s *string) *RepositoryUpdateOne {
 	if s != nil {
-		ruo.SetURL(*s)
+		ruo.SetLocation(*s)
 	}
 	return ruo
 }
@@ -897,8 +897,8 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if value, ok := ruo.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.URL(); ok {
-		_spec.SetField(repository.FieldURL, field.TypeString, value)
+	if value, ok := ruo.mutation.Location(); ok {
+		_spec.SetField(repository.FieldLocation, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)

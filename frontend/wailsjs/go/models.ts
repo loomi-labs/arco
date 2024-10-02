@@ -49,6 +49,19 @@ export namespace app {
 
 }
 
+export namespace backupprofile {
+	
+	export enum Icon {
+	    home = "home",
+	    briefcase = "briefcase",
+	    book = "book",
+	    envelope = "envelope",
+	    camera = "camera",
+	    fire = "fire",
+	}
+
+}
+
 export namespace backupschedule {
 	
 	export enum Weekday {
@@ -278,7 +291,7 @@ export namespace ent {
 	    prefix: string;
 	    backupPaths: string[];
 	    excludePaths: string[];
-	    isSetupComplete: boolean;
+	    icon: backupprofile.Icon;
 	    edges: BackupProfileEdges;
 	
 	    static createFrom(source: any = {}) {
@@ -292,7 +305,7 @@ export namespace ent {
 	        this.prefix = source["prefix"];
 	        this.backupPaths = source["backupPaths"];
 	        this.excludePaths = source["excludePaths"];
-	        this.isSetupComplete = source["isSetupComplete"];
+	        this.icon = source["icon"];
 	        this.edges = this.convertValues(source["edges"], BackupProfileEdges);
 	    }
 	
@@ -351,7 +364,7 @@ export namespace ent {
 	export class Repository {
 	    id: number;
 	    name: string;
-	    url: string;
+	    location: string;
 	    password: string;
 	    stats_total_chunks: number;
 	    stats_total_size: number;
@@ -369,7 +382,7 @@ export namespace ent {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.name = source["name"];
-	        this.url = source["url"];
+	        this.location = source["location"];
 	        this.password = source["password"];
 	        this.stats_total_chunks = source["stats_total_chunks"];
 	        this.stats_total_size = source["stats_total_size"];
@@ -483,15 +496,6 @@ export namespace ent {
 
 export namespace state {
 	
-	export enum RepoStatus {
-	    idle = "idle",
-	    backingUp = "backingUp",
-	    pruning = "pruning",
-	    deleting = "deleting",
-	    mounted = "mounted",
-	    performingOperation = "performingOperation",
-	    locked = "locked",
-	}
 	export enum BackupButtonStatus {
 	    runBackup = "runBackup",
 	    waiting = "waiting",
@@ -507,6 +511,15 @@ export namespace state {
 	    completed = "completed",
 	    cancelled = "cancelled",
 	    failed = "failed",
+	}
+	export enum RepoStatus {
+	    idle = "idle",
+	    backingUp = "backingUp",
+	    pruning = "pruning",
+	    deleting = "deleting",
+	    mounted = "mounted",
+	    performingOperation = "performingOperation",
+	    locked = "locked",
 	}
 	export class BackupState {
 	    status: BackupStatus;

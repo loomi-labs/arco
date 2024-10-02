@@ -1,6 +1,7 @@
 package types
 
 import (
+	"arco/backend/ent/backupprofile"
 	"embed"
 	"fmt"
 )
@@ -39,4 +40,13 @@ type Config struct {
 	BorgPath    string
 	BorgVersion string
 	Icon        embed.FS
+}
+
+var AllIcons = []backupprofile.Icon{
+	backupprofile.IconHome,
+	backupprofile.IconBriefcase,
+	backupprofile.IconBook,
+	backupprofile.IconEnvelope,
+	backupprofile.IconCamera,
+	backupprofile.IconFire,
 }

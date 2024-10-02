@@ -1,10 +1,12 @@
 package app
 
 import (
+	"arco/backend/borg/mockborg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 )
@@ -13,6 +15,7 @@ import (
 
 TEST CASES - backup.go
 
+TestBackupClient_SaveBackupSchedule
 * SaveBackupSchedule with default values
 * SaveBackupSchedule with hourly schedule
 * SaveBackupSchedule with daily schedule
@@ -26,22 +29,38 @@ TEST CASES - backup.go
 * SaveBackupSchedule with daily and weekly schedule
 * SaveBackupSchedule with daily and monthly schedule
 * SaveBackupSchedule with weekly and monthly schedule
-
 * SaveBackupSchedule with an updated daily schedule
 * SaveBackupSchedule with an updated weekly schedule (to hourly)
 
+TestBackupClient_GetPrefixSuggestions
+* GetPrefixSuggestions with empty prefix
+* GetPrefixSuggestions with alphanumeric prefix
+* GetPrefixSuggestions with only non-alphanumeric prefix
+* GetPrefixSuggestions with existing prefix and non-alphanumeric chars
+* GetPrefixSuggestions with existing prefix
+* GetPrefixSuggestions with underscore and hyphen
 */
 
 func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	var a *App
+	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Time{}
 
 	setup := func(t *testing.T) {
-		a = NewTestApp(t)
+		a, mockBorg = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
-		profile = p
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
 		now = time.Now()
 	}
 
@@ -102,10 +121,10 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		assert.NoError(t, err, "Expected no error, got %v", err)
-		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.Equalf(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
 		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
-		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
-		assert.Equal(t, updatedHour.Unix(), profile.Edges.BackupSchedule.DailyAt.Unix(), "Expected updated hour %v, got %v", updatedHour, profile.Edges.BackupSchedule.DailyAt)
+		assert.Equalf(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.Equalf(t, updatedHour.Unix(), profile.Edges.BackupSchedule.DailyAt.Unix(), "Expected updated hour %v, got %v", updatedHour, profile.Edges.BackupSchedule.DailyAt)
 	})
 
 	t.Run("SaveBackupSchedule with an updated weekly schedule (to hourly)", func(t *testing.T) {
@@ -128,10 +147,74 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		bsId2 := a.db.BackupSchedule.Query().Where(backupschedule.HasBackupProfileWith(backupprofile.ID(profile.ID))).FirstIDX(a.ctx)
 
 		assert.NoError(t, err, "Expected no error, got %v", err)
-		assert.Equal(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
+		assert.Equalf(t, 1, a.db.BackupSchedule.Query().CountX(a.ctx), "Expected 1 backup schedule, got %d", a.db.BackupSchedule.Query().CountX(a.ctx))
 		assert.NotEqual(t, bsId1, bsId2, "Expected different backup schedule IDs, got the same")
-		assert.Equal(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
+		assert.Equalf(t, bsId2, profile.Edges.BackupSchedule.ID, "Expected backup schedule ID %d, got %d", bsId2, profile.Edges.BackupSchedule.ID)
 		assert.True(t, profile.Edges.BackupSchedule.Hourly, "Expected hourly schedule to be true, got false")
-		assert.Nil(t, profile.Edges.BackupSchedule.WeeklyAt, "Expected weekly schedule to be nil, got %v", profile.Edges.BackupSchedule.WeeklyAt)
+		assert.Nilf(t, profile.Edges.BackupSchedule.WeeklyAt, "Expected weekly schedule to be nil, got %v", profile.Edges.BackupSchedule.WeeklyAt)
 	})
+}
+
+func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
+	var a *App
+	var mockBorg *mockborg.MockBorg
+	var profile *ent.BackupProfile
+
+	setup := func(t *testing.T) {
+		a, mockBorg = NewTestApp(t)
+		p, err := a.BackupClient().NewBackupProfile()
+		assert.NoError(t, err, "Failed to create new backup profile")
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
+	}
+
+	type expectedPrefix struct {
+		prefix     string
+		exactMatch bool
+	}
+
+	tests := []struct {
+		name           string
+		prefix         string
+		expectedPrefix *expectedPrefix
+		wantErr        bool
+	}{
+		{"GetPrefixSuggestions with empty prefix", "", nil, true},
+		{"GetPrefixSuggestions with alphanumeric prefix", "test123", &expectedPrefix{"test123-", true}, false},
+		{"GetPrefixSuggestions with only non-alphanumeric prefix", "!@#", nil, true},
+		{"GetPrefixSuggestions with existing prefix and non-alphanumeric chars", "test!@#", &expectedPrefix{"test", false}, false},
+		{"GetPrefixSuggestions with existing prefix", "test", &expectedPrefix{"test", false}, false},
+		{"GetPrefixSuggestions with underscore and hyphen", "this-is_a.test", &expectedPrefix{"thisisatest-", true}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setup(t)
+			// ACT
+			suggestion, err := a.BackupClient().GetPrefixSuggestion(tt.prefix)
+
+			// ASSERT
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+			} else {
+				assert.NoErrorf(t, err, "Expected no error, got %v", err)
+				assert.NotNil(t, suggestion, "Expected suggestion, got nil")
+				if tt.expectedPrefix.exactMatch {
+					assert.Equalf(t, tt.expectedPrefix.prefix, suggestion, "Expected prefix %s, got %s", tt.expectedPrefix.prefix, suggestion)
+				} else {
+					assert.Containsf(t, suggestion, tt.expectedPrefix.prefix, "Expected prefix %s to contain %s", suggestion, tt.expectedPrefix.prefix)
+					expectedLen := len(tt.expectedPrefix.prefix) + 4
+					assert.Lenf(t, suggestion, expectedLen, "Expected prefix length %d, got %d", expectedLen, len(suggestion))
+				}
+			}
+		})
+	}
 }

@@ -1,12 +1,38 @@
 package app
 
 import (
+	"arco/backend/borg/mockborg"
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 )
+
+/*
+
+TEST CASES - schedule.go
+
+TestScheduler
+* getNextBackupTime - hourly - from now
+* getNextBackupTime - hourly - from 2024-01-01 at 00:59
+* getNextBackupTime - hourly - from 2024-01-01 at 01:00
+* getNextBackupTime daily at 10:15 - from today at 9:00
+* getNextBackupTime daily at 10:15 - from today at 11:00
+* getNextBackupTime daily at 10:30 - from 2024-01-01 00:00
+* getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 9:00
+* getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 11:00
+* getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 9:00
+* getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00
+* getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00
+* getNextBackupTime monthly at 10:15 on the 30th - from 2024-01-01 00:00
+* getNextBackupTime monthly at 10:15 on the 29th - from 2024-02-01 00:00 (february has 29 days)
+* getNextBackupTime monthly at 10:15 on the 30th - from 2024-02-01 00:00 (february has 29 days in 2024)
+
+* delete backup profile
+
+*/
 
 func parseX(timeStr string) time.Time {
 	expected, err := time.ParseInLocation(time.DateTime, timeStr, time.Local)
@@ -41,15 +67,25 @@ func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) ti
 
 func TestScheduler(t *testing.T) {
 	var a *App
+	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
 	var now = time.Now()
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 
 	setup := func(t *testing.T) {
-		a = NewTestApp(t)
+		a, mockBorg = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
-		profile = p
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
 		now = time.Now()
 	}
 
@@ -198,24 +234,5 @@ func TestScheduler(t *testing.T) {
 
 		// ASSERT
 		assert.NoError(t, err, "DeleteBackupProfile() error = %v", err)
-	})
-
-	t.Run("backup schedule on incomplete backup profile", func(t *testing.T) {
-		setup(t)
-
-		// ARRANGE
-		profile.Update().SetIsSetupComplete(false).SaveX(a.ctx)
-		schedule := ent.BackupSchedule{
-			Hourly: true,
-		}
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		assert.NoError(t, err, "Failed to save backup schedule")
-
-		// ACT
-		schedules, err := a.getBackupSchedules()
-
-		// ASSERT
-		assert.NoError(t, err, "getBackupSchedules() error = %v", err)
-		assert.Empty(t, schedules, "Expected no schedules")
 	})
 }

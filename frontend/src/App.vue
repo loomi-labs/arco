@@ -5,6 +5,7 @@ import * as appClient from "../wailsjs/go/app/AppClient";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
+import Navbar from "./components/Navbar.vue";
 
 /************
  * Variables
@@ -68,7 +69,10 @@ goToStartPage();
 </script>
 
 <template>
-  <RouterView />
+  <div class='bg-base-200 min-w-svw min-h-svh'>
+    <Navbar></Navbar>
+    <RouterView />
+  </div>
 </template>
 
 <style>

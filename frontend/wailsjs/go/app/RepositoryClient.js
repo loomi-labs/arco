@@ -38,6 +38,10 @@ export function GetByBackupId(arg1) {
   return window['go']['app']['RepositoryClient']['GetByBackupId'](arg1);
 }
 
+export function GetConnectedRemoteHosts() {
+  return window['go']['app']['RepositoryClient']['GetConnectedRemoteHosts']();
+}
+
 export function GetLastArchive(arg1) {
   return window['go']['app']['RepositoryClient']['GetLastArchive'](arg1);
 }

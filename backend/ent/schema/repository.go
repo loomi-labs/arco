@@ -18,8 +18,8 @@ func (Repository) Fields() []ent.Field {
 			StructTag(`json:"id"`),
 		field.String("name").
 			StructTag(`json:"name"`),
-		field.String("url").
-			StructTag(`json:"url"`).
+		field.String("location").
+			StructTag(`json:"location"`).
 			Unique(),
 		field.String("password").
 			StructTag(`json:"password"`),

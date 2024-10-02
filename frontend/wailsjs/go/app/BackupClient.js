@@ -10,12 +10,24 @@ export function AbortBackupJobs(arg1) {
   return window['go']['app']['BackupClient']['AbortBackupJobs'](arg1);
 }
 
+export function CreateBackupProfile(arg1, arg2) {
+  return window['go']['app']['BackupClient']['CreateBackupProfile'](arg1, arg2);
+}
+
+export function CreateDirectory(arg1) {
+  return window['go']['app']['BackupClient']['CreateDirectory'](arg1);
+}
+
 export function DeleteBackupProfile(arg1, arg2) {
   return window['go']['app']['BackupClient']['DeleteBackupProfile'](arg1, arg2);
 }
 
 export function DeleteBackupSchedule(arg1) {
   return window['go']['app']['BackupClient']['DeleteBackupSchedule'](arg1);
+}
+
+export function DoesPathExist(arg1) {
+  return window['go']['app']['BackupClient']['DoesPathExist'](arg1);
 }
 
 export function DryRunPruneBackup(arg1) {
@@ -50,8 +62,20 @@ export function GetDirectorySuggestions() {
   return window['go']['app']['BackupClient']['GetDirectorySuggestions']();
 }
 
+export function GetPrefixSuggestion(arg1) {
+  return window['go']['app']['BackupClient']['GetPrefixSuggestion'](arg1);
+}
+
 export function GetState(arg1) {
   return window['go']['app']['BackupClient']['GetState'](arg1);
+}
+
+export function IsDirectory(arg1) {
+  return window['go']['app']['BackupClient']['IsDirectory'](arg1);
+}
+
+export function IsDirectoryEmpty(arg1) {
+  return window['go']['app']['BackupClient']['IsDirectoryEmpty'](arg1);
 }
 
 export function NewBackupProfile() {
@@ -64,10 +88,6 @@ export function PruneBackup(arg1) {
 
 export function PruneBackups(arg1) {
   return window['go']['app']['BackupClient']['PruneBackups'](arg1);
-}
-
-export function SaveBackupProfile(arg1) {
-  return window['go']['app']['BackupClient']['SaveBackupProfile'](arg1);
 }
 
 export function SaveBackupSchedule(arg1, arg2) {
@@ -84,4 +104,8 @@ export function StartBackupJob(arg1) {
 
 export function StartBackupJobs(arg1) {
   return window['go']['app']['BackupClient']['StartBackupJobs'](arg1);
+}
+
+export function UpdateBackupProfile(arg1) {
+  return window['go']['app']['BackupClient']['UpdateBackupProfile'](arg1);
 }

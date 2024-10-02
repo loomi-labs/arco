@@ -59,9 +59,9 @@ func Name(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldName, v))
 }
 
-// URL applies equality check predicate on the "url" field. It's identical to URLEQ.
-func URL(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldURL, v))
+// Location applies equality check predicate on the "location" field. It's identical to LocationEQ.
+func Location(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLocation, v))
 }
 
 // Password applies equality check predicate on the "password" field. It's identical to PasswordEQ.
@@ -164,69 +164,69 @@ func NameContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldName, v))
 }
 
-// URLEQ applies the EQ predicate on the "url" field.
-func URLEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldURL, v))
+// LocationEQ applies the EQ predicate on the "location" field.
+func LocationEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLocation, v))
 }
 
-// URLNEQ applies the NEQ predicate on the "url" field.
-func URLNEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldNEQ(FieldURL, v))
+// LocationNEQ applies the NEQ predicate on the "location" field.
+func LocationNEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldLocation, v))
 }
 
-// URLIn applies the In predicate on the "url" field.
-func URLIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldIn(FieldURL, vs...))
+// LocationIn applies the In predicate on the "location" field.
+func LocationIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldLocation, vs...))
 }
 
-// URLNotIn applies the NotIn predicate on the "url" field.
-func URLNotIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldNotIn(FieldURL, vs...))
+// LocationNotIn applies the NotIn predicate on the "location" field.
+func LocationNotIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldLocation, vs...))
 }
 
-// URLGT applies the GT predicate on the "url" field.
-func URLGT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGT(FieldURL, v))
+// LocationGT applies the GT predicate on the "location" field.
+func LocationGT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldLocation, v))
 }
 
-// URLGTE applies the GTE predicate on the "url" field.
-func URLGTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGTE(FieldURL, v))
+// LocationGTE applies the GTE predicate on the "location" field.
+func LocationGTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldLocation, v))
 }
 
-// URLLT applies the LT predicate on the "url" field.
-func URLLT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLT(FieldURL, v))
+// LocationLT applies the LT predicate on the "location" field.
+func LocationLT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldLocation, v))
 }
 
-// URLLTE applies the LTE predicate on the "url" field.
-func URLLTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLTE(FieldURL, v))
+// LocationLTE applies the LTE predicate on the "location" field.
+func LocationLTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldLocation, v))
 }
 
-// URLContains applies the Contains predicate on the "url" field.
-func URLContains(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContains(FieldURL, v))
+// LocationContains applies the Contains predicate on the "location" field.
+func LocationContains(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContains(FieldLocation, v))
 }
 
-// URLHasPrefix applies the HasPrefix predicate on the "url" field.
-func URLHasPrefix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasPrefix(FieldURL, v))
+// LocationHasPrefix applies the HasPrefix predicate on the "location" field.
+func LocationHasPrefix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasPrefix(FieldLocation, v))
 }
 
-// URLHasSuffix applies the HasSuffix predicate on the "url" field.
-func URLHasSuffix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasSuffix(FieldURL, v))
+// LocationHasSuffix applies the HasSuffix predicate on the "location" field.
+func LocationHasSuffix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasSuffix(FieldLocation, v))
 }
 
-// URLEqualFold applies the EqualFold predicate on the "url" field.
-func URLEqualFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEqualFold(FieldURL, v))
+// LocationEqualFold applies the EqualFold predicate on the "location" field.
+func LocationEqualFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEqualFold(FieldLocation, v))
 }
 
-// URLContainsFold applies the ContainsFold predicate on the "url" field.
-func URLContainsFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContainsFold(FieldURL, v))
+// LocationContainsFold applies the ContainsFold predicate on the "location" field.
+func LocationContainsFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContainsFold(FieldLocation, v))
 }
 
 // PasswordEQ applies the EQ predicate on the "password" field.

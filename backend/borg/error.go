@@ -17,7 +17,7 @@ func (CancelErr) Error() string {
 }
 
 /***********************************/
-/********** Borg Errors ************/
+/********** borg Errors ************/
 /***********************************/
 
 type Error struct{}
@@ -418,7 +418,7 @@ type RemoteRepositoryRPCServerOutdated struct {
 }
 
 func (e RemoteRepositoryRPCServerOutdated) Error() string {
-	return fmt.Sprintf("Borg server is too old for %s. Required version %s", e.Version, e.RequiredVersion)
+	return fmt.Sprintf("borg server is too old for %s. Required version %s", e.Version, e.RequiredVersion)
 }
 
 type UnexpectedRPCDataFormatFromClient struct {
@@ -426,7 +426,7 @@ type UnexpectedRPCDataFormatFromClient struct {
 }
 
 func (e UnexpectedRPCDataFormatFromClient) Error() string {
-	return fmt.Sprintf("Borg %s: Got unexpected RPC data format from client.", e.Client)
+	return fmt.Sprintf("borg %s: Got unexpected RPC data format from client.", e.Client)
 }
 
 type UnexpectedRPCDataFormatFromServer struct {

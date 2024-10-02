@@ -28,9 +28,9 @@ func (rc *RepositoryCreate) SetName(s string) *RepositoryCreate {
 	return rc
 }
 
-// SetURL sets the "url" field.
-func (rc *RepositoryCreate) SetURL(s string) *RepositoryCreate {
-	rc.mutation.SetURL(s)
+// SetLocation sets the "location" field.
+func (rc *RepositoryCreate) SetLocation(s string) *RepositoryCreate {
+	rc.mutation.SetLocation(s)
 	return rc
 }
 
@@ -241,8 +241,8 @@ func (rc *RepositoryCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Repository.name"`)}
 	}
-	if _, ok := rc.mutation.URL(); !ok {
-		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "Repository.url"`)}
+	if _, ok := rc.mutation.Location(); !ok {
+		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "Repository.location"`)}
 	}
 	if _, ok := rc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
@@ -301,9 +301,9 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := rc.mutation.URL(); ok {
-		_spec.SetField(repository.FieldURL, field.TypeString, value)
-		_node.URL = value
+	if value, ok := rc.mutation.Location(); ok {
+		_spec.SetField(repository.FieldLocation, field.TypeString, value)
+		_node.Location = value
 	}
 	if value, ok := rc.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
