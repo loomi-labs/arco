@@ -5,7 +5,7 @@ import { borg, ent, state, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
-import { ref } from "vue";
+import { onUnmounted, ref } from "vue";
 import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
@@ -44,6 +44,8 @@ const bIds = props.backup.edges?.repositories?.map((r) => {
   backupId.repositoryId = r.id;
   return backupId;
 }) ?? [];
+
+const eventListeners: (() => void)[] = [];
 
 /************
  * Functions
@@ -143,15 +145,21 @@ getLastArchives();
 getButtonStatus();
 
 for (const backupId of bIds) {
-  runtime.EventsOn(backupStateChangedEvent(backupId), async () => {
+  eventListeners.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => {
     await getBackupProgress();
-  });
-  runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => {
+  }));
+  eventListeners.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => {
     await getButtonStatus();
     await getFailedBackupRun();
     await getLastArchives();
-  });
+  }));
 }
+
+onUnmounted(() => {
+  for (const listener of eventListeners) {
+    listener();
+  }
+});
 
 </script>
 

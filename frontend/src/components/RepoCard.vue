@@ -6,7 +6,7 @@ import { rRepositoryDetailPage, withId } from "../router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { ref, useTemplateRef, watch } from "vue";
+import { onUnmounted, ref, useTemplateRef, watch } from "vue";
 import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
@@ -58,6 +58,8 @@ const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const showProgressSpinner = ref(false);
 const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
 const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
+
+const eventListeners: (() => void)[] = [];
 
 /************
  * Functions
@@ -211,8 +213,14 @@ watch(repoState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState());
-runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState());
+eventListeners.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState()));
+eventListeners.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState()));
+
+onUnmounted(() => {
+  for (const listener of eventListeners) {
+    listener();
+  }
+});
 
 </script>
 

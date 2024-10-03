@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { ref, watch } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { rRepositoryDetailPage, withId } from "../router";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
@@ -33,6 +33,7 @@ const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const location = ref<Location>(getLocation() );
+const eventListeners: (() => void)[] = [];
 
 /************
  * Functions
@@ -90,7 +91,13 @@ watch(repoState, async (newState, oldState) => {
   await getNbrOfArchives();
 });
 
-runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState());
+eventListeners.push(runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState()));
+
+onUnmounted(() => {
+  for (const listener of eventListeners) {
+    listener();
+  }
+});
 
 </script>
 
