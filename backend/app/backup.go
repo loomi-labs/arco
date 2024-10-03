@@ -433,7 +433,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		b.state.SetBackupError(bId, err, false, false)
-		b.state.AddNotification(fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return state.BackupResultError, err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
@@ -463,7 +463,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
 			}
 			b.state.SetBackupError(bId, err, false, true)
-			b.state.AddNotification(fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
 			return state.BackupResultError, err
 		} else {
 			saveErr := b.saveFailedBackupRun(bId, err)
@@ -471,7 +471,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
 			}
 			b.state.SetBackupError(bId, err, true, false)
-			b.state.AddNotification(fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
 			return state.BackupResultError, err
 		}
 	} else {
@@ -511,18 +511,18 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, pref
 	err := b.borg.DeleteArchives(b.ctx, repoUrl, password, prefix)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.AddNotification("Delete job cancelled", types.LevelWarning)
+			b.state.AddNotification(b.ctx, "Delete job cancelled", types.LevelWarning)
 			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			//b.state.AddBorgLock(bId.RepositoryId)
-			b.state.AddNotification("Delete job failed: repository is locked", types.LevelError)
+			b.state.AddNotification(b.ctx, "Delete job failed: repository is locked", types.LevelError)
 			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusLocked)
 		} else {
-			b.state.AddNotification(err.Error(), types.LevelError)
+			b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
 			b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 		}
 	} else {
-		b.state.AddNotification("Delete job completed", types.LevelInfo)
+		b.state.AddNotification(b.ctx, "Delete job completed", types.LevelInfo)
 		b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
 	}
 }

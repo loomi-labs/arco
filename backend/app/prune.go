@@ -89,15 +89,15 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, false, ch)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.AddNotification("Prune job was canceled", types.LevelWarning)
+			b.state.AddNotification(b.ctx, "Prune job was canceled", types.LevelWarning)
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			//b.state.AddBorgLock(bId.RepositoryId) 	// TODO: fix this
-			b.state.AddNotification("Repository is locked by another operation", types.LevelError)
+			b.state.AddNotification(b.ctx, "Repository is locked by another operation", types.LevelError)
 		} else {
-			b.state.AddNotification(err.Error(), types.LevelError)
+			b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
 		}
 	} else {
-		b.state.AddNotification("Prune job completed", types.LevelInfo)
+		b.state.AddNotification(b.ctx, "Prune job completed", types.LevelInfo)
 	}
 }
 
@@ -172,8 +172,8 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, passwo
 
 	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, true, ch)
 	if err != nil {
-		b.state.AddNotification(err.Error(), types.LevelError)
+		b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
 	} else {
-		b.state.AddNotification("Dry-run prune job completed", types.LevelInfo)
+		b.state.AddNotification(b.ctx, "Dry-run prune job completed", types.LevelInfo)
 	}
 }

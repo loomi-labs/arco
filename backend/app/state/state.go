@@ -527,10 +527,10 @@ func (s *State) RemoveRunningDeleteJob(id types.BackupId) {
 /********** Notifications **********/
 /***********************************/
 
-func (s *State) AddNotification(msg string, level types.NotificationLevel) {
+func (s *State) AddNotification(ctx context.Context, msg string, level types.NotificationLevel) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(context.TODO(), types.EventNotificationAvailable.String())
+	defer runtime.EventsEmit(ctx, types.EventNotificationAvailable.String())
 
 	s.notifications = append(s.notifications, types.Notification{
 		Message: msg,
