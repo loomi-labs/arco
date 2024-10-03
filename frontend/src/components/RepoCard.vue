@@ -59,7 +59,7 @@ const showProgressSpinner = ref(false);
 const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
 const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
 
-const eventListeners: (() => void)[] = [];
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -213,13 +213,11 @@ watch(repoState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-eventListeners.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState()));
-eventListeners.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState()));
+cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState()));
+cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState()));
 
 onUnmounted(() => {
-  for (const listener of eventListeners) {
-    listener();
-  }
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>

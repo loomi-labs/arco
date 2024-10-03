@@ -16,14 +16,14 @@ import { onUnmounted } from "vue";
 
 const router = useRouter();
 const toast = useToast();
-const eventListeners: (() => void)[] = [];
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
  ************/
 
 async function getNotifications() {
-  eventListeners.push(
+  cleanupFunctions.push(
     runtime.EventsOn(types.Event.notificationAvailable, async () => {
       try {
         const notifications = await appClient.GetNotifications();
@@ -73,9 +73,7 @@ getStartupError();
 goToStartPage();
 
 onUnmounted(() => {
-  for (const listener of eventListeners) {
-    listener();
-  }
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>

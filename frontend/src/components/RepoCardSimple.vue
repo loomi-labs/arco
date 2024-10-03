@@ -33,7 +33,7 @@ const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const location = ref<Location>(getLocation() );
-const eventListeners: (() => void)[] = [];
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -91,12 +91,10 @@ watch(repoState, async (newState, oldState) => {
   await getNbrOfArchives();
 });
 
-eventListeners.push(runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState()));
+cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState()));
 
 onUnmounted(() => {
-  for (const listener of eventListeners) {
-    listener();
-  }
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>

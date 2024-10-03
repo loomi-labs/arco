@@ -45,7 +45,7 @@ const bIds = props.backup.edges?.repositories?.map((r) => {
   return backupId;
 }) ?? [];
 
-const eventListeners: (() => void)[] = [];
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -145,10 +145,10 @@ getLastArchives();
 getButtonStatus();
 
 for (const backupId of bIds) {
-  eventListeners.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => {
+  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => {
     await getBackupProgress();
   }));
-  eventListeners.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => {
+  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => {
     await getButtonStatus();
     await getFailedBackupRun();
     await getLastArchives();
@@ -156,9 +156,7 @@ for (const backupId of bIds) {
 }
 
 onUnmounted(() => {
-  for (const listener of eventListeners) {
-    listener();
-  }
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>
