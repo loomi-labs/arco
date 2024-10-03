@@ -28,7 +28,7 @@ func (b *borg) Create(ctx context.Context, repoUrl, password, prefix string, bac
 	}
 
 	// Prepare backup command
-	archiveName := fmt.Sprintf("%s::%s-%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+	archiveName := fmt.Sprintf("%s::%s%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
