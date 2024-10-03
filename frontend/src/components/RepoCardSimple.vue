@@ -5,9 +5,10 @@ import { useRouter } from "vue-router";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { onUnmounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { rRepositoryDetailPage, withId } from "../router";
-import { polling } from "../common/polling";
+import * as runtime from "../../wailsjs/runtime";
+import { repoStateChangedEvent } from "../common/events";
 
 /************
  * Types
@@ -89,9 +90,7 @@ watch(repoState, async (newState, oldState) => {
   await getNbrOfArchives();
 });
 
-// poll for repo state
-let repoStatePollIntervalId = setInterval(getRepoState, polling.normalPollInterval);
-onUnmounted(() => clearInterval(repoStatePollIntervalId));
+runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState());
 
 </script>
 

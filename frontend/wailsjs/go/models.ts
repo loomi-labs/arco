@@ -496,14 +496,6 @@ export namespace ent {
 
 export namespace state {
 	
-	export enum BackupButtonStatus {
-	    runBackup = "runBackup",
-	    waiting = "waiting",
-	    abort = "abort",
-	    locked = "locked",
-	    unmount = "unmount",
-	    busy = "busy",
-	}
 	export enum BackupStatus {
 	    idle = "idle",
 	    waiting = "waiting",
@@ -520,6 +512,14 @@ export namespace state {
 	    mounted = "mounted",
 	    performingOperation = "performingOperation",
 	    locked = "locked",
+	}
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;

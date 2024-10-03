@@ -13,7 +13,6 @@ import { toDurationBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as runtime from "../../wailsjs/runtime";
-import { LogDebug } from "../../wailsjs/runtime";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 
 /************
@@ -213,7 +212,7 @@ watch(repoState, async (newState, oldState) => {
 });
 
 runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState());
-runtime.EventsOn(repoStateChangedEvent(backupId), async () => await getRepoState());
+runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState());
 
 </script>
 
