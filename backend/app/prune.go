@@ -77,8 +77,8 @@ func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password 
 	defer repoLock.Unlock() // Unlock at the end
 
 	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPruning)
-	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
+	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPruning)
+	defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 	b.state.AddRunningPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningPruneJob(bId)
 
@@ -161,8 +161,8 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, passwo
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
 
-	b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusPerformingOperation)
-	defer b.state.SetRepoStatus(bId.RepositoryId, state.RepoStatusIdle)
+	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
+	defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 	b.state.AddRunningDryRunPruneJob(b.ctx, bId)
 	defer b.state.RemoveRunningDryRunPruneJob(bId)
 

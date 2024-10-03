@@ -66,12 +66,24 @@ type Event string
 
 const (
 	EventNotificationAvailable Event = "notificationAvailable"
+	EventBackupStateChanged    Event = "backupStateChanged"
+	EventRepoStateChanged      Event = "repoStateChanged"
 )
 
 var AllEvents = []Event{
 	EventNotificationAvailable,
+	EventBackupStateChanged,
+	EventRepoStateChanged,
 }
 
 func (e Event) String() string {
 	return string(e)
+}
+
+func EventBackupStateChangedString(bId BackupId) string {
+	return EventBackupStateChanged.String() + fmt.Sprintf(":%d-%d", bId.BackupProfileId, bId.RepositoryId)
+}
+
+func EventRepoStateChangedString(repoId int) string {
+	return EventRepoStateChanged.String() + fmt.Sprintf(":%d", repoId)
 }

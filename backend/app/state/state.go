@@ -4,6 +4,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/borg"
 	"context"
+	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"sync"
@@ -235,9 +236,10 @@ func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 	return s.repoStates[repoId].mutex
 }
 
-func (s *State) SetRepoStatus(repoId int, state RepoStatus) {
+func (s *State) SetRepoStatus(ctx context.Context, repoId int, state RepoStatus) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
 
 	s.setRepoState(repoId, state)
 }
@@ -282,9 +284,11 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) SetBackupWaiting(bId types.BackupId) {
+func (s *State) SetBackupWaiting(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusWaiting)
 }
@@ -292,6 +296,8 @@ func (s *State) SetBackupWaiting(bId types.BackupId) {
 func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	currentState, ok := s.backupStates[bId]
 	if ok {
@@ -311,9 +317,11 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 	return s.backupStates[bId].ctx
 }
 
-func (s *State) SetBackupCompleted(bId types.BackupId, setRepoStateIdle bool) {
+func (s *State) SetBackupCompleted(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCompleted)
 	if setRepoStateIdle {
@@ -321,9 +329,11 @@ func (s *State) SetBackupCompleted(bId types.BackupId, setRepoStateIdle bool) {
 	}
 }
 
-func (s *State) SetBackupCancelled(bId types.BackupId, setRepoStateIdle bool) {
+func (s *State) SetBackupCancelled(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCancelled)
 	if setRepoStateIdle {
@@ -331,9 +341,11 @@ func (s *State) SetBackupCancelled(bId types.BackupId, setRepoStateIdle bool) {
 	}
 }
 
-func (s *State) SetBackupError(bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
+func (s *State) SetBackupError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusFailed)
 	s.backupStates[bId].Error = err.Error()
@@ -364,11 +376,12 @@ func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 	s.backupStates[bId].Status = newState
 }
 
-func (s *State) UpdateBackupProgress(id types.BackupId, progress borg.BackupProgress) {
+func (s *State) UpdateBackupProgress(ctx context.Context, bId types.BackupId, progress borg.BackupProgress) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
 
-	if currentState, ok := s.backupStates[id]; ok {
+	if currentState, ok := s.backupStates[bId]; ok {
 		if currentState.Status == BackupStatusRunning {
 			currentState.Progress = &progress
 		}
