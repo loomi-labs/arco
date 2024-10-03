@@ -36,13 +36,14 @@ func (a *App) scheduleBackups() []*time.Timer {
 	var timers []*time.Timer
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
-		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
-		backupId := types.BackupId{
-			BackupProfileId: backupProfileId,
-			RepositoryId:    repositoryId,
+		for _, r := range bs.Edges.BackupProfile.Edges.Repositories {
+			backupId := types.BackupId{
+				BackupProfileId: backupProfileId,
+				RepositoryId:    r.ID,
+			}
+			timer := a.scheduleBackup(bs, backupId)
+			timers = append(timers, timer)
 		}
-		timer := a.scheduleBackup(bs, backupId)
-		timers = append(timers, timer)
 	}
 	return timers
 }
