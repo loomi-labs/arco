@@ -11,8 +11,9 @@ import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
-import { polling } from "../common/polling";
 import ConfirmModal from "./common/ConfirmModal.vue";
+import * as runtime from "../../wailsjs/runtime";
+import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 
 /************
  * Types
@@ -26,8 +27,9 @@ interface Props {
 }
 
 interface Emits {
-  (event: typeof repoStatusEmit, status: state.RepoStatus): void
-  (event: typeof clickEmit): void
+  (event: typeof repoStatusEmit, status: state.RepoStatus): void;
+
+  (event: typeof clickEmit): void;
 }
 
 /************
@@ -43,8 +45,8 @@ const clickEmit = "click";
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
-backupId.backupProfileId = props.backupProfileId ?? -1;
-backupId.repositoryId = props.repoId ?? -1;
+backupId.backupProfileId = props.backupProfileId;
+backupId.repositoryId = props.repoId;
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 
@@ -56,6 +58,8 @@ const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const showProgressSpinner = ref(false);
 const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
 const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
+
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -193,14 +197,6 @@ watch(backupState, async (newState, oldState) => {
 
   await getRepo();
   await getBackupButtonStatus();
-
-  // set next poll interval
-  clearInterval(backupStatePollIntervalId);
-  backupStatePollIntervalId = setInterval(getBackupState,
-    newState.status === state.BackupStatus.running ?
-      polling.fastPollInterval :  // fast poll interval when backup is running
-      polling.normalPollInterval  // normal poll interval otherwise
-  );
 });
 
 // emit repoIsBusy event when repo is busy
@@ -217,13 +213,12 @@ watch(repoState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-// poll for backup state
-let backupStatePollIntervalId = setInterval(getBackupState, polling.normalPollInterval);
-onUnmounted(() => clearInterval(backupStatePollIntervalId));
+cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => await getBackupState()));
+cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState()));
 
-// poll for repo state
-let repoStatePollIntervalId = setInterval(getRepoState, polling.normalPollInterval);
-onUnmounted(() => clearInterval(repoStatePollIntervalId));
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
 
 </script>
 

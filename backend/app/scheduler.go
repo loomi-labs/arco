@@ -29,20 +29,27 @@ func (a *App) scheduleBackups() []*time.Timer {
 	allBs, err := a.getBackupSchedules()
 	if err != nil {
 		a.log.Errorf("Failed to get backup schedules: %s", err)
-		a.state.AddNotification(fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
 		return nil
 	}
 
 	var timers []*time.Timer
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
-		repositoryId := bs.Edges.BackupProfile.Edges.Repositories[0].ID
-		backupId := types.BackupId{
-			BackupProfileId: backupProfileId,
-			RepositoryId:    repositoryId,
+
+		if len(bs.Edges.BackupProfile.Edges.Repositories) == 0 {
+			a.log.Errorf("Backup profile %d has no repositories, skipping", backupProfileId)
+			continue
 		}
-		timer := a.scheduleBackup(bs, backupId)
-		timers = append(timers, timer)
+
+		for _, r := range bs.Edges.BackupProfile.Edges.Repositories {
+			backupId := types.BackupId{
+				BackupProfileId: backupProfileId,
+				RepositoryId:    r.ID,
+			}
+			timer := a.scheduleBackup(bs, backupId)
+			timers = append(timers, timer)
+		}
 	}
 	return timers
 }
@@ -72,7 +79,7 @@ func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId
 		Exist(a.ctx)
 	if err != nil {
 		a.log.Error(fmt.Sprintf("Failed to check if backup schedule exists: %s", err))
-		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 		return
 	}
 	if !exist {
@@ -87,14 +94,14 @@ func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
-		a.state.AddNotification(fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 	} else {
 		lastRunStatus = result.String()
 	}
 	updated, err := a.updateBackupSchedule(bs, lastRunStatus)
 	if err != nil {
 		a.log.Error(fmt.Sprintf("Failed to save backup run: %s", err))
-		a.state.AddNotification(fmt.Sprintf("Failed to save backup run: %s", err), types.LevelError)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to save backup run: %s", err), types.LevelError)
 	} else {
 		a.scheduleBackup(updated, backupId)
 	}

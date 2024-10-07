@@ -2,6 +2,7 @@ package types
 
 import (
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/backupschedule"
 	"embed"
 	"fmt"
 )
@@ -42,6 +43,16 @@ type Config struct {
 	Icon        embed.FS
 }
 
+var AllWeekdays = []backupschedule.Weekday{
+	backupschedule.WeekdayMonday,
+	backupschedule.WeekdayTuesday,
+	backupschedule.WeekdayWednesday,
+	backupschedule.WeekdayThursday,
+	backupschedule.WeekdayFriday,
+	backupschedule.WeekdaySaturday,
+	backupschedule.WeekdaySunday,
+}
+
 var AllIcons = []backupprofile.Icon{
 	backupprofile.IconHome,
 	backupprofile.IconBriefcase,
@@ -49,4 +60,30 @@ var AllIcons = []backupprofile.Icon{
 	backupprofile.IconEnvelope,
 	backupprofile.IconCamera,
 	backupprofile.IconFire,
+}
+
+type Event string
+
+const (
+	EventNotificationAvailable Event = "notificationAvailable"
+	EventBackupStateChanged    Event = "backupStateChanged"
+	EventRepoStateChanged      Event = "repoStateChanged"
+)
+
+var AllEvents = []Event{
+	EventNotificationAvailable,
+	EventBackupStateChanged,
+	EventRepoStateChanged,
+}
+
+func (e Event) String() string {
+	return string(e)
+}
+
+func EventBackupStateChangedString(bId BackupId) string {
+	return fmt.Sprintf("%s:%d-%d", EventBackupStateChanged.String(), bId.BackupProfileId, bId.RepositoryId)
+}
+
+func EventRepoStateChangedString(repoId int) string {
+	return fmt.Sprintf("%s:%d", EventRepoStateChanged.String(), repoId)
 }

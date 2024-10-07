@@ -2,10 +2,13 @@
 
 import { useToast } from "vue-toastification";
 import * as appClient from "../wailsjs/go/app/AppClient";
+import * as runtime from "../wailsjs/runtime";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { rErrorPage } from "./router";
 import Navbar from "./components/Navbar.vue";
+import { types } from "../wailsjs/go/models";
+import { onUnmounted } from "vue";
 
 /************
  * Variables
@@ -13,26 +16,30 @@ import Navbar from "./components/Navbar.vue";
 
 const router = useRouter();
 const toast = useToast();
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
  ************/
 
 async function getNotifications() {
-  try {
-    const notifications = await appClient.GetNotifications();
-    for (const notification of notifications) {
-      if (notification.level === "error") {
-        toast.error(notification.message);
-      } else if (notification.level === "warning") {
-        toast.warning(notification.message);
-      } else if (notification.level === "info") {
-        toast.success(notification.message);
+  cleanupFunctions.push(
+    runtime.EventsOn(types.Event.notificationAvailable, async () => {
+      try {
+        const notifications = await appClient.GetNotifications();
+        for (const notification of notifications) {
+          if (notification.level === "error") {
+            toast.error(notification.message);
+          } else if (notification.level === "warning") {
+            toast.warning(notification.message);
+          } else if (notification.level === "info") {
+            toast.success(notification.message);
+          }
+        }
+      } catch (error: any) {
+        await showAndLogError("Failed to get notifications", error);
       }
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to get notifications", error);
-  }
+    }));
 }
 
 async function getStartupError() {
@@ -61,10 +68,13 @@ async function goToStartPage() {
  * Lifecycle
  ************/
 
-// Poll for notifications every second
-setInterval(getNotifications, 1000);
+getNotifications();
 getStartupError();
 goToStartPage();
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
 
 </script>
 

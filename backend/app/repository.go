@@ -100,7 +100,7 @@ func (r *RepositoryClient) BreakLock(id int) error {
 	if err != nil {
 		return err
 	}
-	r.state.SetRepoStatus(id, state.RepoStatusIdle)
+	r.state.SetRepoStatus(r.ctx, id, state.RepoStatusIdle)
 	return nil
 }
 

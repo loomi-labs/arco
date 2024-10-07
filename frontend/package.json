@@ -9,14 +9,17 @@
     "preview": "vite preview",
     "i18n-report": "vue-i18n-extract report --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
     "i18n-add": "vue-i18n-extract report --add --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
-    "i18n-remove": "vue-i18n-extract report --remove --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'"
+    "i18n-remove": "vue-i18n-extract report --remove --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
+    "devtools": "./node_modules/.bin/vue-devtools"
   },
   "dependencies": {
     "@formkit/tempo": "^0.1.2",
     "@heroicons/vue": "^2.1.5",
     "@types/deep-equal": "^1.0.4",
+    "@types/lodash": "^4.17.10",
     "@vee-validate/zod": "^4.13.2",
     "deep-equal": "^2.2.3",
+    "lodash": "^4.17.21",
     "vee-validate": "^4.13.2",
     "vue": "^3.5.10",
     "vue-i18n": "^9.14.1",
@@ -29,6 +32,7 @@
     "@babel/types": "^7.25.6",
     "@types/node": "^22.7.4",
     "@vitejs/plugin-vue": "^5.1.4",
+    "@vue/devtools": "^7.4.4",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.10",
     "postcss": "^8.4.47",

@@ -8,6 +8,12 @@ import { createI18n } from "vue-i18n";
 import en from "./i18n/en.json";
 
 
+// Connect to the devtools in development mode
+if (import.meta.env.MODE === "development") {
+  const { devtools } = await import("@vue/devtools");
+  await devtools.connect("http://localhost", 8098);
+}
+
 const options: PluginOptions = {
   // Set options for the toast here
 };

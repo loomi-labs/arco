@@ -5,15 +5,17 @@ import { borg, ent, state, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
-import { onUnmounted, ref, watch } from "vue";
+import { onUnmounted, ref } from "vue";
 import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import * as runtime from "../../wailsjs/runtime";
 import { LogDebug } from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
-import { polling } from "../common/polling";
+import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import { debounce } from "lodash";
 
 /************
  * Types
@@ -43,8 +45,8 @@ const bIds = props.backup.edges?.repositories?.map((r) => {
   backupId.repositoryId = r.id;
   return backupId;
 }) ?? [];
-let buttonStatusPollIntervalId = <any | undefined>undefined;  // poll interval ID for button status (undefined = not polling)
-let pollBackupProgressIntervalId = <any | undefined>undefined;  // poll interval ID for backup progress (undefined = not polling)
+
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -139,39 +141,29 @@ async function runButtonAction() {
  * Lifecycle
  ************/
 
+getButtonStatus();
 getFailedBackupRun();
 getLastArchives();
-getButtonStatus();
 
-watch(buttonStatus, async () => {
-  if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    // Abort status means we are running a backup
-    // That's why we want fast polling
-    clearInterval(buttonStatusPollIntervalId);
-    buttonStatusPollIntervalId = setInterval(getButtonStatus, polling.fastPollInterval);
+for (const backupId of bIds) {
+  const handleBackupStateChanged = debounce(async () => {
+    await getBackupProgress();
+  }, 200);
 
-    // We also want to poll for backup progress
-    pollBackupProgressIntervalId = setInterval(getBackupProgress, polling.fastPollInterval);
-  } else {
-    // Every other status means we are not running a backup
-    // That's why we want normal polling
-    clearInterval(buttonStatusPollIntervalId);
-    buttonStatusPollIntervalId = setInterval(getButtonStatus, polling.normalPollInterval);
+  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
 
-    // Stop polling for backup progress
-    clearInterval(pollBackupProgressIntervalId);
-    pollBackupProgressIntervalId = undefined;
-    backupProgress.value = undefined;
-  }
+  const handleRepoStateChanged = debounce(async () => {
+    await getButtonStatus();
+    await getFailedBackupRun();
+    await getLastArchives();
+  }, 200);
 
-  await getFailedBackupRun();
-  await getLastArchives();
+  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
+}
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
-
-// Clear all intervals on unmount
-onUnmounted(() => clearInterval(buttonStatusPollIntervalId));
-
-onUnmounted(() => clearInterval(pollBackupProgressIntervalId));
 
 </script>
 

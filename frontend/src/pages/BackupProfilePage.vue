@@ -177,16 +177,7 @@ watch(name, () => {
       </ConfirmModal>
     </div>
 
-    <div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
-      <!-- Storage Card -->
-      <div class='bg-base-100 p-10 rounded-xl shadow-lg'>
-        <h2 class='text-lg font-semibold mb-4'>{{ $t("storage") }}</h2>
-        <ul>
-          <li>600 GB</li>
-          <li>15603 Files</li>
-          <li>Prefix: {{ backup.prefix }}</li>
-        </ul>
-      </div>
+    <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
       <!-- Data to backup Card -->
       <DataSelection
         show-title
