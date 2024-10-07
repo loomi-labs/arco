@@ -168,6 +168,7 @@ func (b *BackupClient) UpdateBackupProfile(backup ent.BackupProfile) (*ent.Backu
 	return b.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
+		SetIcon(backup.Icon).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
 		Save(b.ctx)

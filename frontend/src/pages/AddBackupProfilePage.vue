@@ -277,7 +277,7 @@ getExistingRepositories();
           </FormField>
         </label>
 
-        <!-- Logo -->
+        <!-- Icon -->
         <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
       </div>
 
