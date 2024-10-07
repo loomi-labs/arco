@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { ent, state, types } from "../../wailsjs/go/models";
+import { app, ent, state, types } from "../../wailsjs/go/models";
 import { ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
@@ -29,7 +29,7 @@ type Pagination = {
 
 interface Props {
   repo: ent.Repository;
-  backupProfileId: number;
+  backupProfileId?: number;
   repoStatus: state.RepoStatus;
   highlight: boolean;
 }
@@ -55,10 +55,15 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(con
 
 async function getPaginatedArchives() {
   try {
-    const backupId = types.BackupId.createFrom();
-    backupId.backupProfileId = props.backupProfileId ?? -1;
-    backupId.repositoryId = props.repo?.id ?? -1;
-    const result = await repoClient.GetPaginatedArchives(backupId, pagination.value.page, pagination.value.pageSize);
+    let result: app.PaginatedArchivesResponse;
+    if (props.backupProfileId) {
+      const backupId = types.BackupId.createFrom();
+      backupId.backupProfileId = props.backupProfileId ?? -1;
+      backupId.repositoryId = props.repo?.id ?? -1;
+      result = await repoClient.GetPaginatedArchivesByBackupId(backupId, pagination.value.page, pagination.value.pageSize);
+    } else {
+      result = await repoClient.GetPaginatedArchivesByRepoId(props.repo.id, pagination.value.page, pagination.value.pageSize);
+    }
     archives.value = result.archives;
     pagination.value = {
       page: pagination.value.page,

@@ -54,8 +54,12 @@ export function GetNbrOfArchives(arg1) {
   return window['go']['app']['RepositoryClient']['GetNbrOfArchives'](arg1);
 }
 
-export function GetPaginatedArchives(arg1, arg2, arg3) {
-  return window['go']['app']['RepositoryClient']['GetPaginatedArchives'](arg1, arg2, arg3);
+export function GetPaginatedArchivesByBackupId(arg1, arg2, arg3) {
+  return window['go']['app']['RepositoryClient']['GetPaginatedArchivesByBackupId'](arg1, arg2, arg3);
+}
+
+export function GetPaginatedArchivesByRepoId(arg1, arg2, arg3) {
+  return window['go']['app']['RepositoryClient']['GetPaginatedArchivesByRepoId'](arg1, arg2, arg3);
 }
 
 export function GetRepoMountState(arg1) {

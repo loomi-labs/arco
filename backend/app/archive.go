@@ -124,7 +124,7 @@ type PaginatedArchivesResponse struct {
 	Total    int            `json:"total"`
 }
 
-func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
+func (r *RepositoryClient) GetPaginatedArchivesByBackupId(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
 	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
 	if err != nil {
 		return nil, err
@@ -147,6 +147,32 @@ func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, p
 			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
 			archive.NameHasPrefix(backupProfile.Prefix),
 		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedArchivesResponse{
+		Archives: archives,
+		Total:    total,
+	}, nil
+}
+
+func (r *RepositoryClient) GetPaginatedArchivesByRepoId(repoId, page, pageSize int) (*PaginatedArchivesResponse, error) {
+	total, err := r.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Count(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	archives, err := r.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).

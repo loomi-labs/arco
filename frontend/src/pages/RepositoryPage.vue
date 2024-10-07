@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { ent } from "../../wailsjs/go/models";
+import { ent, state } from "../../wailsjs/go/models";
 import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
@@ -12,6 +12,7 @@ import { object } from "zod";
 import { getBadgeColor, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
+import ArchivesCard from "../components/ArchivesCard.vue";
 
 /************
  * Variables
@@ -19,6 +20,7 @@ import { toRelativeTimeString } from "../common/time";
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
+const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const loading = ref(true);
 const location = ref<Location>(Location.Local);
 const nbrOfArchives = ref<number>(0);
@@ -54,6 +56,8 @@ async function getRepo() {
     name.value = repo.value.name;
 
     location.value = getLocation(repo.value.location);
+
+    repoState.value = await repoClient.GetState(repoId);
 
     nbrOfArchives.value = await repoClient.GetNbrOfArchives(repoId);
 
@@ -123,7 +127,7 @@ watch(loading, async () => {
       </label>
     </div>
 
-    <div class='flex flex-col w-full pt-6'>
+    <div class='flex flex-col w-full py-6'>
       <div class='flex justify-between'>
         <div>{{ $t("archives") }}</div>
         <div>{{ nbrOfArchives }}</div>
@@ -140,11 +144,12 @@ watch(loading, async () => {
       <div class='divider'></div>
       <div class='flex justify-between'>
         <div>{{ $t("last_backup") }}</div>
-          <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
+        <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
             <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
           </span>
-          <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
-            <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+        <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+            <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
+              }}</span>
           </span>
       </div>
       <div class='divider'></div>
@@ -158,6 +163,11 @@ watch(loading, async () => {
         <div>{{ sizeOnDisk }}</div>
       </div>
     </div>
+
+    <ArchivesCard :repo='repo'
+                  :repo-status='repoState.status'
+                  :highlight='false'>
+    </ArchivesCard>
   </div>
 </template>
 
