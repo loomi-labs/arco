@@ -24,7 +24,7 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 
 const router = useRouter();
 const toast = useToast();
-const backup = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
+const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 
@@ -51,13 +51,13 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 async function getBackupProfile() {
   try {
-    backup.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
-    name.value = backup.value.name;
-    if (backup.value.edges?.repositories?.length && !selectedRepo.value) {
+    backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
+    name.value = backupProfile.value.name;
+    if (backupProfile.value.edges?.repositories?.length && !selectedRepo.value) {
       // Select the first repo by default
-      selectedRepo.value = backup.value.edges.repositories[0];
+      selectedRepo.value = backupProfile.value.edges.repositories[0];
     }
-    for (const repo of backup.value?.edges?.repositories ?? []) {
+    for (const repo of backupProfile.value?.edges?.repositories ?? []) {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
@@ -72,7 +72,7 @@ async function getBackupProfile() {
 
 async function deleteBackupProfile() {
   try {
-    await backupClient.DeleteBackupProfile(backup.value.id, false);
+    await backupClient.DeleteBackupProfile(backupProfile.value.id, false);
     await toast.success("Backup profile deleted");
     await router.push(rDashboardPage);
   } catch (error: any) {
@@ -82,8 +82,8 @@ async function deleteBackupProfile() {
 
 async function saveBackupPaths(paths: string[]) {
   try {
-    backup.value.backupPaths = paths;
-    await backupClient.UpdateBackupProfile(backup.value);
+    backupProfile.value.backupPaths = paths;
+    await backupClient.UpdateBackupProfile(backupProfile.value);
   } catch (error: any) {
     await showAndLogError("Failed to save backup paths", error);
   }
@@ -91,8 +91,8 @@ async function saveBackupPaths(paths: string[]) {
 
 async function saveExcludePaths(paths: string[]) {
   try {
-    backup.value.excludePaths = paths;
-    await backupClient.UpdateBackupProfile(backup.value);
+    backupProfile.value.excludePaths = paths;
+    await backupClient.UpdateBackupProfile(backupProfile.value);
   } catch (error: any) {
     await showAndLogError("Failed to save exclude paths", error);
   }
@@ -100,8 +100,8 @@ async function saveExcludePaths(paths: string[]) {
 
 async function saveSchedule(schedule: ent.BackupSchedule) {
   try {
-    await backupClient.SaveBackupSchedule(backup.value.id, schedule);
-    backup.value.edges.backupSchedule = schedule;
+    await backupClient.SaveBackupSchedule(backupProfile.value.id, schedule);
+    backupProfile.value.edges.backupSchedule = schedule;
   } catch (error: any) {
     await showAndLogError("Failed to save schedule", error);
   }
@@ -109,8 +109,8 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
 
 async function deleteSchedule() {
   try {
-    await backupClient.DeleteBackupSchedule(backup.value.id);
-    backup.value.edges.backupSchedule = undefined;
+    await backupClient.DeleteBackupSchedule(backupProfile.value.id);
+    backupProfile.value.edges.backupSchedule = undefined;
   } catch (error: any) {
     await showAndLogError("Failed to delete schedule", error);
   }
@@ -124,15 +124,15 @@ function adjustBackupNameWidth() {
 }
 
 async function saveBackupName() {
-  if (meta.value.valid && name.value !== backup.value.name) {
-    backup.value.name = name.value ?? "";
-    await backupClient.UpdateBackupProfile(backup.value);
+  if (meta.value.valid && name.value !== backupProfile.value.name) {
+    backupProfile.value.name = name.value ?? "";
+    await backupClient.UpdateBackupProfile(backupProfile.value);
   }
 }
 
 async function saveIcon(icon: backupprofile.Icon) {
-  backup.value.icon = icon;
-  await backupClient.UpdateBackupProfile(backup.value);
+  backupProfile.value.icon = icon;
+  await backupClient.UpdateBackupProfile(backupProfile.value);
 }
 
 /************
@@ -167,7 +167,7 @@ watch(name, () => {
 
       <div class='flex'>
         <!-- Icon -->
-        <SelectIconModal v-if='backup.icon' :icon=backup.icon @select='saveIcon' />
+        <SelectIconModal v-if='backupProfile.icon' :icon=backupProfile.icon @select='saveIcon' />
 
         <!-- Dropdown -->
         <div class='dropdown dropdown-end'>
@@ -194,7 +194,7 @@ watch(name, () => {
       <!-- Data to backup Card -->
       <DataSelection
         show-title
-        :paths='backup.backupPaths ?? []'
+        :paths='backupProfile.backupPaths ?? []'
         :is-backup-selection='true'
         :run-min-one-path-validation='true'
         @update:paths='saveBackupPaths'
@@ -202,7 +202,7 @@ watch(name, () => {
       <!-- Data to ignore Card -->
       <DataSelection
         show-title
-        :paths='backup.excludePaths ?? []'
+        :paths='backupProfile.excludePaths ?? []'
         :is-backup-selection='false'
         @update:paths='saveExcludePaths'
       />
@@ -210,29 +210,29 @@ watch(name, () => {
 
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <ScheduleSelection :schedule='backup.edges?.backupSchedule'
+    <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
                        @update:schedule='saveSchedule'
                        @delete:schedule='deleteSchedule' />
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
       <!-- Repositories -->
-      <div v-for='(repo, index) in backup.edges?.repositories' :key='index'>
+      <div v-for='(repo, index) in backupProfile.edges?.repositories' :key='index'>
         <RepoCard
           :repo-id='repo.id'
-          :backup-profile-id='backup.id'
-          :highlight='(backup.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
-          :show-hover='(backup.edges.repositories?.length ?? 0)  > 1'
+          :backup-profile-id='backupProfile.id'
+          :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+          :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
           @click='() => selectedRepo = repo'
           @repo:status='(event) => repoStatuses.set(repo.id, event)'>
         </RepoCard>
       </div>
     </div>
     <ArchivesCard v-if='selectedRepo'
-                  :backup-profile-id='backup.id'
+                  :backup-profile-id='backupProfile.id'
                   :repo='selectedRepo!'
                   :repo-status='repoStatuses.get(selectedRepo.id)!'
-                  :highlight='(backup.edges.repositories?.length ?? 0) > 1'>
+                  :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'>
     </ArchivesCard>
   </div>
 </template>
