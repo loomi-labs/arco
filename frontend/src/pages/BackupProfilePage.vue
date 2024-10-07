@@ -124,14 +124,22 @@ function adjustBackupNameWidth() {
 
 async function saveBackupName() {
   if (meta.value.valid && name.value !== backupProfile.value.name) {
-    backupProfile.value.name = name.value ?? "";
-    await backupClient.UpdateBackupProfile(backupProfile.value);
+    try {
+      backupProfile.value.name = name.value ?? "";
+      await backupClient.UpdateBackupProfile(backupProfile.value);
+    } catch (error: any) {
+      await showAndLogError("Failed to save backup name", error);
+    }
   }
 }
 
 async function saveIcon(icon: backupprofile.Icon) {
-  backupProfile.value.icon = icon;
-  await backupClient.UpdateBackupProfile(backupProfile.value);
+  try {
+    backupProfile.value.icon = icon;
+    await backupClient.UpdateBackupProfile(backupProfile.value);
+  } catch (error: any) {
+    await showAndLogError("Failed to save icon", error);
+  }
 }
 
 /************
