@@ -81,9 +81,9 @@ func (e Event) String() string {
 }
 
 func EventBackupStateChangedString(bId BackupId) string {
-	return EventBackupStateChanged.String() + fmt.Sprintf(":%d-%d", bId.BackupProfileId, bId.RepositoryId)
+	return fmt.Sprintf("%s:%d-%d", EventBackupStateChanged.String(), bId.BackupProfileId, bId.RepositoryId)
 }
 
 func EventRepoStateChangedString(repoId int) string {
-	return EventRepoStateChanged.String() + fmt.Sprintf(":%d", repoId)
+	return fmt.Sprintf("%s:%d", EventRepoStateChanged.String(), repoId)
 }
