@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { useI18n } from "vue-i18n";
-import { HomeIcon, NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
+import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
 import { borg, ent, state, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
@@ -16,6 +16,7 @@ import { LogDebug } from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
+import { getIcon, Icon } from "../common/icons";
 
 /************
  * Types
@@ -35,6 +36,7 @@ const { t } = useI18n();
 const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
+const icon = ref<Icon>(getIcon(props.backup.icon));
 
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
@@ -168,12 +170,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='group/backup ac-card-hover h-full w-full'
+  <div class='group ac-card-hover h-full w-full'
        @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
     <div
-      class='flex justify-between bg-primary text-primary-content group-hover/backup:bg-primary/70 px-6 pt-4 pb-2'>
+      class='flex justify-between px-6 pt-4 pb-2'
+    :class='icon.color'>
       {{ props.backup.name }}
-      <HomeIcon class='size-8' />
+      <component :is='icon.html' class='size-8' />
     </div>
     <div class='flex justify-between items-center p-6'>
       <div class='w-full pr-6'>

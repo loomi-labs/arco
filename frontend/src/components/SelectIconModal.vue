@@ -1,17 +1,11 @@
 <script setup lang='ts'>
 import { backupprofile } from "../../wailsjs/go/models";
 import { ref, useTemplateRef } from "vue";
-import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
+import { getIcon, Icon, icons } from "../common/icons";
 
 /************
  * Types
  ************/
-
-interface Icon {
-  type: backupprofile.Icon;
-  color: string;
-  html: any;
-}
 
 interface Props {
   icon?: backupprofile.Icon;
@@ -30,36 +24,7 @@ const emits = defineEmits<Emits>();
 
 const selectEmit = "select";
 
-const icons: Icon[] = [
-  {
-    type: backupprofile.Icon.home,
-    color: "bg-blue-500 hover:bg-blue-500/50 text-dark dark:text-white",
-    html: HomeIcon
-  },
-  {
-    type: backupprofile.Icon.briefcase,
-    color: "bg-indigo-500 hover:bg-indigo-500/50 text-dark dark:text-white",
-    html: BriefcaseIcon
-  },
-  {
-    type: backupprofile.Icon.book,
-    color: "bg-purple-500 hover:bg-purple-500/50 text-dark dark:text-white",
-    html: BookOpenIcon
-  },
-  {
-    type: backupprofile.Icon.envelope,
-    color: "bg-green-500 hover:bg-green-500/50 text-dark dark:text-white",
-    html: EnvelopeIcon
-  },
-  {
-    type: backupprofile.Icon.camera,
-    color: "bg-yellow-500 hover:bg-yellow-500/50 text-dark dark:text-white",
-    html: CameraIcon
-  },
-  { type: backupprofile.Icon.fire, color: "bg-red-500 hover:bg-red-500/50 text-dark dark:text-white", html: FireIcon }
-];
-
-const selectedIcon = ref<Icon>(icons.find((i) => i.type === props.icon) ?? icons[0]);
+const selectedIcon = ref<Icon>(getIcon(props.icon ?? icons[0].type));
 const selectIconModalKey = "select_icon_modal";
 const selectIconModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(selectIconModalKey);
 

@@ -4,7 +4,7 @@ import * as zod from "zod";
 import { object } from "zod";
 import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ent, state } from "../../wailsjs/go/models";
+import { backupprofile, ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
@@ -16,6 +16,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import ArchivesCard from "../components/ArchivesCard.vue";
+import SelectIconModal from "../components/SelectIconModal.vue";
 
 /************
  * Variables
@@ -129,6 +130,11 @@ async function saveBackupName() {
   }
 }
 
+async function saveIcon(icon: backupprofile.Icon) {
+  backup.value.icon = icon;
+  await backupClient.UpdateBackupProfile(backup.value);
+}
+
 /************
  * Lifecycle
  ************/
@@ -146,6 +152,7 @@ watch(name, () => {
   <div class='container mx-auto text-left pt-10'>
     <!-- Data Section -->
     <div class='flex items-center justify-between mb-4'>
+      <!-- Name -->
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
@@ -158,23 +165,29 @@ watch(name, () => {
         <span class='text-error'>{{ errors.name }}</span>
       </label>
 
-      <div class='dropdown dropdown-end'>
-        <div tabindex='0' role='button' class='btn m-1'>
-          <EllipsisVerticalIcon class='size-6' />
+      <div class='flex'>
+        <!-- Icon -->
+        <SelectIconModal v-if='backup.icon' :icon=backup.icon @select='saveIcon' />
+
+        <!-- Dropdown -->
+        <div class='dropdown dropdown-end'>
+          <div tabindex='0' role='button' class='btn m-1'>
+            <EllipsisVerticalIcon class='size-6' />
+          </div>
+          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
+            <li><a @click='() => confirmDeleteModal?.showModal()'>Delete
+              <TrashIcon class='size-4' />
+            </a></li>
+          </ul>
         </div>
-        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
-          <li><a @click='() => confirmDeleteModal?.showModal()'>Delete
-            <TrashIcon class='size-4' />
-          </a></li>
-        </ul>
+        <ConfirmModal :ref='confirmDeleteModalKey'
+                      confirm-class='btn-error'
+                      :confirm-text='$t("delete")'
+                      @confirm='deleteBackupProfile'
+        >
+          <p>Are you sure you want to delete this backup profile?</p>
+        </ConfirmModal>
       </div>
-      <ConfirmModal :ref='confirmDeleteModalKey'
-                    confirm-class='btn-error'
-                    :confirm-text='$t("delete")'
-                    @confirm='deleteBackupProfile'
-      >
-        <p>Are you sure you want to delete this backup profile?</p>
-      </ConfirmModal>
     </div>
 
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
