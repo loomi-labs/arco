@@ -28,7 +28,7 @@ export function toHumanReadableSize(size: number): string {
     return "-";
   }
 
-  const units = ["B", "KB", "MB", "GB", "TB"];
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
   let unitIndex = 0;
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
