@@ -15,6 +15,7 @@ import * as runtime from "../../wailsjs/runtime";
 import { LogDebug } from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import { debounce } from "lodash";
 
 /************
  * Types
@@ -140,19 +141,24 @@ async function runButtonAction() {
  * Lifecycle
  ************/
 
+getButtonStatus();
 getFailedBackupRun();
 getLastArchives();
-getButtonStatus();
 
 for (const backupId of bIds) {
-  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), async () => {
+  const handleBackupStateChanged = debounce(async () => {
     await getBackupProgress();
-  }));
-  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), async () => {
+  }, 200);
+
+  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
+
+  const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
     await getFailedBackupRun();
     await getLastArchives();
-  }));
+  }, 200);
+
+  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
 }
 
 onUnmounted(() => {
