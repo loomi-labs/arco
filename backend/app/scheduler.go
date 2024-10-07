@@ -36,6 +36,12 @@ func (a *App) scheduleBackups() []*time.Timer {
 	var timers []*time.Timer
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
+
+		if len(bs.Edges.BackupProfile.Edges.Repositories) == 0 {
+			a.log.Errorf("Backup profile %d has no repositories, skipping", backupProfileId)
+			continue
+		}
+
 		for _, r := range bs.Edges.BackupProfile.Edges.Repositories {
 			backupId := types.BackupId{
 				BackupProfileId: backupProfileId,
