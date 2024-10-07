@@ -63,10 +63,6 @@ async function getBackupProfile() {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
-
-    // Wait for the name input to be rendered
-    await nextTick()
-    adjustBackupNameWidth();
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -144,15 +140,16 @@ async function saveIcon(icon: backupprofile.Icon) {
 
 getBackupProfile();
 
-watch(name, () => {
-  saveBackupName();
+watch(loading, async () => {
+  // Wait for the loading to finish before adjusting the name width
+  await nextTick();
   adjustBackupNameWidth();
 });
 
 </script>
 
 <template>
-  <div v-if='loading'  class='flex items-center justify-center min-h-svh'>
+  <div v-if='loading' class='flex items-center justify-center min-h-svh'>
     <div class='loading loading-ring loading-lg'></div>
   </div>
   <div v-else class='container mx-auto text-left pt-10'>
@@ -165,6 +162,7 @@ watch(name, () => {
                class='text-2xl font-bold bg-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
+               @change='saveBackupName'
                @input='adjustBackupNameWidth'
         />
         <PencilIcon class='size-4' />
