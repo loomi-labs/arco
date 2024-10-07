@@ -25,7 +25,9 @@ export function GetByBackupId(arg1:types.BackupId):Promise<ent.Repository>;
 
 export function GetConnectedRemoteHosts():Promise<Array<string>>;
 
-export function GetLastArchive(arg1:types.BackupId):Promise<ent.Archive>;
+export function GetLastArchiveByBackupId(arg1:types.BackupId):Promise<ent.Archive>;
+
+export function GetLastArchiveByRepoId(arg1:number):Promise<ent.Archive>;
 
 export function GetNbrOfArchives(arg1:number):Promise<number>;
 
@@ -46,3 +48,5 @@ export function UnmountAllForRepo(arg1:number):Promise<void>;
 export function UnmountArchive(arg1:number):Promise<state.MountState>;
 
 export function UnmountRepository(arg1:number):Promise<state.MountState>;
+
+export function Update(arg1:ent.Repository):Promise<ent.Repository>;

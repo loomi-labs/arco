@@ -161,7 +161,7 @@ func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, p
 	}, nil
 }
 
-func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive, error) {
+func (r *RepositoryClient) GetLastArchiveByBackupId(backupId types.BackupId) (*ent.Archive, error) {
 	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
 	if err != nil {
 		return nil, err
@@ -172,6 +172,20 @@ func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive
 		Where(archive.And(
 			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
 			archive.NameHasPrefix(backupProfile.Prefix),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(r.ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return nil, nil
+	}
+	return first, err
+}
+
+func (r *RepositoryClient) GetLastArchiveByRepoId(repoId int) (*ent.Archive, error) {
+	first, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(repoId)),
 		)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(r.ctx)
