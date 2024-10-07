@@ -144,7 +144,7 @@ func (b *BackupClient) GetPrefixSuggestion(name string) (string, error) {
 	}
 	if exist {
 		// If the prefix already exists, we create a new one by appending a random number
-		prefix = fmt.Sprintf("%s_%d", prefix, rand.Intn(1000))
+		prefix = fmt.Sprintf("%s%04d", prefix, rand.Intn(1000))
 		return b.GetPrefixSuggestion(prefix)
 	}
 	return fullPrefix, nil

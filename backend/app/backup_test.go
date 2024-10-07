@@ -211,7 +211,7 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 					assert.Equalf(t, tt.expectedPrefix.prefix, suggestion, "Expected prefix %s, got %s", tt.expectedPrefix.prefix, suggestion)
 				} else {
 					assert.Containsf(t, suggestion, tt.expectedPrefix.prefix, "Expected prefix %s to contain %s", suggestion, tt.expectedPrefix.prefix)
-					expectedLen := len(tt.expectedPrefix.prefix) + 4
+					expectedLen := len(tt.expectedPrefix.prefix) + 5
 					assert.Lenf(t, suggestion, expectedLen, "Expected prefix length %d, got %d", expectedLen, len(suggestion))
 				}
 			}
