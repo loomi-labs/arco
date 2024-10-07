@@ -193,7 +193,7 @@ async function addDirectory() {
 
 async function setTouched() {
   // Delay to allow the form to update
-  await nextTick();
+  await new Promise((resolve) => setTimeout(resolve, 100));
   touched.value = true;
 }
 
