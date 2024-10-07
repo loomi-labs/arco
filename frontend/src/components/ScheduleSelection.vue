@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { backupschedule, ent } from "../../wailsjs/go/models";
-import { computed, ref, watch, watchEffect } from "vue";
+import { computed, nextTick, ref, watch, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { applyOffset, offset, removeOffset } from "@formkit/tempo";
 import deepEqual from "deep-equal";
@@ -220,7 +220,7 @@ watch(() => props.schedule, async (newSchedule, oldSchedule) => {
   backupFrequency.value = getScheduleType(newSchedule) || BackupFrequency.Hourly;
 
   // Wait a bit for the schedule to be rendered
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await nextTick();
   isInitializing.value = false;
 });
 

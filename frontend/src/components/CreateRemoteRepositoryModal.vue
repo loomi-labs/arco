@@ -5,7 +5,7 @@ import { object } from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { formInputClass } from "../common/form";
@@ -93,7 +93,7 @@ async function setNameFromLocation(newLocation: string | undefined) {
   }
 
   // We have to wait a bit for the validation to run
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await nextTick();
 
   // If the location is valid, we can set the name
   if (!errors.value.location) {

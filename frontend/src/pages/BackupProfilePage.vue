@@ -2,7 +2,7 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as zod from "zod";
 import { object } from "zod";
-import { ref, useTemplateRef, watch } from "vue";
+import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ent, state } from "../../wailsjs/go/models";
 import { rDashboardPage } from "../router";
@@ -61,8 +61,8 @@ async function getBackupProfile() {
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
 
-    // Wait a bit for the name input to be rendered
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Wait for the name input to be rendered
+    await nextTick()
     adjustBackupNameWidth();
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
