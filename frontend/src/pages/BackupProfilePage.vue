@@ -27,6 +27,7 @@ const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
+const loading = ref(true);
 
 const nameInputKey = "name_input";
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -51,6 +52,7 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 async function getBackupProfile() {
   try {
+    loading.value = true;
     backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     name.value = backupProfile.value.name;
     if (backupProfile.value.edges?.repositories?.length && !selectedRepo.value) {
@@ -68,6 +70,7 @@ async function getBackupProfile() {
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
+  loading.value = false;
 }
 
 async function deleteBackupProfile() {
@@ -149,7 +152,10 @@ watch(name, () => {
 </script>
 
 <template>
-  <div class='container mx-auto text-left pt-10'>
+  <div v-if='loading'  class='flex items-center justify-center min-h-svh'>
+    <div class='loading loading-ring loading-lg'></div>
+  </div>
+  <div v-else class='container mx-auto text-left pt-10'>
     <!-- Data Section -->
     <div class='flex items-center justify-between mb-4'>
       <!-- Name -->
