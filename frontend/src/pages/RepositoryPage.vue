@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state } from "../../wailsjs/go/models";
-import { nextTick, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
 import { PencilIcon } from "@heroicons/vue/24/solid";
@@ -13,6 +13,8 @@ import { getBadgeColor, getLocation, getTextColor, Location, toHumanReadableSize
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
+import * as runtime from "../../wailsjs/runtime";
+import { repoStateChangedEvent } from "../common/events";
 
 /************
  * Variables
@@ -20,6 +22,7 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 
 const router = useRouter();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
+const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const loading = ref(true);
 const location = ref<Location>(Location.Local);
@@ -28,6 +31,8 @@ const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
+
+const cleanupFunctions: (() => void)[] = [];
 
 const nameInputKey = "name_input";
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -51,12 +56,19 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 async function getRepo() {
   try {
     loading.value = true;
-    const repoId = parseInt(router.currentRoute.value.params.id as string);
+
     repo.value = await repoClient.Get(repoId);
     name.value = repo.value.name;
 
     location.value = getLocation(repo.value.location);
+  } catch (error: any) {
+    await showAndLogError("Failed to get repository", error);
+  }
+  loading.value = false;
+}
 
+async function getRepoState() {
+  try {
     repoState.value = await repoClient.GetState(repoId);
 
     nbrOfArchives.value = await repoClient.GetNbrOfArchives(repoId);
@@ -67,9 +79,8 @@ async function getRepo() {
 
     lastArchive.value = await repoClient.GetLastArchiveByRepoId(repoId);
   } catch (error: any) {
-    await showAndLogError("Failed to get repository", error);
+    await showAndLogError("Failed to get repository state", error);
   }
-  loading.value = false;
 }
 
 async function saveName() {
@@ -95,12 +106,20 @@ function adjustNameWidth() {
  ************/
 
 getRepo();
+getRepoState();
 
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
   await nextTick();
   adjustNameWidth();
 });
+
+cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(repoId), async () => await getRepoState()));
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
+
 
 </script>
 
