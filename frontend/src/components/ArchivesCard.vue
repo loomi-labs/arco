@@ -219,35 +219,44 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th>{{ $t("action") }}</th>
         </tr>
         <tr>
-          <td colspan='3' class='flex items-end gap-3'>
-            <!-- Date filter -->
-            <div>
-              <vue-tailwind-datepicker v-model='dateRange' :formatter='formatter' />
-            </div>
+          <td colspan='3'>
+            <div class='flex items-end gap-3'>
+              <!-- Date filter -->
+              <label class='form-control w-full max-w-xs'>
+                <span class='label'>
+                  <span class='label-text-alt'>Date range</span>
+                </span>
+                <label>
+                  <vue-tailwind-datepicker v-model='dateRange' :formatter='formatter'
+                                           input-classes="input"
+                  />
+                </label>
+              </label>
 
-            <!-- Backup filter -->
-            <label v-if='showBackupProfileFilter' class='form-control max-w-xs'>
+              <!-- Backup filter -->
+              <label v-if='showBackupProfileFilter' class='form-control max-w-xs'>
               <span class='label'>
                 <span class='label-text-alt'>Backup Profile</span>
               </span>
-              <select class='select select-bordered' v-model='backupProfileFilter'>
-                <option v-for='option in backupProfileNames' :value='option.id'>
-                  {{ option.name }}
-                </option>
-              </select>
-            </label>
-
-            <!-- Search -->
-            <label class='form-control w-full max-w-xs'>
-              <span class='label'>
-                <span class='label-text-alt'>Search</span>
-              </span>
-              <label class='input input-bordered flex items-center gap-2'>
-                <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
-                <input type='text' class='grow' v-model='search' />
-                <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = undefined'></XMarkIcon>
+                <select class='select select-bordered' v-model='backupProfileFilter'>
+                  <option v-for='option in backupProfileNames' :value='option.id'>
+                    {{ option.name }}
+                  </option>
+                </select>
               </label>
-            </label>
+
+              <!-- Search -->
+              <label class='form-control w-full max-w-xs'>
+                <span class='label'>
+                  <span class='label-text-alt'>Search</span>
+                </span>
+                <label class='input input-bordered flex items-center gap-2'>
+                  <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
+                  <input type='text' class='grow' v-model='search' />
+                  <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = undefined'></XMarkIcon>
+                </label>
+              </label>
+            </div>
           </td>
         </tr>
         </thead>
@@ -288,8 +297,8 @@ watch([backupProfileFilter, search, dateRange], async () => {
         <!-- Filler row (this is a hack to take up the same amount of space event if there are not enough rows) -->
         <tr v-for='index in (pagination.pageSize - archives.length)' :key='`empty-${index}`'>
           <td colspan='3'>
-            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' disabled>
-              <TrashIcon class='size-4 text-transparent' />
+            <button class='btn btn-sm invisible' disabled>
+              <TrashIcon class='size-4' />
             </button>
           </td>
         </tr>
