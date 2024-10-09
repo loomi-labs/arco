@@ -211,15 +211,13 @@ watch([backupProfileFilter, search, dateRange], async () => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th>
+          <th colspan='3'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
-          <th>{{ $t("date") }}</th>
-          <th>{{ $t("action") }}</th>
         </tr>
         <tr>
-          <td colspan='3'>
+          <th colspan='3'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
               <label class='form-control w-full max-w-xs'>
@@ -227,8 +225,10 @@ watch([backupProfileFilter, search, dateRange], async () => {
                   <span class='label-text-alt'>Date range</span>
                 </span>
                 <label>
-                  <vue-tailwind-datepicker v-model='dateRange' :formatter='formatter'
-                                           input-classes="input"
+                  <vue-tailwind-datepicker
+                    v-model='dateRange'
+                    :formatter='formatter'
+                    input-classes='input input-bordered placeholder-transparent'
                   />
                 </label>
               </label>
@@ -257,7 +257,12 @@ watch([backupProfileFilter, search, dateRange], async () => {
                 </label>
               </label>
             </div>
-          </td>
+          </th>
+        </tr>
+        <tr>
+          <th>{{ $t("name") }}</th>
+          <th>{{ $t("date") }}</th>
+          <th>{{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -304,7 +309,8 @@ watch([backupProfileFilter, search, dateRange], async () => {
         </tr>
         </tbody>
       </table>
-      <div v-if='Math.ceil(pagination.total / pagination.pageSize) > 1' class='flex justify-center items-center mt-4'>
+      <div class='flex justify-center items-center mt-4'
+        :class='{"invisible": pagination.total === 0}'>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'
                 @click='pagination.page = 1; getPaginatedArchives()'>
           <ChevronDoubleLeftIcon class='size-6' />

@@ -46,5 +46,6 @@
   "waiting": "Waiting",
   "location": "Location",
   "local": "Local",
-  "remote": "Remote"
+  "remote": "Remote",
+  "name": "Name"
 }
