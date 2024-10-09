@@ -21,6 +21,7 @@ import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
+import { MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
 
 /************
  * Types
@@ -317,9 +318,12 @@ watch([backupProfileFilter, search, dateRange], async () => {
                   <span class='label-text-alt'>Search</span>
                 </span>
                 <label class='input input-bordered flex items-center gap-2'>
-                  <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
                   <input type='text' class='grow' v-model='search' />
-                  <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = ""'></XMarkIcon>
+                  <label class='swap swap-rotate'
+                         :class='{"swap-active": !!search}'>
+                    <MagnifyingGlassIcon class='swap-off size-5'></MagnifyingGlassIcon>
+                    <XMarkIcon class='swap-on size-5 cursor-pointer' @click='search = ""'></XMarkIcon>
+                  </label>
                 </label>
               </label>
             </div>
