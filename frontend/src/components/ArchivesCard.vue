@@ -63,7 +63,8 @@ const search = ref<string | undefined>(undefined);
 // Show the filter if there are more than 1 backup profiles (All + at least 1 more)
 const showBackupProfileFilter = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
 
-const hasNoArchives = computed<boolean>(() =>  pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1);
+// Repo has no archives if there is no filter set and the total is zero
+const hasNoArchives = computed<boolean>(() => pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1);
 
 async function getPaginatedArchives() {
   try {
@@ -198,12 +199,12 @@ watch([backupProfileFilter, search], async () => {
             </label>
 
             <!-- Search -->
-            <label class="form-control w-full max-w-xs">
-              <span class="label">
-                <span class="label-text-alt">Search</span>
+            <label class='form-control w-full max-w-xs'>
+              <span class='label'>
+                <span class='label-text-alt'>Search</span>
               </span>
               <label class='input input-bordered flex items-center gap-2 max-w-64'>
-                <input type='text' class='grow' v-model='search'/>
+                <input type='text' class='grow' v-model='search' />
                 <MagnifyingGlassIcon class='size-4'></MagnifyingGlassIcon>
               </label>
             </label>
@@ -211,6 +212,7 @@ watch([backupProfileFilter, search], async () => {
         </tr>
         </thead>
         <tbody>
+        <!-- Row -->
         <tr v-for='(archive, index) in archives' :key='index'
             :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
@@ -218,13 +220,13 @@ watch([backupProfileFilter, search], async () => {
             <p>{{ archive.name }}</p>
             <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip'
                   :data-tip='`Archive is mounted at ${archiveMountStates.get(archive.id)?.mount_path}`'>
-              <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
-            </span>
+                <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
+              </span>
           </td>
           <td>
-          <span class='tooltip' :data-tip='archive.createdAt'>
-            <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
-          </span>
+            <span class='tooltip' :data-tip='archive.createdAt'>
+              <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
+            </span>
           </td>
           <td class='flex items-center'>
             <button class='btn btn-sm btn-primary'
@@ -236,10 +238,18 @@ watch([backupProfileFilter, search], async () => {
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='() => {
-                      archiveToBeDeleted = archive.id;
-                      confirmDeleteModal?.showModal();
-                    }'>
+                        archiveToBeDeleted = archive.id;
+                        confirmDeleteModal?.showModal();
+                      }'>
               <TrashIcon class='size-4' />
+            </button>
+          </td>
+        </tr>
+        <!-- Filler row (this is a hack to take up the same amount of space event if there are not enough rows) -->
+        <tr v-for='index in (pagination.pageSize - archives.length)' :key='`empty-${index}`'>
+          <td colspan='3'>
+            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2' disabled>
+              <TrashIcon class='size-4 text-transparent' />
             </button>
           </td>
         </tr>
