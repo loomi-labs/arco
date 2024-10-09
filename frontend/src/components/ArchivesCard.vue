@@ -20,7 +20,7 @@ import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
-import { addDay } from "@formkit/tempo"
+import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 
 /************
  * Types
@@ -110,7 +110,7 @@ async function getPaginatedArchives() {
     request.search = search.value;
     request.startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : undefined;
     // Add a day to the end date to include the end date itself
-    request.endDate = dateRange.value.endDate ? addDay(new Date(dateRange.value.endDate)) : undefined;
+    request.endDate = dateRange.value.endDate ? dayEnd(new Date(dateRange.value.endDate)) : undefined;
 
     const result = await repoClient.GetPaginatedArchives(request);
 
@@ -190,6 +190,67 @@ async function getBackupProfileNames() {
   }
 }
 
+const customDateRangeShortcuts = () => {
+  return [
+    {
+      label: "Today",
+      atClick: () => {
+        const date = new Date();
+        return [dayStart(date), dayEnd(date)];
+      },
+    },
+    {
+      label: "Yesterday",
+      atClick: () => {
+        const date = addDay(new Date(), -1);
+        return [dayStart(date), dayEnd(date)];
+      },
+    },
+    {
+      label: "Last 7 Days",
+      atClick: () => {
+        const date = new Date();
+        return [addDay(date, -6), dayEnd(date)];
+      },
+    },
+    {
+      label: "Last 30 Days",
+      atClick: () => {
+        const date = new Date();
+        return [addDay(date, -29), dayEnd(date)];
+      },
+    },
+    {
+      label: "This Month",
+      atClick: () => {
+        const date = new Date();
+        return [new Date(date.getFullYear(), date.getMonth(), 1), new Date(date.getFullYear(), date.getMonth() + 1, 0)];
+      },
+    },
+    {
+      label: "Last Month",
+      atClick: () => {
+        const date = new Date();
+        return [new Date(date.getFullYear(), date.getMonth() - 1, 1), new Date(date.getFullYear(), date.getMonth(), 0)];
+      },
+    },
+    {
+      label: "This Year",
+      atClick: () => {
+        const date = new Date();
+        return [yearStart(date), yearEnd(date)];
+      },
+    },
+    {
+      label: "Last Years",
+      atClick: () => {
+        const date = addYear(new Date(), -1);
+        return [yearStart(date), yearEnd(date)];
+      },
+    },
+  ];
+};
+
 /************
  * Lifecycle
  ************/
@@ -232,6 +293,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
                   <vue-tailwind-datepicker
                     v-model='dateRange'
                     :formatter='formatter'
+                    :shortcuts='customDateRangeShortcuts'
                     input-classes='input input-bordered placeholder-transparent'
                   />
                 </label>
