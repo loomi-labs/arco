@@ -19,6 +19,7 @@ import {
 import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
+import VueTailwindDatepicker from "vue-tailwind-datepicker";
 
 /************
  * Types
@@ -58,6 +59,19 @@ const backupProfileFilter = ref<number>(-1);
 const search = ref<string | undefined>(undefined);
 const isLoading = ref<boolean>(false);
 
+// const datePair = ref<[Date, Date]>([new Date(), new Date()]);
+// const dateRange = ref<string | [Date, Date]>([] as unknown as [Date, Date]);
+const dateRange = ref({
+  startDate: "",
+  endDate: ""
+});
+
+// const dateValue = ref<string | [Date, Date]>("");
+const formatter = ref({
+  date: "DD MMM YYYY",
+  month: "MMM"
+});
+
 /************
  * Functions
  ************/
@@ -69,18 +83,30 @@ const showBackupProfileFilter = computed<boolean>(() => props.showBackupProfileF
 // - There are no archives
 // - There is no search term
 // - There is no backup profile filter
+// - There is no date range
 // - The component is not loading
-const hasNoArchives = computed<boolean>(() => pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1 && !isLoading.value);
+const hasNoArchives = computed<boolean>(() =>
+  pagination.value.total === 0 &&
+  search.value === undefined &&
+  backupProfileFilter.value === -1 &&
+  dateRange.value.startDate === "" &&
+  dateRange.value.endDate === "" &&
+  !isLoading.value
+);
 
 async function getPaginatedArchives() {
   try {
     isLoading.value = true;
     const request = app.PaginatedArchivesRequest.createFrom();
+    // Required
     request.repositoryId = props.repo.id;
-    request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
-    request.search = search.value;
     request.page = pagination.value.page;
     request.pageSize = pagination.value.pageSize;
+    // Optional
+    request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
+    request.search = search.value;
+    request.startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : undefined;
+    request.endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : undefined;
 
     const result = await repoClient.GetPaginatedArchives(request);
 
@@ -173,7 +199,7 @@ watch([() => props.repoStatus, () => props.repo], async () => {
   await getArchiveMountStates();
 });
 
-watch([backupProfileFilter, search], async () => {
+watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
 });
 
@@ -194,6 +220,11 @@ watch([backupProfileFilter, search], async () => {
         </tr>
         <tr>
           <td colspan='3' class='flex items-end gap-3'>
+            <!-- Date filter -->
+            <div>
+              <vue-tailwind-datepicker v-model='dateRange' :formatter='formatter' />
+            </div>
+
             <!-- Backup filter -->
             <label v-if='showBackupProfileFilter' class='form-control max-w-xs'>
               <span class='label'>
@@ -212,9 +243,9 @@ watch([backupProfileFilter, search], async () => {
                 <span class='label-text-alt'>Search</span>
               </span>
               <label class='input input-bordered flex items-center gap-2'>
-                <MagnifyingGlassIcon class='size-4'></MagnifyingGlassIcon>
+                <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
                 <input type='text' class='grow' v-model='search' />
-                <XMarkIcon v-if='search' class='size-4 cursor-pointer' @click='search = undefined'></XMarkIcon>
+                <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = undefined'></XMarkIcon>
               </label>
             </label>
           </td>

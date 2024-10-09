@@ -121,11 +121,15 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 }
 
 type PaginatedArchivesRequest struct {
-	RepositoryId    int    `json:"repositoryId"`
-	BackupProfileId int    `json:"backupProfileId,omitempty"`
-	Page            int    `json:"page"`
-	PageSize        int    `json:"pageSize"`
-	Search          string `json:"search,omitempty"`
+	// Required
+	RepositoryId int `json:"repositoryId"`
+	Page         int `json:"page"`
+	PageSize     int `json:"pageSize"`
+	// Optional
+	BackupProfileId int       `json:"backupProfileId,omitempty"`
+	Search          string    `json:"search,omitempty"`
+	StartDate       time.Time `json:"startDate,omitempty"`
+	EndDate         time.Time `json:"endDate,omitempty"`
 }
 
 type PaginatedArchivesResponse struct {
@@ -155,6 +159,16 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 	// If a search term is specified, filter by it
 	if req.Search != "" {
 		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+	}
+
+	// If start date is specified, filter by it
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	// If end date is specified, filter by it
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
 	}
 
 	total, err := r.db.Archive.
