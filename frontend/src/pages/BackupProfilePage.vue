@@ -244,7 +244,8 @@ watch(loading, async () => {
                   :backup-profile-id='backupProfile.id'
                   :repo='selectedRepo!'
                   :repo-status='repoStatuses.get(selectedRepo.id)!'
-                  :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'>
+                  :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
+                  :show-name='true'>
     </ArchivesCard>
   </div>
 </template>

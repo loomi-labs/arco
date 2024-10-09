@@ -32,6 +32,7 @@ interface Props {
   backupProfileId?: number;
   repoStatus: state.RepoStatus;
   highlight: boolean;
+  showName?: boolean;
 }
 
 /************
@@ -152,7 +153,7 @@ watch(() => props.repo, async () => {
         <tr>
           <th>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
-            <h4 class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
+            <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
           <th>{{ $t("date") }}</th>
           <th>{{ $t("action") }}</th>
