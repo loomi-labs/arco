@@ -13,7 +13,8 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
-  TrashIcon
+  TrashIcon,
+  XMarkIcon
 } from "@heroicons/vue/24/solid";
 import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
@@ -55,6 +56,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(con
 const backupProfileNames = ref<app.BackupProfileName[]>([]);
 const backupProfileFilter = ref<number>(-1);
 const search = ref<string | undefined>(undefined);
+const isLoading = ref<boolean>(false);
 
 /************
  * Functions
@@ -63,11 +65,16 @@ const search = ref<string | undefined>(undefined);
 // Show the filter if there are more than 1 backup profiles (All + at least 1 more)
 const showBackupProfileFilter = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
 
-// Repo has no archives if there is no filter set and the total is zero
-const hasNoArchives = computed<boolean>(() => pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1);
+// Repo has no archives if (all conditions are met):
+// - There are no archives
+// - There is no search term
+// - There is no backup profile filter
+// - The component is not loading
+const hasNoArchives = computed<boolean>(() => pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1 && !isLoading.value);
 
 async function getPaginatedArchives() {
   try {
+    isLoading.value = true;
     const request = app.PaginatedArchivesRequest.createFrom();
     request.repositoryId = props.repo.id;
     request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
@@ -92,6 +99,7 @@ async function getPaginatedArchives() {
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
   }
+  isLoading.value = false;
 }
 
 async function deleteArchive() {
@@ -203,9 +211,10 @@ watch([backupProfileFilter, search], async () => {
               <span class='label'>
                 <span class='label-text-alt'>Search</span>
               </span>
-              <label class='input input-bordered flex items-center gap-2 max-w-64'>
-                <input type='text' class='grow' v-model='search' />
+              <label class='input input-bordered flex items-center gap-2'>
                 <MagnifyingGlassIcon class='size-4'></MagnifyingGlassIcon>
+                <input type='text' class='grow' v-model='search' />
+                <XMarkIcon v-if='search' class='size-4 cursor-pointer' @click='search = undefined'></XMarkIcon>
               </label>
             </label>
           </td>
