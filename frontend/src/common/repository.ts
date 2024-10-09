@@ -24,6 +24,10 @@ export function getBadgeColor(location: Location): string {
 }
 
 export function toHumanReadableSize(size: number): string {
+  if (size < 0) {
+    return "Invalid size";
+  }
+
   if (size === 0) {
     return "-";
   }

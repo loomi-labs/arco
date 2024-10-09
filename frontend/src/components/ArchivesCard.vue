@@ -57,7 +57,7 @@ const confirmDeleteModalKey = "confirm_delete_archive_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 const backupProfileNames = ref<app.BackupProfileName[]>([]);
 const backupProfileFilter = ref<number>(-1);
-const search = ref<string | undefined>(undefined);
+const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 
 // const datePair = ref<[Date, Date]>([new Date(), new Date()]);
@@ -78,7 +78,7 @@ const formatter = ref({
  ************/
 
 // Show the filter if there are more than 1 backup profiles (All + at least 1 more)
-const showBackupProfileFilter = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
+const isBackupProfileFilterVisible = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
 
 // Repo has no archives if (all conditions are met):
 // - There are no archives
@@ -300,7 +300,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
               </label>
 
               <!-- Backup filter -->
-              <label v-if='showBackupProfileFilter' class='form-control max-w-xs'>
+              <label v-if='isBackupProfileFilterVisible' class='form-control max-w-xs'>
               <span class='label'>
                 <span class='label-text-alt'>Backup Profile</span>
               </span>
@@ -319,7 +319,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
                 <label class='input input-bordered flex items-center gap-2'>
                   <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
                   <input type='text' class='grow' v-model='search' />
-                  <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = undefined'></XMarkIcon>
+                  <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = ""'></XMarkIcon>
                 </label>
               </label>
             </div>
