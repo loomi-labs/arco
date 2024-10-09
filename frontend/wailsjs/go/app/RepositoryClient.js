@@ -42,16 +42,20 @@ export function GetConnectedRemoteHosts() {
   return window['go']['app']['RepositoryClient']['GetConnectedRemoteHosts']();
 }
 
-export function GetLastArchive(arg1) {
-  return window['go']['app']['RepositoryClient']['GetLastArchive'](arg1);
+export function GetLastArchiveByBackupId(arg1) {
+  return window['go']['app']['RepositoryClient']['GetLastArchiveByBackupId'](arg1);
+}
+
+export function GetLastArchiveByRepoId(arg1) {
+  return window['go']['app']['RepositoryClient']['GetLastArchiveByRepoId'](arg1);
 }
 
 export function GetNbrOfArchives(arg1) {
   return window['go']['app']['RepositoryClient']['GetNbrOfArchives'](arg1);
 }
 
-export function GetPaginatedArchives(arg1, arg2, arg3) {
-  return window['go']['app']['RepositoryClient']['GetPaginatedArchives'](arg1, arg2, arg3);
+export function GetPaginatedArchives(arg1) {
+  return window['go']['app']['RepositoryClient']['GetPaginatedArchives'](arg1);
 }
 
 export function GetRepoMountState(arg1) {
@@ -84,4 +88,8 @@ export function UnmountArchive(arg1) {
 
 export function UnmountRepository(arg1) {
   return window['go']['app']['RepositoryClient']['UnmountRepository'](arg1);
+}
+
+export function Update(arg1) {
+  return window['go']['app']['RepositoryClient']['Update'](arg1);
 }

@@ -3,6 +3,7 @@
 import {types} from '../models';
 import {ent} from '../models';
 import {state} from '../models';
+import {app} from '../models';
 import {borg} from '../models';
 
 export function AbortBackupJob(arg1:types.BackupId):Promise<void>;
@@ -26,6 +27,8 @@ export function DryRunPruneBackups(arg1:number):Promise<void>;
 export function GetBackupButtonStatus(arg1:types.BackupId):Promise<state.BackupButtonStatus>;
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
+
+export function GetBackupProfileNamesByRepositoryId(arg1:number):Promise<Array<app.BackupProfileName>>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
 

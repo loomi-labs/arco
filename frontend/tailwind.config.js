@@ -1,6 +1,11 @@
+import colors from "tailwindcss/colors.js";
+
 /** @type {import("tailwindcss").Config} */
 export default {
-  content: ["./src/**/*.{vue,js,ts}"],
+  content: [
+    "./src/**/*.{vue,js,ts}",
+    "./node_modules/vue-tailwind-datepicker/**/*.js",
+  ],
   darkMode: ["selector", "[data-theme=\"dark\"]"],  // https://tailwindcss.com/docs/dark-mode#customizing-the-selector
   theme: {
     fontFamily: {
@@ -11,14 +16,18 @@ export default {
         "half-hidden": {
           light: "#8C8C8C",
           dark: "#8C8C8C"
-        }
+        },
+        "vtd-primary": colors.purple, // Light mode Datepicker color
+        "vtd-secondary": colors.gray, // Dark mode Datepicker color
       },
       borderRadius: {
         "4xl": "3rem"
       }
     }
   },
-  plugins: [require("daisyui")],
+  plugins: [
+    require("daisyui")
+  ],
   daisyui: {
     themes: [
       {

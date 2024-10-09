@@ -5,6 +5,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
+	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"fmt"
 	"slices"
@@ -119,37 +120,77 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
 }
 
+type PaginatedArchivesRequest struct {
+	// Required
+	RepositoryId int `json:"repositoryId"`
+	Page         int `json:"page"`
+	PageSize     int `json:"pageSize"`
+	// Optional
+	BackupProfileId int       `json:"backupProfileId,omitempty"`
+	Search          string    `json:"search,omitempty"`
+	StartDate       time.Time `json:"startDate,omitempty"`
+	EndDate         time.Time `json:"endDate,omitempty"`
+}
+
 type PaginatedArchivesResponse struct {
 	Archives []*ent.Archive `json:"archives"`
 	Total    int            `json:"total"`
 }
 
-func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
-	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
-	if err != nil {
-		return nil, err
+func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
+	if req.RepositoryId <= 0 {
+		return nil, fmt.Errorf("repositoryId is required")
+	}
+	if req.Page <= 0 {
+		return nil, fmt.Errorf("page is required")
+	}
+	if req.PageSize <= 0 {
+		return nil, fmt.Errorf("pageSize is required")
 	}
 
-	archiveQuery := r.db.Archive.Query().
-		Where(archive.And(
-			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
-			archive.NameHasPrefix(backupProfile.Prefix),
-		))
+	// Filter by repository
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
+	}
 
-	total, err := archiveQuery.Count(r.ctx)
+	// If a backup profile is specified, filter by its prefix
+	if req.BackupProfileId != 0 {
+		backupProfile, err := r.backupClient().GetBackupProfile(req.BackupProfileId)
+		if err != nil {
+			return nil, err
+		}
+		archivePredicates = append(archivePredicates, archive.NameHasPrefix(backupProfile.Prefix))
+	}
+
+	// If a search term is specified, filter by it
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+	}
+
+	// If start date is specified, filter by it
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	// If end date is specified, filter by it
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
+	}
+
+	total, err := r.db.Archive.
+		Query().
+		Where(archive.And(archivePredicates...)).
+		Count(r.ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	archives, err := r.db.Archive.
 		Query().
-		Where(archive.And(
-			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
-			archive.NameHasPrefix(backupProfile.Prefix),
-		)).
+		Where(archive.And(archivePredicates...)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
+		Offset((req.Page - 1) * req.PageSize).
+		Limit(req.PageSize).
 		All(r.ctx)
 	if err != nil {
 		return nil, err
@@ -161,7 +202,7 @@ func (r *RepositoryClient) GetPaginatedArchives(backupId types.BackupId, page, p
 	}, nil
 }
 
-func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive, error) {
+func (r *RepositoryClient) GetLastArchiveByBackupId(backupId types.BackupId) (*ent.Archive, error) {
 	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
 	if err != nil {
 		return nil, err
@@ -172,6 +213,20 @@ func (r *RepositoryClient) GetLastArchive(backupId types.BackupId) (*ent.Archive
 		Where(archive.And(
 			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
 			archive.NameHasPrefix(backupProfile.Prefix),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(r.ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return nil, nil
+	}
+	return first, err
+}
+
+func (r *RepositoryClient) GetLastArchiveByRepoId(repoId int) (*ent.Archive, error) {
+	first, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(repoId)),
 		)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(r.ctx)

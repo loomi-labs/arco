@@ -2,7 +2,7 @@
 
 import { ent, state, types } from "../../wailsjs/go/models";
 import { useRouter } from "vue-router";
-import { rRepositoryDetailPage, withId } from "../router";
+import { rRepositoryPage, withId } from "../router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
@@ -14,6 +14,7 @@ import BackupButton from "./BackupButton.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import { toHumanReadableSize } from "../common/repository";
 
 /************
  * Types
@@ -125,7 +126,7 @@ async function getRepo() {
     sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
     failedBackupRun.value = repo.value.edges.failedBackupRuns?.[0]?.error;
 
-    lastArchive.value = await repoClient.GetLastArchive(backupId);
+    lastArchive.value = await repoClient.GetLastArchiveByBackupId(backupId);
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
@@ -153,20 +154,6 @@ async function getBackupButtonStatus() {
   } catch (error: any) {
     await showAndLogError("Failed to get backup button state", error);
   }
-}
-
-function toHumanReadableSize(size: number): string {
-  if (size === 0) {
-    return "-";
-  }
-
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
 async function runButtonAction() {
@@ -240,7 +227,7 @@ onUnmounted(() => {
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
       <a class='link mt-auto'
-         @click='router.push(withId(rRepositoryDetailPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
+         @click='router.push(withId(rRepositoryPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>

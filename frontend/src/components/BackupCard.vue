@@ -80,7 +80,7 @@ async function getLastArchives() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
-      const archive = await repoClient.GetLastArchive(backupId);
+      const archive = await repoClient.GetLastArchiveByBackupId(backupId);
       if (archive?.id) {
         if (!newLastArchive || isAfter(archive.createdAt, newLastArchive.createdAt)) {
           newLastArchive = archive;

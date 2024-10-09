@@ -86,6 +86,14 @@ func (r *RepositoryClient) Create(name, location, password string, noPassword bo
 		Save(r.ctx)
 }
 
+func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, error) {
+	r.log.Debugf("Updating repository %d", repository.ID)
+	return r.db.Repository.
+		UpdateOne(repository).
+		SetName(repository.Name).
+		Save(r.ctx)
+}
+
 func (r *RepositoryClient) GetState(id int) state.RepoState {
 	return r.state.GetRepoState(id)
 }
