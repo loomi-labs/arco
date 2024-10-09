@@ -20,6 +20,7 @@ import { toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
+import { addDay } from "@formkit/tempo"
 
 /************
  * Types
@@ -98,15 +99,18 @@ async function getPaginatedArchives() {
   try {
     isLoading.value = true;
     const request = app.PaginatedArchivesRequest.createFrom();
+
     // Required
     request.repositoryId = props.repo.id;
     request.page = pagination.value.page;
     request.pageSize = pagination.value.pageSize;
+
     // Optional
     request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
     request.search = search.value;
     request.startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : undefined;
-    request.endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : undefined;
+    // Add a day to the end date to include the end date itself
+    request.endDate = dateRange.value.endDate ? addDay(new Date(dateRange.value.endDate)) : undefined;
 
     const result = await repoClient.GetPaginatedArchives(request);
 
