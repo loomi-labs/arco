@@ -286,7 +286,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th colspan='3'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
-              <label class='form-control w-full max-w-xs'>
+              <label class='form-control w-full'>
                 <span class='label'>
                   <span class='label-text-alt'>Date range</span>
                 </span>
@@ -301,7 +301,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
               </label>
 
               <!-- Backup filter -->
-              <label v-if='isBackupProfileFilterVisible' class='form-control max-w-xs'>
+              <label v-if='isBackupProfileFilterVisible' class='form-control w-full'>
               <span class='label'>
                 <span class='label-text-alt'>Backup Profile</span>
               </span>
@@ -313,7 +313,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
               </label>
 
               <!-- Search -->
-              <label class='form-control w-full max-w-xs'>
+              <label class='form-control w-full'>
                 <span class='label'>
                   <span class='label-text-alt'>Search</span>
                 </span>
