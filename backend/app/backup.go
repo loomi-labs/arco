@@ -40,6 +40,26 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		All(b.ctx)
 }
 
+type BackupProfileName struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func (b *BackupClient) GetBackupProfileNamesByRepositoryId(repoId int) ([]BackupProfileName, error) {
+	profiles, err := b.db.BackupProfile.
+		Query().
+		Where(backupprofile.HasRepositoriesWith(repository.ID(repoId))).
+		All(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]BackupProfileName, len(profiles))
+	for i, p := range profiles {
+		names[i] = BackupProfileName{Id: p.ID, Name: p.Name}
+	}
+	return names, nil
+}
+
 func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	// Choose the first icon that is not already in use
 	all, err := b.db.BackupProfile.

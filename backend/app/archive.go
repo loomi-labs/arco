@@ -5,6 +5,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
+	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"fmt"
 	"slices"
@@ -119,52 +120,46 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
 }
 
+type PaginatedArchivesRequest struct {
+	RepositoryId    int    `json:"repositoryId"`
+	BackupProfileId int    `json:"backupProfileId,omitempty"`
+	Page            int    `json:"page"`
+	PageSize        int    `json:"pageSize"`
+	Search          string `json:"search,omitempty"`
+}
+
 type PaginatedArchivesResponse struct {
 	Archives []*ent.Archive `json:"archives"`
 	Total    int            `json:"total"`
 }
 
-func (r *RepositoryClient) GetPaginatedArchivesByBackupId(backupId types.BackupId, page, pageSize int) (*PaginatedArchivesResponse, error) {
-	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
-	if err != nil {
-		return nil, err
+func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
+	if req.RepositoryId == 0 {
+		return nil, fmt.Errorf("repositoryId is required")
 	}
 
-	archiveQuery := r.db.Archive.Query().
-		Where(archive.And(
-			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
-			archive.NameHasPrefix(backupProfile.Prefix),
-		))
-
-	total, err := archiveQuery.Count(r.ctx)
-	if err != nil {
-		return nil, err
+	// Filter by repository
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
 	}
 
-	archives, err := r.db.Archive.
-		Query().
-		Where(archive.And(
-			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
-			archive.NameHasPrefix(backupProfile.Prefix),
-		)).
-		Order(ent.Desc(archive.FieldCreatedAt)).
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
-		All(r.ctx)
-	if err != nil {
-		return nil, err
+	// If a backup profile is specified, filter by its prefix
+	if req.BackupProfileId != 0 {
+		backupProfile, err := r.backupClient().GetBackupProfile(req.BackupProfileId)
+		if err != nil {
+			return nil, err
+		}
+		archivePredicates = append(archivePredicates, archive.NameHasPrefix(backupProfile.Prefix))
 	}
 
-	return &PaginatedArchivesResponse{
-		Archives: archives,
-		Total:    total,
-	}, nil
-}
+	// If a search term is specified, filter by it
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+	}
 
-func (r *RepositoryClient) GetPaginatedArchivesByRepoId(repoId, page, pageSize int) (*PaginatedArchivesResponse, error) {
 	total, err := r.db.Archive.
 		Query().
-		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Where(archive.And(archivePredicates...)).
 		Count(r.ctx)
 	if err != nil {
 		return nil, err
@@ -172,10 +167,10 @@ func (r *RepositoryClient) GetPaginatedArchivesByRepoId(repoId, page, pageSize i
 
 	archives, err := r.db.Archive.
 		Query().
-		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Where(archive.And(archivePredicates...)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
+		Offset((req.Page - 1) * req.PageSize).
+		Limit(req.PageSize).
 		All(r.ctx)
 	if err != nil {
 		return nil, err
