@@ -138,8 +138,14 @@ type PaginatedArchivesResponse struct {
 }
 
 func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
-	if req.RepositoryId == 0 {
+	if req.RepositoryId <= 0 {
 		return nil, fmt.Errorf("repositoryId is required")
+	}
+	if req.Page <= 0 {
+		return nil, fmt.Errorf("page is required")
+	}
+	if req.PageSize <= 0 {
+		return nil, fmt.Errorf("pageSize is required")
 	}
 
 	// Filter by repository
