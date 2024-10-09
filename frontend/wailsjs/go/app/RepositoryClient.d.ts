@@ -31,9 +31,7 @@ export function GetLastArchiveByRepoId(arg1:number):Promise<ent.Archive>;
 
 export function GetNbrOfArchives(arg1:number):Promise<number>;
 
-export function GetPaginatedArchivesByBackupId(arg1:types.BackupId,arg2:number,arg3:number):Promise<app.PaginatedArchivesResponse>;
-
-export function GetPaginatedArchivesByRepoId(arg1:number,arg2:number,arg3:number):Promise<app.PaginatedArchivesResponse>;
+export function GetPaginatedArchives(arg1:app.PaginatedArchivesRequest):Promise<app.PaginatedArchivesResponse>;
 
 export function GetRepoMountState(arg1:number):Promise<state.MountState>;
 

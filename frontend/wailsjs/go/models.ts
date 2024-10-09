@@ -1,5 +1,19 @@
 export namespace app {
 	
+	export class BackupProfileName {
+	    id: number;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupProfileName(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	    }
+	}
 	export class Env {
 	    debug: boolean;
 	    startPage: string;
@@ -12,6 +26,26 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.debug = source["debug"];
 	        this.startPage = source["startPage"];
+	    }
+	}
+	export class PaginatedArchivesRequest {
+	    repositoryId: number;
+	    backupProfileId?: number;
+	    page: number;
+	    pageSize: number;
+	    search?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PaginatedArchivesRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.repositoryId = source["repositoryId"];
+	        this.backupProfileId = source["backupProfileId"];
+	        this.page = source["page"];
+	        this.pageSize = source["pageSize"];
+	        this.search = source["search"];
 	    }
 	}
 	export class PaginatedArchivesResponse {

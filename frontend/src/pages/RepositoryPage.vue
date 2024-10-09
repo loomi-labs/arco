@@ -185,7 +185,8 @@ onUnmounted(() => {
 
     <ArchivesCard :repo='repo'
                   :repo-status='repoState.status'
-                  :highlight='false'>
+                  :highlight='false'
+                  :show-backup-profile-filter='true'>
     </ArchivesCard>
   </div>
 </template>

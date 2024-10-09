@@ -1,8 +1,9 @@
 <script setup lang='ts'>
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { app, ent, state, types } from "../../wailsjs/go/models";
-import { ref, useTemplateRef, watch } from "vue";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import { app, ent, state } from "../../wailsjs/go/models";
+import { computed, ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ChevronDoubleLeftIcon,
@@ -11,6 +12,7 @@ import {
   ChevronRightIcon,
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
+  MagnifyingGlassIcon,
   TrashIcon
 } from "@heroicons/vue/24/solid";
 import { toRelativeTimeString } from "../common/time";
@@ -33,6 +35,7 @@ interface Props {
   repoStatus: state.RepoStatus;
   highlight: boolean;
   showName?: boolean;
+  showBackupProfileFilter?: boolean;
 }
 
 /************
@@ -49,22 +52,30 @@ const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map
 const showProgressSpinner = ref<boolean>(false);
 const confirmDeleteModalKey = "confirm_delete_archive_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
+const backupProfileNames = ref<app.BackupProfileName[]>([]);
+const backupProfileFilter = ref<number>(-1);
+const search = ref<string | undefined>(undefined);
 
 /************
  * Functions
  ************/
 
+// Show the filter if there are more than 1 backup profiles (All + at least 1 more)
+const showBackupProfileFilter = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
+
+const hasNoArchives = computed<boolean>(() =>  pagination.value.total === 0 && search.value === undefined && backupProfileFilter.value === -1);
+
 async function getPaginatedArchives() {
   try {
-    let result: app.PaginatedArchivesResponse;
-    if (props.backupProfileId) {
-      const backupId = types.BackupId.createFrom();
-      backupId.backupProfileId = props.backupProfileId ?? -1;
-      backupId.repositoryId = props.repo?.id ?? -1;
-      result = await repoClient.GetPaginatedArchivesByBackupId(backupId, pagination.value.page, pagination.value.pageSize);
-    } else {
-      result = await repoClient.GetPaginatedArchivesByRepoId(props.repo.id, pagination.value.page, pagination.value.pageSize);
-    }
+    const request = app.PaginatedArchivesRequest.createFrom();
+    request.repositoryId = props.repo.id;
+    request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
+    request.search = search.value;
+    request.page = pagination.value.page;
+    request.pageSize = pagination.value.pageSize;
+
+    const result = await repoClient.GetPaginatedArchives(request);
+
     archives.value = result.archives;
     pagination.value = {
       page: pagination.value.page,
@@ -126,28 +137,42 @@ async function browseArchive(archiveId: number) {
   }
 }
 
+async function getBackupProfileNames() {
+  // We only need to get backup profile names if the filter is shown
+  if (!props.showBackupProfileFilter) {
+    return;
+  }
+
+  try {
+    const result = await backupClient.GetBackupProfileNamesByRepositoryId(props.repo.id);
+    backupProfileNames.value = [{ id: -1, name: "All" }, ...result];
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup profile names", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
 getPaginatedArchives();
 getArchiveMountStates();
+getBackupProfileNames();
 
-watch(() => props.repoStatus, async () => {
+watch([() => props.repoStatus, () => props.repo], async () => {
   await getPaginatedArchives();
   await getArchiveMountStates();
 });
 
-watch(() => props.repo, async () => {
+watch([backupProfileFilter, search], async () => {
   await getPaginatedArchives();
-  await getArchiveMountStates();
 });
 
 </script>
 <template>
   <div class='ac-card p-10'
        :class='{ "border-2 border-primary": props.highlight }'>
-    <div v-if='pagination.total > 0'>
+    <div v-if='!hasNoArchives'>
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
@@ -157,6 +182,32 @@ watch(() => props.repo, async () => {
           </th>
           <th>{{ $t("date") }}</th>
           <th>{{ $t("action") }}</th>
+        </tr>
+        <tr>
+          <td colspan='3' class='flex items-end gap-3'>
+            <!-- Backup filter -->
+            <label v-if='showBackupProfileFilter' class='form-control max-w-xs'>
+              <span class='label'>
+                <span class='label-text-alt'>Backup Profile</span>
+              </span>
+              <select class='select select-bordered' v-model='backupProfileFilter'>
+                <option v-for='option in backupProfileNames' :value='option.id'>
+                  {{ option.name }}
+                </option>
+              </select>
+            </label>
+
+            <!-- Search -->
+            <label class="form-control w-full max-w-xs">
+              <span class="label">
+                <span class="label-text-alt">Search</span>
+              </span>
+              <label class='input input-bordered flex items-center gap-2 max-w-64'>
+                <input type='text' class='grow' v-model='search'/>
+                <MagnifyingGlassIcon class='size-4'></MagnifyingGlassIcon>
+              </label>
+            </label>
+          </td>
         </tr>
         </thead>
         <tbody>
