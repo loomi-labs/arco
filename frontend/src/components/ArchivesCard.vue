@@ -165,7 +165,7 @@ async function browseArchive(archiveId: number) {
 }
 
 async function getBackupProfileFilterOptions() {
-  // We only need to get backup profile names if the filter is shown
+  // We only need to get backup profile names if the backup profile column is visible
   if (!props.showBackupProfileColumn) {
     return;
   }

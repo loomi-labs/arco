@@ -423,8 +423,8 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 	return err
 }
 
-func (b *BackupClient) addNewArchive(bId types.BackupId, url, password string) error {
-	info, err := b.borg.Info(url, password)
+func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
+	info, err := b.borg.Info(archiveName, password)
 	if err != nil {
 		return err
 	}
