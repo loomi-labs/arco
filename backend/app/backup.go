@@ -399,7 +399,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 	return err
 }
 
-func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
+func (b *BackupClient) addNewArchive(bId types.BackupId, url, password string) error {
 	info, err := b.borg.Info(url, password)
 	if err != nil {
 		return err
@@ -410,7 +410,8 @@ func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
 
 	_, err = b.db.Archive.
 		Create().
-		SetRepositoryID(repoId).
+		SetRepositoryID(bId.RepositoryId).
+		SetBackupProfileID(bId.BackupProfileId).
 		SetBorgID(info.Archives[0].ID).
 		SetName(info.Archives[0].Name).
 		SetCreatedAt(time.Time(info.Archives[0].Start)).
@@ -509,7 +510,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}
 
-		err = b.addNewArchive(bId.RepositoryId, archiveName, repo.Password)
+		err = b.addNewArchive(bId, archiveName, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}
