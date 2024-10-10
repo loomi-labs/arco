@@ -46,8 +46,8 @@ export function GetBackupProfile(arg1) {
   return window['go']['app']['BackupClient']['GetBackupProfile'](arg1);
 }
 
-export function GetBackupProfileNamesByRepositoryId(arg1) {
-  return window['go']['app']['BackupClient']['GetBackupProfileNamesByRepositoryId'](arg1);
+export function GetBackupProfileFilterOptions(arg1) {
+  return window['go']['app']['BackupClient']['GetBackupProfileFilterOptions'](arg1);
 }
 
 export function GetBackupProfiles() {

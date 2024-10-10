@@ -28,7 +28,7 @@ export function GetBackupButtonStatus(arg1:types.BackupId):Promise<state.BackupB
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
-export function GetBackupProfileNamesByRepositoryId(arg1:number):Promise<Array<app.BackupProfileName>>;
+export function GetBackupProfileFilterOptions(arg1:number):Promise<Array<app.BackupProfileFilter>>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
 
