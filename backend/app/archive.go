@@ -5,6 +5,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 )
 
+// TODO: refactor this to connect archives to backup profiles
 func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	repo, err := r.Get(repoId)
 	if err != nil {
@@ -126,10 +128,10 @@ type PaginatedArchivesRequest struct {
 	Page         int `json:"page"`
 	PageSize     int `json:"pageSize"`
 	// Optional
-	BackupProfileId int       `json:"backupProfileId,omitempty"`
-	Search          string    `json:"search,omitempty"`
-	StartDate       time.Time `json:"startDate,omitempty"`
-	EndDate         time.Time `json:"endDate,omitempty"`
+	BackupProfileFilter *BackupProfileFilter `json:"backupProfileFilter,omitempty"`
+	Search              string               `json:"search,omitempty"`
+	StartDate           time.Time            `json:"startDate,omitempty"`
+	EndDate             time.Time            `json:"endDate,omitempty"`
 }
 
 type PaginatedArchivesResponse struct {
@@ -153,13 +155,17 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
 	}
 
-	// If a backup profile is specified, filter by its prefix
-	if req.BackupProfileId != 0 {
-		backupProfile, err := r.backupClient().GetBackupProfile(req.BackupProfileId)
-		if err != nil {
-			return nil, err
+	// If a backup profile filter is specified, filter by it
+	if req.BackupProfileFilter != nil {
+		if req.BackupProfileFilter.Id != 0 {
+			// First filter by BackupProfile.ID
+			archivePredicates = append(archivePredicates, archive.HasBackupProfileWith(backupprofile.ID(req.BackupProfileFilter.Id)))
+		} else if req.BackupProfileFilter.IsUnknownFilter {
+			// If the unknown filter is specified, filter by archives that don't have a backup profile
+			archivePredicates = append(archivePredicates, archive.Not(archive.HasBackupProfile()))
 		}
-		archivePredicates = append(archivePredicates, archive.NameHasPrefix(backupProfile.Prefix))
+		// Filter by BackupProfile.Name does not have to be supported
+		// Filter all is implicit
 	}
 
 	// If a search term is specified, filter by it
@@ -187,6 +193,9 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 
 	archives, err := r.db.Archive.
 		Query().
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.Select(backupprofile.FieldName)
+		}).
 		Where(archive.And(archivePredicates...)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		Offset((req.Page - 1) * req.PageSize).
