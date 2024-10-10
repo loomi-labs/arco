@@ -78,21 +78,6 @@ const formatter = ref({
 // If set there is also an additional column for the backup profile
 const isBackupProfileFilterVisible = computed<boolean>(() => backupProfileFilterOptions.value.length > 1);
 
-// Repo has no archives if (all conditions are met):
-// - There are no archives
-// - There is no search term
-// - There is no backup profile filter
-// - There is no date range
-// - The component is not loading
-const hasNoArchives = computed<boolean>(() =>
-  pagination.value.total === 0 &&
-  search.value === undefined &&
-  backupProfileFilter.value === undefined &&
-  dateRange.value.startDate === "" &&
-  dateRange.value.endDate === "" &&
-  !isLoading.value
-);
-
 async function getPaginatedArchives() {
   try {
     isLoading.value = true;
@@ -275,7 +260,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
 <template>
   <div class='ac-card p-10'
        :class='{ "border-2 border-primary": props.highlight }'>
-    <div v-if='!hasNoArchives'>
+    <div>
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
@@ -409,9 +394,6 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <ChevronDoubleRightIcon class='size-6' />
         </button>
       </div>
-    </div>
-    <div v-else>
-      <p>{{ $t("no_archives_found") }}</p>
     </div>
   </div>
 
