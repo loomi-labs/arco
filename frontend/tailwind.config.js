@@ -35,9 +35,6 @@ export default {
         "vtd-primary": arcoPurple, // Light mode Datepicker color
         "vtd-secondary": colors.gray, // Dark mode Datepicker color
       },
-      borderRadius: {
-        "4xl": "3rem"
-      }
     }
   },
   plugins: [
