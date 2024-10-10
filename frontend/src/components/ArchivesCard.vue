@@ -38,7 +38,7 @@ interface Props {
   repoStatus: state.RepoStatus;
   highlight: boolean;
   showName?: boolean;
-  showBackupProfileFilter?: boolean;
+  showBackupProfileColumn?: boolean;
 }
 
 /************
@@ -55,19 +55,16 @@ const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map
 const showProgressSpinner = ref<boolean>(false);
 const confirmDeleteModalKey = "confirm_delete_archive_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
-const backupProfileNames = ref<app.BackupProfileName[]>([]);
-const backupProfileFilter = ref<number>(-1);
+const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
+const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 
-// const datePair = ref<[Date, Date]>([new Date(), new Date()]);
-// const dateRange = ref<string | [Date, Date]>([] as unknown as [Date, Date]);
 const dateRange = ref({
   startDate: "",
   endDate: ""
 });
 
-// const dateValue = ref<string | [Date, Date]>("");
 const formatter = ref({
   date: "DD MMM YYYY",
   month: "MMM"
@@ -77,23 +74,9 @@ const formatter = ref({
  * Functions
  ************/
 
-// Show the filter if there are more than 1 backup profiles (All + at least 1 more)
-const isBackupProfileFilterVisible = computed<boolean>(() => props.showBackupProfileFilter && backupProfileNames.value.length > 2);
-
-// Repo has no archives if (all conditions are met):
-// - There are no archives
-// - There is no search term
-// - There is no backup profile filter
-// - There is no date range
-// - The component is not loading
-const hasNoArchives = computed<boolean>(() =>
-  pagination.value.total === 0 &&
-  search.value === undefined &&
-  backupProfileFilter.value === -1 &&
-  dateRange.value.startDate === "" &&
-  dateRange.value.endDate === "" &&
-  !isLoading.value
-);
+// Show the filter if there are more than 1 backup profiles (without the special options)
+// If set there is also an additional column for the backup profile
+const isBackupProfileFilterVisible = computed<boolean>(() => backupProfileFilterOptions.value.length > 1);
 
 async function getPaginatedArchives() {
   try {
@@ -106,7 +89,12 @@ async function getPaginatedArchives() {
     request.pageSize = pagination.value.pageSize;
 
     // Optional
-    request.backupProfileId = props.backupProfileId ?? (backupProfileFilter.value === -1 ? undefined : backupProfileFilter.value);
+    if (props.backupProfileId) {
+      request.backupProfileFilter = app.BackupProfileFilter.createFrom();
+      request.backupProfileFilter.id = props.backupProfileId;
+    } else {
+      request.backupProfileFilter = backupProfileFilter.value;
+    }
     request.search = search.value;
     request.startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : undefined;
     // Add a day to the end date to include the end date itself
@@ -176,15 +164,14 @@ async function browseArchive(archiveId: number) {
   }
 }
 
-async function getBackupProfileNames() {
-  // We only need to get backup profile names if the filter is shown
-  if (!props.showBackupProfileFilter) {
+async function getBackupProfileFilterOptions() {
+  // We only need to get backup profile names if the backup profile column is visible
+  if (!props.showBackupProfileColumn) {
     return;
   }
 
   try {
-    const result = await backupClient.GetBackupProfileNamesByRepositoryId(props.repo.id);
-    backupProfileNames.value = [{ id: -1, name: "All" }, ...result];
+    backupProfileFilterOptions.value = await backupClient.GetBackupProfileFilterOptions(props.repo.id);
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile names", error);
   }
@@ -197,57 +184,57 @@ const customDateRangeShortcuts = () => {
       atClick: () => {
         const date = new Date();
         return [dayStart(date), dayEnd(date)];
-      },
+      }
     },
     {
       label: "Yesterday",
       atClick: () => {
         const date = addDay(new Date(), -1);
         return [dayStart(date), dayEnd(date)];
-      },
+      }
     },
     {
       label: "Last 7 Days",
       atClick: () => {
         const date = new Date();
         return [addDay(date, -6), dayEnd(date)];
-      },
+      }
     },
     {
       label: "Last 30 Days",
       atClick: () => {
         const date = new Date();
         return [addDay(date, -29), dayEnd(date)];
-      },
+      }
     },
     {
       label: "This Month",
       atClick: () => {
         const date = new Date();
         return [new Date(date.getFullYear(), date.getMonth(), 1), new Date(date.getFullYear(), date.getMonth() + 1, 0)];
-      },
+      }
     },
     {
       label: "Last Month",
       atClick: () => {
         const date = new Date();
         return [new Date(date.getFullYear(), date.getMonth() - 1, 1), new Date(date.getFullYear(), date.getMonth(), 0)];
-      },
+      }
     },
     {
       label: "This Year",
       atClick: () => {
         const date = new Date();
         return [yearStart(date), yearEnd(date)];
-      },
+      }
     },
     {
       label: "Last Years",
       atClick: () => {
         const date = addYear(new Date(), -1);
         return [yearStart(date), yearEnd(date)];
-      },
-    },
+      }
+    }
   ];
 };
 
@@ -257,11 +244,12 @@ const customDateRangeShortcuts = () => {
 
 getPaginatedArchives();
 getArchiveMountStates();
-getBackupProfileNames();
+getBackupProfileFilterOptions();
 
 watch([() => props.repoStatus, () => props.repo], async () => {
   await getPaginatedArchives();
   await getArchiveMountStates();
+  await getBackupProfileFilterOptions();
 });
 
 watch([backupProfileFilter, search, dateRange], async () => {
@@ -272,20 +260,20 @@ watch([backupProfileFilter, search, dateRange], async () => {
 <template>
   <div class='ac-card p-10'
        :class='{ "border-2 border-primary": props.highlight }'>
-    <div v-if='!hasNoArchives'>
+    <div>
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th colspan='3'>
+          <th colspan='4'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
         </tr>
         <tr>
-          <th colspan='3'>
+          <th colspan='4'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
-              <label class='form-control w-full max-w-xs'>
+              <label class='form-control w-full'>
                 <span class='label'>
                   <span class='label-text-alt'>Date range</span>
                 </span>
@@ -300,26 +288,29 @@ watch([backupProfileFilter, search, dateRange], async () => {
               </label>
 
               <!-- Backup filter -->
-              <label v-if='isBackupProfileFilterVisible' class='form-control max-w-xs'>
+              <label v-if='isBackupProfileFilterVisible' class='form-control w-full'>
               <span class='label'>
                 <span class='label-text-alt'>Backup Profile</span>
               </span>
                 <select class='select select-bordered' v-model='backupProfileFilter'>
-                  <option v-for='option in backupProfileNames' :value='option.id'>
+                  <option v-for='option in backupProfileFilterOptions' :value='option'>
                     {{ option.name }}
                   </option>
                 </select>
               </label>
 
               <!-- Search -->
-              <label class='form-control w-full max-w-xs'>
+              <label class='form-control w-full'>
                 <span class='label'>
                   <span class='label-text-alt'>Search</span>
                 </span>
                 <label class='input input-bordered flex items-center gap-2'>
-                  <MagnifyingGlassIcon class='size-5'></MagnifyingGlassIcon>
                   <input type='text' class='grow' v-model='search' />
-                  <XMarkIcon v-if='search' class='size-5 cursor-pointer' @click='search = ""'></XMarkIcon>
+                  <label class='swap swap-rotate'
+                         :class='{"swap-active": !!search}'>
+                    <MagnifyingGlassIcon class='swap-off size-5'></MagnifyingGlassIcon>
+                    <XMarkIcon class='swap-on size-5 cursor-pointer' @click='search = ""'></XMarkIcon>
+                  </label>
                 </label>
               </label>
             </div>
@@ -327,8 +318,9 @@ watch([backupProfileFilter, search, dateRange], async () => {
         </tr>
         <tr>
           <th>{{ $t("name") }}</th>
-          <th>{{ $t("date") }}</th>
-          <th>{{ $t("action") }}</th>
+          <th v-if='showBackupProfileColumn'>Backup profile</th>
+          <th>Creation time</th>
+          <th class='w-40'>{{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -336,6 +328,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
         <tr v-for='(archive, index) in archives' :key='index'
             :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
+          <!-- Name -->
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
             <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip'
@@ -343,11 +336,17 @@ watch([backupProfileFilter, search, dateRange], async () => {
                 <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
               </span>
           </td>
+          <!-- Backup -->
+          <td v-if='showBackupProfileColumn'>
+            <span>{{archive?.edges.backupProfile?.name}}</span>
+          </td>
+          <!-- Date -->
           <td>
             <span class='tooltip' :data-tip='archive.createdAt'>
               <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
             </span>
           </td>
+          <!-- Action -->
           <td class='flex items-center'>
             <button class='btn btn-sm btn-primary'
                     :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
@@ -365,9 +364,9 @@ watch([backupProfileFilter, search, dateRange], async () => {
             </button>
           </td>
         </tr>
-        <!-- Filler row (this is a hack to take up the same amount of space event if there are not enough rows) -->
+        <!-- Filler row (this is a hack to take up the same amount of space even if there are not enough rows) -->
         <tr v-for='index in (pagination.pageSize - archives.length)' :key='`empty-${index}`'>
-          <td colspan='3'>
+          <td colspan='4'>
             <button class='btn btn-sm invisible' disabled>
               <TrashIcon class='size-4' />
             </button>
@@ -376,7 +375,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
         </tbody>
       </table>
       <div class='flex justify-center items-center mt-4'
-        :class='{"invisible": pagination.total === 0}'>
+           :class='{"invisible": pagination.total === 0}'>
         <button class='btn btn-ghost' :disabled='pagination.page === 1'
                 @click='pagination.page = 1; getPaginatedArchives()'>
           <ChevronDoubleLeftIcon class='size-6' />
@@ -395,9 +394,6 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <ChevronDoubleRightIcon class='size-6' />
         </button>
       </div>
-    </div>
-    <div v-else>
-      <p>{{ $t("no_archives_found") }}</p>
     </div>
   </div>
 

@@ -1,17 +1,21 @@
 export namespace app {
 	
-	export class BackupProfileName {
-	    id: number;
+	export class BackupProfileFilter {
+	    id?: number;
 	    name: string;
+	    isAllFilter: boolean;
+	    isUnknownFilter: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new BackupProfileName(source);
+	        return new BackupProfileFilter(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.name = source["name"];
+	        this.isAllFilter = source["isAllFilter"];
+	        this.isUnknownFilter = source["isUnknownFilter"];
 	    }
 	}
 	export class Env {
@@ -32,7 +36,7 @@ export namespace app {
 	    repositoryId: number;
 	    page: number;
 	    pageSize: number;
-	    backupProfileId?: number;
+	    backupProfileFilter?: BackupProfileFilter;
 	    search?: string;
 	    // Go type: time
 	    startDate?: any;
@@ -48,7 +52,7 @@ export namespace app {
 	        this.repositoryId = source["repositoryId"];
 	        this.page = source["page"];
 	        this.pageSize = source["pageSize"];
-	        this.backupProfileId = source["backupProfileId"];
+	        this.backupProfileFilter = this.convertValues(source["backupProfileFilter"], BackupProfileFilter);
 	        this.search = source["search"];
 	        this.startDate = this.convertValues(source["startDate"], null);
 	        this.endDate = this.convertValues(source["endDate"], null);

@@ -5,6 +5,7 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/borg"
 	"arco/backend/ent"
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
@@ -40,12 +41,14 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		All(b.ctx)
 }
 
-type BackupProfileName struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+type BackupProfileFilter struct {
+	Id              int    `json:"id,omitempty"`
+	Name            string `json:"name"`
+	IsAllFilter     bool   `json:"isAllFilter"`
+	IsUnknownFilter bool   `json:"isUnknownFilter"`
 }
 
-func (b *BackupClient) GetBackupProfileNamesByRepositoryId(repoId int) ([]BackupProfileName, error) {
+func (b *BackupClient) GetBackupProfileFilterOptions(repoId int) ([]BackupProfileFilter, error) {
 	profiles, err := b.db.BackupProfile.
 		Query().
 		Where(backupprofile.HasRepositoriesWith(repository.ID(repoId))).
@@ -53,11 +56,32 @@ func (b *BackupClient) GetBackupProfileNamesByRepositoryId(repoId int) ([]Backup
 	if err != nil {
 		return nil, err
 	}
-	names := make([]BackupProfileName, len(profiles))
+
+	filters := make([]BackupProfileFilter, len(profiles))
 	for i, p := range profiles {
-		names[i] = BackupProfileName{Id: p.ID, Name: p.Name}
+		filters[i] = BackupProfileFilter{Id: p.ID, Name: p.Name}
 	}
-	return names, nil
+
+	hasForeignArchives, err := b.db.Repository.
+		Query().
+		Where(repository.And(
+			repository.ID(repoId),
+			repository.HasArchivesWith(archive.Not(archive.HasBackupProfile())),
+		)).
+		Exist(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if hasForeignArchives {
+		filters = append([]BackupProfileFilter{{Name: "Not defined", IsUnknownFilter: true}}, filters...)
+	}
+
+	if len(filters) > 1 {
+		filters = append([]BackupProfileFilter{{Name: "All", IsAllFilter: true}}, filters...)
+	}
+
+	return filters, nil
 }
 
 func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
@@ -399,8 +423,8 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 	return err
 }
 
-func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
-	info, err := b.borg.Info(url, password)
+func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
+	info, err := b.borg.Info(archiveName, password)
 	if err != nil {
 		return err
 	}
@@ -410,7 +434,8 @@ func (b *BackupClient) addNewArchive(repoId int, url, password string) error {
 
 	_, err = b.db.Archive.
 		Create().
-		SetRepositoryID(repoId).
+		SetRepositoryID(bId.RepositoryId).
+		SetBackupProfileID(bId.BackupProfileId).
 		SetBorgID(info.Archives[0].ID).
 		SetName(info.Archives[0].Name).
 		SetCreatedAt(time.Time(info.Archives[0].Start)).
@@ -509,7 +534,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}
 
-		err = b.addNewArchive(bId.RepositoryId, archiveName, repo.Password)
+		err = b.addNewArchive(bId, archiveName, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}
