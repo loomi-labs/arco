@@ -184,6 +184,10 @@ async function getBackupProfileFilterOptions() {
 
   try {
     backupProfileFilterOptions.value = await backupClient.GetBackupProfileFilterOptions(props.repo.id);
+
+    if (backupProfileFilter.value === undefined && backupProfileFilterOptions.value.length > 0) {
+      backupProfileFilter.value = backupProfileFilterOptions.value[0];
+    }
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile names", error);
   }
