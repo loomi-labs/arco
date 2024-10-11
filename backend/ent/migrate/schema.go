@@ -148,6 +148,17 @@ var (
 		Columns:    RepositoriesColumns,
 		PrimaryKey: []*schema.Column{RepositoriesColumns[0]},
 	}
+	// SettingsColumns holds the columns for the "settings" table.
+	SettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "theme", Type: field.TypeEnum, Enums: []string{"system", "light", "dark"}, Default: "system"},
+	}
+	// SettingsTable holds the schema information for the "settings" table.
+	SettingsTable = &schema.Table{
+		Name:       "settings",
+		Columns:    SettingsColumns,
+		PrimaryKey: []*schema.Column{SettingsColumns[0]},
+	}
 	// BackupProfileRepositoriesColumns holds the columns for the "backup_profile_repositories" table.
 	BackupProfileRepositoriesColumns = []*schema.Column{
 		{Name: "backup_profile_id", Type: field.TypeInt},
@@ -180,6 +191,7 @@ var (
 		BackupSchedulesTable,
 		FailedBackupRunsTable,
 		RepositoriesTable,
+		SettingsTable,
 		BackupProfileRepositoriesTable,
 	}
 )

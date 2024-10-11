@@ -83,6 +83,8 @@ func init() {
 	repositoryDescStatsUniqueCsize := repositoryFields[9].Descriptor()
 	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
 	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
+	settingsFields := schema.Settings{}.Fields()
+	_ = settingsFields
 }
 
 const (

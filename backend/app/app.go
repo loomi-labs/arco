@@ -162,6 +162,17 @@ func (a *App) initDb() (*ent.Client, error) {
 	if err := dbClient.Schema.Create(a.ctx); err != nil {
 		return nil, err
 	}
+
+	cnt, err := dbClient.Settings.Query().Count(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+	if cnt == 0 {
+		err = dbClient.Settings.Create().Exec(a.ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return dbClient, nil
 }
 

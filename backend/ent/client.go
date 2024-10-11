@@ -16,6 +16,7 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/repository"
+	"arco/backend/ent/settings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -38,6 +39,8 @@ type Client struct {
 	FailedBackupRun *FailedBackupRunClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
+	// Settings is the client for interacting with the Settings builders.
+	Settings *SettingsClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -54,6 +57,7 @@ func (c *Client) init() {
 	c.BackupSchedule = NewBackupScheduleClient(c.config)
 	c.FailedBackupRun = NewFailedBackupRunClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
+	c.Settings = NewSettingsClient(c.config)
 }
 
 type (
@@ -151,6 +155,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackupSchedule:  NewBackupScheduleClient(cfg),
 		FailedBackupRun: NewFailedBackupRunClient(cfg),
 		Repository:      NewRepositoryClient(cfg),
+		Settings:        NewSettingsClient(cfg),
 	}, nil
 }
 
@@ -175,6 +180,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackupSchedule:  NewBackupScheduleClient(cfg),
 		FailedBackupRun: NewFailedBackupRunClient(cfg),
 		Repository:      NewRepositoryClient(cfg),
+		Settings:        NewSettingsClient(cfg),
 	}, nil
 }
 
@@ -203,21 +209,23 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Archive.Use(hooks...)
-	c.BackupProfile.Use(hooks...)
-	c.BackupSchedule.Use(hooks...)
-	c.FailedBackupRun.Use(hooks...)
-	c.Repository.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
+		c.Settings,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Archive.Intercept(interceptors...)
-	c.BackupProfile.Intercept(interceptors...)
-	c.BackupSchedule.Intercept(interceptors...)
-	c.FailedBackupRun.Intercept(interceptors...)
-	c.Repository.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
+		c.Settings,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -233,6 +241,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.FailedBackupRun.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
+	case *SettingsMutation:
+		return c.Settings.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -1096,13 +1106,147 @@ func (c *RepositoryClient) mutate(ctx context.Context, m *RepositoryMutation) (V
 	}
 }
 
+// SettingsClient is a client for the Settings schema.
+type SettingsClient struct {
+	config
+}
+
+// NewSettingsClient returns a client for the Settings from the given config.
+func NewSettingsClient(c config) *SettingsClient {
+	return &SettingsClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `settings.Hooks(f(g(h())))`.
+func (c *SettingsClient) Use(hooks ...Hook) {
+	c.hooks.Settings = append(c.hooks.Settings, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `settings.Intercept(f(g(h())))`.
+func (c *SettingsClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Settings = append(c.inters.Settings, interceptors...)
+}
+
+// Create returns a builder for creating a Settings entity.
+func (c *SettingsClient) Create() *SettingsCreate {
+	mutation := newSettingsMutation(c.config, OpCreate)
+	return &SettingsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Settings entities.
+func (c *SettingsClient) CreateBulk(builders ...*SettingsCreate) *SettingsCreateBulk {
+	return &SettingsCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SettingsClient) MapCreateBulk(slice any, setFunc func(*SettingsCreate, int)) *SettingsCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SettingsCreateBulk{err: fmt.Errorf("calling to SettingsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SettingsCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SettingsCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Settings.
+func (c *SettingsClient) Update() *SettingsUpdate {
+	mutation := newSettingsMutation(c.config, OpUpdate)
+	return &SettingsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SettingsClient) UpdateOne(s *Settings) *SettingsUpdateOne {
+	mutation := newSettingsMutation(c.config, OpUpdateOne, withSettings(s))
+	return &SettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SettingsClient) UpdateOneID(id int) *SettingsUpdateOne {
+	mutation := newSettingsMutation(c.config, OpUpdateOne, withSettingsID(id))
+	return &SettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Settings.
+func (c *SettingsClient) Delete() *SettingsDelete {
+	mutation := newSettingsMutation(c.config, OpDelete)
+	return &SettingsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SettingsClient) DeleteOne(s *Settings) *SettingsDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SettingsClient) DeleteOneID(id int) *SettingsDeleteOne {
+	builder := c.Delete().Where(settings.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SettingsDeleteOne{builder}
+}
+
+// Query returns a query builder for Settings.
+func (c *SettingsClient) Query() *SettingsQuery {
+	return &SettingsQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSettings},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Settings entity by its id.
+func (c *SettingsClient) Get(ctx context.Context, id int) (*Settings, error) {
+	return c.Query().Where(settings.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SettingsClient) GetX(ctx context.Context, id int) *Settings {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *SettingsClient) Hooks() []Hook {
+	return c.hooks.Settings
+}
+
+// Interceptors returns the client interceptors.
+func (c *SettingsClient) Interceptors() []Interceptor {
+	return c.inters.Settings
+}
+
+func (c *SettingsClient) mutate(ctx context.Context, m *SettingsMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SettingsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SettingsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SettingsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Settings mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository []ent.Hook
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
+		Settings []ent.Hook
 	}
 	inters struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun,
-		Repository []ent.Interceptor
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
+		Settings []ent.Interceptor
 	}
 )

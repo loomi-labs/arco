@@ -157,6 +157,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 			toTsEnums(state.AvailableRepoStatuses),
 			toTsEnums(state.AvailableBackupButtonStatuses),
 			toTsEnums(types.AllEvents),
+			toTsEnums(types.AllThemes),
 		},
 		LogLevel:    logLevel,
 		Logger:      util.NewZapLogWrapper(log),
