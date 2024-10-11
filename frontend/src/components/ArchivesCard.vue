@@ -2,7 +2,7 @@
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { app, ent, state } from "../../wailsjs/go/models";
+import { app, ent, state, types } from "../../wailsjs/go/models";
 import { computed, ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
@@ -51,7 +51,7 @@ const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
-const archiveMountStates = ref<Map<number, state.MountState>>(new Map()); // Map<archiveId, MountState>
+const archiveMountStates = ref<Map<number, types.MountState>>(new Map()); // Map<archiveId, MountState>
 const showProgressSpinner = ref<boolean>(false);
 const confirmDeleteModalKey = "confirm_delete_archive_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
