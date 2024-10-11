@@ -125,6 +125,16 @@ async function abortBackups() {
   }
 }
 
+async function unmountAll() {
+  try {
+    for (const backupId of bIds) {
+      await repoClient.UnmountAllForRepo(backupId.repositoryId);
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to unmount directories", error);
+  }
+}
+
 async function runButtonAction() {
   if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
     await runBackups();
@@ -134,8 +144,7 @@ async function runButtonAction() {
     // TODO: FIX THIS
     LogDebug("locked button");
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    // TODO: FIX THIS
-    LogDebug("unmount button");
+    await unmountAll();
   }
 }
 
