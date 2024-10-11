@@ -237,7 +237,11 @@ func getMountPath(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join("/run/user", currentUser.Uid, "arco", name), nil
+	mountPath, err := types.GetMountPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(mountPath, currentUser.Uid, "arco", name), nil
 }
 
 func getRepoMountPath(repo *ent.Repository) (string, error) {

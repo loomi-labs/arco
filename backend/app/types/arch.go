@@ -49,3 +49,13 @@ func GetOpenFileManagerCmd() (string, error) {
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }
+
+func GetMountPath() (string, error) {
+	if IsLinux() {
+		return "/proc/self/mountinfo", nil
+	}
+	if IsDarwin() {
+		return "/Volumes", nil
+	}
+	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
