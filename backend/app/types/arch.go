@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"
@@ -63,40 +64,36 @@ func GetMountPath() (string, error) {
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }
 
-func getDarwinMountStates(paths map[int]string) (states map[int]*MountState, err error) {
-	mountPath, err := GetMountPath()
-	if err != nil {
-		return
-	}
+func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
 
-	cmd := exec.Command("mount", "|", "grep", mountPath)
+	cmd := exec.Command("mount")
 	output, err := cmd.Output()
 	if err != nil {
-		return
+		return nil, errors.Errorf("error running mount command: %s", err)
 	}
 
-	mountPoints := strings.Split(string(output), "\n")
-	for _, mount := range mountPoints {
+	states := make(map[int]*MountState)
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
 		for id, path := range paths {
-			if mount == path {
+			if strings.Contains(line, path) {
 				states[id] = &MountState{
 					IsMounted: true,
-					MountPath: mount,
+					MountPath: path,
 				}
 			}
 		}
 	}
-	return
+	return states, nil
 }
 
-func getLinuxMountStates(paths map[int]string) (states map[int]*MountState, err error) {
-	states = make(map[int]*MountState)
-
+func getLinuxMountStates(paths map[int]string) (map[int]*MountState, error) {
 	mounts, err := procfs.GetMounts()
 	if err != nil {
-		return
+		return nil, err
 	}
 
+	states := make(map[int]*MountState)
 	for _, mount := range mounts {
 		for id, path := range paths {
 			if mount.MountPoint == path {
@@ -107,7 +104,7 @@ func getLinuxMountStates(paths map[int]string) (states map[int]*MountState, err 
 			}
 		}
 	}
-	return
+	return states, nil
 }
 
 func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
