@@ -87,3 +87,8 @@ func EventBackupStateChangedString(bId BackupId) string {
 func EventRepoStateChangedString(repoId int) string {
 	return fmt.Sprintf("%s:%d", EventRepoStateChanged.String(), repoId)
 }
+
+type MountState struct {
+	IsMounted bool   `json:"is_mounted"`
+	MountPath string `json:"mount_path"`
+}

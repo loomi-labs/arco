@@ -23,8 +23,8 @@ type State struct {
 	runningDryRunPruneJobs map[types.BackupId]*PruneJob
 	runningDeleteJobs      map[types.BackupId]*cancelCtx
 
-	repoMounts    map[int]*MountState         // map of repository ID to mount state
-	archiveMounts map[int]map[int]*MountState // maps of [repository ID][archive ID] to mount state
+	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
+	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
 }
 
 type RepoLock struct {
@@ -51,11 +51,6 @@ type PruneJobResult struct {
 type PruneJob struct {
 	*cancelCtx
 	result PruneJobResult
-}
-
-type MountState struct {
-	IsMounted bool   `json:"is_mounted"`
-	MountPath string `json:"mount_path"`
 }
 
 type RepoStatus string
@@ -186,8 +181,8 @@ func NewState(log *zap.SugaredLogger) *State {
 		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
 		runningDeleteJobs:      make(map[types.BackupId]*cancelCtx),
 
-		repoMounts:    make(map[int]*MountState),
-		archiveMounts: make(map[int]map[int]*MountState),
+		repoMounts:    make(map[int]*types.MountState),
+		archiveMounts: make(map[int]map[int]*types.MountState),
 	}
 }
 
@@ -577,12 +572,12 @@ func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
 	return true, ""
 }
 
-func (s *State) SetRepoMount(id int, state *MountState) {
+func (s *State) SetRepoMount(id int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.repoMounts[id]; !ok {
-		s.repoMounts[id] = &MountState{}
+		s.repoMounts[id] = &types.MountState{}
 	}
 
 	s.repoMounts[id].IsMounted = state.IsMounted
@@ -604,12 +599,12 @@ func (s *State) SetRepoMount(id int, state *MountState) {
 	}
 }
 
-func (s *State) setArchiveMount(repoId int, archiveId int, state *MountState) {
+func (s *State) setArchiveMount(repoId int, archiveId int, state *types.MountState) {
 	if _, ok := s.archiveMounts[repoId]; !ok {
-		s.archiveMounts[repoId] = make(map[int]*MountState)
+		s.archiveMounts[repoId] = make(map[int]*types.MountState)
 	}
 	if _, ok := s.archiveMounts[repoId][archiveId]; !ok {
-		s.archiveMounts[repoId][archiveId] = &MountState{}
+		s.archiveMounts[repoId][archiveId] = &types.MountState{}
 	}
 
 	s.archiveMounts[repoId][archiveId].IsMounted = state.IsMounted
@@ -631,14 +626,14 @@ func (s *State) setArchiveMount(repoId int, archiveId int, state *MountState) {
 	}
 }
 
-func (s *State) SetArchiveMount(repoId int, archiveId int, state *MountState) {
+func (s *State) SetArchiveMount(repoId int, archiveId int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.setArchiveMount(repoId, archiveId, state)
 }
 
-func (s *State) SetArchiveMounts(repoId int, states map[int]*MountState) {
+func (s *State) SetArchiveMounts(repoId int, states map[int]*types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -647,15 +642,15 @@ func (s *State) SetArchiveMounts(repoId int, states map[int]*MountState) {
 	}
 }
 
-func (s *State) GetRepoMount(id int) MountState {
+func (s *State) GetRepoMount(id int) types.MountState {
 	if state, ok := s.repoMounts[id]; ok {
 		return *state
 	}
-	return MountState{}
+	return types.MountState{}
 }
 
-func (s *State) GetArchiveMounts(repoId int) (states map[int]MountState) {
-	states = make(map[int]MountState)
+func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
+	states = make(map[int]types.MountState)
 	for rId, state := range s.archiveMounts {
 		if rId == repoId {
 			for aId, aState := range state {
