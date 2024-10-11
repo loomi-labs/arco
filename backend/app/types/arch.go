@@ -3,7 +3,6 @@ package types
 import (
 	"arco/backend/util"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"
@@ -51,14 +50,15 @@ func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
 	cmd := exec.Command("mount")
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, errors.Errorf("error running mount command: %s", err)
+		return nil, fmt.Errorf("error running mount command: %s", err)
 	}
 
 	states := make(map[int]*MountState)
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		for id, path := range paths {
-			if strings.Contains(line, path) {
+			parts := strings.Fields(line)
+			if len(parts) > 2 && parts[2] == path {
 				states[id] = &MountState{
 					IsMounted: true,
 					MountPath: path,
