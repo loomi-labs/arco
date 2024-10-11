@@ -52,7 +52,7 @@ const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
 const archiveMountStates = ref<Map<number, types.MountState>>(new Map()); // Map<archiveId, MountState>
-const showProgressSpinner = ref<boolean>(false);
+const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
 const confirmDeleteModalKey = "confirm_delete_archive_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
@@ -128,14 +128,13 @@ async function deleteArchive() {
   archiveToBeDeleted.value = undefined;
 
   try {
-    showProgressSpinner.value = true;
+    progressSpinnerText.value = "Deleting archive";
     await repoClient.DeleteArchive(archiveId);
-    showProgressSpinner.value = false;
     markArchiveAndFadeOut(archiveId);
   } catch (error: any) {
-    showProgressSpinner.value = false;
     await showAndLogError("Failed to delete archive", error);
   }
+  progressSpinnerText.value = undefined;
 }
 
 function markArchiveAndFadeOut(archiveId: number) {
@@ -155,13 +154,26 @@ async function getArchiveMountStates() {
   }
 }
 
-async function browseArchive(archiveId: number) {
+async function mountArchive(archiveId: number) {
   try {
+    progressSpinnerText.value = "Browsing archive";
     const archiveMountState = await repoClient.MountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: any) {
     await showAndLogError("Failed to mount archive", error);
   }
+  progressSpinnerText.value = undefined;
+}
+
+async function unmountArchive(archiveId: number) {
+  try {
+    progressSpinnerText.value = "Unmounting archive";
+    const archiveMountState = await repoClient.UnmountArchive(archiveId);
+    archiveMountStates.value.set(archiveId, archiveMountState);
+  } catch (error: any) {
+    await showAndLogError("Failed to unmount archive", error);
+  }
+  progressSpinnerText.value = undefined;
 }
 
 async function getBackupProfileFilterOptions() {
@@ -320,7 +332,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th>{{ $t("name") }}</th>
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th>Creation time</th>
-          <th class='w-40'>{{ $t("action") }}</th>
+          <th class='w-40 text-center'>{{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -331,14 +343,10 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <!-- Name -->
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
-            <span v-if='archiveMountStates.get(archive.id)?.is_mounted' class='tooltip'
-                  :data-tip='`Archive is mounted at ${archiveMountStates.get(archive.id)?.mount_path}`'>
-                <CloudArrowDownIcon class='ml-2 size-4 text-info'></CloudArrowDownIcon>
-              </span>
           </td>
           <!-- Backup -->
           <td v-if='showBackupProfileColumn'>
-            <span>{{archive?.edges.backupProfile?.name}}</span>
+            <span>{{ archive?.edges.backupProfile?.name }}</span>
           </td>
           <!-- Date -->
           <td>
@@ -348,9 +356,17 @@ watch([backupProfileFilter, search, dateRange], async () => {
           </td>
           <!-- Action -->
           <td class='flex items-center'>
-            <button class='btn btn-sm btn-primary'
+            <span class='tooltip'
+                  :class='{"invisible": !archiveMountStates.get(archive.id)?.is_mounted}'
+                  :data-tip='`Click to unmount archive at ${archiveMountStates.get(archive.id)?.mount_path}`'>
+                <button class='btn btn-sm btn-ghost btn-circle btn-info'
+                        @click='unmountArchive(archive.id)'>
+                  <CloudArrowDownIcon class='size-4 text-info'></CloudArrowDownIcon>
+                </button>
+            </span>
+            <button class='btn btn-sm btn-primary ml-2'
                     :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
-                    @click='browseArchive(archive.id)'>
+                    @click='mountArchive(archive.id)'>
               <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               {{ $t("browse") }}
             </button>
@@ -397,10 +413,10 @@ watch([backupProfileFilter, search, dateRange], async () => {
     </div>
   </div>
 
-  <div v-if='showProgressSpinner'
+  <div v-if='progressSpinnerText'
        class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
-      <p class='mb-4'>{{ $t("deleting_archive") }}</p>
+      <p class='mb-4'>{{ progressSpinnerText }}</p>
       <span class='loading loading-dots loading-md'></span>
     </div>
   </div>
