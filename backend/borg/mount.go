@@ -19,7 +19,7 @@ func (b *borg) mount(repoUrl string, archive *string, password string, mountPath
 		archiveOrRepo = fmt.Sprintf("%s::%s", repoUrl, *archive)
 	}
 
-	cmd := exec.Command(b.path, "mount", archiveOrRepo, mountPath)
+	cmd := exec.Command(b.path, "mount", "-o", "ignore_permissions", archiveOrRepo, mountPath)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
