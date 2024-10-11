@@ -1,11 +1,9 @@
 package app
 
 import (
-	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/ent"
 	"fmt"
-	"github.com/prometheus/procfs"
 	"os"
 	"os/exec"
 	"os/user"
@@ -13,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (r *RepositoryClient) MountRepository(repoId int) (state state.MountState, err error) {
+func (r *RepositoryClient) MountRepository(repoId int) (state types.MountState, err error) {
 	repo, err := r.Get(repoId)
 	if err != nil {
 		return
@@ -45,7 +43,7 @@ func (r *RepositoryClient) MountRepository(repoId int) (state state.MountState, 
 	return
 }
 
-func (r *RepositoryClient) MountArchive(archiveId int) (state state.MountState, err error) {
+func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, err error) {
 	archive, err := r.getArchive(archiveId)
 	if err != nil {
 		return
@@ -114,7 +112,7 @@ func (r *RepositoryClient) UnmountAllForRepo(repoId int) error {
 	return nil
 }
 
-func (r *RepositoryClient) UnmountRepository(repoId int) (state state.MountState, err error) {
+func (r *RepositoryClient) UnmountRepository(repoId int) (state types.MountState, err error) {
 	repo, err := r.Get(repoId)
 	if err != nil {
 		return
@@ -138,7 +136,7 @@ func (r *RepositoryClient) UnmountRepository(repoId int) (state state.MountState
 	return
 }
 
-func (r *RepositoryClient) UnmountArchive(archiveId int) (state state.MountState, err error) {
+func (r *RepositoryClient) UnmountArchive(archiveId int) (state types.MountState, err error) {
 	archive, err := r.getArchive(archiveId)
 	if err != nil {
 		return
@@ -162,11 +160,11 @@ func (r *RepositoryClient) UnmountArchive(archiveId int) (state state.MountState
 	return
 }
 
-func (r *RepositoryClient) GetRepoMountState(repoId int) state.MountState {
+func (r *RepositoryClient) GetRepoMountState(repoId int) types.MountState {
 	return r.state.GetRepoMount(repoId)
 }
 
-func (r *RepositoryClient) GetArchiveMountStates(repoId int) (states map[int]state.MountState, err error) {
+func (r *RepositoryClient) GetArchiveMountStates(repoId int) (states map[int]types.MountState, err error) {
 	repo, err := r.Get(repoId)
 	if err != nil {
 		return
@@ -210,7 +208,7 @@ func (r *RepositoryClient) setMountStates() {
 			paths[arch.ID] = archivePath
 		}
 
-		states, err := getMountStates(paths)
+		states, err := types.GetMountStates(paths)
 		if err != nil {
 			r.log.Error("Error getting mount states: ", err)
 			continue
@@ -261,8 +259,8 @@ func ensurePathExists(path string) error {
 	return nil
 }
 
-func getMountState(path string) (state state.MountState, err error) {
-	states, err := getMountStates(map[int]string{0: path})
+func getMountState(path string) (state types.MountState, err error) {
+	states, err := types.GetMountStates(map[int]string{0: path})
 	if err != nil {
 		return
 	}
@@ -270,25 +268,4 @@ func getMountState(path string) (state state.MountState, err error) {
 		return
 	}
 	return *states[0], nil
-}
-
-func getMountStates(paths map[int]string) (states map[int]*state.MountState, err error) {
-	states = make(map[int]*state.MountState)
-
-	mounts, err := procfs.GetMounts()
-	if err != nil {
-		return
-	}
-
-	for _, mount := range mounts {
-		for id, path := range paths {
-			if mount.MountPoint == path {
-				states[id] = &state.MountState{
-					IsMounted: true,
-					MountPath: mount.MountPoint,
-				}
-			}
-		}
-	}
-	return
 }

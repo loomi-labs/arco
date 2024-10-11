@@ -2,7 +2,10 @@ package types
 
 import (
 	"fmt"
+	"github.com/prometheus/procfs"
+	"os/exec"
 	"runtime"
+	"strings"
 )
 
 type OS string
@@ -58,4 +61,61 @@ func GetMountPath() (string, error) {
 		return "/private/tmp", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
+
+func getDarwinMountStates(paths map[int]string) (states map[int]*MountState, err error) {
+	mountPath, err := GetMountPath()
+	if err != nil {
+		return
+	}
+
+	cmd := exec.Command("mount", "|", "grep", mountPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return
+	}
+
+	mountPoints := strings.Split(string(output), "\n")
+	for _, mount := range mountPoints {
+		for id, path := range paths {
+			if mount == path {
+				states[id] = &MountState{
+					IsMounted: true,
+					MountPath: mount,
+				}
+			}
+		}
+	}
+	return
+}
+
+func getLinuxMountStates(paths map[int]string) (states map[int]*MountState, err error) {
+	states = make(map[int]*MountState)
+
+	mounts, err := procfs.GetMounts()
+	if err != nil {
+		return
+	}
+
+	for _, mount := range mounts {
+		for id, path := range paths {
+			if mount.MountPoint == path {
+				states[id] = &MountState{
+					IsMounted: true,
+					MountPath: mount.MountPoint,
+				}
+			}
+		}
+	}
+	return
+}
+
+func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
+	if IsLinux() {
+		return getLinuxMountStates(paths)
+	}
+	if IsDarwin() {
+		return getDarwinMountStates(paths)
+	}
+	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }

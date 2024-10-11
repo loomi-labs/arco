@@ -558,14 +558,6 @@ export namespace ent {
 
 export namespace state {
 	
-	export enum BackupButtonStatus {
-	    runBackup = "runBackup",
-	    waiting = "waiting",
-	    abort = "abort",
-	    locked = "locked",
-	    unmount = "unmount",
-	    busy = "busy",
-	}
 	export enum BackupStatus {
 	    idle = "idle",
 	    waiting = "waiting",
@@ -582,6 +574,14 @@ export namespace state {
 	    mounted = "mounted",
 	    performingOperation = "performingOperation",
 	    locked = "locked",
+	}
+	export enum BackupButtonStatus {
+	    runBackup = "runBackup",
+	    waiting = "waiting",
+	    abort = "abort",
+	    locked = "locked",
+	    unmount = "unmount",
+	    busy = "busy",
 	}
 	export class BackupState {
 	    status: BackupStatus;
@@ -616,20 +616,6 @@ export namespace state {
 		    }
 		    return a;
 		}
-	}
-	export class MountState {
-	    is_mounted: boolean;
-	    mount_path: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new MountState(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.is_mounted = source["is_mounted"];
-	        this.mount_path = source["mount_path"];
-	    }
 	}
 	export class RepoState {
 	    status: RepoStatus;
@@ -679,6 +665,20 @@ export namespace types {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.message = source["message"];
 	        this.stack = source["stack"];
+	    }
+	}
+	export class MountState {
+	    is_mounted: boolean;
+	    mount_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MountState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.is_mounted = source["is_mounted"];
+	        this.mount_path = source["mount_path"];
 	    }
 	}
 	export class Notification {
