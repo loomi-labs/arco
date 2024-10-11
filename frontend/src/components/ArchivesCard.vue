@@ -332,7 +332,8 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th>{{ $t("name") }}</th>
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th>Creation time</th>
-          <th class='w-40 text-center'>{{ $t("action") }}</th>
+          <th class='w-40 pl-12'>
+            {{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -364,12 +365,14 @@ watch([backupProfileFilter, search, dateRange], async () => {
                   <CloudArrowDownIcon class='size-4 text-info'></CloudArrowDownIcon>
                 </button>
             </span>
-            <button class='btn btn-sm btn-primary ml-2'
-                    :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
-                    @click='mountArchive(archive.id)'>
-              <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
-              {{ $t("browse") }}
-            </button>
+            <span class='tooltip'
+                  data-tip='Browse files in this archive'>
+              <button class='btn btn-sm btn-primary btn-circle btn-outline ml-2'
+                      :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
+                      @click='mountArchive(archive.id)'>
+                <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
+              </button>
+            </span>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='() => {
