@@ -572,34 +572,36 @@ func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
 	return true, ""
 }
 
-func (s *State) SetRepoMount(id int, state *types.MountState) {
+func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.repoMounts[id]; !ok {
-		s.repoMounts[id] = &types.MountState{}
+	if _, ok := s.repoMounts[repoId]; !ok {
+		s.repoMounts[repoId] = &types.MountState{}
 	}
 
-	s.repoMounts[id].IsMounted = state.IsMounted
-	s.repoMounts[id].MountPath = state.MountPath
+	s.repoMounts[repoId].IsMounted = state.IsMounted
+	s.repoMounts[repoId].MountPath = state.MountPath
 
 	if state.IsMounted {
-		s.setRepoState(id, RepoStatusMounted)
+		s.setRepoState(repoId, RepoStatusMounted)
+		defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 	} else {
 		hasOtherMounts := false
-		for _, aState := range s.archiveMounts[id] {
+		for _, aState := range s.archiveMounts[repoId] {
 			if aState.IsMounted {
 				hasOtherMounts = true
 				break
 			}
 		}
 		if !hasOtherMounts {
-			s.setRepoState(id, RepoStatusIdle)
+			s.setRepoState(repoId, RepoStatusIdle)
+			defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 		}
 	}
 }
 
-func (s *State) setArchiveMount(repoId int, archiveId int, state *types.MountState) {
+func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, state *types.MountState) {
 	if _, ok := s.archiveMounts[repoId]; !ok {
 		s.archiveMounts[repoId] = make(map[int]*types.MountState)
 	}
@@ -612,6 +614,7 @@ func (s *State) setArchiveMount(repoId int, archiveId int, state *types.MountSta
 
 	if state.IsMounted {
 		s.setRepoState(repoId, RepoStatusMounted)
+		defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 	} else {
 		hasOtherMounts := false
 		for _, aState := range s.archiveMounts[repoId] {
@@ -622,23 +625,24 @@ func (s *State) setArchiveMount(repoId int, archiveId int, state *types.MountSta
 		}
 		if !hasOtherMounts {
 			s.setRepoState(repoId, RepoStatusIdle)
+			defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 		}
 	}
 }
 
-func (s *State) SetArchiveMount(repoId int, archiveId int, state *types.MountState) {
+func (s *State) SetArchiveMount(ctx context.Context, repoId int, archiveId int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.setArchiveMount(repoId, archiveId, state)
+	s.setArchiveMount(ctx, repoId, archiveId, state)
 }
 
-func (s *State) SetArchiveMounts(repoId int, states map[int]*types.MountState) {
+func (s *State) SetArchiveMounts(ctx context.Context, repoId int, states map[int]*types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for archiveId, state := range states {
-		s.setArchiveMount(repoId, archiveId, state)
+		s.setArchiveMount(ctx, repoId, archiveId, state)
 	}
 }
 
