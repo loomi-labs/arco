@@ -553,6 +553,31 @@ export namespace ent {
 	
 	
 	
+	
+	export class Settings {
+	    id?: number;
+	    theme?: settings.Theme;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.theme = source["theme"];
+	    }
+	}
+
+}
+
+export namespace settings {
+	
+	export enum Theme {
+	    system = "system",
+	    dark = "dark",
+	    light = "light",
+	}
 
 }
 
