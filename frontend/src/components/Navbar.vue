@@ -15,7 +15,7 @@ import Theme = settings.Theme;
  ************/
 
 const router = useRouter();
-const isLightTheme = ref(false);
+const isLightTheme = ref<boolean | undefined>(undefined);
 
 /************
  * Functions
@@ -42,14 +42,8 @@ async function detectPreferredTheme() {
     const settings = await appClient.GetSettings();
     const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
 
-    if ((settings.theme === Theme.system && darkThemeMq.matches) || settings.theme === Theme.dark) {
-      // Theme set to dark.
-      await setTheme(Theme.dark);
-    } else {
-      // Theme set to light.
-      await setTheme(Theme.light);
-    }
-    isLightTheme.value = settings.theme === Theme.light;
+    isLightTheme.value = settings.theme === Theme.light || (settings.theme === Theme.system && !darkThemeMq.matches);
+    await setTheme(isLightTheme.value ? Theme.light : Theme.dark);
   } catch (error: any) {
     await showAndLogError("Failed to detect preferred theme", error);
   }
@@ -57,6 +51,7 @@ async function detectPreferredTheme() {
 
 async function toggleTheme() {
   try {
+    isLightTheme.value = !isLightTheme.value;
     const settings = await appClient.GetSettings();
     const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
     if (isLightTheme.value) {
@@ -88,12 +83,9 @@ onMounted(() => detectPreferredTheme());
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <button class='btn btn-ghost uppercase' @click='router.push(rDashboardPage)'>Arco</button>
-      <label class='swap swap-rotate'>
-        <!-- this hidden checkbox controls the state -->
-        <input type='checkbox' v-model='isLightTheme' @change='toggleTheme'>
-
-        <SunIcon class='swap-off h-10 w-10 fill-current' />
-        <MoonIcon class='swap-on h-10 w-10 fill-current' />
+      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
+        <SunIcon class='swap-off h-10 w-10 fill-current' @click='toggleTheme' />
+        <MoonIcon class='swap-on h-10 w-10 fill-current' @click='toggleTheme' />
       </label>
     </div>
   </div>
