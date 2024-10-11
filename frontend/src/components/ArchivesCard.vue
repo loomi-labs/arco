@@ -335,7 +335,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
         <tr>
           <th>{{ $t("name") }}</th>
           <th v-if='showBackupProfileColumn'>Backup profile</th>
-          <th>Creation time</th>
+          <th class='min-w-40 lg:min-w-48'>Creation time</th>
           <th class='w-40 pl-12'>
             {{ $t("action") }}</th>
         </tr>
@@ -371,10 +371,10 @@ watch([backupProfileFilter, search, dateRange], async () => {
             </span>
             <span class='tooltip'
                   data-tip='Browse files in this archive'>
-              <button class='btn btn-sm btn-primary btn-circle btn-outline ml-2'
+              <button class='group btn btn-sm btn-info btn-circle btn-outline ml-2'
                       :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
                       @click='mountArchive(archive.id)'>
-                <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
+                <DocumentMagnifyingGlassIcon class='size-4 text-info group-hover:text-info-content'></DocumentMagnifyingGlassIcon>
               </button>
             </span>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
