@@ -6,10 +6,10 @@ import (
 )
 
 type zapLogWrapper struct {
-	log *zap.Logger
+	log *zap.SugaredLogger
 }
 
-func NewZapLogWrapper(logger *zap.Logger) logger.Logger {
+func NewZapLogWrapper(logger *zap.SugaredLogger) logger.Logger {
 	return &zapLogWrapper{log: logger}
 }
 
@@ -34,9 +34,9 @@ func (z *zapLogWrapper) Warning(message string) {
 }
 
 func (z *zapLogWrapper) Error(message string) {
-	z.log.WithOptions(zap.AddCallerSkip(1)).Error(message)
+	z.log.WithOptions(zap.AddCallerSkip(1)).Errorw(message)
 }
 
 func (z *zapLogWrapper) Fatal(message string) {
-	z.log.WithOptions(zap.AddCallerSkip(1)).Fatal(message)
+	z.log.WithOptions(zap.AddCallerSkip(1)).Fatalw(message)
 }

@@ -159,7 +159,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 			toTsEnums(types.AllEvents),
 		},
 		LogLevel:    logLevel,
-		Logger:      util.NewZapLogWrapper(log.Desugar()),
+		Logger:      util.NewZapLogWrapper(log),
 		StartHidden: startHidden,
 	})
 	if err != nil {
