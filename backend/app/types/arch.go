@@ -1,6 +1,7 @@
 package types
 
 import (
+	"arco/backend/util"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/prometheus/procfs"
@@ -9,35 +10,16 @@ import (
 	"strings"
 )
 
-type OS string
-
-const (
-	Linux  OS = "linux"
-	Darwin OS = "darwin"
-)
-
-func (o OS) String() string {
-	return string(o)
-}
-
 type Binary struct {
 	Name    string
 	Version string
-	Os      OS
+	Os      util.OS
 	Url     string
-}
-
-func IsLinux() bool {
-	return runtime.GOOS == Linux.String()
-}
-
-func IsDarwin() bool {
-	return runtime.GOOS == Darwin.String()
 }
 
 func GetLatestBorgBinary(binaries []Binary) (Binary, error) {
 	for _, binary := range binaries {
-		if binary.Os == OS(runtime.GOOS) {
+		if binary.Os == util.OS(runtime.GOOS) {
 			return binary, nil
 		}
 	}
@@ -45,20 +27,20 @@ func GetLatestBorgBinary(binaries []Binary) (Binary, error) {
 }
 
 func GetOpenFileManagerCmd() (string, error) {
-	if IsLinux() {
+	if util.IsLinux() {
 		return "xdg-open", nil
 	}
-	if IsDarwin() {
+	if util.IsDarwin() {
 		return "open", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }
 
 func GetMountPath() (string, error) {
-	if IsLinux() {
+	if util.IsLinux() {
 		return "/run/user", nil
 	}
-	if IsDarwin() {
+	if util.IsDarwin() {
 		return "/private/tmp", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
@@ -108,10 +90,10 @@ func getLinuxMountStates(paths map[int]string) (map[int]*MountState, error) {
 }
 
 func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
-	if IsLinux() {
+	if util.IsLinux() {
 		return getLinuxMountStates(paths)
 	}
-	if IsDarwin() {
+	if util.IsDarwin() {
 		return getDarwinMountStates(paths)
 	}
 	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)

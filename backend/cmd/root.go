@@ -23,13 +23,13 @@ var binaries = []types.Binary{
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
-		Os:      types.Linux,
+		Os:      util.Linux,
 		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
 	},
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
-		Os:      types.Darwin,
+		Os:      util.Darwin,
 		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
 	},
 }
