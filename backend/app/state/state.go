@@ -676,6 +676,9 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 		if rs.Status == RepoStatusLocked {
 			return BackupButtonStatusLocked
 		}
+		if rs.Status == RepoStatusMounted {
+			return BackupButtonStatusUnmount
+		}
 	}
 
 	bs := s.GetBackupState(id)
@@ -718,6 +721,10 @@ func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButto
 			if rs.Status == RepoStatusLocked {
 				// If any repository is locked, we can't do anything
 				return BackupButtonStatusLocked
+			}
+			if rs.Status == RepoStatusMounted {
+				// If any repository is mounted, we can't do anything
+				return BackupButtonStatusUnmount
 			}
 
 			// We have to check all non-idle repositories
