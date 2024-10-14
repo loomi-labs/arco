@@ -91,20 +91,22 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 	return
 }
 
-func (r *RepositoryClient) UnmountAllForRepo(repoId int) error {
-	mount := r.GetRepoMountState(repoId)
-	if mount.IsMounted {
-		if _, err := r.UnmountRepository(repoId); err != nil {
-			return err
+func (r *RepositoryClient) UnmountAllForRepos(repoIds []int) error {
+	for _, repoId := range repoIds {
+		mount := r.GetRepoMountState(repoId)
+		if mount.IsMounted {
+			if _, err := r.UnmountRepository(repoId); err != nil {
+				return err
+			}
 		}
-	}
-	if states, err := r.GetArchiveMountStates(repoId); err != nil {
-		return err
-	} else {
-		for archiveId := range states {
-			if states[archiveId].IsMounted {
-				if _, err = r.UnmountArchive(archiveId); err != nil {
-					return err
+		if states, err := r.GetArchiveMountStates(repoId); err != nil {
+			return err
+		} else {
+			for archiveId := range states {
+				if states[archiveId].IsMounted {
+					if _, err = r.UnmountArchive(archiveId); err != nil {
+						return err
+					}
 				}
 			}
 		}

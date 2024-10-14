@@ -48,6 +48,21 @@ func (r *RepositoryClient) GetNbrOfArchives(repoId int) (int, error) {
 		Count(r.ctx)
 }
 
+func (r *RepositoryClient) GetLocked() ([]*ent.Repository, error) {
+	all, err := r.All()
+	if err != nil {
+		return nil, err
+	}
+
+	var locked []*ent.Repository
+	for _, repo := range all {
+		if r.state.GetRepoState(repo.ID).Status == state.RepoStatusLocked {
+			locked = append(locked, repo)
+		}
+	}
+	return locked, nil
+}
+
 // TODO: remove this function or refactor it
 func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	// Check if we can connect to the repository

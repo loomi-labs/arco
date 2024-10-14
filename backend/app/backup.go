@@ -279,15 +279,8 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) StartBackupJobs(backupProfileId int) ([]types.BackupId, error) {
-	backupProfile, err := b.GetBackupProfile(backupProfileId)
-	if err != nil {
-		return nil, err
-	}
-
-	var bIds []types.BackupId
-	for _, repo := range backupProfile.Edges.Repositories {
-		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) ([]types.BackupId, error) {
+	for _, bId := range bIds {
 		err := b.StartBackupJob(bId)
 		if err != nil {
 			return bIds, err
@@ -328,16 +321,19 @@ func (b *BackupClient) GetState(bId types.BackupId) state.BackupState {
 	return b.state.GetBackupState(bId)
 }
 
-func (b *BackupClient) GetBackupButtonStatus(bId types.BackupId) state.BackupButtonStatus {
-	return b.state.GetBackupButtonStatus(bId)
+func (b *BackupClient) GetBackupButtonStatus(bIds []types.BackupId) state.BackupButtonStatus {
+	switch len(bIds) {
+	case 0:
+		return state.BackupButtonStatusRunBackup
+	case 1:
+		return b.state.GetBackupButtonStatus(bIds[0])
+	default:
+		return b.state.GetCombinedBackupButtonStatus(bIds)
+	}
 }
 
 func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.BackupProgress {
 	return b.state.GetCombinedBackupProgress(bIds)
-}
-
-func (b *BackupClient) GetCombinedBackupButtonStatus(bIds []types.BackupId) state.BackupButtonStatus {
-	return b.state.GetCombinedBackupButtonStatus(bIds)
 }
 
 /***********************************/
