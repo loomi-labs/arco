@@ -46,6 +46,7 @@ export default {
         light: {
           ...require("daisyui/src/theming/themes")["light"],
           primary: arcoPurple["950"],
+          "primary-content": "#FFFFFF",
           "secondary": "#F97316",  // could also be ffc107
           "secondary-content": "#190211",
           "base-100": "#FFFFFF",
@@ -55,6 +56,7 @@ export default {
         dark: {
           ...require("daisyui/src/theming/themes")["dark"],
           primary: arcoPurple["950"],
+          "primary-content": "#FFFFFF",
           "secondary": "#F97316",   // could also be ffc107
           "secondary-content": "#190211",
           "base-100": "#241D4D",

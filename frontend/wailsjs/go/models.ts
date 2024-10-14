@@ -553,6 +553,31 @@ export namespace ent {
 	
 	
 	
+	
+	export class Settings {
+	    id?: number;
+	    theme?: settings.Theme;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.theme = source["theme"];
+	    }
+	}
+
+}
+
+export namespace settings {
+	
+	export enum Theme {
+	    system = "system",
+	    dark = "dark",
+	    light = "light",
+	}
 
 }
 
@@ -668,8 +693,8 @@ export namespace types {
 	    }
 	}
 	export class MountState {
-	    is_mounted: boolean;
-	    mount_path: string;
+	    isMounted: boolean;
+	    mountPath: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new MountState(source);
@@ -677,8 +702,8 @@ export namespace types {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.is_mounted = source["is_mounted"];
-	        this.mount_path = source["mount_path"];
+	        this.isMounted = source["isMounted"];
+	        this.mountPath = source["mountPath"];
 	    }
 	}
 	export class Notification {

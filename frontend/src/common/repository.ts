@@ -8,19 +8,19 @@ export function getLocation(locationStr: string): Location {
 }
 
 export function getBgColor(location: Location): string {
-  return location === Location.Local ? "bg-secondary group-hover/repo:bg-secondary/70" : "bg-info group-hover/repo:bg-info/70";
+  return location === Location.Local ? "bg-arco-purple-500 group-hover/repo:bg-arco-purple-500/70" : "bg-arco-purple-700 group-hover/repo:bg-arco-purple-700/70";
 }
 
 export function getTextColor(location: Location): string {
-  return location === Location.Local ? "text-secondary" : "text-info";
+  return location === Location.Local ? "text-arco-purple-500" : "text-arco-purple-700";
 }
 
 export function getTooltipColor(location: Location): string {
-  return location === Location.Local ? "tooltip-secondary" : "tooltip-info";
+  return location === Location.Local ? "tooltip-arco-purple-500" : "tooltip-arco-purple-700";
 }
 
-export function getBadgeColor(location: Location): string {
-  return location === Location.Local ? "badge-secondary" : "badge-info";
+export function getBadge(location: Location): string {
+  return location === Location.Local ? "badge bg-arco-purple-500 dark:badge-outline dark:text-arco-purple-500" : "badge text-white bg-arco-purple-700 dark:badge-outline dark:text-arco-purple-700";
 }
 
 export function toHumanReadableSize(size: number): string {

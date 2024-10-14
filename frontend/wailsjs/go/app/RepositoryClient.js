@@ -50,6 +50,10 @@ export function GetLastArchiveByRepoId(arg1) {
   return window['go']['app']['RepositoryClient']['GetLastArchiveByRepoId'](arg1);
 }
 
+export function GetLocked() {
+  return window['go']['app']['RepositoryClient']['GetLocked']();
+}
+
 export function GetNbrOfArchives(arg1) {
   return window['go']['app']['RepositoryClient']['GetNbrOfArchives'](arg1);
 }
@@ -66,6 +70,10 @@ export function GetState(arg1) {
   return window['go']['app']['RepositoryClient']['GetState'](arg1);
 }
 
+export function GetWithActiveMounts() {
+  return window['go']['app']['RepositoryClient']['GetWithActiveMounts']();
+}
+
 export function MountArchive(arg1) {
   return window['go']['app']['RepositoryClient']['MountArchive'](arg1);
 }
@@ -78,8 +86,8 @@ export function RefreshArchives(arg1) {
   return window['go']['app']['RepositoryClient']['RefreshArchives'](arg1);
 }
 
-export function UnmountAllForRepo(arg1) {
-  return window['go']['app']['RepositoryClient']['UnmountAllForRepo'](arg1);
+export function UnmountAllForRepos(arg1) {
+  return window['go']['app']['RepositoryClient']['UnmountAllForRepos'](arg1);
 }
 
 export function UnmountArchive(arg1) {

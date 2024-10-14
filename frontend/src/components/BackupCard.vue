@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { useI18n } from "vue-i18n";
 import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
-import { borg, ent, state, types } from "../../wailsjs/go/models";
+import { ent, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
@@ -9,14 +9,13 @@ import { onUnmounted, ref } from "vue";
 import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
-import { toRelativeTimeString } from "../common/time";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
 import * as runtime from "../../wailsjs/runtime";
-import { LogDebug } from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
-import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import { getIcon, Icon } from "../common/icons";
+import { getBadge, getLocation } from "../common/repository";
 
 /************
  * Types
@@ -37,9 +36,6 @@ const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 const icon = ref<Icon>(getIcon(props.backup.icon));
-
-const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
-const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
 
 const bIds = props.backup.edges?.repositories?.map((r) => {
   const backupId = types.BackupId.createFrom();
@@ -93,69 +89,15 @@ async function getLastArchives() {
   }
 }
 
-async function getButtonStatus() {
-  try {
-    buttonStatus.value = await backupClient.GetCombinedBackupButtonStatus(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to get backup state", error);
-  }
-}
-
-async function getBackupProgress() {
-  try {
-    backupProgress.value = await backupClient.GetCombinedBackupProgress(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to get backup progress", error);
-  }
-}
-
-async function runBackups() {
-  try {
-    await backupClient.StartBackupJobs(props.backup.id);
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
-  }
-}
-
-async function abortBackups() {
-  try {
-    await backupClient.AbortBackupJobs(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
-  }
-}
-
-async function runButtonAction() {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    await runBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    await abortBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    // TODO: FIX THIS
-    LogDebug("locked button");
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    // TODO: FIX THIS
-    LogDebug("unmount button");
-  }
-}
-
 /************
  * Lifecycle
  ************/
 
-getButtonStatus();
 getFailedBackupRun();
 getLastArchives();
 
 for (const backupId of bIds) {
-  const handleBackupStateChanged = debounce(async () => {
-    await getBackupProgress();
-  }, 200);
-
-  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
-
   const handleRepoStateChanged = debounce(async () => {
-    await getButtonStatus();
     await getFailedBackupRun();
     await getLastArchives();
   }, 200);
@@ -174,7 +116,7 @@ onUnmounted(() => {
        @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
     <div
       class='flex justify-between px-6 pt-4 pb-2'
-    :class='icon.color'>
+      :class='icon.color'>
       {{ props.backup.name }}
       <component :is='icon.html' class='size-8' />
     </div>
@@ -185,9 +127,9 @@ onUnmounted(() => {
           <p>{{ $t("last_backup") }}</p>
           <div>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-              <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
+              <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
             </span>
-            <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+            <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
             <span :class='toDurationBadge(lastArchive?.createdAt)'>{{
                 toRelativeTimeString(lastArchive.createdAt)
               }}</span>
@@ -209,17 +151,15 @@ onUnmounted(() => {
           <div>
             Repositories
           </div>
-          <div>
-            <ul>
-              <li v-for='(repo, index) in props.backup.edges?.repositories ?? []' :key='index'
-                  class='badge badge-outline mx-1'>
-                {{ repo.name }}
-              </li>
-            </ul>
-          </div>
+          <ul class='text-right'>
+            <li v-for='repo in props.backup.edges?.repositories ?? []' :key='repo.id'
+                class='mx-1' :class='getBadge(getLocation(repo.location))'>
+              {{ repo.name }}
+            </li>
+          </ul>
         </div>
       </div>
-      <BackupButton :button-status='buttonStatus' :backup-progress='backupProgress' @click='runButtonAction' />
+      <BackupButton :backup-ids='bIds' />
     </div>
   </div>
 </template>

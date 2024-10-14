@@ -20,3 +20,6 @@ type FailedBackupRun func(*sql.Selector)
 
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)
+
+// Settings is the predicate function for settings builders.
+type Settings func(*sql.Selector)

@@ -27,7 +27,7 @@ const i18n = createI18n({
   }
 });
 
-const app = createApp(App)
+createApp(App)
   .use(router)
   .use(i18n)
   .use(Toast, options)

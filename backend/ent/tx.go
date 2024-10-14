@@ -22,6 +22,8 @@ type Tx struct {
 	FailedBackupRun *FailedBackupRunClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
+	// Settings is the client for interacting with the Settings builders.
+	Settings *SettingsClient
 
 	// lazily loaded.
 	client     *Client
@@ -158,6 +160,7 @@ func (tx *Tx) init() {
 	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
 	tx.FailedBackupRun = NewFailedBackupRunClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
+	tx.Settings = NewSettingsClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

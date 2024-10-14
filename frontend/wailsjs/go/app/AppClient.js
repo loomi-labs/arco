@@ -10,10 +10,18 @@ export function GetNotifications() {
   return window['go']['app']['AppClient']['GetNotifications']();
 }
 
+export function GetSettings() {
+  return window['go']['app']['AppClient']['GetSettings']();
+}
+
 export function GetStartupError() {
   return window['go']['app']['AppClient']['GetStartupError']();
 }
 
 export function HandleError(arg1, arg2) {
   return window['go']['app']['AppClient']['HandleError'](arg1, arg2);
+}
+
+export function SaveSettings(arg1) {
+  return window['go']['app']['AppClient']['SaveSettings'](arg1);
 }

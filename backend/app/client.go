@@ -2,6 +2,7 @@ package app
 
 import (
 	"arco/backend/app/types"
+	"arco/backend/ent"
 	"fmt"
 	"go.uber.org/zap"
 	"os"
@@ -47,4 +48,16 @@ func (a *AppClient) GetEnvVars() Env {
 		Debug:     os.Getenv(EnvVarDebug.String()) == "true",
 		StartPage: os.Getenv(EnvVarStartPage.String()),
 	}
+}
+
+func (a *AppClient) GetSettings() (*ent.Settings, error) {
+	return a.db.Settings.Query().First(a.ctx)
+}
+
+func (a *AppClient) SaveSettings(settings *ent.Settings) error {
+	a.log.Debugf("Saving settings: %s", settings)
+	return a.db.Settings.
+		Update().
+		SetTheme(settings.Theme).
+		Exec(a.ctx)
 }

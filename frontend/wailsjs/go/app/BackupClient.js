@@ -54,10 +54,6 @@ export function GetBackupProfiles() {
   return window['go']['app']['BackupClient']['GetBackupProfiles']();
 }
 
-export function GetCombinedBackupButtonStatus(arg1) {
-  return window['go']['app']['BackupClient']['GetCombinedBackupButtonStatus'](arg1);
-}
-
 export function GetCombinedBackupProgress(arg1) {
   return window['go']['app']['BackupClient']['GetCombinedBackupProgress'](arg1);
 }

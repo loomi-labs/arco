@@ -4,7 +4,7 @@ import * as zod from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import FormField from "./common/FormField.vue";
@@ -12,6 +12,7 @@ import { formInputClass } from "../common/form";
 import { FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { useI18n } from "vue-i18n";
+import { capitalizeFirstLetter } from "../common/util";
 
 /************
  * Types
@@ -119,23 +120,21 @@ async function createRepo() {
   isCreating.value = false;
 }
 
-async function setNameFromLocation(newLocation: string | undefined) {
+async function setNameFromLocation() {
+  // Delay 100ms to avoid setting the name before the validation has run
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   // If the user has touched the name field, we don't want to change it
-  if (!newLocation || isNameTouchedByUser.value) {
+  if (!location.value || isNameTouchedByUser.value || errors.value.location) {
     return;
   }
 
-  // We have to wait a bit for the validation to run
-  await nextTick();
-
-  // If the location is valid, we can set the name
-  if (!errors.value.location) {
-    const newName = newLocation?.split("/").pop();
+    // If the location is valid, we can set the name
+    const newName = location.value?.split("/").pop();
     if (newName) {
       // Capitalize the first letter
-      name.value = newName.charAt(0).toUpperCase() + newName.slice(1);
+      name.value = capitalizeFirstLetter(newName);
     }
-  }
 }
 
 async function selectDirectory() {
@@ -150,7 +149,7 @@ async function createDir() {
     const path = location.value?.toString() ?? "";
     await backupClient.CreateDirectory(path);
     location.value = path;
-    await setNameFromLocation(path);
+    await setNameFromLocation();
   } catch (error: any) {
     await showAndLogError("Failed to create directory", error);
   }
@@ -170,7 +169,7 @@ async function toggleEncrypted() {
  ************/
 
 // When the location changes, we want to set the name based on the last part of the path
-watch(() => values.location, async (newLocation) => setNameFromLocation(newLocation));
+watch(() => values.location, async () => await setNameFromLocation());
 
 </script>
 

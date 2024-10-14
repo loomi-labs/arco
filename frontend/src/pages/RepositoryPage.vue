@@ -9,9 +9,9 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
 import { object } from "zod";
-import { getBadgeColor, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
+import { getBadge, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
 import { toDurationBadge } from "../common/badge";
-import { toRelativeTimeString } from "../common/time";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
@@ -156,8 +156,7 @@ onUnmounted(() => {
         <div>{{ $t("location") }}</div>
         <div class='flex items-center gap-4'>
           <span>{{ repo.location }}</span>
-          <span class='badge badge-outline'
-                :class='getBadgeColor(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='getBadge(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </div>
       </div>
       <div class='divider'></div>
@@ -166,7 +165,7 @@ onUnmounted(() => {
         <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
             <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
           </span>
-        <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+        <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
             <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
               }}</span>
           </span>

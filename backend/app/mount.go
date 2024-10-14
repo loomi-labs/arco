@@ -36,7 +36,7 @@ func (r *RepositoryClient) MountRepository(repoId int) (state types.MountState, 
 	if err != nil {
 		return
 	}
-	r.state.SetRepoMount(repoId, &state)
+	r.state.SetRepoMount(r.ctx, repoId, &state)
 
 	// Open the file manager and forget about it
 	go r.openFileManager(path)
@@ -83,7 +83,7 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 		if err != nil {
 			return
 		}
-		r.state.SetArchiveMount(archive.Edges.Repository.ID, archiveId, &state)
+		r.state.SetArchiveMount(r.ctx, archive.Edges.Repository.ID, archiveId, &state)
 	}
 
 	// Open the file manager and forget about it
@@ -91,23 +91,29 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 	return
 }
 
-func (r *RepositoryClient) UnmountAllForRepo(repoId int) error {
-	mount := r.GetRepoMountState(repoId)
-	if mount.IsMounted {
-		if _, err := r.UnmountRepository(repoId); err != nil {
-			return err
+func (r *RepositoryClient) UnmountAllForRepos(repoIds []int) error {
+	var unmountErrors []error
+	for _, repoId := range repoIds {
+		mount := r.GetRepoMountState(repoId)
+		if mount.IsMounted {
+			if _, err := r.UnmountRepository(repoId); err != nil {
+				unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting repository %d: %w", repoId, err))
+			}
 		}
-	}
-	if states, err := r.GetArchiveMountStates(repoId); err != nil {
-		return err
-	} else {
-		for archiveId := range states {
-			if states[archiveId].IsMounted {
-				if _, err = r.UnmountArchive(archiveId); err != nil {
-					return err
+		if states, err := r.GetArchiveMountStates(repoId); err != nil {
+			unmountErrors = append(unmountErrors, fmt.Errorf("error getting archive mount states for repository %d: %w", repoId, err))
+		} else {
+			for archiveId, state := range states {
+				if state.IsMounted {
+					if _, err = r.UnmountArchive(archiveId); err != nil {
+						unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting archive %d: %w", archiveId, err))
+					}
 				}
 			}
 		}
+	}
+	if len(unmountErrors) > 0 {
+		return fmt.Errorf("unmount errors: %v", unmountErrors)
 	}
 	return nil
 }
@@ -132,7 +138,7 @@ func (r *RepositoryClient) UnmountRepository(repoId int) (state types.MountState
 	if err != nil {
 		return
 	}
-	r.state.SetRepoMount(repoId, &mountState)
+	r.state.SetRepoMount(r.ctx, repoId, &mountState)
 	return
 }
 
@@ -156,7 +162,7 @@ func (r *RepositoryClient) UnmountArchive(archiveId int) (state types.MountState
 	if err != nil {
 		return
 	}
-	r.state.SetArchiveMount(archive.Edges.Repository.ID, archiveId, &mountState)
+	r.state.SetArchiveMount(r.ctx, archive.Edges.Repository.ID, archiveId, &mountState)
 	return
 }
 
@@ -190,7 +196,7 @@ func (r *RepositoryClient) setMountStates() {
 			r.log.Error("Error getting mount state: ", err)
 			continue
 		}
-		r.state.SetRepoMount(repo.ID, &mountState)
+		r.state.SetRepoMount(r.ctx, repo.ID, &mountState)
 
 		// Save the mount states for all archives of the repository
 		archives, err := repo.QueryArchives().All(r.ctx)
@@ -213,7 +219,7 @@ func (r *RepositoryClient) setMountStates() {
 			r.log.Error("Error getting mount states: ", err)
 			continue
 		}
-		r.state.SetArchiveMounts(repo.ID, states)
+		r.state.SetArchiveMounts(r.ctx, repo.ID, states)
 	}
 }
 

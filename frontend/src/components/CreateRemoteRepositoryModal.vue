@@ -5,18 +5,19 @@ import { object } from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { nextTick, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { formInputClass } from "../common/form";
 import FormField from "./common/FormField.vue";
+import { capitalizeFirstLetter } from "../common/util";
 
 /************
  * Types
  ************/
 
 interface Emits {
-  (event: typeof emitCreateRepoStr, repo: ent.Repository): void
+  (event: typeof emitCreateRepoStr, repo: ent.Repository): void;
 }
 
 /************
@@ -27,7 +28,7 @@ const emit = defineEmits<Emits>();
 const emitCreateRepoStr = "update:repo-created";
 
 defineExpose({
-  showModal,
+  showModal
 });
 
 const toast = useToast();
@@ -75,7 +76,7 @@ async function createRepo() {
       values.name!,
       values.location!,
       values.password!,
-      false,
+      false
     );
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
@@ -86,29 +87,31 @@ async function createRepo() {
   isCreating.value = false;
 }
 
-async function setNameFromLocation(newLocation: string | undefined) {
+function extractRepositoryName(url: string): string | undefined {
+  // user@host:~/path/to/repo -> repo
+  // ssh://user@host:port/./path/to/repo -> repo
+  const userAndHost = url?.split("@");
+  const newLocationWithoutUser = userAndHost?.[1];
+  const hostAndPath = newLocationWithoutUser?.split(":");
+  const newPath = hostAndPath?.[1];
+  const newPathWithoutPort = newPath?.split("/").slice(-1)[0];
+  return newPathWithoutPort?.split(".")[0];
+}
+
+async function setNameFromLocation() {
+  // Delay 100ms to avoid setting the name before the validation has run
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   // If the user has touched the name field, we don't want to change it
-  if (!newLocation || isNameTouchedByUser.value) {
+  if (!location.value || isNameTouchedByUser.value || errors.value.location) {
     return;
   }
 
-  // We have to wait a bit for the validation to run
-  await nextTick();
-
   // If the location is valid, we can set the name
-  if (!errors.value.location) {
-    // user@host:~/path/to/repo -> repo
-    // ssh://user@host:port/./path/to/repo -> repo
-    const userAndHost = newLocation?.split("@");
-    const newLocationWithoutUser = userAndHost?.[1];
-    const hostAndPath = newLocationWithoutUser?.split(":");
-    const newPath = hostAndPath?.[1];
-    const newPathWithoutPort = newPath?.split("/").slice(-1)[0];
-    const newName = newPathWithoutPort?.split(".")[0];
-    if (newName) {
-      // Capitalize the first letter
-      name.value = newName.charAt(0).toUpperCase() + newName.slice(1);
-    }
+  const newName = extractRepositoryName(location.value);
+  if (newName) {
+    // Capitalize the first letter
+    name.value = capitalizeFirstLetter(newName);
   }
 }
 
@@ -127,7 +130,7 @@ async function getConnectedRemoteHosts() {
 getConnectedRemoteHosts();
 
 // When the location changes, we want to set the name based on the last part of the path
-watch(() => values.location, async (newLocation) => setNameFromLocation(newLocation));
+watch(() => values.location, async () => await setNameFromLocation());
 
 </script>
 
@@ -150,10 +153,10 @@ watch(() => values.location, async (newLocation) => setNameFromLocation(newLocat
                      v-model='location'
                      v-bind='locationAttrs'
                      placeholder='user@host:path/to/repo'
-                     list='locations'/>
-              <datalist id="locations">
+                     list='locations' />
+              <datalist id='locations'>
                 <option v-for='host in hosts'
-                        :value='host'/>
+                        :value='host' />
               </datalist>
             </FormField>
           </div>

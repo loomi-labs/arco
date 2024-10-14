@@ -6,12 +6,11 @@ import { rRepositoryPage, withId } from "../router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { onUnmounted, ref, useTemplateRef, watch } from "vue";
-import { toRelativeTimeString } from "../common/time";
+import { onUnmounted, ref, watch } from "vue";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
-import ConfirmModal from "./common/ConfirmModal.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
@@ -56,68 +55,12 @@ const backupState = ref<state.BackupState>(state.BackupState.createFrom());
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
-const showProgressSpinner = ref(false);
-const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
-const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
 
 const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
  ************/
-
-// Button actions
-async function runBackup() {
-  try {
-    await backupClient.StartBackupJob(backupId);
-    await getRepoState();
-    await getBackupState();
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
-  }
-}
-
-async function pruneBackup() {
-  try {
-    await backupClient.PruneBackup(backupId);
-    await getRepoState();
-    await getBackupState();
-  } catch (error: any) {
-    await showAndLogError("Failed to prune backups", error);
-  }
-}
-
-async function abortBackup() {
-  try {
-    await backupClient.AbortBackupJob(backupId);
-    await getRepoState();
-    await getBackupState();
-  } catch (error: any) {
-    await showAndLogError("Failed to abort backup", error);
-  }
-}
-
-async function breakLock() {
-  try {
-    showProgressSpinner.value = true;
-    await repoClient.BreakLock(backupId.repositoryId);
-    await getRepoState();
-  } catch (error: any) {
-    await showAndLogError("Failed to break lock", error);
-  }
-  showProgressSpinner.value = false;
-}
-
-async function unmountAll() {
-  try {
-    await repoClient.UnmountAllForRepo(backupId.repositoryId);
-    await getRepoState();
-  } catch (error: any) {
-    await showAndLogError("Failed to unmount directories", error);
-  }
-}
-
-// End button actions
 
 async function getRepo() {
   try {
@@ -150,21 +93,9 @@ async function getBackupState() {
 
 async function getBackupButtonStatus() {
   try {
-    buttonStatus.value = await backupClient.GetBackupButtonStatus(backupId);
+    buttonStatus.value = await backupClient.GetBackupButtonStatus([backupId]);
   } catch (error: any) {
     await showAndLogError("Failed to get backup button state", error);
-  }
-}
-
-async function runButtonAction() {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    await runBackup();
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    await abortBackup();
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    confirmRemoveLockModal.value?.showModal();
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    await unmountAll();
   }
 }
 
@@ -186,7 +117,7 @@ watch(backupState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-// emit repoIsBusy event when repo is busy
+// emit repo status
 watch(repoState, async (newState, oldState) => {
   // We only care about status changes
   if (newState.status === oldState.status) {
@@ -217,9 +148,9 @@ onUnmounted(() => {
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
       <p>{{ $t("last_backup") }}:
         <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-          <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
+          <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
         </span>
-        <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+        <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
           <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
             }}</span>
         </span>
@@ -239,23 +170,9 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <BackupButton :button-status='buttonStatus' :backup-progress='backupState.progress' @click='runButtonAction' />
+      <BackupButton :backup-ids='[backupId]'/>
     </div>
   </div>
-  <div v-if='showProgressSpinner'
-       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
-    <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
-      <p class='mb-4'>{{ $t("breaking_lock") }}</p>
-      <span class='loading loading-dots loading-md'></span>
-    </div>
-  </div>
-  <ConfirmModal :ref='confirmRemoveLockModalKey'
-                :confirm-text='$t("remove_lock")'
-                confirm-class='btn-error'
-                @confirm='breakLock()'>
-    <p class='mb-4'>{{ $t("remove_lock_warning") }}</p>
-    <p class='mb-4'>{{ $t("remove_lock_confirmation") }}</p>
-  </ConfirmModal>
 </template>
 
 <style scoped>
