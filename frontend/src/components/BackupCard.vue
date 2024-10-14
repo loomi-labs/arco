@@ -15,6 +15,7 @@ import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import { getIcon, Icon } from "../common/icons";
+import { getBadge, getLocation } from "../common/repository";
 
 /************
  * Types
@@ -150,14 +151,12 @@ onUnmounted(() => {
           <div>
             Repositories
           </div>
-          <div>
-            <ul>
-              <li v-for='(repo, index) in props.backup.edges?.repositories ?? []' :key='index'
-                  class='badge badge-outline mx-1'>
-                {{ repo.name }}
-              </li>
-            </ul>
-          </div>
+          <ul class='text-right'>
+            <li v-for='(repo, index) in props.backup.edges?.repositories ?? []' :key='index'
+                class='mx-1' :class='getBadge(getLocation(repo.location))'>
+              {{ repo.name }}
+            </li>
+          </ul>
         </div>
       </div>
       <BackupButton :backup-ids='bIds' />
