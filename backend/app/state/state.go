@@ -575,6 +575,7 @@ func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
 func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 
 	if _, ok := s.repoMounts[repoId]; !ok {
 		s.repoMounts[repoId] = &types.MountState{}
@@ -585,7 +586,6 @@ func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.Mount
 
 	if state.IsMounted {
 		s.setRepoState(repoId, RepoStatusMounted)
-		defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 	} else {
 		hasOtherMounts := false
 		for _, aState := range s.archiveMounts[repoId] {
@@ -596,7 +596,6 @@ func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.Mount
 		}
 		if !hasOtherMounts {
 			s.setRepoState(repoId, RepoStatusIdle)
-			defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
 		}
 	}
 }
