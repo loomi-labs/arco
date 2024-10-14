@@ -18,7 +18,6 @@ import {
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import { LogDebug } from "../../wailsjs/runtime";
 import { formInputClass } from "../common/form";
 import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
@@ -192,12 +191,10 @@ async function saveBackupProfile(): Promise<boolean> {
 
 // Navigation
 const previousStep = async () => {
-  LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
   currentStep.value--;
 };
 
 const nextStep = async () => {
-  LogDebug(`Backup profile: ${JSON.stringify(backupProfile.value)}`);
   switch (currentStep.value) {
     case Step.SelectData:
       if (!isStep1Valid.value) {

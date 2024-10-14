@@ -7,7 +7,6 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as runtime from "../../wailsjs/runtime";
-import { LogDebug } from "../../wailsjs/runtime";
 import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";
@@ -126,7 +125,6 @@ async function getLockedRepos() {
   try {
     const result = await repoClient.GetLocked();
     lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
-    LogDebug(`Locked repos: ${lockedRepos.value.map((repo) => repo.name).join(", ")}`);
   } catch (error: any) {
     await showAndLogError("Failed to get locked repositories", error);
   }
