@@ -9,6 +9,7 @@ import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
 import deepEqual from "deep-equal";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -285,7 +286,8 @@ onMounted(() => {
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput(index)'
-                   :class='formInputClass + (isSuggestion(field) ? "text-half-hidden-light dark:text-half-hidden-dark" : "")' />
+                   class='{{ formInputClass }}'
+                   :class='{"text-half-hidden-light dark:text-half-hidden-dark": isSuggestion(field)}' />
           </FormFieldSmall>
         </td>
         <td class='text-right align-top'>
