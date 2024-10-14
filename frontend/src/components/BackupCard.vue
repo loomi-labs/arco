@@ -9,7 +9,7 @@ import { onUnmounted, ref } from "vue";
 import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
-import { toRelativeTimeString } from "../common/time";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
 import * as runtime from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
@@ -127,9 +127,9 @@ onUnmounted(() => {
           <p>{{ $t("last_backup") }}</p>
           <div>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-              <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
+              <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
             </span>
-            <span v-else-if='lastArchive' class='tooltip' :data-tip='lastArchive.createdAt'>
+            <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
             <span :class='toDurationBadge(lastArchive?.createdAt)'>{{
                 toRelativeTimeString(lastArchive.createdAt)
               }}</span>

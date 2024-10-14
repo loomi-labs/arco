@@ -16,7 +16,7 @@ import {
   TrashIcon,
   XMarkIcon
 } from "@heroicons/vue/24/solid";
-import { toRelativeTimeString } from "../common/time";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
@@ -355,7 +355,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
           </td>
           <!-- Date -->
           <td>
-            <span class='tooltip' :data-tip='archive.createdAt'>
+            <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
               <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
             </span>
           </td>

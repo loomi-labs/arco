@@ -6,6 +6,7 @@ import {
   diffSeconds,
   diffWeeks,
   diffYears,
+  format,
   isBefore,
   offset,
   parse,
@@ -181,4 +182,12 @@ function toPastString(date: Date, now: Date): string {
 
   const dYears = diffYears(now, date);
   return `${dYears} year${dYears !== 1 ? "s" : ""} ago`;
+}
+
+/**
+ * toShortDateString converts a Date object to a human-readable string with a long date format.
+ * @param date The date to convert
+ */
+export function toLongDateString(date: Date): string {
+  return format(date, { date: "long", time: "short" });
 }
