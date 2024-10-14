@@ -54,7 +54,7 @@ func (r *RepositoryClient) GetLocked() ([]*ent.Repository, error) {
 		return nil, err
 	}
 
-	var locked []*ent.Repository
+	locked := make([]*ent.Repository, 0)
 	for _, repo := range all {
 		if r.state.GetRepoState(repo.ID).Status == state.RepoStatusLocked {
 			locked = append(locked, repo)
