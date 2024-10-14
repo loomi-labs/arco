@@ -63,6 +63,21 @@ func (r *RepositoryClient) GetLocked() ([]*ent.Repository, error) {
 	return locked, nil
 }
 
+func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
+	all, err := r.All()
+	if err != nil {
+		return nil, err
+	}
+
+	active := make([]*ent.Repository, 0)
+	for _, repo := range all {
+		if r.state.GetRepoState(repo.ID).Status == state.RepoStatusMounted {
+			active = append(active, repo)
+		}
+	}
+	return active, nil
+}
+
 // TODO: remove this function or refactor it
 func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
 	// Check if we can connect to the repository

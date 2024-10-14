@@ -2,7 +2,7 @@
 
 import { borg, ent, state, types } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
-import { computed, onUnmounted, ref, useTemplateRef } from "vue";
+import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
@@ -27,12 +27,16 @@ const props = defineProps<Props>();
 
 const { t } = useI18n();
 
+const showProgressSpinner = ref(false);
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
 const lockedRepos = ref<ent.Repository[]>([]);
-const showProgressSpinner = ref(false);
+const reposWithMounts = ref<ent.Repository[]>([]);
 
-const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
+const confirmUnmountModalKey = useId();
+const confirmUnmountModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmUnmountModalKey);
+
+const confirmRemoveLockModalKey = useId();
 const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
 
 const cleanupFunctions: (() => void)[] = [];
@@ -51,7 +55,7 @@ const buttonText = computed(() => {
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
     return t("remove_lock");
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return t("stop_browsing");
+    return t("run_backup");
   } else if (buttonStatus.value === state.BackupButtonStatus.busy) {
     return t("busy");
   }
@@ -65,7 +69,7 @@ const buttonColor = computed(() => {
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
     return "btn-error";
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return "btn-info";
+    return "btn-success";
   } else {
     return "btn-neutral";
   }
@@ -79,7 +83,7 @@ const buttonTextColor = computed(() => {
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
     return "text-error";
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return "text-info";
+    return "text-success";
   } else {
     return "text-neutral";
   }
@@ -130,6 +134,15 @@ async function getLockedRepos() {
   }
 }
 
+async function getReposWithMounts() {
+  try {
+    const result = await repoClient.GetWithActiveMounts();
+    reposWithMounts.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
+  } catch (error: any) {
+    await showAndLogError("Failed to get mounted repositories", error);
+  }
+}
+
 async function runButtonAction() {
   if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
     await runBackups();
@@ -138,7 +151,7 @@ async function runButtonAction() {
   } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
     confirmRemoveLockModal.value?.showModal();
   } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    await unmountAll();
+    confirmUnmountModal.value?.showModal();
   }
 }
 
@@ -178,6 +191,11 @@ async function breakLock() {
   showProgressSpinner.value = false;
 }
 
+async function unmountAllAndRunBackups() {
+  await unmountAll();
+  await runBackups();
+}
+
 /************
  * Lifecycle
  ************/
@@ -185,6 +203,7 @@ async function breakLock() {
 getButtonStatus();
 getBackupProgress();
 getLockedRepos();
+getReposWithMounts();
 
 for (const backupId of props.backupIds) {
   const handleBackupStateChanged = debounce(async () => {
@@ -196,6 +215,7 @@ for (const backupId of props.backupIds) {
   const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
     await getLockedRepos();
+    await getReposWithMounts();
   }, 200);
 
   cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
@@ -238,13 +258,28 @@ onUnmounted(() => {
     </div>
   </div>
 
+  <ConfirmModal :ref='confirmUnmountModalKey'
+                confirm-text='Stop browsing and start backup'
+                confirm-class='btn-info'
+                @confirm='unmountAllAndRunBackups'>
+    <p v-if='reposWithMounts.length === 1'>You are currently browsing the repository <span
+      class='italic'>{{reposWithMounts[0].name}}</span>.</p>
+    <div v-else>
+      <p>You are currently browsing the following repositories:</p>
+      <ul class='mb-4'>
+        <li v-for='(repo, index) in reposWithMounts' :key='index'>- <span class='italic'>{{ repo.name }}</span></li>
+      </ul>
+    </div>
+    <p class='mb-4'>Do you want to stop browsing and start the backup process?</p>
+  </ConfirmModal>
+
   <ConfirmModal :ref='confirmRemoveLockModalKey'
                 :confirm-text='lockedRepos.length === 1 ? "Remove lock" : "Remove locks"'
                 confirm-class='btn-error'
-                @confirm='breakLock()'>
+                @confirm='breakLock'>
     <p v-if='lockedRepos.length === 1'><span class='italic'>{{ lockedRepos[0].name }}</span> has
       been locked!</p>
-    <div v-else >
+    <div v-else>
       <p>The following repositories have been locked:</p>
       <ul class='mb-4'>
         <li v-for='(repo, index) in lockedRepos' :key='index'>- <span class='italic'>{{ repo.name }}</span></li>

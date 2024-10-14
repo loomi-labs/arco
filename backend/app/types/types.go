@@ -90,8 +90,8 @@ func EventRepoStateChangedString(repoId int) string {
 }
 
 type MountState struct {
-	IsMounted bool   `json:"is_mounted"`
-	MountPath string `json:"mount_path"`
+	IsMounted bool   `json:"isMounted"`
+	MountPath string `json:"mountPath"`
 }
 
 var AllThemes = []settings.Theme{

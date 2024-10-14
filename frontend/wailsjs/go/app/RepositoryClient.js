@@ -70,6 +70,10 @@ export function GetState(arg1) {
   return window['go']['app']['RepositoryClient']['GetState'](arg1);
 }
 
+export function GetWithActiveMounts() {
+  return window['go']['app']['RepositoryClient']['GetWithActiveMounts']();
+}
+
 export function MountArchive(arg1) {
   return window['go']['app']['RepositoryClient']['MountArchive'](arg1);
 }

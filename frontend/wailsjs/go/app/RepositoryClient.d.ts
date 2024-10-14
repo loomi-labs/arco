@@ -39,6 +39,8 @@ export function GetRepoMountState(arg1:number):Promise<types.MountState>;
 
 export function GetState(arg1:number):Promise<state.RepoState>;
 
+export function GetWithActiveMounts():Promise<Array<ent.Repository>>;
+
 export function MountArchive(arg1:number):Promise<types.MountState>;
 
 export function MountRepository(arg1:number):Promise<types.MountState>;
