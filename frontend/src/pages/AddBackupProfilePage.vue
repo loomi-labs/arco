@@ -23,6 +23,7 @@ import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
+import TooltipIcon from "../components/common/TooltipIcon.vue";
 
 /************
  * Types
@@ -241,7 +242,9 @@ getExistingRepositories();
     <!-- 1. Step - Data Selection -->
     <template v-if='currentStep === Step.SelectData'>
       <!-- Data to backup Card -->
-      <h2 class='text-3xl py-4'>Data to backup</h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup
+        <TooltipIcon text='Select any folder or file that you want to include in your backup.' />
+      </h2>
       <DataSelection
         :paths='backupProfile.backupPaths'
         :suggestions='directorySuggestions'
@@ -253,7 +256,10 @@ getExistingRepositories();
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
-      <h2 class='text-3xl pt-8 pb-4'>Data to ignore</h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore
+<!--        https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns-->
+        <TooltipIcon text="Select files, folders or patterns that you don't want to include in your backups. This supports wildcards. Example: *.cache -> exclude alls .cache folders" />
+      </h2>
       <DataSelection
         :paths='backupProfile.excludePaths'
         :is-backup-selection='false'
