@@ -60,6 +60,7 @@ defineExpose({
     ref='dialog'
     class='modal'
     @close='dialog?.close()'
+    @click.stop
   >
     <form
       method='dialog'
