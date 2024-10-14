@@ -86,20 +86,20 @@ async function createRepo() {
   isCreating.value = false;
 }
 
-async function setNameFromLocation(newLocation: string | undefined) {
+async function setNameFromLocation() {
+  // Delay 100ms to avoid setting the name before the validation has run
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   // If the user has touched the name field, we don't want to change it
-  if (!newLocation || isNameTouchedByUser.value) {
+  if (!location.value || isNameTouchedByUser.value) {
     return;
   }
-
-  // We have to wait a bit for the validation to run
-  await nextTick();
 
   // If the location is valid, we can set the name
   if (!errors.value.location) {
     // user@host:~/path/to/repo -> repo
     // ssh://user@host:port/./path/to/repo -> repo
-    const userAndHost = newLocation?.split("@");
+    const userAndHost = location.value?.split("@");
     const newLocationWithoutUser = userAndHost?.[1];
     const hostAndPath = newLocationWithoutUser?.split(":");
     const newPath = hostAndPath?.[1];
@@ -127,7 +127,7 @@ async function getConnectedRemoteHosts() {
 getConnectedRemoteHosts();
 
 // When the location changes, we want to set the name based on the last part of the path
-watch(() => values.location, async (newLocation) => setNameFromLocation(newLocation));
+watch(() => values.location, async () => await setNameFromLocation());
 
 </script>
 
