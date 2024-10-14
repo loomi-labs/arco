@@ -6,12 +6,11 @@ import { rRepositoryPage, withId } from "../router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
-import { onUnmounted, ref, useTemplateRef, watch } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { toDurationBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
-import ConfirmModal from "./common/ConfirmModal.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
@@ -118,7 +117,7 @@ watch(backupState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-// emit repoIsBusy event when repo is busy
+// emit repo status
 watch(repoState, async (newState, oldState) => {
   // We only care about status changes
   if (newState.status === oldState.status) {
