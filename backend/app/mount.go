@@ -92,24 +92,28 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 }
 
 func (r *RepositoryClient) UnmountAllForRepos(repoIds []int) error {
+	var unmountErrors []error
 	for _, repoId := range repoIds {
 		mount := r.GetRepoMountState(repoId)
 		if mount.IsMounted {
 			if _, err := r.UnmountRepository(repoId); err != nil {
-				return err
+				unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting repository %d: %w", repoId, err))
 			}
 		}
 		if states, err := r.GetArchiveMountStates(repoId); err != nil {
-			return err
+			unmountErrors = append(unmountErrors, fmt.Errorf("error getting archive mount states for repository %d: %w", repoId, err))
 		} else {
-			for archiveId := range states {
-				if states[archiveId].IsMounted {
+			for archiveId, state := range states {
+				if state.IsMounted {
 					if _, err = r.UnmountArchive(archiveId); err != nil {
-						return err
+						unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting archive %d: %w", archiveId, err))
 					}
 				}
 			}
 		}
+	}
+	if len(unmountErrors) > 0 {
+		return fmt.Errorf("unmount errors: %v", unmountErrors)
 	}
 	return nil
 }
