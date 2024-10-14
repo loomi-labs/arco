@@ -93,8 +93,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 dark:text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 dark:text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
+    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
   </div>
 </template>
 

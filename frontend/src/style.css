@@ -20,4 +20,12 @@
     .ac-card-dotted {
         @apply ac-card bg-transparent border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400
     }
+
+    .badge-arco-purple-500 {
+        @apply text-arco-purple-500;
+    }
+
+    .badge-arco-purple-700 {
+        @apply text-arco-purple-700;
+    }
 }
