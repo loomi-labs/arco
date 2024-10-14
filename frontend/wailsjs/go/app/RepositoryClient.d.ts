@@ -29,6 +29,8 @@ export function GetLastArchiveByBackupId(arg1:types.BackupId):Promise<ent.Archiv
 
 export function GetLastArchiveByRepoId(arg1:number):Promise<ent.Archive>;
 
+export function GetLocked():Promise<Array<ent.Repository>>;
+
 export function GetNbrOfArchives(arg1:number):Promise<number>;
 
 export function GetPaginatedArchives(arg1:app.PaginatedArchivesRequest):Promise<app.PaginatedArchivesResponse>;
@@ -43,7 +45,7 @@ export function MountRepository(arg1:number):Promise<types.MountState>;
 
 export function RefreshArchives(arg1:number):Promise<Array<ent.Archive>>;
 
-export function UnmountAllForRepo(arg1:number):Promise<void>;
+export function UnmountAllForRepos(arg1:Array<number>):Promise<void>;
 
 export function UnmountArchive(arg1:number):Promise<types.MountState>;
 

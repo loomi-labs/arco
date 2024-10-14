@@ -1,20 +1,23 @@
 <script setup lang='ts'>
 
-import { borg, state } from "../../wailsjs/go/models";
+import { borg, ent, state, types } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
-import { computed } from "vue";
+import { computed, onUnmounted, ref, useTemplateRef } from "vue";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import { showAndLogError } from "../common/error";
+import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
+import * as runtime from "../../wailsjs/runtime";
+import { LogDebug } from "../../wailsjs/runtime";
+import { debounce } from "lodash";
+import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import ConfirmModal from "./common/ConfirmModal.vue";
 
 /************
  * Types
  ************/
 
 interface Props {
-  backupProgress?: borg.BackupProgress;
-  buttonStatus?: state.BackupButtonStatus;
-}
-
-interface Emits {
-  (event: typeof clickEmit): void
+  backupIds: types.BackupId[];
 }
 
 /************
@@ -22,13 +25,74 @@ interface Emits {
  ************/
 
 const props = defineProps<Props>();
-const emits = defineEmits<Emits>();
-const clickEmit = "click";
 
 const { t } = useI18n();
 
+const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
+const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
+const lockedRepos = ref<ent.Repository[]>([]);
+const showProgressSpinner = ref(false);
+
+const confirmRemoveLockModalKey = "confirm_remove_lock_modal";
+const confirmRemoveLockModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveLockModalKey);
+
+const cleanupFunctions: (() => void)[] = [];
+
+/************
+ * Functions
+ ************/
+
+const buttonText = computed(() => {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+    return t("run_backup");
+  } else if (buttonStatus.value === state.BackupButtonStatus.waiting) {
+    return t("waiting");
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    return `${t("abort")} ${progress.value}%`;
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+    return t("remove_lock");
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+    return t("stop_browsing");
+  } else if (buttonStatus.value === state.BackupButtonStatus.busy) {
+    return t("busy");
+  }
+});
+
+const buttonColor = computed(() => {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+    return "btn-success";
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    return "btn-warning";
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+    return "btn-error";
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+    return "btn-info";
+  } else {
+    return "btn-neutral";
+  }
+});
+
+const buttonTextColor = computed(() => {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+    return "text-success";
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    return "text-warning";
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+    return "text-error";
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+    return "text-info";
+  } else {
+    return "text-neutral";
+  }
+});
+
+const isButtonDisabled = computed(() => {
+  return buttonStatus.value === state.BackupButtonStatus.busy
+    || buttonStatus.value === state.BackupButtonStatus.waiting;
+});
+
 const progress = computed(() => {
-  const progress = props.backupProgress;
+  const progress = backupProgress.value;
   if (!progress) {
     return 100;
   }
@@ -38,62 +102,110 @@ const progress = computed(() => {
   return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
 });
 
-/************
- * Functions
- ************/
+async function getButtonStatus() {
+  if (!props.backupIds.length) {
+    return;
+  }
 
-function getButtonText() {
-  if (props.buttonStatus === state.BackupButtonStatus.runBackup) {
-    return t("run_backup");
-  } else if (props.buttonStatus === state.BackupButtonStatus.waiting) {
-    return t("waiting");
-  } else if (props.buttonStatus === state.BackupButtonStatus.abort) {
-    return `${t("abort")} ${progress.value}%`;
-  } else if (props.buttonStatus === state.BackupButtonStatus.locked) {
-    return t("remove_lock");
-  } else if (props.buttonStatus === state.BackupButtonStatus.unmount) {
-    return t("stop_browsing");
-  } else if (props.buttonStatus === state.BackupButtonStatus.busy) {
-    return t("busy");
+  try {
+    buttonStatus.value = await backupClient.GetBackupButtonStatus(props.backupIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup state", error);
   }
 }
 
-function getButtonColor() {
-  if (props.buttonStatus === state.BackupButtonStatus.runBackup) {
-    return "btn-success";
-  } else if (props.buttonStatus === state.BackupButtonStatus.abort) {
-    return "btn-warning";
-  } else if (props.buttonStatus === state.BackupButtonStatus.locked) {
-    return "btn-error";
-  } else if (props.buttonStatus === state.BackupButtonStatus.unmount) {
-    return "btn-info";
-  } else {
-    return "btn-neutral";
+async function getBackupProgress() {
+  try {
+    backupProgress.value = await backupClient.GetCombinedBackupProgress(props.backupIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to get backup progress", error);
   }
 }
 
-function getButtonTextColor() {
-  if (props.buttonStatus === state.BackupButtonStatus.runBackup) {
-    return "text-success";
-  } else if (props.buttonStatus === state.BackupButtonStatus.abort) {
-    return "text-warning";
-  } else if (props.buttonStatus === state.BackupButtonStatus.locked) {
-    return "text-error";
-  } else if (props.buttonStatus === state.BackupButtonStatus.unmount) {
-    return "text-info";
-  } else {
-    return "text-neutral";
+async function getLockedRepos() {
+  try {
+    const result = await repoClient.GetLocked();
+    lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
+    LogDebug(`Locked repos: ${lockedRepos.value.map((repo) => repo.name).join(", ")}`);
+  } catch (error: any) {
+    await showAndLogError("Failed to get locked repositories", error);
   }
 }
 
-function getButtonDisabled() {
-  return props.buttonStatus === state.BackupButtonStatus.busy
-    || props.buttonStatus === state.BackupButtonStatus.waiting;
+async function runButtonAction() {
+  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+    await runBackups();
+  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+    await abortBackups();
+  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+    confirmRemoveLockModal.value?.showModal();
+  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+    await unmountAll();
+  }
+}
+
+async function runBackups() {
+  try {
+    await backupClient.StartBackupJobs(props.backupIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to run backup", error);
+  }
+}
+
+async function abortBackups() {
+  try {
+    await backupClient.AbortBackupJobs(props.backupIds);
+  } catch (error: any) {
+    await showAndLogError("Failed to run backup", error);
+  }
+}
+
+async function unmountAll() {
+  try {
+    await repoClient.UnmountAllForRepos(props.backupIds.map((id) => id.repositoryId));
+  } catch (error: any) {
+    await showAndLogError("Failed to unmount directories", error);
+  }
+}
+
+async function breakLock() {
+  try {
+    showProgressSpinner.value = true;
+    for (const repo of lockedRepos.value) {
+      await repoClient.BreakLock(repo.id);
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to break lock", error);
+  }
+  showProgressSpinner.value = false;
 }
 
 /************
  * Lifecycle
  ************/
+
+getButtonStatus();
+getBackupProgress();
+getLockedRepos();
+
+for (const backupId of props.backupIds) {
+  const handleBackupStateChanged = debounce(async () => {
+    await getBackupProgress();
+  }, 200);
+
+  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
+
+  const handleRepoStateChanged = debounce(async () => {
+    await getButtonStatus();
+    await getLockedRepos();
+  }, 200);
+
+  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
+}
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
 
 </script>
 
@@ -101,16 +213,16 @@ function getButtonDisabled() {
   <div v-if='buttonStatus' class='stack'>
     <div class='flex items-center justify-center w-[94px] h-[94px]'>
       <button class='btn btn-circle p-4 m-0 w-16 h-16'
-              :class='getButtonColor()'
-              :disabled='getButtonDisabled()'
-              @click.stop='emits(clickEmit)'
-      >{{ getButtonText() }}
+              :class='buttonColor'
+              :disabled='isButtonDisabled'
+              @click.stop='runButtonAction'
+      >{{ buttonText }}
       </button>
     </div>
     <div class='relative'>
       <div
         class='radial-progress absolute bottom-[2px] left-0'
-        :class='getButtonTextColor()'
+        :class='buttonTextColor'
         :style='`--value:${progress}; --size:95px; --thickness: 6px;`'
         role='progressbar'>
       </div>
@@ -119,6 +231,34 @@ function getButtonDisabled() {
   <div v-else>
     <span class='loading loading-ring w-[94px] h-[94px]'></span>
   </div>
+
+  <div v-if='showProgressSpinner'
+       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
+    <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
+      <p class='mb-4'>{{ $t("breaking_lock") }}</p>
+      <span class='loading loading-dots loading-md'></span>
+    </div>
+  </div>
+
+  <ConfirmModal :ref='confirmRemoveLockModalKey'
+                :confirm-text='lockedRepos.length === 1 ? "Remove lock" : "Remove locks"'
+                confirm-class='btn-error'
+                @confirm='breakLock()'>
+    <p v-if='lockedRepos.length === 1'><span class='italic'>{{ lockedRepos[0].name }}</span> has
+      been locked!</p>
+    <div v-else >
+      <p>The following repositories have been locked:</p>
+      <ul class='mb-4'>
+        <li v-for='(repo, index) in lockedRepos' :key='index'>- <span class='italic'>{{ repo.name }}</span></li>
+      </ul>
+    </div>
+    <p class='mb-4'>This can happen if multiple instances try to do backup operations on the same repository.</p>
+
+    <p class='mb-4'>Make sure that no other process (borg, arco, etc.) is running on this repository before removing the
+      lock!</p>
+    <p class='mb-4'>
+      {{ lockedRepos.length === 1 ? "Are you sure you want to remove the lock?" : "Are you sure you want to remove the locks?" }}</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

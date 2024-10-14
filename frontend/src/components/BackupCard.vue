@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { useI18n } from "vue-i18n";
 import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
-import { borg, ent, state, types } from "../../wailsjs/go/models";
+import { ent, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
@@ -10,11 +10,9 @@ import { rBackupProfilePage, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as runtime from "../../wailsjs/runtime";
-import { LogDebug } from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
-import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
+import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import { getIcon, Icon } from "../common/icons";
 
@@ -37,9 +35,6 @@ const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 const icon = ref<Icon>(getIcon(props.backup.icon));
-
-const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
-const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
 
 const bIds = props.backup.edges?.repositories?.map((r) => {
   const backupId = types.BackupId.createFrom();
@@ -93,78 +88,15 @@ async function getLastArchives() {
   }
 }
 
-async function getButtonStatus() {
-  try {
-    buttonStatus.value = await backupClient.GetCombinedBackupButtonStatus(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to get backup state", error);
-  }
-}
-
-async function getBackupProgress() {
-  try {
-    backupProgress.value = await backupClient.GetCombinedBackupProgress(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to get backup progress", error);
-  }
-}
-
-async function runBackups() {
-  try {
-    await backupClient.StartBackupJobs(props.backup.id);
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
-  }
-}
-
-async function abortBackups() {
-  try {
-    await backupClient.AbortBackupJobs(bIds);
-  } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
-  }
-}
-
-async function unmountAll() {
-  try {
-    for (const backupId of bIds) {
-      await repoClient.UnmountAllForRepo(backupId.repositoryId);
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to unmount directories", error);
-  }
-}
-
-async function runButtonAction() {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    await runBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    await abortBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    // TODO: FIX THIS
-    LogDebug("locked button");
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    await unmountAll();
-  }
-}
-
 /************
  * Lifecycle
  ************/
 
-getButtonStatus();
 getFailedBackupRun();
 getLastArchives();
 
 for (const backupId of bIds) {
-  const handleBackupStateChanged = debounce(async () => {
-    await getBackupProgress();
-  }, 200);
-
-  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
-
   const handleRepoStateChanged = debounce(async () => {
-    await getButtonStatus();
     await getFailedBackupRun();
     await getLastArchives();
   }, 200);
@@ -183,7 +115,7 @@ onUnmounted(() => {
        @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
     <div
       class='flex justify-between px-6 pt-4 pb-2'
-    :class='icon.color'>
+      :class='icon.color'>
       {{ props.backup.name }}
       <component :is='icon.html' class='size-8' />
     </div>
@@ -228,7 +160,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      <BackupButton :button-status='buttonStatus' :backup-progress='backupProgress' @click='runButtonAction' />
+      <BackupButton :backup-ids='bIds' />
     </div>
   </div>
 </template>

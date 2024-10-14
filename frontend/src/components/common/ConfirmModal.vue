@@ -71,7 +71,7 @@ defineExpose({
       <div class='modal-action'>
         <slot name='footer' />
         <slot name='actionButtons'>
-          <div class='flex w-full justify-end gap-4'>
+          <div class='flex w-full justify-center gap-4'>
             <button
               value='false'
               class='btn btn-outline'

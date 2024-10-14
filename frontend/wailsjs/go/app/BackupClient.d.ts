@@ -24,15 +24,13 @@ export function DryRunPruneBackup(arg1:types.BackupId):Promise<void>;
 
 export function DryRunPruneBackups(arg1:number):Promise<void>;
 
-export function GetBackupButtonStatus(arg1:types.BackupId):Promise<state.BackupButtonStatus>;
+export function GetBackupButtonStatus(arg1:Array<types.BackupId>):Promise<state.BackupButtonStatus>;
 
 export function GetBackupProfile(arg1:number):Promise<ent.BackupProfile>;
 
 export function GetBackupProfileFilterOptions(arg1:number):Promise<Array<app.BackupProfileFilter>>;
 
 export function GetBackupProfiles():Promise<Array<ent.BackupProfile>>;
-
-export function GetCombinedBackupButtonStatus(arg1:Array<types.BackupId>):Promise<state.BackupButtonStatus>;
 
 export function GetCombinedBackupProgress(arg1:Array<types.BackupId>):Promise<borg.BackupProgress>;
 
@@ -58,6 +56,6 @@ export function SelectDirectory():Promise<string>;
 
 export function StartBackupJob(arg1:types.BackupId):Promise<void>;
 
-export function StartBackupJobs(arg1:number):Promise<Array<types.BackupId>>;
+export function StartBackupJobs(arg1:Array<types.BackupId>):Promise<Array<types.BackupId>>;
 
 export function UpdateBackupProfile(arg1:ent.BackupProfile):Promise<ent.BackupProfile>;
