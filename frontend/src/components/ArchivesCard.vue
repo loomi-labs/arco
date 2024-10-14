@@ -362,19 +362,19 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <!-- Action -->
           <td class='flex items-center'>
             <span class='tooltip'
-                  :class='{"invisible": !archiveMountStates.get(archive.id)?.is_mounted}'
-                  :data-tip='`Click to unmount archive at ${archiveMountStates.get(archive.id)?.mount_path}`'>
+                  :class='{"invisible": !archiveMountStates.get(archive.id)?.isMounted}'
+                  :data-tip='`Click to unmount archive at ${archiveMountStates.get(archive.id)?.mountPath}`'>
                 <button class='btn btn-sm btn-ghost btn-circle btn-info'
                         @click='unmountArchive(archive.id)'>
                   <CloudArrowDownIcon class='size-4 text-info'></CloudArrowDownIcon>
                 </button>
             </span>
-            <span class='tooltip'
+            <span class='tooltip tooltip-info'
                   data-tip='Browse files in this archive'>
-              <button class='group btn btn-sm btn-info btn-circle btn-outline ml-2'
+              <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content ml-2'
                       :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
                       @click='mountArchive(archive.id)'>
-                <DocumentMagnifyingGlassIcon class='size-4 text-info group-hover:text-info-content'></DocumentMagnifyingGlassIcon>
+                <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               </button>
             </span>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
