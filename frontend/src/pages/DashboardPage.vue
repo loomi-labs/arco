@@ -65,7 +65,7 @@ getRepos();
     <h1 class='text-4xl font-bold'>Backup profiles</h1>
     <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
       <!-- Backup Card -->
-      <div v-for='(backup, index) in backups' :key='index'>
+      <div v-for='backup in backups' :key='backup.id'>
         <BackupCard :backup='backup' />
       </div>
       <!-- Add Backup Card -->
@@ -80,7 +80,7 @@ getRepos();
       <h1 class='text-4xl font-bold'>Repositories</h1>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
         <!-- Repository Card -->
-        <div v-for='(repo, index) in repos' :key='index'>
+        <div v-for='repo in repos' :key='repo.id'>
           <RepoCardSimple :repo='repo' />
         </div>
         <!-- Add Repository Card -->

@@ -95,14 +95,14 @@ const isButtonDisabled = computed(() => {
 });
 
 const progress = computed(() => {
-  const progress = backupProgress.value;
-  if (!progress) {
+  const backupProg = backupProgress.value;
+  if (!backupProg) {
     return 100;
   }
-  if (progress.totalFiles === 0) {
+  if (backupProg.totalFiles === 0) {
     return 0;
   }
-  return parseFloat(((progress.processedFiles / progress.totalFiles) * 100).toFixed(0));
+  return parseFloat(((backupProg.processedFiles / backupProg.totalFiles) * 100).toFixed(0));
 });
 
 async function getButtonStatus() {
@@ -167,7 +167,7 @@ async function abortBackups() {
   try {
     await backupClient.AbortBackupJobs(props.backupIds);
   } catch (error: any) {
-    await showAndLogError("Failed to run backup", error);
+    await showAndLogError("Failed to abort backup", error);
   }
 }
 
@@ -187,8 +187,9 @@ async function breakLock() {
     }
   } catch (error: any) {
     await showAndLogError("Failed to break lock", error);
+  } finally {
+    showProgressSpinner.value = false;
   }
-  showProgressSpinner.value = false;
 }
 
 async function unmountAllAndRunBackups() {

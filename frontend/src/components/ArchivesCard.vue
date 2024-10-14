@@ -116,8 +116,9 @@ async function getPaginatedArchives() {
     }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
+  } finally {
+    isLoading.value = false;
   }
-  isLoading.value = false;
 }
 
 async function deleteArchive() {
@@ -133,8 +134,9 @@ async function deleteArchive() {
     markArchiveAndFadeOut(archiveId);
   } catch (error: any) {
     await showAndLogError("Failed to delete archive", error);
+  } finally {
+    progressSpinnerText.value = undefined;
   }
-  progressSpinnerText.value = undefined;
 }
 
 function markArchiveAndFadeOut(archiveId: number) {
@@ -161,8 +163,9 @@ async function mountArchive(archiveId: number) {
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: any) {
     await showAndLogError("Failed to mount archive", error);
+  } finally {
+    progressSpinnerText.value = undefined;
   }
-  progressSpinnerText.value = undefined;
 }
 
 async function unmountArchive(archiveId: number) {
@@ -172,8 +175,9 @@ async function unmountArchive(archiveId: number) {
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: any) {
     await showAndLogError("Failed to unmount archive", error);
+  } finally {
+    progressSpinnerText.value = undefined;
   }
-  progressSpinnerText.value = undefined;
 }
 
 async function getBackupProfileFilterOptions() {
