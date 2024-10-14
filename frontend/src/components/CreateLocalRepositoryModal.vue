@@ -12,6 +12,7 @@ import { formInputClass } from "../common/form";
 import { FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { useI18n } from "vue-i18n";
+import { capitalizeFirstLetter } from "../common/util";
 
 /************
  * Types
@@ -124,18 +125,16 @@ async function setNameFromLocation() {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   // If the user has touched the name field, we don't want to change it
-  if (!location.value || isNameTouchedByUser.value) {
+  if (!location.value || isNameTouchedByUser.value || errors.value.location) {
     return;
   }
 
-  // If the location is valid, we can set the name
-  if (!errors.value.location) {
+    // If the location is valid, we can set the name
     const newName = location.value?.split("/").pop();
     if (newName) {
       // Capitalize the first letter
-      name.value = newName.charAt(0).toUpperCase() + newName.slice(1);
+      name.value = capitalizeFirstLetter(newName);
     }
-  }
 }
 
 async function selectDirectory() {
