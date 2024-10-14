@@ -9,7 +9,7 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
 import { object } from "zod";
-import { getBadgeColor, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
+import { getBadge, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
 import { toDurationBadge } from "../common/badge";
 import { toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
@@ -156,8 +156,7 @@ onUnmounted(() => {
         <div>{{ $t("location") }}</div>
         <div class='flex items-center gap-4'>
           <span>{{ repo.location }}</span>
-          <span class='badge badge-outline'
-                :class='getBadgeColor(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='getBadge(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </div>
       </div>
       <div class='divider'></div>

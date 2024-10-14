@@ -19,8 +19,8 @@ export function getTooltipColor(location: Location): string {
   return location === Location.Local ? "tooltip-arco-purple-500" : "tooltip-arco-purple-700";
 }
 
-export function getBadgeColor(location: Location): string {
-  return location === Location.Local ? "badge-arco-purple-500" : "badge-arco-purple-700";
+export function getBadge(location: Location): string {
+  return location === Location.Local ? "badge bg-arco-purple-500 dark:badge-outline dark:text-arco-purple-500" : "badge text-white bg-arco-purple-700 dark:badge-outline dark:text-arco-purple-700";
 }
 
 export function toHumanReadableSize(size: number): string {
