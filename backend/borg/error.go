@@ -2,7 +2,6 @@ package borg
 
 import (
 	"errors"
-	"fmt"
 	"os/exec"
 )
 
@@ -16,475 +15,312 @@ func (CancelErr) Error() string {
 	return "command canceled"
 }
 
-/***********************************/
-/********** borg Errors ************/
-/***********************************/
-
-type Error struct{}
-
-func (Error) Error() string { return "Error: {}" }
-
-type ErrorWithTraceback struct{}
-
-func (ErrorWithTraceback) Error() string { return "Error: {}" }
-
-type BufferMemoryLimitExceeded struct {
-	RequestedSize int
-	Limit         int
+type WrappedExitErr struct {
+	ExitError exec.ExitError
 }
 
-func (e BufferMemoryLimitExceeded) Error() string {
-	return fmt.Sprintf("Requested buffer size %d is above the limit of %d.", e.RequestedSize, e.Limit)
+func (e WrappedExitErr) Error() string {
+	return e.ExitError.Error()
+}
+
+/***********************************/
+/********** Borg Errors ************/
+/***********************************/
+
+type Error struct {
+	WrappedExitErr
+}
+
+type ErrorWithTraceback struct {
+	WrappedExitErr
+}
+
+type BufferMemoryLimitExceeded struct {
+	WrappedExitErr
 }
 
 type EfficientCollectionQueueSizeUnderflow struct {
-	FirstElements  int
-	CollectionSize int
+	WrappedExitErr
 }
 
-func (e EfficientCollectionQueueSizeUnderflow) Error() string {
-	return fmt.Sprintf("Could not pop_front first %d elements, collection only has %d elements.", e.FirstElements, e.CollectionSize)
+type RTError struct {
+	WrappedExitErr
 }
 
-type RTError struct{}
+type CancelledByUser struct {
+	WrappedExitErr
+}
 
-func (RTError) Error() string { return "Runtime Error: {}" }
-
-type CancelledByUser struct{}
-
-func (CancelledByUser) Error() string { return "Cancelled by user." }
-
-type CommandError struct{}
-
-func (CommandError) Error() string { return "Command Error: {}" }
+type CommandError struct {
+	WrappedExitErr
+}
 
 type PlaceholderError struct {
-	Format string
-	Args   []interface{}
-}
-
-func (e PlaceholderError) Error() string {
-	return fmt.Sprintf("Formatting Error: “%s”.format(%v): %v", e.Format, e.Args[0], e.Args[1])
+	WrappedExitErr
 }
 
 type InvalidPlaceholder struct {
-	Placeholder string
-}
-
-func (e InvalidPlaceholder) Error() string {
-	return fmt.Sprintf("Invalid placeholder “%s” in string: {}", e.Placeholder)
+	WrappedExitErr
 }
 
 type RepositoryAlreadyExists struct {
-	Path string
-}
-
-func (e RepositoryAlreadyExists) Error() string {
-	return fmt.Sprintf("A repository already exists at %s.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryAtticRepository struct {
-	Path string
-}
-
-func (e RepositoryAtticRepository) Error() string {
-	return fmt.Sprintf("Attic repository detected. Please run “borg upgrade %s”.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryCheckNeeded struct {
-	Path string
-}
-
-func (e RepositoryCheckNeeded) Error() string {
-	return fmt.Sprintf("Inconsistency detected. Please run “borg check %s”.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryDoesNotExist struct {
-	Path string
-}
-
-func (e RepositoryDoesNotExist) Error() string {
-	return fmt.Sprintf("Repository %s does not exist.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryInsufficientFreeSpaceError struct {
-	Required  int
-	Available int
-}
-
-func (e RepositoryInsufficientFreeSpaceError) Error() string {
-	return fmt.Sprintf("Insufficient free space to complete transaction (required: %d, available: %d).", e.Required, e.Available)
+	WrappedExitErr
 }
 
 type RepositoryInvalidRepository struct {
-	Path string
-}
-
-func (e RepositoryInvalidRepository) Error() string {
-	return fmt.Sprintf("%s is not a valid repository. Check repo config.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryInvalidRepositoryConfig struct {
-	Path   string
-	Config string
-}
-
-func (e RepositoryInvalidRepositoryConfig) Error() string {
-	return fmt.Sprintf("%s does not have a valid configuration. Check repo config [%s].", e.Path, e.Config)
+	WrappedExitErr
 }
 
 type RepositoryObjectNotFound struct {
-	Key  string
-	Repo string
-}
-
-func (e RepositoryObjectNotFound) Error() string {
-	return fmt.Sprintf("Object with key %s not found in repository %s.", e.Key, e.Repo)
+	WrappedExitErr
 }
 
 type RepositoryParentPathDoesNotExist struct {
-	Path string
-}
-
-func (e RepositoryParentPathDoesNotExist) Error() string {
-	return fmt.Sprintf("The parent path of the repo directory [%s] does not exist.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryPathAlreadyExists struct {
-	Path string
-}
-
-func (e RepositoryPathAlreadyExists) Error() string {
-	return fmt.Sprintf("There is already something at %s.", e.Path)
+	WrappedExitErr
 }
 
 type RepositoryStorageQuotaExceeded struct {
-	Quota    string
-	Exceeded string
-}
-
-func (e RepositoryStorageQuotaExceeded) Error() string {
-	return fmt.Sprintf("The storage quota (%s) has been exceeded (%s). Try deleting some archives.", e.Quota, e.Exceeded)
+	WrappedExitErr
 }
 
 type RepositoryPathPermissionDenied struct {
-	Path string
-}
-
-func (e RepositoryPathPermissionDenied) Error() string {
-	return fmt.Sprintf("Permission denied to %s.", e.Path)
+	WrappedExitErr
 }
 
 type MandatoryFeatureUnsupported struct {
-	Features string
+	WrappedExitErr
 }
 
-func (e MandatoryFeatureUnsupported) Error() string {
-	return fmt.Sprintf("Unsupported repository feature(s) %s. A newer version of borg is required to access this repository.", e.Features)
+type NoManifestError struct {
+	WrappedExitErr
 }
 
-type NoManifestError struct{}
-
-func (NoManifestError) Error() string { return "Repository has no manifest." }
-
-type UnsupportedManifestError struct{}
-
-func (UnsupportedManifestError) Error() string {
-	return "Unsupported manifest envelope. A newer version is required to access this repository."
+type UnsupportedManifestError struct {
+	WrappedExitErr
 }
 
 type ArchiveAlreadyExists struct {
-	Name string
-}
-
-func (e ArchiveAlreadyExists) Error() string {
-	return fmt.Sprintf("Archive %s already exists", e.Name)
+	WrappedExitErr
 }
 
 type ArchiveDoesNotExist struct {
-	Name string
-}
-
-func (e ArchiveDoesNotExist) Error() string {
-	return fmt.Sprintf("Archive %s does not exist", e.Name)
+	WrappedExitErr
 }
 
 type ArchiveIncompatibleFilesystemEncodingError struct {
-	Filename string
-	Encoding string
-}
-
-func (e ArchiveIncompatibleFilesystemEncodingError) Error() string {
-	return fmt.Sprintf("Failed to encode filename “%s” into file system encoding “%s”. Consider configuring the LANG environment variable.", e.Filename, e.Encoding)
+	WrappedExitErr
 }
 
 type KeyfileInvalidError struct {
-	Repo string
-	Path string
-}
-
-func (e KeyfileInvalidError) Error() string {
-	return fmt.Sprintf("Invalid key data for repository %s found in %s.", e.Repo, e.Path)
+	WrappedExitErr
 }
 
 type KeyfileMismatchError struct {
-	Repo string
-	Path string
-}
-
-func (e KeyfileMismatchError) Error() string {
-	return fmt.Sprintf("Mismatch between repository %s and key file %s.", e.Repo, e.Path)
+	WrappedExitErr
 }
 
 type KeyfileNotFoundError struct {
-	Repo string
-	Path string
+	WrappedExitErr
 }
 
-func (e KeyfileNotFoundError) Error() string {
-	return fmt.Sprintf("No key file for repository %s found in %s.", e.Repo, e.Path)
+type NotABorgKeyFile struct {
+	WrappedExitErr
 }
-
-type NotABorgKeyFile struct{}
-
-func (NotABorgKeyFile) Error() string { return "This file is not a borg key backup, aborting." }
 
 type RepoKeyNotFoundError struct {
-	Repo string
+	WrappedExitErr
 }
 
-func (e RepoKeyNotFoundError) Error() string {
-	return fmt.Sprintf("No key entry found in the config of repository %s.", e.Repo)
+type RepoIdMismatch struct {
+	WrappedExitErr
 }
 
-type RepoIdMismatch struct{}
-
-func (RepoIdMismatch) Error() string {
-	return "This key backup seems to be for a different backup repository, aborting."
-}
-
-type UnencryptedRepo struct{}
-
-func (UnencryptedRepo) Error() string {
-	return "Key management not available for unencrypted repositories."
+type UnencryptedRepo struct {
+	WrappedExitErr
 }
 
 type UnknownKeyType struct {
-	Type string
-}
-
-func (e UnknownKeyType) Error() string {
-	return fmt.Sprintf("Key type %s is unknown.", e.Type)
+	WrappedExitErr
 }
 
 type UnsupportedPayloadError struct {
-	Type string
-}
-
-func (e UnsupportedPayloadError) Error() string {
-	return fmt.Sprintf("Unsupported payload type %s. A newer version is required to access this repository.", e.Type)
+	WrappedExitErr
 }
 
 type NoPassphraseFailure struct {
-	Reason string
+	WrappedExitErr
 }
 
-func (e NoPassphraseFailure) Error() string {
-	return fmt.Sprintf("can not acquire a passphrase: %s", e.Reason)
+type PasscommandFailure struct {
+	WrappedExitErr
 }
 
-type PasscommandFailure struct{}
-
-func (PasscommandFailure) Error() string {
-	return "passcommand supplied in BORG_PASSCOMMAND failed: {}"
+type PassphraseWrong struct {
+	WrappedExitErr
 }
 
-type PassphraseWrong struct{}
-
-func (PassphraseWrong) Error() string {
-	return "passphrase supplied in BORG_PASSPHRASE, by BORG_PASSCOMMAND or via BORG_PASSPHRASE_FD is incorrect."
+type PasswordRetriesExceeded struct {
+	WrappedExitErr
 }
 
-type PasswordRetriesExceeded struct{}
-
-func (PasswordRetriesExceeded) Error() string { return "exceeded the maximum password retries" }
-
-type CacheCacheInitAbortedError struct{}
-
-func (CacheCacheInitAbortedError) Error() string { return "Cache initialization aborted" }
-
-type CacheEncryptionMethodMismatch struct{}
-
-func (CacheEncryptionMethodMismatch) Error() string {
-	return "Repository encryption method changed since last access, refusing to continue"
+type CacheCacheInitAbortedError struct {
+	WrappedExitErr
 }
 
-type CacheRepositoryAccessAborted struct{}
-
-func (CacheRepositoryAccessAborted) Error() string { return "Repository access aborted" }
-
-type CacheRepositoryIDNotUnique struct{}
-
-func (CacheRepositoryIDNotUnique) Error() string {
-	return "Cache is newer than repository - do you have multiple, independently updated repos with same ID?"
+type CacheEncryptionMethodMismatch struct {
+	WrappedExitErr
 }
 
-type CacheRepositoryReplay struct{}
+type CacheRepositoryAccessAborted struct {
+	WrappedExitErr
+}
 
-func (CacheRepositoryReplay) Error() string {
-	return "Cache, or information obtained from the security directory is newer than repository - this is either an attack or unsafe (multiple repos with same ID)"
+type CacheRepositoryIDNotUnique struct {
+	WrappedExitErr
+}
+
+type CacheRepositoryReplay struct {
+	WrappedExitErr
 }
 
 type LockError struct {
-	Lock string
-}
-
-func (e LockError) Error() string {
-	return fmt.Sprintf("Failed to acquire the lock %s.", e.Lock)
+	WrappedExitErr
 }
 
 type LockErrorT struct {
-	Lock string
-}
-
-func (e LockErrorT) Error() string {
-	return fmt.Sprintf("Failed to acquire the lock %s.", e.Lock)
+	WrappedExitErr
 }
 
 type LockFailed struct {
-	Lock   string
-	Reason string
-}
-
-func (e LockFailed) Error() string {
-	return fmt.Sprintf("Failed to create/acquire the lock %s (%s).", e.Lock, e.Reason)
+	WrappedExitErr
 }
 
 type LockTimeout struct {
-	Lock string
-}
-
-func (e LockTimeout) Error() string {
-	return fmt.Sprintf("Failed to create/acquire the lock %s (timeout).", e.Lock)
+	WrappedExitErr
 }
 
 type NotLocked struct {
-	Lock string
-}
-
-func (e NotLocked) Error() string {
-	return fmt.Sprintf("Failed to release the lock %s (was not locked).", e.Lock)
+	WrappedExitErr
 }
 
 type NotMyLock struct {
-	Lock string
+	WrappedExitErr
 }
 
-func (e NotMyLock) Error() string {
-	return fmt.Sprintf("Failed to release the lock %s (was/is locked, but not by me).", e.Lock)
+type ConnectionClosed struct {
+	WrappedExitErr
 }
-
-type ConnectionClosed struct{}
-
-func (ConnectionClosed) Error() string { return "Connection closed by remote host" }
 
 type ConnectionClosedWithHint struct {
-	Hint string
-}
-
-func (e ConnectionClosedWithHint) Error() string {
-	return fmt.Sprintf("Connection closed by remote host. %s", e.Hint)
+	WrappedExitErr
 }
 
 type InvalidRPCMethod struct {
-	Method string
-}
-
-func (e InvalidRPCMethod) Error() string {
-	return fmt.Sprintf("RPC method %s is not valid", e.Method)
+	WrappedExitErr
 }
 
 type PathNotAllowed struct {
-	Path string
-}
-
-func (e PathNotAllowed) Error() string {
-	return fmt.Sprintf("Repository path not allowed: %s", e.Path)
+	WrappedExitErr
 }
 
 type RemoteRepositoryRPCServerOutdated struct {
-	Version         string
-	RequiredVersion string
-}
-
-func (e RemoteRepositoryRPCServerOutdated) Error() string {
-	return fmt.Sprintf("borg server is too old for %s. Required version %s", e.Version, e.RequiredVersion)
+	WrappedExitErr
 }
 
 type UnexpectedRPCDataFormatFromClient struct {
-	Client string
-}
-
-func (e UnexpectedRPCDataFormatFromClient) Error() string {
-	return fmt.Sprintf("borg %s: Got unexpected RPC data format from client.", e.Client)
+	WrappedExitErr
 }
 
 type UnexpectedRPCDataFormatFromServer struct {
-	Server string
-}
-
-func (e UnexpectedRPCDataFormatFromServer) Error() string {
-	return fmt.Sprintf("Got unexpected RPC data format from server: %s", e.Server)
+	WrappedExitErr
 }
 
 type ConnectionBrokenWithHint struct {
-	Hint string
+	WrappedExitErr
 }
 
-func (e ConnectionBrokenWithHint) Error() string {
-	return fmt.Sprintf("Connection to remote host is broken. %s", e.Hint)
+type IntegrityError struct {
+	WrappedExitErr
 }
 
-type IntegrityError struct{}
+type FileIntegrityError struct {
+	WrappedExitErr
+}
 
-func (IntegrityError) Error() string { return "Data integrity error: {}" }
+type DecompressionError struct {
+	WrappedExitErr
+}
 
-type FileIntegrityError struct{}
-
-func (FileIntegrityError) Error() string { return "File failed integrity check: {}" }
-
-type DecompressionError struct{}
-
-func (DecompressionError) Error() string { return "Decompression error: {}" }
-
-type ArchiveTAMInvalid struct{}
-
-func (ArchiveTAMInvalid) Error() string { return "Data integrity error: {}" }
+type ArchiveTAMInvalid struct {
+	WrappedExitErr
+}
 
 type ArchiveTAMRequiredError struct {
-	Archive string
+	WrappedExitErr
 }
 
-func (e ArchiveTAMRequiredError) Error() string {
-	return fmt.Sprintf("Archive ‘%s’ is unauthenticated, but it is required for this repository.", e.Archive)
+type TAMInvalid struct {
+	WrappedExitErr
 }
 
-type TAMInvalid struct{}
-
-func (TAMInvalid) Error() string { return "Data integrity error: {}" }
-
-type TAMRequiredError struct{}
-
-func (TAMRequiredError) Error() string {
-	return "Manifest is unauthenticated, but it is required for this repository."
+type TAMRequiredError struct {
+	WrappedExitErr
 }
 
 type TAMUnsupportedSuiteError struct {
-	Suite string
+	WrappedExitErr
 }
 
-func (e TAMUnsupportedSuiteError) Error() string {
-	return fmt.Sprintf("Could not verify manifest: Unsupported suite %s; a newer version is needed.", e.Suite)
+type BackupError struct {
+	WrappedExitErr
+}
+
+type BackupRaceConditionError struct {
+	WrappedExitErr
+}
+
+type BackupOSError struct {
+	WrappedExitErr
+}
+
+type BackupPermissionError struct {
+	WrappedExitErr
+}
+
+func (e BackupPermissionError) Error() string {
+	return "permission error"
+}
+
+type BackupIOError struct {
+	WrappedExitErr
+}
+
+type BackupFileNotFoundError struct {
+	WrappedExitErr
 }
 
 func exitCodesToError(err error) error {
@@ -502,131 +338,143 @@ func exitCodesToError(err error) error {
 	// Return the error based on the exit code
 	switch exitError.ExitCode() {
 	case 2:
-		return Error{}
+		return Error{WrappedExitErr{ExitError: *exitError}}
 	case 3:
-		return CancelledByUser{}
+		return CancelledByUser{WrappedExitErr{ExitError: *exitError}}
 	case 4:
-		return CommandError{}
+		return CommandError{WrappedExitErr{ExitError: *exitError}}
 	case 5:
-		return PlaceholderError{}
+		return PlaceholderError{WrappedExitErr{ExitError: *exitError}}
 	case 6:
-		return InvalidPlaceholder{}
+		return InvalidPlaceholder{WrappedExitErr{ExitError: *exitError}}
 	case 10:
-		return RepositoryAlreadyExists{}
+		return RepositoryAlreadyExists{WrappedExitErr{ExitError: *exitError}}
 	case 11:
-		return RepositoryAtticRepository{}
+		return RepositoryAtticRepository{WrappedExitErr{ExitError: *exitError}}
 	case 12:
-		return RepositoryCheckNeeded{}
+		return RepositoryCheckNeeded{WrappedExitErr{ExitError: *exitError}}
 	case 13:
-		return RepositoryDoesNotExist{}
+		return RepositoryDoesNotExist{WrappedExitErr{ExitError: *exitError}}
 	case 14:
-		return RepositoryInsufficientFreeSpaceError{}
+		return RepositoryInsufficientFreeSpaceError{WrappedExitErr{ExitError: *exitError}}
 	case 15:
-		return RepositoryInvalidRepository{}
+		return RepositoryInvalidRepository{WrappedExitErr{ExitError: *exitError}}
 	case 16:
-		return RepositoryInvalidRepositoryConfig{}
+		return RepositoryInvalidRepositoryConfig{WrappedExitErr{ExitError: *exitError}}
 	case 17:
-		return RepositoryObjectNotFound{}
+		return RepositoryObjectNotFound{WrappedExitErr{ExitError: *exitError}}
 	case 18:
-		return RepositoryParentPathDoesNotExist{}
+		return RepositoryParentPathDoesNotExist{WrappedExitErr{ExitError: *exitError}}
 	case 19:
-		return RepositoryPathAlreadyExists{}
+		return RepositoryPathAlreadyExists{WrappedExitErr{ExitError: *exitError}}
 	case 20:
-		return RepositoryStorageQuotaExceeded{}
+		return RepositoryStorageQuotaExceeded{WrappedExitErr{ExitError: *exitError}}
 	case 21:
-		return RepositoryPathPermissionDenied{}
+		return RepositoryPathPermissionDenied{WrappedExitErr{ExitError: *exitError}}
 	case 25:
-		return MandatoryFeatureUnsupported{}
+		return MandatoryFeatureUnsupported{WrappedExitErr{ExitError: *exitError}}
 	case 26:
-		return NoManifestError{}
+		return NoManifestError{WrappedExitErr{ExitError: *exitError}}
 	case 27:
-		return UnsupportedManifestError{}
+		return UnsupportedManifestError{WrappedExitErr{ExitError: *exitError}}
 	case 30:
-		return ArchiveAlreadyExists{}
+		return ArchiveAlreadyExists{WrappedExitErr{ExitError: *exitError}}
 	case 31:
-		return ArchiveDoesNotExist{}
+		return ArchiveDoesNotExist{WrappedExitErr{ExitError: *exitError}}
 	case 32:
-		return ArchiveIncompatibleFilesystemEncodingError{}
+		return ArchiveIncompatibleFilesystemEncodingError{WrappedExitErr{ExitError: *exitError}}
 	case 40:
-		return KeyfileInvalidError{}
+		return KeyfileInvalidError{WrappedExitErr{ExitError: *exitError}}
 	case 41:
-		return KeyfileMismatchError{}
+		return KeyfileMismatchError{WrappedExitErr{ExitError: *exitError}}
 	case 42:
-		return KeyfileNotFoundError{}
+		return KeyfileNotFoundError{WrappedExitErr{ExitError: *exitError}}
 	case 43:
-		return NotABorgKeyFile{}
+		return NotABorgKeyFile{WrappedExitErr{ExitError: *exitError}}
 	case 44:
-		return RepoKeyNotFoundError{}
+		return RepoKeyNotFoundError{WrappedExitErr{ExitError: *exitError}}
 	case 45:
-		return RepoIdMismatch{}
+		return RepoIdMismatch{WrappedExitErr{ExitError: *exitError}}
 	case 46:
-		return UnencryptedRepo{}
+		return UnencryptedRepo{WrappedExitErr{ExitError: *exitError}}
 	case 47:
-		return UnknownKeyType{}
+		return UnknownKeyType{WrappedExitErr{ExitError: *exitError}}
 	case 48:
-		return UnsupportedPayloadError{}
+		return UnsupportedPayloadError{WrappedExitErr{ExitError: *exitError}}
 	case 50:
-		return NoPassphraseFailure{}
+		return NoPassphraseFailure{WrappedExitErr{ExitError: *exitError}}
 	case 51:
-		return PasscommandFailure{}
+		return PasscommandFailure{WrappedExitErr{ExitError: *exitError}}
 	case 52:
-		return PassphraseWrong{}
+		return PassphraseWrong{WrappedExitErr{ExitError: *exitError}}
 	case 53:
-		return PasswordRetriesExceeded{}
+		return PasswordRetriesExceeded{WrappedExitErr{ExitError: *exitError}}
 	case 60:
-		return CacheCacheInitAbortedError{}
+		return CacheCacheInitAbortedError{WrappedExitErr{ExitError: *exitError}}
 	case 61:
-		return CacheEncryptionMethodMismatch{}
+		return CacheEncryptionMethodMismatch{WrappedExitErr{ExitError: *exitError}}
 	case 62:
-		return CacheRepositoryAccessAborted{}
+		return CacheRepositoryAccessAborted{WrappedExitErr{ExitError: *exitError}}
 	case 63:
-		return CacheRepositoryIDNotUnique{}
+		return CacheRepositoryIDNotUnique{WrappedExitErr{ExitError: *exitError}}
 	case 64:
-		return CacheRepositoryReplay{}
+		return CacheRepositoryReplay{WrappedExitErr{ExitError: *exitError}}
 	case 70:
-		return LockError{}
+		return LockError{WrappedExitErr{ExitError: *exitError}}
 	case 71:
-		return LockErrorT{}
+		return LockErrorT{WrappedExitErr{ExitError: *exitError}}
 	case 72:
-		return LockFailed{}
+		return LockFailed{WrappedExitErr{ExitError: *exitError}}
 	case 73:
-		return LockTimeout{}
+		return LockTimeout{WrappedExitErr{ExitError: *exitError}}
 	case 74:
-		return NotLocked{}
+		return NotLocked{WrappedExitErr{ExitError: *exitError}}
 	case 75:
-		return NotMyLock{}
+		return NotMyLock{WrappedExitErr{ExitError: *exitError}}
 	case 80:
-		return ConnectionClosed{}
+		return ConnectionClosed{WrappedExitErr{ExitError: *exitError}}
 	case 81:
-		return ConnectionClosedWithHint{}
+		return ConnectionClosedWithHint{WrappedExitErr{ExitError: *exitError}}
 	case 82:
-		return InvalidRPCMethod{}
+		return InvalidRPCMethod{WrappedExitErr{ExitError: *exitError}}
 	case 83:
-		return PathNotAllowed{}
+		return PathNotAllowed{WrappedExitErr{ExitError: *exitError}}
 	case 84:
-		return RemoteRepositoryRPCServerOutdated{}
+		return RemoteRepositoryRPCServerOutdated{WrappedExitErr{ExitError: *exitError}}
 	case 85:
-		return UnexpectedRPCDataFormatFromClient{}
+		return UnexpectedRPCDataFormatFromClient{WrappedExitErr{ExitError: *exitError}}
 	case 86:
-		return UnexpectedRPCDataFormatFromServer{}
+		return UnexpectedRPCDataFormatFromServer{WrappedExitErr{ExitError: *exitError}}
 	case 87:
-		return ConnectionBrokenWithHint{}
+		return ConnectionBrokenWithHint{WrappedExitErr{ExitError: *exitError}}
 	case 90:
-		return IntegrityError{}
+		return IntegrityError{WrappedExitErr{ExitError: *exitError}}
 	case 91:
-		return FileIntegrityError{}
+		return FileIntegrityError{WrappedExitErr{ExitError: *exitError}}
 	case 92:
-		return DecompressionError{}
+		return DecompressionError{WrappedExitErr{ExitError: *exitError}}
 	case 95:
-		return ArchiveTAMInvalid{}
+		return ArchiveTAMInvalid{WrappedExitErr{ExitError: *exitError}}
 	case 96:
-		return ArchiveTAMRequiredError{}
+		return ArchiveTAMRequiredError{WrappedExitErr{ExitError: *exitError}}
 	case 97:
-		return TAMInvalid{}
+		return TAMInvalid{WrappedExitErr{ExitError: *exitError}}
 	case 98:
-		return TAMRequiredError{}
+		return TAMRequiredError{WrappedExitErr{ExitError: *exitError}}
 	case 99:
-		return TAMUnsupportedSuiteError{}
+		return TAMUnsupportedSuiteError{WrappedExitErr{ExitError: *exitError}}
+	case 102:
+		return BackupError{WrappedExitErr{ExitError: *exitError}}
+	case 103:
+		return BackupRaceConditionError{WrappedExitErr{ExitError: *exitError}}
+	case 104:
+		return BackupOSError{WrappedExitErr{ExitError: *exitError}}
+	case 105:
+		return BackupPermissionError{WrappedExitErr{ExitError: *exitError}}
+	case 106:
+		return BackupIOError{WrappedExitErr{ExitError: *exitError}}
+	case 107:
+		return BackupFileNotFoundError{WrappedExitErr{ExitError: *exitError}}
 	default:
 		return err
 	}
