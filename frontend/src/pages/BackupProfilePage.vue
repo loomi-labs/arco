@@ -177,13 +177,13 @@ watch(loading, async () => {
         <span class='text-error'>{{ errors.name }}</span>
       </label>
 
-      <div class='flex'>
+      <div class='flex items-center gap-1'>
         <!-- Icon -->
         <SelectIconModal v-if='backupProfile.icon' :icon=backupProfile.icon @select='saveIcon' />
 
         <!-- Dropdown -->
         <div class='dropdown dropdown-end'>
-          <div tabindex='0' role='button' class='btn m-1'>
+          <div tabindex='0' role='button' class='btn btn-square'>
             <EllipsisVerticalIcon class='size-6' />
           </div>
           <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>

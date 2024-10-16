@@ -1,9 +1,9 @@
 <script setup lang='ts'>
 
-import { rDashboardPage } from "../router";
+import { rAddBackupProfilePage, rBackupProfilePage, rDashboardPage, rRepositoryPage } from "../router";
 import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
-import { MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
+import { ArrowLongLeftIcon, MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
 import { showAndLogError } from "../common/error";
 import { onMounted, ref } from "vue";
 import * as appClient from "../../wailsjs/go/app/AppClient";
@@ -16,6 +16,13 @@ import Theme = settings.Theme;
 
 const router = useRouter();
 const isLightTheme = ref<boolean | undefined>(undefined);
+const subroute = ref<string | undefined>(undefined);
+
+const routeMap = {
+  [rBackupProfilePage]: "Backup Profile",
+  [rRepositoryPage]: "Repository",
+  [rAddBackupProfilePage]: "New Backup Profile"
+};
 
 /************
  * Functions
@@ -77,15 +84,25 @@ async function toggleTheme() {
 
 onMounted(() => detectPreferredTheme());
 
+router.afterEach(() => {
+  const path = router.currentRoute.value.matched.at(0)?.path;
+  subroute.value = routeMap[path] || undefined;
+});
+
 </script>
 
 <template>
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
-      <button class='btn btn-ghost uppercase' @click='router.push(rDashboardPage)'>Arco</button>
+      <div class='flex items-center gap-2'>
+        <button class='btn btn-ghost uppercase gap-6' @click='router.push(rDashboardPage)'>Arco
+          <ArrowLongLeftIcon v-if='subroute' class='size-8' />
+        </button>
+        <p v-if='subroute'>{{ subroute }}</p>
+      </div>
       <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
-        <SunIcon class='swap-off h-10 w-10 fill-current' @click='toggleTheme' />
-        <MoonIcon class='swap-on h-10 w-10 fill-current' @click='toggleTheme' />
+        <SunIcon class='swap-off size-10' @click='toggleTheme' />
+        <MoonIcon class='swap-on size-10' @click='toggleTheme' />
       </label>
     </div>
   </div>

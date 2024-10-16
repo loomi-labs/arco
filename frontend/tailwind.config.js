@@ -59,6 +59,9 @@ export default {
           "primary-content": "#FFFFFF",
           "secondary": "#F97316",   // could also be ffc107
           "secondary-content": "#190211",
+          // "base-100": "#474352",
+          // "base-200": "#34333f",
+          // "base-300": "#27242F",
           "base-100": "#241D4D",
           "base-200": "#21093F",
           "base-300": "#140428",
@@ -67,4 +70,3 @@ export default {
     ]
   }
 };
-
