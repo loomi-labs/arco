@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var binaries = []types.Binary{
@@ -34,17 +35,43 @@ var binaries = []types.Binary{
 	},
 }
 
-func initLogger() *zap.SugaredLogger {
-	if os.Getenv(app.EnvVarDebug.String()) == "true" {
+func initLogger(configDir string) *zap.SugaredLogger {
+	if os.Getenv(app.EnvVarDevelopment.String()) == "true" {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		log, err := config.Build()
-		if err != nil {
-			panic(fmt.Sprintf("failed to build logger: %v", err))
-		}
-		return log.Sugar()
+		return zap.Must(config.Build()).Sugar()
 	} else {
-		return zap.Must(zap.NewProduction()).Sugar()
+		logDir := filepath.Join(configDir, "logs")
+		if _, err := os.Stat(logDir); os.IsNotExist(err) {
+			err = os.MkdirAll(logDir, 0755)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		// Create a new log file with the current date
+		logFileName := filepath.Join(logDir, fmt.Sprintf("arco-%s.log", time.Now().Format("2006-01-02")))
+		logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		fileWriter := zapcore.AddSync(logFile)
+
+		// Create a production config
+		config := zap.NewProductionConfig()
+		if os.Getenv(app.EnvVarDebug.String()) == "true" {
+			config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+		}
+
+		// Create a core that writes to the file
+		core := zapcore.NewCore(
+			zapcore.NewJSONEncoder(config.EncoderConfig),
+			fileWriter,
+			config.Level,
+		)
+
+		// Create a logger with the core
+		return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)).Sugar()
 	}
 }
 
@@ -172,32 +199,18 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 var rootCmd = &cobra.Command{
 	Use:   "arco",
 	Short: "Arco is a backup tool that uses Borg to create backups.",
-	Run: func(cmd *cobra.Command, args []string) {
-		log := initLogger()
-		//goland:noinspection GoUnhandledErrorResult
-		defer log.Sync() // flushes buffer, if any
-
+	RunE: func(cmd *cobra.Command, args []string) error {
 		configDir, err := cmd.Flags().GetString(configFlag)
 		if err != nil {
-			log.Fatalf("failed to get config flag: %v", err)
+			return fmt.Errorf("failed to get config flag: %w", err)
 		}
-		if configDir != "" {
-			log.Infof("using config directory: %s", configDir)
-		}
-
 		startHidden, err := cmd.Flags().GetBool(hiddenFlag)
 		if err != nil {
-			log.Fatalf("failed to get hidden flag: %v", err)
-		}
-		if startHidden {
-			log.Info("starting hidden")
+			return fmt.Errorf("failed to get hidden flag: %w", err)
 		}
 		uniqueRunId, err := cmd.Flags().GetString(uniqueRunIdFlag)
 		if err != nil {
-			log.Fatalf("failed to get unique run id flag: %v", err)
-		}
-		if uniqueRunId != "" {
-			log.Infof("using unique run id: %s", uniqueRunId)
+			return fmt.Errorf("failed to get unique run id flag: %w", err)
 		}
 
 		assets := cmd.Context().Value("assets").(embed.FS)
@@ -206,10 +219,25 @@ var rootCmd = &cobra.Command{
 		// Initialize the configuration
 		config, err := initConfig(configDir, icon)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+
+		log := initLogger(config.Dir)
+		//goland:noinspection GoUnhandledErrorResult
+		defer log.Sync() // flushes buffer, if any
+
+		if startHidden {
+			log.Info("starting hidden")
+		}
+		if configDir != "" {
+			log.Infof("using config directory: %s", configDir)
+		}
+		if uniqueRunId != "" {
+			log.Infof("using unique run id: %s", uniqueRunId)
 		}
 
 		startApp(log, config, assets, startHidden, uniqueRunId)
+		return nil
 	},
 }
 
@@ -221,6 +249,7 @@ func Execute(assets embed.FS, icon embed.FS) {
 
 	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
