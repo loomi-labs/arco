@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
@@ -9,7 +9,6 @@ import * as yup from "yup";
 import FormFieldSmall from "./common/FormFieldSmall.vue";
 import { formInputClass } from "../common/form";
 import deepEqual from "deep-equal";
-import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -286,8 +285,7 @@ onMounted(() => {
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput(index)'
-                   class='{{ formInputClass }}'
-                   :class='{"text-half-hidden-light dark:text-half-hidden-dark": isSuggestion(field)}' />
+                   :class='isSuggestion(field) ? `${formInputClass} text-half-hidden-light dark:text-half-hidden-dark` : `${formInputClass}`' />
           </FormFieldSmall>
         </td>
         <td class='text-right align-top'>
