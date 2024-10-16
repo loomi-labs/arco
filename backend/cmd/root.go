@@ -45,7 +45,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 		if _, err := os.Stat(logDir); os.IsNotExist(err) {
 			err = os.MkdirAll(logDir, 0755)
 			if err != nil {
-				panic(err)
+				panic(fmt.Errorf("failed to create log directory: %w", err))
 			}
 		}
 
@@ -53,7 +53,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 		logFileName := filepath.Join(logDir, fmt.Sprintf("arco-%s.log", time.Now().Format("2006-01-02")))
 		logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to open log file: %w", err))
 		}
 		fileWriter := zapcore.AddSync(logFile)
 
