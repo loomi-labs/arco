@@ -18,6 +18,12 @@ const router = useRouter();
 const isLightTheme = ref<boolean | undefined>(undefined);
 const subroute = ref<string | undefined>(undefined);
 
+const routeMap = {
+  [rBackupProfilePage]: "Backup Profile",
+  [rRepositoryPage]: "Repository",
+  [rAddBackupProfilePage]: "New Backup Profile"
+};
+
 /************
  * Functions
  ************/
@@ -79,20 +85,8 @@ async function toggleTheme() {
 onMounted(() => detectPreferredTheme());
 
 router.afterEach(() => {
-  switch (router.currentRoute.value.matched.at(0)?.path) {
-    case rBackupProfilePage:
-      subroute.value = "Backup Profile";
-      break;
-    case rRepositoryPage:
-      subroute.value = "Repository";
-      break;
-    case rAddBackupProfilePage:
-      subroute.value = "New Backup Profile";
-      break;
-    default:
-      subroute.value = undefined;
-      break;
-  }
+  const path = router.currentRoute.value.matched.at(0)?.path;
+  subroute.value = routeMap[path] || undefined;
 });
 
 </script>
