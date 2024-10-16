@@ -20,7 +20,7 @@ export function getTooltipColor(location: Location): string {
 }
 
 export function getBadge(location: Location): string {
-  return location === Location.Local ? "badge bg-arco-purple-500 dark:badge-outline dark:text-arco-purple-500" : "badge text-white bg-arco-purple-700 dark:badge-outline dark:text-arco-purple-700";
+  return location === Location.Local ? "badge bg-arco-purple-500 dark:badge-outline dark:text-arco-purple-500 h-full" : "badge text-white bg-arco-purple-700 dark:badge-outline dark:text-arco-purple-700 h-full";
 }
 
 export function toHumanReadableSize(size: number): string {

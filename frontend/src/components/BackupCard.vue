@@ -127,7 +127,7 @@ onUnmounted(() => {
           <p>{{ $t("last_backup") }}</p>
           <div>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-              <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
+              <span class='badge badge-error dark:badge-outline h-full'>{{ $t("failed") }}</span>
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
             <span :class='toDurationBadge(lastArchive?.createdAt)'>{{
