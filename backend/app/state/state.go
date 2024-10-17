@@ -260,9 +260,6 @@ func (s *State) GetRepoState(repoId int) RepoState {
 /***********************************/
 
 func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
-	if s.startupError != nil {
-		return false, "Startup error"
-	}
 	if bs, ok := s.backupStates[id]; ok {
 		if bs.Status == BackupStatusRunning {
 			return false, "Backup is already running"
@@ -291,8 +288,6 @@ func (s *State) SetBackupWaiting(ctx context.Context, bId types.BackupId) {
 func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	currentState, ok := s.backupStates[bId]
 	if ok {
@@ -301,6 +296,9 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 			return currentState.ctx
 		}
 	}
+
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
