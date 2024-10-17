@@ -14,7 +14,6 @@ reviews:
   path_filters:
     - '**'
     - 'backend/ent/**'
-    - '!backend/ent/schema/**'
   path_instructions: []
   abort_on_close: true
   auto_review:
