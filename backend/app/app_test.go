@@ -27,6 +27,8 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg) {
 	a.config = nil
 	close(a.backupScheduleChangedCh)
 	a.backupScheduleChangedCh = nil
+	close(a.pruningScheduleChangedCh)
+	a.pruningScheduleChangedCh = nil
 
 	ctrl := gomock.NewController(t)
 	mockBorg := mockborg.NewMockBorg(ctrl)

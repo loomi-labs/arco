@@ -36,11 +36,12 @@ func (e EnvVar) String() string {
 
 type App struct {
 	// Init
-	log                     *zap.SugaredLogger
-	config                  *types.Config
-	state                   *appstate.State
-	borg                    borg.Borg
-	backupScheduleChangedCh chan struct{}
+	log                      *zap.SugaredLogger
+	config                   *types.Config
+	state                    *appstate.State
+	borg                     borg.Borg
+	backupScheduleChangedCh  chan struct{}
+	pruningScheduleChangedCh chan struct{}
 
 	// Startup
 	ctx    context.Context
@@ -54,11 +55,12 @@ func NewApp(
 ) *App {
 	state := appstate.NewState(log)
 	return &App{
-		log:                     log,
-		config:                  config,
-		state:                   state,
-		borg:                    borg.NewBorg(config.BorgPath, log),
-		backupScheduleChangedCh: make(chan struct{}),
+		log:                      log,
+		config:                   config,
+		state:                    state,
+		borg:                     borg.NewBorg(config.BorgPath, log),
+		backupScheduleChangedCh:  make(chan struct{}),
+		pruningScheduleChangedCh: make(chan struct{}),
 	}
 }
 
@@ -124,6 +126,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Schedule backups
 	go a.startScheduleChangeListener()
+	go a.startPruneScheduleChangeListener()
 	a.backupScheduleChangedCh <- struct{}{}
 }
 
