@@ -8,10 +8,12 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -90,6 +92,26 @@ func (bpu *BackupProfileUpdate) SetNillableIcon(b *backupprofile.Icon) *BackupPr
 	return bpu
 }
 
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (bpu *BackupProfileUpdate) SetNextIntegrityCheck(t time.Time) *BackupProfileUpdate {
+	bpu.mutation.SetNextIntegrityCheck(t)
+	return bpu
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillableNextIntegrityCheck(t *time.Time) *BackupProfileUpdate {
+	if t != nil {
+		bpu.SetNextIntegrityCheck(*t)
+	}
+	return bpu
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (bpu *BackupProfileUpdate) ClearNextIntegrityCheck() *BackupProfileUpdate {
+	bpu.mutation.ClearNextIntegrityCheck()
+	return bpu
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
 func (bpu *BackupProfileUpdate) AddRepositoryIDs(ids ...int) *BackupProfileUpdate {
 	bpu.mutation.AddRepositoryIDs(ids...)
@@ -152,6 +174,25 @@ func (bpu *BackupProfileUpdate) AddFailedBackupRuns(f ...*FailedBackupRun) *Back
 		ids[i] = f[i].ID
 	}
 	return bpu.AddFailedBackupRunIDs(ids...)
+}
+
+// SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
+func (bpu *BackupProfileUpdate) SetPruningRuleID(id int) *BackupProfileUpdate {
+	bpu.mutation.SetPruningRuleID(id)
+	return bpu
+}
+
+// SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillablePruningRuleID(id *int) *BackupProfileUpdate {
+	if id != nil {
+		bpu = bpu.SetPruningRuleID(*id)
+	}
+	return bpu
+}
+
+// SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
+func (bpu *BackupProfileUpdate) SetPruningRule(p *PruningRule) *BackupProfileUpdate {
+	return bpu.SetPruningRuleID(p.ID)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -226,6 +267,12 @@ func (bpu *BackupProfileUpdate) RemoveFailedBackupRuns(f ...*FailedBackupRun) *B
 		ids[i] = f[i].ID
 	}
 	return bpu.RemoveFailedBackupRunIDs(ids...)
+}
+
+// ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
+func (bpu *BackupProfileUpdate) ClearPruningRule() *BackupProfileUpdate {
+	bpu.mutation.ClearPruningRule()
+	return bpu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -306,6 +353,12 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := bpu.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+	}
+	if value, ok := bpu.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(backupprofile.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if bpu.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(backupprofile.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if bpu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -471,6 +524,35 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if bpu.mutation.PruningRuleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.PruningRuleTable,
+			Columns: []string{backupprofile.PruningRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.PruningRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.PruningRuleTable,
+			Columns: []string{backupprofile.PruningRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, bpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupprofile.Label}
@@ -549,6 +631,26 @@ func (bpuo *BackupProfileUpdateOne) SetNillableIcon(b *backupprofile.Icon) *Back
 	return bpuo
 }
 
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (bpuo *BackupProfileUpdateOne) SetNextIntegrityCheck(t time.Time) *BackupProfileUpdateOne {
+	bpuo.mutation.SetNextIntegrityCheck(t)
+	return bpuo
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillableNextIntegrityCheck(t *time.Time) *BackupProfileUpdateOne {
+	if t != nil {
+		bpuo.SetNextIntegrityCheck(*t)
+	}
+	return bpuo
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (bpuo *BackupProfileUpdateOne) ClearNextIntegrityCheck() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearNextIntegrityCheck()
+	return bpuo
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
 func (bpuo *BackupProfileUpdateOne) AddRepositoryIDs(ids ...int) *BackupProfileUpdateOne {
 	bpuo.mutation.AddRepositoryIDs(ids...)
@@ -611,6 +713,25 @@ func (bpuo *BackupProfileUpdateOne) AddFailedBackupRuns(f ...*FailedBackupRun) *
 		ids[i] = f[i].ID
 	}
 	return bpuo.AddFailedBackupRunIDs(ids...)
+}
+
+// SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
+func (bpuo *BackupProfileUpdateOne) SetPruningRuleID(id int) *BackupProfileUpdateOne {
+	bpuo.mutation.SetPruningRuleID(id)
+	return bpuo
+}
+
+// SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillablePruningRuleID(id *int) *BackupProfileUpdateOne {
+	if id != nil {
+		bpuo = bpuo.SetPruningRuleID(*id)
+	}
+	return bpuo
+}
+
+// SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
+func (bpuo *BackupProfileUpdateOne) SetPruningRule(p *PruningRule) *BackupProfileUpdateOne {
+	return bpuo.SetPruningRuleID(p.ID)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -685,6 +806,12 @@ func (bpuo *BackupProfileUpdateOne) RemoveFailedBackupRuns(f ...*FailedBackupRun
 		ids[i] = f[i].ID
 	}
 	return bpuo.RemoveFailedBackupRunIDs(ids...)
+}
+
+// ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
+func (bpuo *BackupProfileUpdateOne) ClearPruningRule() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearPruningRule()
+	return bpuo
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
@@ -795,6 +922,12 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	}
 	if value, ok := bpuo.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+	}
+	if value, ok := bpuo.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(backupprofile.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if bpuo.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(backupprofile.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if bpuo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -953,6 +1086,35 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bpuo.mutation.PruningRuleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.PruningRuleTable,
+			Columns: []string{backupprofile.PruningRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.PruningRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.PruningRuleTable,
+			Columns: []string{backupprofile.PruningRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -18,6 +18,9 @@ type BackupSchedule func(*sql.Selector)
 // FailedBackupRun is the predicate function for failedbackuprun builders.
 type FailedBackupRun func(*sql.Selector)
 
+// PruningRule is the predicate function for pruningrule builders.
+type PruningRule func(*sql.Selector)
+
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)
 

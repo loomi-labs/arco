@@ -56,6 +56,18 @@ func (f FailedBackupRunFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FailedBackupRunMutation", m)
 }
 
+// The PruningRuleFunc type is an adapter to allow the use of ordinary
+// function as PruningRule mutator.
+type PruningRuleFunc func(context.Context, *ent.PruningRuleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PruningRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PruningRuleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PruningRuleMutation", m)
+}
+
 // The RepositoryFunc type is an adapter to allow the use of ordinary
 // function as Repository mutator.
 type RepositoryFunc func(context.Context, *ent.RepositoryMutation) (ent.Value, error)

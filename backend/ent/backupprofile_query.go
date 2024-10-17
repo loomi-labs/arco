@@ -8,6 +8,7 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"context"
 	"database/sql/driver"
@@ -31,6 +32,7 @@ type BackupProfileQuery struct {
 	withArchives         *ArchiveQuery
 	withBackupSchedule   *BackupScheduleQuery
 	withFailedBackupRuns *FailedBackupRunQuery
+	withPruningRule      *PruningRuleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -148,6 +150,28 @@ func (bpq *BackupProfileQuery) QueryFailedBackupRuns() *FailedBackupRunQuery {
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
 			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.FailedBackupRunsTable, backupprofile.FailedBackupRunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPruningRule chains the current query on the "pruning_rule" edge.
+func (bpq *BackupProfileQuery) QueryPruningRule() *PruningRuleQuery {
+	query := (&PruningRuleClient{config: bpq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, selector),
+			sqlgraph.To(pruningrule.Table, pruningrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.PruningRuleTable, backupprofile.PruningRuleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
 		return fromU, nil
@@ -351,6 +375,7 @@ func (bpq *BackupProfileQuery) Clone() *BackupProfileQuery {
 		withArchives:         bpq.withArchives.Clone(),
 		withBackupSchedule:   bpq.withBackupSchedule.Clone(),
 		withFailedBackupRuns: bpq.withFailedBackupRuns.Clone(),
+		withPruningRule:      bpq.withPruningRule.Clone(),
 		// clone intermediate query.
 		sql:  bpq.sql.Clone(),
 		path: bpq.path,
@@ -398,6 +423,17 @@ func (bpq *BackupProfileQuery) WithFailedBackupRuns(opts ...func(*FailedBackupRu
 		opt(query)
 	}
 	bpq.withFailedBackupRuns = query
+	return bpq
+}
+
+// WithPruningRule tells the query-builder to eager-load the nodes that are connected to
+// the "pruning_rule" edge. The optional arguments are used to configure the query builder of the edge.
+func (bpq *BackupProfileQuery) WithPruningRule(opts ...func(*PruningRuleQuery)) *BackupProfileQuery {
+	query := (&PruningRuleClient{config: bpq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bpq.withPruningRule = query
 	return bpq
 }
 
@@ -479,11 +515,12 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*BackupProfile{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			bpq.withRepositories != nil,
 			bpq.withArchives != nil,
 			bpq.withBackupSchedule != nil,
 			bpq.withFailedBackupRuns != nil,
+			bpq.withPruningRule != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -530,6 +567,12 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			func(n *BackupProfile, e *FailedBackupRun) {
 				n.Edges.FailedBackupRuns = append(n.Edges.FailedBackupRuns, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := bpq.withPruningRule; query != nil {
+		if err := bpq.loadPruningRule(ctx, query, nodes, nil,
+			func(n *BackupProfile, e *PruningRule) { n.Edges.PruningRule = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -682,6 +725,34 @@ func (bpq *BackupProfileQuery) loadFailedBackupRuns(ctx context.Context, query *
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "failed_backup_run_backup_profile" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (bpq *BackupProfileQuery) loadPruningRule(ctx context.Context, query *PruningRuleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *PruningRule)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*BackupProfile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.PruningRule(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(backupprofile.PruningRuleColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.backup_profile_pruning_rule
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "backup_profile_pruning_rule" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "backup_profile_pruning_rule" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

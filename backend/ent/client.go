@@ -15,6 +15,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/settings"
 
@@ -37,6 +38,8 @@ type Client struct {
 	BackupSchedule *BackupScheduleClient
 	// FailedBackupRun is the client for interacting with the FailedBackupRun builders.
 	FailedBackupRun *FailedBackupRunClient
+	// PruningRule is the client for interacting with the PruningRule builders.
+	PruningRule *PruningRuleClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 	// Settings is the client for interacting with the Settings builders.
@@ -56,6 +59,7 @@ func (c *Client) init() {
 	c.BackupProfile = NewBackupProfileClient(c.config)
 	c.BackupSchedule = NewBackupScheduleClient(c.config)
 	c.FailedBackupRun = NewFailedBackupRunClient(c.config)
+	c.PruningRule = NewPruningRuleClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
 	c.Settings = NewSettingsClient(c.config)
 }
@@ -154,6 +158,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackupProfile:   NewBackupProfileClient(cfg),
 		BackupSchedule:  NewBackupScheduleClient(cfg),
 		FailedBackupRun: NewFailedBackupRunClient(cfg),
+		PruningRule:     NewPruningRuleClient(cfg),
 		Repository:      NewRepositoryClient(cfg),
 		Settings:        NewSettingsClient(cfg),
 	}, nil
@@ -179,6 +184,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackupProfile:   NewBackupProfileClient(cfg),
 		BackupSchedule:  NewBackupScheduleClient(cfg),
 		FailedBackupRun: NewFailedBackupRunClient(cfg),
+		PruningRule:     NewPruningRuleClient(cfg),
 		Repository:      NewRepositoryClient(cfg),
 		Settings:        NewSettingsClient(cfg),
 	}, nil
@@ -210,8 +216,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
-		c.Settings,
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.PruningRule,
+		c.Repository, c.Settings,
 	} {
 		n.Use(hooks...)
 	}
@@ -221,8 +227,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
-		c.Settings,
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.PruningRule,
+		c.Repository, c.Settings,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -239,6 +245,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackupSchedule.mutate(ctx, m)
 	case *FailedBackupRunMutation:
 		return c.FailedBackupRun.mutate(ctx, m)
+	case *PruningRuleMutation:
+		return c.PruningRule.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
 	case *SettingsMutation:
@@ -578,6 +586,22 @@ func (c *BackupProfileClient) QueryFailedBackupRuns(bp *BackupProfile) *FailedBa
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.FailedBackupRunsTable, backupprofile.FailedBackupRunsColumn),
+		)
+		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPruningRule queries the pruning_rule edge of a BackupProfile.
+func (c *BackupProfileClient) QueryPruningRule(bp *BackupProfile) *PruningRuleQuery {
+	query := (&PruningRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
+			sqlgraph.To(pruningrule.Table, pruningrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.PruningRuleTable, backupprofile.PruningRuleColumn),
 		)
 		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
 		return fromV, nil
@@ -925,6 +949,155 @@ func (c *FailedBackupRunClient) mutate(ctx context.Context, m *FailedBackupRunMu
 	}
 }
 
+// PruningRuleClient is a client for the PruningRule schema.
+type PruningRuleClient struct {
+	config
+}
+
+// NewPruningRuleClient returns a client for the PruningRule from the given config.
+func NewPruningRuleClient(c config) *PruningRuleClient {
+	return &PruningRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `pruningrule.Hooks(f(g(h())))`.
+func (c *PruningRuleClient) Use(hooks ...Hook) {
+	c.hooks.PruningRule = append(c.hooks.PruningRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `pruningrule.Intercept(f(g(h())))`.
+func (c *PruningRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PruningRule = append(c.inters.PruningRule, interceptors...)
+}
+
+// Create returns a builder for creating a PruningRule entity.
+func (c *PruningRuleClient) Create() *PruningRuleCreate {
+	mutation := newPruningRuleMutation(c.config, OpCreate)
+	return &PruningRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PruningRule entities.
+func (c *PruningRuleClient) CreateBulk(builders ...*PruningRuleCreate) *PruningRuleCreateBulk {
+	return &PruningRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PruningRuleClient) MapCreateBulk(slice any, setFunc func(*PruningRuleCreate, int)) *PruningRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PruningRuleCreateBulk{err: fmt.Errorf("calling to PruningRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PruningRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PruningRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PruningRule.
+func (c *PruningRuleClient) Update() *PruningRuleUpdate {
+	mutation := newPruningRuleMutation(c.config, OpUpdate)
+	return &PruningRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PruningRuleClient) UpdateOne(pr *PruningRule) *PruningRuleUpdateOne {
+	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRule(pr))
+	return &PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PruningRuleClient) UpdateOneID(id int) *PruningRuleUpdateOne {
+	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRuleID(id))
+	return &PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PruningRule.
+func (c *PruningRuleClient) Delete() *PruningRuleDelete {
+	mutation := newPruningRuleMutation(c.config, OpDelete)
+	return &PruningRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PruningRuleClient) DeleteOne(pr *PruningRule) *PruningRuleDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PruningRuleClient) DeleteOneID(id int) *PruningRuleDeleteOne {
+	builder := c.Delete().Where(pruningrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PruningRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for PruningRule.
+func (c *PruningRuleClient) Query() *PruningRuleQuery {
+	return &PruningRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePruningRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PruningRule entity by its id.
+func (c *PruningRuleClient) Get(ctx context.Context, id int) (*PruningRule, error) {
+	return c.Query().Where(pruningrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PruningRuleClient) GetX(ctx context.Context, id int) *PruningRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBackupProfile queries the backup_profile edge of a PruningRule.
+func (c *PruningRuleClient) QueryBackupProfile(pr *PruningRule) *BackupProfileQuery {
+	query := (&BackupProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(pruningrule.Table, pruningrule.FieldID, id),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, pruningrule.BackupProfileTable, pruningrule.BackupProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PruningRuleClient) Hooks() []Hook {
+	return c.hooks.PruningRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *PruningRuleClient) Interceptors() []Interceptor {
+	return c.inters.PruningRule
+}
+
+func (c *PruningRuleClient) mutate(ctx context.Context, m *PruningRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PruningRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PruningRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PruningRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PruningRule mutation op: %q", m.Op())
+	}
+}
+
 // RepositoryClient is a client for the Repository schema.
 type RepositoryClient struct {
 	config
@@ -1242,11 +1415,11 @@ func (c *SettingsClient) mutate(ctx context.Context, m *SettingsMutation) (Value
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
-		Settings []ent.Hook
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun, PruningRule,
+		Repository, Settings []ent.Hook
 	}
 	inters struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
-		Settings []ent.Interceptor
+		Archive, BackupProfile, BackupSchedule, FailedBackupRun, PruningRule,
+		Repository, Settings []ent.Interceptor
 	}
 )

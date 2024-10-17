@@ -7,6 +7,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/settings"
 	"context"
@@ -82,6 +83,7 @@ func checkColumn(table, column string) error {
 			backupprofile.Table:   backupprofile.ValidColumn,
 			backupschedule.Table:  backupschedule.ValidColumn,
 			failedbackuprun.Table: failedbackuprun.ValidColumn,
+			pruningrule.Table:     pruningrule.ValidColumn,
 			repository.Table:      repository.ValidColumn,
 			settings.Table:        settings.ValidColumn,
 		})

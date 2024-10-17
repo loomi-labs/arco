@@ -53,6 +53,7 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
+		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
@@ -129,6 +130,31 @@ var (
 			},
 		},
 	}
+	// PruningRulesColumns holds the columns for the "pruning_rules" table.
+	PruningRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "keep_hourly", Type: field.TypeInt},
+		{Name: "keep_daily", Type: field.TypeInt},
+		{Name: "keep_weekly", Type: field.TypeInt},
+		{Name: "keep_monthly", Type: field.TypeInt},
+		{Name: "keep_yearly", Type: field.TypeInt},
+		{Name: "keep_within_days", Type: field.TypeInt},
+		{Name: "backup_profile_pruning_rule", Type: field.TypeInt, Unique: true},
+	}
+	// PruningRulesTable holds the schema information for the "pruning_rules" table.
+	PruningRulesTable = &schema.Table{
+		Name:       "pruning_rules",
+		Columns:    PruningRulesColumns,
+		PrimaryKey: []*schema.Column{PruningRulesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "pruning_rules_backup_profiles_pruning_rule",
+				Columns:    []*schema.Column{PruningRulesColumns[7]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// RepositoriesColumns holds the columns for the "repositories" table.
 	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -190,6 +216,7 @@ var (
 		BackupProfilesTable,
 		BackupSchedulesTable,
 		FailedBackupRunsTable,
+		PruningRulesTable,
 		RepositoriesTable,
 		SettingsTable,
 		BackupProfileRepositoriesTable,
@@ -203,6 +230,7 @@ func init() {
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	FailedBackupRunsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	FailedBackupRunsTable.ForeignKeys[1].RefTable = RepositoriesTable
+	PruningRulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }

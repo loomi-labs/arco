@@ -8,6 +8,7 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/failedbackuprun"
 	"arco/backend/ent/predicate"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/settings"
 	"context"
@@ -33,6 +34,7 @@ const (
 	TypeBackupProfile   = "BackupProfile"
 	TypeBackupSchedule  = "BackupSchedule"
 	TypeFailedBackupRun = "FailedBackupRun"
+	TypePruningRule     = "PruningRule"
 	TypeRepository      = "Repository"
 	TypeSettings        = "Settings"
 )
@@ -670,6 +672,7 @@ type BackupProfileMutation struct {
 	exclude_paths             *[]string
 	appendexclude_paths       []string
 	icon                      *backupprofile.Icon
+	next_integrity_check      *time.Time
 	clearedFields             map[string]struct{}
 	repositories              map[int]struct{}
 	removedrepositories       map[int]struct{}
@@ -682,6 +685,8 @@ type BackupProfileMutation struct {
 	failed_backup_runs        map[int]struct{}
 	removedfailed_backup_runs map[int]struct{}
 	clearedfailed_backup_runs bool
+	pruning_rule              *int
+	clearedpruning_rule       bool
 	done                      bool
 	oldValue                  func(context.Context) (*BackupProfile, error)
 	predicates                []predicate.BackupProfile
@@ -1015,6 +1020,55 @@ func (m *BackupProfileMutation) ResetIcon() {
 	m.icon = nil
 }
 
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (m *BackupProfileMutation) SetNextIntegrityCheck(t time.Time) {
+	m.next_integrity_check = &t
+}
+
+// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
+func (m *BackupProfileMutation) NextIntegrityCheck() (r time.Time, exists bool) {
+	v := m.next_integrity_check
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
+	}
+	return oldValue.NextIntegrityCheck, nil
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (m *BackupProfileMutation) ClearNextIntegrityCheck() {
+	m.next_integrity_check = nil
+	m.clearedFields[backupprofile.FieldNextIntegrityCheck] = struct{}{}
+}
+
+// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
+func (m *BackupProfileMutation) NextIntegrityCheckCleared() bool {
+	_, ok := m.clearedFields[backupprofile.FieldNextIntegrityCheck]
+	return ok
+}
+
+// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
+func (m *BackupProfileMutation) ResetNextIntegrityCheck() {
+	m.next_integrity_check = nil
+	delete(m.clearedFields, backupprofile.FieldNextIntegrityCheck)
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
 func (m *BackupProfileMutation) AddRepositoryIDs(ids ...int) {
 	if m.repositories == nil {
@@ -1216,6 +1270,45 @@ func (m *BackupProfileMutation) ResetFailedBackupRuns() {
 	m.removedfailed_backup_runs = nil
 }
 
+// SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by id.
+func (m *BackupProfileMutation) SetPruningRuleID(id int) {
+	m.pruning_rule = &id
+}
+
+// ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
+func (m *BackupProfileMutation) ClearPruningRule() {
+	m.clearedpruning_rule = true
+}
+
+// PruningRuleCleared reports if the "pruning_rule" edge to the PruningRule entity was cleared.
+func (m *BackupProfileMutation) PruningRuleCleared() bool {
+	return m.clearedpruning_rule
+}
+
+// PruningRuleID returns the "pruning_rule" edge ID in the mutation.
+func (m *BackupProfileMutation) PruningRuleID() (id int, exists bool) {
+	if m.pruning_rule != nil {
+		return *m.pruning_rule, true
+	}
+	return
+}
+
+// PruningRuleIDs returns the "pruning_rule" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PruningRuleID instead. It exists only for internal usage by the builders.
+func (m *BackupProfileMutation) PruningRuleIDs() (ids []int) {
+	if id := m.pruning_rule; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPruningRule resets all changes to the "pruning_rule" edge.
+func (m *BackupProfileMutation) ResetPruningRule() {
+	m.pruning_rule = nil
+	m.clearedpruning_rule = false
+}
+
 // Where appends a list predicates to the BackupProfileMutation builder.
 func (m *BackupProfileMutation) Where(ps ...predicate.BackupProfile) {
 	m.predicates = append(m.predicates, ps...)
@@ -1250,7 +1343,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
@@ -1265,6 +1358,9 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
+	}
+	if m.next_integrity_check != nil {
+		fields = append(fields, backupprofile.FieldNextIntegrityCheck)
 	}
 	return fields
 }
@@ -1284,6 +1380,8 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIcon:
 		return m.Icon()
+	case backupprofile.FieldNextIntegrityCheck:
+		return m.NextIntegrityCheck()
 	}
 	return nil, false
 }
@@ -1303,6 +1401,8 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
+	case backupprofile.FieldNextIntegrityCheck:
+		return m.OldNextIntegrityCheck(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1347,6 +1447,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIcon(v)
 		return nil
+	case backupprofile.FieldNextIntegrityCheck:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextIntegrityCheck(v)
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1380,6 +1487,9 @@ func (m *BackupProfileMutation) ClearedFields() []string {
 	if m.FieldCleared(backupprofile.FieldExcludePaths) {
 		fields = append(fields, backupprofile.FieldExcludePaths)
 	}
+	if m.FieldCleared(backupprofile.FieldNextIntegrityCheck) {
+		fields = append(fields, backupprofile.FieldNextIntegrityCheck)
+	}
 	return fields
 }
 
@@ -1396,6 +1506,9 @@ func (m *BackupProfileMutation) ClearField(name string) error {
 	switch name {
 	case backupprofile.FieldExcludePaths:
 		m.ClearExcludePaths()
+		return nil
+	case backupprofile.FieldNextIntegrityCheck:
+		m.ClearNextIntegrityCheck()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
@@ -1420,13 +1533,16 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
 		return nil
+	case backupprofile.FieldNextIntegrityCheck:
+		m.ResetNextIntegrityCheck()
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BackupProfileMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.repositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
@@ -1438,6 +1554,9 @@ func (m *BackupProfileMutation) AddedEdges() []string {
 	}
 	if m.failed_backup_runs != nil {
 		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
+	}
+	if m.pruning_rule != nil {
+		edges = append(edges, backupprofile.EdgePruningRule)
 	}
 	return edges
 }
@@ -1468,13 +1587,17 @@ func (m *BackupProfileMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case backupprofile.EdgePruningRule:
+		if id := m.pruning_rule; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BackupProfileMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedrepositories != nil {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
@@ -1515,7 +1638,7 @@ func (m *BackupProfileMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BackupProfileMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedrepositories {
 		edges = append(edges, backupprofile.EdgeRepositories)
 	}
@@ -1527,6 +1650,9 @@ func (m *BackupProfileMutation) ClearedEdges() []string {
 	}
 	if m.clearedfailed_backup_runs {
 		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
+	}
+	if m.clearedpruning_rule {
+		edges = append(edges, backupprofile.EdgePruningRule)
 	}
 	return edges
 }
@@ -1543,6 +1669,8 @@ func (m *BackupProfileMutation) EdgeCleared(name string) bool {
 		return m.clearedbackup_schedule
 	case backupprofile.EdgeFailedBackupRuns:
 		return m.clearedfailed_backup_runs
+	case backupprofile.EdgePruningRule:
+		return m.clearedpruning_rule
 	}
 	return false
 }
@@ -1553,6 +1681,9 @@ func (m *BackupProfileMutation) ClearEdge(name string) error {
 	switch name {
 	case backupprofile.EdgeBackupSchedule:
 		m.ClearBackupSchedule()
+		return nil
+	case backupprofile.EdgePruningRule:
+		m.ClearPruningRule()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile unique edge %s", name)
@@ -1573,6 +1704,9 @@ func (m *BackupProfileMutation) ResetEdge(name string) error {
 		return nil
 	case backupprofile.EdgeFailedBackupRuns:
 		m.ResetFailedBackupRuns()
+		return nil
+	case backupprofile.EdgePruningRule:
+		m.ResetPruningRule()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile edge %s", name)
@@ -3045,6 +3179,876 @@ func (m *FailedBackupRunMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown FailedBackupRun edge %s", name)
+}
+
+// PruningRuleMutation represents an operation that mutates the PruningRule nodes in the graph.
+type PruningRuleMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int
+	keep_hourly           *int
+	addkeep_hourly        *int
+	keep_daily            *int
+	addkeep_daily         *int
+	keep_weekly           *int
+	addkeep_weekly        *int
+	keep_monthly          *int
+	addkeep_monthly       *int
+	keep_yearly           *int
+	addkeep_yearly        *int
+	keep_within_days      *int
+	addkeep_within_days   *int
+	clearedFields         map[string]struct{}
+	backup_profile        *int
+	clearedbackup_profile bool
+	done                  bool
+	oldValue              func(context.Context) (*PruningRule, error)
+	predicates            []predicate.PruningRule
+}
+
+var _ ent.Mutation = (*PruningRuleMutation)(nil)
+
+// pruningruleOption allows management of the mutation configuration using functional options.
+type pruningruleOption func(*PruningRuleMutation)
+
+// newPruningRuleMutation creates new mutation for the PruningRule entity.
+func newPruningRuleMutation(c config, op Op, opts ...pruningruleOption) *PruningRuleMutation {
+	m := &PruningRuleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePruningRule,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPruningRuleID sets the ID field of the mutation.
+func withPruningRuleID(id int) pruningruleOption {
+	return func(m *PruningRuleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PruningRule
+		)
+		m.oldValue = func(ctx context.Context) (*PruningRule, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PruningRule.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPruningRule sets the old PruningRule of the mutation.
+func withPruningRule(node *PruningRule) pruningruleOption {
+	return func(m *PruningRuleMutation) {
+		m.oldValue = func(context.Context) (*PruningRule, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PruningRuleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PruningRuleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of PruningRule entities.
+func (m *PruningRuleMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PruningRuleMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PruningRuleMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PruningRule.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetKeepHourly sets the "keep_hourly" field.
+func (m *PruningRuleMutation) SetKeepHourly(i int) {
+	m.keep_hourly = &i
+	m.addkeep_hourly = nil
+}
+
+// KeepHourly returns the value of the "keep_hourly" field in the mutation.
+func (m *PruningRuleMutation) KeepHourly() (r int, exists bool) {
+	v := m.keep_hourly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepHourly returns the old "keep_hourly" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepHourly(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepHourly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepHourly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepHourly: %w", err)
+	}
+	return oldValue.KeepHourly, nil
+}
+
+// AddKeepHourly adds i to the "keep_hourly" field.
+func (m *PruningRuleMutation) AddKeepHourly(i int) {
+	if m.addkeep_hourly != nil {
+		*m.addkeep_hourly += i
+	} else {
+		m.addkeep_hourly = &i
+	}
+}
+
+// AddedKeepHourly returns the value that was added to the "keep_hourly" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepHourly() (r int, exists bool) {
+	v := m.addkeep_hourly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepHourly resets all changes to the "keep_hourly" field.
+func (m *PruningRuleMutation) ResetKeepHourly() {
+	m.keep_hourly = nil
+	m.addkeep_hourly = nil
+}
+
+// SetKeepDaily sets the "keep_daily" field.
+func (m *PruningRuleMutation) SetKeepDaily(i int) {
+	m.keep_daily = &i
+	m.addkeep_daily = nil
+}
+
+// KeepDaily returns the value of the "keep_daily" field in the mutation.
+func (m *PruningRuleMutation) KeepDaily() (r int, exists bool) {
+	v := m.keep_daily
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepDaily returns the old "keep_daily" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepDaily(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepDaily is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepDaily requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepDaily: %w", err)
+	}
+	return oldValue.KeepDaily, nil
+}
+
+// AddKeepDaily adds i to the "keep_daily" field.
+func (m *PruningRuleMutation) AddKeepDaily(i int) {
+	if m.addkeep_daily != nil {
+		*m.addkeep_daily += i
+	} else {
+		m.addkeep_daily = &i
+	}
+}
+
+// AddedKeepDaily returns the value that was added to the "keep_daily" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepDaily() (r int, exists bool) {
+	v := m.addkeep_daily
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepDaily resets all changes to the "keep_daily" field.
+func (m *PruningRuleMutation) ResetKeepDaily() {
+	m.keep_daily = nil
+	m.addkeep_daily = nil
+}
+
+// SetKeepWeekly sets the "keep_weekly" field.
+func (m *PruningRuleMutation) SetKeepWeekly(i int) {
+	m.keep_weekly = &i
+	m.addkeep_weekly = nil
+}
+
+// KeepWeekly returns the value of the "keep_weekly" field in the mutation.
+func (m *PruningRuleMutation) KeepWeekly() (r int, exists bool) {
+	v := m.keep_weekly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepWeekly returns the old "keep_weekly" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepWeekly(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepWeekly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepWeekly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepWeekly: %w", err)
+	}
+	return oldValue.KeepWeekly, nil
+}
+
+// AddKeepWeekly adds i to the "keep_weekly" field.
+func (m *PruningRuleMutation) AddKeepWeekly(i int) {
+	if m.addkeep_weekly != nil {
+		*m.addkeep_weekly += i
+	} else {
+		m.addkeep_weekly = &i
+	}
+}
+
+// AddedKeepWeekly returns the value that was added to the "keep_weekly" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepWeekly() (r int, exists bool) {
+	v := m.addkeep_weekly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepWeekly resets all changes to the "keep_weekly" field.
+func (m *PruningRuleMutation) ResetKeepWeekly() {
+	m.keep_weekly = nil
+	m.addkeep_weekly = nil
+}
+
+// SetKeepMonthly sets the "keep_monthly" field.
+func (m *PruningRuleMutation) SetKeepMonthly(i int) {
+	m.keep_monthly = &i
+	m.addkeep_monthly = nil
+}
+
+// KeepMonthly returns the value of the "keep_monthly" field in the mutation.
+func (m *PruningRuleMutation) KeepMonthly() (r int, exists bool) {
+	v := m.keep_monthly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepMonthly returns the old "keep_monthly" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepMonthly(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepMonthly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepMonthly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepMonthly: %w", err)
+	}
+	return oldValue.KeepMonthly, nil
+}
+
+// AddKeepMonthly adds i to the "keep_monthly" field.
+func (m *PruningRuleMutation) AddKeepMonthly(i int) {
+	if m.addkeep_monthly != nil {
+		*m.addkeep_monthly += i
+	} else {
+		m.addkeep_monthly = &i
+	}
+}
+
+// AddedKeepMonthly returns the value that was added to the "keep_monthly" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepMonthly() (r int, exists bool) {
+	v := m.addkeep_monthly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepMonthly resets all changes to the "keep_monthly" field.
+func (m *PruningRuleMutation) ResetKeepMonthly() {
+	m.keep_monthly = nil
+	m.addkeep_monthly = nil
+}
+
+// SetKeepYearly sets the "keep_yearly" field.
+func (m *PruningRuleMutation) SetKeepYearly(i int) {
+	m.keep_yearly = &i
+	m.addkeep_yearly = nil
+}
+
+// KeepYearly returns the value of the "keep_yearly" field in the mutation.
+func (m *PruningRuleMutation) KeepYearly() (r int, exists bool) {
+	v := m.keep_yearly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepYearly returns the old "keep_yearly" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepYearly(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepYearly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepYearly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepYearly: %w", err)
+	}
+	return oldValue.KeepYearly, nil
+}
+
+// AddKeepYearly adds i to the "keep_yearly" field.
+func (m *PruningRuleMutation) AddKeepYearly(i int) {
+	if m.addkeep_yearly != nil {
+		*m.addkeep_yearly += i
+	} else {
+		m.addkeep_yearly = &i
+	}
+}
+
+// AddedKeepYearly returns the value that was added to the "keep_yearly" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepYearly() (r int, exists bool) {
+	v := m.addkeep_yearly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepYearly resets all changes to the "keep_yearly" field.
+func (m *PruningRuleMutation) ResetKeepYearly() {
+	m.keep_yearly = nil
+	m.addkeep_yearly = nil
+}
+
+// SetKeepWithinDays sets the "keep_within_days" field.
+func (m *PruningRuleMutation) SetKeepWithinDays(i int) {
+	m.keep_within_days = &i
+	m.addkeep_within_days = nil
+}
+
+// KeepWithinDays returns the value of the "keep_within_days" field in the mutation.
+func (m *PruningRuleMutation) KeepWithinDays() (r int, exists bool) {
+	v := m.keep_within_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeepWithinDays returns the old "keep_within_days" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldKeepWithinDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeepWithinDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeepWithinDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeepWithinDays: %w", err)
+	}
+	return oldValue.KeepWithinDays, nil
+}
+
+// AddKeepWithinDays adds i to the "keep_within_days" field.
+func (m *PruningRuleMutation) AddKeepWithinDays(i int) {
+	if m.addkeep_within_days != nil {
+		*m.addkeep_within_days += i
+	} else {
+		m.addkeep_within_days = &i
+	}
+}
+
+// AddedKeepWithinDays returns the value that was added to the "keep_within_days" field in this mutation.
+func (m *PruningRuleMutation) AddedKeepWithinDays() (r int, exists bool) {
+	v := m.addkeep_within_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetKeepWithinDays resets all changes to the "keep_within_days" field.
+func (m *PruningRuleMutation) ResetKeepWithinDays() {
+	m.keep_within_days = nil
+	m.addkeep_within_days = nil
+}
+
+// SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
+func (m *PruningRuleMutation) SetBackupProfileID(id int) {
+	m.backup_profile = &id
+}
+
+// ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
+func (m *PruningRuleMutation) ClearBackupProfile() {
+	m.clearedbackup_profile = true
+}
+
+// BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
+func (m *PruningRuleMutation) BackupProfileCleared() bool {
+	return m.clearedbackup_profile
+}
+
+// BackupProfileID returns the "backup_profile" edge ID in the mutation.
+func (m *PruningRuleMutation) BackupProfileID() (id int, exists bool) {
+	if m.backup_profile != nil {
+		return *m.backup_profile, true
+	}
+	return
+}
+
+// BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BackupProfileID instead. It exists only for internal usage by the builders.
+func (m *PruningRuleMutation) BackupProfileIDs() (ids []int) {
+	if id := m.backup_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBackupProfile resets all changes to the "backup_profile" edge.
+func (m *PruningRuleMutation) ResetBackupProfile() {
+	m.backup_profile = nil
+	m.clearedbackup_profile = false
+}
+
+// Where appends a list predicates to the PruningRuleMutation builder.
+func (m *PruningRuleMutation) Where(ps ...predicate.PruningRule) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PruningRuleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PruningRuleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.PruningRule, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PruningRuleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PruningRuleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PruningRule).
+func (m *PruningRuleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PruningRuleMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.keep_hourly != nil {
+		fields = append(fields, pruningrule.FieldKeepHourly)
+	}
+	if m.keep_daily != nil {
+		fields = append(fields, pruningrule.FieldKeepDaily)
+	}
+	if m.keep_weekly != nil {
+		fields = append(fields, pruningrule.FieldKeepWeekly)
+	}
+	if m.keep_monthly != nil {
+		fields = append(fields, pruningrule.FieldKeepMonthly)
+	}
+	if m.keep_yearly != nil {
+		fields = append(fields, pruningrule.FieldKeepYearly)
+	}
+	if m.keep_within_days != nil {
+		fields = append(fields, pruningrule.FieldKeepWithinDays)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PruningRuleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		return m.KeepHourly()
+	case pruningrule.FieldKeepDaily:
+		return m.KeepDaily()
+	case pruningrule.FieldKeepWeekly:
+		return m.KeepWeekly()
+	case pruningrule.FieldKeepMonthly:
+		return m.KeepMonthly()
+	case pruningrule.FieldKeepYearly:
+		return m.KeepYearly()
+	case pruningrule.FieldKeepWithinDays:
+		return m.KeepWithinDays()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PruningRuleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		return m.OldKeepHourly(ctx)
+	case pruningrule.FieldKeepDaily:
+		return m.OldKeepDaily(ctx)
+	case pruningrule.FieldKeepWeekly:
+		return m.OldKeepWeekly(ctx)
+	case pruningrule.FieldKeepMonthly:
+		return m.OldKeepMonthly(ctx)
+	case pruningrule.FieldKeepYearly:
+		return m.OldKeepYearly(ctx)
+	case pruningrule.FieldKeepWithinDays:
+		return m.OldKeepWithinDays(ctx)
+	}
+	return nil, fmt.Errorf("unknown PruningRule field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PruningRuleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepHourly(v)
+		return nil
+	case pruningrule.FieldKeepDaily:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepDaily(v)
+		return nil
+	case pruningrule.FieldKeepWeekly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepWeekly(v)
+		return nil
+	case pruningrule.FieldKeepMonthly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepMonthly(v)
+		return nil
+	case pruningrule.FieldKeepYearly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepYearly(v)
+		return nil
+	case pruningrule.FieldKeepWithinDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeepWithinDays(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PruningRule field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PruningRuleMutation) AddedFields() []string {
+	var fields []string
+	if m.addkeep_hourly != nil {
+		fields = append(fields, pruningrule.FieldKeepHourly)
+	}
+	if m.addkeep_daily != nil {
+		fields = append(fields, pruningrule.FieldKeepDaily)
+	}
+	if m.addkeep_weekly != nil {
+		fields = append(fields, pruningrule.FieldKeepWeekly)
+	}
+	if m.addkeep_monthly != nil {
+		fields = append(fields, pruningrule.FieldKeepMonthly)
+	}
+	if m.addkeep_yearly != nil {
+		fields = append(fields, pruningrule.FieldKeepYearly)
+	}
+	if m.addkeep_within_days != nil {
+		fields = append(fields, pruningrule.FieldKeepWithinDays)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PruningRuleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		return m.AddedKeepHourly()
+	case pruningrule.FieldKeepDaily:
+		return m.AddedKeepDaily()
+	case pruningrule.FieldKeepWeekly:
+		return m.AddedKeepWeekly()
+	case pruningrule.FieldKeepMonthly:
+		return m.AddedKeepMonthly()
+	case pruningrule.FieldKeepYearly:
+		return m.AddedKeepYearly()
+	case pruningrule.FieldKeepWithinDays:
+		return m.AddedKeepWithinDays()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PruningRuleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepHourly(v)
+		return nil
+	case pruningrule.FieldKeepDaily:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepDaily(v)
+		return nil
+	case pruningrule.FieldKeepWeekly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepWeekly(v)
+		return nil
+	case pruningrule.FieldKeepMonthly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepMonthly(v)
+		return nil
+	case pruningrule.FieldKeepYearly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepYearly(v)
+		return nil
+	case pruningrule.FieldKeepWithinDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddKeepWithinDays(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PruningRule numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PruningRuleMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PruningRuleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PruningRuleMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown PruningRule nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PruningRuleMutation) ResetField(name string) error {
+	switch name {
+	case pruningrule.FieldKeepHourly:
+		m.ResetKeepHourly()
+		return nil
+	case pruningrule.FieldKeepDaily:
+		m.ResetKeepDaily()
+		return nil
+	case pruningrule.FieldKeepWeekly:
+		m.ResetKeepWeekly()
+		return nil
+	case pruningrule.FieldKeepMonthly:
+		m.ResetKeepMonthly()
+		return nil
+	case pruningrule.FieldKeepYearly:
+		m.ResetKeepYearly()
+		return nil
+	case pruningrule.FieldKeepWithinDays:
+		m.ResetKeepWithinDays()
+		return nil
+	}
+	return fmt.Errorf("unknown PruningRule field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PruningRuleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.backup_profile != nil {
+		edges = append(edges, pruningrule.EdgeBackupProfile)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PruningRuleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case pruningrule.EdgeBackupProfile:
+		if id := m.backup_profile; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PruningRuleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PruningRuleMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PruningRuleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedbackup_profile {
+		edges = append(edges, pruningrule.EdgeBackupProfile)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PruningRuleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case pruningrule.EdgeBackupProfile:
+		return m.clearedbackup_profile
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PruningRuleMutation) ClearEdge(name string) error {
+	switch name {
+	case pruningrule.EdgeBackupProfile:
+		m.ClearBackupProfile()
+		return nil
+	}
+	return fmt.Errorf("unknown PruningRule unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PruningRuleMutation) ResetEdge(name string) error {
+	switch name {
+	case pruningrule.EdgeBackupProfile:
+		m.ResetBackupProfile()
+		return nil
+	}
+	return fmt.Errorf("unknown PruningRule edge %s", name)
 }
 
 // RepositoryMutation represents an operation that mutates the Repository nodes in the graph.

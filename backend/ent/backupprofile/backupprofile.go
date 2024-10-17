@@ -24,6 +24,8 @@ const (
 	FieldExcludePaths = "exclude_paths"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
+	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
+	FieldNextIntegrityCheck = "next_integrity_check"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -32,6 +34,8 @@ const (
 	EdgeBackupSchedule = "backup_schedule"
 	// EdgeFailedBackupRuns holds the string denoting the failed_backup_runs edge name in mutations.
 	EdgeFailedBackupRuns = "failed_backup_runs"
+	// EdgePruningRule holds the string denoting the pruning_rule edge name in mutations.
+	EdgePruningRule = "pruning_rule"
 	// Table holds the table name of the backupprofile in the database.
 	Table = "backup_profiles"
 	// RepositoriesTable is the table that holds the repositories relation/edge. The primary key declared below.
@@ -60,6 +64,13 @@ const (
 	FailedBackupRunsInverseTable = "failed_backup_runs"
 	// FailedBackupRunsColumn is the table column denoting the failed_backup_runs relation/edge.
 	FailedBackupRunsColumn = "failed_backup_run_backup_profile"
+	// PruningRuleTable is the table that holds the pruning_rule relation/edge.
+	PruningRuleTable = "pruning_rules"
+	// PruningRuleInverseTable is the table name for the PruningRule entity.
+	// It exists in this package in order to avoid circular dependency with the "pruningrule" package.
+	PruningRuleInverseTable = "pruning_rules"
+	// PruningRuleColumn is the table column denoting the pruning_rule relation/edge.
+	PruningRuleColumn = "backup_profile_pruning_rule"
 )
 
 // Columns holds all SQL columns for backupprofile fields.
@@ -70,6 +81,7 @@ var Columns = []string{
 	FieldBackupPaths,
 	FieldExcludePaths,
 	FieldIcon,
+	FieldNextIntegrityCheck,
 }
 
 var (
@@ -149,6 +161,11 @@ func ByIcon(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIcon, opts...).ToFunc()
 }
 
+// ByNextIntegrityCheck orders the results by the next_integrity_check field.
+func ByNextIntegrityCheck(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextIntegrityCheck, opts...).ToFunc()
+}
+
 // ByRepositoriesCount orders the results by repositories count.
 func ByRepositoriesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -197,6 +214,13 @@ func ByFailedBackupRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newFailedBackupRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByPruningRuleField orders the results by pruning_rule field.
+func ByPruningRuleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPruningRuleStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newRepositoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -223,5 +247,12 @@ func newFailedBackupRunsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(FailedBackupRunsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+	)
+}
+func newPruningRuleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PruningRuleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, PruningRuleTable, PruningRuleColumn),
 	)
 }

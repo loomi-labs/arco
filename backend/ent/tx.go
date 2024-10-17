@@ -20,6 +20,8 @@ type Tx struct {
 	BackupSchedule *BackupScheduleClient
 	// FailedBackupRun is the client for interacting with the FailedBackupRun builders.
 	FailedBackupRun *FailedBackupRunClient
+	// PruningRule is the client for interacting with the PruningRule builders.
+	PruningRule *PruningRuleClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 	// Settings is the client for interacting with the Settings builders.
@@ -159,6 +161,7 @@ func (tx *Tx) init() {
 	tx.BackupProfile = NewBackupProfileClient(tx.config)
 	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
 	tx.FailedBackupRun = NewFailedBackupRunClient(tx.config)
+	tx.PruningRule = NewPruningRuleClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
 	tx.Settings = NewSettingsClient(tx.config)
 }

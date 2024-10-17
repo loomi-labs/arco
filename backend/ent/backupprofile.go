@@ -5,9 +5,11 @@ package ent
 import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/pruningrule"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -28,6 +30,8 @@ type BackupProfile struct {
 	ExcludePaths []string `json:"excludePaths"`
 	// Icon holds the value of the "icon" field.
 	Icon backupprofile.Icon `json:"icon"`
+	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
+	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -44,9 +48,11 @@ type BackupProfileEdges struct {
 	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
 	// FailedBackupRuns holds the value of the failed_backup_runs edge.
 	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
+	// PruningRule holds the value of the pruning_rule edge.
+	PruningRule *PruningRule `json:"pruningRule,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // RepositoriesOrErr returns the Repositories value or an error if the edge
@@ -87,6 +93,17 @@ func (e BackupProfileEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) 
 	return nil, &NotLoadedError{edge: "failed_backup_runs"}
 }
 
+// PruningRuleOrErr returns the PruningRule value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BackupProfileEdges) PruningRuleOrErr() (*PruningRule, error) {
+	if e.PruningRule != nil {
+		return e.PruningRule, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: pruningrule.Label}
+	}
+	return nil, &NotLoadedError{edge: "pruning_rule"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -98,6 +115,8 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
 			values[i] = new(sql.NullString)
+		case backupprofile.FieldNextIntegrityCheck:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -153,6 +172,13 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				bp.Icon = backupprofile.Icon(value.String)
 			}
+		case backupprofile.FieldNextIntegrityCheck:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
+			} else if value.Valid {
+				bp.NextIntegrityCheck = new(time.Time)
+				*bp.NextIntegrityCheck = value.Time
+			}
 		default:
 			bp.selectValues.Set(columns[i], values[i])
 		}
@@ -184,6 +210,11 @@ func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
 // QueryFailedBackupRuns queries the "failed_backup_runs" edge of the BackupProfile entity.
 func (bp *BackupProfile) QueryFailedBackupRuns() *FailedBackupRunQuery {
 	return NewBackupProfileClient(bp.config).QueryFailedBackupRuns(bp)
+}
+
+// QueryPruningRule queries the "pruning_rule" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryPruningRule() *PruningRuleQuery {
+	return NewBackupProfileClient(bp.config).QueryPruningRule(bp)
 }
 
 // Update returns a builder for updating this BackupProfile.
@@ -223,6 +254,11 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Icon))
+	builder.WriteString(", ")
+	if v := bp.NextIntegrityCheck; v != nil {
+		builder.WriteString("next_integrity_check=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
