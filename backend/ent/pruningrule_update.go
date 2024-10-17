@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -25,6 +26,12 @@ type PruningRuleUpdate struct {
 // Where appends a list predicates to the PruningRuleUpdate builder.
 func (pru *PruningRuleUpdate) Where(ps ...predicate.PruningRule) *PruningRuleUpdate {
 	pru.mutation.Where(ps...)
+	return pru
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pru *PruningRuleUpdate) SetUpdatedAt(t time.Time) *PruningRuleUpdate {
+	pru.mutation.SetUpdatedAt(t)
 	return pru
 }
 
@@ -154,6 +161,66 @@ func (pru *PruningRuleUpdate) AddKeepWithinDays(i int) *PruningRuleUpdate {
 	return pru
 }
 
+// SetNextRun sets the "next_run" field.
+func (pru *PruningRuleUpdate) SetNextRun(t time.Time) *PruningRuleUpdate {
+	pru.mutation.SetNextRun(t)
+	return pru
+}
+
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (pru *PruningRuleUpdate) SetNillableNextRun(t *time.Time) *PruningRuleUpdate {
+	if t != nil {
+		pru.SetNextRun(*t)
+	}
+	return pru
+}
+
+// ClearNextRun clears the value of the "next_run" field.
+func (pru *PruningRuleUpdate) ClearNextRun() *PruningRuleUpdate {
+	pru.mutation.ClearNextRun()
+	return pru
+}
+
+// SetLastRun sets the "last_run" field.
+func (pru *PruningRuleUpdate) SetLastRun(t time.Time) *PruningRuleUpdate {
+	pru.mutation.SetLastRun(t)
+	return pru
+}
+
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (pru *PruningRuleUpdate) SetNillableLastRun(t *time.Time) *PruningRuleUpdate {
+	if t != nil {
+		pru.SetLastRun(*t)
+	}
+	return pru
+}
+
+// ClearLastRun clears the value of the "last_run" field.
+func (pru *PruningRuleUpdate) ClearLastRun() *PruningRuleUpdate {
+	pru.mutation.ClearLastRun()
+	return pru
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (pru *PruningRuleUpdate) SetLastRunStatus(s string) *PruningRuleUpdate {
+	pru.mutation.SetLastRunStatus(s)
+	return pru
+}
+
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (pru *PruningRuleUpdate) SetNillableLastRunStatus(s *string) *PruningRuleUpdate {
+	if s != nil {
+		pru.SetLastRunStatus(*s)
+	}
+	return pru
+}
+
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (pru *PruningRuleUpdate) ClearLastRunStatus() *PruningRuleUpdate {
+	pru.mutation.ClearLastRunStatus()
+	return pru
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
 func (pru *PruningRuleUpdate) SetBackupProfileID(id int) *PruningRuleUpdate {
 	pru.mutation.SetBackupProfileID(id)
@@ -178,6 +245,7 @@ func (pru *PruningRuleUpdate) ClearBackupProfile() *PruningRuleUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pru *PruningRuleUpdate) Save(ctx context.Context) (int, error) {
+	pru.defaults()
 	return withHooks(ctx, pru.sqlSave, pru.mutation, pru.hooks)
 }
 
@@ -203,6 +271,14 @@ func (pru *PruningRuleUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pru *PruningRuleUpdate) defaults() {
+	if _, ok := pru.mutation.UpdatedAt(); !ok {
+		v := pruningrule.UpdateDefaultUpdatedAt()
+		pru.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (pru *PruningRuleUpdate) check() error {
 	if pru.mutation.BackupProfileCleared() && len(pru.mutation.BackupProfileIDs()) > 0 {
@@ -222,6 +298,9 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pru.mutation.UpdatedAt(); ok {
+		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pru.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
@@ -258,6 +337,24 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := pru.mutation.AddedKeepWithinDays(); ok {
 		_spec.AddField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
+	}
+	if value, ok := pru.mutation.NextRun(); ok {
+		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
+	}
+	if pru.mutation.NextRunCleared() {
+		_spec.ClearField(pruningrule.FieldNextRun, field.TypeTime)
+	}
+	if value, ok := pru.mutation.LastRun(); ok {
+		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
+	}
+	if pru.mutation.LastRunCleared() {
+		_spec.ClearField(pruningrule.FieldLastRun, field.TypeTime)
+	}
+	if value, ok := pru.mutation.LastRunStatus(); ok {
+		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
+	}
+	if pru.mutation.LastRunStatusCleared() {
+		_spec.ClearField(pruningrule.FieldLastRunStatus, field.TypeString)
 	}
 	if pru.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -306,6 +403,12 @@ type PruningRuleUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PruningRuleMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pruo *PruningRuleUpdateOne) SetUpdatedAt(t time.Time) *PruningRuleUpdateOne {
+	pruo.mutation.SetUpdatedAt(t)
+	return pruo
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
@@ -434,6 +537,66 @@ func (pruo *PruningRuleUpdateOne) AddKeepWithinDays(i int) *PruningRuleUpdateOne
 	return pruo
 }
 
+// SetNextRun sets the "next_run" field.
+func (pruo *PruningRuleUpdateOne) SetNextRun(t time.Time) *PruningRuleUpdateOne {
+	pruo.mutation.SetNextRun(t)
+	return pruo
+}
+
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (pruo *PruningRuleUpdateOne) SetNillableNextRun(t *time.Time) *PruningRuleUpdateOne {
+	if t != nil {
+		pruo.SetNextRun(*t)
+	}
+	return pruo
+}
+
+// ClearNextRun clears the value of the "next_run" field.
+func (pruo *PruningRuleUpdateOne) ClearNextRun() *PruningRuleUpdateOne {
+	pruo.mutation.ClearNextRun()
+	return pruo
+}
+
+// SetLastRun sets the "last_run" field.
+func (pruo *PruningRuleUpdateOne) SetLastRun(t time.Time) *PruningRuleUpdateOne {
+	pruo.mutation.SetLastRun(t)
+	return pruo
+}
+
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (pruo *PruningRuleUpdateOne) SetNillableLastRun(t *time.Time) *PruningRuleUpdateOne {
+	if t != nil {
+		pruo.SetLastRun(*t)
+	}
+	return pruo
+}
+
+// ClearLastRun clears the value of the "last_run" field.
+func (pruo *PruningRuleUpdateOne) ClearLastRun() *PruningRuleUpdateOne {
+	pruo.mutation.ClearLastRun()
+	return pruo
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (pruo *PruningRuleUpdateOne) SetLastRunStatus(s string) *PruningRuleUpdateOne {
+	pruo.mutation.SetLastRunStatus(s)
+	return pruo
+}
+
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (pruo *PruningRuleUpdateOne) SetNillableLastRunStatus(s *string) *PruningRuleUpdateOne {
+	if s != nil {
+		pruo.SetLastRunStatus(*s)
+	}
+	return pruo
+}
+
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (pruo *PruningRuleUpdateOne) ClearLastRunStatus() *PruningRuleUpdateOne {
+	pruo.mutation.ClearLastRunStatus()
+	return pruo
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
 func (pruo *PruningRuleUpdateOne) SetBackupProfileID(id int) *PruningRuleUpdateOne {
 	pruo.mutation.SetBackupProfileID(id)
@@ -471,6 +634,7 @@ func (pruo *PruningRuleUpdateOne) Select(field string, fields ...string) *Prunin
 
 // Save executes the query and returns the updated PruningRule entity.
 func (pruo *PruningRuleUpdateOne) Save(ctx context.Context) (*PruningRule, error) {
+	pruo.defaults()
 	return withHooks(ctx, pruo.sqlSave, pruo.mutation, pruo.hooks)
 }
 
@@ -493,6 +657,14 @@ func (pruo *PruningRuleUpdateOne) Exec(ctx context.Context) error {
 func (pruo *PruningRuleUpdateOne) ExecX(ctx context.Context) {
 	if err := pruo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (pruo *PruningRuleUpdateOne) defaults() {
+	if _, ok := pruo.mutation.UpdatedAt(); !ok {
+		v := pruningrule.UpdateDefaultUpdatedAt()
+		pruo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -533,6 +705,9 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 			}
 		}
 	}
+	if value, ok := pruo.mutation.UpdatedAt(); ok {
+		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := pruo.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
@@ -568,6 +743,24 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 	}
 	if value, ok := pruo.mutation.AddedKeepWithinDays(); ok {
 		_spec.AddField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
+	}
+	if value, ok := pruo.mutation.NextRun(); ok {
+		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
+	}
+	if pruo.mutation.NextRunCleared() {
+		_spec.ClearField(pruningrule.FieldNextRun, field.TypeTime)
+	}
+	if value, ok := pruo.mutation.LastRun(); ok {
+		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
+	}
+	if pruo.mutation.LastRunCleared() {
+		_spec.ClearField(pruningrule.FieldLastRun, field.TypeTime)
+	}
+	if value, ok := pruo.mutation.LastRunStatus(); ok {
+		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
+	}
+	if pruo.mutation.LastRunStatusCleared() {
+		_spec.ClearField(pruningrule.FieldLastRunStatus, field.TypeString)
 	}
 	if pruo.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{

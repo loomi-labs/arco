@@ -7,6 +7,7 @@ import (
 	"arco/backend/ent/pruningrule"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -17,6 +18,8 @@ type PruningRule struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// KeepHourly holds the value of the "keep_hourly" field.
 	KeepHourly int `json:"keepHourly"`
 	// KeepDaily holds the value of the "keep_daily" field.
@@ -29,6 +32,12 @@ type PruningRule struct {
 	KeepYearly int `json:"keepYearly"`
 	// KeepWithinDays holds the value of the "keep_within_days" field.
 	KeepWithinDays int `json:"keepWithinDays"`
+	// NextRun holds the value of the "next_run" field.
+	NextRun time.Time `json:"nextRun"`
+	// LastRun holds the value of the "last_run" field.
+	LastRun *time.Time `json:"lastRun"`
+	// LastRunStatus holds the value of the "last_run_status" field.
+	LastRunStatus *string `json:"lastRunStatus"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PruningRuleQuery when eager-loading is set.
 	Edges                       PruningRuleEdges `json:"edges"`
@@ -63,6 +72,10 @@ func (*PruningRule) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case pruningrule.FieldID, pruningrule.FieldKeepHourly, pruningrule.FieldKeepDaily, pruningrule.FieldKeepWeekly, pruningrule.FieldKeepMonthly, pruningrule.FieldKeepYearly, pruningrule.FieldKeepWithinDays:
 			values[i] = new(sql.NullInt64)
+		case pruningrule.FieldLastRunStatus:
+			values[i] = new(sql.NullString)
+		case pruningrule.FieldUpdatedAt, pruningrule.FieldNextRun, pruningrule.FieldLastRun:
+			values[i] = new(sql.NullTime)
 		case pruningrule.ForeignKeys[0]: // backup_profile_pruning_rule
 			values[i] = new(sql.NullInt64)
 		default:
@@ -86,6 +99,12 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pr.ID = int(value.Int64)
+		case pruningrule.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pr.UpdatedAt = value.Time
+			}
 		case pruningrule.FieldKeepHourly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_hourly", values[i])
@@ -121,6 +140,26 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field keep_within_days", values[i])
 			} else if value.Valid {
 				pr.KeepWithinDays = int(value.Int64)
+			}
+		case pruningrule.FieldNextRun:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_run", values[i])
+			} else if value.Valid {
+				pr.NextRun = value.Time
+			}
+		case pruningrule.FieldLastRun:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_run", values[i])
+			} else if value.Valid {
+				pr.LastRun = new(time.Time)
+				*pr.LastRun = value.Time
+			}
+		case pruningrule.FieldLastRunStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_run_status", values[i])
+			} else if value.Valid {
+				pr.LastRunStatus = new(string)
+				*pr.LastRunStatus = value.String
 			}
 		case pruningrule.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -170,6 +209,9 @@ func (pr *PruningRule) String() string {
 	var builder strings.Builder
 	builder.WriteString("PruningRule(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString("updated_at=")
+	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("keep_hourly=")
 	builder.WriteString(fmt.Sprintf("%v", pr.KeepHourly))
 	builder.WriteString(", ")
@@ -187,6 +229,19 @@ func (pr *PruningRule) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("keep_within_days=")
 	builder.WriteString(fmt.Sprintf("%v", pr.KeepWithinDays))
+	builder.WriteString(", ")
+	builder.WriteString("next_run=")
+	builder.WriteString(pr.NextRun.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := pr.LastRun; v != nil {
+		builder.WriteString("last_run=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := pr.LastRunStatus; v != nil {
+		builder.WriteString("last_run_status=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

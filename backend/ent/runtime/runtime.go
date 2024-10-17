@@ -5,8 +5,10 @@ package runtime
 import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/schema"
+	"time"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -57,6 +59,14 @@ func init() {
 	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	pruningruleFields := schema.PruningRule{}.Fields()
+	_ = pruningruleFields
+	// pruningruleDescUpdatedAt is the schema descriptor for updated_at field.
+	pruningruleDescUpdatedAt := pruningruleFields[1].Descriptor()
+	// pruningrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	pruningrule.DefaultUpdatedAt = pruningruleDescUpdatedAt.Default.(func() time.Time)
+	// pruningrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	pruningrule.UpdateDefaultUpdatedAt = pruningruleDescUpdatedAt.UpdateDefault.(func() time.Time)
 	repositoryFields := schema.Repository{}.Fields()
 	_ = repositoryFields
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.

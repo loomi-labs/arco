@@ -4,6 +4,7 @@ package pruningrule
 
 import (
 	"arco/backend/ent/predicate"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -54,6 +55,11 @@ func IDLTE(id int) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldLTE(FieldID, id))
 }
 
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
 // KeepHourly applies equality check predicate on the "keep_hourly" field. It's identical to KeepHourlyEQ.
 func KeepHourly(v int) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldEQ(FieldKeepHourly, v))
@@ -82,6 +88,61 @@ func KeepYearly(v int) predicate.PruningRule {
 // KeepWithinDays applies equality check predicate on the "keep_within_days" field. It's identical to KeepWithinDaysEQ.
 func KeepWithinDays(v int) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldEQ(FieldKeepWithinDays, v))
+}
+
+// NextRun applies equality check predicate on the "next_run" field. It's identical to NextRunEQ.
+func NextRun(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldNextRun, v))
+}
+
+// LastRun applies equality check predicate on the "last_run" field. It's identical to LastRunEQ.
+func LastRun(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldLastRun, v))
+}
+
+// LastRunStatus applies equality check predicate on the "last_run_status" field. It's identical to LastRunStatusEQ.
+func LastRunStatus(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
 // KeepHourlyEQ applies the EQ predicate on the "keep_hourly" field.
@@ -322,6 +383,181 @@ func KeepWithinDaysLT(v int) predicate.PruningRule {
 // KeepWithinDaysLTE applies the LTE predicate on the "keep_within_days" field.
 func KeepWithinDaysLTE(v int) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldLTE(FieldKeepWithinDays, v))
+}
+
+// NextRunEQ applies the EQ predicate on the "next_run" field.
+func NextRunEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldNextRun, v))
+}
+
+// NextRunNEQ applies the NEQ predicate on the "next_run" field.
+func NextRunNEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNEQ(FieldNextRun, v))
+}
+
+// NextRunIn applies the In predicate on the "next_run" field.
+func NextRunIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIn(FieldNextRun, vs...))
+}
+
+// NextRunNotIn applies the NotIn predicate on the "next_run" field.
+func NextRunNotIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotIn(FieldNextRun, vs...))
+}
+
+// NextRunGT applies the GT predicate on the "next_run" field.
+func NextRunGT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGT(FieldNextRun, v))
+}
+
+// NextRunGTE applies the GTE predicate on the "next_run" field.
+func NextRunGTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGTE(FieldNextRun, v))
+}
+
+// NextRunLT applies the LT predicate on the "next_run" field.
+func NextRunLT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLT(FieldNextRun, v))
+}
+
+// NextRunLTE applies the LTE predicate on the "next_run" field.
+func NextRunLTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLTE(FieldNextRun, v))
+}
+
+// NextRunIsNil applies the IsNil predicate on the "next_run" field.
+func NextRunIsNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIsNull(FieldNextRun))
+}
+
+// NextRunNotNil applies the NotNil predicate on the "next_run" field.
+func NextRunNotNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotNull(FieldNextRun))
+}
+
+// LastRunEQ applies the EQ predicate on the "last_run" field.
+func LastRunEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldLastRun, v))
+}
+
+// LastRunNEQ applies the NEQ predicate on the "last_run" field.
+func LastRunNEQ(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNEQ(FieldLastRun, v))
+}
+
+// LastRunIn applies the In predicate on the "last_run" field.
+func LastRunIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIn(FieldLastRun, vs...))
+}
+
+// LastRunNotIn applies the NotIn predicate on the "last_run" field.
+func LastRunNotIn(vs ...time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotIn(FieldLastRun, vs...))
+}
+
+// LastRunGT applies the GT predicate on the "last_run" field.
+func LastRunGT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGT(FieldLastRun, v))
+}
+
+// LastRunGTE applies the GTE predicate on the "last_run" field.
+func LastRunGTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGTE(FieldLastRun, v))
+}
+
+// LastRunLT applies the LT predicate on the "last_run" field.
+func LastRunLT(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLT(FieldLastRun, v))
+}
+
+// LastRunLTE applies the LTE predicate on the "last_run" field.
+func LastRunLTE(v time.Time) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLTE(FieldLastRun, v))
+}
+
+// LastRunIsNil applies the IsNil predicate on the "last_run" field.
+func LastRunIsNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIsNull(FieldLastRun))
+}
+
+// LastRunNotNil applies the NotNil predicate on the "last_run" field.
+func LastRunNotNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotNull(FieldLastRun))
+}
+
+// LastRunStatusEQ applies the EQ predicate on the "last_run_status" field.
+func LastRunStatusEQ(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
+// LastRunStatusNEQ applies the NEQ predicate on the "last_run_status" field.
+func LastRunStatusNEQ(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNEQ(FieldLastRunStatus, v))
+}
+
+// LastRunStatusIn applies the In predicate on the "last_run_status" field.
+func LastRunStatusIn(vs ...string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIn(FieldLastRunStatus, vs...))
+}
+
+// LastRunStatusNotIn applies the NotIn predicate on the "last_run_status" field.
+func LastRunStatusNotIn(vs ...string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotIn(FieldLastRunStatus, vs...))
+}
+
+// LastRunStatusGT applies the GT predicate on the "last_run_status" field.
+func LastRunStatusGT(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGT(FieldLastRunStatus, v))
+}
+
+// LastRunStatusGTE applies the GTE predicate on the "last_run_status" field.
+func LastRunStatusGTE(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldGTE(FieldLastRunStatus, v))
+}
+
+// LastRunStatusLT applies the LT predicate on the "last_run_status" field.
+func LastRunStatusLT(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLT(FieldLastRunStatus, v))
+}
+
+// LastRunStatusLTE applies the LTE predicate on the "last_run_status" field.
+func LastRunStatusLTE(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldLTE(FieldLastRunStatus, v))
+}
+
+// LastRunStatusContains applies the Contains predicate on the "last_run_status" field.
+func LastRunStatusContains(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldContains(FieldLastRunStatus, v))
+}
+
+// LastRunStatusHasPrefix applies the HasPrefix predicate on the "last_run_status" field.
+func LastRunStatusHasPrefix(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldHasPrefix(FieldLastRunStatus, v))
+}
+
+// LastRunStatusHasSuffix applies the HasSuffix predicate on the "last_run_status" field.
+func LastRunStatusHasSuffix(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldHasSuffix(FieldLastRunStatus, v))
+}
+
+// LastRunStatusIsNil applies the IsNil predicate on the "last_run_status" field.
+func LastRunStatusIsNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldIsNull(FieldLastRunStatus))
+}
+
+// LastRunStatusNotNil applies the NotNil predicate on the "last_run_status" field.
+func LastRunStatusNotNil() predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNotNull(FieldLastRunStatus))
+}
+
+// LastRunStatusEqualFold applies the EqualFold predicate on the "last_run_status" field.
+func LastRunStatusEqualFold(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEqualFold(FieldLastRunStatus, v))
+}
+
+// LastRunStatusContainsFold applies the ContainsFold predicate on the "last_run_status" field.
+func LastRunStatusContainsFold(v string) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldContainsFold(FieldLastRunStatus, v))
 }
 
 // HasBackupProfile applies the HasEdge predicate on the "backup_profile" edge.

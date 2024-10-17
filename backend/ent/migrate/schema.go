@@ -133,12 +133,16 @@ var (
 	// PruningRulesColumns holds the columns for the "pruning_rules" table.
 	PruningRulesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "keep_hourly", Type: field.TypeInt},
 		{Name: "keep_daily", Type: field.TypeInt},
 		{Name: "keep_weekly", Type: field.TypeInt},
 		{Name: "keep_monthly", Type: field.TypeInt},
 		{Name: "keep_yearly", Type: field.TypeInt},
 		{Name: "keep_within_days", Type: field.TypeInt},
+		{Name: "next_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_status", Type: field.TypeString, Nullable: true},
 		{Name: "backup_profile_pruning_rule", Type: field.TypeInt, Unique: true},
 	}
 	// PruningRulesTable holds the schema information for the "pruning_rules" table.
@@ -149,7 +153,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "pruning_rules_backup_profiles_pruning_rule",
-				Columns:    []*schema.Column{PruningRulesColumns[7]},
+				Columns:    []*schema.Column{PruningRulesColumns[11]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

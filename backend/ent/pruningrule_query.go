@@ -299,12 +299,12 @@ func (prq *PruningRuleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)
 // Example:
 //
 //	var v []struct {
-//		KeepHourly int `json:"keepHourly"`
+//		UpdatedAt time.Time `json:"updated_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.PruningRule.Query().
-//		GroupBy(pruningrule.FieldKeepHourly).
+//		GroupBy(pruningrule.FieldUpdatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (prq *PruningRuleQuery) GroupBy(field string, fields ...string) *PruningRuleGroupBy {
@@ -322,11 +322,11 @@ func (prq *PruningRuleQuery) GroupBy(field string, fields ...string) *PruningRul
 // Example:
 //
 //	var v []struct {
-//		KeepHourly int `json:"keepHourly"`
+//		UpdatedAt time.Time `json:"updated_at,omitempty"`
 //	}
 //
 //	client.PruningRule.Query().
-//		Select(pruningrule.FieldKeepHourly).
+//		Select(pruningrule.FieldUpdatedAt).
 //		Scan(ctx, &v)
 func (prq *PruningRuleQuery) Select(fields ...string) *PruningRuleSelect {
 	prq.ctx.Fields = append(prq.ctx.Fields, fields...)

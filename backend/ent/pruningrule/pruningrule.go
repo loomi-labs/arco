@@ -3,6 +3,8 @@
 package pruningrule
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -12,6 +14,8 @@ const (
 	Label = "pruning_rule"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldKeepHourly holds the string denoting the keep_hourly field in the database.
 	FieldKeepHourly = "keep_hourly"
 	// FieldKeepDaily holds the string denoting the keep_daily field in the database.
@@ -24,6 +28,12 @@ const (
 	FieldKeepYearly = "keep_yearly"
 	// FieldKeepWithinDays holds the string denoting the keep_within_days field in the database.
 	FieldKeepWithinDays = "keep_within_days"
+	// FieldNextRun holds the string denoting the next_run field in the database.
+	FieldNextRun = "next_run"
+	// FieldLastRun holds the string denoting the last_run field in the database.
+	FieldLastRun = "last_run"
+	// FieldLastRunStatus holds the string denoting the last_run_status field in the database.
+	FieldLastRunStatus = "last_run_status"
 	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
 	EdgeBackupProfile = "backup_profile"
 	// Table holds the table name of the pruningrule in the database.
@@ -40,12 +50,16 @@ const (
 // Columns holds all SQL columns for pruningrule fields.
 var Columns = []string{
 	FieldID,
+	FieldUpdatedAt,
 	FieldKeepHourly,
 	FieldKeepDaily,
 	FieldKeepWeekly,
 	FieldKeepMonthly,
 	FieldKeepYearly,
 	FieldKeepWithinDays,
+	FieldNextRun,
+	FieldLastRun,
+	FieldLastRunStatus,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "pruning_rules"
@@ -69,12 +83,24 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
+)
+
 // OrderOption defines the ordering options for the PruningRule queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByKeepHourly orders the results by the keep_hourly field.
@@ -105,6 +131,21 @@ func ByKeepYearly(opts ...sql.OrderTermOption) OrderOption {
 // ByKeepWithinDays orders the results by the keep_within_days field.
 func ByKeepWithinDays(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldKeepWithinDays, opts...).ToFunc()
+}
+
+// ByNextRun orders the results by the next_run field.
+func ByNextRun(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextRun, opts...).ToFunc()
+}
+
+// ByLastRun orders the results by the last_run field.
+func ByLastRun(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastRun, opts...).ToFunc()
+}
+
+// ByLastRunStatus orders the results by the last_run_status field.
+func ByLastRunStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastRunStatus, opts...).ToFunc()
 }
 
 // ByBackupProfileField orders the results by backup_profile field.

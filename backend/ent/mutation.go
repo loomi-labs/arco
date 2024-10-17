@@ -3187,6 +3187,7 @@ type PruningRuleMutation struct {
 	op                    Op
 	typ                   string
 	id                    *int
+	updated_at            *time.Time
 	keep_hourly           *int
 	addkeep_hourly        *int
 	keep_daily            *int
@@ -3199,6 +3200,9 @@ type PruningRuleMutation struct {
 	addkeep_yearly        *int
 	keep_within_days      *int
 	addkeep_within_days   *int
+	next_run              *time.Time
+	last_run              *time.Time
+	last_run_status       *string
 	clearedFields         map[string]struct{}
 	backup_profile        *int
 	clearedbackup_profile bool
@@ -3309,6 +3313,42 @@ func (m *PruningRuleMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *PruningRuleMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *PruningRuleMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *PruningRuleMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
@@ -3647,6 +3687,153 @@ func (m *PruningRuleMutation) ResetKeepWithinDays() {
 	m.addkeep_within_days = nil
 }
 
+// SetNextRun sets the "next_run" field.
+func (m *PruningRuleMutation) SetNextRun(t time.Time) {
+	m.next_run = &t
+}
+
+// NextRun returns the value of the "next_run" field in the mutation.
+func (m *PruningRuleMutation) NextRun() (r time.Time, exists bool) {
+	v := m.next_run
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextRun returns the old "next_run" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldNextRun(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextRun is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextRun requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextRun: %w", err)
+	}
+	return oldValue.NextRun, nil
+}
+
+// ClearNextRun clears the value of the "next_run" field.
+func (m *PruningRuleMutation) ClearNextRun() {
+	m.next_run = nil
+	m.clearedFields[pruningrule.FieldNextRun] = struct{}{}
+}
+
+// NextRunCleared returns if the "next_run" field was cleared in this mutation.
+func (m *PruningRuleMutation) NextRunCleared() bool {
+	_, ok := m.clearedFields[pruningrule.FieldNextRun]
+	return ok
+}
+
+// ResetNextRun resets all changes to the "next_run" field.
+func (m *PruningRuleMutation) ResetNextRun() {
+	m.next_run = nil
+	delete(m.clearedFields, pruningrule.FieldNextRun)
+}
+
+// SetLastRun sets the "last_run" field.
+func (m *PruningRuleMutation) SetLastRun(t time.Time) {
+	m.last_run = &t
+}
+
+// LastRun returns the value of the "last_run" field in the mutation.
+func (m *PruningRuleMutation) LastRun() (r time.Time, exists bool) {
+	v := m.last_run
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRun returns the old "last_run" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldLastRun(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRun is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRun requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRun: %w", err)
+	}
+	return oldValue.LastRun, nil
+}
+
+// ClearLastRun clears the value of the "last_run" field.
+func (m *PruningRuleMutation) ClearLastRun() {
+	m.last_run = nil
+	m.clearedFields[pruningrule.FieldLastRun] = struct{}{}
+}
+
+// LastRunCleared returns if the "last_run" field was cleared in this mutation.
+func (m *PruningRuleMutation) LastRunCleared() bool {
+	_, ok := m.clearedFields[pruningrule.FieldLastRun]
+	return ok
+}
+
+// ResetLastRun resets all changes to the "last_run" field.
+func (m *PruningRuleMutation) ResetLastRun() {
+	m.last_run = nil
+	delete(m.clearedFields, pruningrule.FieldLastRun)
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (m *PruningRuleMutation) SetLastRunStatus(s string) {
+	m.last_run_status = &s
+}
+
+// LastRunStatus returns the value of the "last_run_status" field in the mutation.
+func (m *PruningRuleMutation) LastRunStatus() (r string, exists bool) {
+	v := m.last_run_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastRunStatus returns the old "last_run_status" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldLastRunStatus(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastRunStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastRunStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastRunStatus: %w", err)
+	}
+	return oldValue.LastRunStatus, nil
+}
+
+// ClearLastRunStatus clears the value of the "last_run_status" field.
+func (m *PruningRuleMutation) ClearLastRunStatus() {
+	m.last_run_status = nil
+	m.clearedFields[pruningrule.FieldLastRunStatus] = struct{}{}
+}
+
+// LastRunStatusCleared returns if the "last_run_status" field was cleared in this mutation.
+func (m *PruningRuleMutation) LastRunStatusCleared() bool {
+	_, ok := m.clearedFields[pruningrule.FieldLastRunStatus]
+	return ok
+}
+
+// ResetLastRunStatus resets all changes to the "last_run_status" field.
+func (m *PruningRuleMutation) ResetLastRunStatus() {
+	m.last_run_status = nil
+	delete(m.clearedFields, pruningrule.FieldLastRunStatus)
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
 func (m *PruningRuleMutation) SetBackupProfileID(id int) {
 	m.backup_profile = &id
@@ -3720,7 +3907,10 @@ func (m *PruningRuleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PruningRuleMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 10)
+	if m.updated_at != nil {
+		fields = append(fields, pruningrule.FieldUpdatedAt)
+	}
 	if m.keep_hourly != nil {
 		fields = append(fields, pruningrule.FieldKeepHourly)
 	}
@@ -3739,6 +3929,15 @@ func (m *PruningRuleMutation) Fields() []string {
 	if m.keep_within_days != nil {
 		fields = append(fields, pruningrule.FieldKeepWithinDays)
 	}
+	if m.next_run != nil {
+		fields = append(fields, pruningrule.FieldNextRun)
+	}
+	if m.last_run != nil {
+		fields = append(fields, pruningrule.FieldLastRun)
+	}
+	if m.last_run_status != nil {
+		fields = append(fields, pruningrule.FieldLastRunStatus)
+	}
 	return fields
 }
 
@@ -3747,6 +3946,8 @@ func (m *PruningRuleMutation) Fields() []string {
 // schema.
 func (m *PruningRuleMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case pruningrule.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case pruningrule.FieldKeepHourly:
 		return m.KeepHourly()
 	case pruningrule.FieldKeepDaily:
@@ -3759,6 +3960,12 @@ func (m *PruningRuleMutation) Field(name string) (ent.Value, bool) {
 		return m.KeepYearly()
 	case pruningrule.FieldKeepWithinDays:
 		return m.KeepWithinDays()
+	case pruningrule.FieldNextRun:
+		return m.NextRun()
+	case pruningrule.FieldLastRun:
+		return m.LastRun()
+	case pruningrule.FieldLastRunStatus:
+		return m.LastRunStatus()
 	}
 	return nil, false
 }
@@ -3768,6 +3975,8 @@ func (m *PruningRuleMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *PruningRuleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case pruningrule.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case pruningrule.FieldKeepHourly:
 		return m.OldKeepHourly(ctx)
 	case pruningrule.FieldKeepDaily:
@@ -3780,6 +3989,12 @@ func (m *PruningRuleMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldKeepYearly(ctx)
 	case pruningrule.FieldKeepWithinDays:
 		return m.OldKeepWithinDays(ctx)
+	case pruningrule.FieldNextRun:
+		return m.OldNextRun(ctx)
+	case pruningrule.FieldLastRun:
+		return m.OldLastRun(ctx)
+	case pruningrule.FieldLastRunStatus:
+		return m.OldLastRunStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown PruningRule field %s", name)
 }
@@ -3789,6 +4004,13 @@ func (m *PruningRuleMutation) OldField(ctx context.Context, name string) (ent.Va
 // type.
 func (m *PruningRuleMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case pruningrule.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
 	case pruningrule.FieldKeepHourly:
 		v, ok := value.(int)
 		if !ok {
@@ -3830,6 +4052,27 @@ func (m *PruningRuleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKeepWithinDays(v)
+		return nil
+	case pruningrule.FieldNextRun:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextRun(v)
+		return nil
+	case pruningrule.FieldLastRun:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRun(v)
+		return nil
+	case pruningrule.FieldLastRunStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastRunStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown PruningRule field %s", name)
@@ -3935,7 +4178,17 @@ func (m *PruningRuleMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PruningRuleMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(pruningrule.FieldNextRun) {
+		fields = append(fields, pruningrule.FieldNextRun)
+	}
+	if m.FieldCleared(pruningrule.FieldLastRun) {
+		fields = append(fields, pruningrule.FieldLastRun)
+	}
+	if m.FieldCleared(pruningrule.FieldLastRunStatus) {
+		fields = append(fields, pruningrule.FieldLastRunStatus)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3948,6 +4201,17 @@ func (m *PruningRuleMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PruningRuleMutation) ClearField(name string) error {
+	switch name {
+	case pruningrule.FieldNextRun:
+		m.ClearNextRun()
+		return nil
+	case pruningrule.FieldLastRun:
+		m.ClearLastRun()
+		return nil
+	case pruningrule.FieldLastRunStatus:
+		m.ClearLastRunStatus()
+		return nil
+	}
 	return fmt.Errorf("unknown PruningRule nullable field %s", name)
 }
 
@@ -3955,6 +4219,9 @@ func (m *PruningRuleMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *PruningRuleMutation) ResetField(name string) error {
 	switch name {
+	case pruningrule.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
 	case pruningrule.FieldKeepHourly:
 		m.ResetKeepHourly()
 		return nil
@@ -3972,6 +4239,15 @@ func (m *PruningRuleMutation) ResetField(name string) error {
 		return nil
 	case pruningrule.FieldKeepWithinDays:
 		m.ResetKeepWithinDays()
+		return nil
+	case pruningrule.FieldNextRun:
+		m.ResetNextRun()
+		return nil
+	case pruningrule.FieldLastRun:
+		m.ResetLastRun()
+		return nil
+	case pruningrule.FieldLastRunStatus:
+		m.ResetLastRunStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown PruningRule field %s", name)

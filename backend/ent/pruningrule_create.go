@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -18,6 +19,20 @@ type PruningRuleCreate struct {
 	config
 	mutation *PruningRuleMutation
 	hooks    []Hook
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (prc *PruningRuleCreate) SetUpdatedAt(t time.Time) *PruningRuleCreate {
+	prc.mutation.SetUpdatedAt(t)
+	return prc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (prc *PruningRuleCreate) SetNillableUpdatedAt(t *time.Time) *PruningRuleCreate {
+	if t != nil {
+		prc.SetUpdatedAt(*t)
+	}
+	return prc
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
@@ -56,6 +71,48 @@ func (prc *PruningRuleCreate) SetKeepWithinDays(i int) *PruningRuleCreate {
 	return prc
 }
 
+// SetNextRun sets the "next_run" field.
+func (prc *PruningRuleCreate) SetNextRun(t time.Time) *PruningRuleCreate {
+	prc.mutation.SetNextRun(t)
+	return prc
+}
+
+// SetNillableNextRun sets the "next_run" field if the given value is not nil.
+func (prc *PruningRuleCreate) SetNillableNextRun(t *time.Time) *PruningRuleCreate {
+	if t != nil {
+		prc.SetNextRun(*t)
+	}
+	return prc
+}
+
+// SetLastRun sets the "last_run" field.
+func (prc *PruningRuleCreate) SetLastRun(t time.Time) *PruningRuleCreate {
+	prc.mutation.SetLastRun(t)
+	return prc
+}
+
+// SetNillableLastRun sets the "last_run" field if the given value is not nil.
+func (prc *PruningRuleCreate) SetNillableLastRun(t *time.Time) *PruningRuleCreate {
+	if t != nil {
+		prc.SetLastRun(*t)
+	}
+	return prc
+}
+
+// SetLastRunStatus sets the "last_run_status" field.
+func (prc *PruningRuleCreate) SetLastRunStatus(s string) *PruningRuleCreate {
+	prc.mutation.SetLastRunStatus(s)
+	return prc
+}
+
+// SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
+func (prc *PruningRuleCreate) SetNillableLastRunStatus(s *string) *PruningRuleCreate {
+	if s != nil {
+		prc.SetLastRunStatus(*s)
+	}
+	return prc
+}
+
 // SetID sets the "id" field.
 func (prc *PruningRuleCreate) SetID(i int) *PruningRuleCreate {
 	prc.mutation.SetID(i)
@@ -80,6 +137,7 @@ func (prc *PruningRuleCreate) Mutation() *PruningRuleMutation {
 
 // Save creates the PruningRule in the database.
 func (prc *PruningRuleCreate) Save(ctx context.Context) (*PruningRule, error) {
+	prc.defaults()
 	return withHooks(ctx, prc.sqlSave, prc.mutation, prc.hooks)
 }
 
@@ -105,8 +163,19 @@ func (prc *PruningRuleCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (prc *PruningRuleCreate) defaults() {
+	if _, ok := prc.mutation.UpdatedAt(); !ok {
+		v := pruningrule.DefaultUpdatedAt()
+		prc.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (prc *PruningRuleCreate) check() error {
+	if _, ok := prc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PruningRule.updated_at"`)}
+	}
 	if _, ok := prc.mutation.KeepHourly(); !ok {
 		return &ValidationError{Name: "keep_hourly", err: errors.New(`ent: missing required field "PruningRule.keep_hourly"`)}
 	}
@@ -160,6 +229,10 @@ func (prc *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) 
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := prc.mutation.UpdatedAt(); ok {
+		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := prc.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 		_node.KeepHourly = value
@@ -183,6 +256,18 @@ func (prc *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) 
 	if value, ok := prc.mutation.KeepWithinDays(); ok {
 		_spec.SetField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 		_node.KeepWithinDays = value
+	}
+	if value, ok := prc.mutation.NextRun(); ok {
+		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
+		_node.NextRun = value
+	}
+	if value, ok := prc.mutation.LastRun(); ok {
+		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
+		_node.LastRun = &value
+	}
+	if value, ok := prc.mutation.LastRunStatus(); ok {
+		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
+		_node.LastRunStatus = &value
 	}
 	if nodes := prc.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -222,6 +307,7 @@ func (prcb *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, er
 	for i := range prcb.builders {
 		func(i int, root context.Context) {
 			builder := prcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PruningRuleMutation)
 				if !ok {
