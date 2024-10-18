@@ -75,7 +75,7 @@ async function getRepoState() {
 
     totalSize.value = toHumanReadableSize(repo.value.stats_total_size);
     sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
-    failedBackupRun.value = repo.value.edges.failedBackupRuns?.[0]?.error;
+    failedBackupRun.value = await repoClient.GetLastBackupErrorMsg(repoId);
 
     lastArchive.value = await repoClient.GetLastArchiveByRepoId(repoId);
   } catch (error: any) {

@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
 import { ent, types } from "../../wailsjs/go/models";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref } from "vue";
@@ -34,7 +35,7 @@ const props = defineProps<Props>();
 const { t } = useI18n();
 const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
-const failedBackupRun = ref<string | undefined>(undefined);
+const failedBackupRun = ref<string >("");
 const icon = ref<Icon>(getIcon(props.backup.icon));
 
 const bIds = props.backup.edges?.repositories?.map((r) => {
@@ -56,15 +57,14 @@ async function getFailedBackupRun() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repoId;
-      const repo = await repoClient.GetByBackupId(backupId);
+      failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
 
-      // We only care about the first failed backup run
-      if (repo.edges.failedBackupRuns?.length) {
-        failedBackupRun.value = repo.edges.failedBackupRuns?.[0]?.error;
-        return;
+      // We only care about the first error message.
+      if (failedBackupRun.value) {
+        break;
       }
     } catch (error: any) {
-      await showAndLogError("Failed to get repository", error);
+      await showAndLogError("Failed to get last backup error message", error);
     }
   }
 }
