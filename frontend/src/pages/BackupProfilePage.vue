@@ -17,6 +17,7 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
+import PruningCard from "../components/PruningCard.vue";
 
 /************
  * Variables
@@ -33,6 +34,8 @@ const nameInputKey = "name_input";
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
 const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
+
+const isPruningEnabled = ref(false);
 
 const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
@@ -63,6 +66,7 @@ async function getBackupProfile() {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
+    isPruningEnabled.value = backupProfile.value.edges.pruningRule !== undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -222,9 +226,13 @@ watch(loading, async () => {
 
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
-                       @update:schedule='saveSchedule'
-                       @delete:schedule='deleteSchedule' />
+    <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
+      <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
+                         @update:schedule='saveSchedule'
+                         @delete:schedule='deleteSchedule' />
+
+      <PruningCard :backup-profile='backupProfile' @pruning:is-enabled='(isEnabled) => isPruningEnabled = isEnabled'></PruningCard>
+    </div>
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
@@ -235,6 +243,7 @@ watch(loading, async () => {
           :backup-profile-id='backupProfile.id'
           :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
           :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
+          :is-pruning-enabled='isPruningEnabled'
           @click='() => selectedRepo = repo'
           @repo:status='(event) => repoStatuses.set(repo.id, event)'>
         </RepoCard>
