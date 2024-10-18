@@ -295,6 +295,14 @@ type TAMUnsupportedSuiteError struct {
 	WrappedExitErr
 }
 
+type FileChangedWarning struct {
+	WrappedExitErr
+}
+
+type IncludePatternNeverMatchedWarning struct {
+	WrappedExitErr
+}
+
 type BackupError struct {
 	WrappedExitErr
 }
@@ -463,6 +471,10 @@ func exitCodesToError(err error) error {
 		return TAMRequiredError{WrappedExitErr{ExitError: exitError}}
 	case 99:
 		return TAMUnsupportedSuiteError{WrappedExitErr{ExitError: exitError}}
+	case 100:
+		return FileChangedWarning{WrappedExitErr{ExitError: exitError}}
+	case 101:
+		return IncludePatternNeverMatchedWarning{WrappedExitErr{ExitError: exitError}}
 	case 102:
 		return BackupError{WrappedExitErr{ExitError: exitError}}
 	case 103:
