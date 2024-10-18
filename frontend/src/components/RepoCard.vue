@@ -66,8 +66,8 @@ const cleanupFunctions: (() => void)[] = [];
 async function getRepo() {
   try {
     repo.value = await repoClient.GetByBackupId(backupId);
-    totalSize.value = toHumanReadableSize(repo.value.stats_total_size);
-    sizeOnDisk.value = toHumanReadableSize(repo.value.stats_unique_csize);
+    totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
+    sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
     failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
 
     lastArchive.value = await repoClient.GetLastArchiveByBackupId(backupId);

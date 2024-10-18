@@ -27,22 +27,22 @@ func (Repository) Fields() []ent.Field {
 		// Stats
 		field.Int("stats_total_chunks").
 			Default(0).
-			StructTag(`json:"stats_total_chunks"`),
+			StructTag(`json:"statsTotalChunks"`),
 		field.Int("stats_total_size").
 			Default(0).
-			StructTag(`json:"stats_total_size"`),
+			StructTag(`json:"statsTotalSize"`),
 		field.Int("stats_total_csize").
 			Default(0).
-			StructTag(`json:"stats_total_csize"`),
+			StructTag(`json:"statsTotalCsize"`),
 		field.Int("stats_total_unique_chunks").
 			Default(0).
-			StructTag(`json:"stats_total_unique_chunks"`),
+			StructTag(`json:"statsTotalUniqueChunks"`),
 		field.Int("stats_unique_size").
 			Default(0).
-			StructTag(`json:"stats_unique_size"`),
+			StructTag(`json:"statsUniqueSize"`),
 		field.Int("stats_unique_csize").
 			Default(0).
-			StructTag(`json:"stats_unique_csize"`),
+			StructTag(`json:"statsUniqueCsize"`),
 	}
 }
 

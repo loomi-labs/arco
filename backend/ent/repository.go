@@ -23,17 +23,17 @@ type Repository struct {
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
 	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
-	StatsTotalChunks int `json:"stats_total_chunks"`
+	StatsTotalChunks int `json:"statsTotalChunks"`
 	// StatsTotalSize holds the value of the "stats_total_size" field.
-	StatsTotalSize int `json:"stats_total_size"`
+	StatsTotalSize int `json:"statsTotalSize"`
 	// StatsTotalCsize holds the value of the "stats_total_csize" field.
-	StatsTotalCsize int `json:"stats_total_csize"`
+	StatsTotalCsize int `json:"statsTotalCsize"`
 	// StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
-	StatsTotalUniqueChunks int `json:"stats_total_unique_chunks"`
+	StatsTotalUniqueChunks int `json:"statsTotalUniqueChunks"`
 	// StatsUniqueSize holds the value of the "stats_unique_size" field.
-	StatsUniqueSize int `json:"stats_unique_size"`
+	StatsUniqueSize int `json:"statsUniqueSize"`
 	// StatsUniqueCsize holds the value of the "stats_unique_csize" field.
-	StatsUniqueCsize int `json:"stats_unique_csize"`
+	StatsUniqueCsize int `json:"statsUniqueCsize"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
 	Edges        RepositoryEdges `json:"edges"`
