@@ -7,10 +7,12 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"errors"
 	"fmt"
+	"github.com/eminarican/safetypes"
 	"time"
 )
 
@@ -182,12 +184,18 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 			return PruneResultCanceled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			err = fmt.Errorf("repository is locked")
-			// TODO: save failed prune job
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
 			b.state.SetPruneError(b.ctx, bId, err, false, true)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
 			return PruneResultError, err
 		} else {
-			// TODO: save failed prune job
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
 			b.state.SetPruneError(b.ctx, bId, err, true, false)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
 			return PruneResultError, err
@@ -197,8 +205,6 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 		case pruneResult := <-resultCh:
 			// Prune job completed successfully
 			defer b.state.SetPruneCompleted(b.ctx, bId, pruneResult)
-
-			// TODO: delete failed prune job
 
 			err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 			if err != nil {

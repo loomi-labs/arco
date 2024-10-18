@@ -8,11 +8,12 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
 	"errors"
 	"fmt"
+	"github.com/eminarican/safetypes"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"math/rand"
 	"os"
@@ -359,6 +360,40 @@ func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.Ba
 	return b.state.GetCombinedBackupProgress(bIds)
 }
 
+func (b *BackupClient) GetLastBackupErrorMsg(bId types.BackupId) (string, error) {
+	// Get the last notification for the backup profile and repository
+	lastNotification, err := b.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(b.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := b.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(b.ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
+}
+
 /***********************************/
 /********** Backup Schedule ********/
 /***********************************/
@@ -464,29 +499,15 @@ func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password s
 	return err
 }
 
-func (b *BackupClient) deleteFailedBackupRun(bId types.BackupId) error {
-	_, err := b.db.FailedBackupRun.
-		Delete().
-		Where(failedbackuprun.And(
-			failedbackuprun.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-		)).
-		Exec(b.ctx)
-	return err
-}
-
-func (b *BackupClient) saveFailedBackupRun(bId types.BackupId, backupErr error) error {
-	err := b.deleteFailedBackupRun(bId)
-	if err != nil {
-		return err
-	}
-	_, err = b.db.FailedBackupRun.
+func (b *BackupClient) saveDbNotification(backupId types.BackupId, message string, notificationType notification.Type, action safetypes.Option[notification.Action]) error {
+	return b.db.Notification.
 		Create().
-		SetRepositoryID(bId.RepositoryId).
-		SetBackupProfileID(bId.BackupProfileId).
-		SetError(backupErr.Error()).
-		Save(b.ctx)
-	return err
+		SetMessage(message).
+		SetType(notificationType).
+		SetBackupProfileID(backupId.BackupProfileId).
+		SetRepositoryID(backupId.RepositoryId).
+		SetNillableAction(action.Value).
+		Exec(b.ctx)
 }
 
 /***********************************/
@@ -536,17 +557,17 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			return BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
 			err = fmt.Errorf("repository is locked")
-			saveErr := b.saveFailedBackupRun(bId, err)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
-				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
 			b.state.SetBackupError(b.ctx, bId, err, false, true)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
 			return BackupResultError, err
 		} else {
-			saveErr := b.saveFailedBackupRun(bId, err)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
 			if saveErr != nil {
-				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
 			b.state.SetBackupError(b.ctx, bId, err, true, false)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
@@ -555,11 +576,6 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 	} else {
 		// Backup completed successfully
 		defer b.state.SetBackupCompleted(b.ctx, bId, true)
-
-		err = b.deleteFailedBackupRun(bId)
-		if err != nil {
-			b.log.Error(fmt.Sprintf("Failed to delete failed backup run: %s", err))
-		}
 
 		err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 		if err != nil {
