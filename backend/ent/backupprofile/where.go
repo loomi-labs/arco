@@ -349,29 +349,6 @@ func HasBackupScheduleWith(preds ...predicate.BackupSchedule) predicate.BackupPr
 	})
 }
 
-// HasFailedBackupRuns applies the HasEdge predicate on the "failed_backup_runs" edge.
-func HasFailedBackupRuns() predicate.BackupProfile {
-	return predicate.BackupProfile(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasFailedBackupRunsWith applies the HasEdge predicate on the "failed_backup_runs" edge with a given conditions (other predicates).
-func HasFailedBackupRunsWith(preds ...predicate.FailedBackupRun) predicate.BackupProfile {
-	return predicate.BackupProfile(func(s *sql.Selector) {
-		step := newFailedBackupRunsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasPruningRule applies the HasEdge predicate on the "pruning_rule" edge.
 func HasPruningRule() predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
@@ -387,6 +364,29 @@ func HasPruningRule() predicate.BackupProfile {
 func HasPruningRuleWith(preds ...predicate.PruningRule) predicate.BackupProfile {
 	return predicate.BackupProfile(func(s *sql.Selector) {
 		step := newPruningRuleStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNotifications applies the HasEdge predicate on the "notifications" edge.
+func HasNotifications() predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNotificationsWith applies the HasEdge predicate on the "notifications" edge with a given conditions (other predicates).
+func HasNotificationsWith(preds ...predicate.Notification) predicate.BackupProfile {
+	return predicate.BackupProfile(func(s *sql.Selector) {
+		step := newNotificationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

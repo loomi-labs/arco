@@ -580,21 +580,21 @@ func HasArchivesWith(preds ...predicate.Archive) predicate.Repository {
 	})
 }
 
-// HasFailedBackupRuns applies the HasEdge predicate on the "failed_backup_runs" edge.
-func HasFailedBackupRuns() predicate.Repository {
+// HasNotifications applies the HasEdge predicate on the "notifications" edge.
+func HasNotifications() predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasFailedBackupRunsWith applies the HasEdge predicate on the "failed_backup_runs" edge with a given conditions (other predicates).
-func HasFailedBackupRunsWith(preds ...predicate.FailedBackupRun) predicate.Repository {
+// HasNotificationsWith applies the HasEdge predicate on the "notifications" edge with a given conditions (other predicates).
+func HasNotificationsWith(preds ...predicate.Notification) predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
-		step := newFailedBackupRunsStep()
+		step := newNotificationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

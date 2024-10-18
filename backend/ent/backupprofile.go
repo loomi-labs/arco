@@ -46,10 +46,10 @@ type BackupProfileEdges struct {
 	Archives []*Archive `json:"archives,omitempty"`
 	// BackupSchedule holds the value of the backup_schedule edge.
 	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
-	// FailedBackupRuns holds the value of the failed_backup_runs edge.
-	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
 	// PruningRule holds the value of the pruning_rule edge.
 	PruningRule *PruningRule `json:"pruningRule,omitempty"`
+	// Notifications holds the value of the notifications edge.
+	Notifications []*Notification `json:"notifications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [5]bool
@@ -84,24 +84,24 @@ func (e BackupProfileEdges) BackupScheduleOrErr() (*BackupSchedule, error) {
 	return nil, &NotLoadedError{edge: "backup_schedule"}
 }
 
-// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
-// was not loaded in eager-loading.
-func (e BackupProfileEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
-	if e.loadedTypes[3] {
-		return e.FailedBackupRuns, nil
-	}
-	return nil, &NotLoadedError{edge: "failed_backup_runs"}
-}
-
 // PruningRuleOrErr returns the PruningRule value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e BackupProfileEdges) PruningRuleOrErr() (*PruningRule, error) {
 	if e.PruningRule != nil {
 		return e.PruningRule, nil
-	} else if e.loadedTypes[4] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: pruningrule.Label}
 	}
 	return nil, &NotLoadedError{edge: "pruning_rule"}
+}
+
+// NotificationsOrErr returns the Notifications value or an error if the edge
+// was not loaded in eager-loading.
+func (e BackupProfileEdges) NotificationsOrErr() ([]*Notification, error) {
+	if e.loadedTypes[4] {
+		return e.Notifications, nil
+	}
+	return nil, &NotLoadedError{edge: "notifications"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -207,14 +207,14 @@ func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
 	return NewBackupProfileClient(bp.config).QueryBackupSchedule(bp)
 }
 
-// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryFailedBackupRuns() *FailedBackupRunQuery {
-	return NewBackupProfileClient(bp.config).QueryFailedBackupRuns(bp)
-}
-
 // QueryPruningRule queries the "pruning_rule" edge of the BackupProfile entity.
 func (bp *BackupProfile) QueryPruningRule() *PruningRuleQuery {
 	return NewBackupProfileClient(bp.config).QueryPruningRule(bp)
+}
+
+// QueryNotifications queries the "notifications" edge of the BackupProfile entity.
+func (bp *BackupProfile) QueryNotifications() *NotificationQuery {
+	return NewBackupProfileClient(bp.config).QueryNotifications(bp)
 }
 
 // Update returns a builder for updating this BackupProfile.

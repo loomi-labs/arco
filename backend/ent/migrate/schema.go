@@ -96,37 +96,34 @@ var (
 			},
 		},
 	}
-	// FailedBackupRunsColumns holds the columns for the "failed_backup_runs" table.
-	FailedBackupRunsColumns = []*schema.Column{
+	// NotificationsColumns holds the columns for the "notifications" table.
+	NotificationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "error", Type: field.TypeString},
-		{Name: "failed_backup_run_backup_profile", Type: field.TypeInt},
-		{Name: "failed_backup_run_repository", Type: field.TypeInt},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "message", Type: field.TypeString},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run"}},
+		{Name: "seen", Type: field.TypeBool, Default: false},
+		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
+		{Name: "notification_backup_profile", Type: field.TypeInt},
+		{Name: "notification_repository", Type: field.TypeInt},
 	}
-	// FailedBackupRunsTable holds the schema information for the "failed_backup_runs" table.
-	FailedBackupRunsTable = &schema.Table{
-		Name:       "failed_backup_runs",
-		Columns:    FailedBackupRunsColumns,
-		PrimaryKey: []*schema.Column{FailedBackupRunsColumns[0]},
+	// NotificationsTable holds the schema information for the "notifications" table.
+	NotificationsTable = &schema.Table{
+		Name:       "notifications",
+		Columns:    NotificationsColumns,
+		PrimaryKey: []*schema.Column{NotificationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "failed_backup_runs_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{FailedBackupRunsColumns[2]},
+				Symbol:     "notifications_backup_profiles_backup_profile",
+				Columns:    []*schema.Column{NotificationsColumns[6]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "failed_backup_runs_repositories_repository",
-				Columns:    []*schema.Column{FailedBackupRunsColumns[3]},
+				Symbol:     "notifications_repositories_repository",
+				Columns:    []*schema.Column{NotificationsColumns[7]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "failedbackuprun_failed_backup_run_backup_profile_failed_backup_run_repository",
-				Unique:  true,
-				Columns: []*schema.Column{FailedBackupRunsColumns[2], FailedBackupRunsColumns[3]},
 			},
 		},
 	}
@@ -219,7 +216,7 @@ var (
 		ArchivesTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
-		FailedBackupRunsTable,
+		NotificationsTable,
 		PruningRulesTable,
 		RepositoriesTable,
 		SettingsTable,
@@ -232,8 +229,8 @@ func init() {
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
 	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
-	FailedBackupRunsTable.ForeignKeys[0].RefTable = BackupProfilesTable
-	FailedBackupRunsTable.ForeignKeys[1].RefTable = RepositoriesTable
+	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable
 	PruningRulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable

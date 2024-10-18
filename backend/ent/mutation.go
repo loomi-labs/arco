@@ -6,7 +6,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
@@ -30,13 +30,13 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArchive         = "Archive"
-	TypeBackupProfile   = "BackupProfile"
-	TypeBackupSchedule  = "BackupSchedule"
-	TypeFailedBackupRun = "FailedBackupRun"
-	TypePruningRule     = "PruningRule"
-	TypeRepository      = "Repository"
-	TypeSettings        = "Settings"
+	TypeArchive        = "Archive"
+	TypeBackupProfile  = "BackupProfile"
+	TypeBackupSchedule = "BackupSchedule"
+	TypeNotification   = "Notification"
+	TypePruningRule    = "PruningRule"
+	TypeRepository     = "Repository"
+	TypeSettings       = "Settings"
 )
 
 // ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
@@ -662,34 +662,34 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 // BackupProfileMutation represents an operation that mutates the BackupProfile nodes in the graph.
 type BackupProfileMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *int
-	name                      *string
-	prefix                    *string
-	backup_paths              *[]string
-	appendbackup_paths        []string
-	exclude_paths             *[]string
-	appendexclude_paths       []string
-	icon                      *backupprofile.Icon
-	next_integrity_check      *time.Time
-	clearedFields             map[string]struct{}
-	repositories              map[int]struct{}
-	removedrepositories       map[int]struct{}
-	clearedrepositories       bool
-	archives                  map[int]struct{}
-	removedarchives           map[int]struct{}
-	clearedarchives           bool
-	backup_schedule           *int
-	clearedbackup_schedule    bool
-	failed_backup_runs        map[int]struct{}
-	removedfailed_backup_runs map[int]struct{}
-	clearedfailed_backup_runs bool
-	pruning_rule              *int
-	clearedpruning_rule       bool
-	done                      bool
-	oldValue                  func(context.Context) (*BackupProfile, error)
-	predicates                []predicate.BackupProfile
+	op                     Op
+	typ                    string
+	id                     *int
+	name                   *string
+	prefix                 *string
+	backup_paths           *[]string
+	appendbackup_paths     []string
+	exclude_paths          *[]string
+	appendexclude_paths    []string
+	icon                   *backupprofile.Icon
+	next_integrity_check   *time.Time
+	clearedFields          map[string]struct{}
+	repositories           map[int]struct{}
+	removedrepositories    map[int]struct{}
+	clearedrepositories    bool
+	archives               map[int]struct{}
+	removedarchives        map[int]struct{}
+	clearedarchives        bool
+	backup_schedule        *int
+	clearedbackup_schedule bool
+	pruning_rule           *int
+	clearedpruning_rule    bool
+	notifications          map[int]struct{}
+	removednotifications   map[int]struct{}
+	clearednotifications   bool
+	done                   bool
+	oldValue               func(context.Context) (*BackupProfile, error)
+	predicates             []predicate.BackupProfile
 }
 
 var _ ent.Mutation = (*BackupProfileMutation)(nil)
@@ -1216,60 +1216,6 @@ func (m *BackupProfileMutation) ResetBackupSchedule() {
 	m.clearedbackup_schedule = false
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
-func (m *BackupProfileMutation) AddFailedBackupRunIDs(ids ...int) {
-	if m.failed_backup_runs == nil {
-		m.failed_backup_runs = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.failed_backup_runs[ids[i]] = struct{}{}
-	}
-}
-
-// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
-func (m *BackupProfileMutation) ClearFailedBackupRuns() {
-	m.clearedfailed_backup_runs = true
-}
-
-// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
-func (m *BackupProfileMutation) FailedBackupRunsCleared() bool {
-	return m.clearedfailed_backup_runs
-}
-
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (m *BackupProfileMutation) RemoveFailedBackupRunIDs(ids ...int) {
-	if m.removedfailed_backup_runs == nil {
-		m.removedfailed_backup_runs = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.failed_backup_runs, ids[i])
-		m.removedfailed_backup_runs[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
-func (m *BackupProfileMutation) RemovedFailedBackupRunsIDs() (ids []int) {
-	for id := range m.removedfailed_backup_runs {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
-func (m *BackupProfileMutation) FailedBackupRunsIDs() (ids []int) {
-	for id := range m.failed_backup_runs {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
-func (m *BackupProfileMutation) ResetFailedBackupRuns() {
-	m.failed_backup_runs = nil
-	m.clearedfailed_backup_runs = false
-	m.removedfailed_backup_runs = nil
-}
-
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by id.
 func (m *BackupProfileMutation) SetPruningRuleID(id int) {
 	m.pruning_rule = &id
@@ -1307,6 +1253,60 @@ func (m *BackupProfileMutation) PruningRuleIDs() (ids []int) {
 func (m *BackupProfileMutation) ResetPruningRule() {
 	m.pruning_rule = nil
 	m.clearedpruning_rule = false
+}
+
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by ids.
+func (m *BackupProfileMutation) AddNotificationIDs(ids ...int) {
+	if m.notifications == nil {
+		m.notifications = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.notifications[ids[i]] = struct{}{}
+	}
+}
+
+// ClearNotifications clears the "notifications" edge to the Notification entity.
+func (m *BackupProfileMutation) ClearNotifications() {
+	m.clearednotifications = true
+}
+
+// NotificationsCleared reports if the "notifications" edge to the Notification entity was cleared.
+func (m *BackupProfileMutation) NotificationsCleared() bool {
+	return m.clearednotifications
+}
+
+// RemoveNotificationIDs removes the "notifications" edge to the Notification entity by IDs.
+func (m *BackupProfileMutation) RemoveNotificationIDs(ids ...int) {
+	if m.removednotifications == nil {
+		m.removednotifications = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.notifications, ids[i])
+		m.removednotifications[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNotifications returns the removed IDs of the "notifications" edge to the Notification entity.
+func (m *BackupProfileMutation) RemovedNotificationsIDs() (ids []int) {
+	for id := range m.removednotifications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NotificationsIDs returns the "notifications" edge IDs in the mutation.
+func (m *BackupProfileMutation) NotificationsIDs() (ids []int) {
+	for id := range m.notifications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNotifications resets all changes to the "notifications" edge.
+func (m *BackupProfileMutation) ResetNotifications() {
+	m.notifications = nil
+	m.clearednotifications = false
+	m.removednotifications = nil
 }
 
 // Where appends a list predicates to the BackupProfileMutation builder.
@@ -1552,11 +1552,11 @@ func (m *BackupProfileMutation) AddedEdges() []string {
 	if m.backup_schedule != nil {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
 	}
-	if m.failed_backup_runs != nil {
-		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
-	}
 	if m.pruning_rule != nil {
 		edges = append(edges, backupprofile.EdgePruningRule)
+	}
+	if m.notifications != nil {
+		edges = append(edges, backupprofile.EdgeNotifications)
 	}
 	return edges
 }
@@ -1581,16 +1581,16 @@ func (m *BackupProfileMutation) AddedIDs(name string) []ent.Value {
 		if id := m.backup_schedule; id != nil {
 			return []ent.Value{*id}
 		}
-	case backupprofile.EdgeFailedBackupRuns:
-		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
-		for id := range m.failed_backup_runs {
-			ids = append(ids, id)
-		}
-		return ids
 	case backupprofile.EdgePruningRule:
 		if id := m.pruning_rule; id != nil {
 			return []ent.Value{*id}
 		}
+	case backupprofile.EdgeNotifications:
+		ids := make([]ent.Value, 0, len(m.notifications))
+		for id := range m.notifications {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
@@ -1604,8 +1604,8 @@ func (m *BackupProfileMutation) RemovedEdges() []string {
 	if m.removedarchives != nil {
 		edges = append(edges, backupprofile.EdgeArchives)
 	}
-	if m.removedfailed_backup_runs != nil {
-		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
+	if m.removednotifications != nil {
+		edges = append(edges, backupprofile.EdgeNotifications)
 	}
 	return edges
 }
@@ -1626,9 +1626,9 @@ func (m *BackupProfileMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case backupprofile.EdgeFailedBackupRuns:
-		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
-		for id := range m.removedfailed_backup_runs {
+	case backupprofile.EdgeNotifications:
+		ids := make([]ent.Value, 0, len(m.removednotifications))
+		for id := range m.removednotifications {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1648,11 +1648,11 @@ func (m *BackupProfileMutation) ClearedEdges() []string {
 	if m.clearedbackup_schedule {
 		edges = append(edges, backupprofile.EdgeBackupSchedule)
 	}
-	if m.clearedfailed_backup_runs {
-		edges = append(edges, backupprofile.EdgeFailedBackupRuns)
-	}
 	if m.clearedpruning_rule {
 		edges = append(edges, backupprofile.EdgePruningRule)
+	}
+	if m.clearednotifications {
+		edges = append(edges, backupprofile.EdgeNotifications)
 	}
 	return edges
 }
@@ -1667,10 +1667,10 @@ func (m *BackupProfileMutation) EdgeCleared(name string) bool {
 		return m.clearedarchives
 	case backupprofile.EdgeBackupSchedule:
 		return m.clearedbackup_schedule
-	case backupprofile.EdgeFailedBackupRuns:
-		return m.clearedfailed_backup_runs
 	case backupprofile.EdgePruningRule:
 		return m.clearedpruning_rule
+	case backupprofile.EdgeNotifications:
+		return m.clearednotifications
 	}
 	return false
 }
@@ -1702,11 +1702,11 @@ func (m *BackupProfileMutation) ResetEdge(name string) error {
 	case backupprofile.EdgeBackupSchedule:
 		m.ResetBackupSchedule()
 		return nil
-	case backupprofile.EdgeFailedBackupRuns:
-		m.ResetFailedBackupRuns()
-		return nil
 	case backupprofile.EdgePruningRule:
 		m.ResetPruningRule()
+		return nil
+	case backupprofile.EdgeNotifications:
+		m.ResetNotifications()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile edge %s", name)
@@ -2729,34 +2729,38 @@ func (m *BackupScheduleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown BackupSchedule edge %s", name)
 }
 
-// FailedBackupRunMutation represents an operation that mutates the FailedBackupRun nodes in the graph.
-type FailedBackupRunMutation struct {
+// NotificationMutation represents an operation that mutates the Notification nodes in the graph.
+type NotificationMutation struct {
 	config
 	op                    Op
 	typ                   string
 	id                    *int
-	error                 *string
+	created_at            *time.Time
+	message               *string
+	_type                 *notification.Type
+	seen                  *bool
+	action                *notification.Action
 	clearedFields         map[string]struct{}
 	backup_profile        *int
 	clearedbackup_profile bool
 	repository            *int
 	clearedrepository     bool
 	done                  bool
-	oldValue              func(context.Context) (*FailedBackupRun, error)
-	predicates            []predicate.FailedBackupRun
+	oldValue              func(context.Context) (*Notification, error)
+	predicates            []predicate.Notification
 }
 
-var _ ent.Mutation = (*FailedBackupRunMutation)(nil)
+var _ ent.Mutation = (*NotificationMutation)(nil)
 
-// failedbackuprunOption allows management of the mutation configuration using functional options.
-type failedbackuprunOption func(*FailedBackupRunMutation)
+// notificationOption allows management of the mutation configuration using functional options.
+type notificationOption func(*NotificationMutation)
 
-// newFailedBackupRunMutation creates new mutation for the FailedBackupRun entity.
-func newFailedBackupRunMutation(c config, op Op, opts ...failedbackuprunOption) *FailedBackupRunMutation {
-	m := &FailedBackupRunMutation{
+// newNotificationMutation creates new mutation for the Notification entity.
+func newNotificationMutation(c config, op Op, opts ...notificationOption) *NotificationMutation {
+	m := &NotificationMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeFailedBackupRun,
+		typ:           TypeNotification,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -2765,20 +2769,20 @@ func newFailedBackupRunMutation(c config, op Op, opts ...failedbackuprunOption) 
 	return m
 }
 
-// withFailedBackupRunID sets the ID field of the mutation.
-func withFailedBackupRunID(id int) failedbackuprunOption {
-	return func(m *FailedBackupRunMutation) {
+// withNotificationID sets the ID field of the mutation.
+func withNotificationID(id int) notificationOption {
+	return func(m *NotificationMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *FailedBackupRun
+			value *Notification
 		)
-		m.oldValue = func(ctx context.Context) (*FailedBackupRun, error) {
+		m.oldValue = func(ctx context.Context) (*Notification, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().FailedBackupRun.Get(ctx, id)
+					value, err = m.Client().Notification.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -2787,10 +2791,10 @@ func withFailedBackupRunID(id int) failedbackuprunOption {
 	}
 }
 
-// withFailedBackupRun sets the old FailedBackupRun of the mutation.
-func withFailedBackupRun(node *FailedBackupRun) failedbackuprunOption {
-	return func(m *FailedBackupRunMutation) {
-		m.oldValue = func(context.Context) (*FailedBackupRun, error) {
+// withNotification sets the old Notification of the mutation.
+func withNotification(node *Notification) notificationOption {
+	return func(m *NotificationMutation) {
+		m.oldValue = func(context.Context) (*Notification, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -2799,7 +2803,7 @@ func withFailedBackupRun(node *FailedBackupRun) failedbackuprunOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m FailedBackupRunMutation) Client() *Client {
+func (m NotificationMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -2807,7 +2811,7 @@ func (m FailedBackupRunMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m FailedBackupRunMutation) Tx() (*Tx, error) {
+func (m NotificationMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -2816,9 +2820,15 @@ func (m FailedBackupRunMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Notification entities.
+func (m *NotificationMutation) SetID(id int) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *FailedBackupRunMutation) ID() (id int, exists bool) {
+func (m *NotificationMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -2829,7 +2839,7 @@ func (m *FailedBackupRunMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *FailedBackupRunMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *NotificationMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -2838,65 +2848,222 @@ func (m *FailedBackupRunMutation) IDs(ctx context.Context) ([]int, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().FailedBackupRun.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().Notification.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
-// SetError sets the "error" field.
-func (m *FailedBackupRunMutation) SetError(s string) {
-	m.error = &s
+// SetCreatedAt sets the "created_at" field.
+func (m *NotificationMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
 }
 
-// Error returns the value of the "error" field in the mutation.
-func (m *FailedBackupRunMutation) Error() (r string, exists bool) {
-	v := m.error
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *NotificationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldError returns the old "error" field's value of the FailedBackupRun entity.
-// If the FailedBackupRun object wasn't provided to the builder, the object is fetched from the database.
+// OldCreatedAt returns the old "created_at" field's value of the Notification entity.
+// If the Notification object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FailedBackupRunMutation) OldError(ctx context.Context) (v string, err error) {
+func (m *NotificationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldError is only allowed on UpdateOne operations")
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldError requires an ID field in the mutation")
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldError: %w", err)
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
 	}
-	return oldValue.Error, nil
+	return oldValue.CreatedAt, nil
 }
 
-// ResetError resets all changes to the "error" field.
-func (m *FailedBackupRunMutation) ResetError() {
-	m.error = nil
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *NotificationMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetMessage sets the "message" field.
+func (m *NotificationMutation) SetMessage(s string) {
+	m.message = &s
+}
+
+// Message returns the value of the "message" field in the mutation.
+func (m *NotificationMutation) Message() (r string, exists bool) {
+	v := m.message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessage returns the old "message" field's value of the Notification entity.
+// If the Notification object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationMutation) OldMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessage: %w", err)
+	}
+	return oldValue.Message, nil
+}
+
+// ResetMessage resets all changes to the "message" field.
+func (m *NotificationMutation) ResetMessage() {
+	m.message = nil
+}
+
+// SetType sets the "type" field.
+func (m *NotificationMutation) SetType(n notification.Type) {
+	m._type = &n
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *NotificationMutation) GetType() (r notification.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the Notification entity.
+// If the Notification object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationMutation) OldType(ctx context.Context) (v notification.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *NotificationMutation) ResetType() {
+	m._type = nil
+}
+
+// SetSeen sets the "seen" field.
+func (m *NotificationMutation) SetSeen(b bool) {
+	m.seen = &b
+}
+
+// Seen returns the value of the "seen" field in the mutation.
+func (m *NotificationMutation) Seen() (r bool, exists bool) {
+	v := m.seen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeen returns the old "seen" field's value of the Notification entity.
+// If the Notification object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationMutation) OldSeen(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeen is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeen requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeen: %w", err)
+	}
+	return oldValue.Seen, nil
+}
+
+// ResetSeen resets all changes to the "seen" field.
+func (m *NotificationMutation) ResetSeen() {
+	m.seen = nil
+}
+
+// SetAction sets the "action" field.
+func (m *NotificationMutation) SetAction(n notification.Action) {
+	m.action = &n
+}
+
+// Action returns the value of the "action" field in the mutation.
+func (m *NotificationMutation) Action() (r notification.Action, exists bool) {
+	v := m.action
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAction returns the old "action" field's value of the Notification entity.
+// If the Notification object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NotificationMutation) OldAction(ctx context.Context) (v notification.Action, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAction is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAction requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAction: %w", err)
+	}
+	return oldValue.Action, nil
+}
+
+// ClearAction clears the value of the "action" field.
+func (m *NotificationMutation) ClearAction() {
+	m.action = nil
+	m.clearedFields[notification.FieldAction] = struct{}{}
+}
+
+// ActionCleared returns if the "action" field was cleared in this mutation.
+func (m *NotificationMutation) ActionCleared() bool {
+	_, ok := m.clearedFields[notification.FieldAction]
+	return ok
+}
+
+// ResetAction resets all changes to the "action" field.
+func (m *NotificationMutation) ResetAction() {
+	m.action = nil
+	delete(m.clearedFields, notification.FieldAction)
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by id.
-func (m *FailedBackupRunMutation) SetBackupProfileID(id int) {
+func (m *NotificationMutation) SetBackupProfileID(id int) {
 	m.backup_profile = &id
 }
 
 // ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
-func (m *FailedBackupRunMutation) ClearBackupProfile() {
+func (m *NotificationMutation) ClearBackupProfile() {
 	m.clearedbackup_profile = true
 }
 
 // BackupProfileCleared reports if the "backup_profile" edge to the BackupProfile entity was cleared.
-func (m *FailedBackupRunMutation) BackupProfileCleared() bool {
+func (m *NotificationMutation) BackupProfileCleared() bool {
 	return m.clearedbackup_profile
 }
 
 // BackupProfileID returns the "backup_profile" edge ID in the mutation.
-func (m *FailedBackupRunMutation) BackupProfileID() (id int, exists bool) {
+func (m *NotificationMutation) BackupProfileID() (id int, exists bool) {
 	if m.backup_profile != nil {
 		return *m.backup_profile, true
 	}
@@ -2906,7 +3073,7 @@ func (m *FailedBackupRunMutation) BackupProfileID() (id int, exists bool) {
 // BackupProfileIDs returns the "backup_profile" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // BackupProfileID instead. It exists only for internal usage by the builders.
-func (m *FailedBackupRunMutation) BackupProfileIDs() (ids []int) {
+func (m *NotificationMutation) BackupProfileIDs() (ids []int) {
 	if id := m.backup_profile; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2914,28 +3081,28 @@ func (m *FailedBackupRunMutation) BackupProfileIDs() (ids []int) {
 }
 
 // ResetBackupProfile resets all changes to the "backup_profile" edge.
-func (m *FailedBackupRunMutation) ResetBackupProfile() {
+func (m *NotificationMutation) ResetBackupProfile() {
 	m.backup_profile = nil
 	m.clearedbackup_profile = false
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by id.
-func (m *FailedBackupRunMutation) SetRepositoryID(id int) {
+func (m *NotificationMutation) SetRepositoryID(id int) {
 	m.repository = &id
 }
 
 // ClearRepository clears the "repository" edge to the Repository entity.
-func (m *FailedBackupRunMutation) ClearRepository() {
+func (m *NotificationMutation) ClearRepository() {
 	m.clearedrepository = true
 }
 
 // RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
-func (m *FailedBackupRunMutation) RepositoryCleared() bool {
+func (m *NotificationMutation) RepositoryCleared() bool {
 	return m.clearedrepository
 }
 
 // RepositoryID returns the "repository" edge ID in the mutation.
-func (m *FailedBackupRunMutation) RepositoryID() (id int, exists bool) {
+func (m *NotificationMutation) RepositoryID() (id int, exists bool) {
 	if m.repository != nil {
 		return *m.repository, true
 	}
@@ -2945,7 +3112,7 @@ func (m *FailedBackupRunMutation) RepositoryID() (id int, exists bool) {
 // RepositoryIDs returns the "repository" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // RepositoryID instead. It exists only for internal usage by the builders.
-func (m *FailedBackupRunMutation) RepositoryIDs() (ids []int) {
+func (m *NotificationMutation) RepositoryIDs() (ids []int) {
 	if id := m.repository; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2953,20 +3120,20 @@ func (m *FailedBackupRunMutation) RepositoryIDs() (ids []int) {
 }
 
 // ResetRepository resets all changes to the "repository" edge.
-func (m *FailedBackupRunMutation) ResetRepository() {
+func (m *NotificationMutation) ResetRepository() {
 	m.repository = nil
 	m.clearedrepository = false
 }
 
-// Where appends a list predicates to the FailedBackupRunMutation builder.
-func (m *FailedBackupRunMutation) Where(ps ...predicate.FailedBackupRun) {
+// Where appends a list predicates to the NotificationMutation builder.
+func (m *NotificationMutation) Where(ps ...predicate.Notification) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the FailedBackupRunMutation builder. Using this method,
+// WhereP appends storage-level predicates to the NotificationMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *FailedBackupRunMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.FailedBackupRun, len(ps))
+func (m *NotificationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Notification, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -2974,27 +3141,39 @@ func (m *FailedBackupRunMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *FailedBackupRunMutation) Op() Op {
+func (m *NotificationMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *FailedBackupRunMutation) SetOp(op Op) {
+func (m *NotificationMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (FailedBackupRun).
-func (m *FailedBackupRunMutation) Type() string {
+// Type returns the node type of this mutation (Notification).
+func (m *NotificationMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *FailedBackupRunMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.error != nil {
-		fields = append(fields, failedbackuprun.FieldError)
+func (m *NotificationMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.created_at != nil {
+		fields = append(fields, notification.FieldCreatedAt)
+	}
+	if m.message != nil {
+		fields = append(fields, notification.FieldMessage)
+	}
+	if m._type != nil {
+		fields = append(fields, notification.FieldType)
+	}
+	if m.seen != nil {
+		fields = append(fields, notification.FieldSeen)
+	}
+	if m.action != nil {
+		fields = append(fields, notification.FieldAction)
 	}
 	return fields
 }
@@ -3002,10 +3181,18 @@ func (m *FailedBackupRunMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *FailedBackupRunMutation) Field(name string) (ent.Value, bool) {
+func (m *NotificationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case failedbackuprun.FieldError:
-		return m.Error()
+	case notification.FieldCreatedAt:
+		return m.CreatedAt()
+	case notification.FieldMessage:
+		return m.Message()
+	case notification.FieldType:
+		return m.GetType()
+	case notification.FieldSeen:
+		return m.Seen()
+	case notification.FieldAction:
+		return m.Action()
 	}
 	return nil, false
 }
@@ -3013,103 +3200,160 @@ func (m *FailedBackupRunMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *FailedBackupRunMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *NotificationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case failedbackuprun.FieldError:
-		return m.OldError(ctx)
+	case notification.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case notification.FieldMessage:
+		return m.OldMessage(ctx)
+	case notification.FieldType:
+		return m.OldType(ctx)
+	case notification.FieldSeen:
+		return m.OldSeen(ctx)
+	case notification.FieldAction:
+		return m.OldAction(ctx)
 	}
-	return nil, fmt.Errorf("unknown FailedBackupRun field %s", name)
+	return nil, fmt.Errorf("unknown Notification field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *FailedBackupRunMutation) SetField(name string, value ent.Value) error {
+func (m *NotificationMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case failedbackuprun.FieldError:
+	case notification.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case notification.FieldMessage:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetError(v)
+		m.SetMessage(v)
+		return nil
+	case notification.FieldType:
+		v, ok := value.(notification.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case notification.FieldSeen:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeen(v)
+		return nil
+	case notification.FieldAction:
+		v, ok := value.(notification.Action)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAction(v)
 		return nil
 	}
-	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+	return fmt.Errorf("unknown Notification field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *FailedBackupRunMutation) AddedFields() []string {
+func (m *NotificationMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *FailedBackupRunMutation) AddedField(name string) (ent.Value, bool) {
+func (m *NotificationMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *FailedBackupRunMutation) AddField(name string, value ent.Value) error {
+func (m *NotificationMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown FailedBackupRun numeric field %s", name)
+	return fmt.Errorf("unknown Notification numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *FailedBackupRunMutation) ClearedFields() []string {
-	return nil
+func (m *NotificationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(notification.FieldAction) {
+		fields = append(fields, notification.FieldAction)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *FailedBackupRunMutation) FieldCleared(name string) bool {
+func (m *NotificationMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *FailedBackupRunMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown FailedBackupRun nullable field %s", name)
+func (m *NotificationMutation) ClearField(name string) error {
+	switch name {
+	case notification.FieldAction:
+		m.ClearAction()
+		return nil
+	}
+	return fmt.Errorf("unknown Notification nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *FailedBackupRunMutation) ResetField(name string) error {
+func (m *NotificationMutation) ResetField(name string) error {
 	switch name {
-	case failedbackuprun.FieldError:
-		m.ResetError()
+	case notification.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case notification.FieldMessage:
+		m.ResetMessage()
+		return nil
+	case notification.FieldType:
+		m.ResetType()
+		return nil
+	case notification.FieldSeen:
+		m.ResetSeen()
+		return nil
+	case notification.FieldAction:
+		m.ResetAction()
 		return nil
 	}
-	return fmt.Errorf("unknown FailedBackupRun field %s", name)
+	return fmt.Errorf("unknown Notification field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *FailedBackupRunMutation) AddedEdges() []string {
+func (m *NotificationMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.backup_profile != nil {
-		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+		edges = append(edges, notification.EdgeBackupProfile)
 	}
 	if m.repository != nil {
-		edges = append(edges, failedbackuprun.EdgeRepository)
+		edges = append(edges, notification.EdgeRepository)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *FailedBackupRunMutation) AddedIDs(name string) []ent.Value {
+func (m *NotificationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case failedbackuprun.EdgeBackupProfile:
+	case notification.EdgeBackupProfile:
 		if id := m.backup_profile; id != nil {
 			return []ent.Value{*id}
 		}
-	case failedbackuprun.EdgeRepository:
+	case notification.EdgeRepository:
 		if id := m.repository; id != nil {
 			return []ent.Value{*id}
 		}
@@ -3118,36 +3362,36 @@ func (m *FailedBackupRunMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *FailedBackupRunMutation) RemovedEdges() []string {
+func (m *NotificationMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *FailedBackupRunMutation) RemovedIDs(name string) []ent.Value {
+func (m *NotificationMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *FailedBackupRunMutation) ClearedEdges() []string {
+func (m *NotificationMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.clearedbackup_profile {
-		edges = append(edges, failedbackuprun.EdgeBackupProfile)
+		edges = append(edges, notification.EdgeBackupProfile)
 	}
 	if m.clearedrepository {
-		edges = append(edges, failedbackuprun.EdgeRepository)
+		edges = append(edges, notification.EdgeRepository)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *FailedBackupRunMutation) EdgeCleared(name string) bool {
+func (m *NotificationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case failedbackuprun.EdgeBackupProfile:
+	case notification.EdgeBackupProfile:
 		return m.clearedbackup_profile
-	case failedbackuprun.EdgeRepository:
+	case notification.EdgeRepository:
 		return m.clearedrepository
 	}
 	return false
@@ -3155,30 +3399,30 @@ func (m *FailedBackupRunMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *FailedBackupRunMutation) ClearEdge(name string) error {
+func (m *NotificationMutation) ClearEdge(name string) error {
 	switch name {
-	case failedbackuprun.EdgeBackupProfile:
+	case notification.EdgeBackupProfile:
 		m.ClearBackupProfile()
 		return nil
-	case failedbackuprun.EdgeRepository:
+	case notification.EdgeRepository:
 		m.ClearRepository()
 		return nil
 	}
-	return fmt.Errorf("unknown FailedBackupRun unique edge %s", name)
+	return fmt.Errorf("unknown Notification unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *FailedBackupRunMutation) ResetEdge(name string) error {
+func (m *NotificationMutation) ResetEdge(name string) error {
 	switch name {
-	case failedbackuprun.EdgeBackupProfile:
+	case notification.EdgeBackupProfile:
 		m.ResetBackupProfile()
 		return nil
-	case failedbackuprun.EdgeRepository:
+	case notification.EdgeRepository:
 		m.ResetRepository()
 		return nil
 	}
-	return fmt.Errorf("unknown FailedBackupRun edge %s", name)
+	return fmt.Errorf("unknown Notification edge %s", name)
 }
 
 // PruningRuleMutation represents an operation that mutates the PruningRule nodes in the graph.
@@ -4355,9 +4599,9 @@ type RepositoryMutation struct {
 	archives                     map[int]struct{}
 	removedarchives              map[int]struct{}
 	clearedarchives              bool
-	failed_backup_runs           map[int]struct{}
-	removedfailed_backup_runs    map[int]struct{}
-	clearedfailed_backup_runs    bool
+	notifications                map[int]struct{}
+	removednotifications         map[int]struct{}
+	clearednotifications         bool
 	done                         bool
 	oldValue                     func(context.Context) (*Repository, error)
 	predicates                   []predicate.Repository
@@ -5019,58 +5263,58 @@ func (m *RepositoryMutation) ResetArchives() {
 	m.removedarchives = nil
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by ids.
-func (m *RepositoryMutation) AddFailedBackupRunIDs(ids ...int) {
-	if m.failed_backup_runs == nil {
-		m.failed_backup_runs = make(map[int]struct{})
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by ids.
+func (m *RepositoryMutation) AddNotificationIDs(ids ...int) {
+	if m.notifications == nil {
+		m.notifications = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.failed_backup_runs[ids[i]] = struct{}{}
+		m.notifications[ids[i]] = struct{}{}
 	}
 }
 
-// ClearFailedBackupRuns clears the "failed_backup_runs" edge to the FailedBackupRun entity.
-func (m *RepositoryMutation) ClearFailedBackupRuns() {
-	m.clearedfailed_backup_runs = true
+// ClearNotifications clears the "notifications" edge to the Notification entity.
+func (m *RepositoryMutation) ClearNotifications() {
+	m.clearednotifications = true
 }
 
-// FailedBackupRunsCleared reports if the "failed_backup_runs" edge to the FailedBackupRun entity was cleared.
-func (m *RepositoryMutation) FailedBackupRunsCleared() bool {
-	return m.clearedfailed_backup_runs
+// NotificationsCleared reports if the "notifications" edge to the Notification entity was cleared.
+func (m *RepositoryMutation) NotificationsCleared() bool {
+	return m.clearednotifications
 }
 
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (m *RepositoryMutation) RemoveFailedBackupRunIDs(ids ...int) {
-	if m.removedfailed_backup_runs == nil {
-		m.removedfailed_backup_runs = make(map[int]struct{})
+// RemoveNotificationIDs removes the "notifications" edge to the Notification entity by IDs.
+func (m *RepositoryMutation) RemoveNotificationIDs(ids ...int) {
+	if m.removednotifications == nil {
+		m.removednotifications = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.failed_backup_runs, ids[i])
-		m.removedfailed_backup_runs[ids[i]] = struct{}{}
+		delete(m.notifications, ids[i])
+		m.removednotifications[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedFailedBackupRuns returns the removed IDs of the "failed_backup_runs" edge to the FailedBackupRun entity.
-func (m *RepositoryMutation) RemovedFailedBackupRunsIDs() (ids []int) {
-	for id := range m.removedfailed_backup_runs {
+// RemovedNotifications returns the removed IDs of the "notifications" edge to the Notification entity.
+func (m *RepositoryMutation) RemovedNotificationsIDs() (ids []int) {
+	for id := range m.removednotifications {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// FailedBackupRunsIDs returns the "failed_backup_runs" edge IDs in the mutation.
-func (m *RepositoryMutation) FailedBackupRunsIDs() (ids []int) {
-	for id := range m.failed_backup_runs {
+// NotificationsIDs returns the "notifications" edge IDs in the mutation.
+func (m *RepositoryMutation) NotificationsIDs() (ids []int) {
+	for id := range m.notifications {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetFailedBackupRuns resets all changes to the "failed_backup_runs" edge.
-func (m *RepositoryMutation) ResetFailedBackupRuns() {
-	m.failed_backup_runs = nil
-	m.clearedfailed_backup_runs = false
-	m.removedfailed_backup_runs = nil
+// ResetNotifications resets all changes to the "notifications" edge.
+func (m *RepositoryMutation) ResetNotifications() {
+	m.notifications = nil
+	m.clearednotifications = false
+	m.removednotifications = nil
 }
 
 // Where appends a list predicates to the RepositoryMutation builder.
@@ -5424,8 +5668,8 @@ func (m *RepositoryMutation) AddedEdges() []string {
 	if m.archives != nil {
 		edges = append(edges, repository.EdgeArchives)
 	}
-	if m.failed_backup_runs != nil {
-		edges = append(edges, repository.EdgeFailedBackupRuns)
+	if m.notifications != nil {
+		edges = append(edges, repository.EdgeNotifications)
 	}
 	return edges
 }
@@ -5446,9 +5690,9 @@ func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case repository.EdgeFailedBackupRuns:
-		ids := make([]ent.Value, 0, len(m.failed_backup_runs))
-		for id := range m.failed_backup_runs {
+	case repository.EdgeNotifications:
+		ids := make([]ent.Value, 0, len(m.notifications))
+		for id := range m.notifications {
 			ids = append(ids, id)
 		}
 		return ids
@@ -5465,8 +5709,8 @@ func (m *RepositoryMutation) RemovedEdges() []string {
 	if m.removedarchives != nil {
 		edges = append(edges, repository.EdgeArchives)
 	}
-	if m.removedfailed_backup_runs != nil {
-		edges = append(edges, repository.EdgeFailedBackupRuns)
+	if m.removednotifications != nil {
+		edges = append(edges, repository.EdgeNotifications)
 	}
 	return edges
 }
@@ -5487,9 +5731,9 @@ func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case repository.EdgeFailedBackupRuns:
-		ids := make([]ent.Value, 0, len(m.removedfailed_backup_runs))
-		for id := range m.removedfailed_backup_runs {
+	case repository.EdgeNotifications:
+		ids := make([]ent.Value, 0, len(m.removednotifications))
+		for id := range m.removednotifications {
 			ids = append(ids, id)
 		}
 		return ids
@@ -5506,8 +5750,8 @@ func (m *RepositoryMutation) ClearedEdges() []string {
 	if m.clearedarchives {
 		edges = append(edges, repository.EdgeArchives)
 	}
-	if m.clearedfailed_backup_runs {
-		edges = append(edges, repository.EdgeFailedBackupRuns)
+	if m.clearednotifications {
+		edges = append(edges, repository.EdgeNotifications)
 	}
 	return edges
 }
@@ -5520,8 +5764,8 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 		return m.clearedbackup_profiles
 	case repository.EdgeArchives:
 		return m.clearedarchives
-	case repository.EdgeFailedBackupRuns:
-		return m.clearedfailed_backup_runs
+	case repository.EdgeNotifications:
+		return m.clearednotifications
 	}
 	return false
 }
@@ -5544,8 +5788,8 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 	case repository.EdgeArchives:
 		m.ResetArchives()
 		return nil
-	case repository.EdgeFailedBackupRuns:
-		m.ResetFailedBackupRuns()
+	case repository.EdgeNotifications:
+		m.ResetNotifications()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository edge %s", name)

@@ -5,6 +5,7 @@ package runtime
 import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/schema"
@@ -59,6 +60,16 @@ func init() {
 	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	notificationFields := schema.Notification{}.Fields()
+	_ = notificationFields
+	// notificationDescCreatedAt is the schema descriptor for created_at field.
+	notificationDescCreatedAt := notificationFields[1].Descriptor()
+	// notification.DefaultCreatedAt holds the default value on creation for the created_at field.
+	notification.DefaultCreatedAt = notificationDescCreatedAt.Default.(time.Time)
+	// notificationDescSeen is the schema descriptor for seen field.
+	notificationDescSeen := notificationFields[4].Descriptor()
+	// notification.DefaultSeen holds the default value on creation for the seen field.
+	notification.DefaultSeen = notificationDescSeen.Default.(bool)
 	pruningruleFields := schema.PruningRule{}.Fields()
 	_ = pruningruleFields
 	// pruningruleDescUpdatedAt is the schema descriptor for updated_at field.

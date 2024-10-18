@@ -6,7 +6,7 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
@@ -161,21 +161,6 @@ func (bpu *BackupProfileUpdate) SetBackupSchedule(b *BackupSchedule) *BackupProf
 	return bpu.SetBackupScheduleID(b.ID)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (bpu *BackupProfileUpdate) AddFailedBackupRunIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.AddFailedBackupRunIDs(ids...)
-	return bpu
-}
-
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (bpu *BackupProfileUpdate) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
-	}
-	return bpu.AddFailedBackupRunIDs(ids...)
-}
-
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
 func (bpu *BackupProfileUpdate) SetPruningRuleID(id int) *BackupProfileUpdate {
 	bpu.mutation.SetPruningRuleID(id)
@@ -193,6 +178,21 @@ func (bpu *BackupProfileUpdate) SetNillablePruningRuleID(id *int) *BackupProfile
 // SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
 func (bpu *BackupProfileUpdate) SetPruningRule(p *PruningRule) *BackupProfileUpdate {
 	return bpu.SetPruningRuleID(p.ID)
+}
+
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (bpu *BackupProfileUpdate) AddNotificationIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.AddNotificationIDs(ids...)
+	return bpu
+}
+
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (bpu *BackupProfileUpdate) AddNotifications(n ...*Notification) *BackupProfileUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return bpu.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -248,31 +248,31 @@ func (bpu *BackupProfileUpdate) ClearBackupSchedule() *BackupProfileUpdate {
 	return bpu
 }
 
-// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
-func (bpu *BackupProfileUpdate) ClearFailedBackupRuns() *BackupProfileUpdate {
-	bpu.mutation.ClearFailedBackupRuns()
-	return bpu
-}
-
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
-func (bpu *BackupProfileUpdate) RemoveFailedBackupRunIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.RemoveFailedBackupRunIDs(ids...)
-	return bpu
-}
-
-// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
-func (bpu *BackupProfileUpdate) RemoveFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
-	}
-	return bpu.RemoveFailedBackupRunIDs(ids...)
-}
-
 // ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
 func (bpu *BackupProfileUpdate) ClearPruningRule() *BackupProfileUpdate {
 	bpu.mutation.ClearPruningRule()
 	return bpu
+}
+
+// ClearNotifications clears all "notifications" edges to the Notification entity.
+func (bpu *BackupProfileUpdate) ClearNotifications() *BackupProfileUpdate {
+	bpu.mutation.ClearNotifications()
+	return bpu
+}
+
+// RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
+func (bpu *BackupProfileUpdate) RemoveNotificationIDs(ids ...int) *BackupProfileUpdate {
+	bpu.mutation.RemoveNotificationIDs(ids...)
+	return bpu
+}
+
+// RemoveNotifications removes "notifications" edges to Notification entities.
+func (bpu *BackupProfileUpdate) RemoveNotifications(n ...*Notification) *BackupProfileUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return bpu.RemoveNotificationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -479,51 +479,6 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpu.mutation.FailedBackupRunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !bpu.mutation.FailedBackupRunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if bpu.mutation.PruningRuleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -546,6 +501,51 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bpu.mutation.NotificationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !bpu.mutation.NotificationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpu.mutation.NotificationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -700,21 +700,6 @@ func (bpuo *BackupProfileUpdateOne) SetBackupSchedule(b *BackupSchedule) *Backup
 	return bpuo.SetBackupScheduleID(b.ID)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (bpuo *BackupProfileUpdateOne) AddFailedBackupRunIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.AddFailedBackupRunIDs(ids...)
-	return bpuo
-}
-
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (bpuo *BackupProfileUpdateOne) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdateOne {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
-	}
-	return bpuo.AddFailedBackupRunIDs(ids...)
-}
-
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
 func (bpuo *BackupProfileUpdateOne) SetPruningRuleID(id int) *BackupProfileUpdateOne {
 	bpuo.mutation.SetPruningRuleID(id)
@@ -732,6 +717,21 @@ func (bpuo *BackupProfileUpdateOne) SetNillablePruningRuleID(id *int) *BackupPro
 // SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
 func (bpuo *BackupProfileUpdateOne) SetPruningRule(p *PruningRule) *BackupProfileUpdateOne {
 	return bpuo.SetPruningRuleID(p.ID)
+}
+
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (bpuo *BackupProfileUpdateOne) AddNotificationIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.AddNotificationIDs(ids...)
+	return bpuo
+}
+
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (bpuo *BackupProfileUpdateOne) AddNotifications(n ...*Notification) *BackupProfileUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return bpuo.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -787,31 +787,31 @@ func (bpuo *BackupProfileUpdateOne) ClearBackupSchedule() *BackupProfileUpdateOn
 	return bpuo
 }
 
-// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
-func (bpuo *BackupProfileUpdateOne) ClearFailedBackupRuns() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearFailedBackupRuns()
-	return bpuo
-}
-
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
-func (bpuo *BackupProfileUpdateOne) RemoveFailedBackupRunIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.RemoveFailedBackupRunIDs(ids...)
-	return bpuo
-}
-
-// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
-func (bpuo *BackupProfileUpdateOne) RemoveFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileUpdateOne {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
-	}
-	return bpuo.RemoveFailedBackupRunIDs(ids...)
-}
-
 // ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
 func (bpuo *BackupProfileUpdateOne) ClearPruningRule() *BackupProfileUpdateOne {
 	bpuo.mutation.ClearPruningRule()
 	return bpuo
+}
+
+// ClearNotifications clears all "notifications" edges to the Notification entity.
+func (bpuo *BackupProfileUpdateOne) ClearNotifications() *BackupProfileUpdateOne {
+	bpuo.mutation.ClearNotifications()
+	return bpuo
+}
+
+// RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
+func (bpuo *BackupProfileUpdateOne) RemoveNotificationIDs(ids ...int) *BackupProfileUpdateOne {
+	bpuo.mutation.RemoveNotificationIDs(ids...)
+	return bpuo
+}
+
+// RemoveNotifications removes "notifications" edges to Notification entities.
+func (bpuo *BackupProfileUpdateOne) RemoveNotifications(n ...*Notification) *BackupProfileUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return bpuo.RemoveNotificationIDs(ids...)
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
@@ -1048,51 +1048,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpuo.mutation.FailedBackupRunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !bpuo.mutation.FailedBackupRunsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if bpuo.mutation.PruningRuleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -1115,6 +1070,51 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bpuo.mutation.NotificationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !bpuo.mutation.NotificationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bpuo.mutation.NotificationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

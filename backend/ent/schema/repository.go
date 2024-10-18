@@ -54,8 +54,8 @@ func (Repository) Edges() []ent.Edge {
 			Ref("repositories"),
 		edge.From("archives", Archive.Type).
 			Ref("repository"),
-		edge.From("failed_backup_runs", FailedBackupRun.Type).
-			StructTag(`json:"failedBackupRuns,omitempty"`).
+		edge.From("notifications", Notification.Type).
+			StructTag(`json:"notifications,omitempty"`).
 			Ref("repository"),
 	}
 }

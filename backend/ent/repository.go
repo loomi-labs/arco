@@ -46,8 +46,8 @@ type RepositoryEdges struct {
 	BackupProfiles []*BackupProfile `json:"backupProfiles,omitempty"`
 	// Archives holds the value of the archives edge.
 	Archives []*Archive `json:"archives,omitempty"`
-	// FailedBackupRuns holds the value of the failed_backup_runs edge.
-	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
+	// Notifications holds the value of the notifications edge.
+	Notifications []*Notification `json:"notifications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -71,13 +71,13 @@ func (e RepositoryEdges) ArchivesOrErr() ([]*Archive, error) {
 	return nil, &NotLoadedError{edge: "archives"}
 }
 
-// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
+// NotificationsOrErr returns the Notifications value or an error if the edge
 // was not loaded in eager-loading.
-func (e RepositoryEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
+func (e RepositoryEdges) NotificationsOrErr() ([]*Notification, error) {
 	if e.loadedTypes[2] {
-		return e.FailedBackupRuns, nil
+		return e.Notifications, nil
 	}
-	return nil, &NotLoadedError{edge: "failed_backup_runs"}
+	return nil, &NotLoadedError{edge: "notifications"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -187,9 +187,9 @@ func (r *Repository) QueryArchives() *ArchiveQuery {
 	return NewRepositoryClient(r.config).QueryArchives(r)
 }
 
-// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the Repository entity.
-func (r *Repository) QueryFailedBackupRuns() *FailedBackupRunQuery {
-	return NewRepositoryClient(r.config).QueryFailedBackupRuns(r)
+// QueryNotifications queries the "notifications" edge of the Repository entity.
+func (r *Repository) QueryNotifications() *NotificationQuery {
+	return NewRepositoryClient(r.config).QueryNotifications(r)
 }
 
 // Update returns a builder for updating this Repository.
