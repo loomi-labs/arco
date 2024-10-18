@@ -24,6 +24,7 @@ interface Props {
   backupProfileId: number;
   highlight: boolean;
   showHover: boolean;
+  isPruningEnabled: boolean;
 }
 
 interface Emits {
@@ -99,6 +100,14 @@ async function getBackupButtonStatus() {
   }
 }
 
+async function prune() {
+  try {
+    await backupClient.StartPruneJob(backupId);
+  } catch (error: any) {
+    await showAndLogError("Failed to prune repository", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -151,8 +160,7 @@ onUnmounted(() => {
           <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
-            }}</span>
+          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)}}</span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
@@ -162,7 +170,11 @@ onUnmounted(() => {
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>
-        <button class='btn btn-ghost btn-circle' :disabled='repoState.status !== state.RepoStatus.idle'>
+        <button v-if='isPruningEnabled'
+                class='btn btn-ghost btn-circle'
+                :disabled='repoState.status !== state.RepoStatus.idle'
+                @click='prune'
+        >
           <ScissorsIcon class='size-6' />
         </button>
         <button class='btn btn-ghost btn-circle ml-2' :disabled='repoState.status !== state.RepoStatus.idle'>
