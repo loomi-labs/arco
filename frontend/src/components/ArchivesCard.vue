@@ -14,7 +14,8 @@ import {
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
   TrashIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon,
 } from "@heroicons/vue/24/solid";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
@@ -197,6 +198,17 @@ async function getBackupProfileFilterOptions() {
   }
 }
 
+async function refreshArchives() {
+  try {
+    progressSpinnerText.value = "Refreshing archives";
+    await repoClient.RefreshArchives(props.repo.id);
+  } catch (error: any) {
+    await showAndLogError("Failed to refresh archives", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
 const customDateRangeShortcuts = () => {
   return [
     {
@@ -284,9 +296,15 @@ watch([backupProfileFilter, search, dateRange], async () => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th colspan='4'>
+          <th colspan='2'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
+          </th>
+          <th class='text-right'>
+            <button class='btn btn-ghost btn-circle btn-info'
+                    @click='refreshArchives'>
+              <ArrowPathIcon class='size-6'></ArrowPathIcon>
+            </button>
           </th>
         </tr>
         <tr>
