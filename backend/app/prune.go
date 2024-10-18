@@ -76,7 +76,7 @@ func (b *BackupClient) StartPruneJob(bId types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) PruneBackups(bIds []types.BackupId) error {
+func (b *BackupClient) StartPruneJobs(bIds []types.BackupId) error {
 	for _, bId := range bIds {
 		err := b.StartPruneJob(bId)
 		if err != nil {
@@ -202,10 +202,13 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 
 			err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 			if err != nil {
-				b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+				b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 			}
 
-			// TODO: refresh archives
+			_, err := b.repoClient().refreshArchives(bId.RepositoryId)
+			if err != nil {
+				b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+			}
 
 			return PruneResultSuccess, nil
 		case <-time.After(30 * time.Second):
