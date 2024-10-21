@@ -64,11 +64,13 @@ const pruningOptionMap: PruningOptionMap = {
 interface Props {
   backupProfileId: number;
   pruningRule: ent.PruningRule;
+  askForSaveBeforeLeaving: boolean;
 }
 
 interface Emits {
   (event: typeof emitUpdatePruningRule, rule: ent.PruningRule): void;
 }
+
 
 /************
  * Variables
@@ -88,6 +90,10 @@ const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 
 const wantToGoRoute = ref<string | undefined>(undefined);
+
+defineExpose({
+  pruningRule,
+})
 
 /************
  * Functions
@@ -178,7 +184,7 @@ watchEffect(() => copyCurrentPruningRule());
 
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
 onBeforeRouteLeave((to, from) => {
-  if (hasUnsavedChanges.value) {
+  if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
     wantToGoRoute.value = to.path;
     confirmSaveModal.value?.showModal();
     return false;
@@ -204,7 +210,7 @@ onBeforeRouteLeave((to, from) => {
       <div>
         <FormField>
           <input :class='formInputClass'
-                 class='w-16'
+                 class='w-12'
                  min='0'
                  max='999'
                  type='number'
@@ -236,7 +242,7 @@ onBeforeRouteLeave((to, from) => {
         <div class='flex flex-col'>
           <FormField label='Hourly'>
             <input :class='formInputClass'
-                   class='w-16'
+                   class='w-10'
                    min='0'
                    max='99'
                    type='number'
@@ -248,7 +254,7 @@ onBeforeRouteLeave((to, from) => {
         <div class='flex flex-col'>
           <FormField label='Daily'>
             <input :class='formInputClass'
-                   class='w-16'
+                   class='w-10'
                    min='0'
                    max='99'
                    type='number'
@@ -260,7 +266,7 @@ onBeforeRouteLeave((to, from) => {
         <div class='flex flex-col'>
           <FormField label='Weekly'>
             <input :class='formInputClass'
-                   class='w-16'
+                   class='w-10'
                    min='0'
                    max='99'
                    type='number'
@@ -272,7 +278,7 @@ onBeforeRouteLeave((to, from) => {
         <div class='flex flex-col'>
           <FormField label='Monthly'>
             <input :class='formInputClass'
-                   class='w-16'
+                   class='w-10'
                    min='0'
                    max='99'
                    type='number'
@@ -284,7 +290,7 @@ onBeforeRouteLeave((to, from) => {
         <div class='flex flex-col'>
           <FormField label='Yearly'>
             <input :class='formInputClass'
-                   class='w-16'
+                   class='w-10'
                    min='0'
                    max='99'
                    type='number'
@@ -297,7 +303,7 @@ onBeforeRouteLeave((to, from) => {
     </div>
 
     <!-- Apply/discard buttons -->
-    <div class='flex justify-end gap-2'>
+    <div v-if='askForSaveBeforeLeaving' class='flex justify-end gap-2'>
       <span v-if='validationError' class='label'>
         <span class='label text-sm text-error'>{{ validationError }}</span>
       </span>

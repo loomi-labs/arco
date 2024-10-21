@@ -239,6 +239,7 @@ watch(loading, async () => {
 
       <PruningCard :backup-profile-id='backupProfile.id'
                    :pruning-rule='backupProfile.edges?.pruningRule ?? ent.PruningRule.createFrom()'
+                   :ask-for-save-before-leaving='true'
                    @update:pruning-rule='setPruningRule'>
       </PruningCard>
     </div>
