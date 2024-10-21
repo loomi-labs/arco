@@ -112,6 +112,16 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Hourly: true,
 	}
 
+	pruningRule := &ent.PruningRule{
+		IsEnabled:      true,
+		KeepHourly:     12,
+		KeepDaily:      7,
+		KeepWeekly:     4,
+		KeepMonthly:    6,
+		KeepYearly:     1,
+		KeepWithinDays: 30,
+	}
+
 	return &ent.BackupProfile{
 		ID:           0,
 		Name:         "",
@@ -121,6 +131,7 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Icon:         selectedIcon,
 		Edges: ent.BackupProfileEdges{
 			BackupSchedule: schedule,
+			PruningRule:    pruningRule,
 		},
 	}, nil
 }
