@@ -6,13 +6,60 @@ import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
+import { formInputClass } from "../common/form";
+import FormField from "./common/FormField.vue";
+
+/************
+ * Types
+ ************/
 
 enum PruningKeepOption {
   none = "none",
-  few = "few",
   some = "some",
-  many = "many"
+  many = "many",
+  custom = "custom",
 }
+
+interface PruningOptionMap {
+  [key: string]: {
+    keepHourly: number;
+    keepDaily: number;
+    keepWeekly: number;
+    keepMonthly: number;
+    keepYearly: number;
+  };
+}
+
+const pruningOptionMap: PruningOptionMap = {
+  [PruningKeepOption.none]: {
+    keepHourly: 0,
+    keepDaily: 0,
+    keepWeekly: 0,
+    keepMonthly: 0,
+    keepYearly: 0
+  },
+  [PruningKeepOption.some]: {
+    keepHourly: 6,
+    keepDaily: 7,
+    keepWeekly: 4,
+    keepMonthly: 3,
+    keepYearly: 2
+  },
+  [PruningKeepOption.many]: {
+    keepHourly: 24,
+    keepDaily: 14,
+    keepWeekly: 8,
+    keepMonthly: 12,
+    keepYearly: 4
+  },
+  [PruningKeepOption.custom]: {
+    keepHourly: -1,
+    keepDaily: -1,
+    keepWeekly: -1,
+    keepMonthly: -1,
+    keepYearly: -1
+  }
+};
 
 interface Props {
   backupProfileId: number;
@@ -42,7 +89,6 @@ const isIntegrityCheckEnabled = ref(props.isIntegrityCheckEnabled);
 
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
 const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
-const pruningKeepWithinDays = ref<number>(0);
 
 const confirmSaveModalKey = "confirm_delete_backup_profile_modal";
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
@@ -63,6 +109,17 @@ const hasUnsavedChanges = computed(() => {
     props.pruningRule.keepYearly !== pruningRule.value.keepYearly;
 });
 
+const validationError = computed(() => {
+  if (pruningRule.value.isEnabled && pruningRule.value.keepWithinDays < 1 && pruningKeepOption.value === PruningKeepOption.none) {
+    return "You must either keep archives within a certain number of days or keep a certain number of archives";
+  }
+  return "";
+});
+
+const isValid = computed(() => {
+  return !validationError.value;
+});
+
 function copyCurrentPruningRule() {
   pruningRule.value.isEnabled = props.pruningRule.isEnabled;
   pruningRule.value.keepWithinDays = props.pruningRule.keepWithinDays;
@@ -71,39 +128,31 @@ function copyCurrentPruningRule() {
   pruningRule.value.keepWeekly = props.pruningRule.keepWeekly;
   pruningRule.value.keepMonthly = props.pruningRule.keepMonthly;
   pruningRule.value.keepYearly = props.pruningRule.keepYearly;
+  ruleToPruningKeepOption(props.pruningRule);
+}
+
+function ruleToPruningKeepOption(rule: ent.PruningRule) {
+  const option = Object.keys(pruningOptionMap).find((key) => {
+    const map = pruningOptionMap[key];
+    return rule.keepHourly === map.keepHourly &&
+      rule.keepDaily === map.keepDaily &&
+      rule.keepWeekly === map.keepWeekly &&
+      rule.keepMonthly === map.keepMonthly &&
+      rule.keepYearly === map.keepYearly;
+  });
+  if (option) {
+    pruningKeepOption.value = option as PruningKeepOption;
+  } else {
+    pruningKeepOption.value = PruningKeepOption.custom;
+  }
 }
 
 function toPruningRule() {
-  switch (pruningKeepOption.value) {
-    case PruningKeepOption.none:
-      pruningRule.value.keepHourly = 0;
-      pruningRule.value.keepDaily = 0;
-      pruningRule.value.keepWeekly = 0;
-      pruningRule.value.keepMonthly = 0;
-      pruningRule.value.keepYearly = 0;
-      break;
-    case PruningKeepOption.few:
-      pruningRule.value.keepHourly = 1;
-      pruningRule.value.keepDaily = 1;
-      pruningRule.value.keepWeekly = 1;
-      pruningRule.value.keepMonthly = 1;
-      pruningRule.value.keepYearly = 1;
-      break;
-    case PruningKeepOption.some:
-      pruningRule.value.keepHourly = 3;
-      pruningRule.value.keepDaily = 3;
-      pruningRule.value.keepWeekly = 3;
-      pruningRule.value.keepMonthly = 3;
-      pruningRule.value.keepYearly = 3;
-      break;
-    case PruningKeepOption.many:
-      pruningRule.value.keepHourly = 6;
-      pruningRule.value.keepDaily = 6;
-      pruningRule.value.keepWeekly = 6;
-      pruningRule.value.keepMonthly = 6;
-      pruningRule.value.keepYearly = 6;
-      break;
-  }
+  pruningRule.value.keepHourly = pruningOptionMap[pruningKeepOption.value].keepHourly;
+  pruningRule.value.keepDaily = pruningOptionMap[pruningKeepOption.value].keepDaily;
+  pruningRule.value.keepWeekly = pruningOptionMap[pruningKeepOption.value].keepWeekly;
+  pruningRule.value.keepMonthly = pruningOptionMap[pruningKeepOption.value].keepMonthly;
+  pruningRule.value.keepYearly = pruningOptionMap[pruningKeepOption.value].keepYearly;
 }
 
 async function savePruningRule() {
@@ -163,16 +212,16 @@ onBeforeRouteLeave((to, from) => {
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Number of days to keep the archives'>
         <h3 class='text-xl font-semibold'>Always keep the last
-          {{ pruningKeepWithinDays > 1 ? `${pruningKeepWithinDays} days` : "day" }}</h3>
+          {{ pruningRule.keepWithinDays > 1 ? `${pruningRule.keepWithinDays} days` : "day" }}</h3>
       </TooltipTextIcon>
       <input type='number'
-             class='input input-primary'
+             class='input'
              min='1'
              :disabled='!pruningRule.isEnabled'
              v-model='pruningRule.keepWithinDays'
       />
     </div>
-    <!--  Keep few/some/many options -->
+    <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Number of archives to keep'>
         <h3 class='text-xl font-semibold'>Keep</h3>
@@ -182,17 +231,87 @@ onBeforeRouteLeave((to, from) => {
               v-model='pruningKeepOption'
               @change='toPruningRule'
       >
-        <option v-for='option in Object.keys(PruningKeepOption)' :key='option' :value='option'>
+        <option v-for='option in Object.keys(PruningKeepOption)' :key='option' :value='option' :disabled='option === PruningKeepOption.custom'>
           {{ option.charAt(0).toUpperCase() + option.slice(1) }}
         </option>
       </select>
     </div>
 
+    <!-- Custom option -->
+    <div class='flex items-center justify-between mb-4'>
+      <h3 class='text-xl font-semibold'>Custom</h3>
+      <div class='flex items-center gap-4'>
+        <div class='flex flex-col'>
+          <FormField label='Hourly' error=''>
+            <input :class='formInputClass'
+                   class='w-16'
+                   min='0'
+                   max='99'
+                   type='number'
+                   :disabled='!pruningRule.isEnabled'
+                   v-model='pruningRule.keepHourly'
+                   @change='ruleToPruningKeepOption(pruningRule)' />
+          </FormField>
+        </div>
+        <div class='flex flex-col'>
+          <FormField label='Daily' error=''>
+            <input :class='formInputClass'
+                   class='w-16'
+                   min='0'
+                   max='99'
+                   type='number'
+                   :disabled='!pruningRule.isEnabled'
+                   v-model='pruningRule.keepDaily'
+                   @change='ruleToPruningKeepOption(pruningRule)' />
+          </FormField>
+        </div>
+        <div class='flex flex-col'>
+          <FormField label='Weekly' error=''>
+            <input :class='formInputClass'
+                   class='w-16'
+                   min='0'
+                   max='99'
+                   type='number'
+                   :disabled='!pruningRule.isEnabled'
+                   v-model='pruningRule.keepWeekly'
+                   @change='ruleToPruningKeepOption(pruningRule)' />
+          </FormField>
+        </div>
+        <div class='flex flex-col'>
+          <FormField label='Monthly' error=''>
+            <input :class='formInputClass'
+                   class='w-16'
+                   min='0'
+                   max='99'
+                   type='number'
+                   :disabled='!pruningRule.isEnabled'
+                   v-model='pruningRule.keepMonthly'
+                   @change='ruleToPruningKeepOption(pruningRule)' />
+          </FormField>
+        </div>
+        <div class='flex flex-col'>
+          <FormField label='Yearly' error=''>
+            <input :class='formInputClass'
+                   class='w-16'
+                   min='0'
+                   max='99'
+                   type='number'
+                   :disabled='!pruningRule.isEnabled'
+                   v-model='pruningRule.keepYearly'
+                   @change='ruleToPruningKeepOption(pruningRule)' />
+          </FormField>
+        </div>
+      </div>
+    </div>
+
     <!-- Apply/discard buttons -->
     <div class='flex justify-end gap-2'>
-      <button class='btn btn-outline' :disabled='!hasUnsavedChanges' @click='copyCurrentPruningRule'>Discard changes
+      <span v-if='validationError' class='label'>
+        <span class='label text-sm text-error'>{{ validationError }}</span>
+      </span>
+      <button class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid' @click='copyCurrentPruningRule'>Discard changes
       </button>
-      <button class='btn btn-primary' :disabled='!hasUnsavedChanges' @click='savePruningRule'>Apply changes</button>
+      <button class='btn btn-primary' :disabled='!hasUnsavedChanges || !isValid' @click='savePruningRule'>Apply changes</button>
     </div>
   </div>
 
