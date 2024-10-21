@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent, state } from "../../wailsjs/go/models";
-import { nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
 import { PencilIcon } from "@heroicons/vue/24/solid";
@@ -34,7 +34,7 @@ const failedBackupRun = ref<string | undefined>(undefined);
 
 const cleanupFunctions: (() => void)[] = [];
 
-const nameInputKey = "name_input";
+const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
 
 const { meta, errors, defineField } = useForm({

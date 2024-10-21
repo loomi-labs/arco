@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed, ref, useTemplateRef, watchEffect } from "vue";
+import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
@@ -90,7 +90,7 @@ const isIntegrityCheckEnabled = ref(props.isIntegrityCheckEnabled);
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
 const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
 
-const confirmSaveModalKey = "confirm_delete_backup_profile_modal";
+const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 
 const wantToGoRoute = ref<string | undefined>(undefined);
