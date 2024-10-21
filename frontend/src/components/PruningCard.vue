@@ -201,12 +201,17 @@ onBeforeRouteLeave((to, from) => {
         <h3 class='text-xl font-semibold'>Always keep the last
           {{ pruningRule.keepWithinDays > 1 ? `${pruningRule.keepWithinDays} days` : "day" }}</h3>
       </TooltipTextIcon>
-      <input type='number'
-             class='input'
-             min='1'
-             :disabled='!pruningRule.isEnabled'
-             v-model='pruningRule.keepWithinDays'
-      />
+      <div>
+        <FormField>
+          <input :class='formInputClass'
+                 class='w-16'
+                 min='0'
+                 max='999'
+                 type='number'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepWithinDays' />
+        </FormField>
+      </div>
     </div>
     <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
@@ -229,7 +234,7 @@ onBeforeRouteLeave((to, from) => {
       <h3 class='text-xl font-semibold'>Custom</h3>
       <div class='flex items-center gap-4'>
         <div class='flex flex-col'>
-          <FormField label='Hourly' error=''>
+          <FormField label='Hourly'>
             <input :class='formInputClass'
                    class='w-16'
                    min='0'
@@ -241,7 +246,7 @@ onBeforeRouteLeave((to, from) => {
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Daily' error=''>
+          <FormField label='Daily'>
             <input :class='formInputClass'
                    class='w-16'
                    min='0'
@@ -253,7 +258,7 @@ onBeforeRouteLeave((to, from) => {
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Weekly' error=''>
+          <FormField label='Weekly'>
             <input :class='formInputClass'
                    class='w-16'
                    min='0'
@@ -265,7 +270,7 @@ onBeforeRouteLeave((to, from) => {
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Monthly' error=''>
+          <FormField label='Monthly'>
             <input :class='formInputClass'
                    class='w-16'
                    min='0'
@@ -277,7 +282,7 @@ onBeforeRouteLeave((to, from) => {
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Yearly' error=''>
+          <FormField label='Yearly'>
             <input :class='formInputClass'
                    class='w-16'
                    min='0'
@@ -298,7 +303,7 @@ onBeforeRouteLeave((to, from) => {
       </span>
       <button class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid' @click='copyCurrentPruningRule'>Discard changes
       </button>
-      <button class='btn btn-primary' :disabled='!hasUnsavedChanges || !isValid' @click='savePruningRule'>Apply changes</button>
+      <button class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid' @click='savePruningRule'>Apply changes</button>
     </div>
   </div>
 
