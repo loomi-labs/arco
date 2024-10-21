@@ -53,7 +53,6 @@ const wantToGoRoute = ref<string | undefined>(undefined);
  * Functions
  ************/
 
-
 const hasUnsavedChanges = computed(() => {
   return props.pruningRule.isEnabled !== pruningRule.value.isEnabled ||
     props.pruningRule.keepWithinDays !== pruningRule.value.keepWithinDays ||
@@ -63,6 +62,16 @@ const hasUnsavedChanges = computed(() => {
     props.pruningRule.keepMonthly !== pruningRule.value.keepMonthly ||
     props.pruningRule.keepYearly !== pruningRule.value.keepYearly;
 });
+
+function copyCurrentPruningRule() {
+  pruningRule.value.isEnabled = props.pruningRule.isEnabled;
+  pruningRule.value.keepWithinDays = props.pruningRule.keepWithinDays;
+  pruningRule.value.keepHourly = props.pruningRule.keepHourly;
+  pruningRule.value.keepDaily = props.pruningRule.keepDaily;
+  pruningRule.value.keepWeekly = props.pruningRule.keepWeekly;
+  pruningRule.value.keepMonthly = props.pruningRule.keepMonthly;
+  pruningRule.value.keepYearly = props.pruningRule.keepYearly;
+}
 
 function toPruningRule() {
   switch (pruningKeepOption.value) {
@@ -97,20 +106,23 @@ function toPruningRule() {
   }
 }
 
-async function savePruningRule(pruningRule: ent.PruningRule) {
+async function savePruningRule() {
   try {
-    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule);
+    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value);
     await emits(emitUpdatePruningRule, result);
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);
   }
 }
 
-async function confirmSave(redirectTo?: string) {
-  await savePruningRule(pruningRule.value);
-  if (redirectTo) {
-    await router.push(redirectTo);
-  }
+async function discardAndGoToRoute(route: string) {
+  copyCurrentPruningRule();
+  await router.push(route);
+}
+
+async function saveAndGoToRoute(route: string) {
+  await savePruningRule();
+  await router.push(route);
 }
 
 /************
@@ -119,15 +131,7 @@ async function confirmSave(redirectTo?: string) {
 
 // Create a copy of the current pruning rule
 // This way we can compare the current pruning rule with the new one and save or discard changes
-watchEffect(() => {
-  pruningRule.value.isEnabled = props.pruningRule.isEnabled;
-  pruningRule.value.keepWithinDays = props.pruningRule.keepWithinDays;
-  pruningRule.value.keepHourly = props.pruningRule.keepHourly;
-  pruningRule.value.keepDaily = props.pruningRule.keepDaily;
-  pruningRule.value.keepWeekly = props.pruningRule.keepWeekly;
-  pruningRule.value.keepMonthly = props.pruningRule.keepMonthly;
-  pruningRule.value.keepYearly = props.pruningRule.keepYearly;
-});
+watchEffect(() => copyCurrentPruningRule());
 
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
 onBeforeRouteLeave((to, from) => {
@@ -136,7 +140,7 @@ onBeforeRouteLeave((to, from) => {
     confirmSaveModal.value?.showModal();
     return false;
   }
-})
+});
 
 </script>
 
@@ -183,13 +187,24 @@ onBeforeRouteLeave((to, from) => {
         </option>
       </select>
     </div>
+
+    <!-- Apply/discard buttons -->
+    <div class='flex justify-end gap-2'>
+      <button class='btn btn-outline' :disabled='!hasUnsavedChanges' @click='copyCurrentPruningRule'>Discard changes
+      </button>
+      <button class='btn btn-primary' :disabled='!hasUnsavedChanges' @click='savePruningRule'>Apply changes</button>
+    </div>
   </div>
 
   <ConfirmModal :ref='confirmSaveModalKey'
                 confirm-class='btn-success'
                 confirm-text='Apply changes'
                 :confirm-value='wantToGoRoute'
-                @confirm='confirmSave'
+                secondary-option-class='btn-outline btn-error'
+                secondary-option-text='Discard changes'
+                :secondary-option-value='wantToGoRoute'
+                @secondary='discardAndGoToRoute'
+                @confirm='saveAndGoToRoute'
   >
     <p>You have unsaved cleanup settings. Do you want to apply them now?</p>
   </ConfirmModal>

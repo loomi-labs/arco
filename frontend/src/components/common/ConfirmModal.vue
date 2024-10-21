@@ -7,16 +7,21 @@ import { useI18n } from "vue-i18n";
  ************/
 
 interface Props {
-  cancelText?: string;
-  confirmText?: string;
   formClass?: string;
+  cancelText?: string;
   cancelClass?: string;
+  confirmText?: string;
   confirmClass?: string;
   confirmValue?: any;
+  secondaryOptionText?: string;
+  secondaryOptionClass?: string;
+  secondaryOptionValue?: any;
 }
 
 interface Emits {
-  (event: typeof emitConfirmStr, value: typeof props.confirmValue): void;
+  (event: typeof emitConfirm, value: typeof props.confirmValue): void;
+
+  (event: typeof emitSecondary, value: typeof props.secondaryOptionValue): void;
 }
 
 /************
@@ -26,8 +31,9 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm or cancel)
-const emitConfirmStr = "confirm";
+// Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm, cancel or backdrop click)
+const emitConfirm = "confirm";
+const emitSecondary = "secondary";
 
 const dialog = ref<HTMLDialogElement>();
 const { t } = useI18n();
@@ -38,7 +44,12 @@ const { t } = useI18n();
 
 function confirm() {
   dialog.value?.close();
-  emit(emitConfirmStr, props.confirmValue);
+  emit(emitConfirm, props.confirmValue);
+}
+
+function secondary() {
+  dialog.value?.close();
+  emit(emitSecondary, props.secondaryOptionValue);
 }
 
 function showModal() {
@@ -80,6 +91,13 @@ defineExpose({
               :class='props.cancelClass'
             >
               {{ props.cancelText ?? $t("cancel") }}
+            </button>
+            <button v-if='secondaryOptionText'
+              class='btn btn-primary'
+              :class='props.secondaryOptionClass'
+              @click.prevent='secondary'
+            >
+              {{ props.secondaryOptionText }}
             </button>
             <button
               value='true'
