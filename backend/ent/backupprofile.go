@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -30,8 +29,6 @@ type BackupProfile struct {
 	ExcludePaths []string `json:"excludePaths"`
 	// Icon holds the value of the "icon" field.
 	Icon backupprofile.Icon `json:"icon"`
-	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
-	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -115,8 +112,6 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
 			values[i] = new(sql.NullString)
-		case backupprofile.FieldNextIntegrityCheck:
-			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -171,13 +166,6 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field icon", values[i])
 			} else if value.Valid {
 				bp.Icon = backupprofile.Icon(value.String)
-			}
-		case backupprofile.FieldNextIntegrityCheck:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
-			} else if value.Valid {
-				bp.NextIntegrityCheck = new(time.Time)
-				*bp.NextIntegrityCheck = value.Time
 			}
 		default:
 			bp.selectValues.Set(columns[i], values[i])
@@ -254,11 +242,6 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Icon))
-	builder.WriteString(", ")
-	if v := bp.NextIntegrityCheck; v != nil {
-		builder.WriteString("next_integrity_check=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

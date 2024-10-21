@@ -40,10 +40,6 @@ func (BackupProfile) Fields() []ent.Field {
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),
-		field.Time("next_integrity_check").
-			StructTag(`json:"nextIntegrityCheck"`).
-			Nillable().
-			Optional(),
 	}
 }
 

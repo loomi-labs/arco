@@ -53,7 +53,6 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
-		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
@@ -163,6 +162,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "location", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
+		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},

@@ -672,7 +672,6 @@ type BackupProfileMutation struct {
 	exclude_paths          *[]string
 	appendexclude_paths    []string
 	icon                   *backupprofile.Icon
-	next_integrity_check   *time.Time
 	clearedFields          map[string]struct{}
 	repositories           map[int]struct{}
 	removedrepositories    map[int]struct{}
@@ -1020,55 +1019,6 @@ func (m *BackupProfileMutation) ResetIcon() {
 	m.icon = nil
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (m *BackupProfileMutation) SetNextIntegrityCheck(t time.Time) {
-	m.next_integrity_check = &t
-}
-
-// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
-func (m *BackupProfileMutation) NextIntegrityCheck() (r time.Time, exists bool) {
-	v := m.next_integrity_check
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the BackupProfile entity.
-// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupProfileMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
-	}
-	return oldValue.NextIntegrityCheck, nil
-}
-
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (m *BackupProfileMutation) ClearNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	m.clearedFields[backupprofile.FieldNextIntegrityCheck] = struct{}{}
-}
-
-// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
-func (m *BackupProfileMutation) NextIntegrityCheckCleared() bool {
-	_, ok := m.clearedFields[backupprofile.FieldNextIntegrityCheck]
-	return ok
-}
-
-// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
-func (m *BackupProfileMutation) ResetNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	delete(m.clearedFields, backupprofile.FieldNextIntegrityCheck)
-}
-
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
 func (m *BackupProfileMutation) AddRepositoryIDs(ids ...int) {
 	if m.repositories == nil {
@@ -1343,7 +1293,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, backupprofile.FieldName)
 	}
@@ -1358,9 +1308,6 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
-	}
-	if m.next_integrity_check != nil {
-		fields = append(fields, backupprofile.FieldNextIntegrityCheck)
 	}
 	return fields
 }
@@ -1380,8 +1327,6 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIcon:
 		return m.Icon()
-	case backupprofile.FieldNextIntegrityCheck:
-		return m.NextIntegrityCheck()
 	}
 	return nil, false
 }
@@ -1401,8 +1346,6 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
-	case backupprofile.FieldNextIntegrityCheck:
-		return m.OldNextIntegrityCheck(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1447,13 +1390,6 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIcon(v)
 		return nil
-	case backupprofile.FieldNextIntegrityCheck:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNextIntegrityCheck(v)
-		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1487,9 +1423,6 @@ func (m *BackupProfileMutation) ClearedFields() []string {
 	if m.FieldCleared(backupprofile.FieldExcludePaths) {
 		fields = append(fields, backupprofile.FieldExcludePaths)
 	}
-	if m.FieldCleared(backupprofile.FieldNextIntegrityCheck) {
-		fields = append(fields, backupprofile.FieldNextIntegrityCheck)
-	}
 	return fields
 }
 
@@ -1506,9 +1439,6 @@ func (m *BackupProfileMutation) ClearField(name string) error {
 	switch name {
 	case backupprofile.FieldExcludePaths:
 		m.ClearExcludePaths()
-		return nil
-	case backupprofile.FieldNextIntegrityCheck:
-		m.ClearNextIntegrityCheck()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
@@ -1532,9 +1462,6 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
-		return nil
-	case backupprofile.FieldNextIntegrityCheck:
-		m.ResetNextIntegrityCheck()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
@@ -4634,6 +4561,7 @@ type RepositoryMutation struct {
 	name                         *string
 	location                     *string
 	password                     *string
+	next_integrity_check         *time.Time
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
 	stats_total_size             *int
@@ -4871,6 +4799,55 @@ func (m *RepositoryMutation) OldPassword(ctx context.Context) (v string, err err
 // ResetPassword resets all changes to the "password" field.
 func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (m *RepositoryMutation) SetNextIntegrityCheck(t time.Time) {
+	m.next_integrity_check = &t
+}
+
+// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
+func (m *RepositoryMutation) NextIntegrityCheck() (r time.Time, exists bool) {
+	v := m.next_integrity_check
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
+	}
+	return oldValue.NextIntegrityCheck, nil
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (m *RepositoryMutation) ClearNextIntegrityCheck() {
+	m.next_integrity_check = nil
+	m.clearedFields[repository.FieldNextIntegrityCheck] = struct{}{}
+}
+
+// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
+func (m *RepositoryMutation) NextIntegrityCheckCleared() bool {
+	_, ok := m.clearedFields[repository.FieldNextIntegrityCheck]
+	return ok
+}
+
+// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
+func (m *RepositoryMutation) ResetNextIntegrityCheck() {
+	m.next_integrity_check = nil
+	delete(m.clearedFields, repository.FieldNextIntegrityCheck)
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
@@ -5405,7 +5382,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
@@ -5414,6 +5391,9 @@ func (m *RepositoryMutation) Fields() []string {
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
+	}
+	if m.next_integrity_check != nil {
+		fields = append(fields, repository.FieldNextIntegrityCheck)
 	}
 	if m.stats_total_chunks != nil {
 		fields = append(fields, repository.FieldStatsTotalChunks)
@@ -5447,6 +5427,8 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Location()
 	case repository.FieldPassword:
 		return m.Password()
+	case repository.FieldNextIntegrityCheck:
+		return m.NextIntegrityCheck()
 	case repository.FieldStatsTotalChunks:
 		return m.StatsTotalChunks()
 	case repository.FieldStatsTotalSize:
@@ -5474,6 +5456,8 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldLocation(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
+	case repository.FieldNextIntegrityCheck:
+		return m.OldNextIntegrityCheck(ctx)
 	case repository.FieldStatsTotalChunks:
 		return m.OldStatsTotalChunks(ctx)
 	case repository.FieldStatsTotalSize:
@@ -5515,6 +5499,13 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPassword(v)
+		return nil
+	case repository.FieldNextIntegrityCheck:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextIntegrityCheck(v)
 		return nil
 	case repository.FieldStatsTotalChunks:
 		v, ok := value.(int)
@@ -5662,7 +5653,11 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
+		fields = append(fields, repository.FieldNextIntegrityCheck)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -5675,6 +5670,11 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
+	switch name {
+	case repository.FieldNextIntegrityCheck:
+		m.ClearNextIntegrityCheck()
+		return nil
+	}
 	return fmt.Errorf("unknown Repository nullable field %s", name)
 }
 
@@ -5690,6 +5690,9 @@ func (m *RepositoryMutation) ResetField(name string) error {
 		return nil
 	case repository.FieldPassword:
 		m.ResetPassword()
+		return nil
+	case repository.FieldNextIntegrityCheck:
+		m.ResetNextIntegrityCheck()
 		return nil
 	case repository.FieldStatsTotalChunks:
 		m.ResetStatsTotalChunks()

@@ -143,15 +143,6 @@ async function saveIcon(icon: backupprofile.Icon) {
   }
 }
 
-async function saveIntegrityCheckSettings(isEnabled: boolean) {
-  try {
-    const result = await backupClient.SaveIntegrityCheckSettings(backupProfile.value.id, isEnabled);
-    backupProfile.value.nextIntegrityCheck = result.nextIntegrityCheck;
-  } catch (error: any) {
-    await showAndLogError("Failed to save integrity check settings", error);
-  }
-}
-
 async function setPruningRule(pruningRule: ent.PruningRule) {
   try {
     backupProfile.value.edges.pruningRule = pruningRule
@@ -248,8 +239,6 @@ watch(loading, async () => {
 
       <PruningCard :backup-profile-id='backupProfile.id'
                    :pruning-rule='backupProfile.edges?.pruningRule ?? ent.PruningRule.createFrom()'
-                   :is-integrity-check-enabled='!!backupProfile.nextIntegrityCheck'
-                   @update:integrity-check='saveIntegrityCheckSettings'
                    @update:pruning-rule='setPruningRule'>
       </PruningCard>
     </div>

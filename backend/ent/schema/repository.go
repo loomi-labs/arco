@@ -24,6 +24,12 @@ func (Repository) Fields() []ent.Field {
 		field.String("password").
 			StructTag(`json:"password"`),
 
+		// Integrity check
+		field.Time("next_integrity_check").
+			StructTag(`json:"nextIntegrityCheck"`).
+			Nillable().
+			Optional(),
+
 		// Stats
 		field.Int("stats_total_chunks").
 			Default(0).

@@ -4,7 +4,6 @@ package backupprofile
 
 import (
 	"arco/backend/ent/predicate"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -63,11 +62,6 @@ func Name(v string) predicate.BackupProfile {
 // Prefix applies equality check predicate on the "prefix" field. It's identical to PrefixEQ.
 func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
-}
-
-// NextIntegrityCheck applies equality check predicate on the "next_integrity_check" field. It's identical to NextIntegrityCheckEQ.
-func NextIntegrityCheck(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldNextIntegrityCheck, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -228,56 +222,6 @@ func IconIn(vs ...Icon) predicate.BackupProfile {
 // IconNotIn applies the NotIn predicate on the "icon" field.
 func IconNotIn(vs ...Icon) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotIn(FieldIcon, vs...))
-}
-
-// NextIntegrityCheckEQ applies the EQ predicate on the "next_integrity_check" field.
-func NextIntegrityCheckEQ(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldEQ(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckNEQ applies the NEQ predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNEQ(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNEQ(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckIn applies the In predicate on the "next_integrity_check" field.
-func NextIntegrityCheckIn(vs ...time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldIn(FieldNextIntegrityCheck, vs...))
-}
-
-// NextIntegrityCheckNotIn applies the NotIn predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNotIn(vs ...time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNotIn(FieldNextIntegrityCheck, vs...))
-}
-
-// NextIntegrityCheckGT applies the GT predicate on the "next_integrity_check" field.
-func NextIntegrityCheckGT(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGT(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckGTE applies the GTE predicate on the "next_integrity_check" field.
-func NextIntegrityCheckGTE(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldGTE(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckLT applies the LT predicate on the "next_integrity_check" field.
-func NextIntegrityCheckLT(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLT(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckLTE applies the LTE predicate on the "next_integrity_check" field.
-func NextIntegrityCheckLTE(v time.Time) predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldLTE(FieldNextIntegrityCheck, v))
-}
-
-// NextIntegrityCheckIsNil applies the IsNil predicate on the "next_integrity_check" field.
-func NextIntegrityCheckIsNil() predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldIsNull(FieldNextIntegrityCheck))
-}
-
-// NextIntegrityCheckNotNil applies the NotNil predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNotNil() predicate.BackupProfile {
-	return predicate.BackupProfile(sql.FieldNotNull(FieldNextIntegrityCheck))
 }
 
 // HasRepositories applies the HasEdge predicate on the "repositories" edge.

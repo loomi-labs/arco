@@ -15,6 +15,7 @@ import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
+import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 
 /************
  * Variables
@@ -31,6 +32,7 @@ const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
+const isIntegrityCheckEnabled = ref(false);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -61,6 +63,7 @@ async function getRepo() {
     name.value = repo.value.name;
 
     location.value = getLocation(repo.value.location);
+    isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
@@ -98,6 +101,15 @@ function adjustNameWidth() {
   if (nameInput.value) {
     nameInput.value.style.width = "30px";
     nameInput.value.style.width = `${nameInput.value.scrollWidth}px`;
+  }
+}
+
+async function saveIntegrityCheckSettings() {
+  try {
+    const result = await repoClient.SaveIntegrityCheckSettings(repoId, isIntegrityCheckEnabled.value);
+    repo.value.nextIntegrityCheck = result.nextIntegrityCheck;
+  } catch (error: any) {
+    await showAndLogError("Failed to save integrity check settings", error);
   }
 }
 
@@ -179,6 +191,15 @@ onUnmounted(() => {
       <div class='flex justify-between'>
         <div>{{ $t("size_on_disk") }}</div>
         <div>{{ sizeOnDisk }}</div>
+      </div>
+
+      <div class='divider'></div>
+      <div class='flex items-center justify-between mb-4'>
+        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>
+          <h3 class='text-xl font-semibold'>Run integrity checks</h3>
+        </TooltipTextIcon>
+        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'
+               @change='saveIntegrityCheckSettings'>
       </div>
     </div>
 

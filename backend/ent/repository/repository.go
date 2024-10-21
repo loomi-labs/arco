@@ -18,6 +18,8 @@ const (
 	FieldLocation = "location"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
+	FieldNextIntegrityCheck = "next_integrity_check"
 	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
 	FieldStatsTotalChunks = "stats_total_chunks"
 	// FieldStatsTotalSize holds the string denoting the stats_total_size field in the database.
@@ -65,6 +67,7 @@ var Columns = []string{
 	FieldName,
 	FieldLocation,
 	FieldPassword,
+	FieldNextIntegrityCheck,
 	FieldStatsTotalChunks,
 	FieldStatsTotalSize,
 	FieldStatsTotalCsize,
@@ -125,6 +128,11 @@ func ByLocation(opts ...sql.OrderTermOption) OrderOption {
 // ByPassword orders the results by the password field.
 func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+}
+
+// ByNextIntegrityCheck orders the results by the next_integrity_check field.
+func ByNextIntegrityCheck(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextIntegrityCheck, opts...).ToFunc()
 }
 
 // ByStatsTotalChunks orders the results by the stats_total_chunks field.

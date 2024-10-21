@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -69,6 +70,26 @@ func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
 	if s != nil {
 		ru.SetPassword(*s)
 	}
+	return ru
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (ru *RepositoryUpdate) SetNextIntegrityCheck(t time.Time) *RepositoryUpdate {
+	ru.mutation.SetNextIntegrityCheck(t)
+	return ru
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdate {
+	if t != nil {
+		ru.SetNextIntegrityCheck(*t)
+	}
+	return ru
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (ru *RepositoryUpdate) ClearNextIntegrityCheck() *RepositoryUpdate {
+	ru.mutation.ClearNextIntegrityCheck()
 	return ru
 }
 
@@ -356,6 +377,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
+	if value, ok := ru.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if ru.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
+	}
 	if value, ok := ru.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 	}
@@ -586,6 +613,26 @@ func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdate
 	if s != nil {
 		ruo.SetPassword(*s)
 	}
+	return ruo
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (ruo *RepositoryUpdateOne) SetNextIntegrityCheck(t time.Time) *RepositoryUpdateOne {
+	ruo.mutation.SetNextIntegrityCheck(t)
+	return ruo
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdateOne {
+	if t != nil {
+		ruo.SetNextIntegrityCheck(*t)
+	}
+	return ruo
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (ruo *RepositoryUpdateOne) ClearNextIntegrityCheck() *RepositoryUpdateOne {
+	ruo.mutation.ClearNextIntegrityCheck()
 	return ruo
 }
 
@@ -902,6 +949,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if ruo.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if value, ok := ruo.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)

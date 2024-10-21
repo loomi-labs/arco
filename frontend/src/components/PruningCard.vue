@@ -64,12 +64,9 @@ const pruningOptionMap: PruningOptionMap = {
 interface Props {
   backupProfileId: number;
   pruningRule: ent.PruningRule;
-  isIntegrityCheckEnabled: boolean;
 }
 
 interface Emits {
-  (event: typeof emitUpdateIntegrityCheck, isEnabled: boolean): void;
-
   (event: typeof emitUpdatePruningRule, rule: ent.PruningRule): void;
 }
 
@@ -80,12 +77,9 @@ interface Emits {
 const props = defineProps<Props>();
 const emits = defineEmits<Emits>();
 
-const emitUpdateIntegrityCheck = "update:integrityCheck";
 const emitUpdatePruningRule = "update:pruningRule";
 
 const router = useRouter();
-
-const isIntegrityCheckEnabled = ref(props.isIntegrityCheckEnabled);
 
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
 const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
@@ -195,13 +189,6 @@ onBeforeRouteLeave((to, from) => {
 
 <template>
   <div class='ac-card p-10'>
-    <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>
-        <h3 class='text-xl font-semibold'>Run integrity checks</h3>
-      </TooltipTextIcon>
-      <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'
-             @change='emits(emitUpdateIntegrityCheck, isIntegrityCheckEnabled)'>
-    </div>
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Delete old archives'>
         <h3 class='text-xl font-semibold'>Delete old archives</h3>

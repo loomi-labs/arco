@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -37,6 +38,20 @@ func (rc *RepositoryCreate) SetLocation(s string) *RepositoryCreate {
 // SetPassword sets the "password" field.
 func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	rc.mutation.SetPassword(s)
+	return rc
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (rc *RepositoryCreate) SetNextIntegrityCheck(t time.Time) *RepositoryCreate {
+	rc.mutation.SetNextIntegrityCheck(t)
+	return rc
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryCreate {
+	if t != nil {
+		rc.SetNextIntegrityCheck(*t)
+	}
 	return rc
 }
 
@@ -308,6 +323,10 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
+	}
+	if value, ok := rc.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+		_node.NextIntegrityCheck = &value
 	}
 	if value, ok := rc.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)

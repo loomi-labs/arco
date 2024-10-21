@@ -24,8 +24,6 @@ const (
 	FieldExcludePaths = "exclude_paths"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
-	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
-	FieldNextIntegrityCheck = "next_integrity_check"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -81,7 +79,6 @@ var Columns = []string{
 	FieldBackupPaths,
 	FieldExcludePaths,
 	FieldIcon,
-	FieldNextIntegrityCheck,
 }
 
 var (
@@ -159,11 +156,6 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 // ByIcon orders the results by the icon field.
 func ByIcon(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIcon, opts...).ToFunc()
-}
-
-// ByNextIntegrityCheck orders the results by the next_integrity_check field.
-func ByNextIntegrityCheck(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNextIntegrityCheck, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

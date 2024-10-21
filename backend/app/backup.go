@@ -263,28 +263,6 @@ func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int)
 	return repo, nil
 }
 
-func endOfMonth(t time.Time) time.Time {
-	// Add one month to the current time
-	nextMonth := t.AddDate(0, 1, 0)
-	// Set the day to the first day of the next month and subtract one day
-	return time.Date(nextMonth.Year(), nextMonth.Month(), 1, 0, 0, 0, 0, nextMonth.Location()).Add(-time.Nanosecond)
-}
-
-func (b *BackupClient) SaveIntegrityCheckSettings(backupId int, enabled bool) (*ent.BackupProfile, error) {
-	b.log.Debug(fmt.Sprintf("Setting integrity check for backup profile %d to %t", backupId, enabled))
-	if enabled {
-		nextRun := endOfMonth(time.Now())
-		return b.db.BackupProfile.
-			UpdateOneID(backupId).
-			SetNillableNextIntegrityCheck(&nextRun).
-			Save(b.ctx)
-	}
-	return b.db.BackupProfile.
-		UpdateOneID(backupId).
-		SetNillableNextIntegrityCheck(nil).
-		Save(b.ctx)
-}
-
 /***********************************/
 /********** Backup Functions *******/
 /***********************************/

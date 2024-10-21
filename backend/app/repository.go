@@ -9,7 +9,9 @@ import (
 	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
+	"fmt"
 	"net/url"
+	"time"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -154,6 +156,28 @@ func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, 
 	return r.db.Repository.
 		UpdateOne(repository).
 		SetName(repository.Name).
+		Save(r.ctx)
+}
+
+func endOfMonth(t time.Time) time.Time {
+	// Add one month to the current time
+	nextMonth := t.AddDate(0, 1, 0)
+	// Set the day to the first day of the next month and subtract one day
+	return time.Date(nextMonth.Year(), nextMonth.Month(), 1, 0, 0, 0, 0, nextMonth.Location()).Add(-time.Nanosecond)
+}
+
+func (r *RepositoryClient) SaveIntegrityCheckSettings(repoId int, enabled bool) (*ent.Repository, error) {
+	r.log.Debug(fmt.Sprintf("Setting integrity check for repository %d to %t", repoId, enabled))
+	if enabled {
+		nextRun := endOfMonth(time.Now())
+		return r.db.Repository.
+			UpdateOneID(repoId).
+			SetNillableNextIntegrityCheck(&nextRun).
+			Save(r.ctx)
+	}
+	return r.db.Repository.
+		UpdateOneID(repoId).
+		SetNillableNextIntegrityCheck(nil).
 		Save(r.ctx)
 }
 

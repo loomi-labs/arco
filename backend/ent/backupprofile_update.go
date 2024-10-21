@@ -13,7 +13,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -89,26 +88,6 @@ func (bpu *BackupProfileUpdate) SetNillableIcon(b *backupprofile.Icon) *BackupPr
 	if b != nil {
 		bpu.SetIcon(*b)
 	}
-	return bpu
-}
-
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (bpu *BackupProfileUpdate) SetNextIntegrityCheck(t time.Time) *BackupProfileUpdate {
-	bpu.mutation.SetNextIntegrityCheck(t)
-	return bpu
-}
-
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableNextIntegrityCheck(t *time.Time) *BackupProfileUpdate {
-	if t != nil {
-		bpu.SetNextIntegrityCheck(*t)
-	}
-	return bpu
-}
-
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (bpu *BackupProfileUpdate) ClearNextIntegrityCheck() *BackupProfileUpdate {
-	bpu.mutation.ClearNextIntegrityCheck()
 	return bpu
 }
 
@@ -353,12 +332,6 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := bpu.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
-	}
-	if value, ok := bpu.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(backupprofile.FieldNextIntegrityCheck, field.TypeTime, value)
-	}
-	if bpu.mutation.NextIntegrityCheckCleared() {
-		_spec.ClearField(backupprofile.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if bpu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -628,26 +601,6 @@ func (bpuo *BackupProfileUpdateOne) SetNillableIcon(b *backupprofile.Icon) *Back
 	if b != nil {
 		bpuo.SetIcon(*b)
 	}
-	return bpuo
-}
-
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (bpuo *BackupProfileUpdateOne) SetNextIntegrityCheck(t time.Time) *BackupProfileUpdateOne {
-	bpuo.mutation.SetNextIntegrityCheck(t)
-	return bpuo
-}
-
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableNextIntegrityCheck(t *time.Time) *BackupProfileUpdateOne {
-	if t != nil {
-		bpuo.SetNextIntegrityCheck(*t)
-	}
-	return bpuo
-}
-
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (bpuo *BackupProfileUpdateOne) ClearNextIntegrityCheck() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearNextIntegrityCheck()
 	return bpuo
 }
 
@@ -922,12 +875,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	}
 	if value, ok := bpuo.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
-	}
-	if value, ok := bpuo.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(backupprofile.FieldNextIntegrityCheck, field.TypeTime, value)
-	}
-	if bpuo.mutation.NextIntegrityCheckCleared() {
-		_spec.ClearField(backupprofile.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if bpuo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

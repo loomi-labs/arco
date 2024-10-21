@@ -12,7 +12,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -52,20 +51,6 @@ func (bpc *BackupProfileCreate) SetExcludePaths(s []string) *BackupProfileCreate
 // SetIcon sets the "icon" field.
 func (bpc *BackupProfileCreate) SetIcon(b backupprofile.Icon) *BackupProfileCreate {
 	bpc.mutation.SetIcon(b)
-	return bpc
-}
-
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (bpc *BackupProfileCreate) SetNextIntegrityCheck(t time.Time) *BackupProfileCreate {
-	bpc.mutation.SetNextIntegrityCheck(t)
-	return bpc
-}
-
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableNextIntegrityCheck(t *time.Time) *BackupProfileCreate {
-	if t != nil {
-		bpc.SetNextIntegrityCheck(*t)
-	}
 	return bpc
 }
 
@@ -286,10 +271,6 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 	if value, ok := bpc.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 		_node.Icon = value
-	}
-	if value, ok := bpc.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(backupprofile.FieldNextIntegrityCheck, field.TypeTime, value)
-		_node.NextIntegrityCheck = &value
 	}
 	if nodes := bpc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -22,6 +23,8 @@ type Repository struct {
 	Location string `json:"location"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
+	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
+	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
 	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
 	StatsTotalChunks int `json:"statsTotalChunks"`
 	// StatsTotalSize holds the value of the "stats_total_size" field.
@@ -89,6 +92,8 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
 			values[i] = new(sql.NullString)
+		case repository.FieldNextIntegrityCheck:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -127,6 +132,13 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
 				r.Password = value.String
+			}
+		case repository.FieldNextIntegrityCheck:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
+			} else if value.Valid {
+				r.NextIntegrityCheck = new(time.Time)
+				*r.NextIntegrityCheck = value.Time
 			}
 		case repository.FieldStatsTotalChunks:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -223,6 +235,11 @@ func (r *Repository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)
+	builder.WriteString(", ")
+	if v := r.NextIntegrityCheck; v != nil {
+		builder.WriteString("next_integrity_check=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_chunks=")
 	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalChunks))
