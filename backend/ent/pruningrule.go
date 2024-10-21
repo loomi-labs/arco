@@ -20,6 +20,8 @@ type PruningRule struct {
 	ID int `json:"id"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// IsEnabled holds the value of the "is_enabled" field.
+	IsEnabled bool `json:"isEnabled"`
 	// KeepHourly holds the value of the "keep_hourly" field.
 	KeepHourly int `json:"keepHourly"`
 	// KeepDaily holds the value of the "keep_daily" field.
@@ -70,6 +72,8 @@ func (*PruningRule) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case pruningrule.FieldIsEnabled:
+			values[i] = new(sql.NullBool)
 		case pruningrule.FieldID, pruningrule.FieldKeepHourly, pruningrule.FieldKeepDaily, pruningrule.FieldKeepWeekly, pruningrule.FieldKeepMonthly, pruningrule.FieldKeepYearly, pruningrule.FieldKeepWithinDays:
 			values[i] = new(sql.NullInt64)
 		case pruningrule.FieldLastRunStatus:
@@ -104,6 +108,12 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				pr.UpdatedAt = value.Time
+			}
+		case pruningrule.FieldIsEnabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_enabled", values[i])
+			} else if value.Valid {
+				pr.IsEnabled = value.Bool
 			}
 		case pruningrule.FieldKeepHourly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -211,6 +221,9 @@ func (pr *PruningRule) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
 	builder.WriteString("updated_at=")
 	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("is_enabled=")
+	builder.WriteString(fmt.Sprintf("%v", pr.IsEnabled))
 	builder.WriteString(", ")
 	builder.WriteString("keep_hourly=")
 	builder.WriteString(fmt.Sprintf("%v", pr.KeepHourly))

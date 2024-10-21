@@ -16,6 +16,8 @@ const (
 	FieldID = "id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldIsEnabled holds the string denoting the is_enabled field in the database.
+	FieldIsEnabled = "is_enabled"
 	// FieldKeepHourly holds the string denoting the keep_hourly field in the database.
 	FieldKeepHourly = "keep_hourly"
 	// FieldKeepDaily holds the string denoting the keep_daily field in the database.
@@ -51,6 +53,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldUpdatedAt,
+	FieldIsEnabled,
 	FieldKeepHourly,
 	FieldKeepDaily,
 	FieldKeepWeekly,
@@ -101,6 +104,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByIsEnabled orders the results by the is_enabled field.
+func ByIsEnabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsEnabled, opts...).ToFunc()
 }
 
 // ByKeepHourly orders the results by the keep_hourly field.

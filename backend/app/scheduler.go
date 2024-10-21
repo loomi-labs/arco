@@ -370,6 +370,7 @@ func (a *App) getPruningRules() ([]*ent.PruningRule, error) {
 			q.WithRepositories()
 			q.WithBackupSchedule()
 		}).
+		Where(pruningrule.IsEnabledEQ(true)).
 		All(a.ctx)
 }
 

@@ -20,6 +20,8 @@ func (PruningRule) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
+		field.Bool("is_enabled").
+			StructTag(`json:"isEnabled"`),
 		// https://borgbackup.readthedocs.io/en/stable/usage/prune.html
 		// Fields to define the keep rules
 		field.Int("keep_hourly").

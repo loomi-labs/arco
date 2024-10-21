@@ -19,10 +19,18 @@ import (
 func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
 	defer b.sendPruningRuleChanged()
 
-	if rule.ID == 0 {
+	// We ignore the ID from the given rule and get it from the db directly
+	pruingRuleId, err := b.db.PruningRule.
+		Query().
+		Where(pruningrule.HasBackupProfileWith(backupprofile.ID(backupId))).
+		FirstID(b.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	} else if ent.IsNotFound(err) {
 		b.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
 		return b.db.PruningRule.
 			Create().
+			SetIsEnabled(rule.IsEnabled).
 			SetKeepHourly(rule.KeepHourly).
 			SetKeepDaily(rule.KeepDaily).
 			SetKeepWeekly(rule.KeepWeekly).
@@ -34,7 +42,8 @@ func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent
 	}
 	b.log.Debug(fmt.Sprintf("Updating pruning rule %d for backup profile %d", rule.ID, backupId))
 	return b.db.PruningRule.
-		UpdateOneID(rule.ID).
+		UpdateOneID(pruingRuleId).
+		SetIsEnabled(rule.IsEnabled).
 		SetKeepHourly(rule.KeepHourly).
 		SetKeepDaily(rule.KeepDaily).
 		SetKeepWeekly(rule.KeepWeekly).
@@ -42,18 +51,6 @@ func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent
 		SetKeepYearly(rule.KeepYearly).
 		SetKeepWithinDays(rule.KeepWithinDays).
 		Save(b.ctx)
-}
-
-func (b *BackupClient) DeletePruningRule(backupId int) error {
-	_, err := b.db.PruningRule.
-		Delete().
-		Where(pruningrule.HasBackupProfileWith(backupprofile.ID(backupId))).
-		Exec(b.ctx)
-	if err != nil {
-		return err
-	}
-	b.sendPruningRuleChanged()
-	return nil
 }
 
 func (b *BackupClient) sendPruningRuleChanged() {

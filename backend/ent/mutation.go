@@ -3432,6 +3432,7 @@ type PruningRuleMutation struct {
 	typ                   string
 	id                    *int
 	updated_at            *time.Time
+	is_enabled            *bool
 	keep_hourly           *int
 	addkeep_hourly        *int
 	keep_daily            *int
@@ -3593,6 +3594,42 @@ func (m *PruningRuleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *PruningRuleMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetIsEnabled sets the "is_enabled" field.
+func (m *PruningRuleMutation) SetIsEnabled(b bool) {
+	m.is_enabled = &b
+}
+
+// IsEnabled returns the value of the "is_enabled" field in the mutation.
+func (m *PruningRuleMutation) IsEnabled() (r bool, exists bool) {
+	v := m.is_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsEnabled returns the old "is_enabled" field's value of the PruningRule entity.
+// If the PruningRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PruningRuleMutation) OldIsEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsEnabled: %w", err)
+	}
+	return oldValue.IsEnabled, nil
+}
+
+// ResetIsEnabled resets all changes to the "is_enabled" field.
+func (m *PruningRuleMutation) ResetIsEnabled() {
+	m.is_enabled = nil
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
@@ -4151,9 +4188,12 @@ func (m *PruningRuleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PruningRuleMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.updated_at != nil {
 		fields = append(fields, pruningrule.FieldUpdatedAt)
+	}
+	if m.is_enabled != nil {
+		fields = append(fields, pruningrule.FieldIsEnabled)
 	}
 	if m.keep_hourly != nil {
 		fields = append(fields, pruningrule.FieldKeepHourly)
@@ -4192,6 +4232,8 @@ func (m *PruningRuleMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case pruningrule.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case pruningrule.FieldIsEnabled:
+		return m.IsEnabled()
 	case pruningrule.FieldKeepHourly:
 		return m.KeepHourly()
 	case pruningrule.FieldKeepDaily:
@@ -4221,6 +4263,8 @@ func (m *PruningRuleMutation) OldField(ctx context.Context, name string) (ent.Va
 	switch name {
 	case pruningrule.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case pruningrule.FieldIsEnabled:
+		return m.OldIsEnabled(ctx)
 	case pruningrule.FieldKeepHourly:
 		return m.OldKeepHourly(ctx)
 	case pruningrule.FieldKeepDaily:
@@ -4254,6 +4298,13 @@ func (m *PruningRuleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case pruningrule.FieldIsEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsEnabled(v)
 		return nil
 	case pruningrule.FieldKeepHourly:
 		v, ok := value.(int)
@@ -4465,6 +4516,9 @@ func (m *PruningRuleMutation) ResetField(name string) error {
 	switch name {
 	case pruningrule.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case pruningrule.FieldIsEnabled:
+		m.ResetIsEnabled()
 		return nil
 	case pruningrule.FieldKeepHourly:
 		m.ResetKeepHourly()

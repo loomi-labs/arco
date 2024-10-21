@@ -35,6 +35,12 @@ func (prc *PruningRuleCreate) SetNillableUpdatedAt(t *time.Time) *PruningRuleCre
 	return prc
 }
 
+// SetIsEnabled sets the "is_enabled" field.
+func (prc *PruningRuleCreate) SetIsEnabled(b bool) *PruningRuleCreate {
+	prc.mutation.SetIsEnabled(b)
+	return prc
+}
+
 // SetKeepHourly sets the "keep_hourly" field.
 func (prc *PruningRuleCreate) SetKeepHourly(i int) *PruningRuleCreate {
 	prc.mutation.SetKeepHourly(i)
@@ -176,6 +182,9 @@ func (prc *PruningRuleCreate) check() error {
 	if _, ok := prc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PruningRule.updated_at"`)}
 	}
+	if _, ok := prc.mutation.IsEnabled(); !ok {
+		return &ValidationError{Name: "is_enabled", err: errors.New(`ent: missing required field "PruningRule.is_enabled"`)}
+	}
 	if _, ok := prc.mutation.KeepHourly(); !ok {
 		return &ValidationError{Name: "keep_hourly", err: errors.New(`ent: missing required field "PruningRule.keep_hourly"`)}
 	}
@@ -232,6 +241,10 @@ func (prc *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) 
 	if value, ok := prc.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := prc.mutation.IsEnabled(); ok {
+		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
+		_node.IsEnabled = value
 	}
 	if value, ok := prc.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)

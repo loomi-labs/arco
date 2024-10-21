@@ -270,18 +270,19 @@ func endOfMonth(t time.Time) time.Time {
 	return time.Date(nextMonth.Year(), nextMonth.Month(), 1, 0, 0, 0, 0, nextMonth.Location()).Add(-time.Nanosecond)
 }
 
-func (b *BackupClient) SaveIntegrityCheckSettings(backupId int, enabled bool) error {
+func (b *BackupClient) SaveIntegrityCheckSettings(backupId int, enabled bool) (*ent.BackupProfile, error) {
+	b.log.Debug(fmt.Sprintf("Setting integrity check for backup profile %d to %t", backupId, enabled))
 	if enabled {
 		nextRun := endOfMonth(time.Now())
 		return b.db.BackupProfile.
 			UpdateOneID(backupId).
 			SetNillableNextIntegrityCheck(&nextRun).
-			Exec(b.ctx)
+			Save(b.ctx)
 	}
 	return b.db.BackupProfile.
 		UpdateOneID(backupId).
 		SetNillableNextIntegrityCheck(nil).
-		Exec(b.ctx)
+		Save(b.ctx)
 }
 
 /***********************************/

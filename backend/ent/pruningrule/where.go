@@ -60,6 +60,11 @@ func UpdatedAt(v time.Time) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
+// IsEnabled applies equality check predicate on the "is_enabled" field. It's identical to IsEnabledEQ.
+func IsEnabled(v bool) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldIsEnabled, v))
+}
+
 // KeepHourly applies equality check predicate on the "keep_hourly" field. It's identical to KeepHourlyEQ.
 func KeepHourly(v int) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldEQ(FieldKeepHourly, v))
@@ -143,6 +148,16 @@ func UpdatedAtLT(v time.Time) predicate.PruningRule {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.PruningRule {
 	return predicate.PruningRule(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// IsEnabledEQ applies the EQ predicate on the "is_enabled" field.
+func IsEnabledEQ(v bool) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldEQ(FieldIsEnabled, v))
+}
+
+// IsEnabledNEQ applies the NEQ predicate on the "is_enabled" field.
+func IsEnabledNEQ(v bool) predicate.PruningRule {
+	return predicate.PruningRule(sql.FieldNEQ(FieldIsEnabled, v))
 }
 
 // KeepHourlyEQ applies the EQ predicate on the "keep_hourly" field.

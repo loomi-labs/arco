@@ -35,6 +35,20 @@ func (pru *PruningRuleUpdate) SetUpdatedAt(t time.Time) *PruningRuleUpdate {
 	return pru
 }
 
+// SetIsEnabled sets the "is_enabled" field.
+func (pru *PruningRuleUpdate) SetIsEnabled(b bool) *PruningRuleUpdate {
+	pru.mutation.SetIsEnabled(b)
+	return pru
+}
+
+// SetNillableIsEnabled sets the "is_enabled" field if the given value is not nil.
+func (pru *PruningRuleUpdate) SetNillableIsEnabled(b *bool) *PruningRuleUpdate {
+	if b != nil {
+		pru.SetIsEnabled(*b)
+	}
+	return pru
+}
+
 // SetKeepHourly sets the "keep_hourly" field.
 func (pru *PruningRuleUpdate) SetKeepHourly(i int) *PruningRuleUpdate {
 	pru.mutation.ResetKeepHourly()
@@ -302,6 +316,9 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pru.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if value, ok := pru.mutation.IsEnabled(); ok {
+		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
+	}
 	if value, ok := pru.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
@@ -408,6 +425,20 @@ type PruningRuleUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (pruo *PruningRuleUpdateOne) SetUpdatedAt(t time.Time) *PruningRuleUpdateOne {
 	pruo.mutation.SetUpdatedAt(t)
+	return pruo
+}
+
+// SetIsEnabled sets the "is_enabled" field.
+func (pruo *PruningRuleUpdateOne) SetIsEnabled(b bool) *PruningRuleUpdateOne {
+	pruo.mutation.SetIsEnabled(b)
+	return pruo
+}
+
+// SetNillableIsEnabled sets the "is_enabled" field if the given value is not nil.
+func (pruo *PruningRuleUpdateOne) SetNillableIsEnabled(b *bool) *PruningRuleUpdateOne {
+	if b != nil {
+		pruo.SetIsEnabled(*b)
+	}
 	return pruo
 }
 
@@ -707,6 +738,9 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 	}
 	if value, ok := pruo.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := pruo.mutation.IsEnabled(); ok {
+		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
 	}
 	if value, ok := pruo.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
