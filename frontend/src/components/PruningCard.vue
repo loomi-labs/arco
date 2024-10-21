@@ -1,10 +1,11 @@
 <script setup lang='ts'>
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref, useTemplateRef, watchEffect } from "vue";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { ent } from "../../wailsjs/go/models";
-import { showAndLogError } from "../common/error";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
+import ConfirmModal from "./common/ConfirmModal.vue";
+import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import { showAndLogError } from "../common/error";
 
 enum PruningKeepOption {
   none = "none",
@@ -14,11 +15,15 @@ enum PruningKeepOption {
 }
 
 interface Props {
-  backupProfile: ent.BackupProfile;
+  backupProfileId: number;
+  pruningRule: ent.PruningRule;
+  isIntegrityCheckEnabled: boolean;
 }
 
 interface Emits {
-  (event: typeof isPruningEnabledEmit, enabled: boolean): void;
+  (event: typeof emitUpdateIntegrityCheck, isEnabled: boolean): void;
+
+  (event: typeof emitUpdatePruningRule, rule: ent.PruningRule): void;
 }
 
 /************
@@ -28,87 +33,110 @@ interface Emits {
 const props = defineProps<Props>();
 const emits = defineEmits<Emits>();
 
-const isPruningEnabledEmit = "pruning:isEnabled";
+const emitUpdateIntegrityCheck = "update:integrityCheck";
+const emitUpdatePruningRule = "update:pruningRule";
 
 const router = useRouter();
 
-const isIntegrityCheckEnabled = ref(!!props.backupProfile.nextIntegrityCheck);
-const isPruningEnabled = ref(!!props.backupProfile.edges.pruningRule);
-const pruningRule = ref<ent.PruningRule>(props.backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom());
+const isIntegrityCheckEnabled = ref(props.isIntegrityCheckEnabled);
+
+const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
 const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
 const pruningKeepWithinDays = ref<number>(0);
+
+const confirmSaveModalKey = "confirm_delete_backup_profile_modal";
+const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
+
+const wantToGoRoute = ref<string | undefined>(undefined);
 
 /************
  * Functions
  ************/
 
-async function saveIntegrityCheckSettings() {
-  try {
-    await backupClient.SaveIntegrityCheckSettings(props.backupProfile.id, isIntegrityCheckEnabled.value);
-  } catch (error: any) {
-    await showAndLogError("Failed to save integrity check settings", error);
-  }
-}
 
-function toPruningRule(option: PruningKeepOption): ent.PruningRule {
-  const rule = pruningRule.value;
-  switch (option) {
+const hasUnsavedChanges = computed(() => {
+  return props.pruningRule.isEnabled !== pruningRule.value.isEnabled ||
+    props.pruningRule.keepWithinDays !== pruningRule.value.keepWithinDays ||
+    props.pruningRule.keepHourly !== pruningRule.value.keepHourly ||
+    props.pruningRule.keepDaily !== pruningRule.value.keepDaily ||
+    props.pruningRule.keepWeekly !== pruningRule.value.keepWeekly ||
+    props.pruningRule.keepMonthly !== pruningRule.value.keepMonthly ||
+    props.pruningRule.keepYearly !== pruningRule.value.keepYearly;
+});
+
+function toPruningRule() {
+  switch (pruningKeepOption.value) {
     case PruningKeepOption.none:
-      rule.keepHourly = 0;
-      rule.keepDaily = 0;
-      rule.keepWeekly = 0;
-      rule.keepMonthly = 0;
-      rule.keepYearly = 0;
+      pruningRule.value.keepHourly = 0;
+      pruningRule.value.keepDaily = 0;
+      pruningRule.value.keepWeekly = 0;
+      pruningRule.value.keepMonthly = 0;
+      pruningRule.value.keepYearly = 0;
       break;
     case PruningKeepOption.few:
-      rule.keepHourly = 1;
-      rule.keepDaily = 1;
-      rule.keepWeekly = 1;
-      rule.keepMonthly = 1;
-      rule.keepYearly = 1;
+      pruningRule.value.keepHourly = 1;
+      pruningRule.value.keepDaily = 1;
+      pruningRule.value.keepWeekly = 1;
+      pruningRule.value.keepMonthly = 1;
+      pruningRule.value.keepYearly = 1;
       break;
     case PruningKeepOption.some:
-      rule.keepHourly = 3;
-      rule.keepDaily = 3;
-      rule.keepWeekly = 3;
-      rule.keepMonthly = 3;
-      rule.keepYearly = 3;
+      pruningRule.value.keepHourly = 3;
+      pruningRule.value.keepDaily = 3;
+      pruningRule.value.keepWeekly = 3;
+      pruningRule.value.keepMonthly = 3;
+      pruningRule.value.keepYearly = 3;
       break;
     case PruningKeepOption.many:
-      rule.keepHourly = 6;
-      rule.keepDaily = 6;
-      rule.keepWeekly = 6;
-      rule.keepMonthly = 6;
-      rule.keepYearly = 6;
+      pruningRule.value.keepHourly = 6;
+      pruningRule.value.keepDaily = 6;
+      pruningRule.value.keepWeekly = 6;
+      pruningRule.value.keepMonthly = 6;
+      pruningRule.value.keepYearly = 6;
       break;
   }
-  return rule;
 }
 
-async function savePruningRule() {
+async function savePruningRule(pruningRule: ent.PruningRule) {
   try {
-    if (isPruningEnabled.value) {
-      pruningRule.value = toPruningRule(pruningKeepOption.value);
-      pruningRule.value.keepWithinDays = pruningKeepWithinDays.value;
-      pruningRule.value = await backupClient.SavePruningRule(props.backupProfile.id, pruningRule.value);
-      props.backupProfile.edges.pruningRule = pruningRule.value;
-      pruningKeepWithinDays.value = pruningRule.value.keepWithinDays;
-    } else {
-      await backupClient.DeletePruningRule(props.backupProfile.id);
-      pruningRule.value = ent.PruningRule.createFrom();
-      props.backupProfile.edges.pruningRule = ent.PruningRule.createFrom();
-      pruningKeepWithinDays.value = pruningRule.value.keepWithinDays;
-    }
+    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule);
+    await emits(emitUpdatePruningRule, result);
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);
-  } finally {
-    emits(isPruningEnabledEmit, isPruningEnabled.value);
+  }
+}
+
+async function confirmSave(redirectTo?: string) {
+  await savePruningRule(pruningRule.value);
+  if (redirectTo) {
+    await router.push(redirectTo);
   }
 }
 
 /************
  * Lifecycle
  ************/
+
+// Create a copy of the current pruning rule
+// This way we can compare the current pruning rule with the new one and save or discard changes
+watchEffect(() => {
+  pruningRule.value.isEnabled = props.pruningRule.isEnabled;
+  pruningRule.value.keepWithinDays = props.pruningRule.keepWithinDays;
+  pruningRule.value.keepHourly = props.pruningRule.keepHourly;
+  pruningRule.value.keepDaily = props.pruningRule.keepDaily;
+  pruningRule.value.keepWeekly = props.pruningRule.keepWeekly;
+  pruningRule.value.keepMonthly = props.pruningRule.keepMonthly;
+  pruningRule.value.keepYearly = props.pruningRule.keepYearly;
+});
+
+// If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
+onBeforeRouteLeave((to, from) => {
+  if (hasUnsavedChanges.value) {
+    wantToGoRoute.value = to.path;
+    confirmSaveModal.value?.showModal();
+    return false;
+  }
+})
 
 </script>
 
@@ -119,14 +147,13 @@ async function savePruningRule() {
         <h3 class='text-xl font-semibold'>Run integrity checks</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'
-             @change='saveIntegrityCheckSettings'>
+             @change='emits(emitUpdateIntegrityCheck, isIntegrityCheckEnabled)'>
     </div>
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Delete old archives'>
         <h3 class='text-xl font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
-      <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isPruningEnabled'
-             @change='savePruningRule'>
+      <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
     </div>
     <!--  Keep days option -->
     <div class='flex items-center justify-between mb-4'>
@@ -137,9 +164,8 @@ async function savePruningRule() {
       <input type='number'
              class='input input-primary'
              min='1'
-             :disabled='!isPruningEnabled'
-             v-model='pruningKeepWithinDays'
-             @change='savePruningRule'
+             :disabled='!pruningRule.isEnabled'
+             v-model='pruningRule.keepWithinDays'
       />
     </div>
     <!--  Keep few/some/many options -->
@@ -148,9 +174,9 @@ async function savePruningRule() {
         <h3 class='text-xl font-semibold'>Keep</h3>
       </TooltipTextIcon>
       <select class='select select-bordered w-32'
-              :disabled='!isPruningEnabled'
+              :disabled='!pruningRule.isEnabled'
               v-model='pruningKeepOption'
-              @change='savePruningRule'
+              @change='toPruningRule'
       >
         <option v-for='option in Object.keys(PruningKeepOption)' :key='option' :value='option'>
           {{ option.charAt(0).toUpperCase() + option.slice(1) }}
@@ -158,6 +184,15 @@ async function savePruningRule() {
       </select>
     </div>
   </div>
+
+  <ConfirmModal :ref='confirmSaveModalKey'
+                confirm-class='btn-success'
+                confirm-text='Apply changes'
+                :confirm-value='wantToGoRoute'
+                @confirm='confirmSave'
+  >
+    <p>You have unsaved cleanup settings. Do you want to apply them now?</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

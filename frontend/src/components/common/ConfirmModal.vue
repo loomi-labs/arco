@@ -12,10 +12,11 @@ interface Props {
   formClass?: string;
   cancelClass?: string;
   confirmClass?: string;
+  confirmValue?: any;
 }
 
 interface Emits {
-  (event: typeof emitConfirmStr): void;
+  (event: typeof emitConfirmStr, value: typeof props.confirmValue): void;
 }
 
 /************
@@ -37,7 +38,7 @@ const { t } = useI18n();
 
 function confirm() {
   dialog.value?.close();
-  emit(emitConfirmStr);
+  emit(emitConfirmStr, props.confirmValue);
 }
 
 function showModal() {

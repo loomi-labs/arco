@@ -35,8 +35,6 @@ const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInpu
 const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
-const isPruningEnabled = ref(false);
-
 const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
@@ -66,7 +64,6 @@ async function getBackupProfile() {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
-    isPruningEnabled.value = backupProfile.value.edges.pruningRule !== undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   }
@@ -145,6 +142,24 @@ async function saveIcon(icon: backupprofile.Icon) {
     await showAndLogError("Failed to save icon", error);
   }
 }
+
+async function saveIntegrityCheckSettings(isEnabled: boolean) {
+  try {
+    const result = await backupClient.SaveIntegrityCheckSettings(backupProfile.value.id, isEnabled);
+    backupProfile.value.nextIntegrityCheck = result.nextIntegrityCheck;
+  } catch (error: any) {
+    await showAndLogError("Failed to save integrity check settings", error);
+  }
+}
+
+async function setPruningRule(pruningRule: ent.PruningRule) {
+  try {
+    backupProfile.value.edges.pruningRule = pruningRule
+  } catch (error: any) {
+    await showAndLogError("Failed to save pruning rule", error);
+  }
+}
+
 
 /************
  * Lifecycle
@@ -231,7 +246,12 @@ watch(loading, async () => {
                          @update:schedule='saveSchedule'
                          @delete:schedule='deleteSchedule' />
 
-      <PruningCard :backup-profile='backupProfile' @pruning:is-enabled='(isEnabled) => isPruningEnabled = isEnabled'></PruningCard>
+      <PruningCard :backup-profile-id='backupProfile.id'
+                   :pruning-rule='backupProfile.edges?.pruningRule ?? ent.PruningRule.createFrom()'
+                   :is-integrity-check-enabled='!!backupProfile.nextIntegrityCheck'
+                   @update:integrity-check='saveIntegrityCheckSettings'
+                   @update:pruning-rule='setPruningRule'>
+      </PruningCard>
     </div>
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
@@ -243,7 +263,7 @@ watch(loading, async () => {
           :backup-profile-id='backupProfile.id'
           :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
           :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
-          :is-pruning-enabled='isPruningEnabled'
+          :is-pruning-enabled='backupProfile.edges.pruningRule?.isEnabled ?? false'
           @click='() => selectedRepo = repo'
           @repo:status='(event) => repoStatuses.set(repo.id, event)'>
         </RepoCard>
