@@ -86,17 +86,16 @@ func (b *BackupClient) StartPruneJobs(bIds []types.BackupId) error {
 }
 
 func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
-	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
-	if err != nil {
-		return err
-	}
-	backupProfile := repo.Edges.BackupProfiles[0]
-
-	if canRun, reason := b.state.CanRunPrune(bId); !canRun {
+	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
 		return errors.New(reason)
 	}
 
-	go b.dryRunPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
+	go func() {
+		err := b.dryRunPruneJob(bId)
+		if err != nil {
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
+		}
+	}()
 	return nil
 }
 
@@ -294,24 +293,86 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, archiv
 	}
 }
 
-func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
+func (b *BackupClient) dryRunPruneJob(bId types.BackupId) error {
+	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		return fmt.Errorf("failed to get repository: %w", err)
+	}
+	backupProfile := repo.Edges.BackupProfiles[0]
+	pruningRule := backupProfile.Edges.PruningRule
+	if pruningRule == nil {
+		return fmt.Errorf("pruning rule not found")
+	}
+
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
 
 	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
-	defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-	b.state.AddRunningDryRunPruneJob(b.ctx, bId)
-	defer b.state.RemoveRunningDryRunPruneJob(bId)
+
+	// Get all archives from the database
+	archives, err := b.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
+		All(b.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get archives: %w", err)
+	}
 
 	// Create go routine to save prune result
-	ch := make(chan borg.PruneResult)
-	go b.savePruneResult(bId, true, nil, ch, nil)
+	borgCh := make(chan borg.PruneResult)
+	resultCh := make(chan state.PruneJobResult)
+	go b.savePruneResult(bId, true, archives, borgCh, resultCh)
 
-	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, nil, true, ch)
+	cmd := pruneEntityToBorgCmd(pruningRule)
+	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if err != nil {
-		b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
+		if errors.As(err, &borg.CancelErr{}) {
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return nil
+		} else if errors.As(err, &borg.LockTimeout{}) {
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
+			return fmt.Errorf("repository is locked")
+		} else {
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return fmt.Errorf("failed to examine prune: %w", err)
+		}
 	} else {
-		b.state.AddNotification(b.ctx, "Dry-run prune job completed", types.LevelInfo)
+		select {
+		case pruneResult := <-resultCh:
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+			tx, err := b.db.Tx(b.ctx)
+			if err != nil {
+				return fmt.Errorf("failed to start transaction: %w", err)
+			}
+
+			err = tx.Archive.
+				Update().
+				Where(archive.And(
+					archive.IDIn(pruneResult.PruneArchives...),
+					archive.WillBePruned(false)),
+				).
+				SetWillBePruned(true).
+				Exec(b.ctx)
+			if err != nil {
+				return rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+			}
+
+			err = tx.Archive.
+				Update().
+				Where(archive.And(
+					archive.IDNotIn(pruneResult.PruneArchives...),
+					archive.WillBePruned(true)),
+				).
+				SetWillBePruned(false).
+				Exec(b.ctx)
+
+			return tx.Commit()
+		case <-time.After(30 * time.Second):
+			return fmt.Errorf("timeout waiting for prune result")
+		case <-b.ctx.Done():
+			return fmt.Errorf("context canceled")
+		}
 	}
 }

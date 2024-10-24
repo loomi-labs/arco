@@ -241,6 +241,15 @@ func (s *State) GetStartupError() error {
 /********** Repo States ************/
 /***********************************/
 
+func (s *State) CanPerformRepoOperation(id types.BackupId) (canRun bool, reason string) {
+	if rs, ok := s.repoStates[id.RepositoryId]; ok {
+		if rs.Status != RepoStatusIdle {
+			return false, "Repository is busy"
+		}
+	}
+	return true, ""
+}
+
 // GetRepoLock returns the mutex for the given repository ID.
 // The mutex has to be acquired before performing any operations on the repository.
 //
