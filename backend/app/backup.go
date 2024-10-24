@@ -9,6 +9,7 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/notification"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
 	"errors"
@@ -575,6 +576,23 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		err = b.addNewArchive(bId, archiveName, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+		}
+
+		pruningRule, err := b.db.PruningRule.
+			Query().
+			Where(pruningrule.And(
+				pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				pruningrule.IsEnabled(true),
+			)).
+			Only(b.ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			b.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", err))
+		}
+		if pruningRule != nil && pruningRule.IsEnabled {
+			_, err := b.examinePrune(bId, safetypes.Some(pruningRule), true)
+			if err != nil {
+				b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+			}
 		}
 
 		return BackupResultSuccess, nil

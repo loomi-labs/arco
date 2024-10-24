@@ -104,7 +104,7 @@ func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.Pr
 		return
 	}
 
-	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule))
+	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule), false)
 	if err != nil {
 		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
 		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
@@ -314,7 +314,7 @@ func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borg.Pru
 	}
 }
 
-func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule]) (int, error) {
+func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule], hasRepoLock bool) (int, error) {
 	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get repository: %w", err)
@@ -326,17 +326,19 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 		return 0, fmt.Errorf("no pruning rule found")
 	}
 
-	// We do not wait for other operations to finish
-	// Either we can run the operation or we return an error
-	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
-		return 0, fmt.Errorf("can not examine prune: %s", reason)
+	if !hasRepoLock {
+		// We do not wait for other operations to finish
+		// Either we can run the operation or we return an error
+		if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+			return 0, fmt.Errorf("can not examine prune: %s", reason)
+		}
+
+		repoLock := b.state.GetRepoLock(bId.RepositoryId)
+		repoLock.Lock()         // We should not have to wait here
+		defer repoLock.Unlock() // Unlock at the end
+
+		b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
 	}
-
-	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()         // We should not have to wait here
-	defer repoLock.Unlock() // Unlock at the end
-
-	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
 
 	// Get all archives from the database
 	archives, err := b.db.Archive.
