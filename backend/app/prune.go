@@ -104,11 +104,6 @@ func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.Pr
 		return
 	}
 
-	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
-		resultCh <- ExaminePruningResult{BackupID: bId, Error: errors.New(reason), RepositoryName: repo.Name}
-		return
-	}
-
 	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule))
 	if err != nil {
 		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
@@ -203,7 +198,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 	// Create go routine to save prune result
 	borgCh := make(chan borg.PruneResult)
 	resultCh := make(chan state.PruneJobResult)
-	go b.savePruneResult(bId, false, archives, borgCh, resultCh)
+	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
@@ -277,7 +272,7 @@ func pruneEntityToBorgCmd(pruningRule *ent.PruningRule) []string {
 	return cmd
 }
 
-func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, archives []*ent.Archive, ch chan borg.PruneResult, resultCh chan state.PruneJobResult) {
+func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borg.PruneResult, resultCh chan state.PruneJobResult) {
 	defer close(resultCh)
 	for {
 		select {
@@ -315,13 +310,6 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, archiv
 			}
 
 			resultCh <- pjr
-
-			// TODO: remove this
-			//if isDryRun {
-			//	b.state.SetDryRunPruneResult(bId, pjr)
-			//} else {
-			//	b.state.SetPruneResult(bId, pjr)
-			//}
 		}
 	}
 }
@@ -335,11 +323,17 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 
 	pruningRule := pruningRuleOpt.UnwrapOr(backupProfile.Edges.PruningRule)
 	if pruningRule == nil {
-		return 0, fmt.Errorf("pruning rule not found")
+		return 0, fmt.Errorf("no pruning rule found")
+	}
+
+	// We do not wait for other operations to finish
+	// Either we can run the operation or we return an error
+	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+		return 0, fmt.Errorf("can not examine prune: %s", reason)
 	}
 
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()         // We might wait here for other operations to finish
+	repoLock.Lock()         // We should not have to wait here
 	defer repoLock.Unlock() // Unlock at the end
 
 	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
@@ -356,7 +350,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	// Create go routine to save prune result
 	borgCh := make(chan borg.PruneResult)
 	resultCh := make(chan state.PruneJobResult)
-	go b.savePruneResult(bId, true, archives, borgCh, resultCh)
+	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
