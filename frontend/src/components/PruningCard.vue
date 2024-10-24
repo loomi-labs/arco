@@ -101,10 +101,6 @@ const pruningImpactText = ref<string>("");
 const cleanupImpactRows = ref<Array<CleanupImpactRow>>([]);
 const isExaminePrune = ref<boolean>(false);
 
-defineExpose({
-  pruningRule
-});
-
 /************
  * Functions
  ************/
@@ -272,6 +268,11 @@ onBeforeRouteLeave(async (to, from) => {
   }
 });
 
+defineExpose({
+  pruningRule,
+  isValid,
+});
+
 </script>
 
 <template>
@@ -385,14 +386,14 @@ onBeforeRouteLeave(async (to, from) => {
     </div>
 
     <!-- Apply/discard buttons -->
-    <div v-if='askForSaveBeforeLeaving' class='flex justify-end gap-2'>
+    <div class='flex justify-end gap-2'>
       <span v-if='validationError' class='label'>
         <span class='label text-sm text-error'>{{ validationError }}</span>
       </span>
-      <button class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid' @click='copyCurrentPruningRule'>Discard
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid' @click='copyCurrentPruningRule'>Discard
         changes
       </button>
-      <button class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid' @click='apply'>Apply changes</button>
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid' @click='apply'>Apply changes</button>
     </div>
   </div>
 

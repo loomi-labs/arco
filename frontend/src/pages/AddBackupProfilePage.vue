@@ -83,6 +83,9 @@ const isStep1Valid = computed(() => {
 });
 
 // Step 2
+const isStep2Valid = computed(() => {
+  return pruningCardRef.value?.isValid ?? false;
+});
 const pruningCardRef = ref();
 
 // Step 3
@@ -213,6 +216,9 @@ const nextStep = async () => {
       currentStep.value++;
       break;
     case Step.Schedule:
+      if (!isStep2Valid.value) {
+        return;
+      }
       backupProfile.value.edges.pruningRule = pruningCardRef.value.pruningRule;
       currentStep.value++;
       break;
@@ -318,7 +324,7 @@ getExistingRepositories();
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
-        <button class='btn btn-primary min-w-24' @click='nextStep'>Next</button>
+        <button class='btn btn-primary min-w-24' :disabled='!isStep2Valid' @click='nextStep'>Next</button>
       </div>
     </template>
 
