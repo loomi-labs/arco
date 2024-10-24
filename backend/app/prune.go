@@ -342,6 +342,11 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId) error {
 		case pruneResult := <-resultCh:
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 
+			keepIds := make([]int, len(pruneResult.KeepArchives))
+			for i, keep := range pruneResult.KeepArchives {
+				keepIds[i] = keep.Id
+			}
+
 			tx, err := b.db.Tx(b.ctx)
 			if err != nil {
 				return fmt.Errorf("failed to start transaction: %w", err)
@@ -362,7 +367,7 @@ func (b *BackupClient) dryRunPruneJob(bId types.BackupId) error {
 			err = tx.Archive.
 				Update().
 				Where(archive.And(
-					archive.IDNotIn(pruneResult.PruneArchives...),
+					archive.IDIn(keepIds...),
 					archive.WillBePruned(true)),
 				).
 				SetWillBePruned(false).
