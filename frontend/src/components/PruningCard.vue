@@ -61,6 +61,16 @@ const pruningOptionMap: PruningOptionMap = {
   }
 };
 
+interface CleanupImpact {
+  Summary: string;
+  Rows: Array<CleanupImpactRow>;
+}
+
+interface CleanupImpactRow {
+  RepositoryName: string;
+  Impact: string;
+}
+
 interface Props {
   backupProfileId: number;
   pruningRule: ent.PruningRule;
@@ -88,6 +98,7 @@ const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
 const pruningImpactText = ref<string>("");
+const cleanupImpactRows = ref<Array<CleanupImpactRow>>([]);
 const isExaminePrune = ref<boolean>(false);
 
 defineExpose({
@@ -182,29 +193,27 @@ function toArchiveText(cnt: number) {
   return `${cnt} archives`;
 }
 
-function toExaminePruneText(result: Array<app.ExaminePruningResult>): string {
-  if (result.length === 1) {
-    if (result[0].Error) {
-      return "Could not examine impact of new cleanup settings";
+function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImpact {
+  const rows = result.map((r) => {
+    if (r.Error) {
+      return { RepositoryName: r.RepositoryName, Impact: "unknown" };
     }
-    if (result[0].CntArchivesToBeDeleted === 0) {
-      return "Your cleanup settings will not delete any archives right now";
-    }
-    return `Your cleanup settings will delete ${toArchiveText(result[0].CntArchivesToBeDeleted)}`;
-  }
+    return { RepositoryName: r.RepositoryName, Impact: `${toArchiveText(r.CntArchivesToBeDeleted)} will be deleted` };
+  });
 
   const total = result.map((r) => r.CntArchivesToBeDeleted).reduce((a, b) => a + b, 0);
   const hasErrors = result.map((r) => r.Error).some((e) => e);
+
+  let summary: string;
   if (total === 0 && !hasErrors) {
-    return "Your cleanup settings will not delete any archives right now";
+    summary = "Your cleanup settings will not delete any archives";
+  } else if (hasErrors) {
+    summary = `Your cleanup settings will delete at least ${toArchiveText(total)}`;
+  } else {
+    summary = `Your cleanup settings will delete ${toArchiveText(total)}`;
   }
 
-  return `Your cleanup settings will delete ${toArchiveText(total)} right now\n` + result.map((r) => {
-    if (r.Error) {
-      return `- ${r.RepositoryName}: Could not examine impact of new cleanup settings`;
-    }
-    return `- ${r.RepositoryName}: ${toArchiveText(r.CntArchivesToBeDeleted)} will be deleted`;
-  }).join("\n");
+  return { Summary: summary, Rows: rows };
 }
 
 async function apply() {
@@ -212,7 +221,9 @@ async function apply() {
   confirmSaveModal.value?.showModal();
   const result = await examinePrune();
   if (result) {
-    pruningImpactText.value = toExaminePruneText(result);
+    const impact = toExaminePruneText(result);
+    pruningImpactText.value = impact.Summary;
+    cleanupImpactRows.value = impact.Rows;
   } else {
     await save();
   }
@@ -373,22 +384,15 @@ onBeforeRouteLeave((to, from) => {
     </div>
   </div>
 
-  <ConfirmModal :ref='confirmSaveModalKey'
-                confirm-class='btn-success'
-                confirm-text='Apply changes'
-                :confirm-value='wantToGoRoute'
-                secondary-option-class='btn-outline btn-error'
-                secondary-option-text='Discard changes'
-                :secondary-option-value='wantToGoRoute'
-                @secondary='discard'
-                @confirm='save'
-  >
+  <ConfirmModal :ref='confirmSaveModalKey'>
     <div class='flex gap-2 w-full'>
       <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
       <span v-if='isExaminePrune' class="loading loading-dots loading-md"></span>
-      <div class='flex flex-col'>
-        <div v-for='part in pruningImpactText.toString().split("\n")' :key='pruningImpactText'>
-          {{ part }}<br />
+      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-4'>
+        <div class='col-span-1'>{{ pruningImpactText }}</div>
+        <div v-for='row in cleanupImpactRows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
+          <div>{{ row.RepositoryName }}</div>
+          <div>{{ row.Impact }}</div>
         </div>
       </div>
     </div>
@@ -405,14 +409,14 @@ onBeforeRouteLeave((to, from) => {
         </button>
         <button class='btn btn-outline btn-error'
                 :disabled='isExaminePrune'
-                @click.prevent='() => discard(wantToGoRoute)'
+                @click='() => discard(wantToGoRoute)'
         >
           Discard changes
         </button>
         <button
           value='true'
           class='btn btn-success'
-          @click.prevent='() => save(wantToGoRoute)'
+          @click='() => save(wantToGoRoute)'
           :disabled='isExaminePrune'
         >
           Apply changes
