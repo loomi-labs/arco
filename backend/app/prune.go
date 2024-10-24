@@ -85,21 +85,22 @@ func (b *BackupClient) StartPruneJobs(bIds []types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
+func (b *BackupClient) startExaminePruning(bId types.BackupId) error {
 	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
 		return errors.New(reason)
 	}
 
 	go func() {
-		err := b.dryRunPruneJob(bId)
+		err := b.examinePruning(bId)
 		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
 		}
 	}()
 	return nil
 }
 
-func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
+func (b *BackupClient) ExaminePrunings(backupProfileId int) error {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return err
@@ -107,7 +108,7 @@ func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
 
 	for _, repo := range backupProfile.Edges.Repositories {
 		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		err := b.DryRunPruneBackup(bId)
+		err := b.startExaminePruning(bId)
 		if err != nil {
 			return err
 		}
@@ -293,7 +294,7 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, archiv
 	}
 }
 
-func (b *BackupClient) dryRunPruneJob(bId types.BackupId) error {
+func (b *BackupClient) examinePruning(bId types.BackupId) error {
 	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return fmt.Errorf("failed to get repository: %w", err)
