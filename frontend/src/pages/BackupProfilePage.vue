@@ -17,6 +17,7 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import RepoCard from "../components/RepoCard.vue";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
+import PruningCard from "../components/PruningCard.vue";
 
 /************
  * Variables
@@ -142,6 +143,15 @@ async function saveIcon(icon: backupprofile.Icon) {
   }
 }
 
+async function setPruningRule(pruningRule: ent.PruningRule) {
+  try {
+    backupProfile.value.edges.pruningRule = pruningRule
+  } catch (error: any) {
+    await showAndLogError("Failed to save pruning rule", error);
+  }
+}
+
+
 /************
  * Lifecycle
  ************/
@@ -222,9 +232,17 @@ watch(loading, async () => {
 
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
-                       @update:schedule='saveSchedule'
-                       @delete:schedule='deleteSchedule' />
+    <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
+      <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
+                         @update:schedule='saveSchedule'
+                         @delete:schedule='deleteSchedule' />
+
+      <PruningCard :backup-profile-id='backupProfile.id'
+                   :pruning-rule='backupProfile.edges?.pruningRule ?? ent.PruningRule.createFrom()'
+                   :ask-for-save-before-leaving='true'
+                   @update:pruning-rule='setPruningRule'>
+      </PruningCard>
+    </div>
 
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
@@ -235,6 +253,7 @@ watch(loading, async () => {
           :backup-profile-id='backupProfile.id'
           :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
           :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
+          :is-pruning-enabled='backupProfile.edges.pruningRule?.isEnabled ?? false'
           @click='() => selectedRepo = repo'
           @repo:status='(event) => repoStatuses.set(repo.id, event)'>
         </RepoCard>

@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	entgo.io/ent v0.14.1
 	github.com/charmbracelet/keygen v0.5.1
+	github.com/eminarican/safetypes v0.0.8
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/prometheus/procfs v0.15.1

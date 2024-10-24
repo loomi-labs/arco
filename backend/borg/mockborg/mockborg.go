@@ -184,17 +184,17 @@ func (mr *MockBorgMockRecorder) MountRepository(repoUrl, password, mountPath any
 }
 
 // Prune mocks base method.
-func (m *MockBorg) Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan borg.PruneResult) error {
+func (m *MockBorg) Prune(ctx context.Context, repoUrl, password, prefix string, pruneOptions []string, isDryRun bool, ch chan borg.PruneResult) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Prune", ctx, repoUrl, password, prefix, isDryRun, ch)
+	ret := m.ctrl.Call(m, "Prune", ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Prune indicates an expected call of Prune.
-func (mr *MockBorgMockRecorder) Prune(ctx, repoUrl, password, prefix, isDryRun, ch any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Prune(ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repoUrl, password, prefix, isDryRun, ch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch)
 }
 
 // Umount mocks base method.

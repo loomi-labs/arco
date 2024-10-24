@@ -21,14 +21,15 @@ type BackupProgress struct {
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
 func (b *borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
+	archiveName := fmt.Sprintf("%s::%s%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+
 	// Count the total files to backup
-	totalFiles, err := b.countBackupFiles(ctx, repoUrl, password, prefix, backupPaths)
+	totalFiles, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)
 	if err != nil {
 		return "", err
 	}
 
 	// Prepare backup command
-	archiveName := fmt.Sprintf("%s::%s%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
@@ -114,16 +115,19 @@ func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- Back
 
 // countBackupFiles counts the number of files that will be backed up.
 // We use the --dry-run flag to simulate the backup and count the files.
-func (b *borg) countBackupFiles(ctx context.Context, repoUrl, password, prefix string, directories []string) (int, error) {
-	name := fmt.Sprintf("%s-%s", prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
-	cmd := exec.CommandContext(ctx, b.path, append([]string{
+func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string) (int, error) {
+	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--dry-run",  // Simulate the backup
 		"--list",     // List the files and directories to be backed up
 		"--log-json", // Outputs JSON log messages
-		fmt.Sprintf("%s::%s", repoUrl, name)},
-		directories...,
-	)...)
+		archiveName},
+		backupPaths...,
+	)
+	for _, excludeDir := range excludePaths {
+		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
+	}
+	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Add cancel functionality

@@ -25,6 +25,9 @@ func (Archive) Fields() []ent.Field {
 			StructTag(`json:"duration"`),
 		field.String("borg_id").
 			StructTag(`json:"borgId"`),
+		field.Bool("will_be_pruned").
+			StructTag(`json:"willBePruned"`).
+			Default(false),
 	}
 }
 

@@ -6,7 +6,7 @@
 @layer components {
     /* Use ac-prefix because card is already taken by daisUI */
     .ac-card {
-        @apply bg-base-100 shadow-lg rounded-md overflow-hidden;
+        @apply bg-base-100 shadow-lg rounded-md;
     }
 
     .ac-card-hover {

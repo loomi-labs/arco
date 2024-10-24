@@ -46,6 +46,20 @@ func (ac *ArchiveCreate) SetBorgID(s string) *ArchiveCreate {
 	return ac
 }
 
+// SetWillBePruned sets the "will_be_pruned" field.
+func (ac *ArchiveCreate) SetWillBePruned(b bool) *ArchiveCreate {
+	ac.mutation.SetWillBePruned(b)
+	return ac
+}
+
+// SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
+func (ac *ArchiveCreate) SetNillableWillBePruned(b *bool) *ArchiveCreate {
+	if b != nil {
+		ac.SetWillBePruned(*b)
+	}
+	return ac
+}
+
 // SetID sets the "id" field.
 func (ac *ArchiveCreate) SetID(i int) *ArchiveCreate {
 	ac.mutation.SetID(i)
@@ -89,6 +103,7 @@ func (ac *ArchiveCreate) Mutation() *ArchiveMutation {
 
 // Save creates the Archive in the database.
 func (ac *ArchiveCreate) Save(ctx context.Context) (*Archive, error) {
+	ac.defaults()
 	return withHooks(ctx, ac.sqlSave, ac.mutation, ac.hooks)
 }
 
@@ -114,6 +129,14 @@ func (ac *ArchiveCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ac *ArchiveCreate) defaults() {
+	if _, ok := ac.mutation.WillBePruned(); !ok {
+		v := archive.DefaultWillBePruned
+		ac.mutation.SetWillBePruned(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (ac *ArchiveCreate) check() error {
 	if _, ok := ac.mutation.Name(); !ok {
@@ -127,6 +150,9 @@ func (ac *ArchiveCreate) check() error {
 	}
 	if _, ok := ac.mutation.BorgID(); !ok {
 		return &ValidationError{Name: "borg_id", err: errors.New(`ent: missing required field "Archive.borg_id"`)}
+	}
+	if _, ok := ac.mutation.WillBePruned(); !ok {
+		return &ValidationError{Name: "will_be_pruned", err: errors.New(`ent: missing required field "Archive.will_be_pruned"`)}
 	}
 	if len(ac.mutation.RepositoryIDs()) == 0 {
 		return &ValidationError{Name: "repository", err: errors.New(`ent: missing required edge "Archive.repository"`)}
@@ -178,6 +204,10 @@ func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
 		_node.BorgID = value
+	}
+	if value, ok := ac.mutation.WillBePruned(); ok {
+		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
+		_node.WillBePruned = value
 	}
 	if nodes := ac.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -234,6 +264,7 @@ func (acb *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
 	for i := range acb.builders {
 		func(i int, root context.Context) {
 			builder := acb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ArchiveMutation)
 				if !ok {

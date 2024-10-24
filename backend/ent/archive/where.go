@@ -75,6 +75,11 @@ func BorgID(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldBorgID, v))
 }
 
+// WillBePruned applies equality check predicate on the "will_be_pruned" field. It's identical to WillBePrunedEQ.
+func WillBePruned(v bool) predicate.Archive {
+	return predicate.Archive(sql.FieldEQ(FieldWillBePruned, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldName, v))
@@ -283,6 +288,16 @@ func BorgIDEqualFold(v string) predicate.Archive {
 // BorgIDContainsFold applies the ContainsFold predicate on the "borg_id" field.
 func BorgIDContainsFold(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldContainsFold(FieldBorgID, v))
+}
+
+// WillBePrunedEQ applies the EQ predicate on the "will_be_pruned" field.
+func WillBePrunedEQ(v bool) predicate.Archive {
+	return predicate.Archive(sql.FieldEQ(FieldWillBePruned, v))
+}
+
+// WillBePrunedNEQ applies the NEQ predicate on the "will_be_pruned" field.
+func WillBePrunedNEQ(v bool) predicate.Archive {
+	return predicate.Archive(sql.FieldNEQ(FieldWillBePruned, v))
 }
 
 // HasRepository applies the HasEdge predicate on the "repository" edge.

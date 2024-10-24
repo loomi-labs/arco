@@ -24,6 +24,7 @@ import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import TooltipIcon from "../components/common/TooltipIcon.vue";
+import PruningCard from "../components/PruningCard.vue";
 
 /************
  * Types
@@ -80,6 +81,12 @@ const [name, nameAttrs] = step1Form.defineField("name", {
 const isStep1Valid = computed(() => {
   return step1Form.meta.value.valid && isBackupPathsValid.value && isExcludePathsValid.value;
 });
+
+// Step 2
+const isStep2Valid = computed(() => {
+  return pruningCardRef.value?.isValid ?? false;
+});
+const pruningCardRef = ref();
 
 // Step 3
 const connectedRepos = ref<ent.Repository[]>([]);
@@ -182,6 +189,10 @@ async function saveBackupProfile(): Promise<boolean> {
       await backupClient.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
     }
 
+    if (backupProfile.value.edges.pruningRule) {
+      await backupClient.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
+    }
+
     backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id);
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
@@ -205,6 +216,10 @@ const nextStep = async () => {
       currentStep.value++;
       break;
     case Step.Schedule:
+      if (!isStep2Valid.value) {
+        return;
+      }
+      backupProfile.value.edges.pruningRule = pruningCardRef.value.pruningRule;
       currentStep.value++;
       break;
     case Step.Repository:
@@ -257,8 +272,9 @@ getExistingRepositories();
 
       <!-- Data to ignore Card -->
       <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore
-<!--        https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns-->
-        <TooltipIcon text="Select files, folders or patterns that you don't want to include in your backups. This supports wildcards. Example: *.cache -> exclude alls .cache folders" />
+        <!--        https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns-->
+        <TooltipIcon
+          text="Select files, folders or patterns that you don't want to include in your backups. This supports wildcards. Example: *.cache -> exclude alls .cache folders" />
       </h2>
       <DataSelection
         :paths='backupProfile.excludePaths'
@@ -272,8 +288,8 @@ getExistingRepositories();
       <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-10 py-2 gap-5'>
 
         <!-- Name -->
-        <label class='w-full '>
-          <FormField :error='step1Form.errors.value.name' label='-' label-class='invisible'>
+        <label class='w-full py-6'>
+          <FormField :error='step1Form.errors.value.name'>
             <input :class='formInputClass' type='text' placeholder='fancy-pants-backup'
                    v-model='name'
                    v-bind='nameAttrs' />
@@ -293,13 +309,22 @@ getExistingRepositories();
     <!-- 2. Step - Schedule -->
     <template v-if='currentStep === Step.Schedule'>
       <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
-      <ScheduleSelection :schedule='backupProfile.edges.backupSchedule'
-                         @update:schedule='saveSchedule'
-                         @delete:schedule='() => saveSchedule(undefined)' />
+      <div class='flex flex-col gap-10'>
+        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule'
+                           @update:schedule='saveSchedule'
+                           @delete:schedule='() => saveSchedule(undefined)' />
+
+        <PruningCard ref='pruningCardRef'
+                     :backup-profile-id='backupProfile.id'
+                     :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
+                     :ask-for-save-before-leaving='false'>
+        </PruningCard>
+      </div>
+
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
-        <button class='btn btn-primary min-w-24' @click='nextStep'>Next</button>
+        <button class='btn btn-primary min-w-24' :disabled='!isStep2Valid' @click='nextStep'>Next</button>
       </div>
     </template>
 

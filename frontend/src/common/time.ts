@@ -88,6 +88,16 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
   return value;
 }
 
+/**
+ * isInPast checks if a Date object is in the past.
+ * @param date The date to check (without timezone offset)
+ */
+export function isInPast(date: Date): boolean {
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
+  return isBefore(date, now)
+}
 
 /**
  * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.

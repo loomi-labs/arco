@@ -24,25 +24,31 @@ func (Repository) Fields() []ent.Field {
 		field.String("password").
 			StructTag(`json:"password"`),
 
+		// Integrity check
+		field.Time("next_integrity_check").
+			StructTag(`json:"nextIntegrityCheck"`).
+			Nillable().
+			Optional(),
+
 		// Stats
 		field.Int("stats_total_chunks").
 			Default(0).
-			StructTag(`json:"stats_total_chunks"`),
+			StructTag(`json:"statsTotalChunks"`),
 		field.Int("stats_total_size").
 			Default(0).
-			StructTag(`json:"stats_total_size"`),
+			StructTag(`json:"statsTotalSize"`),
 		field.Int("stats_total_csize").
 			Default(0).
-			StructTag(`json:"stats_total_csize"`),
+			StructTag(`json:"statsTotalCsize"`),
 		field.Int("stats_total_unique_chunks").
 			Default(0).
-			StructTag(`json:"stats_total_unique_chunks"`),
+			StructTag(`json:"statsTotalUniqueChunks"`),
 		field.Int("stats_unique_size").
 			Default(0).
-			StructTag(`json:"stats_unique_size"`),
+			StructTag(`json:"statsUniqueSize"`),
 		field.Int("stats_unique_csize").
 			Default(0).
-			StructTag(`json:"stats_unique_csize"`),
+			StructTag(`json:"statsUniqueCsize"`),
 	}
 }
 
@@ -54,8 +60,8 @@ func (Repository) Edges() []ent.Edge {
 			Ref("repositories"),
 		edge.From("archives", Archive.Type).
 			Ref("repository"),
-		edge.From("failed_backup_runs", FailedBackupRun.Type).
-			StructTag(`json:"failedBackupRuns,omitempty"`).
+		edge.From("notifications", Notification.Type).
+			StructTag(`json:"notifications,omitempty"`).
 			Ref("repository"),
 	}
 }

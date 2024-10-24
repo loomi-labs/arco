@@ -6,10 +6,12 @@ import (
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
+	"fmt"
 	"net/url"
+	"time"
 )
 
 func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
@@ -22,12 +24,13 @@ func (r *RepositoryClient) Get(repoId int) (*ent.Repository, error) {
 func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		WithFailedBackupRuns(func(query *ent.FailedBackupRunQuery) {
-			query.Where(failedbackuprun.And(
-				failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				failedbackuprun.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			))
-		}).
+		//WithNotifications(func(query *ent.NotificationQuery) {
+		//	query.Where(notification.And(
+		//		notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+		//		notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		//		notification.Seen(false),
+		//	))
+		//}).
 		Where(repository.And(
 			repository.ID(bId.RepositoryId),
 			repository.HasBackupProfilesWith(backupprofile.ID(bId.BackupProfileId)),
@@ -46,6 +49,38 @@ func (r *RepositoryClient) GetNbrOfArchives(repoId int) (int, error) {
 		Query().
 		Where(archive.HasRepositoryWith(repository.ID(repoId))).
 		Count(r.ctx)
+}
+
+func (r *RepositoryClient) GetLastBackupErrorMsg(repoId int) (string, error) {
+	// Get the last notification for the backup profile and repository
+	// that is a failed backup run or failed pruning run
+	lastNotification, err := r.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasRepositoryWith(repository.ID(repoId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(r.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := r.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasRepositoryWith(repository.ID(repoId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).Exist(r.ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
 }
 
 func (r *RepositoryClient) GetLocked() ([]*ent.Repository, error) {
@@ -121,6 +156,28 @@ func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, 
 	return r.db.Repository.
 		UpdateOne(repository).
 		SetName(repository.Name).
+		Save(r.ctx)
+}
+
+func endOfMonth(t time.Time) time.Time {
+	// Add one month to the current time
+	nextMonth := t.AddDate(0, 1, 0)
+	// Set the day to the first day of the next month and subtract one day
+	return time.Date(nextMonth.Year(), nextMonth.Month(), 1, 0, 0, 0, 0, nextMonth.Location()).Add(-time.Nanosecond)
+}
+
+func (r *RepositoryClient) SaveIntegrityCheckSettings(repoId int, enabled bool) (*ent.Repository, error) {
+	r.log.Debug(fmt.Sprintf("Setting integrity check for repository %d to %t", repoId, enabled))
+	if enabled {
+		nextRun := endOfMonth(time.Now())
+		return r.db.Repository.
+			UpdateOneID(repoId).
+			SetNillableNextIntegrityCheck(&nextRun).
+			Save(r.ctx)
+	}
+	return r.db.Repository.
+		UpdateOneID(repoId).
+		SetNillableNextIntegrityCheck(nil).
 		Save(r.ctx)
 }
 

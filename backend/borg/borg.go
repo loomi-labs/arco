@@ -19,7 +19,7 @@ type Borg interface {
 	List(repoUrl string, password string) (*ListResponse, error)
 	MountRepository(repoUrl string, password string, mountPath string) error
 	MountArchive(repoUrl string, archive string, password string, mountPath string) error
-	Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan PruneResult) error
+	Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
 	BreakLock(ctx context.Context, repository string, password string) error
 	Umount(path string) error
 }

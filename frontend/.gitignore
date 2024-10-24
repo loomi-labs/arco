@@ -1,0 +1,11 @@
+# JetBrains IDE project files
+.idea
+
+# Build files
+build/bin
+node_modules
+dist
+wailsjs
+
+# Environment variables
+.env*

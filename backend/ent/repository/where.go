@@ -4,6 +4,7 @@ package repository
 
 import (
 	"arco/backend/ent/predicate"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -67,6 +68,11 @@ func Location(v string) predicate.Repository {
 // Password applies equality check predicate on the "password" field. It's identical to PasswordEQ.
 func Password(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
+}
+
+// NextIntegrityCheck applies equality check predicate on the "next_integrity_check" field. It's identical to NextIntegrityCheckEQ.
+func NextIntegrityCheck(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldNextIntegrityCheck, v))
 }
 
 // StatsTotalChunks applies equality check predicate on the "stats_total_chunks" field. It's identical to StatsTotalChunksEQ.
@@ -292,6 +298,56 @@ func PasswordEqualFold(v string) predicate.Repository {
 // PasswordContainsFold applies the ContainsFold predicate on the "password" field.
 func PasswordContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
+}
+
+// NextIntegrityCheckEQ applies the EQ predicate on the "next_integrity_check" field.
+func NextIntegrityCheckEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckNEQ applies the NEQ predicate on the "next_integrity_check" field.
+func NextIntegrityCheckNEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckIn applies the In predicate on the "next_integrity_check" field.
+func NextIntegrityCheckIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldNextIntegrityCheck, vs...))
+}
+
+// NextIntegrityCheckNotIn applies the NotIn predicate on the "next_integrity_check" field.
+func NextIntegrityCheckNotIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldNextIntegrityCheck, vs...))
+}
+
+// NextIntegrityCheckGT applies the GT predicate on the "next_integrity_check" field.
+func NextIntegrityCheckGT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckGTE applies the GTE predicate on the "next_integrity_check" field.
+func NextIntegrityCheckGTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckLT applies the LT predicate on the "next_integrity_check" field.
+func NextIntegrityCheckLT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckLTE applies the LTE predicate on the "next_integrity_check" field.
+func NextIntegrityCheckLTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldNextIntegrityCheck, v))
+}
+
+// NextIntegrityCheckIsNil applies the IsNil predicate on the "next_integrity_check" field.
+func NextIntegrityCheckIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldNextIntegrityCheck))
+}
+
+// NextIntegrityCheckNotNil applies the NotNil predicate on the "next_integrity_check" field.
+func NextIntegrityCheckNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldNextIntegrityCheck))
 }
 
 // StatsTotalChunksEQ applies the EQ predicate on the "stats_total_chunks" field.
@@ -580,21 +636,21 @@ func HasArchivesWith(preds ...predicate.Archive) predicate.Repository {
 	})
 }
 
-// HasFailedBackupRuns applies the HasEdge predicate on the "failed_backup_runs" edge.
-func HasFailedBackupRuns() predicate.Repository {
+// HasNotifications applies the HasEdge predicate on the "notifications" edge.
+func HasNotifications() predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasFailedBackupRunsWith applies the HasEdge predicate on the "failed_backup_runs" edge with a given conditions (other predicates).
-func HasFailedBackupRunsWith(preds ...predicate.FailedBackupRun) predicate.Repository {
+// HasNotificationsWith applies the HasEdge predicate on the "notifications" edge with a given conditions (other predicates).
+func HasNotificationsWith(preds ...predicate.Notification) predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
-		step := newFailedBackupRunsStep()
+		step := newNotificationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

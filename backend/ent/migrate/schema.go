@@ -15,6 +15,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "duration", Type: field.TypeTime},
 		{Name: "borg_id", Type: field.TypeString},
+		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
 		{Name: "archive_repository", Type: field.TypeInt},
 		{Name: "archive_backup_profile", Type: field.TypeInt, Nullable: true},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
@@ -27,19 +28,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "archives_repositories_repository",
-				Columns:    []*schema.Column{ArchivesColumns[5]},
+				Columns:    []*schema.Column{ArchivesColumns[6]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{ArchivesColumns[6]},
+				Columns:    []*schema.Column{ArchivesColumns[7]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[7]},
+				Columns:    []*schema.Column{ArchivesColumns[8]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -95,37 +96,64 @@ var (
 			},
 		},
 	}
-	// FailedBackupRunsColumns holds the columns for the "failed_backup_runs" table.
-	FailedBackupRunsColumns = []*schema.Column{
+	// NotificationsColumns holds the columns for the "notifications" table.
+	NotificationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "error", Type: field.TypeString},
-		{Name: "failed_backup_run_backup_profile", Type: field.TypeInt},
-		{Name: "failed_backup_run_repository", Type: field.TypeInt},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "message", Type: field.TypeString},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run"}},
+		{Name: "seen", Type: field.TypeBool, Default: false},
+		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
+		{Name: "notification_backup_profile", Type: field.TypeInt},
+		{Name: "notification_repository", Type: field.TypeInt},
 	}
-	// FailedBackupRunsTable holds the schema information for the "failed_backup_runs" table.
-	FailedBackupRunsTable = &schema.Table{
-		Name:       "failed_backup_runs",
-		Columns:    FailedBackupRunsColumns,
-		PrimaryKey: []*schema.Column{FailedBackupRunsColumns[0]},
+	// NotificationsTable holds the schema information for the "notifications" table.
+	NotificationsTable = &schema.Table{
+		Name:       "notifications",
+		Columns:    NotificationsColumns,
+		PrimaryKey: []*schema.Column{NotificationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "failed_backup_runs_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{FailedBackupRunsColumns[2]},
+				Symbol:     "notifications_backup_profiles_backup_profile",
+				Columns:    []*schema.Column{NotificationsColumns[6]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "failed_backup_runs_repositories_repository",
-				Columns:    []*schema.Column{FailedBackupRunsColumns[3]},
+				Symbol:     "notifications_repositories_repository",
+				Columns:    []*schema.Column{NotificationsColumns[7]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
-		Indexes: []*schema.Index{
+	}
+	// PruningRulesColumns holds the columns for the "pruning_rules" table.
+	PruningRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "is_enabled", Type: field.TypeBool},
+		{Name: "keep_hourly", Type: field.TypeInt},
+		{Name: "keep_daily", Type: field.TypeInt},
+		{Name: "keep_weekly", Type: field.TypeInt},
+		{Name: "keep_monthly", Type: field.TypeInt},
+		{Name: "keep_yearly", Type: field.TypeInt},
+		{Name: "keep_within_days", Type: field.TypeInt},
+		{Name: "next_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run", Type: field.TypeTime, Nullable: true},
+		{Name: "last_run_status", Type: field.TypeString, Nullable: true},
+		{Name: "backup_profile_pruning_rule", Type: field.TypeInt, Unique: true},
+	}
+	// PruningRulesTable holds the schema information for the "pruning_rules" table.
+	PruningRulesTable = &schema.Table{
+		Name:       "pruning_rules",
+		Columns:    PruningRulesColumns,
+		PrimaryKey: []*schema.Column{PruningRulesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
 			{
-				Name:    "failedbackuprun_failed_backup_run_backup_profile_failed_backup_run_repository",
-				Unique:  true,
-				Columns: []*schema.Column{FailedBackupRunsColumns[2], FailedBackupRunsColumns[3]},
+				Symbol:     "pruning_rules_backup_profiles_pruning_rule",
+				Columns:    []*schema.Column{PruningRulesColumns[12]},
+				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -135,6 +163,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "location", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
+		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},
@@ -189,7 +218,8 @@ var (
 		ArchivesTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
-		FailedBackupRunsTable,
+		NotificationsTable,
+		PruningRulesTable,
 		RepositoriesTable,
 		SettingsTable,
 		BackupProfileRepositoriesTable,
@@ -201,8 +231,9 @@ func init() {
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
 	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
-	FailedBackupRunsTable.ForeignKeys[0].RefTable = BackupProfilesTable
-	FailedBackupRunsTable.ForeignKeys[1].RefTable = RepositoriesTable
+	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable
+	PruningRulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }
