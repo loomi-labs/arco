@@ -131,7 +131,8 @@ func (a *App) Startup(ctx context.Context) {
 	// Schedule backups
 	go a.startScheduleChangeListener()
 	go a.startPruneScheduleChangeListener()
-	a.backupScheduleChangedCh <- struct{}{}
+	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
+	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
 }
 
 func (a *App) Shutdown(_ context.Context) {
