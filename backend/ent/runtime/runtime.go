@@ -3,6 +3,7 @@
 package runtime
 
 import (
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/notification"
@@ -16,6 +17,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	archiveFields := schema.Archive{}.Fields()
+	_ = archiveFields
+	// archiveDescWillBePruned is the schema descriptor for will_be_pruned field.
+	archiveDescWillBePruned := archiveFields[5].Descriptor()
+	// archive.DefaultWillBePruned holds the default value on creation for the will_be_pruned field.
+	archive.DefaultWillBePruned = archiveDescWillBePruned.Default.(bool)
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
 	// backupprofileDescName is the schema descriptor for name field.

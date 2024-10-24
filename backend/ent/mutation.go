@@ -49,6 +49,7 @@ type ArchiveMutation struct {
 	createdAt             *time.Time
 	duration              *time.Time
 	borg_id               *string
+	will_be_pruned        *bool
 	clearedFields         map[string]struct{}
 	repository            *int
 	clearedrepository     bool
@@ -307,6 +308,42 @@ func (m *ArchiveMutation) ResetBorgID() {
 	m.borg_id = nil
 }
 
+// SetWillBePruned sets the "will_be_pruned" field.
+func (m *ArchiveMutation) SetWillBePruned(b bool) {
+	m.will_be_pruned = &b
+}
+
+// WillBePruned returns the value of the "will_be_pruned" field in the mutation.
+func (m *ArchiveMutation) WillBePruned() (r bool, exists bool) {
+	v := m.will_be_pruned
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWillBePruned returns the old "will_be_pruned" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldWillBePruned(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWillBePruned is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWillBePruned requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWillBePruned: %w", err)
+	}
+	return oldValue.WillBePruned, nil
+}
+
+// ResetWillBePruned resets all changes to the "will_be_pruned" field.
+func (m *ArchiveMutation) ResetWillBePruned() {
+	m.will_be_pruned = nil
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by id.
 func (m *ArchiveMutation) SetRepositoryID(id int) {
 	m.repository = &id
@@ -419,7 +456,7 @@ func (m *ArchiveMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArchiveMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, archive.FieldName)
 	}
@@ -431,6 +468,9 @@ func (m *ArchiveMutation) Fields() []string {
 	}
 	if m.borg_id != nil {
 		fields = append(fields, archive.FieldBorgID)
+	}
+	if m.will_be_pruned != nil {
+		fields = append(fields, archive.FieldWillBePruned)
 	}
 	return fields
 }
@@ -448,6 +488,8 @@ func (m *ArchiveMutation) Field(name string) (ent.Value, bool) {
 		return m.Duration()
 	case archive.FieldBorgID:
 		return m.BorgID()
+	case archive.FieldWillBePruned:
+		return m.WillBePruned()
 	}
 	return nil, false
 }
@@ -465,6 +507,8 @@ func (m *ArchiveMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDuration(ctx)
 	case archive.FieldBorgID:
 		return m.OldBorgID(ctx)
+	case archive.FieldWillBePruned:
+		return m.OldWillBePruned(ctx)
 	}
 	return nil, fmt.Errorf("unknown Archive field %s", name)
 }
@@ -501,6 +545,13 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBorgID(v)
+		return nil
+	case archive.FieldWillBePruned:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWillBePruned(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
@@ -562,6 +613,9 @@ func (m *ArchiveMutation) ResetField(name string) error {
 		return nil
 	case archive.FieldBorgID:
 		m.ResetBorgID()
+		return nil
+	case archive.FieldWillBePruned:
+		m.ResetWillBePruned()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
