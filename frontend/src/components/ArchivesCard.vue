@@ -230,7 +230,7 @@ function getPruningText(archiveId: number) {
     return "This archive will be deleted";
   }
 
-  return `This archive will be deleted in ${toRelativeTimeString(nextRun)}`;
+  return `This archive will be deleted ${toRelativeTimeString(nextRun)}`;
 }
 
 const customDateRangeShortcuts = () => {

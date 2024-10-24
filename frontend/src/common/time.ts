@@ -120,37 +120,37 @@ export function toRelativeTimeString(date: Date): string {
  * @param now The current date
  */
 function toFutureString(date: Date, now: Date): string {
-  const dSeconds = diffSeconds(now, date, "ceil");
+  const dSeconds = diffSeconds(date, now, "ceil");
   if (dSeconds < 60) {
     return `in less than a minute`;
   }
 
-  const dMinutes = diffMinutes(now, date, "ceil");
+  const dMinutes = diffMinutes(date, now, "ceil");
   if (dMinutes < 60) {
     return `in ${dMinutes} minute${dMinutes !== 1 ? "s" : ""}`;
   }
 
-  const dHours = diffHours(now, date, "ceil");
+  const dHours = diffHours(date, now, "ceil");
   if (dHours < 24) {
     return `in ${dHours} hour${dHours !== 1 ? "s" : ""}`;
   }
 
-  const dDays = diffDays(now, date, "ceil");
+  const dDays = diffDays(date, now, "ceil");
   if (dDays < 7) {
     return `in ${dDays} day${dDays !== 1 ? "s" : ""}`;
   }
 
-  const dWeeks = diffWeeks(now, date, "ceil");
+  const dWeeks = diffWeeks(date, now, "ceil");
   if (dWeeks < 4) {
     return `in ${dWeeks} week${dWeeks !== 1 ? "s" : ""}`;
   }
 
-  const dMonths = diffMonths(now, date);
+  const dMonths = diffMonths(date, now);
   if (dMonths < 12) {
     return `in ${dMonths} month${dMonths !== 1 ? "s" : ""}`;
   }
 
-  const dYears = diffYears(now, date);
+  const dYears = diffYears(date, now);
   return `in ${dYears} year${dYears !== 1 ? "s" : ""}`;
 }
 
