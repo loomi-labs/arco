@@ -217,6 +217,12 @@ function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImp
 }
 
 async function apply() {
+  // If pruning is disabled, just save the rule
+  if (!pruningRule.value.isEnabled) {
+    await save();
+    return;
+  }
+
   wantToGoRoute.value = undefined;
   confirmSaveModal.value?.showModal();
   const result = await examinePrune();
@@ -252,9 +258,15 @@ async function save(route?: string) {
 watchEffect(() => copyCurrentPruningRule());
 
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
-onBeforeRouteLeave((to, from) => {
+onBeforeRouteLeave(async (to, from) => {
   if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
-    apply();
+    // If pruning is disabled, just save the rule
+    if (!pruningRule.value.isEnabled) {
+      await save();
+      return true;
+    }
+
+    apply().then(r => r);
     wantToGoRoute.value = to.path;
     return false;
   }
