@@ -20,8 +20,8 @@ type State struct {
 	backupStates map[types.BackupId]*BackupState
 	pruneStates  map[types.BackupId]*PruneState
 
-	runningDryRunPruneJobs map[types.BackupId]*PruneJob
-	runningDeleteJobs      map[types.BackupId]*cancelCtx
+	// TODO: remove runningDeleteJobs and use the same pattern as backupStates and pruneStates
+	runningDeleteJobs map[types.BackupId]*cancelCtx
 
 	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
@@ -206,8 +206,7 @@ func NewState(log *zap.SugaredLogger) *State {
 		backupStates: map[types.BackupId]*BackupState{},
 		pruneStates:  map[types.BackupId]*PruneState{},
 
-		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
-		runningDeleteJobs:      make(map[types.BackupId]*cancelCtx),
+		runningDeleteJobs: make(map[types.BackupId]*cancelCtx),
 
 		repoMounts:    make(map[int]*types.MountState),
 		archiveMounts: make(map[int]map[int]*types.MountState),
@@ -562,41 +561,6 @@ func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
 	}
 
 	s.pruneStates[bId].Status = newState
-}
-
-/***********************************/
-/********** Dry Run Prune Jobs ****/
-/***********************************/
-
-func (s *State) AddRunningDryRunPruneJob(ctx context.Context, id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.runningDryRunPruneJobs[id] = &PruneJob{
-		cancelCtx: newCancelCtx(ctx),
-		result:    PruneJobResult{},
-	}
-}
-
-func (s *State) RemoveRunningDryRunPruneJob(id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if ctx, ok := s.runningDryRunPruneJobs[id]; ok {
-		s.log.Debugf("Cancelling context of dry-run prune job %v", id)
-		ctx.cancel()
-	}
-
-	delete(s.runningDryRunPruneJobs, id)
-}
-
-func (s *State) SetDryRunPruneResult(id types.BackupId, result PruneJobResult) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if bj := s.runningDryRunPruneJobs[id]; bj != nil {
-		bj.result = result
-	}
 }
 
 /***********************************/
