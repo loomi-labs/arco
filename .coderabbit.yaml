@@ -13,7 +13,7 @@ reviews:
   collapse_walkthrough: false
   path_filters:
     - '**'
-    - 'backend/ent/**'
+    - '!backend/ent/**'
   path_instructions: []
   abort_on_close: true
   auto_review:
