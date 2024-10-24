@@ -18,11 +18,11 @@ import {
   TrashIcon,
   XMarkIcon
 } from "@heroicons/vue/24/solid";
-import { toLongDateString, toRelativeTimeString } from "../common/time";
+import { isInPast, toLongDateString, toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
-import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
+import { addDay, addYear, dayEnd, dayStart, isBefore, yearEnd, yearStart } from "@formkit/tempo";
 
 /************
  * Types
@@ -61,6 +61,7 @@ const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
+const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
 
 const dateRange = ref({
   startDate: "",
@@ -114,7 +115,11 @@ async function getPaginatedArchives() {
     // If there are no archives on the current page, go back to the first page
     if (archives.value.length === 0 && pagination.value.page > 1) {
       pagination.value.page = 1;
-      await getPaginatedArchives();
+    }
+
+    // If we have archives tha will be pruned, get the next pruning dates
+    if (archives.value.some(a => a.willBePruned)) {
+      await getPruningDates();
     }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
@@ -208,6 +213,23 @@ async function refreshArchives() {
   } finally {
     progressSpinnerText.value = undefined;
   }
+}
+
+async function getPruningDates() {
+  try {
+    pruningDates.value = await repoClient.GetPruningDates(archives.value.filter(a => a.willBePruned).map(a => a.id));
+  } catch (error: any) {
+    await showAndLogError("Failed to get next pruning date", error);
+  }
+}
+
+function getPruningText(archiveId: number) {
+  const nextRun = pruningDates.value.pruningDates.find(p => p.archiveId === archiveId)?.nextRun;
+  if (!nextRun || isInPast(nextRun)) {
+    return "This archive will be deleted";
+  }
+
+  return `This archive will be deleted in ${toRelativeTimeString(nextRun)}`;
 }
 
 const customDateRangeShortcuts = () => {
@@ -372,7 +394,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <!-- Name -->
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
-            <span v-if='archive.willBePruned' class='tooltip tooltip-info' data-tip='This archive will be pruned'>
+            <span v-if='archive.willBePruned' class='tooltip tooltip-info' :data-tip='getPruningText(archive.id)'>
               <ScissorsIcon class='size-4 text-info ml-2' />
             </span>
           </td>

@@ -228,6 +228,37 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 	}, nil
 }
 
+type PruningDates struct {
+	PruningDates []PruningDate `json:"pruningDates"`
+}
+
+type PruningDate struct {
+	ArchiveId int       `json:"archiveId"`
+	NextRun   time.Time `json:"nextRun"`
+}
+
+func (r *RepositoryClient) GetPruningDates(archiveIds []int) (response PruningDates, err error) {
+	archives, err := r.db.Archive.
+		Query().
+		Where(archive.IDIn(archiveIds...)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithPruningRule()
+		}).
+		All(r.ctx)
+	if err != nil {
+		return
+	}
+	for _, arch := range archives {
+		if arch.Edges.BackupProfile.Edges.PruningRule != nil {
+			response.PruningDates = append(response.PruningDates, PruningDate{
+				ArchiveId: arch.ID,
+				NextRun:   arch.Edges.BackupProfile.Edges.PruningRule.NextRun,
+			})
+		}
+	}
+	return
+}
+
 func (r *RepositoryClient) GetLastArchiveByBackupId(backupId types.BackupId) (*ent.Archive, error) {
 	backupProfile, err := r.backupClient().GetBackupProfile(backupId.BackupProfileId)
 	if err != nil {
