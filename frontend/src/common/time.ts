@@ -199,5 +199,8 @@ function toPastString(date: Date, now: Date): string {
  * @param date The date to convert
  */
 export function toLongDateString(date: Date): string {
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
   return format(date, { date: "long", time: "short" });
 }
