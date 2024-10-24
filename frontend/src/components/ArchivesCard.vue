@@ -22,7 +22,7 @@ import { isInPast, toLongDateString, toRelativeTimeString } from "../common/time
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
-import { addDay, addYear, dayEnd, dayStart, isBefore, yearEnd, yearStart } from "@formkit/tempo";
+import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 
 /************
  * Types
@@ -62,6 +62,7 @@ const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
+pruningDates.value.pruningDates = [];
 
 const dateRange = ref({
   startDate: "",
