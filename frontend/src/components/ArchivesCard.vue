@@ -6,6 +6,7 @@ import { app, ent, state, types } from "../../wailsjs/go/models";
 import { computed, ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
+  ArrowPathIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
@@ -13,9 +14,9 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
+  ScissorsIcon,
   TrashIcon,
-  XMarkIcon,
-  ArrowPathIcon,
+  XMarkIcon
 } from "@heroicons/vue/24/solid";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
@@ -359,7 +360,8 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th class='min-w-40 lg:min-w-48'>Creation time</th>
           <th class='w-40 pl-12'>
-            {{ $t("action") }}</th>
+            {{ $t("action") }}
+          </th>
         </tr>
         </thead>
         <tbody>
@@ -370,6 +372,9 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <!-- Name -->
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
+            <span v-if='archive.willBePruned' class='tooltip tooltip-info' data-tip='This archive will be pruned'>
+              <ScissorsIcon class='size-4 text-info ml-2' />
+            </span>
           </td>
           <!-- Backup -->
           <td v-if='showBackupProfileColumn'>
