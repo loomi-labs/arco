@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eminarican/safetypes"
+	"sync"
 	"time"
 )
 
@@ -85,35 +86,66 @@ func (b *BackupClient) StartPruneJobs(bIds []types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) startExaminePruning(bId types.BackupId) error {
-	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
-		return errors.New(reason)
-	}
-
-	go func() {
-		err := b.examinePruning(bId)
-		if err != nil {
-			b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
-			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
-		}
-	}()
-	return nil
+type ExaminePruningResult struct {
+	BackupID               types.BackupId
+	RepositoryName         string
+	CntArchivesToBeDeleted int
+	Error                  error
 }
 
-func (b *BackupClient) ExaminePrunings(backupProfileId int) error {
-	backupProfile, err := b.GetBackupProfile(backupProfileId)
+func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.PruningRule, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+	defer wg.Done()
+
+	repo, err := b.db.Repository.Query().
+		Where(repository.ID(bId.RepositoryId)).
+		Select(repository.FieldName).
+		Only(b.ctx)
 	if err != nil {
-		return err
+		return
 	}
 
-	for _, repo := range backupProfile.Edges.Repositories {
-		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		err := b.startExaminePruning(bId)
-		if err != nil {
-			return err
-		}
+	if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: errors.New(reason), RepositoryName: repo.Name}
+		return
 	}
-	return nil
+
+	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule))
+	if err != nil {
+		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
+		return
+	}
+
+	resultCh <- ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
+}
+
+func (b *BackupClient) ExaminePrunes(backupProfileId int, pruningRule *ent.PruningRule) []ExaminePruningResult {
+	backupProfile, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return []ExaminePruningResult{{Error: err}}
+	}
+
+	var wg sync.WaitGroup
+	resultCh := make(chan ExaminePruningResult, len(backupProfile.Edges.Repositories))
+	results := make([]ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
+
+	for _, repo := range backupProfile.Edges.Repositories {
+		wg.Add(1)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		go b.startExaminePrune(bId, pruningRule, &wg, resultCh)
+	}
+
+	// Wait for all examine prune jobs to finish
+	wg.Wait()
+	close(resultCh)
+
+	// Collect results
+	for result := range resultCh {
+		results = append(results, result)
+	}
+
+	return results
 }
 
 /***********************************/
@@ -294,15 +326,16 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, archiv
 	}
 }
 
-func (b *BackupClient) examinePruning(bId types.BackupId) error {
+func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule]) (int, error) {
 	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
-		return fmt.Errorf("failed to get repository: %w", err)
+		return 0, fmt.Errorf("failed to get repository: %w", err)
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
-	pruningRule := backupProfile.Edges.PruningRule
+
+	pruningRule := pruningRuleOpt.UnwrapOr(backupProfile.Edges.PruningRule)
 	if pruningRule == nil {
-		return fmt.Errorf("pruning rule not found")
+		return 0, fmt.Errorf("pruning rule not found")
 	}
 
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
@@ -317,7 +350,7 @@ func (b *BackupClient) examinePruning(bId types.BackupId) error {
 		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
 		All(b.ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get archives: %w", err)
+		return 0, fmt.Errorf("failed to get archives: %w", err)
 	}
 
 	// Create go routine to save prune result
@@ -328,15 +361,12 @@ func (b *BackupClient) examinePruning(bId types.BackupId) error {
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if err != nil {
-		if errors.As(err, &borg.CancelErr{}) {
-			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return nil
-		} else if errors.As(err, &borg.LockTimeout{}) {
+		if errors.As(err, &borg.LockTimeout{}) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
-			return fmt.Errorf("repository is locked")
+			return 0, fmt.Errorf("repository is locked")
 		} else {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return fmt.Errorf("failed to examine prune: %w", err)
+			return 0, fmt.Errorf("failed to examine prune: %w", err)
 		}
 	} else {
 		select {
@@ -350,7 +380,7 @@ func (b *BackupClient) examinePruning(bId types.BackupId) error {
 
 			tx, err := b.db.Tx(b.ctx)
 			if err != nil {
-				return fmt.Errorf("failed to start transaction: %w", err)
+				return 0, fmt.Errorf("failed to start transaction: %w", err)
 			}
 
 			err = tx.Archive.
@@ -362,7 +392,7 @@ func (b *BackupClient) examinePruning(bId types.BackupId) error {
 				SetWillBePruned(true).
 				Exec(b.ctx)
 			if err != nil {
-				return rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
 			}
 
 			err = tx.Archive.
@@ -374,11 +404,11 @@ func (b *BackupClient) examinePruning(bId types.BackupId) error {
 				SetWillBePruned(false).
 				Exec(b.ctx)
 
-			return tx.Commit()
-		case <-time.After(30 * time.Second):
-			return fmt.Errorf("timeout waiting for prune result")
+			return len(pruneResult.PruneArchives), tx.Commit()
+		case <-time.After(10 * time.Second):
+			return 0, fmt.Errorf("timeout waiting for prune result")
 		case <-b.ctx.Done():
-			return fmt.Errorf("context canceled")
+			return 0, fmt.Errorf("context canceled")
 		}
 	}
 }
