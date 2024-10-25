@@ -279,8 +279,7 @@ func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int)
 /********** Backup Functions *******/
 /***********************************/
 
-// StartBackupJob starts a backup job for the given repository and backup profile.
-func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
+func (b *BackupClient) startBackupJob(bId types.BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
 		return errors.New(reason)
 	}
@@ -298,7 +297,7 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) error {
 	var errs []error
 	for _, bId := range bIds {
-		err := b.StartBackupJob(bId)
+		err := b.startBackupJob(bId)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -319,7 +318,7 @@ type BackupProgressResponse struct {
 	Found    bool                `json:"found"`
 }
 
-func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
+func (b *BackupClient) abortBackupJob(id types.BackupId) error {
 	b.state.SetBackupCancelled(b.ctx, id, true)
 	return nil
 }
@@ -327,7 +326,7 @@ func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
 func (b *BackupClient) AbortBackupJobs(bIds []types.BackupId) error {
 	for _, bId := range bIds {
 		if b.state.GetBackupState(bId).Status == state.BackupStatusRunning {
-			err := b.AbortBackupJob(bId)
+			err := b.abortBackupJob(bId)
 			if err != nil {
 				return err
 			}
