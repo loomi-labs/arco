@@ -386,7 +386,7 @@ func getNextPruneTime(bs *ent.BackupSchedule, fromTime time.Time) time.Time {
 	// Calculate the next prune time based on the backup schedule
 	// If the backup run is in the past, we run the prune in 1 hour
 	if bs.NextRun.Before(time.Now().Add(time.Hour)) {
-		return time.Now().Add(time.Hour)
+		return fromTime.Add(time.Hour)
 	}
 
 	// Otherwise we run the prune 1 minute after the backup

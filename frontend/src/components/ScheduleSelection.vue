@@ -87,10 +87,10 @@ const monthday = defineModel("monthday", {
 function copySchedule(schedule: ent.BackupSchedule): ent.BackupSchedule {
   const newSchedule = ent.BackupSchedule.createFrom();
   newSchedule.mode = schedule.mode;
-  newSchedule.dailyAt = schedule.dailyAt;
-  newSchedule.weeklyAt = schedule.weeklyAt;
+  newSchedule.dailyAt = new Date(schedule.dailyAt);
+  newSchedule.weeklyAt = new Date(schedule.weeklyAt);
   newSchedule.weekday = schedule.weekday;
-  newSchedule.monthlyAt = schedule.monthlyAt;
+  newSchedule.monthlyAt = new Date(schedule.monthlyAt);
   newSchedule.monthday = schedule.monthday;
   return newSchedule;
 }
@@ -141,7 +141,7 @@ watchEffect(() => {
         <!-- Hourly -->
         <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isHourly}'
-             @click='() => schedule.mode = backupschedule.Mode.hourly'>
+             @click='schedule.mode = backupschedule.Mode.hourly'>
           <label for='hourly'>{{ $t("hour") }}</label>
           <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
@@ -153,7 +153,7 @@ watchEffect(() => {
         <!-- Daily -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isDaily}'
-             @click='() => schedule.mode = backupschedule.Mode.daily'>
+             @click='schedule.mode = backupschedule.Mode.daily'>
           <div class='flex justify-between space-x-2'>
             <label for='daily'>{{ $t("day") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
@@ -170,7 +170,7 @@ watchEffect(() => {
         <!-- Weekly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isWeekly}'
-             @click='() => schedule.mode = backupschedule.Mode.weekly'>
+             @click='schedule.mode = backupschedule.Mode.weekly'>
           <div class='flex justify-between space-x-2'>
             <label for='weekly'>{{ $t("week") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
@@ -181,7 +181,7 @@ watchEffect(() => {
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='weekday'
-                  @focus='() => schedule.mode = backupschedule.Mode.weekly'>
+                  @focus='schedule.mode = backupschedule.Mode.weekly'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
@@ -195,7 +195,7 @@ watchEffect(() => {
         <!-- Monthly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isMonthly}'
-             @click='() => schedule.mode = backupschedule.Mode.monthly'>
+             @click='schedule.mode = backupschedule.Mode.monthly'>
           <div class='flex justify-between space-x-2'>
             <label for='monthly'>{{ $t("month") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
@@ -206,7 +206,7 @@ watchEffect(() => {
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='monthday'
-                  @focus='() => schedule.mode = backupschedule.Mode.monthly'>
+                  @focus='schedule.mode = backupschedule.Mode.monthly'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>
