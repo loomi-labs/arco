@@ -5,6 +5,7 @@ import (
 	"arco/backend/borg"
 	"context"
 	"fmt"
+	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"sync"
@@ -523,6 +524,7 @@ func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error
 	defer s.mu.Unlock()
 	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
 	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	assert.True(err != nil, "error must not be nil")
 
 	s.changePruneState(bId, PruningStatusFailed)
 	s.pruneStates[bId].Error = err.Error()
@@ -530,17 +532,6 @@ func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error
 		s.setRepoState(bId.RepositoryId, RepoStatusLocked)
 	} else if setRepoStateIdle {
 		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
-	}
-}
-
-func (s *State) SetPruneResult(bId types.BackupId, result PruneJobResult) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if currentState, ok := s.pruneStates[bId]; ok {
-		if currentState.Status == PruningStatusRunning {
-			currentState.Result = &result
-		}
 	}
 }
 

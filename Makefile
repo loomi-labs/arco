@@ -123,4 +123,4 @@ install-tools: download
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
-	wails dev
+	wails dev --tags=assert

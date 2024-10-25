@@ -8,6 +8,7 @@ require (
 	github.com/eminarican/safetypes v0.0.8
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/mattn/go-sqlite3 v1.14.23
+	github.com/negrel/assert v0.2.0
 	github.com/prometheus/procfs v0.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
