@@ -240,7 +240,11 @@ type PruningDate struct {
 func (r *RepositoryClient) GetPruningDates(archiveIds []int) (response PruningDates, err error) {
 	archives, err := r.db.Archive.
 		Query().
-		Where(archive.IDIn(archiveIds...)).
+		Where(archive.And(
+			archive.IDIn(archiveIds...),
+			archive.HasBackupProfile(),
+			archive.WillBePruned(true),
+		)).
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithPruningRule()
 		}).
