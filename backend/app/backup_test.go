@@ -12,11 +12,10 @@ import (
 )
 
 /*
-
 TEST CASES - backup.go
 
 TestBackupClient_SaveBackupSchedule
-* SaveBackupSchedule with default values
+* SaveBackupSchedule with invalid schedule
 * SaveBackupSchedule with hourly schedule
 * SaveBackupSchedule with daily schedule
 * SaveBackupSchedule with weekly schedule
@@ -29,8 +28,6 @@ TestBackupClient_SaveBackupSchedule
 * SaveBackupSchedule with daily and weekly schedule
 * SaveBackupSchedule with daily and monthly schedule
 * SaveBackupSchedule with weekly and monthly schedule
-* SaveBackupSchedule with an updated daily schedule
-* SaveBackupSchedule with an updated weekly schedule (to hourly)
 
 TestBackupClient_GetPrefixSuggestions
 * GetPrefixSuggestions with empty prefix
@@ -89,106 +86,73 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		schedule func() ent.BackupSchedule
+		schedule ent.BackupSchedule
 		wantErr  bool
 	}{
 		{
-			name: "SaveBackupSchedule with default values",
-			schedule: func() ent.BackupSchedule {
-				return ent.BackupSchedule{}
-			},
-			wantErr: true,
+			name:     "SaveBackupSchedule with invalid schedule",
+			schedule: ent.BackupSchedule{Mode: "invalid"},
+			wantErr:  true,
 		},
 		{
-			name: "SaveBackupSchedule with invalid schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: "invalid"})
-			},
-			wantErr: true,
+			name:     "SaveBackupSchedule with hourly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with hourly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with daily schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with daily schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with weekly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with weekly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with invalid weekly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: "invalid", WeeklyAt: now},
+			wantErr:  true,
 		},
 		{
-			name: "SaveBackupSchedule with invalid weekly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: "invalid", WeeklyAt: now})
-			},
-			wantErr: true,
+			name:     "SaveBackupSchedule with monthly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{1}[0], MonthlyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with monthly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{1}[0], MonthlyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with invalid monthly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{32}[0], MonthlyAt: now},
+			wantErr:  true,
 		},
 		{
-			name: "SaveBackupSchedule with invalid monthly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{32}[0], MonthlyAt: now})
-			},
-			wantErr: true,
+			name:     "SaveBackupSchedule with hourly and daily schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, DailyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with hourly and daily schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly, DailyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with hourly and weekly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with hourly and weekly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with hourly and monthly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, Monthday: []uint8{1}[0], MonthlyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with hourly and monthly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly, Monthday: []uint8{1}[0], MonthlyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with daily and weekly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with daily and weekly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with daily and monthly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
+			wantErr:  false,
 		},
 		{
-			name: "SaveBackupSchedule with daily and monthly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now})
-			},
-			wantErr: false,
-		},
-		{
-			name: "SaveBackupSchedule with weekly and monthly schedule",
-			schedule: func() ent.BackupSchedule {
-				return newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now})
-			},
-			wantErr: false,
+			name:     "SaveBackupSchedule with weekly and monthly schedule",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
+			wantErr:  false,
 		},
 	}
 
@@ -196,7 +160,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setup(t)
 			// ACT
-			err := a.BackupClient().SaveBackupSchedule(profile.ID, tt.schedule())
+			err := a.BackupClient().SaveBackupSchedule(profile.ID, newBackupSchedule(tt.schedule))
 
 			// ASSERT
 			if tt.wantErr {
@@ -211,12 +175,12 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 
 				cnt := a.db.BackupSchedule.Query().CountX(a.ctx)
 
-				assert.Equalf(t, tt.schedule().Mode, updatedSchedule.Mode, "Expected mode %s, got %s", tt.schedule().Mode, updatedSchedule.Mode)
-				//assert.Equalf(t, tt.schedule().DailyAt.Unix(), updatedSchedule.DailyAt.Unix(), "Expected daily at %v, got %v", tt.schedule().DailyAt, updatedSchedule.DailyAt)
-				assert.Equalf(t, tt.schedule().Weekday, updatedSchedule.Weekday, "Expected weekday %s, got %s", tt.schedule().Weekday, updatedSchedule.Weekday)
-				//assert.Equalf(t, tt.schedule().WeeklyAt.Unix(), updatedSchedule.WeeklyAt.Unix(), "Expected weekly at %v, got %v", tt.schedule().WeeklyAt, updatedSchedule.WeeklyAt)
-				assert.Equalf(t, tt.schedule().Monthday, updatedSchedule.Monthday, "Expected monthday %d, got %d", tt.schedule().Monthday, updatedSchedule.Monthday)
-				//assert.Equalf(t, tt.schedule().MonthlyAt.Unix(), updatedSchedule.MonthlyAt.Unix(), "Expected monthly at %v, got %v", tt.schedule().MonthlyAt, updatedSchedule.MonthlyAt)
+				assert.Equalf(t, newBackupSchedule(tt.schedule).Mode, updatedSchedule.Mode, "Expected mode %s, got %s", newBackupSchedule(tt.schedule).Mode, updatedSchedule.Mode)
+				//assert.Equalf(t, newBackupSchedule(tt.schedule).DailyAt.Unix(), updatedSchedule.DailyAt.Unix(), "Expected daily at %v, got %v", newBackupSchedule(tt.schedule).DailyAt, updatedSchedule.DailyAt)
+				assert.Equalf(t, newBackupSchedule(tt.schedule).Weekday, updatedSchedule.Weekday, "Expected weekday %s, got %s", newBackupSchedule(tt.schedule).Weekday, updatedSchedule.Weekday)
+				//assert.Equalf(t, newBackupSchedule(tt.schedule).WeeklyAt.Unix(), updatedSchedule.WeeklyAt.Unix(), "Expected weekly at %v, got %v", newBackupSchedule(tt.schedule).WeeklyAt, updatedSchedule.WeeklyAt)
+				assert.Equalf(t, newBackupSchedule(tt.schedule).Monthday, updatedSchedule.Monthday, "Expected monthday %d, got %d", newBackupSchedule(tt.schedule).Monthday, updatedSchedule.Monthday)
+				//assert.Equalf(t, newBackupSchedule(tt.schedule).MonthlyAt.Unix(), updatedSchedule.MonthlyAt.Unix(), "Expected monthly at %v, got %v", newBackupSchedule(tt.schedule).MonthlyAt, updatedSchedule.MonthlyAt)
 				assert.Equalf(t, 1, cnt, "Expected 1 backup schedule, got %d", cnt)
 			}
 		})
