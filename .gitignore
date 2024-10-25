@@ -3,9 +3,6 @@
 
 # Build files
 build/bin
-node_modules
-frontend/dist
-frontend/wailsjs
 
 # Environment variables
 .env*
