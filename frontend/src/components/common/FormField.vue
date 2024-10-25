@@ -25,7 +25,7 @@ interface Props {
  ************/
 
 const props = withDefaults(defineProps<Props>(), {
-  errorRenderType: ErrorRenderType.RenderIfError,
+  errorRenderType: ErrorRenderType.RenderIfError
 });
 
 const hideError = computed(() => {
@@ -33,10 +33,10 @@ const hideError = computed(() => {
 });
 
 const renderError = computed(() => {
-  return props.errorRenderType !== ErrorRenderType.RenderIfError ||
+  return props.errorRenderType === ErrorRenderType.PreserveSpace ||
+    props.errorRenderType === ErrorRenderType.HideErrorButPreserveSpace ||
     (props.errorRenderType === ErrorRenderType.RenderIfError && props.error);
 });
-
 /************
  * Functions
  ************/
