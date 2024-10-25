@@ -55,6 +55,11 @@ func IDLTE(id int) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldID, id))
 }
 
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
 // Hourly applies equality check predicate on the "hourly" field. It's identical to HourlyEQ.
 func Hourly(v bool) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldHourly, v))
@@ -93,6 +98,76 @@ func LastRun(v time.Time) predicate.BackupSchedule {
 // LastRunStatus applies equality check predicate on the "last_run_status" field. It's identical to LastRunStatusEQ.
 func LastRunStatus(v string) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotNull(FieldUpdatedAt))
+}
+
+// ModeEQ applies the EQ predicate on the "mode" field.
+func ModeEQ(v Mode) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldMode, v))
+}
+
+// ModeNEQ applies the NEQ predicate on the "mode" field.
+func ModeNEQ(v Mode) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldMode, v))
+}
+
+// ModeIn applies the In predicate on the "mode" field.
+func ModeIn(vs ...Mode) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldMode, vs...))
+}
+
+// ModeNotIn applies the NotIn predicate on the "mode" field.
+func ModeNotIn(vs ...Mode) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldMode, vs...))
 }
 
 // HourlyEQ applies the EQ predicate on the "hourly" field.
@@ -145,16 +220,6 @@ func DailyAtLTE(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldDailyAt, v))
 }
 
-// DailyAtIsNil applies the IsNil predicate on the "daily_at" field.
-func DailyAtIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldDailyAt))
-}
-
-// DailyAtNotNil applies the NotNil predicate on the "daily_at" field.
-func DailyAtNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldDailyAt))
-}
-
 // WeekdayEQ applies the EQ predicate on the "weekday" field.
 func WeekdayEQ(v Weekday) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldWeekday, v))
@@ -173,16 +238,6 @@ func WeekdayIn(vs ...Weekday) predicate.BackupSchedule {
 // WeekdayNotIn applies the NotIn predicate on the "weekday" field.
 func WeekdayNotIn(vs ...Weekday) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldNotIn(FieldWeekday, vs...))
-}
-
-// WeekdayIsNil applies the IsNil predicate on the "weekday" field.
-func WeekdayIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldWeekday))
-}
-
-// WeekdayNotNil applies the NotNil predicate on the "weekday" field.
-func WeekdayNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldWeekday))
 }
 
 // WeeklyAtEQ applies the EQ predicate on the "weekly_at" field.
@@ -225,16 +280,6 @@ func WeeklyAtLTE(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldWeeklyAt, v))
 }
 
-// WeeklyAtIsNil applies the IsNil predicate on the "weekly_at" field.
-func WeeklyAtIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldWeeklyAt))
-}
-
-// WeeklyAtNotNil applies the NotNil predicate on the "weekly_at" field.
-func WeeklyAtNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldWeeklyAt))
-}
-
 // MonthdayEQ applies the EQ predicate on the "monthday" field.
 func MonthdayEQ(v uint8) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldMonthday, v))
@@ -275,16 +320,6 @@ func MonthdayLTE(v uint8) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldMonthday, v))
 }
 
-// MonthdayIsNil applies the IsNil predicate on the "monthday" field.
-func MonthdayIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldMonthday))
-}
-
-// MonthdayNotNil applies the NotNil predicate on the "monthday" field.
-func MonthdayNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldMonthday))
-}
-
 // MonthlyAtEQ applies the EQ predicate on the "monthly_at" field.
 func MonthlyAtEQ(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldMonthlyAt, v))
@@ -323,16 +358,6 @@ func MonthlyAtLT(v time.Time) predicate.BackupSchedule {
 // MonthlyAtLTE applies the LTE predicate on the "monthly_at" field.
 func MonthlyAtLTE(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldMonthlyAt, v))
-}
-
-// MonthlyAtIsNil applies the IsNil predicate on the "monthly_at" field.
-func MonthlyAtIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldMonthlyAt))
-}
-
-// MonthlyAtNotNil applies the NotNil predicate on the "monthly_at" field.
-func MonthlyAtNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldMonthlyAt))
 }
 
 // NextRunEQ applies the EQ predicate on the "next_run" field.
