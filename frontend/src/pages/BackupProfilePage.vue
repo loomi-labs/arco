@@ -107,15 +107,6 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
   }
 }
 
-async function deleteSchedule() {
-  try {
-    await backupClient.DeleteBackupSchedule(backupProfile.value.id);
-    backupProfile.value.edges.backupSchedule = undefined;
-  } catch (error: any) {
-    await showAndLogError("Failed to delete schedule", error);
-  }
-}
-
 function adjustBackupNameWidth() {
   if (nameInput.value) {
     nameInput.value.style.width = "30px";
@@ -150,7 +141,6 @@ async function setPruningRule(pruningRule: ent.PruningRule) {
     await showAndLogError("Failed to save pruning rule", error);
   }
 }
-
 
 /************
  * Lifecycle
@@ -233,12 +223,11 @@ watch(loading, async () => {
     <!-- Schedule Section -->
     <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
     <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-      <ScheduleSelection :schedule='backupProfile.edges?.backupSchedule'
-                         @update:schedule='saveSchedule'
-                         @delete:schedule='deleteSchedule' />
+      <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
+                         @update:schedule='saveSchedule' />
 
       <PruningCard :backup-profile-id='backupProfile.id'
-                   :pruning-rule='backupProfile.edges?.pruningRule ?? ent.PruningRule.createFrom()'
+                   :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
                    :ask-for-save-before-leaving='true'
                    @update:pruning-rule='setPruningRule'>
       </PruningCard>

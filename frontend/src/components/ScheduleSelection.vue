@@ -1,29 +1,18 @@
 <script setup lang='ts'>
 import { backupschedule, ent } from "../../wailsjs/go/models";
-import { computed, nextTick, ref, watch, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
-import { applyOffset, offset, removeOffset } from "@formkit/tempo";
-import deepEqual from "deep-equal";
 
 /************
  * Types
  ************/
 
 interface Props {
-  schedule?: ent.BackupSchedule;
+  schedule: ent.BackupSchedule;
 }
 
 interface Emits {
   (event: typeof emitUpdate, schedule: ent.BackupSchedule): void;
-
-  (event: typeof emitDelete): void;
-}
-
-enum BackupFrequency {
-  Hourly = "hourly",
-  Daily = "daily",
-  Weekly = "weekly",
-  Monthly = "monthly",
 }
 
 /************
@@ -34,23 +23,14 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const emitUpdate = "update:schedule";
-const emitDelete = "delete:schedule";
 
-// We have to remove the timezone offset from the date when showing it in the UI
-// and add it back when saving it to the schedule
-const offsetToUtc = offset(new Date());
-const schedule = ref<ent.BackupSchedule>(getBackupScheduleFromProps());
-const isScheduleEnabled = ref<boolean>(getScheduleType(props.schedule) !== undefined);
-const backupFrequency = ref<BackupFrequency>(getScheduleType(props.schedule) || BackupFrequency.Hourly);
-const isInitializing = ref<boolean>(false);
-
-const isHourly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Hourly);
-const isDaily = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Daily);
-const isWeekly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Weekly);
-const isMonthly = computed(() => isScheduleEnabled.value && backupFrequency.value === BackupFrequency.Monthly);
-
-// Create a cleaned schedule that only contains the necessary fields
-const cleanedSchedule = ref<ent.BackupSchedule>(getCleanedSchedule());
+const schedule = ref<ent.BackupSchedule>(props.schedule);
+const originalSchedule = ref<ent.BackupSchedule>(copySchedule(props.schedule));
+const isScheduleEnabled = computed(() => schedule.value.mode !== backupschedule.Mode.disabled);
+const isHourly = computed(() => schedule.value.mode === backupschedule.Mode.hourly);
+const isDaily = computed(() => schedule.value.mode === backupschedule.Mode.daily);
+const isWeekly = computed(() => schedule.value.mode === backupschedule.Mode.weekly);
+const isMonthly = computed(() => schedule.value.mode === backupschedule.Mode.monthly);
 
 const dailyAtDateTime = defineModel("dailyAtDateTime", {
   get() {
@@ -104,148 +84,44 @@ const monthday = defineModel("monthday", {
  * Functions
  ************/
 
-function getBackupScheduleFromProps(): ent.BackupSchedule {
-  const at9am = new Date();
-  at9am.setHours(9, 0, 0, 0);
+function copySchedule(schedule: ent.BackupSchedule): ent.BackupSchedule {
   const newSchedule = ent.BackupSchedule.createFrom();
-  newSchedule.hourly = true;
-  newSchedule.dailyAt = at9am;
-  newSchedule.weekday = backupschedule.Weekday.monday;
-  newSchedule.weeklyAt = at9am;
-  newSchedule.monthday = 30;
-  newSchedule.monthlyAt = at9am;
-
-  if (!props.schedule) {
-    return newSchedule;
-  }
-
-  switch (getScheduleType(props.schedule)) {
-    case BackupFrequency.Hourly:
-      newSchedule.hourly = props.schedule.hourly;
-      break;
-    case BackupFrequency.Daily:
-      newSchedule.dailyAt = removeOffset(props.schedule.dailyAt, offsetToUtc);
-      break;
-    case BackupFrequency.Weekly:
-      newSchedule.weeklyAt = removeOffset(props.schedule.weeklyAt, offsetToUtc);
-      newSchedule.weekday = props.schedule.weekday;
-      break;
-    case BackupFrequency.Monthly:
-      newSchedule.monthlyAt = removeOffset(props.schedule.monthlyAt, offsetToUtc);
-      newSchedule.monthday = props.schedule.monthday;
-      break;
-  }
+  newSchedule.mode = schedule.mode;
+  newSchedule.dailyAt = schedule.dailyAt;
+  newSchedule.weeklyAt = schedule.weeklyAt;
+  newSchedule.weekday = schedule.weekday;
+  newSchedule.monthlyAt = schedule.monthlyAt;
+  newSchedule.monthday = schedule.monthday;
   return newSchedule;
 }
 
-function getScheduleType(schedule: ent.BackupSchedule | undefined): BackupFrequency | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  if (schedule.hourly) {
-    return BackupFrequency.Hourly;
-  } else if (schedule.dailyAt) {
-    return BackupFrequency.Daily;
-  } else if (schedule.weeklyAt) {
-    return BackupFrequency.Weekly;
-  } else if (schedule.monthlyAt) {
-    return BackupFrequency.Monthly;
-  }
-  return undefined;
+function isEqual(schedule1: ent.BackupSchedule, schedule2: ent.BackupSchedule): boolean {
+  return schedule1.mode === schedule2.mode &&
+    schedule1.dailyAt === schedule2.dailyAt &&
+    schedule1.weeklyAt === schedule2.weeklyAt &&
+    schedule1.weekday === schedule2.weekday &&
+    schedule1.monthlyAt === schedule2.monthlyAt &&
+    schedule1.monthday === schedule2.monthday;
 }
 
-function getCleanedSchedule(): ent.BackupSchedule {
-  const newSchedule = ent.BackupSchedule.createFrom();
-  if (isScheduleEnabled.value) {
-    switch (backupFrequency.value) {
-      case BackupFrequency.Hourly:
-        newSchedule.hourly = true;
-        break;
-      case BackupFrequency.Daily:
-        newSchedule.dailyAt = applyOffset(schedule.value.dailyAt, offsetToUtc);
-        break;
-      case BackupFrequency.Weekly:
-        newSchedule.weeklyAt = applyOffset(schedule.value.weeklyAt, offsetToUtc);
-        newSchedule.weekday = schedule.value.weekday;
-        break;
-      case BackupFrequency.Monthly:
-        newSchedule.monthlyAt = applyOffset(schedule.value.monthlyAt, offsetToUtc);
-        newSchedule.monthday = schedule.value.monthday;
-        break;
-    }
-  }
-  return newSchedule;
-}
-
-function backupFrequencyChanged() {
-  switch (backupFrequency.value) {
-    case BackupFrequency.Hourly:
-      schedule.value.hourly = true;
-      break;
-    default:
-      schedule.value.hourly = false;
-      break;
-  }
-}
-
-function setBackupFrequency(frequency: BackupFrequency) {
-  if (!isScheduleEnabled.value) {
-    return;
-  }
-
-  backupFrequency.value = frequency;
+function toggleIsScheduleEnabled() {
+  schedule.value.mode = isScheduleEnabled.value ? backupschedule.Mode.disabled : backupschedule.Mode.hourly;
 }
 
 function emitUpdateSchedule(schedule: ent.BackupSchedule) {
   emit(emitUpdate, schedule);
 }
 
-function emitDeleteSchedule() {
-  emit(emitDelete);
-}
-
 /************
  * Lifecycle
  ************/
 
-// Watch for changes to props.schedule
-watch(() => props.schedule, async (newSchedule, oldSchedule) => {
-  if (deepEqual(newSchedule, oldSchedule)) {
-    return;
-  }
-
-  isInitializing.value = true;
-  schedule.value = getBackupScheduleFromProps();
-  isScheduleEnabled.value = getScheduleType(newSchedule) !== undefined;
-  backupFrequency.value = getScheduleType(newSchedule) || BackupFrequency.Hourly;
-
-  // Wait a bit for the schedule to be rendered
-  await nextTick();
-  isInitializing.value = false;
-});
-
-// Watch for changes to schedule
-// When schedule changes, update cleanedSchedule
 watchEffect(() => {
-  schedule.value;
-  backupFrequency.value;
-  isScheduleEnabled.value;
-  cleanedSchedule.value = getCleanedSchedule();
-});
-
-// Watch for changes to cleanedSchedule
-// When cleanedSchedule changes, emit the new schedule or emit delete
-watch(cleanedSchedule, (newSchedule, oldSchedule) => {
-  // Don't emit if the schedule is initializing or if the new schedule is the same as the old schedule
-  if (isInitializing.value || deepEqual(newSchedule, oldSchedule)) {
+  if (isEqual(schedule.value, originalSchedule.value)) {
     return;
   }
 
-  if (getScheduleType(newSchedule) === undefined) {
-    emitDeleteSchedule();
-  } else {
-    emitUpdateSchedule(cleanedSchedule.value);
-  }
+  emitUpdateSchedule(schedule.value);
 });
 
 </script>
@@ -254,7 +130,10 @@ watch(cleanedSchedule, (newSchedule, oldSchedule) => {
   <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
       <h3 class='text-xl font-semibold'>Run automatic backups</h3>
-      <input type='checkbox' class='toggle toggle-secondary' v-model='isScheduleEnabled'>
+      <input type='checkbox'
+             class='toggle toggle-secondary'
+             v-model='isScheduleEnabled'
+             @change='toggleIsScheduleEnabled'>
     </div>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold mb-4'>{{ $t("every") }}</h3>
@@ -262,26 +141,25 @@ watch(cleanedSchedule, (newSchedule, oldSchedule) => {
         <!-- Hourly -->
         <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isHourly}'
-             @click='() => setBackupFrequency(BackupFrequency.Hourly)'>
+             @click='() => schedule.mode = backupschedule.Mode.hourly'>
           <label for='hourly'>{{ $t("hour") }}</label>
           <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
-                 :value='BackupFrequency.Hourly'
-                 @change='backupFrequencyChanged'
-                 v-model='backupFrequency'>
+                 :value='backupschedule.Mode.hourly'
+                 v-model='schedule.mode'>
         </div>
         <div class='divider divider-horizontal'></div>
 
         <!-- Daily -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isDaily}'
-             @click='() => setBackupFrequency(BackupFrequency.Daily)'>
+             @click='() => schedule.mode = backupschedule.Mode.daily'>
           <div class='flex justify-between space-x-2'>
             <label for='daily'>{{ $t("day") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
                    :disabled='!isScheduleEnabled'
-                   :value='BackupFrequency.Daily'
-                   v-model='backupFrequency'>
+                   :value='backupschedule.Mode.daily'
+                   v-model='schedule.mode'>
           </div>
           <input type='time' class='input input-bordered input-sm'
                  :disabled='!isScheduleEnabled'
@@ -292,18 +170,18 @@ watch(cleanedSchedule, (newSchedule, oldSchedule) => {
         <!-- Weekly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isWeekly}'
-             @click='() => setBackupFrequency(BackupFrequency.Weekly)'>
+             @click='() => schedule.mode = backupschedule.Mode.weekly'>
           <div class='flex justify-between space-x-2'>
             <label for='weekly'>{{ $t("week") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
                    :disabled='!isScheduleEnabled'
-                   :value='BackupFrequency.Weekly'
-                   v-model='backupFrequency'>
+                   :value='backupschedule.Mode.weekly'
+                   v-model='schedule.mode'>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='weekday'
-                  @focus='() => setBackupFrequency(BackupFrequency.Weekly)'>
+                  @focus='() => schedule.mode = backupschedule.Mode.weekly'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
@@ -317,18 +195,18 @@ watch(cleanedSchedule, (newSchedule, oldSchedule) => {
         <!-- Monthly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isMonthly}'
-             @click='() => setBackupFrequency(BackupFrequency.Monthly)'>
+             @click='() => schedule.mode = backupschedule.Mode.monthly'>
           <div class='flex justify-between space-x-2'>
             <label for='monthly'>{{ $t("month") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
                    :disabled='!isScheduleEnabled'
-                   :value='BackupFrequency.Monthly'
-                   v-model='backupFrequency'>
+                   :value='backupschedule.Mode.monthly'
+                   v-model='schedule.mode'>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='monthday'
-                  @focus='() => setBackupFrequency(BackupFrequency.Monthly)'>
+                  @focus='() => schedule.mode = backupschedule.Mode.monthly'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>

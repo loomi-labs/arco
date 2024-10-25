@@ -310,7 +310,7 @@ getExistingRepositories();
     <template v-if='currentStep === Step.Schedule'>
       <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
       <div class='flex flex-col gap-10'>
-        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule'
+        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
                            @update:schedule='saveSchedule'
                            @delete:schedule='() => saveSchedule(undefined)' />
 
