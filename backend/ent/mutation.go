@@ -1854,22 +1854,9 @@ func (m *BackupScheduleMutation) OldUpdatedAt(ctx context.Context) (v time.Time,
 	return oldValue.UpdatedAt, nil
 }
 
-// ClearUpdatedAt clears the value of the "updated_at" field.
-func (m *BackupScheduleMutation) ClearUpdatedAt() {
-	m.updated_at = nil
-	m.clearedFields[backupschedule.FieldUpdatedAt] = struct{}{}
-}
-
-// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
-func (m *BackupScheduleMutation) UpdatedAtCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldUpdatedAt]
-	return ok
-}
-
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *BackupScheduleMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-	delete(m.clearedFields, backupschedule.FieldUpdatedAt)
 }
 
 // SetMode sets the "mode" field.
@@ -2590,9 +2577,6 @@ func (m *BackupScheduleMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *BackupScheduleMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(backupschedule.FieldUpdatedAt) {
-		fields = append(fields, backupschedule.FieldUpdatedAt)
-	}
 	if m.FieldCleared(backupschedule.FieldNextRun) {
 		fields = append(fields, backupschedule.FieldNextRun)
 	}
@@ -2616,9 +2600,6 @@ func (m *BackupScheduleMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *BackupScheduleMutation) ClearField(name string) error {
 	switch name {
-	case backupschedule.FieldUpdatedAt:
-		m.ClearUpdatedAt()
-		return nil
 	case backupschedule.FieldNextRun:
 		m.ClearNextRun()
 		return nil

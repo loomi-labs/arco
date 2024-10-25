@@ -4,6 +4,8 @@
 4d63.com/gochecknoglobals v0.2.1/go.mod h1:KRE8wtJB3CXCsb1xy421JfTHIIbmT3U5ruxw2Qu8fSU=
 ariga.io/atlas v0.27.0 h1:UHUQMTRx2Vz8/acJxEfcC/zL2wY739/vkZzt7L8HL8I=
 ariga.io/atlas v0.27.0/go.mod h1:KPLc7Zj+nzoXfWshrcY1RwlOh94dsATQEy4UPrF2RkM=
+ariga.io/atlas-go-sdk v0.6.4 h1:6iSUoMkHi7CijzxW4c+iMly53UFdw07HX8ECRglkUR4=
+ariga.io/atlas-go-sdk v0.6.4/go.mod h1:9Q+/04PVyJHUse1lEE9Kp6E18xj/6mIzaUTcWYSjSnQ=
 atomicgo.dev/cursor v0.1.1 h1:0t9sxQomCTRh5ug+hAMCs59x/UmC9QL6Ci5uosINKD4=
 atomicgo.dev/cursor v0.1.1/go.mod h1:Lr4ZJB3U7DfPPOkbH7/6TOtJ4vFGHlgj1nc+n900IpU=
 atomicgo.dev/keyboard v0.2.8 h1:Di09BitwZgdTV1hPyX/b9Cqxi8HVuJQwWivnZUEqlj4=
@@ -660,8 +662,9 @@ github.com/sashamelentyev/usestdlibvars v1.27.0 h1:t/3jZpSXtRPRf2xr0m63i32Zrusyu
 github.com/sashamelentyev/usestdlibvars v1.27.0/go.mod h1:9nl0jgOfHKWNFS43Ojw0i7aRoS4j6EBye3YBhmAIRF8=
 github.com/securego/gosec/v2 v2.21.2 h1:deZp5zmYf3TWwU7A7cR2+SolbTpZ3HQiwFqnzQyEl3M=
 github.com/securego/gosec/v2 v2.21.2/go.mod h1:au33kg78rNseF5PwPnTWhuYBFf534bvJRvOrgZ/bFzU=
-github.com/sergi/go-diff v1.2.0 h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=
 github.com/sergi/go-diff v1.2.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
+github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
+github.com/sergi/go-diff v1.3.1/go.mod h1:aMJSSKb2lpPvRNec0+w3fl7LP9IOFzdc9Pa4NFbPK1I=
 github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c h1:W65qqJCIOVP4jpqPQ0YvHYKwcMEMVWIzWC5iNQQfBTU=
 github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c/go.mod h1:/PevMnwAxekIXwN8qQyfc5gl2NlkB3CQlkizAbOkeBs=
 github.com/shurcooL/go v0.0.0-20180423040247-9e1955d9fb6e/go.mod h1:TDJrrUr11Vxrven61rcy3hJMUqaf/CLWYhHNPmT14Lk=

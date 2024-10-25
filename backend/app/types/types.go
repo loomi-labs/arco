@@ -42,6 +42,7 @@ type Config struct {
 	BorgPath    string
 	BorgVersion string
 	Icon        embed.FS
+	Migrations  embed.FS
 }
 
 var AllWeekdays = []backupschedule.Weekday{

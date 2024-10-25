@@ -140,16 +140,6 @@ func UpdatedAtLTE(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
-func UpdatedAtIsNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldIsNull(FieldUpdatedAt))
-}
-
-// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
-func UpdatedAtNotNil() predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNotNull(FieldUpdatedAt))
-}
-
 // ModeEQ applies the EQ predicate on the "mode" field.
 func ModeEQ(v Mode) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldMode, v))

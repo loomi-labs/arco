@@ -128,6 +128,7 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 func (a *App) getBackupSchedules() ([]*ent.BackupSchedule, error) {
 	return a.db.BackupSchedule.
 		Query().
+		Where(backupschedule.ModeNEQ(backupschedule.ModeDisabled)).
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithRepositories()
 		}).
@@ -156,10 +157,10 @@ func weekdayToTimeWeekday(weekday backupschedule.Weekday) time.Weekday {
 
 // getNextBackupTime calculates the next time a backup should run based on the schedule
 func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, error) {
-	if bs.Hourly {
+	switch bs.Mode {
+	case backupschedule.ModeHourly:
 		return fromTime.Truncate(time.Hour).Add(time.Hour), nil
-	}
-	if bs.DailyAt != nil {
+	case backupschedule.ModeDaily:
 		// Calculate the wanted duration from the beginning of the day
 		wantedDuration :=
 			time.Duration(bs.DailyAt.Hour())*time.Hour + // hours
@@ -178,11 +179,10 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		}
 		// Otherwise we just wait the difference
 		return fromTime.Add(diff), nil
-	}
-	if bs.WeeklyAt != nil && bs.Weekday != nil {
+	case backupschedule.ModeWeekly:
 		// Calculate the wanted duration from the beginning of the week
 		wantedDuration :=
-			time.Duration(weekdayToTimeWeekday(*bs.Weekday))*24*time.Hour + // days
+			time.Duration(weekdayToTimeWeekday(bs.Weekday))*24*time.Hour + // days
 				time.Duration(bs.WeeklyAt.Hour())*time.Hour + // hours
 				time.Duration(bs.WeeklyAt.Minute())*time.Minute // minutes
 
@@ -200,9 +200,8 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		}
 		// Otherwise we just wait the difference
 		return fromTime.Add(diff), nil
-	}
-	if bs.MonthlyAt != nil && bs.Monthday != nil {
-		monthday := *bs.Monthday
+	case backupschedule.ModeMonthly:
+		monthday := bs.Monthday
 
 		// If we are in February and the monthday is 29 or 30, we use the last day of the month
 		if fromTime.Month() == time.February && monthday > 28 {
@@ -239,8 +238,9 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		}
 		// Otherwise we just wait the difference
 		return fromTime.Add(diff), nil
+	default:
+		return time.Time{}, fmt.Errorf("no valid schedule found")
 	}
-	return time.Time{}, fmt.Errorf("no valid schedule found")
 }
 
 /***********************************/
@@ -347,15 +347,17 @@ func (a *App) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, up
 }
 
 func (a *App) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus string) (*ent.PruningRule, error) {
-	assert.NotNil(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, "backup schedule is nil")
-
 	lastRunTime := time.Now()
 	update := pruningRule.Update()
 	update.SetLastRun(lastRunTime)
 	if lastRunStatus != "" {
 		update.SetNillableLastRunStatus(&lastRunStatus)
 	}
-	nextPruneTime := getNextPruneTime(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, lastRunTime)
+	backupSchedule, err := pruningRule.QueryBackupProfile().QueryBackupSchedule().First(a.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+	nextPruneTime := getNextPruneTime(backupSchedule, lastRunTime)
 	update.SetNextRun(nextPruneTime)
 	return update.Save(a.ctx)
 }
@@ -381,7 +383,7 @@ func getNextPruneTime(bs *ent.BackupSchedule, fromTime time.Time) time.Time {
 	// Put the next prune at least one hour into the future
 	// Add also 1 minute to avoid running the prune at the same time as the backup
 	if bs.NextRun.Before(time.Now().Add(time.Hour)) {
-		return bs.NextRun.Add(time.Hour).Add(time.Minute)
+		return time.Now().Add(time.Hour).Add(time.Minute)
 	}
 
 	return bs.NextRun.Add(time.Minute)

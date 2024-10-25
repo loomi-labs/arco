@@ -45,6 +45,21 @@ lint-migrations: ensure-tools
        --latest=1
 	@echo "✅ Done!"
 
+create-migration: ensure-tools
+ifndef name
+	$(error name is not set; use `make create-migration name=MyFancyMigration`)
+endif
+	@echo "Creating ent migration..."
+	@atlas migrate new $(name) \
+					 --dir "file://backend/ent/migrate/migrations"
+	@echo "✅ Done!"
+
+hash-migrations: ensure-tools
+	@echo "Hashing ent migrations..."
+	@atlas migrate hash \
+	   --dir="file://backend/ent/migrate/migrations"
+	@echo "✅ Done!"
+
 #################################
 ###          Checks           ###
 #################################

@@ -203,6 +203,9 @@ func (bsc *BackupScheduleCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsc *BackupScheduleCreate) check() error {
+	if _, ok := bsc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BackupSchedule.updated_at"`)}
+	}
 	if _, ok := bsc.mutation.Mode(); !ok {
 		return &ValidationError{Name: "mode", err: errors.New(`ent: missing required field "BackupSchedule.mode"`)}
 	}

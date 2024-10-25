@@ -35,12 +35,6 @@ func (bsu *BackupScheduleUpdate) SetUpdatedAt(t time.Time) *BackupScheduleUpdate
 	return bsu
 }
 
-// ClearUpdatedAt clears the value of the "updated_at" field.
-func (bsu *BackupScheduleUpdate) ClearUpdatedAt() *BackupScheduleUpdate {
-	bsu.mutation.ClearUpdatedAt()
-	return bsu
-}
-
 // SetMode sets the "mode" field.
 func (bsu *BackupScheduleUpdate) SetMode(b backupschedule.Mode) *BackupScheduleUpdate {
 	bsu.mutation.SetMode(b)
@@ -258,7 +252,7 @@ func (bsu *BackupScheduleUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bsu *BackupScheduleUpdate) defaults() {
-	if _, ok := bsu.mutation.UpdatedAt(); !ok && !bsu.mutation.UpdatedAtCleared() {
+	if _, ok := bsu.mutation.UpdatedAt(); !ok {
 		v := backupschedule.UpdateDefaultUpdatedAt()
 		bsu.mutation.SetUpdatedAt(v)
 	}
@@ -301,9 +295,6 @@ func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if value, ok := bsu.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupschedule.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if bsu.mutation.UpdatedAtCleared() {
-		_spec.ClearField(backupschedule.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := bsu.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
@@ -399,12 +390,6 @@ type BackupScheduleUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (bsuo *BackupScheduleUpdateOne) SetUpdatedAt(t time.Time) *BackupScheduleUpdateOne {
 	bsuo.mutation.SetUpdatedAt(t)
-	return bsuo
-}
-
-// ClearUpdatedAt clears the value of the "updated_at" field.
-func (bsuo *BackupScheduleUpdateOne) ClearUpdatedAt() *BackupScheduleUpdateOne {
-	bsuo.mutation.ClearUpdatedAt()
 	return bsuo
 }
 
@@ -638,7 +623,7 @@ func (bsuo *BackupScheduleUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bsuo *BackupScheduleUpdateOne) defaults() {
-	if _, ok := bsuo.mutation.UpdatedAt(); !ok && !bsuo.mutation.UpdatedAtCleared() {
+	if _, ok := bsuo.mutation.UpdatedAt(); !ok {
 		v := backupschedule.UpdateDefaultUpdatedAt()
 		bsuo.mutation.SetUpdatedAt(v)
 	}
@@ -698,9 +683,6 @@ func (bsuo *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *Backup
 	}
 	if value, ok := bsuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupschedule.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if bsuo.mutation.UpdatedAtCleared() {
-		_spec.ClearField(backupschedule.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := bsuo.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)

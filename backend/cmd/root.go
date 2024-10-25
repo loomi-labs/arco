@@ -97,7 +97,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, icon embed.FS) (*types.Config, error) {
+func initConfig(configDir string, icon embed.FS, migrations embed.FS) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -117,6 +117,7 @@ func initConfig(configDir string, icon embed.FS) (*types.Config, error) {
 		BorgPath:    filepath.Join(configDir, binaries[0].Name),
 		BorgVersion: binaries[0].Version,
 		Icon:        icon,
+		Migrations:  migrations,
 	}, nil
 }
 
@@ -227,9 +228,10 @@ var rootCmd = &cobra.Command{
 
 		assets := cmd.Context().Value("assets").(embed.FS)
 		icon := cmd.Context().Value("icon").(embed.FS)
+		migrations := cmd.Context().Value("migrations").(embed.FS)
 
 		// Initialize the configuration
-		config, err := initConfig(configDir, icon)
+		config, err := initConfig(configDir, icon, migrations)
 		if err != nil {
 			return fmt.Errorf("failed to initialize config: %w", err)
 		}
@@ -255,9 +257,10 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(assets embed.FS, icon embed.FS) {
+func Execute(assets embed.FS, icon embed.FS, migrations embed.FS) {
 	ctx := context.WithValue(context.Background(), "assets", assets)
 	ctx = context.WithValue(ctx, "icon", icon)
+	ctx = context.WithValue(ctx, "migrations", migrations)
 
 	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {

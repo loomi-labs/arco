@@ -64,12 +64,14 @@ var (
 	// BackupSchedulesColumns holds the columns for the "backup_schedules" table.
 	BackupSchedulesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "mode", Type: field.TypeEnum, Enums: []string{"disabled", "hourly", "daily", "weekly", "monthly"}, Default: "disabled"},
 		{Name: "hourly", Type: field.TypeBool, Default: false},
-		{Name: "daily_at", Type: field.TypeTime, Nullable: true},
-		{Name: "weekday", Type: field.TypeEnum, Nullable: true, Enums: []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}},
-		{Name: "weekly_at", Type: field.TypeTime, Nullable: true},
-		{Name: "monthday", Type: field.TypeUint8, Nullable: true},
-		{Name: "monthly_at", Type: field.TypeTime, Nullable: true},
+		{Name: "daily_at", Type: field.TypeTime},
+		{Name: "weekday", Type: field.TypeEnum, Enums: []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}},
+		{Name: "weekly_at", Type: field.TypeTime},
+		{Name: "monthday", Type: field.TypeUint8},
+		{Name: "monthly_at", Type: field.TypeTime},
 		{Name: "next_run", Type: field.TypeTime, Nullable: true},
 		{Name: "last_run", Type: field.TypeTime, Nullable: true},
 		{Name: "last_run_status", Type: field.TypeString, Nullable: true},
@@ -83,7 +85,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
-				Columns:    []*schema.Column{BackupSchedulesColumns[10]},
+				Columns:    []*schema.Column{BackupSchedulesColumns[12]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -92,7 +94,7 @@ var (
 			{
 				Name:    "backupschedule_next_run",
 				Unique:  false,
-				Columns: []*schema.Column{BackupSchedulesColumns[7]},
+				Columns: []*schema.Column{BackupSchedulesColumns[9]},
 			},
 		},
 	}

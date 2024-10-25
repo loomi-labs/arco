@@ -393,6 +393,7 @@ func (b *BackupClient) GetLastBackupErrorMsg(bId types.BackupId) (string, error)
 /***********************************/
 
 func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSchedule) error {
+	defer b.sendBackupScheduleChanged()
 	doesExist, err := b.db.BackupSchedule.
 		Query().
 		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
@@ -400,39 +401,41 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 	if err != nil {
 		return err
 	}
-	tx, err := b.db.Tx(b.ctx)
-	if err != nil {
-		return err
-	}
-	if doesExist {
-		_, err := tx.BackupSchedule.
-			Delete().
-			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-			Exec(b.ctx)
+
+	var nextRun *time.Time
+	if schedule.Mode != backupschedule.ModeDisabled {
+		nr, err := getNextBackupTime(&schedule, time.Now())
 		if err != nil {
-			return rollback(tx, fmt.Errorf("failed to delete existing schedule: %w", err))
+			return err
 		}
+		nextRun = &nr
 	}
-	backupTime, err := getNextBackupTime(&schedule, time.Now())
-	if err != nil {
-		return rollback(tx, fmt.Errorf("failed to get next backup time: %w", err))
+
+	if doesExist {
+		return b.db.BackupSchedule.
+			Update().
+			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+			SetHourly(schedule.Hourly).
+			SetDailyAt(schedule.DailyAt).
+			SetWeeklyAt(schedule.WeeklyAt).
+			SetWeekday(schedule.Weekday).
+			SetMonthlyAt(schedule.MonthlyAt).
+			SetMonthday(schedule.Monthday).
+			ClearNextRun().
+			SetNillableNextRun(nextRun).
+			Exec(b.ctx)
 	}
-	_, err = tx.BackupSchedule.
+	return b.db.BackupSchedule.
 		Create().
 		SetHourly(schedule.Hourly).
-		SetNillableDailyAt(schedule.DailyAt).
-		SetNillableWeeklyAt(schedule.WeeklyAt).
-		SetNillableWeekday(schedule.Weekday).
-		SetNillableMonthlyAt(schedule.MonthlyAt).
-		SetNillableMonthday(schedule.Monthday).
-		SetNextRun(backupTime).
+		SetDailyAt(schedule.DailyAt).
+		SetWeeklyAt(schedule.WeeklyAt).
+		SetWeekday(schedule.Weekday).
+		SetMonthlyAt(schedule.MonthlyAt).
+		SetMonthday(schedule.Monthday).
+		SetNillableNextRun(nextRun).
 		SetBackupProfileID(backupProfileId).
-		Save(b.ctx)
-	if err != nil {
-		return rollback(tx, fmt.Errorf("failed to save schedule: %w", err))
-	}
-	defer b.sendBackupScheduleChanged()
-	return tx.Commit()
+		Exec(b.ctx)
 }
 
 func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
