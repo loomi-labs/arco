@@ -1701,7 +1701,6 @@ type BackupScheduleMutation struct {
 	id                    *int
 	updated_at            *time.Time
 	mode                  *backupschedule.Mode
-	hourly                *bool
 	daily_at              *time.Time
 	weekday               *backupschedule.Weekday
 	weekly_at             *time.Time
@@ -1893,42 +1892,6 @@ func (m *BackupScheduleMutation) OldMode(ctx context.Context) (v backupschedule.
 // ResetMode resets all changes to the "mode" field.
 func (m *BackupScheduleMutation) ResetMode() {
 	m.mode = nil
-}
-
-// SetHourly sets the "hourly" field.
-func (m *BackupScheduleMutation) SetHourly(b bool) {
-	m.hourly = &b
-}
-
-// Hourly returns the value of the "hourly" field in the mutation.
-func (m *BackupScheduleMutation) Hourly() (r bool, exists bool) {
-	v := m.hourly
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldHourly returns the old "hourly" field's value of the BackupSchedule entity.
-// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldHourly(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldHourly is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldHourly requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldHourly: %w", err)
-	}
-	return oldValue.Hourly, nil
-}
-
-// ResetHourly resets all changes to the "hourly" field.
-func (m *BackupScheduleMutation) ResetHourly() {
-	m.hourly = nil
 }
 
 // SetDailyAt sets the "daily_at" field.
@@ -2351,15 +2314,12 @@ func (m *BackupScheduleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupScheduleMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 10)
 	if m.updated_at != nil {
 		fields = append(fields, backupschedule.FieldUpdatedAt)
 	}
 	if m.mode != nil {
 		fields = append(fields, backupschedule.FieldMode)
-	}
-	if m.hourly != nil {
-		fields = append(fields, backupschedule.FieldHourly)
 	}
 	if m.daily_at != nil {
 		fields = append(fields, backupschedule.FieldDailyAt)
@@ -2397,8 +2357,6 @@ func (m *BackupScheduleMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case backupschedule.FieldMode:
 		return m.Mode()
-	case backupschedule.FieldHourly:
-		return m.Hourly()
 	case backupschedule.FieldDailyAt:
 		return m.DailyAt()
 	case backupschedule.FieldWeekday:
@@ -2428,8 +2386,6 @@ func (m *BackupScheduleMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldUpdatedAt(ctx)
 	case backupschedule.FieldMode:
 		return m.OldMode(ctx)
-	case backupschedule.FieldHourly:
-		return m.OldHourly(ctx)
 	case backupschedule.FieldDailyAt:
 		return m.OldDailyAt(ctx)
 	case backupschedule.FieldWeekday:
@@ -2468,13 +2424,6 @@ func (m *BackupScheduleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMode(v)
-		return nil
-	case backupschedule.FieldHourly:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetHourly(v)
 		return nil
 	case backupschedule.FieldDailyAt:
 		v, ok := value.(time.Time)
@@ -2622,9 +2571,6 @@ func (m *BackupScheduleMutation) ResetField(name string) error {
 		return nil
 	case backupschedule.FieldMode:
 		m.ResetMode()
-		return nil
-	case backupschedule.FieldHourly:
-		m.ResetHourly()
 		return nil
 	case backupschedule.FieldDailyAt:
 		m.ResetDailyAt()

@@ -30,9 +30,6 @@ func (BackupSchedule) Fields() []ent.Field {
 			Default("disabled"),
 
 		// Schedule fields
-		field.Bool("hourly").
-			StructTag(`json:"hourly"`).
-			Default(false),
 		field.Time("daily_at").
 			StructTag(`json:"dailyAt"`),
 		field.Enum("weekday").

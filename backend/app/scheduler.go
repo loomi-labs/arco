@@ -66,19 +66,23 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *t
 	}
 
 	// Schedule the backup
+	updatedAt := bs.UpdatedAt
 	timer := time.AfterFunc(durationUntilNextBackup, func() {
-		a.runScheduledBackup(bs, backupId)
+		a.runScheduledBackup(bs, backupId, updatedAt)
 	})
 	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
 	return timer
 }
 
-func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId) {
+func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId, updatedAt time.Time) {
 	// Check if the backup schedule still exists
 	// This is necessary because the backup schedule might have been deleted or modified (modified -> deleted and recreated)
 	exist, err := a.db.BackupSchedule.
 		Query().
-		Where(backupschedule.ID(bs.ID)).
+		Where(backupschedule.And(
+			backupschedule.ID(bs.ID),
+			backupschedule.UpdatedAtEQ(updatedAt),
+		)).
 		Exist(a.ctx)
 	if err != nil {
 		a.log.Error(fmt.Sprintf("Failed to check if backup schedule exists: %s", err))

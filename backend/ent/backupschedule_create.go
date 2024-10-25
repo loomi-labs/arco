@@ -49,20 +49,6 @@ func (bsc *BackupScheduleCreate) SetNillableMode(b *backupschedule.Mode) *Backup
 	return bsc
 }
 
-// SetHourly sets the "hourly" field.
-func (bsc *BackupScheduleCreate) SetHourly(b bool) *BackupScheduleCreate {
-	bsc.mutation.SetHourly(b)
-	return bsc
-}
-
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableHourly(b *bool) *BackupScheduleCreate {
-	if b != nil {
-		bsc.SetHourly(*b)
-	}
-	return bsc
-}
-
 // SetDailyAt sets the "daily_at" field.
 func (bsc *BackupScheduleCreate) SetDailyAt(t time.Time) *BackupScheduleCreate {
 	bsc.mutation.SetDailyAt(t)
@@ -195,10 +181,6 @@ func (bsc *BackupScheduleCreate) defaults() {
 		v := backupschedule.DefaultMode
 		bsc.mutation.SetMode(v)
 	}
-	if _, ok := bsc.mutation.Hourly(); !ok {
-		v := backupschedule.DefaultHourly
-		bsc.mutation.SetHourly(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -213,9 +195,6 @@ func (bsc *BackupScheduleCreate) check() error {
 		if err := backupschedule.ModeValidator(v); err != nil {
 			return &ValidationError{Name: "mode", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.mode": %w`, err)}
 		}
-	}
-	if _, ok := bsc.mutation.Hourly(); !ok {
-		return &ValidationError{Name: "hourly", err: errors.New(`ent: missing required field "BackupSchedule.hourly"`)}
 	}
 	if _, ok := bsc.mutation.DailyAt(); !ok {
 		return &ValidationError{Name: "daily_at", err: errors.New(`ent: missing required field "BackupSchedule.daily_at"`)}
@@ -284,10 +263,6 @@ func (bsc *BackupScheduleCreate) createSpec() (*BackupSchedule, *sqlgraph.Create
 	if value, ok := bsc.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
 		_node.Mode = value
-	}
-	if value, ok := bsc.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
-		_node.Hourly = value
 	}
 	if value, ok := bsc.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)

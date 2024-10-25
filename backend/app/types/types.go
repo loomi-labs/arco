@@ -64,6 +64,14 @@ var AllIcons = []backupprofile.Icon{
 	backupprofile.IconFire,
 }
 
+var AllBackupScheduleModes = []backupschedule.Mode{
+	backupschedule.ModeDisabled,
+	backupschedule.ModeHourly,
+	backupschedule.ModeDaily,
+	backupschedule.ModeWeekly,
+	backupschedule.ModeMonthly,
+}
+
 type Event string
 
 const (

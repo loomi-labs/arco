@@ -110,7 +110,12 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	}
 
 	schedule := &ent.BackupSchedule{
-		Hourly: true,
+		Mode:      backupschedule.ModeHourly,
+		DailyAt:   time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		Weekday:   backupschedule.WeekdayMonday,
+		WeeklyAt:  time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		Monthday:  1,
+		MonthlyAt: time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
 	}
 
 	pruningRule := &ent.PruningRule{
@@ -393,6 +398,8 @@ func (b *BackupClient) GetLastBackupErrorMsg(bId types.BackupId) (string, error)
 /***********************************/
 
 func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSchedule) error {
+	b.log.Debug(fmt.Sprintf("Saving backup schedule for backup profile %d", backupProfileId))
+
 	defer b.sendBackupScheduleChanged()
 	doesExist, err := b.db.BackupSchedule.
 		Query().
@@ -415,7 +422,7 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 		return b.db.BackupSchedule.
 			Update().
 			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-			SetHourly(schedule.Hourly).
+			SetMode(schedule.Mode).
 			SetDailyAt(schedule.DailyAt).
 			SetWeeklyAt(schedule.WeeklyAt).
 			SetWeekday(schedule.Weekday).
@@ -427,7 +434,7 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 	}
 	return b.db.BackupSchedule.
 		Create().
-		SetHourly(schedule.Hourly).
+		SetMode(schedule.Mode).
 		SetDailyAt(schedule.DailyAt).
 		SetWeeklyAt(schedule.WeeklyAt).
 		SetWeekday(schedule.Weekday).
@@ -436,15 +443,6 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 		SetNillableNextRun(nextRun).
 		SetBackupProfileID(backupProfileId).
 		Exec(b.ctx)
-}
-
-func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
-	defer b.sendBackupScheduleChanged()
-	_, err := b.db.BackupSchedule.
-		Delete().
-		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-		Exec(b.ctx)
-	return err
 }
 
 func (b *BackupClient) sendBackupScheduleChanged() {

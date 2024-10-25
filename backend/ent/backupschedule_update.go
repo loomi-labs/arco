@@ -49,20 +49,6 @@ func (bsu *BackupScheduleUpdate) SetNillableMode(b *backupschedule.Mode) *Backup
 	return bsu
 }
 
-// SetHourly sets the "hourly" field.
-func (bsu *BackupScheduleUpdate) SetHourly(b bool) *BackupScheduleUpdate {
-	bsu.mutation.SetHourly(b)
-	return bsu
-}
-
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsu *BackupScheduleUpdate) SetNillableHourly(b *bool) *BackupScheduleUpdate {
-	if b != nil {
-		bsu.SetHourly(*b)
-	}
-	return bsu
-}
-
 // SetDailyAt sets the "daily_at" field.
 func (bsu *BackupScheduleUpdate) SetDailyAt(t time.Time) *BackupScheduleUpdate {
 	bsu.mutation.SetDailyAt(t)
@@ -299,9 +285,6 @@ func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if value, ok := bsu.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
 	}
-	if value, ok := bsu.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
-	}
 	if value, ok := bsu.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
 	}
@@ -403,20 +386,6 @@ func (bsuo *BackupScheduleUpdateOne) SetMode(b backupschedule.Mode) *BackupSched
 func (bsuo *BackupScheduleUpdateOne) SetNillableMode(b *backupschedule.Mode) *BackupScheduleUpdateOne {
 	if b != nil {
 		bsuo.SetMode(*b)
-	}
-	return bsuo
-}
-
-// SetHourly sets the "hourly" field.
-func (bsuo *BackupScheduleUpdateOne) SetHourly(b bool) *BackupScheduleUpdateOne {
-	bsuo.mutation.SetHourly(b)
-	return bsuo
-}
-
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsuo *BackupScheduleUpdateOne) SetNillableHourly(b *bool) *BackupScheduleUpdateOne {
-	if b != nil {
-		bsuo.SetHourly(*b)
 	}
 	return bsuo
 }
@@ -686,9 +655,6 @@ func (bsuo *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *Backup
 	}
 	if value, ok := bsuo.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
-	}
-	if value, ok := bsuo.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
 	}
 	if value, ok := bsuo.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)

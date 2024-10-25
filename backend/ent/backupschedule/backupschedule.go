@@ -19,8 +19,6 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldMode holds the string denoting the mode field in the database.
 	FieldMode = "mode"
-	// FieldHourly holds the string denoting the hourly field in the database.
-	FieldHourly = "hourly"
 	// FieldDailyAt holds the string denoting the daily_at field in the database.
 	FieldDailyAt = "daily_at"
 	// FieldWeekday holds the string denoting the weekday field in the database.
@@ -55,7 +53,6 @@ var Columns = []string{
 	FieldID,
 	FieldUpdatedAt,
 	FieldMode,
-	FieldHourly,
 	FieldDailyAt,
 	FieldWeekday,
 	FieldWeeklyAt,
@@ -92,8 +89,6 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// DefaultHourly holds the default value on creation for the "hourly" field.
-	DefaultHourly bool
 	// MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	MonthdayValidator func(uint8) error
 )
@@ -171,11 +166,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByMode orders the results by the mode field.
 func ByMode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMode, opts...).ToFunc()
-}
-
-// ByHourly orders the results by the hourly field.
-func ByHourly(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHourly, opts...).ToFunc()
 }
 
 // ByDailyAt orders the results by the daily_at field.

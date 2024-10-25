@@ -63,12 +63,8 @@ func init() {
 	backupschedule.DefaultUpdatedAt = backupscheduleDescUpdatedAt.Default.(func() time.Time)
 	// backupschedule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	backupschedule.UpdateDefaultUpdatedAt = backupscheduleDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// backupscheduleDescHourly is the schema descriptor for hourly field.
-	backupscheduleDescHourly := backupscheduleFields[3].Descriptor()
-	// backupschedule.DefaultHourly holds the default value on creation for the hourly field.
-	backupschedule.DefaultHourly = backupscheduleDescHourly.Default.(bool)
 	// backupscheduleDescMonthday is the schema descriptor for monthday field.
-	backupscheduleDescMonthday := backupscheduleFields[7].Descriptor()
+	backupscheduleDescMonthday := backupscheduleFields[6].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
 	notificationFields := schema.Notification{}.Fields()

@@ -60,11 +60,6 @@ func UpdatedAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// Hourly applies equality check predicate on the "hourly" field. It's identical to HourlyEQ.
-func Hourly(v bool) predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldEQ(FieldHourly, v))
-}
-
 // DailyAt applies equality check predicate on the "daily_at" field. It's identical to DailyAtEQ.
 func DailyAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldDailyAt, v))
@@ -158,16 +153,6 @@ func ModeIn(vs ...Mode) predicate.BackupSchedule {
 // ModeNotIn applies the NotIn predicate on the "mode" field.
 func ModeNotIn(vs ...Mode) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldNotIn(FieldMode, vs...))
-}
-
-// HourlyEQ applies the EQ predicate on the "hourly" field.
-func HourlyEQ(v bool) predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldEQ(FieldHourly, v))
-}
-
-// HourlyNEQ applies the NEQ predicate on the "hourly" field.
-func HourlyNEQ(v bool) predicate.BackupSchedule {
-	return predicate.BackupSchedule(sql.FieldNEQ(FieldHourly, v))
 }
 
 // DailyAtEQ applies the EQ predicate on the "daily_at" field.
