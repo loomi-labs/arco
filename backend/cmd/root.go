@@ -97,7 +97,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, icon embed.FS) (*types.Config, error) {
+func initConfig(configDir string, icon embed.FS, migrations embed.FS) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -117,6 +117,7 @@ func initConfig(configDir string, icon embed.FS) (*types.Config, error) {
 		BorgPath:    filepath.Join(configDir, binaries[0].Name),
 		BorgVersion: binaries[0].Version,
 		Icon:        icon,
+		Migrations:  migrations,
 	}, nil
 }
 
@@ -191,6 +192,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 			toTsEnums(state.AvailableBackupButtonStatuses),
 			toTsEnums(types.AllEvents),
 			toTsEnums(types.AllThemes),
+			toTsEnums(types.AllBackupScheduleModes),
 		},
 		LogLevel:    logLevel,
 		Logger:      util.NewZapLogWrapper(log),
@@ -206,6 +208,14 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 		log.Fatal(err)
 	}
 }
+
+type contextKey string
+
+const (
+	assetsKey     contextKey = "assets"
+	iconKey       contextKey = "icon"
+	migrationsKey contextKey = "migrations"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -225,11 +235,12 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to get unique run id flag: %w", err)
 		}
 
-		assets := cmd.Context().Value("assets").(embed.FS)
-		icon := cmd.Context().Value("icon").(embed.FS)
+		assets := cmd.Context().Value(assetsKey).(embed.FS)
+		icon := cmd.Context().Value(iconKey).(embed.FS)
+		migrations := cmd.Context().Value(migrationsKey).(embed.FS)
 
 		// Initialize the configuration
-		config, err := initConfig(configDir, icon)
+		config, err := initConfig(configDir, icon, migrations)
 		if err != nil {
 			return fmt.Errorf("failed to initialize config: %w", err)
 		}
@@ -255,9 +266,10 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(assets embed.FS, icon embed.FS) {
-	ctx := context.WithValue(context.Background(), "assets", assets)
-	ctx = context.WithValue(ctx, "icon", icon)
+func Execute(assets embed.FS, icon embed.FS, migrations embed.FS) {
+	ctx := context.WithValue(context.Background(), assetsKey, assets)
+	ctx = context.WithValue(ctx, iconKey, icon)
+	ctx = context.WithValue(ctx, migrationsKey, migrations)
 
 	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {

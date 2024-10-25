@@ -1699,7 +1699,8 @@ type BackupScheduleMutation struct {
 	op                    Op
 	typ                   string
 	id                    *int
-	hourly                *bool
+	updated_at            *time.Time
+	mode                  *backupschedule.Mode
 	daily_at              *time.Time
 	weekday               *backupschedule.Weekday
 	weekly_at             *time.Time
@@ -1787,6 +1788,12 @@ func (m BackupScheduleMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BackupSchedule entities.
+func (m *BackupScheduleMutation) SetID(id int) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
 func (m *BackupScheduleMutation) ID() (id int, exists bool) {
@@ -1815,40 +1822,76 @@ func (m *BackupScheduleMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetHourly sets the "hourly" field.
-func (m *BackupScheduleMutation) SetHourly(b bool) {
-	m.hourly = &b
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BackupScheduleMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
 }
 
-// Hourly returns the value of the "hourly" field in the mutation.
-func (m *BackupScheduleMutation) Hourly() (r bool, exists bool) {
-	v := m.hourly
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BackupScheduleMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldHourly returns the old "hourly" field's value of the BackupSchedule entity.
+// OldUpdatedAt returns the old "updated_at" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldHourly(ctx context.Context) (v bool, err error) {
+func (m *BackupScheduleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldHourly is only allowed on UpdateOne operations")
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldHourly requires an ID field in the mutation")
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldHourly: %w", err)
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
 	}
-	return oldValue.Hourly, nil
+	return oldValue.UpdatedAt, nil
 }
 
-// ResetHourly resets all changes to the "hourly" field.
-func (m *BackupScheduleMutation) ResetHourly() {
-	m.hourly = nil
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BackupScheduleMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetMode sets the "mode" field.
+func (m *BackupScheduleMutation) SetMode(b backupschedule.Mode) {
+	m.mode = &b
+}
+
+// Mode returns the value of the "mode" field in the mutation.
+func (m *BackupScheduleMutation) Mode() (r backupschedule.Mode, exists bool) {
+	v := m.mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMode returns the old "mode" field's value of the BackupSchedule entity.
+// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupScheduleMutation) OldMode(ctx context.Context) (v backupschedule.Mode, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMode: %w", err)
+	}
+	return oldValue.Mode, nil
+}
+
+// ResetMode resets all changes to the "mode" field.
+func (m *BackupScheduleMutation) ResetMode() {
+	m.mode = nil
 }
 
 // SetDailyAt sets the "daily_at" field.
@@ -1868,7 +1911,7 @@ func (m *BackupScheduleMutation) DailyAt() (r time.Time, exists bool) {
 // OldDailyAt returns the old "daily_at" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldDailyAt(ctx context.Context) (v *time.Time, err error) {
+func (m *BackupScheduleMutation) OldDailyAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDailyAt is only allowed on UpdateOne operations")
 	}
@@ -1882,22 +1925,9 @@ func (m *BackupScheduleMutation) OldDailyAt(ctx context.Context) (v *time.Time, 
 	return oldValue.DailyAt, nil
 }
 
-// ClearDailyAt clears the value of the "daily_at" field.
-func (m *BackupScheduleMutation) ClearDailyAt() {
-	m.daily_at = nil
-	m.clearedFields[backupschedule.FieldDailyAt] = struct{}{}
-}
-
-// DailyAtCleared returns if the "daily_at" field was cleared in this mutation.
-func (m *BackupScheduleMutation) DailyAtCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldDailyAt]
-	return ok
-}
-
 // ResetDailyAt resets all changes to the "daily_at" field.
 func (m *BackupScheduleMutation) ResetDailyAt() {
 	m.daily_at = nil
-	delete(m.clearedFields, backupschedule.FieldDailyAt)
 }
 
 // SetWeekday sets the "weekday" field.
@@ -1917,7 +1947,7 @@ func (m *BackupScheduleMutation) Weekday() (r backupschedule.Weekday, exists boo
 // OldWeekday returns the old "weekday" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldWeekday(ctx context.Context) (v *backupschedule.Weekday, err error) {
+func (m *BackupScheduleMutation) OldWeekday(ctx context.Context) (v backupschedule.Weekday, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldWeekday is only allowed on UpdateOne operations")
 	}
@@ -1931,22 +1961,9 @@ func (m *BackupScheduleMutation) OldWeekday(ctx context.Context) (v *backupsched
 	return oldValue.Weekday, nil
 }
 
-// ClearWeekday clears the value of the "weekday" field.
-func (m *BackupScheduleMutation) ClearWeekday() {
-	m.weekday = nil
-	m.clearedFields[backupschedule.FieldWeekday] = struct{}{}
-}
-
-// WeekdayCleared returns if the "weekday" field was cleared in this mutation.
-func (m *BackupScheduleMutation) WeekdayCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldWeekday]
-	return ok
-}
-
 // ResetWeekday resets all changes to the "weekday" field.
 func (m *BackupScheduleMutation) ResetWeekday() {
 	m.weekday = nil
-	delete(m.clearedFields, backupschedule.FieldWeekday)
 }
 
 // SetWeeklyAt sets the "weekly_at" field.
@@ -1966,7 +1983,7 @@ func (m *BackupScheduleMutation) WeeklyAt() (r time.Time, exists bool) {
 // OldWeeklyAt returns the old "weekly_at" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldWeeklyAt(ctx context.Context) (v *time.Time, err error) {
+func (m *BackupScheduleMutation) OldWeeklyAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldWeeklyAt is only allowed on UpdateOne operations")
 	}
@@ -1980,22 +1997,9 @@ func (m *BackupScheduleMutation) OldWeeklyAt(ctx context.Context) (v *time.Time,
 	return oldValue.WeeklyAt, nil
 }
 
-// ClearWeeklyAt clears the value of the "weekly_at" field.
-func (m *BackupScheduleMutation) ClearWeeklyAt() {
-	m.weekly_at = nil
-	m.clearedFields[backupschedule.FieldWeeklyAt] = struct{}{}
-}
-
-// WeeklyAtCleared returns if the "weekly_at" field was cleared in this mutation.
-func (m *BackupScheduleMutation) WeeklyAtCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldWeeklyAt]
-	return ok
-}
-
 // ResetWeeklyAt resets all changes to the "weekly_at" field.
 func (m *BackupScheduleMutation) ResetWeeklyAt() {
 	m.weekly_at = nil
-	delete(m.clearedFields, backupschedule.FieldWeeklyAt)
 }
 
 // SetMonthday sets the "monthday" field.
@@ -2016,7 +2020,7 @@ func (m *BackupScheduleMutation) Monthday() (r uint8, exists bool) {
 // OldMonthday returns the old "monthday" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldMonthday(ctx context.Context) (v *uint8, err error) {
+func (m *BackupScheduleMutation) OldMonthday(ctx context.Context) (v uint8, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMonthday is only allowed on UpdateOne operations")
 	}
@@ -2048,24 +2052,10 @@ func (m *BackupScheduleMutation) AddedMonthday() (r int8, exists bool) {
 	return *v, true
 }
 
-// ClearMonthday clears the value of the "monthday" field.
-func (m *BackupScheduleMutation) ClearMonthday() {
-	m.monthday = nil
-	m.addmonthday = nil
-	m.clearedFields[backupschedule.FieldMonthday] = struct{}{}
-}
-
-// MonthdayCleared returns if the "monthday" field was cleared in this mutation.
-func (m *BackupScheduleMutation) MonthdayCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldMonthday]
-	return ok
-}
-
 // ResetMonthday resets all changes to the "monthday" field.
 func (m *BackupScheduleMutation) ResetMonthday() {
 	m.monthday = nil
 	m.addmonthday = nil
-	delete(m.clearedFields, backupschedule.FieldMonthday)
 }
 
 // SetMonthlyAt sets the "monthly_at" field.
@@ -2085,7 +2075,7 @@ func (m *BackupScheduleMutation) MonthlyAt() (r time.Time, exists bool) {
 // OldMonthlyAt returns the old "monthly_at" field's value of the BackupSchedule entity.
 // If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackupScheduleMutation) OldMonthlyAt(ctx context.Context) (v *time.Time, err error) {
+func (m *BackupScheduleMutation) OldMonthlyAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMonthlyAt is only allowed on UpdateOne operations")
 	}
@@ -2099,22 +2089,9 @@ func (m *BackupScheduleMutation) OldMonthlyAt(ctx context.Context) (v *time.Time
 	return oldValue.MonthlyAt, nil
 }
 
-// ClearMonthlyAt clears the value of the "monthly_at" field.
-func (m *BackupScheduleMutation) ClearMonthlyAt() {
-	m.monthly_at = nil
-	m.clearedFields[backupschedule.FieldMonthlyAt] = struct{}{}
-}
-
-// MonthlyAtCleared returns if the "monthly_at" field was cleared in this mutation.
-func (m *BackupScheduleMutation) MonthlyAtCleared() bool {
-	_, ok := m.clearedFields[backupschedule.FieldMonthlyAt]
-	return ok
-}
-
 // ResetMonthlyAt resets all changes to the "monthly_at" field.
 func (m *BackupScheduleMutation) ResetMonthlyAt() {
 	m.monthly_at = nil
-	delete(m.clearedFields, backupschedule.FieldMonthlyAt)
 }
 
 // SetNextRun sets the "next_run" field.
@@ -2337,9 +2314,12 @@ func (m *BackupScheduleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupScheduleMutation) Fields() []string {
-	fields := make([]string, 0, 9)
-	if m.hourly != nil {
-		fields = append(fields, backupschedule.FieldHourly)
+	fields := make([]string, 0, 10)
+	if m.updated_at != nil {
+		fields = append(fields, backupschedule.FieldUpdatedAt)
+	}
+	if m.mode != nil {
+		fields = append(fields, backupschedule.FieldMode)
 	}
 	if m.daily_at != nil {
 		fields = append(fields, backupschedule.FieldDailyAt)
@@ -2373,8 +2353,10 @@ func (m *BackupScheduleMutation) Fields() []string {
 // schema.
 func (m *BackupScheduleMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case backupschedule.FieldHourly:
-		return m.Hourly()
+	case backupschedule.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case backupschedule.FieldMode:
+		return m.Mode()
 	case backupschedule.FieldDailyAt:
 		return m.DailyAt()
 	case backupschedule.FieldWeekday:
@@ -2400,8 +2382,10 @@ func (m *BackupScheduleMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *BackupScheduleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case backupschedule.FieldHourly:
-		return m.OldHourly(ctx)
+	case backupschedule.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case backupschedule.FieldMode:
+		return m.OldMode(ctx)
 	case backupschedule.FieldDailyAt:
 		return m.OldDailyAt(ctx)
 	case backupschedule.FieldWeekday:
@@ -2427,12 +2411,19 @@ func (m *BackupScheduleMutation) OldField(ctx context.Context, name string) (ent
 // type.
 func (m *BackupScheduleMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case backupschedule.FieldHourly:
-		v, ok := value.(bool)
+	case backupschedule.FieldUpdatedAt:
+		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetHourly(v)
+		m.SetUpdatedAt(v)
+		return nil
+	case backupschedule.FieldMode:
+		v, ok := value.(backupschedule.Mode)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMode(v)
 		return nil
 	case backupschedule.FieldDailyAt:
 		v, ok := value.(time.Time)
@@ -2535,21 +2526,6 @@ func (m *BackupScheduleMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *BackupScheduleMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(backupschedule.FieldDailyAt) {
-		fields = append(fields, backupschedule.FieldDailyAt)
-	}
-	if m.FieldCleared(backupschedule.FieldWeekday) {
-		fields = append(fields, backupschedule.FieldWeekday)
-	}
-	if m.FieldCleared(backupschedule.FieldWeeklyAt) {
-		fields = append(fields, backupschedule.FieldWeeklyAt)
-	}
-	if m.FieldCleared(backupschedule.FieldMonthday) {
-		fields = append(fields, backupschedule.FieldMonthday)
-	}
-	if m.FieldCleared(backupschedule.FieldMonthlyAt) {
-		fields = append(fields, backupschedule.FieldMonthlyAt)
-	}
 	if m.FieldCleared(backupschedule.FieldNextRun) {
 		fields = append(fields, backupschedule.FieldNextRun)
 	}
@@ -2573,21 +2549,6 @@ func (m *BackupScheduleMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *BackupScheduleMutation) ClearField(name string) error {
 	switch name {
-	case backupschedule.FieldDailyAt:
-		m.ClearDailyAt()
-		return nil
-	case backupschedule.FieldWeekday:
-		m.ClearWeekday()
-		return nil
-	case backupschedule.FieldWeeklyAt:
-		m.ClearWeeklyAt()
-		return nil
-	case backupschedule.FieldMonthday:
-		m.ClearMonthday()
-		return nil
-	case backupschedule.FieldMonthlyAt:
-		m.ClearMonthlyAt()
-		return nil
 	case backupschedule.FieldNextRun:
 		m.ClearNextRun()
 		return nil
@@ -2605,8 +2566,11 @@ func (m *BackupScheduleMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *BackupScheduleMutation) ResetField(name string) error {
 	switch name {
-	case backupschedule.FieldHourly:
-		m.ResetHourly()
+	case backupschedule.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case backupschedule.FieldMode:
+		m.ResetMode()
 		return nil
 	case backupschedule.FieldDailyAt:
 		m.ResetDailyAt()

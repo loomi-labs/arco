@@ -21,16 +21,30 @@ type BackupScheduleCreate struct {
 	hooks    []Hook
 }
 
-// SetHourly sets the "hourly" field.
-func (bsc *BackupScheduleCreate) SetHourly(b bool) *BackupScheduleCreate {
-	bsc.mutation.SetHourly(b)
+// SetUpdatedAt sets the "updated_at" field.
+func (bsc *BackupScheduleCreate) SetUpdatedAt(t time.Time) *BackupScheduleCreate {
+	bsc.mutation.SetUpdatedAt(t)
 	return bsc
 }
 
-// SetNillableHourly sets the "hourly" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableHourly(b *bool) *BackupScheduleCreate {
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableUpdatedAt(t *time.Time) *BackupScheduleCreate {
+	if t != nil {
+		bsc.SetUpdatedAt(*t)
+	}
+	return bsc
+}
+
+// SetMode sets the "mode" field.
+func (bsc *BackupScheduleCreate) SetMode(b backupschedule.Mode) *BackupScheduleCreate {
+	bsc.mutation.SetMode(b)
+	return bsc
+}
+
+// SetNillableMode sets the "mode" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableMode(b *backupschedule.Mode) *BackupScheduleCreate {
 	if b != nil {
-		bsc.SetHourly(*b)
+		bsc.SetMode(*b)
 	}
 	return bsc
 }
@@ -41,25 +55,9 @@ func (bsc *BackupScheduleCreate) SetDailyAt(t time.Time) *BackupScheduleCreate {
 	return bsc
 }
 
-// SetNillableDailyAt sets the "daily_at" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableDailyAt(t *time.Time) *BackupScheduleCreate {
-	if t != nil {
-		bsc.SetDailyAt(*t)
-	}
-	return bsc
-}
-
 // SetWeekday sets the "weekday" field.
 func (bsc *BackupScheduleCreate) SetWeekday(b backupschedule.Weekday) *BackupScheduleCreate {
 	bsc.mutation.SetWeekday(b)
-	return bsc
-}
-
-// SetNillableWeekday sets the "weekday" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableWeekday(b *backupschedule.Weekday) *BackupScheduleCreate {
-	if b != nil {
-		bsc.SetWeekday(*b)
-	}
 	return bsc
 }
 
@@ -69,39 +67,15 @@ func (bsc *BackupScheduleCreate) SetWeeklyAt(t time.Time) *BackupScheduleCreate 
 	return bsc
 }
 
-// SetNillableWeeklyAt sets the "weekly_at" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableWeeklyAt(t *time.Time) *BackupScheduleCreate {
-	if t != nil {
-		bsc.SetWeeklyAt(*t)
-	}
-	return bsc
-}
-
 // SetMonthday sets the "monthday" field.
 func (bsc *BackupScheduleCreate) SetMonthday(u uint8) *BackupScheduleCreate {
 	bsc.mutation.SetMonthday(u)
 	return bsc
 }
 
-// SetNillableMonthday sets the "monthday" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableMonthday(u *uint8) *BackupScheduleCreate {
-	if u != nil {
-		bsc.SetMonthday(*u)
-	}
-	return bsc
-}
-
 // SetMonthlyAt sets the "monthly_at" field.
 func (bsc *BackupScheduleCreate) SetMonthlyAt(t time.Time) *BackupScheduleCreate {
 	bsc.mutation.SetMonthlyAt(t)
-	return bsc
-}
-
-// SetNillableMonthlyAt sets the "monthly_at" field if the given value is not nil.
-func (bsc *BackupScheduleCreate) SetNillableMonthlyAt(t *time.Time) *BackupScheduleCreate {
-	if t != nil {
-		bsc.SetMonthlyAt(*t)
-	}
 	return bsc
 }
 
@@ -147,6 +121,12 @@ func (bsc *BackupScheduleCreate) SetNillableLastRunStatus(s *string) *BackupSche
 	return bsc
 }
 
+// SetID sets the "id" field.
+func (bsc *BackupScheduleCreate) SetID(i int) *BackupScheduleCreate {
+	bsc.mutation.SetID(i)
+	return bsc
+}
+
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
 func (bsc *BackupScheduleCreate) SetBackupProfileID(id int) *BackupScheduleCreate {
 	bsc.mutation.SetBackupProfileID(id)
@@ -165,9 +145,7 @@ func (bsc *BackupScheduleCreate) Mutation() *BackupScheduleMutation {
 
 // Save creates the BackupSchedule in the database.
 func (bsc *BackupScheduleCreate) Save(ctx context.Context) (*BackupSchedule, error) {
-	if err := bsc.defaults(); err != nil {
-		return nil, err
-	}
+	bsc.defaults()
 	return withHooks(ctx, bsc.sqlSave, bsc.mutation, bsc.hooks)
 }
 
@@ -194,28 +172,54 @@ func (bsc *BackupScheduleCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (bsc *BackupScheduleCreate) defaults() error {
-	if _, ok := bsc.mutation.Hourly(); !ok {
-		v := backupschedule.DefaultHourly
-		bsc.mutation.SetHourly(v)
+func (bsc *BackupScheduleCreate) defaults() {
+	if _, ok := bsc.mutation.UpdatedAt(); !ok {
+		v := backupschedule.DefaultUpdatedAt()
+		bsc.mutation.SetUpdatedAt(v)
 	}
-	return nil
+	if _, ok := bsc.mutation.Mode(); !ok {
+		v := backupschedule.DefaultMode
+		bsc.mutation.SetMode(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (bsc *BackupScheduleCreate) check() error {
-	if _, ok := bsc.mutation.Hourly(); !ok {
-		return &ValidationError{Name: "hourly", err: errors.New(`ent: missing required field "BackupSchedule.hourly"`)}
+	if _, ok := bsc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BackupSchedule.updated_at"`)}
+	}
+	if _, ok := bsc.mutation.Mode(); !ok {
+		return &ValidationError{Name: "mode", err: errors.New(`ent: missing required field "BackupSchedule.mode"`)}
+	}
+	if v, ok := bsc.mutation.Mode(); ok {
+		if err := backupschedule.ModeValidator(v); err != nil {
+			return &ValidationError{Name: "mode", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.mode": %w`, err)}
+		}
+	}
+	if _, ok := bsc.mutation.DailyAt(); !ok {
+		return &ValidationError{Name: "daily_at", err: errors.New(`ent: missing required field "BackupSchedule.daily_at"`)}
+	}
+	if _, ok := bsc.mutation.Weekday(); !ok {
+		return &ValidationError{Name: "weekday", err: errors.New(`ent: missing required field "BackupSchedule.weekday"`)}
 	}
 	if v, ok := bsc.mutation.Weekday(); ok {
 		if err := backupschedule.WeekdayValidator(v); err != nil {
 			return &ValidationError{Name: "weekday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.weekday": %w`, err)}
 		}
 	}
+	if _, ok := bsc.mutation.WeeklyAt(); !ok {
+		return &ValidationError{Name: "weekly_at", err: errors.New(`ent: missing required field "BackupSchedule.weekly_at"`)}
+	}
+	if _, ok := bsc.mutation.Monthday(); !ok {
+		return &ValidationError{Name: "monthday", err: errors.New(`ent: missing required field "BackupSchedule.monthday"`)}
+	}
 	if v, ok := bsc.mutation.Monthday(); ok {
 		if err := backupschedule.MonthdayValidator(v); err != nil {
 			return &ValidationError{Name: "monthday", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.monthday": %w`, err)}
 		}
+	}
+	if _, ok := bsc.mutation.MonthlyAt(); !ok {
+		return &ValidationError{Name: "monthly_at", err: errors.New(`ent: missing required field "BackupSchedule.monthly_at"`)}
 	}
 	if len(bsc.mutation.BackupProfileIDs()) == 0 {
 		return &ValidationError{Name: "backup_profile", err: errors.New(`ent: missing required edge "BackupSchedule.backup_profile"`)}
@@ -234,8 +238,10 @@ func (bsc *BackupScheduleCreate) sqlSave(ctx context.Context) (*BackupSchedule, 
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int(id)
+	}
 	bsc.mutation.id = &_node.ID
 	bsc.mutation.done = true
 	return _node, nil
@@ -246,29 +252,37 @@ func (bsc *BackupScheduleCreate) createSpec() (*BackupSchedule, *sqlgraph.Create
 		_node = &BackupSchedule{config: bsc.config}
 		_spec = sqlgraph.NewCreateSpec(backupschedule.Table, sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt))
 	)
-	if value, ok := bsc.mutation.Hourly(); ok {
-		_spec.SetField(backupschedule.FieldHourly, field.TypeBool, value)
-		_node.Hourly = value
+	if id, ok := bsc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
+	if value, ok := bsc.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupschedule.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
+	if value, ok := bsc.mutation.Mode(); ok {
+		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
+		_node.Mode = value
 	}
 	if value, ok := bsc.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
-		_node.DailyAt = &value
+		_node.DailyAt = value
 	}
 	if value, ok := bsc.mutation.Weekday(); ok {
 		_spec.SetField(backupschedule.FieldWeekday, field.TypeEnum, value)
-		_node.Weekday = &value
+		_node.Weekday = value
 	}
 	if value, ok := bsc.mutation.WeeklyAt(); ok {
 		_spec.SetField(backupschedule.FieldWeeklyAt, field.TypeTime, value)
-		_node.WeeklyAt = &value
+		_node.WeeklyAt = value
 	}
 	if value, ok := bsc.mutation.Monthday(); ok {
 		_spec.SetField(backupschedule.FieldMonthday, field.TypeUint8, value)
-		_node.Monthday = &value
+		_node.Monthday = value
 	}
 	if value, ok := bsc.mutation.MonthlyAt(); ok {
 		_spec.SetField(backupschedule.FieldMonthlyAt, field.TypeTime, value)
-		_node.MonthlyAt = &value
+		_node.MonthlyAt = value
 	}
 	if value, ok := bsc.mutation.NextRun(); ok {
 		_spec.SetField(backupschedule.FieldNextRun, field.TypeTime, value)
@@ -347,7 +361,7 @@ func (bscb *BackupScheduleCreateBulk) Save(ctx context.Context) ([]*BackupSchedu
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
 					nodes[i].ID = int(id)
 				}

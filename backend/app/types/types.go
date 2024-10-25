@@ -42,6 +42,7 @@ type Config struct {
 	BorgPath    string
 	BorgVersion string
 	Icon        embed.FS
+	Migrations  embed.FS
 }
 
 var AllWeekdays = []backupschedule.Weekday{
@@ -61,6 +62,14 @@ var AllIcons = []backupprofile.Icon{
 	backupprofile.IconEnvelope,
 	backupprofile.IconCamera,
 	backupprofile.IconFire,
+}
+
+var AllBackupScheduleModes = []backupschedule.Mode{
+	backupschedule.ModeDisabled,
+	backupschedule.ModeHourly,
+	backupschedule.ModeDaily,
+	backupschedule.ModeWeekly,
+	backupschedule.ModeMonthly,
 }
 
 type Event string

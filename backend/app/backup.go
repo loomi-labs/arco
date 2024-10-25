@@ -110,7 +110,12 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	}
 
 	schedule := &ent.BackupSchedule{
-		Hourly: true,
+		Mode:      backupschedule.ModeHourly,
+		DailyAt:   time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		Weekday:   backupschedule.WeekdayMonday,
+		WeeklyAt:  time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		Monthday:  1,
+		MonthlyAt: time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
 	}
 
 	pruningRule := &ent.PruningRule{
@@ -279,8 +284,7 @@ func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int)
 /********** Backup Functions *******/
 /***********************************/
 
-// StartBackupJob starts a backup job for the given repository and backup profile.
-func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
+func (b *BackupClient) startBackupJob(bId types.BackupId) error {
 	if canRun, reason := b.state.CanRunBackup(bId); !canRun {
 		return errors.New(reason)
 	}
@@ -298,7 +302,7 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) error {
 	var errs []error
 	for _, bId := range bIds {
-		err := b.StartBackupJob(bId)
+		err := b.startBackupJob(bId)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -319,7 +323,7 @@ type BackupProgressResponse struct {
 	Found    bool                `json:"found"`
 }
 
-func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
+func (b *BackupClient) abortBackupJob(id types.BackupId) error {
 	b.state.SetBackupCancelled(b.ctx, id, true)
 	return nil
 }
@@ -327,7 +331,7 @@ func (b *BackupClient) AbortBackupJob(id types.BackupId) error {
 func (b *BackupClient) AbortBackupJobs(bIds []types.BackupId) error {
 	for _, bId := range bIds {
 		if b.state.GetBackupState(bId).Status == state.BackupStatusRunning {
-			err := b.AbortBackupJob(bId)
+			err := b.abortBackupJob(bId)
 			if err != nil {
 				return err
 			}
@@ -394,6 +398,9 @@ func (b *BackupClient) GetLastBackupErrorMsg(bId types.BackupId) (string, error)
 /***********************************/
 
 func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSchedule) error {
+	b.log.Debug(fmt.Sprintf("Saving backup schedule for backup profile %d", backupProfileId))
+
+	defer b.sendBackupScheduleChanged()
 	doesExist, err := b.db.BackupSchedule.
 		Query().
 		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
@@ -401,48 +408,41 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 	if err != nil {
 		return err
 	}
-	tx, err := b.db.Tx(b.ctx)
-	if err != nil {
-		return err
-	}
-	if doesExist {
-		_, err := tx.BackupSchedule.
-			Delete().
-			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-			Exec(b.ctx)
-		if err != nil {
-			return rollback(tx, fmt.Errorf("failed to delete existing schedule: %w", err))
-		}
-	}
-	backupTime, err := getNextBackupTime(&schedule, time.Now())
-	if err != nil {
-		return rollback(tx, fmt.Errorf("failed to get next backup time: %w", err))
-	}
-	_, err = tx.BackupSchedule.
-		Create().
-		SetHourly(schedule.Hourly).
-		SetNillableDailyAt(schedule.DailyAt).
-		SetNillableWeeklyAt(schedule.WeeklyAt).
-		SetNillableWeekday(schedule.Weekday).
-		SetNillableMonthlyAt(schedule.MonthlyAt).
-		SetNillableMonthday(schedule.Monthday).
-		SetNextRun(backupTime).
-		SetBackupProfileID(backupProfileId).
-		Save(b.ctx)
-	if err != nil {
-		return rollback(tx, fmt.Errorf("failed to save schedule: %w", err))
-	}
-	defer b.sendBackupScheduleChanged()
-	return tx.Commit()
-}
 
-func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
-	defer b.sendBackupScheduleChanged()
-	_, err := b.db.BackupSchedule.
-		Delete().
-		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+	var nextRun *time.Time
+	if schedule.Mode != backupschedule.ModeDisabled {
+		nr, err := getNextBackupTime(&schedule, time.Now())
+		if err != nil {
+			return err
+		}
+		nextRun = &nr
+	}
+
+	if doesExist {
+		return b.db.BackupSchedule.
+			Update().
+			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
+			SetMode(schedule.Mode).
+			SetDailyAt(schedule.DailyAt).
+			SetWeeklyAt(schedule.WeeklyAt).
+			SetWeekday(schedule.Weekday).
+			SetMonthlyAt(schedule.MonthlyAt).
+			SetMonthday(schedule.Monthday).
+			ClearNextRun().
+			SetNillableNextRun(nextRun).
+			Exec(b.ctx)
+	}
+	return b.db.BackupSchedule.
+		Create().
+		SetMode(schedule.Mode).
+		SetDailyAt(schedule.DailyAt).
+		SetWeeklyAt(schedule.WeeklyAt).
+		SetWeekday(schedule.Weekday).
+		SetMonthlyAt(schedule.MonthlyAt).
+		SetMonthday(schedule.Monthday).
+		SetNillableNextRun(nextRun).
+		SetBackupProfileID(backupProfileId).
 		Exec(b.ctx)
-	return err
 }
 
 func (b *BackupClient) sendBackupScheduleChanged() {

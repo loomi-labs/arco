@@ -4,8 +4,8 @@ package backupschedule
 
 import (
 	"fmt"
+	"time"
 
-	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -15,8 +15,10 @@ const (
 	Label = "backup_schedule"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldHourly holds the string denoting the hourly field in the database.
-	FieldHourly = "hourly"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
+	// FieldMode holds the string denoting the mode field in the database.
+	FieldMode = "mode"
 	// FieldDailyAt holds the string denoting the daily_at field in the database.
 	FieldDailyAt = "daily_at"
 	// FieldWeekday holds the string denoting the weekday field in the database.
@@ -49,7 +51,8 @@ const (
 // Columns holds all SQL columns for backupschedule fields.
 var Columns = []string{
 	FieldID,
-	FieldHourly,
+	FieldUpdatedAt,
+	FieldMode,
 	FieldDailyAt,
 	FieldWeekday,
 	FieldWeeklyAt,
@@ -81,18 +84,43 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-// Note that the variables below are initialized by the runtime
-// package on the initialization of the application. Therefore,
-// it should be imported in the main as follows:
-//
-//	import _ "arco/backend/ent/runtime"
 var (
-	Hooks [1]ent.Hook
-	// DefaultHourly holds the default value on creation for the "hourly" field.
-	DefaultHourly bool
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	MonthdayValidator func(uint8) error
 )
+
+// Mode defines the type for the "mode" enum field.
+type Mode string
+
+// ModeDisabled is the default value of the Mode enum.
+const DefaultMode = ModeDisabled
+
+// Mode values.
+const (
+	ModeDisabled Mode = "disabled"
+	ModeHourly   Mode = "hourly"
+	ModeDaily    Mode = "daily"
+	ModeWeekly   Mode = "weekly"
+	ModeMonthly  Mode = "monthly"
+)
+
+func (m Mode) String() string {
+	return string(m)
+}
+
+// ModeValidator is a validator for the "mode" field enum values. It is called by the builders before save.
+func ModeValidator(m Mode) error {
+	switch m {
+	case ModeDisabled, ModeHourly, ModeDaily, ModeWeekly, ModeMonthly:
+		return nil
+	default:
+		return fmt.Errorf("backupschedule: invalid enum value for mode field: %q", m)
+	}
+}
 
 // Weekday defines the type for the "weekday" enum field.
 type Weekday string
@@ -130,9 +158,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByHourly orders the results by the hourly field.
-func ByHourly(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHourly, opts...).ToFunc()
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByMode orders the results by the mode field.
+func ByMode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMode, opts...).ToFunc()
 }
 
 // ByDailyAt orders the results by the daily_at field.

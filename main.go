@@ -13,6 +13,9 @@ var assets embed.FS
 //go:embed icon.png
 var icon embed.FS
 
+//go:embed backend/ent/migrate/migrations
+var migrations embed.FS
+
 func main() {
-	cmd.Execute(assets, icon)
+	cmd.Execute(assets, icon, migrations)
 }

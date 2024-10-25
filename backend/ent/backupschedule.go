@@ -17,19 +17,21 @@ import (
 type BackupSchedule struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// Hourly holds the value of the "hourly" field.
-	Hourly bool `json:"hourly"`
+	ID int `json:"id"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Mode holds the value of the "mode" field.
+	Mode backupschedule.Mode `json:"mode"`
 	// DailyAt holds the value of the "daily_at" field.
-	DailyAt *time.Time `json:"dailyAt"`
+	DailyAt time.Time `json:"dailyAt"`
 	// Weekday holds the value of the "weekday" field.
-	Weekday *backupschedule.Weekday `json:"weekday"`
+	Weekday backupschedule.Weekday `json:"weekday"`
 	// WeeklyAt holds the value of the "weekly_at" field.
-	WeeklyAt *time.Time `json:"weeklyAt"`
+	WeeklyAt time.Time `json:"weeklyAt"`
 	// Monthday holds the value of the "monthday" field.
-	Monthday *uint8 `json:"monthday"`
+	Monthday uint8 `json:"monthday"`
 	// MonthlyAt holds the value of the "monthly_at" field.
-	MonthlyAt *time.Time `json:"monthlyAt"`
+	MonthlyAt time.Time `json:"monthlyAt"`
 	// NextRun holds the value of the "next_run" field.
 	NextRun time.Time `json:"nextRun"`
 	// LastRun holds the value of the "last_run" field.
@@ -68,13 +70,11 @@ func (*BackupSchedule) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backupschedule.FieldHourly:
-			values[i] = new(sql.NullBool)
 		case backupschedule.FieldID, backupschedule.FieldMonthday:
 			values[i] = new(sql.NullInt64)
-		case backupschedule.FieldWeekday, backupschedule.FieldLastRunStatus:
+		case backupschedule.FieldMode, backupschedule.FieldWeekday, backupschedule.FieldLastRunStatus:
 			values[i] = new(sql.NullString)
-		case backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt, backupschedule.FieldNextRun, backupschedule.FieldLastRun:
+		case backupschedule.FieldUpdatedAt, backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt, backupschedule.FieldNextRun, backupschedule.FieldLastRun:
 			values[i] = new(sql.NullTime)
 		case backupschedule.ForeignKeys[0]: // backup_profile_backup_schedule
 			values[i] = new(sql.NullInt64)
@@ -99,46 +99,47 @@ func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			bs.ID = int(value.Int64)
-		case backupschedule.FieldHourly:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field hourly", values[i])
+		case backupschedule.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				bs.Hourly = value.Bool
+				bs.UpdatedAt = value.Time
+			}
+		case backupschedule.FieldMode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field mode", values[i])
+			} else if value.Valid {
+				bs.Mode = backupschedule.Mode(value.String)
 			}
 		case backupschedule.FieldDailyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field daily_at", values[i])
 			} else if value.Valid {
-				bs.DailyAt = new(time.Time)
-				*bs.DailyAt = value.Time
+				bs.DailyAt = value.Time
 			}
 		case backupschedule.FieldWeekday:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field weekday", values[i])
 			} else if value.Valid {
-				bs.Weekday = new(backupschedule.Weekday)
-				*bs.Weekday = backupschedule.Weekday(value.String)
+				bs.Weekday = backupschedule.Weekday(value.String)
 			}
 		case backupschedule.FieldWeeklyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field weekly_at", values[i])
 			} else if value.Valid {
-				bs.WeeklyAt = new(time.Time)
-				*bs.WeeklyAt = value.Time
+				bs.WeeklyAt = value.Time
 			}
 		case backupschedule.FieldMonthday:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field monthday", values[i])
 			} else if value.Valid {
-				bs.Monthday = new(uint8)
-				*bs.Monthday = uint8(value.Int64)
+				bs.Monthday = uint8(value.Int64)
 			}
 		case backupschedule.FieldMonthlyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field monthly_at", values[i])
 			} else if value.Valid {
-				bs.MonthlyAt = new(time.Time)
-				*bs.MonthlyAt = value.Time
+				bs.MonthlyAt = value.Time
 			}
 		case backupschedule.FieldNextRun:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -208,33 +209,26 @@ func (bs *BackupSchedule) String() string {
 	var builder strings.Builder
 	builder.WriteString("BackupSchedule(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bs.ID))
-	builder.WriteString("hourly=")
-	builder.WriteString(fmt.Sprintf("%v", bs.Hourly))
+	builder.WriteString("updated_at=")
+	builder.WriteString(bs.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := bs.DailyAt; v != nil {
-		builder.WriteString("daily_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("mode=")
+	builder.WriteString(fmt.Sprintf("%v", bs.Mode))
 	builder.WriteString(", ")
-	if v := bs.Weekday; v != nil {
-		builder.WriteString("weekday=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
+	builder.WriteString("daily_at=")
+	builder.WriteString(bs.DailyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := bs.WeeklyAt; v != nil {
-		builder.WriteString("weekly_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("weekday=")
+	builder.WriteString(fmt.Sprintf("%v", bs.Weekday))
 	builder.WriteString(", ")
-	if v := bs.Monthday; v != nil {
-		builder.WriteString("monthday=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
+	builder.WriteString("weekly_at=")
+	builder.WriteString(bs.WeeklyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := bs.MonthlyAt; v != nil {
-		builder.WriteString("monthly_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("monthday=")
+	builder.WriteString(fmt.Sprintf("%v", bs.Monthday))
+	builder.WriteString(", ")
+	builder.WriteString("monthly_at=")
+	builder.WriteString(bs.MonthlyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("next_run=")
 	builder.WriteString(bs.NextRun.Format(time.ANSIC))

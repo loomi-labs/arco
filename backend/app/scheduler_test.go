@@ -46,9 +46,9 @@ func hourMinute(date time.Time, hour int, minute int) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.Local)
 }
 
-func hourMinutePtr(date time.Time, hour int, minute int) *time.Time {
+func hourMinutePtr(date time.Time, hour int, minute int) time.Time {
 	result := hourMinute(date, hour, minute)
-	return &result
+	return result
 }
 
 func weekdayHourMinute(date time.Time, weekday time.Weekday, hour int, minute int) time.Time {
@@ -69,6 +69,7 @@ func TestScheduler(t *testing.T) {
 	var a *App
 	var mockBorg *mockborg.MockBorg
 	var profile *ent.BackupProfile
+	var bs *ent.BackupSchedule
 	var now = time.Now()
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 
@@ -78,6 +79,7 @@ func TestScheduler(t *testing.T) {
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
 		p.Prefix = "test-"
+		bs = p.Edges.BackupSchedule
 
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
@@ -89,8 +91,26 @@ func TestScheduler(t *testing.T) {
 		now = time.Now()
 	}
 
-	weekdayPtr := func(w backupschedule.Weekday) *backupschedule.Weekday {
-		return &w
+	newBackupSchedule := func(overrides ent.BackupSchedule) ent.BackupSchedule {
+		if overrides.Mode != "" {
+			bs.Mode = overrides.Mode
+		}
+		if !overrides.DailyAt.IsZero() {
+			bs.DailyAt = overrides.DailyAt
+		}
+		if overrides.Weekday != "" {
+			bs.Weekday = overrides.Weekday
+		}
+		if !overrides.WeeklyAt.IsZero() {
+			bs.WeeklyAt = overrides.WeeklyAt
+		}
+		if overrides.Monthday != 0 {
+			bs.Monthday = overrides.Monthday
+		}
+		if !overrides.MonthlyAt.IsZero() {
+			bs.MonthlyAt = overrides.MonthlyAt
+		}
+		return *bs
 	}
 
 	tests := []struct {
@@ -102,98 +122,98 @@ func TestScheduler(t *testing.T) {
 	}{
 		{
 			name:     "getNextBackupTime - hourly - from now",
-			schedule: ent.BackupSchedule{Hourly: true},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
 			fromTime: now,
 			wantTime: now.Add(time.Hour).Truncate(time.Hour),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime - hourly - from 2024-01-01 at 00:59",
-			schedule: ent.BackupSchedule{Hourly: true},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
 			fromTime: firstOfJanuary2024.Add(time.Minute * 59),
 			wantTime: parseX("2024-01-01 01:00:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime - hourly - from 2024-01-01 at 01:00",
-			schedule: ent.BackupSchedule{Hourly: true},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
 			fromTime: firstOfJanuary2024.Add(time.Hour),
 			wantTime: parseX("2024-01-01 02:00:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime daily at 10:15 - from today at 9:00",
-			schedule: ent.BackupSchedule{DailyAt: hourMinutePtr(now, 10, 15)},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: hourMinutePtr(now, 10, 15)},
 			fromTime: hourMinute(now, 9, 0),
 			wantTime: hourMinute(now, 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime daily at 10:15 - from today at 11:00",
-			schedule: ent.BackupSchedule{DailyAt: hourMinutePtr(now, 10, 15)},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: hourMinutePtr(now, 10, 15)},
 			fromTime: hourMinute(now, 11, 0),
 			wantTime: hourMinute(now.AddDate(0, 0, 1), 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime daily at 10:30 - from 2024-01-01 00:00",
-			schedule: ent.BackupSchedule{DailyAt: hourMinutePtr(firstOfJanuary2024, 10, 30)},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: hourMinutePtr(firstOfJanuary2024, 10, 30)},
 			fromTime: firstOfJanuary2024,
 			wantTime: parseX("2024-01-01 10:30:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 9:00",
-			schedule: ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdayWednesday)},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: backupschedule.WeekdayWednesday},
 			fromTime: weekdayHourMinute(now, time.Wednesday, 9, 0),
 			wantTime: weekdayHourMinute(now, time.Wednesday, 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime weekly at 10:15 on Wednesday - from Wednesday at 11:00",
-			schedule: ent.BackupSchedule{WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: weekdayPtr(backupschedule.WeekdayWednesday)},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, WeeklyAt: hourMinutePtr(now, 10, 15), Weekday: backupschedule.WeekdayWednesday},
 			fromTime: weekdayHourMinute(now, time.Wednesday, 11, 0),
 			wantTime: weekdayHourMinute(now.AddDate(0, 0, 7), time.Wednesday, 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 9:00",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{5}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{5}[0]},
 			fromTime: monthdayHourMinute(now, 5, 9, 0),
 			wantTime: monthdayHourMinute(now, 5, 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 5th - from the 5th at 11:00",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{5}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{5}[0]},
 			fromTime: monthdayHourMinute(now, 5, 11, 0),
 			wantTime: monthdayHourMinute(now.AddDate(0, 1, 0), 5, 10, 15),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 1th - from 2024-01-01 00:00",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{1}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{1}[0]},
 			fromTime: firstOfJanuary2024,
 			wantTime: parseX("2024-01-01 10:15:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 30th - from 2024-01-01 00:00",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{30}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{30}[0]},
 			fromTime: firstOfJanuary2024,
 			wantTime: parseX("2024-01-30 10:15:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 29th - from 2024-02-01 00:00 (february has 29 days)",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{29}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{29}[0]},
 			fromTime: parseX("2024-02-01 00:00:00"),
 			wantTime: parseX("2024-02-29 10:15:00"),
 			wantErr:  false,
 		},
 		{
 			name:     "getNextBackupTime monthly at 10:15 on the 30th - from 2024-02-01 00:00 (february has 29 days in 2024)",
-			schedule: ent.BackupSchedule{MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: &[]uint8{30}[0]},
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, MonthlyAt: hourMinutePtr(now, 10, 15), Monthday: []uint8{30}[0]},
 			fromTime: parseX("2024-02-01 00:00:00"),
 			wantTime: parseX("2024-02-29 10:15:00"),
 			wantErr:  false,
@@ -205,7 +225,7 @@ func TestScheduler(t *testing.T) {
 			setup(t)
 
 			// ARRANGE
-			err := a.BackupClient().SaveBackupSchedule(profile.ID, tt.schedule)
+			err := a.BackupClient().SaveBackupSchedule(profile.ID, newBackupSchedule(tt.schedule))
 			assert.NoError(t, err, "Failed to save backup schedule")
 
 			// ACT
@@ -225,7 +245,7 @@ func TestScheduler(t *testing.T) {
 		setup(t)
 
 		// ARRANGE
-		schedule := ent.BackupSchedule{Hourly: true}
+		schedule := newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly})
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
 		assert.NoError(t, err, "Failed to save backup schedule")
 

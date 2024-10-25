@@ -760,8 +760,7 @@ func (c *BackupScheduleClient) QueryBackupProfile(bs *BackupSchedule) *BackupPro
 
 // Hooks returns the client hooks.
 func (c *BackupScheduleClient) Hooks() []Hook {
-	hooks := c.hooks.BackupSchedule
-	return append(hooks[:len(hooks):len(hooks)], backupschedule.Hooks[:]...)
+	return c.hooks.BackupSchedule
 }
 
 // Interceptors returns the client interceptors.

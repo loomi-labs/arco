@@ -6,6 +6,7 @@ import (
 	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/util"
+	"ariga.io/atlas-go-sdk/atlasexec"
 	"context"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -156,22 +157,53 @@ func (a *App) Wakeup() {
 	runtime.WindowShow(a.ctx)
 }
 
+func (a *App) applyMigrations(opts string) error {
+	workdir, err := atlasexec.NewWorkingDir(
+		atlasexec.WithMigrations(
+			a.config.Migrations,
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to load working directory: %v", err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer workdir.Close()
+
+	// Initialize the atlasClient.
+	atlasClient, err := atlasexec.NewClient(workdir.Path(), "atlas")
+	if err != nil {
+		return fmt.Errorf("failed to initialize atlasClient: %v", err)
+	}
+
+	// Run `atlas migrate apply`
+	_, err = atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
+		URL:             fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
+		BaselineVersion: "20241024090930", // TODO: remove this before release
+	})
+	if err != nil {
+		return fmt.Errorf("failed to apply migrations: %v", err)
+	}
+	return nil
+}
+
 func (a *App) initDb() (*ent.Client, error) {
 	// - Set WAL mode (not strictly necessary each time because it's persisted in the database, but good for first run)
 	// - Set busy timeout, so concurrent writers wait on each other instead of erroring immediately
 	// - Enable foreign key checks
 	opts := "?_journal=WAL&_timeout=5000&_fk=1"
 
+	// Apply migrations
+	if err := a.applyMigrations(opts); err != nil {
+		return nil, err
+	}
+
 	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
-	// Run the auto migration tool.
-	if err := dbClient.Schema.Create(a.ctx); err != nil {
-		return nil, err
-	}
-
+	// Create an initial settings entry if it doesn't exist
+	// TODO: move this into the migrations
 	cnt, err := dbClient.Settings.Query().Count(a.ctx)
 	if err != nil {
 		return nil, err
