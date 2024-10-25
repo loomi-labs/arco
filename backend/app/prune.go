@@ -6,9 +6,7 @@ import (
 	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/notification"
-	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"errors"
 	"fmt"
@@ -20,17 +18,18 @@ import (
 func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
 	defer b.sendPruningRuleChanged()
 
-	// We ignore the ID from the given rule and get it from the db directly
-	pruingRuleId, err := b.db.PruningRule.
-		Query().
-		Where(pruningrule.HasBackupProfileWith(backupprofile.ID(backupId))).
-		FirstID(b.ctx)
-	if err != nil && !ent.IsNotFound(err) {
+	backupProfile, err := b.GetBackupProfile(backupId)
+	if err != nil {
 		return nil, err
-	} else if ent.IsNotFound(err) {
-		b.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
+	}
+
+	nextRun := getNextPruneTime(backupProfile.Edges.BackupSchedule, time.Now())
+
+	if backupProfile.Edges.PruningRule != nil {
+		b.log.Debug(fmt.Sprintf("Updating pruning rule %d for backup profile %d", rule.ID, backupId))
 		return b.db.PruningRule.
-			Create().
+			// We ignore the ID from the given rule and get it from the db directly
+			UpdateOneID(backupProfile.Edges.PruningRule.ID).
 			SetIsEnabled(rule.IsEnabled).
 			SetKeepHourly(rule.KeepHourly).
 			SetKeepDaily(rule.KeepDaily).
@@ -38,12 +37,12 @@ func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent
 			SetKeepMonthly(rule.KeepMonthly).
 			SetKeepYearly(rule.KeepYearly).
 			SetKeepWithinDays(rule.KeepWithinDays).
-			SetBackupProfileID(backupId).
+			SetNextRun(nextRun).
 			Save(b.ctx)
 	}
-	b.log.Debug(fmt.Sprintf("Updating pruning rule %d for backup profile %d", rule.ID, backupId))
+	b.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
 	return b.db.PruningRule.
-		UpdateOneID(pruingRuleId).
+		Create().
 		SetIsEnabled(rule.IsEnabled).
 		SetKeepHourly(rule.KeepHourly).
 		SetKeepDaily(rule.KeepDaily).
@@ -51,6 +50,8 @@ func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent
 		SetKeepMonthly(rule.KeepMonthly).
 		SetKeepYearly(rule.KeepYearly).
 		SetKeepWithinDays(rule.KeepWithinDays).
+		SetBackupProfileID(backupId).
+		SetNextRun(nextRun).
 		Save(b.ctx)
 }
 

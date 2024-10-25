@@ -358,7 +358,7 @@ func (a *App) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus stri
 	if lastRunStatus != "" {
 		update.SetNillableLastRunStatus(&lastRunStatus)
 	}
-	nextPruneTime := getNextPruneTime(pruningRule, lastRunTime)
+	nextPruneTime := getNextPruneTime(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, lastRunTime)
 	update.SetNextRun(nextPruneTime)
 	return update.Save(a.ctx)
 }
@@ -374,15 +374,18 @@ func (a *App) getPruningRules() ([]*ent.PruningRule, error) {
 		All(a.ctx)
 }
 
-func getNextPruneTime(pruningRule *ent.PruningRule, fromTime time.Time) time.Time {
-	// TODO: find a proper way to schedule this
-	bs := pruningRule.Edges.BackupProfile.Edges.BackupSchedule
+func getNextPruneTime(bs *ent.BackupSchedule, fromTime time.Time) time.Time {
 	if bs == nil {
 		// If we don't have a backup schedule, we run the prune once a week
 		return fromTime.AddDate(0, 0, 7)
 	}
 
 	// Calculate the next prune time based on the backup schedule
-	// Add 1 minute to the next run time of the backup schedule
+	// Put the next prune at least one hour into the future
+	// Add also 1 minute to avoid running the prune at the same time as the backup
+	if bs.NextRun.Before(time.Now().Add(time.Hour)) {
+		return bs.NextRun.Add(time.Hour).Add(time.Minute)
+	}
+
 	return bs.NextRun.Add(time.Minute)
 }
