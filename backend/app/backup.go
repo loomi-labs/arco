@@ -296,11 +296,15 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 }
 
 func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) error {
+	var errs []error
 	for _, bId := range bIds {
 		err := b.StartBackupJob(bId)
 		if err != nil {
-			return err
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to start some backup jobs: %v", errs)
 	}
 	return nil
 }
