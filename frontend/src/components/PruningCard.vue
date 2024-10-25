@@ -226,8 +226,6 @@ async function apply() {
     const impact = toExaminePruneText(result);
     pruningImpactText.value = impact.Summary;
     cleanupImpactRows.value = impact.Rows;
-  } else {
-    await save();
   }
 }
 
@@ -274,7 +272,7 @@ onBeforeRouteLeave(async (to, from) => {
 
 defineExpose({
   pruningRule,
-  isValid,
+  isValid
 });
 
 </script>
@@ -394,17 +392,20 @@ defineExpose({
       <span v-if='validationError' class='label'>
         <span class='label text-sm text-error'>{{ validationError }}</span>
       </span>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid' @click='copyCurrentPruningRule'>Discard
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid'
+              @click='copyCurrentPruningRule'>Discard
         changes
       </button>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid' @click='apply'>Apply changes</button>
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid'
+              @click='apply'>Apply changes
+      </button>
     </div>
   </div>
 
   <ConfirmModal :ref='confirmSaveModalKey'>
     <div class='flex gap-2 w-full'>
       <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
-      <span v-if='isExaminePrune' class="loading loading-dots loading-md"></span>
+      <span v-if='isExaminePrune' class='loading loading-dots loading-md'></span>
       <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-4'>
         <div class='col-span-1'>{{ pruningImpactText }}</div>
         <div v-for='row in cleanupImpactRows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>

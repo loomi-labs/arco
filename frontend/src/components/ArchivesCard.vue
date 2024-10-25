@@ -62,7 +62,7 @@ const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
-pruningDates.value.pruningDates = [];
+pruningDates.value.dates = [];
 
 const dateRange = ref({
   startDate: "",
@@ -225,7 +225,7 @@ async function getPruningDates() {
 }
 
 function getPruningText(archiveId: number) {
-  const nextRun = pruningDates.value.pruningDates.find(p => p.archiveId === archiveId)?.nextRun;
+  const nextRun = pruningDates.value.dates.find(p => p.archiveId === archiveId)?.nextRun;
   if (!nextRun || isInPast(nextRun, true)) {
     return "This archive will be deleted";
   }
