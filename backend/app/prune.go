@@ -77,16 +77,6 @@ func (b *BackupClient) StartPruneJob(bId types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) StartPruneJobs(bIds []types.BackupId) error {
-	for _, bId := range bIds {
-		err := b.StartPruneJob(bId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 type ExaminePruningResult struct {
 	BackupID               types.BackupId
 	RepositoryName         string

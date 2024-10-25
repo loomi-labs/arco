@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/pruningrule"
 	"fmt"
+	"github.com/negrel/assert"
 	"time"
 )
 
@@ -42,10 +43,7 @@ func (a *App) scheduleBackups() []*time.Timer {
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 
-		if len(bs.Edges.BackupProfile.Edges.Repositories) == 0 {
-			a.log.Errorf("Backup profile %d has no repositories, skipping", backupProfileId)
-			continue
-		}
+		assert.NotNil(bs.Edges.BackupProfile.Edges.Repositories, "repositories is nil")
 
 		for _, r := range bs.Edges.BackupProfile.Edges.Repositories {
 			backupId := types.BackupId{
@@ -270,7 +268,7 @@ func (a *App) schedulePrunes() []*time.Timer {
 	pruningRules, err := a.getPruningRules()
 	if err != nil {
 		a.log.Errorf("Failed to get pruning schedules: %s", err)
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get pruning schedules: %s", err), types.LevelError)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get pruning rules: %s", err), types.LevelError)
 		return nil
 	}
 
@@ -278,10 +276,7 @@ func (a *App) schedulePrunes() []*time.Timer {
 	for _, pruningRule := range pruningRules {
 		backupProfileId := pruningRule.Edges.BackupProfile.ID
 
-		if len(pruningRule.Edges.BackupProfile.Edges.Repositories) == 0 {
-			a.log.Errorf("Backup profile %d has no repositories, skipping", backupProfileId)
-			continue
-		}
+		assert.NotNil(pruningRule.Edges.BackupProfile.Edges.Repositories, "repositories is nil")
 
 		for _, r := range pruningRule.Edges.BackupProfile.Edges.Repositories {
 			pruneId := types.BackupId{
@@ -352,6 +347,8 @@ func (a *App) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, up
 }
 
 func (a *App) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus string) (*ent.PruningRule, error) {
+	assert.NotNil(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, "backup schedule is nil")
+
 	lastRunTime := time.Now()
 	update := pruningRule.Update()
 	update.SetLastRun(lastRunTime)

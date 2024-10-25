@@ -229,7 +229,7 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 }
 
 type PruningDates struct {
-	PruningDates []PruningDate `json:"pruningDates"`
+	Dates []PruningDate `json:"dates"`
 }
 
 type PruningDate struct {
@@ -254,7 +254,7 @@ func (r *RepositoryClient) GetPruningDates(archiveIds []int) (response PruningDa
 	}
 	for _, arch := range archives {
 		if arch.Edges.BackupProfile.Edges.PruningRule != nil {
-			response.PruningDates = append(response.PruningDates, PruningDate{
+			response.Dates = append(response.Dates, PruningDate{
 				ArchiveId: arch.ID,
 				NextRun:   arch.Edges.BackupProfile.Edges.PruningRule.NextRun,
 			})
