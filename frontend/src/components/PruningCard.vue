@@ -170,11 +170,11 @@ async function savePruningRule() {
   }
 }
 
-async function examinePrune(): Promise<Array<app.ExaminePruningResult> | undefined> {
+async function examinePrune(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
   try {
     isExaminePrune.value = true;
     pruningImpactText.value = "";
-    return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value);
+    return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
   } catch (error: any) {
     await showAndLogError("Failed to dry run pruning rule", error);
   } finally {
@@ -221,7 +221,7 @@ async function apply() {
 
   wantToGoRoute.value = undefined;
   confirmSaveModal.value?.showModal();
-  const result = await examinePrune();
+  const result = await examinePrune(false);
   if (result) {
     const impact = toExaminePruneText(result);
     pruningImpactText.value = impact.Summary;
@@ -240,9 +240,13 @@ async function discard(route?: string) {
 
 async function save(route?: string) {
   await savePruningRule();
+
   if (route) {
     await router.push(route);
   }
+
+  // We examine the prune again but this time with the saveResults flag set to true
+  examinePrune(true).then(r => r);  // We don't have to wait for this to finish
 }
 
 /************

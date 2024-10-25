@@ -94,7 +94,7 @@ type ExaminePruningResult struct {
 	Error                  error
 }
 
-func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.PruningRule, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
 	defer wg.Done()
 
 	repo, err := b.db.Repository.Query().
@@ -105,7 +105,7 @@ func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.Pr
 		return
 	}
 
-	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule), false)
+	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule), saveResults, false)
 	if err != nil {
 		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
 		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
@@ -116,7 +116,7 @@ func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.Pr
 	resultCh <- ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
 }
 
-func (b *BackupClient) ExaminePrunes(backupProfileId int, pruningRule *ent.PruningRule) []ExaminePruningResult {
+func (b *BackupClient) ExaminePrunes(backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) []ExaminePruningResult {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
 		return []ExaminePruningResult{{Error: err}}
@@ -129,7 +129,7 @@ func (b *BackupClient) ExaminePrunes(backupProfileId int, pruningRule *ent.Pruni
 	for _, repo := range backupProfile.Edges.Repositories {
 		wg.Add(1)
 		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		go b.startExaminePrune(bId, pruningRule, &wg, resultCh)
+		go b.startExaminePrune(bId, pruningRule, saveResults, &wg, resultCh)
 	}
 
 	// Wait for all examine prune jobs to finish
@@ -315,7 +315,7 @@ func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borg.Pru
 	}
 }
 
-func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule], hasRepoLock bool) (int, error) {
+func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule], saveResults, skipAcquiringRepoLock bool) (int, error) {
 	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get repository: %w", err)
@@ -326,8 +326,11 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	if pruningRule == nil {
 		return 0, fmt.Errorf("no pruning rule found")
 	}
+	if !pruningRule.IsEnabled {
+		return 0, fmt.Errorf("pruning rule is disabled")
+	}
 
-	if !hasRepoLock {
+	if !skipAcquiringRepoLock {
 		// We do not wait for other operations to finish
 		// Either we can run the operation or we return an error
 		if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
@@ -370,38 +373,41 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 		case pruneResult := <-resultCh:
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 
-			keepIds := make([]int, len(pruneResult.KeepArchives))
-			for i, keep := range pruneResult.KeepArchives {
-				keepIds[i] = keep.Id
+			if saveResults {
+				keepIds := make([]int, len(pruneResult.KeepArchives))
+				for i, keep := range pruneResult.KeepArchives {
+					keepIds[i] = keep.Id
+				}
+
+				tx, err := b.db.Tx(b.ctx)
+				if err != nil {
+					return 0, fmt.Errorf("failed to start transaction: %w", err)
+				}
+
+				err = tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(pruneResult.PruneArchives...),
+						archive.WillBePruned(false)),
+					).
+					SetWillBePruned(true).
+					Exec(b.ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+
+				err = tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(keepIds...),
+						archive.WillBePruned(true)),
+					).
+					SetWillBePruned(false).
+					Exec(b.ctx)
+
+				return len(pruneResult.PruneArchives), tx.Commit()
 			}
-
-			tx, err := b.db.Tx(b.ctx)
-			if err != nil {
-				return 0, fmt.Errorf("failed to start transaction: %w", err)
-			}
-
-			err = tx.Archive.
-				Update().
-				Where(archive.And(
-					archive.IDIn(pruneResult.PruneArchives...),
-					archive.WillBePruned(false)),
-				).
-				SetWillBePruned(true).
-				Exec(b.ctx)
-			if err != nil {
-				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
-			}
-
-			err = tx.Archive.
-				Update().
-				Where(archive.And(
-					archive.IDIn(keepIds...),
-					archive.WillBePruned(true)),
-				).
-				SetWillBePruned(false).
-				Exec(b.ctx)
-
-			return len(pruneResult.PruneArchives), tx.Commit()
+			return len(pruneResult.PruneArchives), nil
 		case <-time.After(10 * time.Second):
 			return 0, fmt.Errorf("timeout waiting for prune result")
 		case <-b.ctx.Done():

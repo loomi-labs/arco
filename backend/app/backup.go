@@ -589,7 +589,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			b.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", err))
 		}
 		if pruningRule != nil && pruningRule.IsEnabled {
-			_, err := b.examinePrune(bId, safetypes.Some(pruningRule), true)
+			_, err := b.examinePrune(bId, safetypes.Some(pruningRule), true, true)
 			if err != nil {
 				b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
 			}
