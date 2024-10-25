@@ -226,11 +226,11 @@ async function getPruningDates() {
 
 function getPruningText(archiveId: number) {
   const nextRun = pruningDates.value.pruningDates.find(p => p.archiveId === archiveId)?.nextRun;
-  if (!nextRun || isInPast(nextRun)) {
+  if (!nextRun || isInPast(nextRun, true)) {
     return "This archive will be deleted";
   }
 
-  return `This archive will be deleted ${toRelativeTimeString(nextRun)}`;
+  return `This archive will be deleted ${toRelativeTimeString(nextRun, true)}`;
 }
 
 const customDateRangeShortcuts = () => {

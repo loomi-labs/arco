@@ -90,23 +90,29 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
 
 /**
  * isInPast checks if a Date object is in the past.
- * @param date The date to check (without timezone offset)
+ * @param date The date to check
+ * @param ignoreTz If true, the timezone offset is ignored
  */
-export function isInPast(date: Date): boolean {
+export function isInPast(date: Date, ignoreTz: boolean = false): boolean {
   const now = new Date();
-  const offsetToUTC = offset(now);
-  date = removeOffset(date, offsetToUTC);
-  return isBefore(date, now)
+  if (!ignoreTz) {
+    const offsetToUTC = offset(now);
+    date = removeOffset(date, offsetToUTC);
+  }
+  return isBefore(date, now);
 }
 
 /**
  * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.
- * @param date The date to convert (without timezone offset)
+ * @param date The date to convert
+ * @param ignoreTz If true, the timezone offset is ignored
  */
-export function toRelativeTimeString(date: Date): string {
+export function toRelativeTimeString(date: Date, ignoreTz: boolean = false): string {
   const now = new Date();
-  const offsetToUTC = offset(now);
-  date = removeOffset(date, offsetToUTC);
+  if (!ignoreTz) {
+    const offsetToUTC = offset(now);
+    date = removeOffset(date, offsetToUTC);
+  }
 
   if (isBefore(date, now)) {
     return toPastString(date, now);
