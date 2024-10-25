@@ -9,6 +9,7 @@ import (
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"slices"
 	"strings"
 	"time"
@@ -108,6 +109,10 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 		r.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
 	}
 
+	if cntDeletedArchives > 0 || cntNewArchives > 0 {
+		defer runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(repoId))
+	}
+
 	return archives, nil
 }
 
@@ -136,7 +141,12 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	if err != nil {
 		return err
 	}
-	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
+	err = r.db.Archive.DeleteOneID(id).Exec(r.ctx)
+	if err != nil {
+		return err
+	}
+	runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(arch.Edges.Repository.ID))
+	return nil
 }
 
 type PaginatedArchivesRequest struct {

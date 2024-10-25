@@ -70,6 +70,7 @@ const (
 	EventBackupStateChanged    Event = "backupStateChanged"
 	EventPruneStateChanged     Event = "pruneStateChanged"
 	EventRepoStateChanged      Event = "repoStateChanged"
+	EventArchivesChanged       Event = "archivesChanged"
 )
 
 var AllEvents = []Event{
@@ -77,6 +78,7 @@ var AllEvents = []Event{
 	EventBackupStateChanged,
 	EventPruneStateChanged,
 	EventRepoStateChanged,
+	EventArchivesChanged,
 }
 
 func (e Event) String() string {
@@ -93,6 +95,10 @@ func EventPruneStateChangedString(bId BackupId) string {
 
 func EventRepoStateChangedString(repoId int) string {
 	return fmt.Sprintf("%s:%d", EventRepoStateChanged.String(), repoId)
+}
+
+func EventArchivesChangedString(repoId int) string {
+	return fmt.Sprintf("%s:%d", EventArchivesChanged.String(), repoId)
 }
 
 type MountState struct {

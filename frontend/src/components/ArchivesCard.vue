@@ -3,7 +3,7 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
-import { computed, ref, useTemplateRef, watch } from "vue";
+import { computed, onUnmounted, ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ArrowPathIcon,
@@ -23,6 +23,8 @@ import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
+import * as runtime from "../../wailsjs/runtime";
+import { archivesChanged, repoStateChangedEvent } from "../common/events";
 
 /************
  * Types
@@ -63,6 +65,7 @@ const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
 pruningDates.value.dates = [];
+const cleanupFunctions: (() => void)[] = [];
 
 const dateRange = ref({
   startDate: "",
@@ -310,6 +313,12 @@ watch([() => props.repoStatus, () => props.repo], async () => {
 
 watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
+});
+
+cleanupFunctions.push(runtime.EventsOn(archivesChanged(props.repo.id), getPaginatedArchives));
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>

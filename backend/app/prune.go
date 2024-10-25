@@ -6,11 +6,13 @@ import (
 	"arco/backend/borg"
 	"arco/backend/ent"
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"errors"
 	"fmt"
 	"github.com/eminarican/safetypes"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sync"
 	"time"
 )
@@ -316,8 +318,25 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	if pruningRule == nil {
 		return 0, fmt.Errorf("no pruning rule found")
 	}
+
+	// If the pruning rule is not enabled, we don't need to call borg
 	if !pruningRule.IsEnabled {
-		return 0, fmt.Errorf("pruning rule is disabled")
+		if saveResults {
+			defer runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+			err = b.db.Archive.
+				Update().
+				Where(archive.And(
+					archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+					archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+					archive.WillBePruned(true)),
+				).
+				SetWillBePruned(false).
+				Exec(b.ctx)
+			if err != nil {
+				return 0, fmt.Errorf("failed to update archives: %w", err)
+			}
+		}
+		return 0, nil
 	}
 
 	if !skipAcquiringRepoLock {
@@ -374,28 +393,38 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 					return 0, fmt.Errorf("failed to start transaction: %w", err)
 				}
 
-				err = tx.Archive.
+				cntToTrue, err := tx.Archive.
 					Update().
 					Where(archive.And(
 						archive.IDIn(pruneResult.PruneArchives...),
 						archive.WillBePruned(false)),
 					).
 					SetWillBePruned(true).
-					Exec(b.ctx)
+					Save(b.ctx)
 				if err != nil {
 					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
 				}
 
-				err = tx.Archive.
+				cntToFalse, err := tx.Archive.
 					Update().
 					Where(archive.And(
 						archive.IDIn(keepIds...),
 						archive.WillBePruned(true)),
 					).
 					SetWillBePruned(false).
-					Exec(b.ctx)
+					Save(b.ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+				err = tx.Commit()
+				if err != nil {
+					return 0, fmt.Errorf("failed to commit transaction: %w", err)
+				}
+				if cntToTrue+cntToFalse > 0 {
+					runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+				}
 
-				return len(pruneResult.PruneArchives), tx.Commit()
+				return len(pruneResult.PruneArchives), nil
 			}
 			return len(pruneResult.PruneArchives), nil
 		case <-time.After(10 * time.Second):
