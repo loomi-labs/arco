@@ -176,7 +176,7 @@ func (a *App) applyMigrations(opts string) error {
 	}
 
 	// Run `atlas migrate apply`
-	_, err = atlasClient.MigrateApply(context.Background(), &atlasexec.MigrateApplyParams{
+	_, err = atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
 		URL:             fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
 		BaselineVersion: "20241024090930", // TODO: remove this before release
 	})

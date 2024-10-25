@@ -209,6 +209,14 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 	}
 }
 
+type contextKey string
+
+const (
+	assetsKey     contextKey = "assets"
+	iconKey       contextKey = "icon"
+	migrationsKey contextKey = "migrations"
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "arco",
@@ -227,9 +235,9 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to get unique run id flag: %w", err)
 		}
 
-		assets := cmd.Context().Value("assets").(embed.FS)
-		icon := cmd.Context().Value("icon").(embed.FS)
-		migrations := cmd.Context().Value("migrations").(embed.FS)
+		assets := cmd.Context().Value(assetsKey).(embed.FS)
+		icon := cmd.Context().Value(iconKey).(embed.FS)
+		migrations := cmd.Context().Value(migrationsKey).(embed.FS)
 
 		// Initialize the configuration
 		config, err := initConfig(configDir, icon, migrations)
@@ -259,9 +267,9 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(assets embed.FS, icon embed.FS, migrations embed.FS) {
-	ctx := context.WithValue(context.Background(), "assets", assets)
-	ctx = context.WithValue(ctx, "icon", icon)
-	ctx = context.WithValue(ctx, "migrations", migrations)
+	ctx := context.WithValue(context.Background(), assetsKey, assets)
+	ctx = context.WithValue(ctx, iconKey, icon)
+	ctx = context.WithValue(ctx, migrationsKey, migrations)
 
 	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {
