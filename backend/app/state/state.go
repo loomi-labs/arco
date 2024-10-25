@@ -5,6 +5,7 @@ import (
 	"arco/backend/borg"
 	"context"
 	"fmt"
+	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"sync"
@@ -18,10 +19,10 @@ type State struct {
 
 	repoStates   map[int]*RepoState
 	backupStates map[types.BackupId]*BackupState
+	pruneStates  map[types.BackupId]*PruneState
 
-	runningPruneJobs       map[types.BackupId]*PruneJob
-	runningDryRunPruneJobs map[types.BackupId]*PruneJob
-	runningDeleteJobs      map[types.BackupId]*cancelCtx
+	// TODO: remove runningDeleteJobs and use the same pattern as backupStates and pruneStates
+	runningDeleteJobs map[types.BackupId]*cancelCtx
 
 	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
@@ -131,18 +132,6 @@ func newBackupState() *BackupState {
 	}
 }
 
-type BackupResult string
-
-const (
-	BackupResultSuccess   BackupResult = "success"
-	BackupResultCancelled BackupResult = "cancelled"
-	BackupResultError     BackupResult = "error"
-)
-
-func (b BackupResult) String() string {
-	return string(b)
-}
-
 type BackupButtonStatus string
 
 const (
@@ -167,6 +156,46 @@ func (b BackupButtonStatus) String() string {
 	return string(b)
 }
 
+type PruningStatus string
+
+const (
+	PruningStatusIdle      PruningStatus = "idle"
+	PruningStatusWaiting   PruningStatus = "waiting"
+	PruningStatusRunning   PruningStatus = "running"
+	PruningStatusCompleted PruningStatus = "completed"
+	PruningStatusCancelled PruningStatus = "cancelled"
+	PruningStatusFailed    PruningStatus = "failed"
+)
+
+var AvailablePruningStatuses = []PruningStatus{
+	PruningStatusIdle,
+	PruningStatusWaiting,
+	PruningStatusRunning,
+	PruningStatusCompleted,
+	PruningStatusCancelled,
+	PruningStatusFailed,
+}
+
+func (ps PruningStatus) String() string {
+	return string(ps)
+}
+
+type PruneState struct {
+	*cancelCtx
+	Status PruningStatus   `json:"status"`
+	Result *PruneJobResult `json:"result,omitempty"`
+	Error  string          `json:"error,omitempty"`
+}
+
+func newPruneState() *PruneState {
+	return &PruneState{
+		cancelCtx: nil,
+		Status:    PruningStatusIdle,
+		Result:    nil,
+		Error:     "",
+	}
+}
+
 func NewState(log *zap.SugaredLogger) *State {
 	return &State{
 		log:           log,
@@ -176,10 +205,9 @@ func NewState(log *zap.SugaredLogger) *State {
 
 		repoStates:   make(map[int]*RepoState),
 		backupStates: map[types.BackupId]*BackupState{},
+		pruneStates:  map[types.BackupId]*PruneState{},
 
-		runningPruneJobs:       make(map[types.BackupId]*PruneJob),
-		runningDryRunPruneJobs: make(map[types.BackupId]*PruneJob),
-		runningDeleteJobs:      make(map[types.BackupId]*cancelCtx),
+		runningDeleteJobs: make(map[types.BackupId]*cancelCtx),
 
 		repoMounts:    make(map[int]*types.MountState),
 		archiveMounts: make(map[int]map[int]*types.MountState),
@@ -212,6 +240,15 @@ func (s *State) GetStartupError() error {
 /***********************************/
 /********** Repo States ************/
 /***********************************/
+
+func (s *State) CanPerformRepoOperation(id types.BackupId) (canRun bool, reason string) {
+	if rs, ok := s.repoStates[id.RepositoryId]; ok {
+		if rs.Status != RepoStatusIdle {
+			return false, "Repository is busy"
+		}
+	}
+	return true, ""
+}
 
 // GetRepoLock returns the mutex for the given repository ID.
 // The mutex has to be acquired before performing any operations on the repository.
@@ -260,9 +297,6 @@ func (s *State) GetRepoState(repoId int) RepoState {
 /***********************************/
 
 func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
-	if s.startupError != nil {
-		return false, "Startup error"
-	}
 	if bs, ok := s.backupStates[id]; ok {
 		if bs.Status == BackupStatusRunning {
 			return false, "Backup is already running"
@@ -291,8 +325,6 @@ func (s *State) SetBackupWaiting(ctx context.Context, bId types.BackupId) {
 func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	currentState, ok := s.backupStates[bId]
 	if ok {
@@ -301,6 +333,9 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 			return currentState.ctx
 		}
 	}
+
+	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
@@ -415,12 +450,14 @@ func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borg.BackupProg
 /********** Prune Jobs ************/
 /***********************************/
 
-func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
-	if s.startupError != nil {
-		return false, "Startup error"
-	}
-	if _, ok := s.runningPruneJobs[id]; ok {
-		return false, "Prune job is already running"
+func (s *State) CanRunPrune(id types.BackupId) (canRun bool, reason string) {
+	if ps, ok := s.pruneStates[id]; ok {
+		if ps.Status == PruningStatusRunning {
+			return false, "Prune job is already running"
+		}
+		if ps.Status == PruningStatusWaiting {
+			return false, "Prune job is already queued to run"
+		}
 	}
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
 		if rs.Status != RepoStatusIdle {
@@ -430,70 +467,91 @@ func (s *State) CanRunPruneJob(id types.BackupId) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) AddRunningPruneJob(ctx context.Context, id types.BackupId) {
+func (s *State) SetPruneWaiting(ctx context.Context, bId types.BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+
+	s.changePruneState(bId, PruningStatusWaiting)
+}
+
+func (s *State) SetPruneRunning(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.runningPruneJobs[id] = &PruneJob{
-		cancelCtx: newCancelCtx(ctx),
-		result:    PruneJobResult{},
+	currentState, ok := s.pruneStates[bId]
+	if ok {
+		if currentState.Status == PruningStatusRunning {
+			// If the state is already running, we don't do anything
+			return
+		}
+	}
+
+	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+
+	s.changePruneState(bId, PruningStatusRunning)
+	s.pruneStates[bId].cancelCtx = newCancelCtx(ctx)
+	s.pruneStates[bId].Error = ""
+
+	s.setRepoState(bId.RepositoryId, RepoStatusPruning)
+}
+
+func (s *State) SetPruneCompleted(ctx context.Context, bId types.BackupId, result PruneJobResult) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+
+	s.changePruneState(bId, PruningStatusCompleted)
+	s.pruneStates[bId].Result = &result
+	s.setRepoState(bId.RepositoryId, RepoStatusIdle)
+}
+
+func (s *State) SetPruneCancelled(ctx context.Context, bId types.BackupId) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+
+	s.changePruneState(bId, PruningStatusCancelled)
+	s.setRepoState(bId.RepositoryId, RepoStatusIdle)
+}
+
+func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
+	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	assert.True(err != nil, "error must not be nil")
+
+	s.changePruneState(bId, PruningStatusFailed)
+	s.pruneStates[bId].Error = err.Error()
+	if setRepoLocked {
+		s.setRepoState(bId.RepositoryId, RepoStatusLocked)
+	} else if setRepoStateIdle {
+		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
 	}
 }
 
-func (s *State) RemoveRunningPruneJob(id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if ctx, ok := s.runningPruneJobs[id]; ok {
-		s.log.Debugf("Cancelling context of prune job %v", id)
-		ctx.cancel()
+func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
+	currentState, ok := s.pruneStates[bId]
+	if ok {
+		if currentState.Status == PruningStatusRunning && newState != PruningStatusRunning {
+			// If we are here it means:
+			// - the current state is running
+			// - the new state is not running (it's either completed, cancelled or errored)
+			// Therefore we cancel the context to stop eventual running borg operations
+			currentState.cancel()
+			currentState.ctx = nil
+		}
+	} else {
+		// If the prune state doesn't exist, we create it
+		s.pruneStates[bId] = newPruneState()
 	}
 
-	delete(s.runningPruneJobs, id)
-}
-
-func (s *State) SetPruneResult(id types.BackupId, result PruneJobResult) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if bj := s.runningPruneJobs[id]; bj != nil {
-		bj.result = result
-	}
-}
-
-/***********************************/
-/********** Dry Run Prune Jobs ****/
-/***********************************/
-
-func (s *State) AddRunningDryRunPruneJob(ctx context.Context, id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.runningDryRunPruneJobs[id] = &PruneJob{
-		cancelCtx: newCancelCtx(ctx),
-		result:    PruneJobResult{},
-	}
-}
-
-func (s *State) RemoveRunningDryRunPruneJob(id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if ctx, ok := s.runningDryRunPruneJobs[id]; ok {
-		s.log.Debugf("Cancelling context of dry-run prune job %v", id)
-		ctx.cancel()
-	}
-
-	delete(s.runningDryRunPruneJobs, id)
-}
-
-func (s *State) SetDryRunPruneResult(id types.BackupId, result PruneJobResult) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if bj := s.runningDryRunPruneJobs[id]; bj != nil {
-		bj.result = result
-	}
+	s.pruneStates[bId].Status = newState
 }
 
 /***********************************/

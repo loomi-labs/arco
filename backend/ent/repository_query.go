@@ -5,7 +5,7 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
@@ -22,13 +22,13 @@ import (
 // RepositoryQuery is the builder for querying Repository entities.
 type RepositoryQuery struct {
 	config
-	ctx                  *QueryContext
-	order                []repository.OrderOption
-	inters               []Interceptor
-	predicates           []predicate.Repository
-	withBackupProfiles   *BackupProfileQuery
-	withArchives         *ArchiveQuery
-	withFailedBackupRuns *FailedBackupRunQuery
+	ctx                *QueryContext
+	order              []repository.OrderOption
+	inters             []Interceptor
+	predicates         []predicate.Repository
+	withBackupProfiles *BackupProfileQuery
+	withArchives       *ArchiveQuery
+	withNotifications  *NotificationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -109,9 +109,9 @@ func (rq *RepositoryQuery) QueryArchives() *ArchiveQuery {
 	return query
 }
 
-// QueryFailedBackupRuns chains the current query on the "failed_backup_runs" edge.
-func (rq *RepositoryQuery) QueryFailedBackupRuns() *FailedBackupRunQuery {
-	query := (&FailedBackupRunClient{config: rq.config}).Query()
+// QueryNotifications chains the current query on the "notifications" edge.
+func (rq *RepositoryQuery) QueryNotifications() *NotificationQuery {
+	query := (&NotificationClient{config: rq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -122,8 +122,8 @@ func (rq *RepositoryQuery) QueryFailedBackupRuns() *FailedBackupRunQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, selector),
-			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, repository.FailedBackupRunsTable, repository.FailedBackupRunsColumn),
+			sqlgraph.To(notification.Table, notification.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.NotificationsTable, repository.NotificationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -318,14 +318,14 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		return nil
 	}
 	return &RepositoryQuery{
-		config:               rq.config,
-		ctx:                  rq.ctx.Clone(),
-		order:                append([]repository.OrderOption{}, rq.order...),
-		inters:               append([]Interceptor{}, rq.inters...),
-		predicates:           append([]predicate.Repository{}, rq.predicates...),
-		withBackupProfiles:   rq.withBackupProfiles.Clone(),
-		withArchives:         rq.withArchives.Clone(),
-		withFailedBackupRuns: rq.withFailedBackupRuns.Clone(),
+		config:             rq.config,
+		ctx:                rq.ctx.Clone(),
+		order:              append([]repository.OrderOption{}, rq.order...),
+		inters:             append([]Interceptor{}, rq.inters...),
+		predicates:         append([]predicate.Repository{}, rq.predicates...),
+		withBackupProfiles: rq.withBackupProfiles.Clone(),
+		withArchives:       rq.withArchives.Clone(),
+		withNotifications:  rq.withNotifications.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -354,14 +354,14 @@ func (rq *RepositoryQuery) WithArchives(opts ...func(*ArchiveQuery)) *Repository
 	return rq
 }
 
-// WithFailedBackupRuns tells the query-builder to eager-load the nodes that are connected to
-// the "failed_backup_runs" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepositoryQuery) WithFailedBackupRuns(opts ...func(*FailedBackupRunQuery)) *RepositoryQuery {
-	query := (&FailedBackupRunClient{config: rq.config}).Query()
+// WithNotifications tells the query-builder to eager-load the nodes that are connected to
+// the "notifications" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepositoryQuery) WithNotifications(opts ...func(*NotificationQuery)) *RepositoryQuery {
+	query := (&NotificationClient{config: rq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withFailedBackupRuns = query
+	rq.withNotifications = query
 	return rq
 }
 
@@ -446,7 +446,7 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		loadedTypes = [3]bool{
 			rq.withBackupProfiles != nil,
 			rq.withArchives != nil,
-			rq.withFailedBackupRuns != nil,
+			rq.withNotifications != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -481,12 +481,10 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 			return nil, err
 		}
 	}
-	if query := rq.withFailedBackupRuns; query != nil {
-		if err := rq.loadFailedBackupRuns(ctx, query, nodes,
-			func(n *Repository) { n.Edges.FailedBackupRuns = []*FailedBackupRun{} },
-			func(n *Repository, e *FailedBackupRun) {
-				n.Edges.FailedBackupRuns = append(n.Edges.FailedBackupRuns, e)
-			}); err != nil {
+	if query := rq.withNotifications; query != nil {
+		if err := rq.loadNotifications(ctx, query, nodes,
+			func(n *Repository) { n.Edges.Notifications = []*Notification{} },
+			func(n *Repository, e *Notification) { n.Edges.Notifications = append(n.Edges.Notifications, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -585,7 +583,7 @@ func (rq *RepositoryQuery) loadArchives(ctx context.Context, query *ArchiveQuery
 	}
 	return nil
 }
-func (rq *RepositoryQuery) loadFailedBackupRuns(ctx context.Context, query *FailedBackupRunQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *FailedBackupRun)) error {
+func (rq *RepositoryQuery) loadNotifications(ctx context.Context, query *NotificationQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *Notification)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Repository)
 	for i := range nodes {
@@ -596,21 +594,21 @@ func (rq *RepositoryQuery) loadFailedBackupRuns(ctx context.Context, query *Fail
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.FailedBackupRun(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(repository.FailedBackupRunsColumn), fks...))
+	query.Where(predicate.Notification(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(repository.NotificationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.failed_backup_run_repository
+		fk := n.notification_repository
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "failed_backup_run_repository" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "notification_repository" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "failed_backup_run_repository" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "notification_repository" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

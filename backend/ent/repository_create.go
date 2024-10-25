@@ -5,11 +5,12 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -37,6 +38,20 @@ func (rc *RepositoryCreate) SetLocation(s string) *RepositoryCreate {
 // SetPassword sets the "password" field.
 func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	rc.mutation.SetPassword(s)
+	return rc
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (rc *RepositoryCreate) SetNextIntegrityCheck(t time.Time) *RepositoryCreate {
+	rc.mutation.SetNextIntegrityCheck(t)
+	return rc
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryCreate {
+	if t != nil {
+		rc.SetNextIntegrityCheck(*t)
+	}
 	return rc
 }
 
@@ -160,19 +175,19 @@ func (rc *RepositoryCreate) AddArchives(a ...*Archive) *RepositoryCreate {
 	return rc.AddArchiveIDs(ids...)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (rc *RepositoryCreate) AddFailedBackupRunIDs(ids ...int) *RepositoryCreate {
-	rc.mutation.AddFailedBackupRunIDs(ids...)
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (rc *RepositoryCreate) AddNotificationIDs(ids ...int) *RepositoryCreate {
+	rc.mutation.AddNotificationIDs(ids...)
 	return rc
 }
 
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (rc *RepositoryCreate) AddFailedBackupRuns(f ...*FailedBackupRun) *RepositoryCreate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (rc *RepositoryCreate) AddNotifications(n ...*Notification) *RepositoryCreate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return rc.AddFailedBackupRunIDs(ids...)
+	return rc.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
@@ -309,6 +324,10 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
+	if value, ok := rc.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+		_node.NextIntegrityCheck = &value
+	}
 	if value, ok := rc.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 		_node.StatsTotalChunks = value
@@ -365,15 +384,15 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

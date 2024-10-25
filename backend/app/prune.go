@@ -4,104 +4,269 @@ import (
 	"arco/backend/app/state"
 	"arco/backend/app/types"
 	"arco/backend/borg"
+	"arco/backend/ent"
 	"arco/backend/ent/archive"
+	"arco/backend/ent/backupprofile"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/repository"
 	"errors"
+	"fmt"
+	"github.com/eminarican/safetypes"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"sync"
+	"time"
 )
 
-func (b *BackupClient) PruneBackup(bId types.BackupId) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
-	if err != nil {
-		return err
-	}
-	backupProfile := repo.Edges.BackupProfiles[0]
+func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
+	defer b.sendPruningRuleChanged()
 
-	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
+	backupProfile, err := b.GetBackupProfile(backupId)
+	if err != nil {
+		return nil, err
+	}
+
+	nextRun := getNextPruneTime(backupProfile.Edges.BackupSchedule, time.Now())
+
+	if backupProfile.Edges.PruningRule != nil {
+		b.log.Debug(fmt.Sprintf("Updating pruning rule %d for backup profile %d", rule.ID, backupId))
+		return b.db.PruningRule.
+			// We ignore the ID from the given rule and get it from the db directly
+			UpdateOneID(backupProfile.Edges.PruningRule.ID).
+			SetIsEnabled(rule.IsEnabled).
+			SetKeepHourly(rule.KeepHourly).
+			SetKeepDaily(rule.KeepDaily).
+			SetKeepWeekly(rule.KeepWeekly).
+			SetKeepMonthly(rule.KeepMonthly).
+			SetKeepYearly(rule.KeepYearly).
+			SetKeepWithinDays(rule.KeepWithinDays).
+			SetNextRun(nextRun).
+			Save(b.ctx)
+	}
+	b.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
+	return b.db.PruningRule.
+		Create().
+		SetIsEnabled(rule.IsEnabled).
+		SetKeepHourly(rule.KeepHourly).
+		SetKeepDaily(rule.KeepDaily).
+		SetKeepWeekly(rule.KeepWeekly).
+		SetKeepMonthly(rule.KeepMonthly).
+		SetKeepYearly(rule.KeepYearly).
+		SetKeepWithinDays(rule.KeepWithinDays).
+		SetBackupProfileID(backupId).
+		SetNextRun(nextRun).
+		Save(b.ctx)
+}
+
+func (b *BackupClient) sendPruningRuleChanged() {
+	b.log.Debug("Sending pruning rule changed event")
+	if b.pruningScheduleChangedCh == nil {
+		return
+	}
+	b.pruningScheduleChangedCh <- struct{}{}
+}
+
+func (b *BackupClient) StartPruneJob(bId types.BackupId) error {
+	if canRun, reason := b.state.CanRunPrune(bId); !canRun {
 		return errors.New(reason)
 	}
 
-	go b.runPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
+	go func() {
+		_, err := b.runPruneJob(bId)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Prune job failed: %s", err))
+		}
+	}()
 	return nil
 }
 
-func (b *BackupClient) PruneBackups(backupProfileId int) error {
+type ExaminePruningResult struct {
+	BackupID               types.BackupId
+	RepositoryName         string
+	CntArchivesToBeDeleted int
+	Error                  error
+}
+
+func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+	defer wg.Done()
+
+	repo, err := b.db.Repository.Query().
+		Where(repository.ID(bId.RepositoryId)).
+		Select(repository.FieldName).
+		Only(b.ctx)
+	if err != nil {
+		return
+	}
+
+	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule), saveResults, false)
+	if err != nil {
+		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
+		return
+	}
+
+	resultCh <- ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
+}
+
+func (b *BackupClient) ExaminePrunes(backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) []ExaminePruningResult {
 	backupProfile, err := b.GetBackupProfile(backupProfileId)
 	if err != nil {
-		return err
+		return []ExaminePruningResult{{Error: err}}
 	}
+
+	var wg sync.WaitGroup
+	resultCh := make(chan ExaminePruningResult, len(backupProfile.Edges.Repositories))
+	results := make([]ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
 
 	for _, repo := range backupProfile.Edges.Repositories {
+		wg.Add(1)
 		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		err := b.PruneBackup(bId)
-		if err != nil {
-			return err
-		}
+		go b.startExaminePrune(bId, pruningRule, saveResults, &wg, resultCh)
 	}
-	return nil
+
+	// Wait for all examine prune jobs to finish
+	wg.Wait()
+	close(resultCh)
+
+	// Collect results
+	for result := range resultCh {
+		results = append(results, result)
+	}
+
+	return results
 }
 
-func (b *BackupClient) DryRunPruneBackup(bId types.BackupId) error {
-	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
+/***********************************/
+/********** Borg Commands **********/
+/***********************************/
+
+type PruneResult string
+
+const (
+	PruneResultSuccess  PruneResult = "success"
+	PruneResultCanceled PruneResult = "canceled"
+	PruneResultError    PruneResult = "error"
+)
+
+func (p PruneResult) String() string {
+	return string(p)
+}
+
+func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
+	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
-		return err
+		b.state.SetPruneError(b.ctx, bId, err, false, false)
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
+		return PruneResultError, err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
-
-	if canRun, reason := b.state.CanRunPruneJob(bId); !canRun {
-		return errors.New(reason)
+	pruningRule := backupProfile.Edges.PruningRule
+	if pruningRule == nil {
+		err = errors.New("pruning rule not found")
+		b.state.SetPruneError(b.ctx, bId, err, false, false)
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get pruning rule: %s", err), types.LevelError)
+		return PruneResultError, err
 	}
 
-	go b.dryRunPruneJob(bId, repo.Location, repo.Password, backupProfile.Prefix)
-	return nil
-}
+	b.state.SetPruneWaiting(b.ctx, bId)
 
-func (b *BackupClient) DryRunPruneBackups(backupProfileId int) error {
-	backupProfile, err := b.GetBackupProfile(backupProfileId)
-	if err != nil {
-		return err
-	}
-
-	for _, repo := range backupProfile.Edges.Repositories {
-		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		err := b.DryRunPruneBackup(bId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (b *BackupClient) runPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
 
-	// Wait to acquire the lock and then set the repo as locked
-	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPruning)
-	defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-	b.state.AddRunningPruneJob(b.ctx, bId)
-	defer b.state.RemoveRunningPruneJob(bId)
+	// Wait to acquire the lock and then set the prune as running
+	b.state.SetPruneRunning(b.ctx, bId)
+
+	// Get all archives from the database
+	archives, err := b.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
+		All(b.ctx)
+	if err != nil {
+		b.state.SetPruneError(b.ctx, bId, err, false, false)
+		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get archives: %s", err), types.LevelError)
+		return PruneResultError, err
+	}
 
 	// Create go routine to save prune result
-	ch := make(chan borg.PruneResult)
-	go b.savePruneResult(bId, false, ch)
+	borgCh := make(chan borg.PruneResult)
+	resultCh := make(chan state.PruneJobResult)
+	go b.savePruneResult(archives, borgCh, resultCh)
 
-	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, false, ch)
+	cmd := pruneEntityToBorgCmd(pruningRule)
+	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.AddNotification(b.ctx, "Prune job was canceled", types.LevelWarning)
+			b.state.SetPruneCancelled(b.ctx, bId)
+			return PruneResultCanceled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			//b.state.AddBorgLock(bId.RepositoryId) 	// TODO: fix this
-			b.state.AddNotification(b.ctx, "Repository is locked by another operation", types.LevelError)
+			err = fmt.Errorf("repository %s is locked", repo.Name)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			b.state.SetPruneError(b.ctx, bId, err, false, true)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
+			return PruneResultError, err
 		} else {
-			b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
+			if saveErr != nil {
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			b.state.SetPruneError(b.ctx, bId, err, true, false)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
+			return PruneResultError, err
 		}
 	} else {
-		b.state.AddNotification(b.ctx, "Prune job completed", types.LevelInfo)
+		select {
+		case pruneResult := <-resultCh:
+			// Prune job completed successfully
+			defer b.state.SetPruneCompleted(b.ctx, bId, pruneResult)
+
+			err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
+			if err != nil {
+				b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+			}
+
+			_, err := b.repoClient().refreshArchives(bId.RepositoryId)
+			if err != nil {
+				b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+			}
+
+			return PruneResultSuccess, nil
+		case <-time.After(30 * time.Second):
+			return PruneResultError, fmt.Errorf("timeout waiting for prune result")
+		case <-b.ctx.Done():
+			return PruneResultError, fmt.Errorf("context canceled")
+		}
 	}
 }
 
-func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch chan borg.PruneResult) {
+func pruneEntityToBorgCmd(pruningRule *ent.PruningRule) []string {
+	var cmd []string
+	if pruningRule.KeepHourly > 0 {
+		cmd = append(cmd, "--keep-hourly", fmt.Sprintf("%d", pruningRule.KeepHourly))
+	}
+	if pruningRule.KeepDaily > 0 {
+		cmd = append(cmd, "--keep-daily", fmt.Sprintf("%d", pruningRule.KeepDaily))
+	}
+	if pruningRule.KeepWeekly > 0 {
+		cmd = append(cmd, "--keep-weekly", fmt.Sprintf("%d", pruningRule.KeepWeekly))
+	}
+	if pruningRule.KeepMonthly > 0 {
+		cmd = append(cmd, "--keep-monthly", fmt.Sprintf("%d", pruningRule.KeepMonthly))
+	}
+	if pruningRule.KeepYearly > 0 {
+		cmd = append(cmd, "--keep-yearly", fmt.Sprintf("%d", pruningRule.KeepYearly))
+	}
+	if pruningRule.KeepWithinDays > 0 {
+		cmd = append(cmd, "--keep-within", fmt.Sprintf("%dd", pruningRule.KeepWithinDays))
+	}
+	return cmd
+}
+
+func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borg.PruneResult, resultCh chan state.PruneJobResult) {
+	defer close(resultCh)
 	for {
 		select {
 		case <-b.ctx.Done():
@@ -110,16 +275,6 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch cha
 			if !ok {
 				// Channel is closed, break the loop
 				return
-			}
-
-			// Get all archives from the database
-			archives, err := b.db.Archive.
-				Query().
-				Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
-				All(b.ctx)
-			if err != nil {
-				b.log.Error("Error querying archives: ", err)
-				continue
 			}
 
 			// Merge the prune result with the archives
@@ -147,33 +302,135 @@ func (b *BackupClient) savePruneResult(bId types.BackupId, isDryRun bool, ch cha
 				}
 			}
 
-			if isDryRun {
-				b.state.SetDryRunPruneResult(bId, pjr)
-			} else {
-				b.state.SetPruneResult(bId, pjr)
-			}
+			resultCh <- pjr
 		}
 	}
 }
 
-func (b *BackupClient) dryRunPruneJob(bId types.BackupId, repoUrl string, password string, prefix string) {
-	repoLock := b.state.GetRepoLock(bId.RepositoryId)
-	repoLock.Lock()         // We might wait here for other operations to finish
-	defer repoLock.Unlock() // Unlock at the end
+func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule], saveResults, skipAcquiringRepoLock bool) (int, error) {
+	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get repository: %w", err)
+	}
+	backupProfile := repo.Edges.BackupProfiles[0]
 
-	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
-	defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-	b.state.AddRunningDryRunPruneJob(b.ctx, bId)
-	defer b.state.RemoveRunningDryRunPruneJob(bId)
+	pruningRule := pruningRuleOpt.UnwrapOr(backupProfile.Edges.PruningRule)
+	if pruningRule == nil {
+		return 0, fmt.Errorf("no pruning rule found")
+	}
+
+	// If the pruning rule is not enabled, we don't need to call borg
+	if !pruningRule.IsEnabled {
+		if saveResults {
+			defer runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+			err = b.db.Archive.
+				Update().
+				Where(archive.And(
+					archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+					archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+					archive.WillBePruned(true)),
+				).
+				SetWillBePruned(false).
+				Exec(b.ctx)
+			if err != nil {
+				return 0, fmt.Errorf("failed to update archives: %w", err)
+			}
+		}
+		return 0, nil
+	}
+
+	if !skipAcquiringRepoLock {
+		// We do not wait for other operations to finish
+		// Either we can run the operation or we return an error
+		if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+			return 0, fmt.Errorf("can not examine prune: %s", reason)
+		}
+
+		repoLock := b.state.GetRepoLock(bId.RepositoryId)
+		repoLock.Lock()         // We should not have to wait here
+		defer repoLock.Unlock() // Unlock at the end
+
+		b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
+	}
+
+	// Get all archives from the database
+	archives, err := b.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
+		All(b.ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get archives: %w", err)
+	}
 
 	// Create go routine to save prune result
-	ch := make(chan borg.PruneResult)
-	go b.savePruneResult(bId, true, ch)
+	borgCh := make(chan borg.PruneResult)
+	resultCh := make(chan state.PruneJobResult)
+	go b.savePruneResult(archives, borgCh, resultCh)
 
-	err := b.borg.Prune(b.ctx, repoUrl, password, prefix, true, ch)
+	cmd := pruneEntityToBorgCmd(pruningRule)
+	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if err != nil {
-		b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
+		if errors.As(err, &borg.LockTimeout{}) {
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
+			return 0, fmt.Errorf("repository %s is locked", repo.Name)
+		} else {
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return 0, fmt.Errorf("failed to examine prune: %w", err)
+		}
 	} else {
-		b.state.AddNotification(b.ctx, "Dry-run prune job completed", types.LevelInfo)
+		select {
+		case pruneResult := <-resultCh:
+			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+			if saveResults {
+				keepIds := make([]int, len(pruneResult.KeepArchives))
+				for i, keep := range pruneResult.KeepArchives {
+					keepIds[i] = keep.Id
+				}
+
+				tx, err := b.db.Tx(b.ctx)
+				if err != nil {
+					return 0, fmt.Errorf("failed to start transaction: %w", err)
+				}
+
+				cntToTrue, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(pruneResult.PruneArchives...),
+						archive.WillBePruned(false)),
+					).
+					SetWillBePruned(true).
+					Save(b.ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+
+				cntToFalse, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(keepIds...),
+						archive.WillBePruned(true)),
+					).
+					SetWillBePruned(false).
+					Save(b.ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+				err = tx.Commit()
+				if err != nil {
+					return 0, fmt.Errorf("failed to commit transaction: %w", err)
+				}
+				if cntToTrue+cntToFalse > 0 {
+					runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+				}
+
+				return len(pruneResult.PruneArchives), nil
+			}
+			return len(pruneResult.PruneArchives), nil
+		case <-time.After(10 * time.Second):
+			return 0, fmt.Errorf("timeout waiting for prune result")
+		case <-b.ctx.Done():
+			return 0, fmt.Errorf("context canceled")
+		}
 	}
 }

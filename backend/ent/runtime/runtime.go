@@ -3,16 +3,26 @@
 package runtime
 
 import (
+	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/notification"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/schema"
+	"time"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	archiveFields := schema.Archive{}.Fields()
+	_ = archiveFields
+	// archiveDescWillBePruned is the schema descriptor for will_be_pruned field.
+	archiveDescWillBePruned := archiveFields[5].Descriptor()
+	// archive.DefaultWillBePruned holds the default value on creation for the will_be_pruned field.
+	archive.DefaultWillBePruned = archiveDescWillBePruned.Default.(bool)
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
 	// backupprofileDescName is the schema descriptor for name field.
@@ -57,30 +67,48 @@ func init() {
 	backupscheduleDescMonthday := backupscheduleFields[4].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	notificationFields := schema.Notification{}.Fields()
+	_ = notificationFields
+	// notificationDescCreatedAt is the schema descriptor for created_at field.
+	notificationDescCreatedAt := notificationFields[1].Descriptor()
+	// notification.DefaultCreatedAt holds the default value on creation for the created_at field.
+	notification.DefaultCreatedAt = notificationDescCreatedAt.Default.(time.Time)
+	// notificationDescSeen is the schema descriptor for seen field.
+	notificationDescSeen := notificationFields[4].Descriptor()
+	// notification.DefaultSeen holds the default value on creation for the seen field.
+	notification.DefaultSeen = notificationDescSeen.Default.(bool)
+	pruningruleFields := schema.PruningRule{}.Fields()
+	_ = pruningruleFields
+	// pruningruleDescUpdatedAt is the schema descriptor for updated_at field.
+	pruningruleDescUpdatedAt := pruningruleFields[1].Descriptor()
+	// pruningrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	pruningrule.DefaultUpdatedAt = pruningruleDescUpdatedAt.Default.(func() time.Time)
+	// pruningrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	pruningrule.UpdateDefaultUpdatedAt = pruningruleDescUpdatedAt.UpdateDefault.(func() time.Time)
 	repositoryFields := schema.Repository{}.Fields()
 	_ = repositoryFields
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
-	repositoryDescStatsTotalChunks := repositoryFields[4].Descriptor()
+	repositoryDescStatsTotalChunks := repositoryFields[5].Descriptor()
 	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
 	repository.DefaultStatsTotalChunks = repositoryDescStatsTotalChunks.Default.(int)
 	// repositoryDescStatsTotalSize is the schema descriptor for stats_total_size field.
-	repositoryDescStatsTotalSize := repositoryFields[5].Descriptor()
+	repositoryDescStatsTotalSize := repositoryFields[6].Descriptor()
 	// repository.DefaultStatsTotalSize holds the default value on creation for the stats_total_size field.
 	repository.DefaultStatsTotalSize = repositoryDescStatsTotalSize.Default.(int)
 	// repositoryDescStatsTotalCsize is the schema descriptor for stats_total_csize field.
-	repositoryDescStatsTotalCsize := repositoryFields[6].Descriptor()
+	repositoryDescStatsTotalCsize := repositoryFields[7].Descriptor()
 	// repository.DefaultStatsTotalCsize holds the default value on creation for the stats_total_csize field.
 	repository.DefaultStatsTotalCsize = repositoryDescStatsTotalCsize.Default.(int)
 	// repositoryDescStatsTotalUniqueChunks is the schema descriptor for stats_total_unique_chunks field.
-	repositoryDescStatsTotalUniqueChunks := repositoryFields[7].Descriptor()
+	repositoryDescStatsTotalUniqueChunks := repositoryFields[8].Descriptor()
 	// repository.DefaultStatsTotalUniqueChunks holds the default value on creation for the stats_total_unique_chunks field.
 	repository.DefaultStatsTotalUniqueChunks = repositoryDescStatsTotalUniqueChunks.Default.(int)
 	// repositoryDescStatsUniqueSize is the schema descriptor for stats_unique_size field.
-	repositoryDescStatsUniqueSize := repositoryFields[8].Descriptor()
+	repositoryDescStatsUniqueSize := repositoryFields[9].Descriptor()
 	// repository.DefaultStatsUniqueSize holds the default value on creation for the stats_unique_size field.
 	repository.DefaultStatsUniqueSize = repositoryDescStatsUniqueSize.Default.(int)
 	// repositoryDescStatsUniqueCsize is the schema descriptor for stats_unique_csize field.
-	repositoryDescStatsUniqueCsize := repositoryFields[9].Descriptor()
+	repositoryDescStatsUniqueCsize := repositoryFields[10].Descriptor()
 	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
 	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
 	settingsFields := schema.Settings{}.Fields()

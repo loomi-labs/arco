@@ -5,12 +5,13 @@ package ent
 import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -69,6 +70,26 @@ func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
 	if s != nil {
 		ru.SetPassword(*s)
 	}
+	return ru
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (ru *RepositoryUpdate) SetNextIntegrityCheck(t time.Time) *RepositoryUpdate {
+	ru.mutation.SetNextIntegrityCheck(t)
+	return ru
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdate {
+	if t != nil {
+		ru.SetNextIntegrityCheck(*t)
+	}
+	return ru
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (ru *RepositoryUpdate) ClearNextIntegrityCheck() *RepositoryUpdate {
+	ru.mutation.ClearNextIntegrityCheck()
 	return ru
 }
 
@@ -228,19 +249,19 @@ func (ru *RepositoryUpdate) AddArchives(a ...*Archive) *RepositoryUpdate {
 	return ru.AddArchiveIDs(ids...)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (ru *RepositoryUpdate) AddFailedBackupRunIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.AddFailedBackupRunIDs(ids...)
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (ru *RepositoryUpdate) AddNotificationIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.AddNotificationIDs(ids...)
 	return ru
 }
 
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (ru *RepositoryUpdate) AddFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (ru *RepositoryUpdate) AddNotifications(n ...*Notification) *RepositoryUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return ru.AddFailedBackupRunIDs(ids...)
+	return ru.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
@@ -290,25 +311,25 @@ func (ru *RepositoryUpdate) RemoveArchives(a ...*Archive) *RepositoryUpdate {
 	return ru.RemoveArchiveIDs(ids...)
 }
 
-// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
-func (ru *RepositoryUpdate) ClearFailedBackupRuns() *RepositoryUpdate {
-	ru.mutation.ClearFailedBackupRuns()
+// ClearNotifications clears all "notifications" edges to the Notification entity.
+func (ru *RepositoryUpdate) ClearNotifications() *RepositoryUpdate {
+	ru.mutation.ClearNotifications()
 	return ru
 }
 
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
-func (ru *RepositoryUpdate) RemoveFailedBackupRunIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.RemoveFailedBackupRunIDs(ids...)
+// RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
+func (ru *RepositoryUpdate) RemoveNotificationIDs(ids ...int) *RepositoryUpdate {
+	ru.mutation.RemoveNotificationIDs(ids...)
 	return ru
 }
 
-// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
-func (ru *RepositoryUpdate) RemoveFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// RemoveNotifications removes "notifications" edges to Notification entities.
+func (ru *RepositoryUpdate) RemoveNotifications(n ...*Notification) *RepositoryUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return ru.RemoveFailedBackupRunIDs(ids...)
+	return ru.RemoveNotificationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -355,6 +376,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ru.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if ru.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if value, ok := ru.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
@@ -482,28 +509,28 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.FailedBackupRunsCleared() {
+	if ru.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !ru.mutation.FailedBackupRunsCleared() {
+	if nodes := ru.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !ru.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -511,15 +538,15 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -586,6 +613,26 @@ func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdate
 	if s != nil {
 		ruo.SetPassword(*s)
 	}
+	return ruo
+}
+
+// SetNextIntegrityCheck sets the "next_integrity_check" field.
+func (ruo *RepositoryUpdateOne) SetNextIntegrityCheck(t time.Time) *RepositoryUpdateOne {
+	ruo.mutation.SetNextIntegrityCheck(t)
+	return ruo
+}
+
+// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdateOne {
+	if t != nil {
+		ruo.SetNextIntegrityCheck(*t)
+	}
+	return ruo
+}
+
+// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
+func (ruo *RepositoryUpdateOne) ClearNextIntegrityCheck() *RepositoryUpdateOne {
+	ruo.mutation.ClearNextIntegrityCheck()
 	return ruo
 }
 
@@ -745,19 +792,19 @@ func (ruo *RepositoryUpdateOne) AddArchives(a ...*Archive) *RepositoryUpdateOne 
 	return ruo.AddArchiveIDs(ids...)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (ruo *RepositoryUpdateOne) AddFailedBackupRunIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.AddFailedBackupRunIDs(ids...)
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (ruo *RepositoryUpdateOne) AddNotificationIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.AddNotificationIDs(ids...)
 	return ruo
 }
 
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (ruo *RepositoryUpdateOne) AddFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdateOne {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (ruo *RepositoryUpdateOne) AddNotifications(n ...*Notification) *RepositoryUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return ruo.AddFailedBackupRunIDs(ids...)
+	return ruo.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
@@ -807,25 +854,25 @@ func (ruo *RepositoryUpdateOne) RemoveArchives(a ...*Archive) *RepositoryUpdateO
 	return ruo.RemoveArchiveIDs(ids...)
 }
 
-// ClearFailedBackupRuns clears all "failed_backup_runs" edges to the FailedBackupRun entity.
-func (ruo *RepositoryUpdateOne) ClearFailedBackupRuns() *RepositoryUpdateOne {
-	ruo.mutation.ClearFailedBackupRuns()
+// ClearNotifications clears all "notifications" edges to the Notification entity.
+func (ruo *RepositoryUpdateOne) ClearNotifications() *RepositoryUpdateOne {
+	ruo.mutation.ClearNotifications()
 	return ruo
 }
 
-// RemoveFailedBackupRunIDs removes the "failed_backup_runs" edge to FailedBackupRun entities by IDs.
-func (ruo *RepositoryUpdateOne) RemoveFailedBackupRunIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.RemoveFailedBackupRunIDs(ids...)
+// RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
+func (ruo *RepositoryUpdateOne) RemoveNotificationIDs(ids ...int) *RepositoryUpdateOne {
+	ruo.mutation.RemoveNotificationIDs(ids...)
 	return ruo
 }
 
-// RemoveFailedBackupRuns removes "failed_backup_runs" edges to FailedBackupRun entities.
-func (ruo *RepositoryUpdateOne) RemoveFailedBackupRuns(f ...*FailedBackupRun) *RepositoryUpdateOne {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// RemoveNotifications removes "notifications" edges to Notification entities.
+func (ruo *RepositoryUpdateOne) RemoveNotifications(n ...*Notification) *RepositoryUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return ruo.RemoveFailedBackupRunIDs(ids...)
+	return ruo.RemoveNotificationIDs(ids...)
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
@@ -902,6 +949,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.NextIntegrityCheck(); ok {
+		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	}
+	if ruo.mutation.NextIntegrityCheckCleared() {
+		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
 	}
 	if value, ok := ruo.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
@@ -1029,28 +1082,28 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.FailedBackupRunsCleared() {
+	if ruo.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedFailedBackupRunsIDs(); len(nodes) > 0 && !ruo.mutation.FailedBackupRunsCleared() {
+	if nodes := ruo.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !ruo.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1058,15 +1111,15 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repository.FailedBackupRunsTable,
-			Columns: []string{repository.FailedBackupRunsColumn},
+			Table:   repository.NotificationsTable,
+			Columns: []string{repository.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

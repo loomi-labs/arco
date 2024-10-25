@@ -18,6 +18,8 @@ const (
 	FieldLocation = "location"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
+	FieldNextIntegrityCheck = "next_integrity_check"
 	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
 	FieldStatsTotalChunks = "stats_total_chunks"
 	// FieldStatsTotalSize holds the string denoting the stats_total_size field in the database.
@@ -34,8 +36,8 @@ const (
 	EdgeBackupProfiles = "backup_profiles"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
 	EdgeArchives = "archives"
-	// EdgeFailedBackupRuns holds the string denoting the failed_backup_runs edge name in mutations.
-	EdgeFailedBackupRuns = "failed_backup_runs"
+	// EdgeNotifications holds the string denoting the notifications edge name in mutations.
+	EdgeNotifications = "notifications"
 	// Table holds the table name of the repository in the database.
 	Table = "repositories"
 	// BackupProfilesTable is the table that holds the backup_profiles relation/edge. The primary key declared below.
@@ -50,13 +52,13 @@ const (
 	ArchivesInverseTable = "archives"
 	// ArchivesColumn is the table column denoting the archives relation/edge.
 	ArchivesColumn = "archive_repository"
-	// FailedBackupRunsTable is the table that holds the failed_backup_runs relation/edge.
-	FailedBackupRunsTable = "failed_backup_runs"
-	// FailedBackupRunsInverseTable is the table name for the FailedBackupRun entity.
-	// It exists in this package in order to avoid circular dependency with the "failedbackuprun" package.
-	FailedBackupRunsInverseTable = "failed_backup_runs"
-	// FailedBackupRunsColumn is the table column denoting the failed_backup_runs relation/edge.
-	FailedBackupRunsColumn = "failed_backup_run_repository"
+	// NotificationsTable is the table that holds the notifications relation/edge.
+	NotificationsTable = "notifications"
+	// NotificationsInverseTable is the table name for the Notification entity.
+	// It exists in this package in order to avoid circular dependency with the "notification" package.
+	NotificationsInverseTable = "notifications"
+	// NotificationsColumn is the table column denoting the notifications relation/edge.
+	NotificationsColumn = "notification_repository"
 )
 
 // Columns holds all SQL columns for repository fields.
@@ -65,6 +67,7 @@ var Columns = []string{
 	FieldName,
 	FieldLocation,
 	FieldPassword,
+	FieldNextIntegrityCheck,
 	FieldStatsTotalChunks,
 	FieldStatsTotalSize,
 	FieldStatsTotalCsize,
@@ -127,6 +130,11 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
 }
 
+// ByNextIntegrityCheck orders the results by the next_integrity_check field.
+func ByNextIntegrityCheck(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextIntegrityCheck, opts...).ToFunc()
+}
+
 // ByStatsTotalChunks orders the results by the stats_total_chunks field.
 func ByStatsTotalChunks(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatsTotalChunks, opts...).ToFunc()
@@ -185,17 +193,17 @@ func ByArchives(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByFailedBackupRunsCount orders the results by failed_backup_runs count.
-func ByFailedBackupRunsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByNotificationsCount orders the results by notifications count.
+func ByNotificationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newFailedBackupRunsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newNotificationsStep(), opts...)
 	}
 }
 
-// ByFailedBackupRuns orders the results by failed_backup_runs terms.
-func ByFailedBackupRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByNotifications orders the results by notifications terms.
+func ByNotifications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newFailedBackupRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newNotificationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newBackupProfilesStep() *sqlgraph.Step {
@@ -212,10 +220,10 @@ func newArchivesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, ArchivesTable, ArchivesColumn),
 	)
 }
-func newFailedBackupRunsStep() *sqlgraph.Step {
+func newNotificationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(FailedBackupRunsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+		sqlgraph.To(NotificationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
 	)
 }

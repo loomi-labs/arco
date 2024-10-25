@@ -25,16 +25,12 @@ type KeepArchive struct {
 	Reason string
 }
 
-// TODO: get this from the config
-var pruneOptions = []string{
-	"--keep-daily",
-	"3",
-	"--keep-weekly",
-	"4",
-}
-
-func (b *borg) Prune(ctx context.Context, repoUrl, password, prefix string, isDryRun bool, ch chan PruneResult) error {
+func (b *borg) Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error {
 	defer close(ch)
+
+	if len(pruneOptions) == 0 {
+		return fmt.Errorf("pruneOptions must not be empty")
+	}
 
 	// Prepare prune command
 	cmdStr := []string{
@@ -42,7 +38,7 @@ func (b *borg) Prune(ctx context.Context, repoUrl, password, prefix string, isDr
 		"--list",          // List archives to be pruned
 		"--log-json",      // Outputs JSON log messages
 		"--glob-archives", // Match archives by glob pattern
-		fmt.Sprintf("%s-*", prefix),
+		fmt.Sprintf("%s*", prefix),
 	}
 
 	if isDryRun {

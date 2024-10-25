@@ -88,15 +88,31 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
   return value;
 }
 
+/**
+ * isInPast checks if a Date object is in the past.
+ * @param date The date to check
+ * @param ignoreTz If true, the timezone offset is ignored
+ */
+export function isInPast(date: Date, ignoreTz: boolean = false): boolean {
+  const now = new Date();
+  if (!ignoreTz) {
+    const offsetToUTC = offset(now);
+    date = removeOffset(date, offsetToUTC);
+  }
+  return isBefore(date, now);
+}
 
 /**
  * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.
- * @param date The date to convert (without timezone offset)
+ * @param date The date to convert
+ * @param ignoreTz If true, the timezone offset is ignored
  */
-export function toRelativeTimeString(date: Date): string {
+export function toRelativeTimeString(date: Date, ignoreTz: boolean = false): string {
   const now = new Date();
-  const offsetToUTC = offset(now);
-  date = removeOffset(date, offsetToUTC);
+  if (!ignoreTz) {
+    const offsetToUTC = offset(now);
+    date = removeOffset(date, offsetToUTC);
+  }
 
   if (isBefore(date, now)) {
     return toPastString(date, now);
@@ -110,37 +126,37 @@ export function toRelativeTimeString(date: Date): string {
  * @param now The current date
  */
 function toFutureString(date: Date, now: Date): string {
-  const dSeconds = diffSeconds(now, date, "ceil");
+  const dSeconds = diffSeconds(date, now, "ceil");
   if (dSeconds < 60) {
     return `in less than a minute`;
   }
 
-  const dMinutes = diffMinutes(now, date, "ceil");
+  const dMinutes = diffMinutes(date, now, "ceil");
   if (dMinutes < 60) {
     return `in ${dMinutes} minute${dMinutes !== 1 ? "s" : ""}`;
   }
 
-  const dHours = diffHours(now, date, "ceil");
+  const dHours = diffHours(date, now, "ceil");
   if (dHours < 24) {
     return `in ${dHours} hour${dHours !== 1 ? "s" : ""}`;
   }
 
-  const dDays = diffDays(now, date, "ceil");
+  const dDays = diffDays(date, now, "ceil");
   if (dDays < 7) {
     return `in ${dDays} day${dDays !== 1 ? "s" : ""}`;
   }
 
-  const dWeeks = diffWeeks(now, date, "ceil");
+  const dWeeks = diffWeeks(date, now, "ceil");
   if (dWeeks < 4) {
     return `in ${dWeeks} week${dWeeks !== 1 ? "s" : ""}`;
   }
 
-  const dMonths = diffMonths(now, date);
+  const dMonths = diffMonths(date, now);
   if (dMonths < 12) {
     return `in ${dMonths} month${dMonths !== 1 ? "s" : ""}`;
   }
 
-  const dYears = diffYears(now, date);
+  const dYears = diffYears(date, now);
   return `in ${dYears} year${dYears !== 1 ? "s" : ""}`;
 }
 
@@ -189,5 +205,8 @@ function toPastString(date: Date, now: Date): string {
  * @param date The date to convert
  */
 export function toLongDateString(date: Date): string {
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
   return format(date, { date: "long", time: "short" });
 }

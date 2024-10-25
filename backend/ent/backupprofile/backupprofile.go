@@ -30,8 +30,10 @@ const (
 	EdgeArchives = "archives"
 	// EdgeBackupSchedule holds the string denoting the backup_schedule edge name in mutations.
 	EdgeBackupSchedule = "backup_schedule"
-	// EdgeFailedBackupRuns holds the string denoting the failed_backup_runs edge name in mutations.
-	EdgeFailedBackupRuns = "failed_backup_runs"
+	// EdgePruningRule holds the string denoting the pruning_rule edge name in mutations.
+	EdgePruningRule = "pruning_rule"
+	// EdgeNotifications holds the string denoting the notifications edge name in mutations.
+	EdgeNotifications = "notifications"
 	// Table holds the table name of the backupprofile in the database.
 	Table = "backup_profiles"
 	// RepositoriesTable is the table that holds the repositories relation/edge. The primary key declared below.
@@ -53,13 +55,20 @@ const (
 	BackupScheduleInverseTable = "backup_schedules"
 	// BackupScheduleColumn is the table column denoting the backup_schedule relation/edge.
 	BackupScheduleColumn = "backup_profile_backup_schedule"
-	// FailedBackupRunsTable is the table that holds the failed_backup_runs relation/edge.
-	FailedBackupRunsTable = "failed_backup_runs"
-	// FailedBackupRunsInverseTable is the table name for the FailedBackupRun entity.
-	// It exists in this package in order to avoid circular dependency with the "failedbackuprun" package.
-	FailedBackupRunsInverseTable = "failed_backup_runs"
-	// FailedBackupRunsColumn is the table column denoting the failed_backup_runs relation/edge.
-	FailedBackupRunsColumn = "failed_backup_run_backup_profile"
+	// PruningRuleTable is the table that holds the pruning_rule relation/edge.
+	PruningRuleTable = "pruning_rules"
+	// PruningRuleInverseTable is the table name for the PruningRule entity.
+	// It exists in this package in order to avoid circular dependency with the "pruningrule" package.
+	PruningRuleInverseTable = "pruning_rules"
+	// PruningRuleColumn is the table column denoting the pruning_rule relation/edge.
+	PruningRuleColumn = "backup_profile_pruning_rule"
+	// NotificationsTable is the table that holds the notifications relation/edge.
+	NotificationsTable = "notifications"
+	// NotificationsInverseTable is the table name for the Notification entity.
+	// It exists in this package in order to avoid circular dependency with the "notification" package.
+	NotificationsInverseTable = "notifications"
+	// NotificationsColumn is the table column denoting the notifications relation/edge.
+	NotificationsColumn = "notification_backup_profile"
 )
 
 // Columns holds all SQL columns for backupprofile fields.
@@ -184,17 +193,24 @@ func ByBackupScheduleField(field string, opts ...sql.OrderTermOption) OrderOptio
 	}
 }
 
-// ByFailedBackupRunsCount orders the results by failed_backup_runs count.
-func ByFailedBackupRunsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByPruningRuleField orders the results by pruning_rule field.
+func ByPruningRuleField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newFailedBackupRunsStep(), opts...)
+		sqlgraph.OrderByNeighborTerms(s, newPruningRuleStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// ByFailedBackupRuns orders the results by failed_backup_runs terms.
-func ByFailedBackupRuns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByNotificationsCount orders the results by notifications count.
+func ByNotificationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newFailedBackupRunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborsCount(s, newNotificationsStep(), opts...)
+	}
+}
+
+// ByNotifications orders the results by notifications terms.
+func ByNotifications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNotificationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newRepositoriesStep() *sqlgraph.Step {
@@ -218,10 +234,17 @@ func newBackupScheduleStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2O, false, BackupScheduleTable, BackupScheduleColumn),
 	)
 }
-func newFailedBackupRunsStep() *sqlgraph.Step {
+func newPruningRuleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(FailedBackupRunsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, FailedBackupRunsTable, FailedBackupRunsColumn),
+		sqlgraph.To(PruningRuleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, PruningRuleTable, PruningRuleColumn),
+	)
+}
+func newNotificationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NotificationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
 	)
 }

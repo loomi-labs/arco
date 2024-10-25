@@ -27,6 +27,8 @@ type Archive struct {
 	Duration time.Time `json:"duration"`
 	// BorgID holds the value of the "borg_id" field.
 	BorgID string `json:"borgId"`
+	// WillBePruned holds the value of the "will_be_pruned" field.
+	WillBePruned bool `json:"willBePruned"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
 	Edges                   ArchiveEdges `json:"edges"`
@@ -74,6 +76,8 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case archive.FieldWillBePruned:
+			values[i] = new(sql.NullBool)
 		case archive.FieldID:
 			values[i] = new(sql.NullInt64)
 		case archive.FieldName, archive.FieldBorgID:
@@ -130,6 +134,12 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field borg_id", values[i])
 			} else if value.Valid {
 				a.BorgID = value.String
+			}
+		case archive.FieldWillBePruned:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field will_be_pruned", values[i])
+			} else if value.Valid {
+				a.WillBePruned = value.Bool
 			}
 		case archive.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -209,6 +219,9 @@ func (a *Archive) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("borg_id=")
 	builder.WriteString(a.BorgID)
+	builder.WriteString(", ")
+	builder.WriteString("will_be_pruned=")
+	builder.WriteString(fmt.Sprintf("%v", a.WillBePruned))
 	builder.WriteByte(')')
 	return builder.String()
 }

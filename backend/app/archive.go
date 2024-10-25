@@ -9,20 +9,29 @@ import (
 	"arco/backend/ent/predicate"
 	"arco/backend/ent/repository"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"slices"
+	"strings"
 	"time"
 )
 
-// TODO: refactor this to connect archives to backup profiles
 func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
-	repo, err := r.Get(repoId)
-	if err != nil {
-		return nil, err
-	}
-
 	repoLock := r.state.GetRepoLock(repoId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
+
+	return r.refreshArchives(repoId)
+}
+
+func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
+	repo, err := r.db.Repository.
+		Query().
+		Where(repository.ID(repoId)).
+		WithBackupProfiles().
+		Only(r.ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Wait to acquire the lock and then set the repo as fetching info
 	r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusPerformingOperation)
@@ -40,7 +49,7 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	// Delete the archives that don't exist anymore
-	cnt, err := r.db.Archive.
+	cntDeletedArchives, err := r.db.Archive.
 		Delete().
 		Where(
 			archive.And(
@@ -51,8 +60,8 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cnt > 0 {
-		r.log.Info(fmt.Sprintf("Deleted %d archives", cnt))
+	if cntDeletedArchives > 0 {
+		r.log.Info(fmt.Sprintf("Deleted %d archives", cntDeletedArchives))
 	}
 
 	// Check which archives are already saved
@@ -72,14 +81,23 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	cntNewArchives := 0
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
-			newArchive, err := r.db.Archive.
+			createQuery := r.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
 				SetCreatedAt(time.Time(arch.Start)).
 				SetDuration(time.Time(arch.Time)).
-				SetRepositoryID(repoId).
-				Save(r.ctx)
+				SetRepositoryID(repoId)
+
+			// Find the backup profile that has the same prefix as the archive
+			for _, backupProfile := range repo.Edges.BackupProfiles {
+				if strings.HasPrefix(arch.Name, backupProfile.Prefix) {
+					createQuery = createQuery.SetBackupProfileID(backupProfile.ID)
+					break
+				}
+			}
+
+			newArchive, err := createQuery.Save(r.ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -89,6 +107,10 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 	if cntNewArchives > 0 {
 		r.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
+	}
+
+	if cntDeletedArchives > 0 || cntNewArchives > 0 {
+		defer runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(repoId))
 	}
 
 	return archives, nil
@@ -119,7 +141,12 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	if err != nil {
 		return err
 	}
-	return r.db.Archive.DeleteOneID(id).Exec(r.ctx)
+	err = r.db.Archive.DeleteOneID(id).Exec(r.ctx)
+	if err != nil {
+		return err
+	}
+	runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(arch.Edges.Repository.ID))
+	return nil
 }
 
 type PaginatedArchivesRequest struct {
@@ -209,6 +236,41 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 		Archives: archives,
 		Total:    total,
 	}, nil
+}
+
+type PruningDates struct {
+	Dates []PruningDate `json:"dates"`
+}
+
+type PruningDate struct {
+	ArchiveId int       `json:"archiveId"`
+	NextRun   time.Time `json:"nextRun"`
+}
+
+func (r *RepositoryClient) GetPruningDates(archiveIds []int) (response PruningDates, err error) {
+	archives, err := r.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.IDIn(archiveIds...),
+			archive.HasBackupProfile(),
+			archive.WillBePruned(true),
+		)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithPruningRule()
+		}).
+		All(r.ctx)
+	if err != nil {
+		return
+	}
+	for _, arch := range archives {
+		if arch.Edges.BackupProfile.Edges.PruningRule != nil {
+			response.Dates = append(response.Dates, PruningDate{
+				ArchiveId: arch.ID,
+				NextRun:   arch.Edges.BackupProfile.Edges.PruningRule.NextRun,
+			})
+		}
+	}
+	return
 }
 
 func (r *RepositoryClient) GetLastArchiveByBackupId(backupId types.BackupId) (*ent.Archive, error) {

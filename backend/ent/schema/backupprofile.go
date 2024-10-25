@@ -53,8 +53,12 @@ func (BackupProfile) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			StructTag(`json:"backupSchedule,omitempty"`).
 			Unique(),
-		edge.From("failed_backup_runs", FailedBackupRun.Type).
-			StructTag(`json:"failedBackupRuns,omitempty"`).
+		edge.To("pruning_rule", PruningRule.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			StructTag(`json:"pruningRule,omitempty"`).
+			Unique(),
+		edge.From("notifications", Notification.Type).
+			StructTag(`json:"notifications,omitempty"`).
 			Ref("backup_profile"),
 	}
 }

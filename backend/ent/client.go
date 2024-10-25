@@ -14,7 +14,8 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/ent/settings"
 
@@ -35,8 +36,10 @@ type Client struct {
 	BackupProfile *BackupProfileClient
 	// BackupSchedule is the client for interacting with the BackupSchedule builders.
 	BackupSchedule *BackupScheduleClient
-	// FailedBackupRun is the client for interacting with the FailedBackupRun builders.
-	FailedBackupRun *FailedBackupRunClient
+	// Notification is the client for interacting with the Notification builders.
+	Notification *NotificationClient
+	// PruningRule is the client for interacting with the PruningRule builders.
+	PruningRule *PruningRuleClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 	// Settings is the client for interacting with the Settings builders.
@@ -55,7 +58,8 @@ func (c *Client) init() {
 	c.Archive = NewArchiveClient(c.config)
 	c.BackupProfile = NewBackupProfileClient(c.config)
 	c.BackupSchedule = NewBackupScheduleClient(c.config)
-	c.FailedBackupRun = NewFailedBackupRunClient(c.config)
+	c.Notification = NewNotificationClient(c.config)
+	c.PruningRule = NewPruningRuleClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
 	c.Settings = NewSettingsClient(c.config)
 }
@@ -148,14 +152,15 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Archive:         NewArchiveClient(cfg),
-		BackupProfile:   NewBackupProfileClient(cfg),
-		BackupSchedule:  NewBackupScheduleClient(cfg),
-		FailedBackupRun: NewFailedBackupRunClient(cfg),
-		Repository:      NewRepositoryClient(cfg),
-		Settings:        NewSettingsClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Archive:        NewArchiveClient(cfg),
+		BackupProfile:  NewBackupProfileClient(cfg),
+		BackupSchedule: NewBackupScheduleClient(cfg),
+		Notification:   NewNotificationClient(cfg),
+		PruningRule:    NewPruningRuleClient(cfg),
+		Repository:     NewRepositoryClient(cfg),
+		Settings:       NewSettingsClient(cfg),
 	}, nil
 }
 
@@ -173,14 +178,15 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Archive:         NewArchiveClient(cfg),
-		BackupProfile:   NewBackupProfileClient(cfg),
-		BackupSchedule:  NewBackupScheduleClient(cfg),
-		FailedBackupRun: NewFailedBackupRunClient(cfg),
-		Repository:      NewRepositoryClient(cfg),
-		Settings:        NewSettingsClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Archive:        NewArchiveClient(cfg),
+		BackupProfile:  NewBackupProfileClient(cfg),
+		BackupSchedule: NewBackupScheduleClient(cfg),
+		Notification:   NewNotificationClient(cfg),
+		PruningRule:    NewPruningRuleClient(cfg),
+		Repository:     NewRepositoryClient(cfg),
+		Settings:       NewSettingsClient(cfg),
 	}, nil
 }
 
@@ -210,8 +216,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
-		c.Settings,
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.Notification, c.PruningRule,
+		c.Repository, c.Settings,
 	} {
 		n.Use(hooks...)
 	}
@@ -221,8 +227,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Archive, c.BackupProfile, c.BackupSchedule, c.FailedBackupRun, c.Repository,
-		c.Settings,
+		c.Archive, c.BackupProfile, c.BackupSchedule, c.Notification, c.PruningRule,
+		c.Repository, c.Settings,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -237,8 +243,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackupProfile.mutate(ctx, m)
 	case *BackupScheduleMutation:
 		return c.BackupSchedule.mutate(ctx, m)
-	case *FailedBackupRunMutation:
-		return c.FailedBackupRun.mutate(ctx, m)
+	case *NotificationMutation:
+		return c.Notification.mutate(ctx, m)
+	case *PruningRuleMutation:
+		return c.PruningRule.mutate(ctx, m)
 	case *RepositoryMutation:
 		return c.Repository.mutate(ctx, m)
 	case *SettingsMutation:
@@ -569,15 +577,31 @@ func (c *BackupProfileClient) QueryBackupSchedule(bp *BackupProfile) *BackupSche
 	return query
 }
 
-// QueryFailedBackupRuns queries the failed_backup_runs edge of a BackupProfile.
-func (c *BackupProfileClient) QueryFailedBackupRuns(bp *BackupProfile) *FailedBackupRunQuery {
-	query := (&FailedBackupRunClient{config: c.config}).Query()
+// QueryPruningRule queries the pruning_rule edge of a BackupProfile.
+func (c *BackupProfileClient) QueryPruningRule(bp *BackupProfile) *PruningRuleQuery {
+	query := (&PruningRuleClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := bp.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
-			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.FailedBackupRunsTable, backupprofile.FailedBackupRunsColumn),
+			sqlgraph.To(pruningrule.Table, pruningrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.PruningRuleTable, backupprofile.PruningRuleColumn),
+		)
+		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNotifications queries the notifications edge of a BackupProfile.
+func (c *BackupProfileClient) QueryNotifications(bp *BackupProfile) *NotificationQuery {
+	query := (&NotificationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
+			sqlgraph.To(notification.Table, notification.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.NotificationsTable, backupprofile.NotificationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
 		return fromV, nil
@@ -760,107 +784,107 @@ func (c *BackupScheduleClient) mutate(ctx context.Context, m *BackupScheduleMuta
 	}
 }
 
-// FailedBackupRunClient is a client for the FailedBackupRun schema.
-type FailedBackupRunClient struct {
+// NotificationClient is a client for the Notification schema.
+type NotificationClient struct {
 	config
 }
 
-// NewFailedBackupRunClient returns a client for the FailedBackupRun from the given config.
-func NewFailedBackupRunClient(c config) *FailedBackupRunClient {
-	return &FailedBackupRunClient{config: c}
+// NewNotificationClient returns a client for the Notification from the given config.
+func NewNotificationClient(c config) *NotificationClient {
+	return &NotificationClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `failedbackuprun.Hooks(f(g(h())))`.
-func (c *FailedBackupRunClient) Use(hooks ...Hook) {
-	c.hooks.FailedBackupRun = append(c.hooks.FailedBackupRun, hooks...)
+// A call to `Use(f, g, h)` equals to `notification.Hooks(f(g(h())))`.
+func (c *NotificationClient) Use(hooks ...Hook) {
+	c.hooks.Notification = append(c.hooks.Notification, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `failedbackuprun.Intercept(f(g(h())))`.
-func (c *FailedBackupRunClient) Intercept(interceptors ...Interceptor) {
-	c.inters.FailedBackupRun = append(c.inters.FailedBackupRun, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `notification.Intercept(f(g(h())))`.
+func (c *NotificationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Notification = append(c.inters.Notification, interceptors...)
 }
 
-// Create returns a builder for creating a FailedBackupRun entity.
-func (c *FailedBackupRunClient) Create() *FailedBackupRunCreate {
-	mutation := newFailedBackupRunMutation(c.config, OpCreate)
-	return &FailedBackupRunCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Notification entity.
+func (c *NotificationClient) Create() *NotificationCreate {
+	mutation := newNotificationMutation(c.config, OpCreate)
+	return &NotificationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of FailedBackupRun entities.
-func (c *FailedBackupRunClient) CreateBulk(builders ...*FailedBackupRunCreate) *FailedBackupRunCreateBulk {
-	return &FailedBackupRunCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Notification entities.
+func (c *NotificationClient) CreateBulk(builders ...*NotificationCreate) *NotificationCreateBulk {
+	return &NotificationCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *FailedBackupRunClient) MapCreateBulk(slice any, setFunc func(*FailedBackupRunCreate, int)) *FailedBackupRunCreateBulk {
+func (c *NotificationClient) MapCreateBulk(slice any, setFunc func(*NotificationCreate, int)) *NotificationCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &FailedBackupRunCreateBulk{err: fmt.Errorf("calling to FailedBackupRunClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &NotificationCreateBulk{err: fmt.Errorf("calling to NotificationClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*FailedBackupRunCreate, rv.Len())
+	builders := make([]*NotificationCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &FailedBackupRunCreateBulk{config: c.config, builders: builders}
+	return &NotificationCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for FailedBackupRun.
-func (c *FailedBackupRunClient) Update() *FailedBackupRunUpdate {
-	mutation := newFailedBackupRunMutation(c.config, OpUpdate)
-	return &FailedBackupRunUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Notification.
+func (c *NotificationClient) Update() *NotificationUpdate {
+	mutation := newNotificationMutation(c.config, OpUpdate)
+	return &NotificationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *FailedBackupRunClient) UpdateOne(fbr *FailedBackupRun) *FailedBackupRunUpdateOne {
-	mutation := newFailedBackupRunMutation(c.config, OpUpdateOne, withFailedBackupRun(fbr))
-	return &FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *NotificationClient) UpdateOne(n *Notification) *NotificationUpdateOne {
+	mutation := newNotificationMutation(c.config, OpUpdateOne, withNotification(n))
+	return &NotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *FailedBackupRunClient) UpdateOneID(id int) *FailedBackupRunUpdateOne {
-	mutation := newFailedBackupRunMutation(c.config, OpUpdateOne, withFailedBackupRunID(id))
-	return &FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *NotificationClient) UpdateOneID(id int) *NotificationUpdateOne {
+	mutation := newNotificationMutation(c.config, OpUpdateOne, withNotificationID(id))
+	return &NotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for FailedBackupRun.
-func (c *FailedBackupRunClient) Delete() *FailedBackupRunDelete {
-	mutation := newFailedBackupRunMutation(c.config, OpDelete)
-	return &FailedBackupRunDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Notification.
+func (c *NotificationClient) Delete() *NotificationDelete {
+	mutation := newNotificationMutation(c.config, OpDelete)
+	return &NotificationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *FailedBackupRunClient) DeleteOne(fbr *FailedBackupRun) *FailedBackupRunDeleteOne {
-	return c.DeleteOneID(fbr.ID)
+func (c *NotificationClient) DeleteOne(n *Notification) *NotificationDeleteOne {
+	return c.DeleteOneID(n.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *FailedBackupRunClient) DeleteOneID(id int) *FailedBackupRunDeleteOne {
-	builder := c.Delete().Where(failedbackuprun.ID(id))
+func (c *NotificationClient) DeleteOneID(id int) *NotificationDeleteOne {
+	builder := c.Delete().Where(notification.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &FailedBackupRunDeleteOne{builder}
+	return &NotificationDeleteOne{builder}
 }
 
-// Query returns a query builder for FailedBackupRun.
-func (c *FailedBackupRunClient) Query() *FailedBackupRunQuery {
-	return &FailedBackupRunQuery{
+// Query returns a query builder for Notification.
+func (c *NotificationClient) Query() *NotificationQuery {
+	return &NotificationQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeFailedBackupRun},
+		ctx:    &QueryContext{Type: TypeNotification},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a FailedBackupRun entity by its id.
-func (c *FailedBackupRunClient) Get(ctx context.Context, id int) (*FailedBackupRun, error) {
-	return c.Query().Where(failedbackuprun.ID(id)).Only(ctx)
+// Get returns a Notification entity by its id.
+func (c *NotificationClient) Get(ctx context.Context, id int) (*Notification, error) {
+	return c.Query().Where(notification.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *FailedBackupRunClient) GetX(ctx context.Context, id int) *FailedBackupRun {
+func (c *NotificationClient) GetX(ctx context.Context, id int) *Notification {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -868,60 +892,209 @@ func (c *FailedBackupRunClient) GetX(ctx context.Context, id int) *FailedBackupR
 	return obj
 }
 
-// QueryBackupProfile queries the backup_profile edge of a FailedBackupRun.
-func (c *FailedBackupRunClient) QueryBackupProfile(fbr *FailedBackupRun) *BackupProfileQuery {
+// QueryBackupProfile queries the backup_profile edge of a Notification.
+func (c *NotificationClient) QueryBackupProfile(n *Notification) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := fbr.ID
+		id := n.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(failedbackuprun.Table, failedbackuprun.FieldID, id),
+			sqlgraph.From(notification.Table, notification.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, failedbackuprun.BackupProfileTable, failedbackuprun.BackupProfileColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, notification.BackupProfileTable, notification.BackupProfileColumn),
 		)
-		fromV = sqlgraph.Neighbors(fbr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
-// QueryRepository queries the repository edge of a FailedBackupRun.
-func (c *FailedBackupRunClient) QueryRepository(fbr *FailedBackupRun) *RepositoryQuery {
+// QueryRepository queries the repository edge of a Notification.
+func (c *NotificationClient) QueryRepository(n *Notification) *RepositoryQuery {
 	query := (&RepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := fbr.ID
+		id := n.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(failedbackuprun.Table, failedbackuprun.FieldID, id),
+			sqlgraph.From(notification.Table, notification.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, failedbackuprun.RepositoryTable, failedbackuprun.RepositoryColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, notification.RepositoryTable, notification.RepositoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(fbr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // Hooks returns the client hooks.
-func (c *FailedBackupRunClient) Hooks() []Hook {
-	return c.hooks.FailedBackupRun
+func (c *NotificationClient) Hooks() []Hook {
+	return c.hooks.Notification
 }
 
 // Interceptors returns the client interceptors.
-func (c *FailedBackupRunClient) Interceptors() []Interceptor {
-	return c.inters.FailedBackupRun
+func (c *NotificationClient) Interceptors() []Interceptor {
+	return c.inters.Notification
 }
 
-func (c *FailedBackupRunClient) mutate(ctx context.Context, m *FailedBackupRunMutation) (Value, error) {
+func (c *NotificationClient) mutate(ctx context.Context, m *NotificationMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&FailedBackupRunCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&NotificationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&FailedBackupRunUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&NotificationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&FailedBackupRunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&NotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&FailedBackupRunDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&NotificationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown FailedBackupRun mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Notification mutation op: %q", m.Op())
+	}
+}
+
+// PruningRuleClient is a client for the PruningRule schema.
+type PruningRuleClient struct {
+	config
+}
+
+// NewPruningRuleClient returns a client for the PruningRule from the given config.
+func NewPruningRuleClient(c config) *PruningRuleClient {
+	return &PruningRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `pruningrule.Hooks(f(g(h())))`.
+func (c *PruningRuleClient) Use(hooks ...Hook) {
+	c.hooks.PruningRule = append(c.hooks.PruningRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `pruningrule.Intercept(f(g(h())))`.
+func (c *PruningRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PruningRule = append(c.inters.PruningRule, interceptors...)
+}
+
+// Create returns a builder for creating a PruningRule entity.
+func (c *PruningRuleClient) Create() *PruningRuleCreate {
+	mutation := newPruningRuleMutation(c.config, OpCreate)
+	return &PruningRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PruningRule entities.
+func (c *PruningRuleClient) CreateBulk(builders ...*PruningRuleCreate) *PruningRuleCreateBulk {
+	return &PruningRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PruningRuleClient) MapCreateBulk(slice any, setFunc func(*PruningRuleCreate, int)) *PruningRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PruningRuleCreateBulk{err: fmt.Errorf("calling to PruningRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PruningRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PruningRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PruningRule.
+func (c *PruningRuleClient) Update() *PruningRuleUpdate {
+	mutation := newPruningRuleMutation(c.config, OpUpdate)
+	return &PruningRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PruningRuleClient) UpdateOne(pr *PruningRule) *PruningRuleUpdateOne {
+	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRule(pr))
+	return &PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PruningRuleClient) UpdateOneID(id int) *PruningRuleUpdateOne {
+	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRuleID(id))
+	return &PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PruningRule.
+func (c *PruningRuleClient) Delete() *PruningRuleDelete {
+	mutation := newPruningRuleMutation(c.config, OpDelete)
+	return &PruningRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PruningRuleClient) DeleteOne(pr *PruningRule) *PruningRuleDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PruningRuleClient) DeleteOneID(id int) *PruningRuleDeleteOne {
+	builder := c.Delete().Where(pruningrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PruningRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for PruningRule.
+func (c *PruningRuleClient) Query() *PruningRuleQuery {
+	return &PruningRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePruningRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PruningRule entity by its id.
+func (c *PruningRuleClient) Get(ctx context.Context, id int) (*PruningRule, error) {
+	return c.Query().Where(pruningrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PruningRuleClient) GetX(ctx context.Context, id int) *PruningRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBackupProfile queries the backup_profile edge of a PruningRule.
+func (c *PruningRuleClient) QueryBackupProfile(pr *PruningRule) *BackupProfileQuery {
+	query := (&BackupProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(pruningrule.Table, pruningrule.FieldID, id),
+			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, pruningrule.BackupProfileTable, pruningrule.BackupProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PruningRuleClient) Hooks() []Hook {
+	return c.hooks.PruningRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *PruningRuleClient) Interceptors() []Interceptor {
+	return c.inters.PruningRule
+}
+
+func (c *PruningRuleClient) mutate(ctx context.Context, m *PruningRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PruningRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PruningRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PruningRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PruningRule mutation op: %q", m.Op())
 	}
 }
 
@@ -1065,15 +1238,15 @@ func (c *RepositoryClient) QueryArchives(r *Repository) *ArchiveQuery {
 	return query
 }
 
-// QueryFailedBackupRuns queries the failed_backup_runs edge of a Repository.
-func (c *RepositoryClient) QueryFailedBackupRuns(r *Repository) *FailedBackupRunQuery {
-	query := (&FailedBackupRunClient{config: c.config}).Query()
+// QueryNotifications queries the notifications edge of a Repository.
+func (c *RepositoryClient) QueryNotifications(r *Repository) *NotificationQuery {
+	query := (&NotificationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
-			sqlgraph.To(failedbackuprun.Table, failedbackuprun.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, repository.FailedBackupRunsTable, repository.FailedBackupRunsColumn),
+			sqlgraph.To(notification.Table, notification.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.NotificationsTable, repository.NotificationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -1242,11 +1415,11 @@ func (c *SettingsClient) mutate(ctx context.Context, m *SettingsMutation) (Value
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
+		Archive, BackupProfile, BackupSchedule, Notification, PruningRule, Repository,
 		Settings []ent.Hook
 	}
 	inters struct {
-		Archive, BackupProfile, BackupSchedule, FailedBackupRun, Repository,
+		Archive, BackupProfile, BackupSchedule, Notification, PruningRule, Repository,
 		Settings []ent.Interceptor
 	}
 )

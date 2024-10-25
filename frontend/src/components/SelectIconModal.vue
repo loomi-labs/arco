@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { backupprofile } from "../../wailsjs/go/models";
-import { ref, useTemplateRef } from "vue";
+import { ref, useTemplateRef, watch } from "vue";
 import { getIcon, Icon, icons } from "../common/icons";
 
 /************
@@ -40,6 +40,10 @@ function selectIcon(icon: Icon) {
 /************
  * Lifecycle
  ************/
+
+watch(() => props.icon, (icon) => {
+  selectedIcon.value = getIcon(icon ?? icons[0].type);
+});
 
 </script>
 

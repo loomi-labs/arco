@@ -86,6 +86,20 @@ func (au *ArchiveUpdate) SetNillableBorgID(s *string) *ArchiveUpdate {
 	return au
 }
 
+// SetWillBePruned sets the "will_be_pruned" field.
+func (au *ArchiveUpdate) SetWillBePruned(b bool) *ArchiveUpdate {
+	au.mutation.SetWillBePruned(b)
+	return au
+}
+
+// SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
+func (au *ArchiveUpdate) SetNillableWillBePruned(b *bool) *ArchiveUpdate {
+	if b != nil {
+		au.SetWillBePruned(*b)
+	}
+	return au
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
 func (au *ArchiveUpdate) SetRepositoryID(id int) *ArchiveUpdate {
 	au.mutation.SetRepositoryID(id)
@@ -191,6 +205,9 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := au.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
+	}
+	if value, ok := au.mutation.WillBePruned(); ok {
+		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 	}
 	if au.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -322,6 +339,20 @@ func (auo *ArchiveUpdateOne) SetBorgID(s string) *ArchiveUpdateOne {
 func (auo *ArchiveUpdateOne) SetNillableBorgID(s *string) *ArchiveUpdateOne {
 	if s != nil {
 		auo.SetBorgID(*s)
+	}
+	return auo
+}
+
+// SetWillBePruned sets the "will_be_pruned" field.
+func (auo *ArchiveUpdateOne) SetWillBePruned(b bool) *ArchiveUpdateOne {
+	auo.mutation.SetWillBePruned(b)
+	return auo
+}
+
+// SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
+func (auo *ArchiveUpdateOne) SetNillableWillBePruned(b *bool) *ArchiveUpdateOne {
+	if b != nil {
+		auo.SetWillBePruned(*b)
 	}
 	return auo
 }
@@ -461,6 +492,9 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 	}
 	if value, ok := auo.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
+	}
+	if value, ok := auo.mutation.WillBePruned(); ok {
+		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 	}
 	if auo.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{

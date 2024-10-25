@@ -13,8 +13,8 @@ reviews:
   collapse_walkthrough: false
   path_filters:
     - '**'
-    - 'backend/ent/**'
-    - '!backend/ent/schema/**'
+    - '!backend/ent/**'
+    - 'backend/ent/schema/**'
   path_instructions: []
   abort_on_close: true
   auto_review:

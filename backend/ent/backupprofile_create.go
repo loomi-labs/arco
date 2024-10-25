@@ -6,7 +6,8 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"context"
 	"errors"
@@ -108,19 +109,38 @@ func (bpc *BackupProfileCreate) SetBackupSchedule(b *BackupSchedule) *BackupProf
 	return bpc.SetBackupScheduleID(b.ID)
 }
 
-// AddFailedBackupRunIDs adds the "failed_backup_runs" edge to the FailedBackupRun entity by IDs.
-func (bpc *BackupProfileCreate) AddFailedBackupRunIDs(ids ...int) *BackupProfileCreate {
-	bpc.mutation.AddFailedBackupRunIDs(ids...)
+// SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
+func (bpc *BackupProfileCreate) SetPruningRuleID(id int) *BackupProfileCreate {
+	bpc.mutation.SetPruningRuleID(id)
 	return bpc
 }
 
-// AddFailedBackupRuns adds the "failed_backup_runs" edges to the FailedBackupRun entity.
-func (bpc *BackupProfileCreate) AddFailedBackupRuns(f ...*FailedBackupRun) *BackupProfileCreate {
-	ids := make([]int, len(f))
-	for i := range f {
-		ids[i] = f[i].ID
+// SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillablePruningRuleID(id *int) *BackupProfileCreate {
+	if id != nil {
+		bpc = bpc.SetPruningRuleID(*id)
 	}
-	return bpc.AddFailedBackupRunIDs(ids...)
+	return bpc
+}
+
+// SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
+func (bpc *BackupProfileCreate) SetPruningRule(p *PruningRule) *BackupProfileCreate {
+	return bpc.SetPruningRuleID(p.ID)
+}
+
+// AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
+func (bpc *BackupProfileCreate) AddNotificationIDs(ids ...int) *BackupProfileCreate {
+	bpc.mutation.AddNotificationIDs(ids...)
+	return bpc
+}
+
+// AddNotifications adds the "notifications" edges to the Notification entity.
+func (bpc *BackupProfileCreate) AddNotifications(n ...*Notification) *BackupProfileCreate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return bpc.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
@@ -300,15 +320,31 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bpc.mutation.FailedBackupRunsIDs(); len(nodes) > 0 {
+	if nodes := bpc.mutation.PruningRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   backupprofile.PruningRuleTable,
+			Columns: []string{backupprofile.PruningRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bpc.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   backupprofile.FailedBackupRunsTable,
-			Columns: []string{backupprofile.FailedBackupRunsColumn},
+			Table:   backupprofile.NotificationsTable,
+			Columns: []string{backupprofile.NotificationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(failedbackuprun.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

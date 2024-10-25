@@ -8,3 +8,7 @@ export function backupStateChangedEvent(bId: types.BackupId): string {
 export function repoStateChangedEvent(repositoryId: number): string {
     return `${types.Event.repoStateChanged}:${repositoryId}`;
 }
+
+export function archivesChanged(repositoryId: number): string {
+    return `${types.Event.archivesChanged}:${repositoryId}`;
+}

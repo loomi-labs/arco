@@ -8,11 +8,13 @@ import (
 	"arco/backend/ent/archive"
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/failedbackuprun"
+	"arco/backend/ent/notification"
+	"arco/backend/ent/pruningrule"
 	"arco/backend/ent/repository"
 	"arco/backend/util"
 	"errors"
 	"fmt"
+	"github.com/eminarican/safetypes"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"math/rand"
 	"os"
@@ -29,6 +31,7 @@ func (b *BackupClient) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 		Query().
 		WithRepositories().
 		WithBackupSchedule().
+		WithPruningRule().
 		Where(backupprofile.ID(id)).
 		Only(b.ctx)
 }
@@ -38,6 +41,7 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		Query().
 		WithRepositories().
 		WithBackupSchedule().
+		WithPruningRule().
 		All(b.ctx)
 }
 
@@ -109,6 +113,16 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Hourly: true,
 	}
 
+	pruningRule := &ent.PruningRule{
+		IsEnabled:      true,
+		KeepHourly:     12,
+		KeepDaily:      7,
+		KeepWeekly:     4,
+		KeepMonthly:    6,
+		KeepYearly:     1,
+		KeepWithinDays: 30,
+	}
+
 	return &ent.BackupProfile{
 		ID:           0,
 		Name:         "",
@@ -118,6 +132,7 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		Icon:         selectedIcon,
 		Edges: ent.BackupProfileEdges{
 			BackupSchedule: schedule,
+			PruningRule:    pruningRule,
 		},
 	}, nil
 }
@@ -238,7 +253,7 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 	return err
 }
 
-func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
+func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
 	repo, err := b.db.Repository.
 		Query().
 		Where(repository.And(
@@ -248,6 +263,7 @@ func (b *BackupClient) getRepoWithCompletedBackupProfile(repoId int, backupProfi
 		WithBackupProfiles(func(q *ent.BackupProfileQuery) {
 			q.Limit(1)
 			q.Where(backupprofile.ID(backupProfileId))
+			q.WithPruningRule()
 		}).
 		Only(b.ctx)
 	if err != nil {
@@ -279,15 +295,18 @@ func (b *BackupClient) StartBackupJob(bId types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) ([]types.BackupId, error) {
+func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) error {
+	var errs []error
 	for _, bId := range bIds {
 		err := b.StartBackupJob(bId)
 		if err != nil {
-			return bIds, err
+			errs = append(errs, err)
 		}
-		bIds = append(bIds, bId)
 	}
-	return bIds, nil
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to start some backup jobs: %v", errs)
+	}
+	return nil
 }
 
 func (b *BackupClient) SelectDirectory() (string, error) {
@@ -334,6 +353,40 @@ func (b *BackupClient) GetBackupButtonStatus(bIds []types.BackupId) state.Backup
 
 func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.BackupProgress {
 	return b.state.GetCombinedBackupProgress(bIds)
+}
+
+func (b *BackupClient) GetLastBackupErrorMsg(bId types.BackupId) (string, error) {
+	// Get the last notification for the backup profile and repository
+	lastNotification, err := b.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(b.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := b.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(b.ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
 }
 
 /***********************************/
@@ -384,6 +437,7 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 }
 
 func (b *BackupClient) DeleteBackupSchedule(backupProfileId int) error {
+	defer b.sendBackupScheduleChanged()
 	_, err := b.db.BackupSchedule.
 		Delete().
 		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
@@ -440,43 +494,41 @@ func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password s
 	return err
 }
 
-func (b *BackupClient) deleteFailedBackupRun(bId types.BackupId) error {
-	_, err := b.db.FailedBackupRun.
-		Delete().
-		Where(failedbackuprun.And(
-			failedbackuprun.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			failedbackuprun.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-		)).
-		Exec(b.ctx)
-	return err
-}
-
-func (b *BackupClient) saveFailedBackupRun(bId types.BackupId, backupErr error) error {
-	err := b.deleteFailedBackupRun(bId)
-	if err != nil {
-		return err
-	}
-	_, err = b.db.FailedBackupRun.
+func (b *BackupClient) saveDbNotification(backupId types.BackupId, message string, notificationType notification.Type, action safetypes.Option[notification.Action]) error {
+	return b.db.Notification.
 		Create().
-		SetRepositoryID(bId.RepositoryId).
-		SetBackupProfileID(bId.BackupProfileId).
-		SetError(backupErr.Error()).
-		Save(b.ctx)
-	return err
+		SetMessage(message).
+		SetType(notificationType).
+		SetBackupProfileID(backupId.BackupProfileId).
+		SetRepositoryID(backupId.RepositoryId).
+		SetNillableAction(action.Value).
+		Exec(b.ctx)
 }
 
 /***********************************/
 /********** Borg Commands **********/
 /***********************************/
 
+type BackupResult string
+
+const (
+	BackupResultSuccess   BackupResult = "success"
+	BackupResultCancelled BackupResult = "cancelled"
+	BackupResultError     BackupResult = "error"
+)
+
+func (b BackupResult) String() string {
+	return string(b)
+}
+
 // runBorgCreate runs the actual backup job.
 // It is long running and should be run in a goroutine.
-func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupResult, err error) {
-	repo, err := b.getRepoWithCompletedBackupProfile(bId.RepositoryId, bId.BackupProfileId)
+func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, err error) {
+	repo, err := b.getRepoWithBackupProfile(bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
 		b.state.SetBackupError(b.ctx, bId, err, false, false)
 		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
-		return state.BackupResultError, err
+		return BackupResultError, err
 	}
 	backupProfile := repo.Edges.BackupProfiles[0]
 	b.state.SetBackupWaiting(b.ctx, bId)
@@ -497,33 +549,28 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetBackupCancelled(b.ctx, bId, true)
-			return state.BackupResultCancelled, nil
+			return BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			err = fmt.Errorf("repository is locked")
-			saveErr := b.saveFailedBackupRun(bId, err)
+			err = fmt.Errorf("repository %s is locked", repo.Name)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
-				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
 			b.state.SetBackupError(b.ctx, bId, err, false, true)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
-			return state.BackupResultError, err
+			return BackupResultError, err
 		} else {
-			saveErr := b.saveFailedBackupRun(bId, err)
+			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
 			if saveErr != nil {
-				b.log.Error(fmt.Sprintf("Failed to save failed backup run: %s", saveErr))
+				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
 			b.state.SetBackupError(b.ctx, bId, err, true, false)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
-			return state.BackupResultError, err
+			return BackupResultError, err
 		}
 	} else {
 		// Backup completed successfully
 		defer b.state.SetBackupCompleted(b.ctx, bId, true)
-
-		err = b.deleteFailedBackupRun(bId)
-		if err != nil {
-			b.log.Error(fmt.Sprintf("Failed to delete failed backup run: %s", err))
-		}
 
 		err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
 		if err != nil {
@@ -532,10 +579,27 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result state.BackupRes
 
 		err = b.addNewArchive(bId, archiveName, repo.Password)
 		if err != nil {
-			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+			b.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
 		}
 
-		return state.BackupResultSuccess, nil
+		pruningRule, err := b.db.PruningRule.
+			Query().
+			Where(pruningrule.And(
+				pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				pruningrule.IsEnabled(true),
+			)).
+			Only(b.ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			b.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", err))
+		}
+		if pruningRule != nil && pruningRule.IsEnabled {
+			_, err := b.examinePrune(bId, safetypes.Some(pruningRule), true, true)
+			if err != nil {
+				b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+			}
+		}
+
+		return BackupResultSuccess, nil
 	}
 }
 

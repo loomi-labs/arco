@@ -4,7 +4,9 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/ent"
 	"arco/backend/ent/backupschedule"
+	"arco/backend/ent/pruningrule"
 	"fmt"
+	"github.com/negrel/assert"
 	"time"
 )
 
@@ -23,6 +25,10 @@ func (a *App) startScheduleChangeListener() {
 	}
 }
 
+/***********************************/
+/********** Backup Scheduling ******/
+/***********************************/
+
 func (a *App) scheduleBackups() []*time.Timer {
 	a.log.Info("Scheduling backups")
 
@@ -37,10 +43,7 @@ func (a *App) scheduleBackups() []*time.Timer {
 	for _, bs := range allBs {
 		backupProfileId := bs.Edges.BackupProfile.ID
 
-		if len(bs.Edges.BackupProfile.Edges.Repositories) == 0 {
-			a.log.Errorf("Backup profile %d has no repositories, skipping", backupProfileId)
-			continue
-		}
+		assert.NotNil(bs.Edges.BackupProfile.Edges.Repositories, "repositories is nil")
 
 		for _, r := range bs.Edges.BackupProfile.Edges.Repositories {
 			backupId := types.BackupId{
@@ -238,4 +241,148 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		return fromTime.Add(diff), nil
 	}
 	return time.Time{}, fmt.Errorf("no valid schedule found")
+}
+
+/***********************************/
+/********** Prune Scheduling *******/
+/***********************************/
+
+func (a *App) startPruneScheduleChangeListener() {
+	var timers []*time.Timer
+	for {
+		<-a.pruningScheduleChangedCh
+
+		// Stop all scheduled prunes
+		for _, t := range timers {
+			t.Stop()
+		}
+
+		// Schedule all prunes
+		timers = a.schedulePrunes()
+	}
+}
+
+func (a *App) schedulePrunes() []*time.Timer {
+	a.log.Info("Scheduling prunes")
+
+	pruningRules, err := a.getPruningRules()
+	if err != nil {
+		a.log.Errorf("Failed to get pruning schedules: %s", err)
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get pruning rules: %s", err), types.LevelError)
+		return nil
+	}
+
+	var timers []*time.Timer
+	for _, pruningRule := range pruningRules {
+		backupProfileId := pruningRule.Edges.BackupProfile.ID
+
+		assert.NotNil(pruningRule.Edges.BackupProfile.Edges.Repositories, "repositories is nil")
+
+		for _, r := range pruningRule.Edges.BackupProfile.Edges.Repositories {
+			pruneId := types.BackupId{
+				BackupProfileId: backupProfileId,
+				RepositoryId:    r.ID,
+			}
+			timer := a.schedulePrune(pruningRule, pruneId)
+			timers = append(timers, timer)
+		}
+	}
+	return timers
+}
+
+func (a *App) schedulePrune(ps *ent.PruningRule, backupId types.BackupId) *time.Timer {
+	// Calculate the duration until the next prune
+	durationUntilNextPrune := time.Until(ps.NextRun)
+	if durationUntilNextPrune < 0 {
+		// If the duration is negative, schedule the prune immediately
+		durationUntilNextPrune = 0
+	}
+
+	// Schedule the prune
+	updatedAt := ps.UpdatedAt
+	timer := time.AfterFunc(durationUntilNextPrune, func() {
+		a.runScheduledPrune(ps, backupId, updatedAt)
+	})
+	a.log.Info(fmt.Sprintf("Scheduled prune %s in %s", backupId, durationUntilNextPrune))
+	return timer
+}
+
+func (a *App) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, updatedAt time.Time) {
+	// Check if the prune schedule still exists and has not been modified
+	exist, err := a.db.PruningRule.
+		Query().
+		Where(pruningrule.And(
+			pruningrule.ID(ps.ID),
+			pruningrule.UpdatedAtEQ(updatedAt),
+		)).
+		Exist(a.ctx)
+	if err != nil {
+		a.log.Error(fmt.Sprintf("Failed to check if prune schedule exists: %s", err))
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
+		return
+	}
+	if !exist {
+		a.log.Infof("Prune schedule %d does not exist anymore or has been modified, skipping", ps.ID)
+		return
+	}
+
+	// Run the prune
+	a.log.Infof("Running scheduled prune for %s", backupId)
+	var lastRunStatus string
+	result, err := a.BackupClient().runPruneJob(backupId)
+	if err != nil {
+		lastRunStatus = fmt.Sprintf("error: %s", err)
+		a.log.Error(fmt.Sprintf("Failed to run scheduled prune: %s", err))
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
+	} else {
+		lastRunStatus = result.String()
+	}
+	updated, err := a.updatePruningRule(ps, lastRunStatus)
+	if err != nil {
+		a.log.Error(fmt.Sprintf("Failed to save prune run: %s", err))
+		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to save prune run: %s", err), types.LevelError)
+	} else {
+		a.schedulePrune(updated, backupId)
+	}
+}
+
+func (a *App) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus string) (*ent.PruningRule, error) {
+	assert.NotNil(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, "backup schedule is nil")
+
+	lastRunTime := time.Now()
+	update := pruningRule.Update()
+	update.SetLastRun(lastRunTime)
+	if lastRunStatus != "" {
+		update.SetNillableLastRunStatus(&lastRunStatus)
+	}
+	nextPruneTime := getNextPruneTime(pruningRule.Edges.BackupProfile.Edges.BackupSchedule, lastRunTime)
+	update.SetNextRun(nextPruneTime)
+	return update.Save(a.ctx)
+}
+
+func (a *App) getPruningRules() ([]*ent.PruningRule, error) {
+	return a.db.PruningRule.
+		Query().
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithRepositories()
+			q.WithBackupSchedule()
+		}).
+		Where(pruningrule.IsEnabledEQ(true)).
+		All(a.ctx)
+}
+
+func getNextPruneTime(bs *ent.BackupSchedule, fromTime time.Time) time.Time {
+	if bs == nil {
+		// If we don't have a backup schedule, we run the prune once a week
+		return fromTime.AddDate(0, 0, 7)
+	}
+
+	// Calculate the next prune time based on the backup schedule
+	// Put the next prune at least one hour into the future
+	// Add also 1 minute to avoid running the prune at the same time as the backup
+	if bs.NextRun.Before(time.Now().Add(time.Hour)) {
+		return bs.NextRun.Add(time.Hour).Add(time.Minute)
+	}
+
+	return bs.NextRun.Add(time.Minute)
 }

@@ -93,6 +93,12 @@ build: ensure-tools ensure-pnpm
 	@wails build
 	@echo "✅ Done!"
 
+.phony: build-assert
+build-assert: ensure-tools ensure-pnpm
+	@echo "🏗️ Building..."
+	@wails build --tags=assert
+	@echo "✅ Done!"
+
 #################################
 ###        Development        ###
 #################################
@@ -123,4 +129,4 @@ install-tools: download
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
-	wails dev
+	wails dev --tags=assert

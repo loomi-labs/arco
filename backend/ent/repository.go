@@ -6,6 +6,7 @@ import (
 	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -22,18 +23,20 @@ type Repository struct {
 	Location string `json:"location"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
+	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
+	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
 	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
-	StatsTotalChunks int `json:"stats_total_chunks"`
+	StatsTotalChunks int `json:"statsTotalChunks"`
 	// StatsTotalSize holds the value of the "stats_total_size" field.
-	StatsTotalSize int `json:"stats_total_size"`
+	StatsTotalSize int `json:"statsTotalSize"`
 	// StatsTotalCsize holds the value of the "stats_total_csize" field.
-	StatsTotalCsize int `json:"stats_total_csize"`
+	StatsTotalCsize int `json:"statsTotalCsize"`
 	// StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
-	StatsTotalUniqueChunks int `json:"stats_total_unique_chunks"`
+	StatsTotalUniqueChunks int `json:"statsTotalUniqueChunks"`
 	// StatsUniqueSize holds the value of the "stats_unique_size" field.
-	StatsUniqueSize int `json:"stats_unique_size"`
+	StatsUniqueSize int `json:"statsUniqueSize"`
 	// StatsUniqueCsize holds the value of the "stats_unique_csize" field.
-	StatsUniqueCsize int `json:"stats_unique_csize"`
+	StatsUniqueCsize int `json:"statsUniqueCsize"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
 	Edges        RepositoryEdges `json:"edges"`
@@ -46,8 +49,8 @@ type RepositoryEdges struct {
 	BackupProfiles []*BackupProfile `json:"backupProfiles,omitempty"`
 	// Archives holds the value of the archives edge.
 	Archives []*Archive `json:"archives,omitempty"`
-	// FailedBackupRuns holds the value of the failed_backup_runs edge.
-	FailedBackupRuns []*FailedBackupRun `json:"failedBackupRuns,omitempty"`
+	// Notifications holds the value of the notifications edge.
+	Notifications []*Notification `json:"notifications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -71,13 +74,13 @@ func (e RepositoryEdges) ArchivesOrErr() ([]*Archive, error) {
 	return nil, &NotLoadedError{edge: "archives"}
 }
 
-// FailedBackupRunsOrErr returns the FailedBackupRuns value or an error if the edge
+// NotificationsOrErr returns the Notifications value or an error if the edge
 // was not loaded in eager-loading.
-func (e RepositoryEdges) FailedBackupRunsOrErr() ([]*FailedBackupRun, error) {
+func (e RepositoryEdges) NotificationsOrErr() ([]*Notification, error) {
 	if e.loadedTypes[2] {
-		return e.FailedBackupRuns, nil
+		return e.Notifications, nil
 	}
-	return nil, &NotLoadedError{edge: "failed_backup_runs"}
+	return nil, &NotLoadedError{edge: "notifications"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -89,6 +92,8 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
 			values[i] = new(sql.NullString)
+		case repository.FieldNextIntegrityCheck:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -127,6 +132,13 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
 				r.Password = value.String
+			}
+		case repository.FieldNextIntegrityCheck:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
+			} else if value.Valid {
+				r.NextIntegrityCheck = new(time.Time)
+				*r.NextIntegrityCheck = value.Time
 			}
 		case repository.FieldStatsTotalChunks:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -187,9 +199,9 @@ func (r *Repository) QueryArchives() *ArchiveQuery {
 	return NewRepositoryClient(r.config).QueryArchives(r)
 }
 
-// QueryFailedBackupRuns queries the "failed_backup_runs" edge of the Repository entity.
-func (r *Repository) QueryFailedBackupRuns() *FailedBackupRunQuery {
-	return NewRepositoryClient(r.config).QueryFailedBackupRuns(r)
+// QueryNotifications queries the "notifications" edge of the Repository entity.
+func (r *Repository) QueryNotifications() *NotificationQuery {
+	return NewRepositoryClient(r.config).QueryNotifications(r)
 }
 
 // Update returns a builder for updating this Repository.
@@ -223,6 +235,11 @@ func (r *Repository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)
+	builder.WriteString(", ")
+	if v := r.NextIntegrityCheck; v != nil {
+		builder.WriteString("next_integrity_check=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_chunks=")
 	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalChunks))

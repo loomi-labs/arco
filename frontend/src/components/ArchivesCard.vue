@@ -3,9 +3,10 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
-import { computed, ref, useTemplateRef, watch } from "vue";
+import { computed, onUnmounted, ref, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
+  ArrowPathIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
@@ -13,14 +14,17 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
+  ScissorsIcon,
   TrashIcon,
   XMarkIcon
 } from "@heroicons/vue/24/solid";
-import { toLongDateString, toRelativeTimeString } from "../common/time";
+import { isInPast, toLongDateString, toRelativeTimeString } from "../common/time";
 import { toDurationBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
+import * as runtime from "../../wailsjs/runtime";
+import { archivesChanged, repoStateChangedEvent } from "../common/events";
 
 /************
  * Types
@@ -59,6 +63,9 @@ const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
+const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
+pruningDates.value.dates = [];
+const cleanupFunctions: (() => void)[] = [];
 
 const dateRange = ref({
   startDate: "",
@@ -112,7 +119,11 @@ async function getPaginatedArchives() {
     // If there are no archives on the current page, go back to the first page
     if (archives.value.length === 0 && pagination.value.page > 1) {
       pagination.value.page = 1;
-      await getPaginatedArchives();
+    }
+
+    // If we have archives tha will be pruned, get the next pruning dates
+    if (archives.value.some(a => a.willBePruned)) {
+      await getPruningDates();
     }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
@@ -197,6 +208,34 @@ async function getBackupProfileFilterOptions() {
   }
 }
 
+async function refreshArchives() {
+  try {
+    progressSpinnerText.value = "Refreshing archives";
+    await repoClient.RefreshArchives(props.repo.id);
+  } catch (error: any) {
+    await showAndLogError("Failed to refresh archives", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
+async function getPruningDates() {
+  try {
+    pruningDates.value = await repoClient.GetPruningDates(archives.value.filter(a => a.willBePruned).map(a => a.id));
+  } catch (error: any) {
+    await showAndLogError("Failed to get next pruning date", error);
+  }
+}
+
+function getPruningText(archiveId: number) {
+  const nextRun = pruningDates.value.dates.find(p => p.archiveId === archiveId)?.nextRun;
+  if (!nextRun || isInPast(nextRun, true)) {
+    return "This archive will be deleted";
+  }
+
+  return `This archive will be deleted ${toRelativeTimeString(nextRun, true)}`;
+}
+
 const customDateRangeShortcuts = () => {
   return [
     {
@@ -276,6 +315,12 @@ watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
 });
 
+cleanupFunctions.push(runtime.EventsOn(archivesChanged(props.repo.id), getPaginatedArchives));
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
+
 </script>
 <template>
   <div class='ac-card p-10'
@@ -284,9 +329,15 @@ watch([backupProfileFilter, search, dateRange], async () => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th colspan='4'>
+          <th colspan='2'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
+          </th>
+          <th class='text-right'>
+            <button class='btn btn-ghost btn-circle btn-info'
+                    @click='refreshArchives'>
+              <ArrowPathIcon class='size-6'></ArrowPathIcon>
+            </button>
           </th>
         </tr>
         <tr>
@@ -341,7 +392,8 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th class='min-w-40 lg:min-w-48'>Creation time</th>
           <th class='w-40 pl-12'>
-            {{ $t("action") }}</th>
+            {{ $t("action") }}
+          </th>
         </tr>
         </thead>
         <tbody>
@@ -352,6 +404,9 @@ watch([backupProfileFilter, search, dateRange], async () => {
           <!-- Name -->
           <td class='flex items-center'>
             <p>{{ archive.name }}</p>
+            <span v-if='archive.willBePruned' class='tooltip tooltip-info' :data-tip='getPruningText(archive.id)'>
+              <ScissorsIcon class='size-4 text-info ml-2' />
+            </span>
           </td>
           <!-- Backup -->
           <td v-if='showBackupProfileColumn'>

@@ -13,6 +13,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -152,6 +153,11 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
+	iconData, err := config.Icon.ReadFile("icon.png")
+	if err != nil {
+		log.Fatalf("failed to read icon: %v", err)
+	}
+
 	if uniqueRunId == "" {
 		uniqueRunId = "4ffabbd3-334a-454e-8c66-dee8d1ff9afb"
 	}
@@ -188,7 +194,13 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 		},
 		LogLevel:    logLevel,
 		Logger:      util.NewZapLogWrapper(log),
+		MaxWidth:    3840,
+		MaxHeight:   3840,
 		StartHidden: startHidden,
+		Linux: &linux.Options{
+			Icon: iconData,
+		},
+		//Mac: &mac.Options{},
 	})
 	if err != nil {
 		log.Fatal(err)
