@@ -551,7 +551,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			b.state.SetBackupCancelled(b.ctx, bId, true)
 			return BackupResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			err = fmt.Errorf("repository is locked")
+			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
 				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
@@ -579,7 +579,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 
 		err = b.addNewArchive(bId, archiveName, repo.Password)
 		if err != nil {
-			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+			b.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
 		}
 
 		pruningRule, err := b.db.PruningRule.
