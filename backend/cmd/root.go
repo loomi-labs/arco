@@ -164,6 +164,10 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	if err != nil {
 		log.Fatalf("failed to read icon: %v", err)
 	}
+	err = iconFile.Close()
+	if err != nil {
+		log.Fatalf("failed to close icon: %v", err)
+	}
 
 	if uniqueRunId == "" {
 		uniqueRunId = "4ffabbd3-334a-454e-8c66-dee8d1ff9afb"
