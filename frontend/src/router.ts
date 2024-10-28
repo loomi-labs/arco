@@ -5,13 +5,15 @@ import ErrorPage from "./pages/ErrorPage.vue";
 import DashboardPage from "./pages/DashboardPage.vue";
 import AddBackupProfilePage from "./pages/AddBackupProfilePage.vue";
 
-export const rDashboardPage = "/";
+export const rStartup = "/";
+export const rDashboardPage = "/dashboard";
 export const rBackupProfilePage = "/backup-profile/:id";
 export const rAddBackupProfilePage = "/backup-profile/new";
 export const rRepositoryPage = "/repository/:id";
 export const rErrorPage = "/error";
 
 const routes: RouteRecordRaw[] = [
+  { path: rStartup, component: ErrorPage },
   { path: rDashboardPage, component: DashboardPage },
   { path: rBackupProfilePage, component: BackupProfilePage },
   { path: rAddBackupProfilePage, component: AddBackupProfilePage },

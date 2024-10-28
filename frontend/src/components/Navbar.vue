@@ -5,14 +5,24 @@ import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
 import { ArrowLongLeftIcon, MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
 import { showAndLogError } from "../common/error";
-import { onMounted, ref } from "vue";
+import { ref, watch } from "vue";
 import * as appClient from "../../wailsjs/go/app/AppClient";
 import { settings } from "../../wailsjs/go/models";
 import Theme = settings.Theme;
 
 /************
+ * Types
+ ************/
+
+interface Props {
+  isReady: boolean;
+}
+
+/************
  * Variables
  ************/
+
+const props = defineProps<Props>();
 
 const router = useRouter();
 const isLightTheme = ref<boolean | undefined>(undefined);
@@ -51,6 +61,11 @@ async function detectPreferredTheme() {
 }
 
 async function toggleTheme() {
+  // If the app is not ready, we don't do anything.
+  if (!props.isReady) {
+    return
+  }
+
   try {
     isLightTheme.value = !isLightTheme.value;
     const settings = await appClient.GetSettings();
@@ -76,7 +91,11 @@ async function toggleTheme() {
  * Lifecycle
  ************/
 
-onMounted(() => detectPreferredTheme());
+watch(props, async () => {
+  if (props.isReady) {
+    await detectPreferredTheme();
+  }
+});
 
 router.afterEach(() => {
   const path = router.currentRoute.value.matched.at(0)?.path;
@@ -101,12 +120,12 @@ router.afterEach(() => {
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <div class='flex items-center gap-2'>
-        <button class='btn btn-ghost uppercase gap-6' @click='router.push(rDashboardPage)'>Arco
+        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(rDashboardPage)'>Arco
           <ArrowLongLeftIcon v-if='subroute' class='size-8' />
         </button>
         <p v-if='subroute'>{{ subroute }}</p>
       </div>
-      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
+      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}' >
         <SunIcon class='swap-off size-10' @click='toggleTheme' />
         <MoonIcon class='swap-on size-10' @click='toggleTheme' />
       </label>
