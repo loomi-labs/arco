@@ -14,6 +14,13 @@ import {
 } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
+import {
+  getBorderColor,
+  getLocation,
+  getTextColorOnlyHover,
+  getTextColorWithHover,
+  Location
+} from "../common/repository";
 
 /************
  * Types
@@ -90,6 +97,15 @@ function connectOrDisconnectRepo(repo: ent.Repository) {
   emit(emitUpdateConnectedRepos, connectedRepos.value);
 }
 
+function getRepoCardClass(repo: ent.Repository) {
+  const location = getLocation(repo.location);
+  const isConnected = connectedRepos.value.some(r => r.id === repo.id);
+  const isConnectedClass = isConnected ?
+    `ac-card-selected ${getBorderColor(location)} ${getTextColorWithHover(location)}` :
+    `border-transparent ${getTextColorOnlyHover(location)}`;
+  return `${isConnectedClass}`;
+}
+
 /************
  * Lifecycle
  ************/
@@ -99,14 +115,21 @@ getExistingRepositories();
 </script>
 
 <template>
-  <h2 class='text-3xl py-4'>Connect Repositories</h2>
+  <h2 class='text-3xl py-4'>Your Repositories</h2>
   <p class='text-lg'>Choose the repositories where you want to store your backups</p>
 
-  <div class='flex gap-4'>
-    <div class='hover:bg-success/50 p-4' v-for='(repo, index) in existingRepos' :key='index'
-         :class='{"bg-success": connectedRepos.some(r => r.id === repo.id)}'
+  <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4' :class='{
+    "grid-rows-1": existingRepos.length <= 3,
+    "grid-rows-2 lg:grid-rows-1": existingRepos.length > 3 && existingRepos.length <= 6,
+    "grid-rows-3 lg:grid-rows-2": existingRepos.length > 6 && existingRepos.length <= 9,
+    "grid-rows-4 lg:grid-rows-2": existingRepos.length > 9,
+  }'>
+    <div class='group ac-card flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2' v-for='(repo, index) in existingRepos' :key='index'
+         :class='getRepoCardClass(repo)'
          @click='connectOrDisconnectRepo(repo)'
     >
+      <ComputerDesktopIcon v-if='getLocation(repo.location) === Location.Local' class='size-12'/>
+      <GlobeEuropeAfricaIcon v-else class='size-12'/>
       {{ repo.name }}
     </div>
   </div>

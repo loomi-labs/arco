@@ -15,6 +15,18 @@ export function getTextColor(location: Location): string {
   return location === Location.Local ? "text-arco-purple-500" : "text-arco-purple-700";
 }
 
+export function getTextColorWithHover(location: Location): string {
+  return `${getTextColor(location)} ${getTextColorOnlyHover(location)}`;
+}
+
+export function getTextColorOnlyHover(location: Location): string {
+  return location === Location.Local ? "hover:text-arco-purple-500/70 group-hover:text-arco-purple-500/70" : "hover:text-arco-purple-700/70 group-hover:text-arco-purple-700/70";
+}
+
+export function getBorderColor(location: Location): string {
+  return location === Location.Local ? "border-arco-purple-500 hover:border-arco-purple-500/70 group-hover:border-arco-purple-500/70" : "border-arco-purple-700 hover:border-arco-purple-700/70 group-hover:border-arco-purple-700/70";
+}
+
 export function getTooltipColor(location: Location): string {
   return location === Location.Local ? "tooltip-arco-purple-500" : "tooltip-arco-purple-700";
 }
