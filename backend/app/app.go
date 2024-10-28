@@ -176,12 +176,16 @@ func (a *App) applyMigrations(opts string) error {
 	}
 
 	// Run `atlas migrate apply`
-	_, err = atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
-		URL:             fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
-		BaselineVersion: "20241024090930", // TODO: remove this before release
+	result, err := atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
+		URL: fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to apply migrations: %v", err)
+	}
+	a.log.Infof("Applied %d migrations", len(result.Applied))
+	a.log.Infof("Current db version: %s", result.Current)
+	if result.Current == "" && len(result.Applied) == 0 {
+		return fmt.Errorf("could not apply migrations")
 	}
 	return nil
 }
@@ -200,19 +204,6 @@ func (a *App) initDb() (*ent.Client, error) {
 	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
-	}
-
-	// Create an initial settings entry if it doesn't exist
-	// TODO: move this into the migrations
-	cnt, err := dbClient.Settings.Query().Count(a.ctx)
-	if err != nil {
-		return nil, err
-	}
-	if cnt == 0 {
-		err = dbClient.Settings.Create().Exec(a.ctx)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return dbClient, nil
 }

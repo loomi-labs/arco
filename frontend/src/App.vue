@@ -3,12 +3,13 @@
 import { useToast } from "vue-toastification";
 import * as appClient from "../wailsjs/go/app/AppClient";
 import * as runtime from "../wailsjs/runtime";
+import { LogDebug } from "../wailsjs/runtime";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
-import { rErrorPage } from "./router";
+import { rDashboardPage, rErrorPage } from "./router";
 import Navbar from "./components/Navbar.vue";
 import { types } from "../wailsjs/go/models";
-import { onUnmounted } from "vue";
+import { onUnmounted, ref } from "vue";
 
 /************
  * Variables
@@ -16,11 +17,31 @@ import { onUnmounted } from "vue";
 
 const router = useRouter();
 const toast = useToast();
+const isInitialized = ref(false);
+const hasStartupError = ref(false);
 const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
  ************/
+
+async function init() {
+  try {
+    const errorMsg = await appClient.GetStartupError();
+    if (errorMsg.message !== "") {
+      hasStartupError.value = true;
+      LogDebug("go to error page");
+      await router.push(rErrorPage);
+    } else {
+      await getNotifications();
+      await goToStartPage();
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get startup error", error);
+  } finally {
+    isInitialized.value = true;
+  }
+}
 
 async function getNotifications() {
   cleanupFunctions.push(
@@ -42,22 +63,13 @@ async function getNotifications() {
     }));
 }
 
-async function getStartupError() {
-  try {
-    const errorMsg = await appClient.GetStartupError();
-    if (errorMsg.message !== "") {
-      await router.push(rErrorPage);
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to get startup error", error);
-  }
-}
-
 async function goToStartPage() {
   try {
     const env = await appClient.GetEnvVars();
     if (env.startPage) {
       await router.push(env.startPage);
+    } else {
+      await router.push(rDashboardPage);
     }
   } catch (error: any) {
     await showAndLogError("Failed to get env vars", error);
@@ -68,9 +80,7 @@ async function goToStartPage() {
  * Lifecycle
  ************/
 
-getNotifications();
-getStartupError();
-goToStartPage();
+init();
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -80,7 +90,7 @@ onUnmounted(() => {
 
 <template>
   <div class='bg-base-200 min-w-svw min-h-svh'>
-    <Navbar></Navbar>
+    <Navbar :is-ready='isInitialized && !hasStartupError'></Navbar>
     <RouterView />
   </div>
 </template>
