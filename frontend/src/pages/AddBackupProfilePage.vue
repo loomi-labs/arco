@@ -301,7 +301,7 @@ getExistingRepositories();
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.back()'>Cancel</button>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='router.replace(rDashboardPage)'>Cancel</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
