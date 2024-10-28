@@ -176,12 +176,17 @@ func (a *App) applyMigrations(opts string) error {
 	}
 
 	// Run `atlas migrate apply`
-	_, err = atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
+	result, err := atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
 		URL:             fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
 		BaselineVersion: "20241024090930", // TODO: remove this before release
 	})
 	if err != nil {
 		return fmt.Errorf("failed to apply migrations: %v", err)
+	}
+	a.log.Infof("Applied %d migrations", len(result.Applied))
+	a.log.Infof("Current db version: %s", result.Current)
+	if result.Current == "" && len(result.Applied) == 0 {
+		return fmt.Errorf("could not apply migrations")
 	}
 	return nil
 }

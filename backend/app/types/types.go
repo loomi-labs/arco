@@ -4,8 +4,8 @@ import (
 	"arco/backend/ent/backupprofile"
 	"arco/backend/ent/backupschedule"
 	"arco/backend/ent/settings"
-	"embed"
 	"fmt"
+	"io/fs"
 )
 
 // FrontendError is the error type that is received from the frontend
@@ -41,8 +41,8 @@ type Config struct {
 	Binaries    []Binary
 	BorgPath    string
 	BorgVersion string
-	Icon        embed.FS
-	Migrations  embed.FS
+	Icon        fs.FS
+	Migrations  fs.FS
 }
 
 var AllWeekdays = []backupschedule.Weekday{

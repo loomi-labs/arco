@@ -6,7 +6,6 @@ import (
 	"arco/backend/app/types"
 	"arco/backend/util"
 	"context"
-	"embed"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/wails/v2"
@@ -16,6 +15,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -97,7 +98,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, icon embed.FS, migrations embed.FS) (*types.Config, error) {
+func initConfig(configDir string, icon fs.FS, migrations fs.FS) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -146,7 +147,7 @@ func toTsEnums[T Stringer](states []T) []struct {
 	return allBs
 }
 
-func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, startHidden bool, uniqueRunId string) {
+func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
 	arco := app.NewApp(log, config)
 
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
@@ -154,7 +155,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets embed.FS, sta
 		log.Fatalf("failed to convert log level: %v", err)
 	}
 
-	iconData, err := config.Icon.ReadFile("icon.png")
+	iconFile, err := config.Icon.Open("icon.png")
+	if err != nil {
+		log.Fatalf("failed to open icon: %v", err)
+	}
+
+	iconData, err := io.ReadAll(iconFile)
 	if err != nil {
 		log.Fatalf("failed to read icon: %v", err)
 	}
@@ -235,9 +241,9 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to get unique run id flag: %w", err)
 		}
 
-		assets := cmd.Context().Value(assetsKey).(embed.FS)
-		icon := cmd.Context().Value(iconKey).(embed.FS)
-		migrations := cmd.Context().Value(migrationsKey).(embed.FS)
+		assets := cmd.Context().Value(assetsKey).(fs.FS)
+		icon := cmd.Context().Value(iconKey).(fs.FS)
+		migrations := cmd.Context().Value(migrationsKey).(fs.FS)
 
 		// Initialize the configuration
 		config, err := initConfig(configDir, icon, migrations)
@@ -266,7 +272,7 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(assets embed.FS, icon embed.FS, migrations embed.FS) {
+func Execute(assets fs.FS, icon fs.FS, migrations fs.FS) {
 	ctx := context.WithValue(context.Background(), assetsKey, assets)
 	ctx = context.WithValue(ctx, iconKey, icon)
 	ctx = context.WithValue(ctx, migrationsKey, migrations)
