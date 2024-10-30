@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { ent } from "../../wailsjs/go/models";
-import { computed, ref, useId, useTemplateRef } from "vue";
+import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
@@ -49,7 +49,7 @@ const emitUpdateConnectedRepos = "update:connected-repos";
 const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
-const existingRepos = computed(() => props.existingRepos ?? []);
+const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);
 
 const connectedRepos = ref<ent.Repository[]>([]);
 const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
@@ -108,6 +108,10 @@ function getRepoCardClass(repo: ent.Repository) {
 /************
  * Lifecycle
  ************/
+
+watch(() => props.existingRepos, (newRepos) => {
+  existingRepos.value = newRepos ?? [];
+});
 
 </script>
 

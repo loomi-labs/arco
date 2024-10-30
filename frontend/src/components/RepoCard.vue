@@ -26,7 +26,8 @@ interface Props {
   backupProfileId: number;
   highlight: boolean;
   showHover: boolean;
-  isPruningEnabled: boolean;
+  isPruningShown: boolean;
+  isDeleteShown: boolean;
 }
 
 interface Emits {
@@ -178,14 +179,15 @@ onUnmounted(() => {
     </div>
     <div class='flex flex-col items-end gap-2'>
       <div class='flex gap-2'>
-        <button v-if='isPruningEnabled'
-                class='btn btn-ghost btn-circle'
+        <button class='btn btn-ghost btn-circle'
+                :class='{ "invisible": !isPruningShown }'
                 :disabled='repoState.status !== state.RepoStatus.idle'
                 @click.stop='prune'
         >
           <ScissorsIcon class='size-6' />
         </button>
         <button class='btn btn-ghost btn-circle'
+                :class='{ "invisible": !isDeleteShown }'
                 :disabled='repoState.status !== state.RepoStatus.idle'
                 @click.stop='confirmRemoveRepoModal?.showModal()'>
           <TrashIcon class='size-6' />
