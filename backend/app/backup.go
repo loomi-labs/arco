@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eminarican/safetypes"
+	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"math/rand"
 	"os"
@@ -256,6 +257,38 @@ func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
 		DeleteOneID(id).
 		Exec(b.ctx)
 	return err
+}
+
+func (b *BackupClient) AddRepositoryToBackupProfile(backupProfileId int, repositoryId int) error {
+	bs, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return err
+	}
+	assert.NotNil(bs.Edges.Repositories, "backup profile does not have repositories")
+	for _, r := range bs.Edges.Repositories {
+		if r.ID == repositoryId {
+			return fmt.Errorf("repository is already in the backup profile")
+		}
+	}
+	return b.db.BackupProfile.
+		UpdateOneID(backupProfileId).
+		AddRepositoryIDs(repositoryId).
+		Exec(b.ctx)
+}
+
+func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, repositoryId int) error {
+	bs, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return err
+	}
+	assert.NotNil(bs.Edges.Repositories, "backup profile does not have repositories")
+	if len(bs.Edges.Repositories) == 1 {
+		return fmt.Errorf("cannot remove the only repository from the backup profile")
+	}
+	return b.db.BackupProfile.
+		UpdateOneID(backupProfileId).
+		RemoveRepositoryIDs(repositoryId).
+		Exec(b.ctx)
 }
 
 func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {

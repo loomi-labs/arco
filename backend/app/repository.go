@@ -113,30 +113,6 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 	return active, nil
 }
 
-// TODO: remove this function or refactor it
-func (r *RepositoryClient) AddExistingRepository(name, url, password string, backupProfileId int) (*ent.Repository, error) {
-	// Check if we can connect to the repository
-	if _, err := r.borg.Info(url, password); err != nil {
-		return nil, err
-	}
-
-	// Create a new repository entity
-	return r.db.Repository.
-		Create().
-		SetName(name).
-		SetLocation(url).
-		SetPassword(password).
-		AddBackupProfileIDs(backupProfileId).
-		Save(r.ctx)
-}
-
-func (r *RepositoryClient) AddBackupProfile(id int, backupProfileId int) (*ent.Repository, error) {
-	return r.db.Repository.
-		UpdateOneID(id).
-		AddBackupProfileIDs(backupProfileId).
-		Save(r.ctx)
-}
-
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
 	if err := r.borg.Init(util.ExpandPath(location), password, noPassword); err != nil {
 		return nil, err
