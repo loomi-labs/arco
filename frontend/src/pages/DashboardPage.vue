@@ -7,7 +7,7 @@ import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { Page } from "../router";
+import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 
 /************
@@ -54,7 +54,7 @@ getRepos();
 <template>
   <!-- Backups profiles -->
   <div class='container mx-auto text-left pt-10'>
-    <h1 class='text-4xl font-bold'>Backup profiles</h1>
+    <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup profiles</h1>
     <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
       <!-- Backup Card -->
       <div v-for='backup in backups' :key='backup.id'>
@@ -69,7 +69,7 @@ getRepos();
 
     <!-- Repositories -->
     <div class='container text-left mx-auto pt-10'>
-      <h1 class='text-4xl font-bold'>Repositories</h1>
+      <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
         <!-- Repository Card -->
         <div v-for='repo in repos' :key='repo.id'>

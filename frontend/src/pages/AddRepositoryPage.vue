@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { useRouter } from "vue-router";
 import ConnectRepo from "../components/ConnectRepo.vue";
+import { Page, withId } from "../router";
 
 /************
  * Types
@@ -30,7 +31,7 @@ const router = useRouter();
     <h1 class='text-4xl font-bold text-center p-10'>New repository</h1>
 
     <ConnectRepo
-      @update:repo-added='router.back()'>
+      @update:repo-added='(repo) => router.push(withId(Page.RepositoryPage, repo.id))'>
     </ConnectRepo>
   </div>
 </template>

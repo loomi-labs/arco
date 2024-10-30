@@ -16,7 +16,7 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
-import { Page } from "../router";
+import { Anchor, Page } from "../router";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { useToast } from "vue-toastification";
 
@@ -124,7 +124,7 @@ async function deleteRepo() {
   try {
     await repoClient.Delete(repoId);
     toast.success("Repository deleted");
-    await router.replace(Page.DashboardPage)
+    await router.replace({ path: Page.DashboardPage, hash: `#${Anchor.Repositories}` });
   } catch (error: any) {
     await showAndLogError("Failed to delete repository", error);
   }

@@ -5,7 +5,7 @@ import { object } from "zod";
 import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { backupprofile, ent, state } from "../../wailsjs/go/models";
-import { Page } from "../router";
+import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
 import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
@@ -74,7 +74,7 @@ async function deleteBackupProfile() {
   try {
     await backupClient.DeleteBackupProfile(backupProfile.value.id, false);
     toast.success("Backup profile deleted");
-    await router.push(Page.DashboardPage);
+    await router.replace({ path: Page.DashboardPage, hash: `#${Anchor.BackupProfiles}` });
   } catch (error: any) {
     await showAndLogError("Failed to delete backup profile", error);
   }
