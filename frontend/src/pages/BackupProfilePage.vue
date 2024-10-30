@@ -3,7 +3,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as zod from "zod";
 import { object } from "zod";
-import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
+import { nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { backupprofile, ent, state } from "../../wailsjs/go/models";
 import { Anchor, Page } from "../router";
@@ -289,7 +289,6 @@ watch(loading, async () => {
       <dialog
         :ref='addRepoModalKey'
         class='modal'
-        @close='addRepoModal?.close()'
         @click.stop
       >
         <form
@@ -302,7 +301,7 @@ watch(loading, async () => {
                 :show-connected-repos='true'
                 :use-single-repo='true'
                 :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
-                @click:repo='(repo) => addRepo(repo)'/>
+                @click:repo='(repo) => addRepo(repo)' />
 
               <!-- Add new Repository -->
               <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
@@ -314,6 +313,15 @@ watch(loading, async () => {
                     <PlusCircleIcon class='size-10' />
                   </div>
                 </div>
+              </div>
+
+              <div class='flex w-full justify-center gap-4'>
+                <button
+                  value='false'
+                  class='btn btn-outline'
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
