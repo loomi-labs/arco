@@ -294,7 +294,7 @@ watch(loading, async () => {
       >
         <form
           method='dialog'
-          class='modal-box flex flex-col w-11/12 max-w-5xl p-6'
+          class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
         >
           <div class='modal-action'>
             <div class='flex flex-col w-full justify-center gap-4'>
@@ -305,7 +305,7 @@ watch(loading, async () => {
                 @click:repo='(repo) => addRepo(repo)'/>
 
               <!-- Add new Repository -->
-              <div class='group flex justify-between items-end ac-card-hover p-10 w-full' @click='router.push(Page.AddRepository)'>
+              <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
                 <p>Create new repository</p>
                 <div class='relative size-24 group-hover:text-secondary'>
                   <CircleStackIcon class='absolute inset-0 size-24 z-10' />
