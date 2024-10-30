@@ -2,35 +2,15 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref, useTemplateRef } from "vue";
-import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
-import {
-  ArrowRightCircleIcon,
-  CircleStackIcon,
-  ComputerDesktopIcon,
-  FireIcon,
-  GlobeEuropeAfricaIcon,
-  PlusCircleIcon
-} from "@heroicons/vue/24/solid";
+import { ComputerDesktopIcon, FireIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import {
-  getBorderColor,
-  getLocation,
-  getTextColorOnlyHover,
-  getTextColorWithHover,
-  Location
-} from "../common/repository";
+import { getBorderColor, getLocation, getTextColorOnlyHover, getTextColorWithHover, Location } from "../common/repository";
 
 /************
  * Types
  ************/
-
-enum SelectedRepoAction {
-  None = "none",
-  ConnectExisting = "connect-existing",
-  CreateNew = "create-new",
-}
 
 enum SelectedRepoType {
   None = "none",
@@ -39,27 +19,41 @@ enum SelectedRepoType {
   ArcoCloud = "arco-cloud",
 }
 
+interface Props {
+  showConnectedRepos?: boolean;
+  showTitles?: boolean;
+}
+
 interface Emits {
   (event: typeof emitUpdateConnectedRepos, repos: ent.Repository[]): void;
+
+  (event: typeof emitUpdateRepoAdded, repo: ent.Repository): void;
 }
 
 /************
  * Variables
  ************/
 
+const props = withDefaults(defineProps<Props>(), {
+  showConnectedRepos: false,
+  showTitles: false
+});
 const emit = defineEmits<Emits>();
 const emitUpdateConnectedRepos = "update:connected-repos";
+const emitUpdateRepoAdded = "update:repo-added";
 
-const router = useRouter();
 const existingRepos = ref<ent.Repository[]>([]);
 
 const connectedRepos = ref<ent.Repository[]>([]);
-const selectedRepoAction = ref<SelectedRepoAction>(SelectedRepoAction.None);
 const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
 const createLocalRepoModalKey = "create_local_repo_modal";
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
 const createRemoteRepoModalKey = "create_remote_repo_modal";
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
+
+// Needed so that the tailwindcss compiler includes these classes
+// noinspection JSUnusedGlobalSymbols
+const _taildwindcssPlaceholder = "grid-rows-1 grid-rows-2 grid-rows-3 grid-rows-4 grid-rows-5 grid-rows-6 grid-rows-7 grid-rows-8 grid-rows-9 grid-rows-10 grid-rows-11 grid-rows-12";
 
 /************
  * Functions
@@ -86,6 +80,7 @@ function selectRemoteRepo() {
 function addRepo(repo: ent.Repository) {
   existingRepos.value.push(repo);
   connectedRepos.value.push(repo);
+  emit(emitUpdateRepoAdded, repo);
 }
 
 function connectOrDisconnectRepo(repo: ent.Repository) {
@@ -115,55 +110,28 @@ getExistingRepositories();
 </script>
 
 <template>
-  <h2 class='text-3xl py-4'>Your Repositories</h2>
-  <p class='text-lg'>Choose the repositories where you want to store your backups</p>
+  <div v-if='showConnectedRepos'>
+    <h2 v-if='showTitles' class='text-3xl py-4'>Your repositories</h2>
+    <p class='text-lg'>Choose the repositories where you want to store your backups</p>
 
-  <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4' :class='{
-    "grid-rows-1": existingRepos.length <= 3,
-    "grid-rows-2 lg:grid-rows-1": existingRepos.length > 3 && existingRepos.length <= 6,
-    "grid-rows-3 lg:grid-rows-2": existingRepos.length > 6 && existingRepos.length <= 9,
-    "grid-rows-4 lg:grid-rows-2": existingRepos.length > 9,
-  }'>
-    <div class='group ac-card flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2' v-for='(repo, index) in existingRepos' :key='index'
-         :class='getRepoCardClass(repo)'
-         @click='connectOrDisconnectRepo(repo)'
-    >
-      <ComputerDesktopIcon v-if='getLocation(repo.location) === Location.Local' class='size-12'/>
-      <GlobeEuropeAfricaIcon v-else class='size-12'/>
-      {{ repo.name }}
-    </div>
-  </div>
-
-  <div class='flex gap-4 pt-10 pb-6'>
-    <!-- Add new Repository Card -->
-    <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-         :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.CreateNew }'
-         @click='selectedRepoAction = SelectedRepoAction.CreateNew'>
-      <p>Create new repository</p>
-      <div class='relative size-24 group-hover:text-secondary'
-           :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.CreateNew}'>
-        <CircleStackIcon class='absolute inset-0 size-24 z-10' />
-        <div
-          class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-          <PlusCircleIcon class='size-10' />
-        </div>
-      </div>
-    </div>
-    <!-- Connect to existing Repository Card -->
-    <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-         :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.ConnectExisting }'
-         @click='selectedRepoAction = SelectedRepoAction.ConnectExisting; selectedRepoType = SelectedRepoType.None'>
-      <p>Connect to existing repository</p>
-      <div class='relative size-24 group-hover:text-secondary'
-           :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.ConnectExisting}'>
-        <ArrowRightCircleIcon class='absolute inset-0 size-24 z-10' />
+    <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
+         :class='`grid-rows-${Math.ceil(existingRepos.length / 4)}`'>
+      <div class='group ac-card flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
+           v-for='(repo, index) in existingRepos' :key='index'
+           :class='getRepoCardClass(repo)'
+           @click='connectOrDisconnectRepo(repo)'
+      >
+        <ComputerDesktopIcon v-if='getLocation(repo.location) === Location.Local' class='size-12' />
+        <GlobeEuropeAfricaIcon v-else class='size-12' />
+        {{ repo.name }}
       </div>
     </div>
   </div>
+
+  <h2 v-if='showTitles' class='text-3xl py-4'>Add a repository</h2>
 
   <!-- New Repository Options -->
-  <div class='flex gap-4 w-1/2 pr-2'
-       :class='{"hidden": selectedRepoAction !== SelectedRepoAction.CreateNew}'>
+  <div class='flex gap-6'>
     <!-- Local Repository Card -->
     <div class='group flex flex-col ac-card-hover p-10 w-full'
          :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'

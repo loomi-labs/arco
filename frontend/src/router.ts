@@ -10,6 +10,7 @@ export const rDashboardPage = "/dashboard";
 export const rBackupProfilePage = "/backup-profile/:id";
 export const rAddBackupProfilePage = "/backup-profile/new";
 export const rRepositoryPage = "/repository/:id";
+export const rAddRepositoryPage = "/repository/new";
 export const rErrorPage = "/error";
 
 const routes: RouteRecordRaw[] = [
@@ -18,6 +19,7 @@ const routes: RouteRecordRaw[] = [
   { path: rBackupProfilePage, component: BackupProfilePage },
   { path: rAddBackupProfilePage, component: AddBackupProfilePage },
   { path: rRepositoryPage, component: RepositoryPage },
+  { path: rAddRepositoryPage, component: AddRepositoryPage },
   { path: rErrorPage, component: ErrorPage }
 ];
 

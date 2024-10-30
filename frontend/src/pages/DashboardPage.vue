@@ -3,24 +3,16 @@ import { useRouter } from "vue-router";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
-import { onMounted, onUnmounted, ref } from "vue";
+import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { rAddBackupProfilePage } from "../router";
+import { rAddBackupProfilePage, rAddRepositoryPage } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
-import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
  ************/
-
-interface Slide {
-  next?: boolean;
-  prev?: boolean;
-  backup?: boolean;
-  repo?: boolean;
-}
 
 /************
  * Variables
@@ -84,7 +76,7 @@ getRepos();
           <RepoCardSimple :repo='repo' />
         </div>
         <!-- Add Repository Card -->
-        <div @click='LogDebug("Add Repository clicked")' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+        <div @click='router.push(rAddRepositoryPage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
         </div>

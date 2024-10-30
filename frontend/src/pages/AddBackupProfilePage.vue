@@ -16,6 +16,7 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import TooltipIcon from "../components/common/TooltipIcon.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Types
@@ -25,7 +26,6 @@ enum Step {
   SelectData = 0,
   Schedule = 1,
   Repository = 2,
-  Summary = 3,
 }
 
 /************
@@ -33,6 +33,7 @@ enum Step {
  ************/
 
 const router = useRouter();
+const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
@@ -80,7 +81,7 @@ const isStep3Valid = computed(() => {
 function getMaxWithPerStep(): string {
   switch (currentStep.value) {
     case Step.Repository:
-      return "";
+      return "max-w-[800px]";
     default:
       return "max-w-[600px]";
   }
@@ -188,7 +189,8 @@ const nextStep = async () => {
         return;
       }
       if (await saveBackupProfile()) {
-        currentStep.value++;
+        toast.success("Backup profile created");
+        await router.replace(withId(rBackupProfilePage, backupProfile.value.id.toString()))
       }
       break;
   }
@@ -290,29 +292,15 @@ getExistingRepositories();
 
     <!-- 3. Step - Repository -->
     <template v-if='currentStep === Step.Repository'>
-      <ConnectRepo @update:connected-repos='connectRepos'></ConnectRepo>
+      <ConnectRepo
+        :show-connected-repos='true'
+        :show-titles='true'
+        @update:connected-repos='connectRepos'>
+      </ConnectRepo>
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep3Valid' @click='nextStep'>Create</button>
-      </div>
-    </template>
-
-    <!-- 4. Step - Summary -->
-    <template v-if='currentStep === Step.Summary'>
-      <div class='flex items-center'>
-        <h2>Summary</h2>
-        <div>{{ backupProfile.name }}</div>
-        <div>{{ backupProfile.prefix }}</div>
-        <div>{{ backupProfile.backupPaths }}</div>
-      </div>
-
-      <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.push(rDashboardPage)'>Go to Dashboard
-        </button>
-        <button class='btn btn-primary min-w-24'
-                @click='router.push(withId(rBackupProfilePage, backupProfile.id.toString()))'>Go to Backup Profile
-        </button>
       </div>
     </template>
   </div>
