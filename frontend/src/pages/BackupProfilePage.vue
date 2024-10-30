@@ -53,10 +53,6 @@ const { meta, errors, defineField } = useForm({
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
-const reposToBeAdded = computed(() => {
-  return existingRepos.value.filter(r => !backupProfile.value.edges.repositories?.some(repo => repo.id === r.id));
-});
-
 /************
  * Functions
  ************/
@@ -65,9 +61,10 @@ async function getData() {
   try {
     backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     name.value = backupProfile.value.name;
-    if (backupProfile.value.edges?.repositories?.length && !selectedRepo.value) {
+
+    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.some(repo => repo.id === selectedRepo.value?.id)) {
       // Select the first repo by default
-      selectedRepo.value = backupProfile.value.edges.repositories[0];
+      selectedRepo.value = backupProfile.value.edges.repositories?.[0];
     }
     for (const repo of backupProfile.value?.edges?.repositories ?? []) {
       // Set all repo statuses to idle
@@ -304,7 +301,7 @@ watch(loading, async () => {
               <ConnectRepo
                 :show-connected-repos='true'
                 :use-single-repo='true'
-                :existing-repos='reposToBeAdded'
+                :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
                 @click:repo='(repo) => addRepo(repo)'/>
 
               <!-- Add new Repository -->
