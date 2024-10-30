@@ -294,7 +294,9 @@ getExistingRepositories();
     <template v-if='currentStep === Step.Repository'>
       <ConnectRepo
         :show-connected-repos='true'
+        :show-add-repo='true'
         :show-titles='true'
+        :existing-repos='existingRepos'
         @update:connected-repos='connectRepos'>
       </ConnectRepo>
 

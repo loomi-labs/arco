@@ -1,12 +1,11 @@
 <script setup lang='ts'>
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
-import { ref, useTemplateRef } from "vue";
-import { showAndLogError } from "../common/error";
-import { ComputerDesktopIcon, FireIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
+import { computed, ref, useId, useTemplateRef } from "vue";
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import { getBorderColor, getLocation, getTextColorOnlyHover, getTextColorWithHover, Location } from "../common/repository";
+import { getBorderColor, getLocation, getTextColorOnlyHover, getTextColorWithHover, Location, RepoType } from "../common/repository";
+import ConnectRepoCard from "./ConnectRepoCard.vue";
 
 /************
  * Types
@@ -21,13 +20,18 @@ enum SelectedRepoType {
 
 interface Props {
   showConnectedRepos?: boolean;
+  showAddRepo?: boolean;
   showTitles?: boolean;
+  useSingleRepo?: boolean;
+  existingRepos?: ent.Repository[];
 }
 
 interface Emits {
   (event: typeof emitUpdateConnectedRepos, repos: ent.Repository[]): void;
 
   (event: typeof emitUpdateRepoAdded, repo: ent.Repository): void;
+
+  (event: typeof emitClickRepo, repo: ent.Repository): void;
 }
 
 /************
@@ -36,19 +40,22 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   showConnectedRepos: false,
-  showTitles: false
+  showTitles: false,
+  showAddRepo: false,
+  useSingleRepo: false
 });
 const emit = defineEmits<Emits>();
 const emitUpdateConnectedRepos = "update:connected-repos";
 const emitUpdateRepoAdded = "update:repo-added";
+const emitClickRepo = "click:repo";
 
-const existingRepos = ref<ent.Repository[]>([]);
+const existingRepos = computed(() => props.existingRepos ?? []);
 
 const connectedRepos = ref<ent.Repository[]>([]);
 const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
-const createLocalRepoModalKey = "create_local_repo_modal";
+const createLocalRepoModalKey = useId();
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
-const createRemoteRepoModalKey = "create_remote_repo_modal";
+const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
@@ -58,14 +65,6 @@ const _taildwindcssPlaceholder = "grid-rows-1 grid-rows-2 grid-rows-3 grid-rows-
 /************
  * Functions
  ************/
-
-async function getExistingRepositories() {
-  try {
-    existingRepos.value = await repoClient.All();
-  } catch (error: any) {
-    await showAndLogError("Failed to get existing repositories", error);
-  }
-}
 
 function selectLocalRepo() {
   selectedRepoType.value = SelectedRepoType.Local;
@@ -84,6 +83,11 @@ function addRepo(repo: ent.Repository) {
 }
 
 function connectOrDisconnectRepo(repo: ent.Repository) {
+  if (props.useSingleRepo) {
+    emit(emitClickRepo, repo);
+    return;
+  }
+
   if (connectedRepos.value.some(r => r.id === repo.id)) {
     connectedRepos.value = connectedRepos.value.filter(r => r.id !== repo.id);
   } else {
@@ -104,8 +108,6 @@ function getRepoCardClass(repo: ent.Repository) {
 /************
  * Lifecycle
  ************/
-
-getExistingRepositories();
 
 </script>
 
@@ -128,50 +130,23 @@ getExistingRepositories();
     </div>
   </div>
 
-  <h2 v-if='showTitles' class='text-3xl py-4'>Add a repository</h2>
+  <div v-if='showAddRepo'>
+    <h2 v-if='showTitles' class='text-3xl py-4'>Add a repository</h2>
 
-  <!-- New Repository Options -->
-  <div class='flex gap-6'>
-    <!-- Local Repository Card -->
-    <div class='group flex flex-col ac-card-hover p-10 w-full'
-         :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'
-         @click='selectLocalRepo'>
-      <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                           :class='{"text-secondary": selectedRepoType === SelectedRepoType.Local}' />
-      <p>Local Repository</p>
-      <div class='divider'></div>
-      <p>Store your backups on a local drive.</p>
+    <div class='flex gap-6'>
+      <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
+      <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
+      <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' />
     </div>
-    <!-- Remote Repository Card -->
-    <div class='group flex flex-col ac-card-hover p-10 w-full'
-         :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Remote }'
-         @click='selectRemoteRepo'>
-      <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                             :class='{"text-secondary": selectedRepoType === SelectedRepoType.Remote}' />
-      <p>Remote Repository</p>
-      <div class='divider'></div>
-      <p>Store your backups on a remote server.</p>
-    </div>
-    <!-- Arco Cloud Card -->
-    <div class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'
-         :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.ArcoCloud }'
-         @click='selectedRepoType = SelectedRepoType.ArcoCloud'>
-      <FireIcon class='size-24 self-center mb-4'
-                :class='{"text-secondary": selectedRepoType === SelectedRepoType.ArcoCloud}' />
-      <p>Arco Cloud</p>
-      <div class='divider'></div>
-      <p>Store your backups in Arco Cloud.</p>
-      <p>Coming Soon</p>
-    </div>
+
+    <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
+                                @close='selectedRepoType = SelectedRepoType.None'
+                                @update:repo-created='(repo) => addRepo(repo)' />
+
+    <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
+                                 @close='selectedRepoType = SelectedRepoType.None'
+                                 @update:repo-created='(repo) => addRepo(repo)' />
   </div>
-
-  <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
-                              @close='selectedRepoType = SelectedRepoType.None'
-                              @update:repo-created='(repo) => addRepo(repo)' />
-
-  <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
-                               @close='selectedRepoType = SelectedRepoType.None'
-                               @update:repo-created='(repo) => addRepo(repo)' />
 </template>
 
 <style scoped>

@@ -31,6 +31,7 @@ const router = useRouter();
     <h1 class='text-4xl font-bold text-center p-10'>New repository</h1>
 
     <ConnectRepo
+      :show-add-repo='true'
       @update:repo-added='(repo) => router.push(withId(Page.Repository, repo.id))'>
     </ConnectRepo>
   </div>

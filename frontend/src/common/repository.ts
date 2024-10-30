@@ -52,3 +52,9 @@ export function toHumanReadableSize(size: number): string {
   }
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
+
+export enum RepoType {
+  Local = "local",
+  Remote = "remote",
+  ArcoCloud = "arco-cloud",
+}
