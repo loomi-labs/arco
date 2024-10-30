@@ -7,7 +7,7 @@ import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupCard from "../components/BackupCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { rAddBackupProfilePage, rAddRepositoryPage } from "../router";
+import { Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 
 /************
@@ -61,7 +61,7 @@ getRepos();
         <BackupCard :backup='backup' />
       </div>
       <!-- Add Backup Card -->
-      <div @click='router.push(rAddBackupProfilePage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+      <div @click='router.push(Page.AddBackupProfilePage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
         <PlusCircleIcon class='size-12' />
         <div class='pl-2 text-lg font-semibold'>Add Backup</div>
       </div>
@@ -76,7 +76,7 @@ getRepos();
           <RepoCardSimple :repo='repo' />
         </div>
         <!-- Add Repository Card -->
-        <div @click='router.push(rAddRepositoryPage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+        <div @click='router.push(Page.AddRepositoryPage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
         </div>

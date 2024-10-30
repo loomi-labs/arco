@@ -6,7 +6,7 @@ import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/so
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
-import { rRepositoryPage, withId } from "../router";
+import { Page, withId } from "../router";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
 import { getBadge, getBgColor, getLocation, getTextColor, getTooltipColor, Location } from "../common/repository";
@@ -77,7 +77,7 @@ onUnmounted(() => {
 
 <template>
   <div class='group/repo flex justify-between ac-card-hover h-full w-full'
-    @click='router.push(withId(rRepositoryPage, repo.id))'>
+    @click='router.push(withId(Page.RepositoryPage, repo.id))'>
     <div class='flex flex-col w-full p-6'>
       <div class='flex-grow text-xl font-semibold pb-6' :class='getTextColor(location)'>{{ repo.name }}</div>
       <div class='flex justify-between'>

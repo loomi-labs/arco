@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { rAddBackupProfilePage, rBackupProfilePage, rDashboardPage, rRepositoryPage } from "../router";
+import { Page } from "../router";
 import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
 import { ArrowLongLeftIcon, MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
@@ -63,7 +63,7 @@ async function detectPreferredTheme() {
 async function toggleTheme() {
   // If the app is not ready, we don't do anything.
   if (!props.isReady) {
-    return
+    return;
   }
 
   try {
@@ -100,13 +100,13 @@ watch(props, async () => {
 router.afterEach(() => {
   const path = router.currentRoute.value.matched.at(0)?.path;
   switch (path) {
-    case rBackupProfilePage:
+    case Page.BackupProfilePage:
       subroute.value = "Backup Profile";
       break;
-    case rRepositoryPage:
+    case Page.RepositoryPage:
       subroute.value = "Repository";
       break;
-    case rAddBackupProfilePage:
+    case Page.AddBackupProfilePage:
       subroute.value = "New Backup Profile";
       break;
     default:
@@ -120,12 +120,12 @@ router.afterEach(() => {
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <div class='flex items-center gap-2'>
-        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(rDashboardPage)'>Arco
+        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.DashboardPage)'>Arco
           <ArrowLongLeftIcon v-if='subroute' class='size-8' />
         </button>
         <p v-if='subroute'>{{ subroute }}</p>
       </div>
-      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}' >
+      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
         <SunIcon class='swap-off size-10' @click='toggleTheme' />
         <MoonIcon class='swap-on size-10' @click='toggleTheme' />
       </label>

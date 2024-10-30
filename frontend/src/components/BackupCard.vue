@@ -7,7 +7,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref } from "vue";
-import { rBackupProfilePage, withId } from "../router";
+import { Page, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toDurationBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
@@ -113,7 +113,7 @@ onUnmounted(() => {
 
 <template>
   <div class='group ac-card-hover h-full w-full'
-       @click='router.push(withId(rBackupProfilePage, backup.id.toString()))'>
+       @click='router.push(withId(Page.BackupProfilePage, backup.id.toString()))'>
     <div
       class='flex justify-between px-6 pt-4 pb-2'
       :class='icon.color'>

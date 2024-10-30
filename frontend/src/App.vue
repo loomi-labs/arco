@@ -6,7 +6,7 @@ import * as runtime from "../wailsjs/runtime";
 import { LogDebug } from "../wailsjs/runtime";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
-import { rDashboardPage, rErrorPage } from "./router";
+import { Page } from "./router";
 import Navbar from "./components/Navbar.vue";
 import { types } from "../wailsjs/go/models";
 import { onUnmounted, ref } from "vue";
@@ -31,7 +31,7 @@ async function init() {
     if (errorMsg.message !== "") {
       hasStartupError.value = true;
       LogDebug("go to error page");
-      await router.push(rErrorPage);
+      await router.push(Page.ErrorPage);
     } else {
       await getNotifications();
       await goToStartPage();
@@ -69,7 +69,7 @@ async function goToStartPage() {
     if (env.startPage) {
       await router.push(env.startPage);
     } else {
-      await router.push(rDashboardPage);
+      await router.push(Page.DashboardPage);
     }
   } catch (error: any) {
     await showAndLogError("Failed to get env vars", error);

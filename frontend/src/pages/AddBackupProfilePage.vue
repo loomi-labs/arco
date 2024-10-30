@@ -4,7 +4,7 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { rBackupProfilePage, rDashboardPage, withId } from "../router";
+import { Page, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
@@ -190,7 +190,7 @@ const nextStep = async () => {
       }
       if (await saveBackupProfile()) {
         toast.success("Backup profile created");
-        await router.replace(withId(rBackupProfilePage, backupProfile.value.id.toString()))
+        await router.replace(withId(Page.BackupProfilePage, backupProfile.value.id.toString()))
       }
       break;
   }
@@ -264,7 +264,7 @@ getExistingRepositories();
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.replace(rDashboardPage)'>Cancel</button>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='router.replace(Page.DashboardPage)'>Cancel</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
