@@ -41,6 +41,7 @@ func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, e
 func (r *RepositoryClient) All() ([]*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
+		Order(ent.Desc(repository.FieldName)).
 		All(r.ctx)
 }
 

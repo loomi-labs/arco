@@ -43,6 +43,7 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		WithRepositories().
 		WithBackupSchedule().
 		WithPruningRule().
+		Order(ent.Desc(backupprofile.FieldName)).
 		All(b.ctx)
 }
 
@@ -57,6 +58,7 @@ func (b *BackupClient) GetBackupProfileFilterOptions(repoId int) ([]BackupProfil
 	profiles, err := b.db.BackupProfile.
 		Query().
 		Where(backupprofile.HasRepositoriesWith(repository.ID(repoId))).
+		Order(ent.Desc(backupprofile.FieldName)).
 		All(b.ctx)
 	if err != nil {
 		return nil, err
