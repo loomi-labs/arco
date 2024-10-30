@@ -120,7 +120,7 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	}
 
 	pruningRule := &ent.PruningRule{
-		IsEnabled:      true,
+		IsEnabled:      false,
 		KeepHourly:     12,
 		KeepDaily:      7,
 		KeepWeekly:     4,
