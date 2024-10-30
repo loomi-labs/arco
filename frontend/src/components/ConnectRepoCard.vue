@@ -1,6 +1,7 @@
 <script setup lang='ts'>
-import { ComputerDesktopIcon, FireIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import { RepoType } from "../common/repository";
+import ArcoLogo from "./common/ArcoLogo.vue";
 
 /************
  * Types
@@ -61,8 +62,7 @@ const emitClick = "click";
        class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'
        :class='{ "ac-card-selected": isSelected}'
        @click='emit(emitClick)'>
-    <FireIcon class='size-24 self-center mb-4'
-              :class='{"text-secondary": isSelected}' />
+    <ArcoLogo :svgClass='"size-24 self-center mb-42" + (isSelected ? "text-secondary" : "")' />
     <p>Arco Cloud</p>
     <div class='divider'></div>
     <p>Store your backups in Arco Cloud.</p>

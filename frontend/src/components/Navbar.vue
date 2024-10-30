@@ -9,6 +9,7 @@ import { ref, watch } from "vue";
 import * as appClient from "../../wailsjs/go/app/AppClient";
 import { settings } from "../../wailsjs/go/models";
 import Theme = settings.Theme;
+import ArcoLogo from "./common/ArcoLogo.vue";
 
 /************
  * Types
@@ -123,7 +124,8 @@ router.afterEach(() => {
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <div class='flex items-center gap-2'>
-        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.Dashboard)'>Arco
+        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.Dashboard)'>
+          <ArcoLogo svgClass='size-8' />Arco
           <ArrowLongLeftIcon v-if='subroute' class='size-8' />
         </button>
         <p v-if='subroute'>{{ subroute }}</p>
