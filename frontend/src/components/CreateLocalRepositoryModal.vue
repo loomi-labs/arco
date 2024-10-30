@@ -129,12 +129,12 @@ async function setNameFromLocation() {
     return;
   }
 
-    // If the location is valid, we can set the name
-    const newName = location.value?.split("/").pop();
-    if (newName) {
-      // Capitalize the first letter
-      name.value = capitalizeFirstLetter(newName);
-    }
+  // If the location is valid, we can set the name
+  const newName = location.value?.split("/").pop();
+  if (newName) {
+    // Capitalize the first letter
+    name.value = capitalizeFirstLetter(newName);
+  }
 }
 
 async function selectDirectory() {
@@ -183,8 +183,8 @@ watch(() => values.location, async () => await setNameFromLocation());
       <h2 class='text-2xl'>Add a new local repository</h2>
       <VeeForm class='flex flex-col'
                :validation-schema='values'>
-        <div class='flex justify-between items-center'>
-          <div class='flex flex-col w-full pr-4'>
+        <div class='flex justify-between items-start gap-4'>
+          <div class='flex flex-col w-full'>
             <FormField label='Location' :error='errors.location'>
               <input :class='formInputClass' type='text' v-model='location' v-bind='locationAttrs' />
               <template #labelRight v-if='errors.location === pathDoesNotExistMsg'>
@@ -195,21 +195,21 @@ watch(() => values.location, async () => await setNameFromLocation());
             </FormField>
           </div>
 
-          <button class='btn btn-success' @click.prevent='selectDirectory'>
+          <button class='btn btn-success mt-9' @click.prevent='selectDirectory'>
             Select
             <FolderPlusIcon class='size-6' />
           </button>
         </div>
 
-        <div class='flex justify-between items-center'>
-          <div class='flex flex-col w-full pr-4'>
+        <div class='flex justify-between items-start gap-4'>
+          <div class='flex flex-col w-full'>
             <FormField label='Password' :error='errors.password'>
               <input :class='formInputClass' type='password' v-model='password' v-bind='passwordAttrs'
                      :disabled='!isEncrypted' />
             </FormField>
           </div>
 
-          <button class='btn btn-outline min-w-44'
+          <button class='btn btn-outline min-w-44 mt-9'
                   :class='{"btn-success": isEncrypted}'
                   @click.prevent='toggleEncrypted()'>
             {{ isEncrypted ? "Encrypted" : "Not encrypted" }}
