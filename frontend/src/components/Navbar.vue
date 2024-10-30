@@ -109,6 +109,9 @@ router.afterEach(() => {
     case Page.AddBackupProfile:
       subroute.value = "New Backup Profile";
       break;
+    case Page.AddRepository:
+      subroute.value = "New Repository";
+      break;
     default:
       subroute.value = undefined;
   }
