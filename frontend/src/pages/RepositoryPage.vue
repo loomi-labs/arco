@@ -16,12 +16,16 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
+import { Anchor, Page } from "../router";
+import ConfirmModal from "../components/common/ConfirmModal.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Variables
  ************/
 
 const router = useRouter();
+const toast = useToast();
 const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
@@ -33,6 +37,9 @@ const sizeOnDisk = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 const isIntegrityCheckEnabled = ref(false);
+
+const confirmDeleteModalKey = useId();
+const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -113,6 +120,16 @@ async function saveIntegrityCheckSettings() {
   }
 }
 
+async function deleteRepo() {
+  try {
+    await repoClient.Delete(repoId);
+    toast.success("Repository deleted");
+    await router.replace({ path: Page.Dashboard, hash: `#${Anchor.Repositories}` });
+  } catch (error: any) {
+    await showAndLogError("Failed to delete repository", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -175,12 +192,11 @@ onUnmounted(() => {
       <div class='flex justify-between'>
         <div>{{ $t("last_backup") }}</div>
         <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-            <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
-          </span>
+          <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
+        </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-            <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt)
-              }}</span>
-          </span>
+          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+        </span>
       </div>
       <div class='divider'></div>
       <div class='flex justify-between'>
@@ -201,6 +217,17 @@ onUnmounted(() => {
         <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'
                @change='saveIntegrityCheckSettings'>
       </div>
+      <div class='divider'></div>
+      <div class='flex justify-end'>
+        <button class='btn btn-outline btn-error' @click='confirmDeleteModal?.showModal()'>Delete</button>
+      </div>
+
+      <ConfirmModal :ref='confirmDeleteModalKey'
+                    confirm-text='Delete repository'
+                    confirm-class='btn-error'
+                    @confirm='deleteRepo()'>
+        <p>Are you sure you want to delete this repository?</p>
+      </ConfirmModal>
     </div>
 
     <ArchivesCard :repo='repo'

@@ -2,22 +2,12 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { rBackupProfilePage, rDashboardPage, withId } from "../router";
+import { Page, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
-import {
-  ArrowRightCircleIcon,
-  CircleStackIcon,
-  ComputerDesktopIcon,
-  FireIcon,
-  GlobeEuropeAfricaIcon,
-  PlusCircleIcon
-} from "@heroicons/vue/24/solid";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
-import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
-import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import { formInputClass } from "../common/form";
 import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
@@ -25,6 +15,8 @@ import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import TooltipIcon from "../components/common/TooltipIcon.vue";
 import PruningCard from "../components/PruningCard.vue";
+import ConnectRepo from "../components/ConnectRepo.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Types
@@ -34,20 +26,6 @@ enum Step {
   SelectData = 0,
   Schedule = 1,
   Repository = 2,
-  Summary = 3,
-}
-
-enum SelectedRepoAction {
-  None = "none",
-  ConnectExisting = "connect-existing",
-  CreateNew = "create-new",
-}
-
-enum SelectedRepoType {
-  None = "none",
-  Local = "local",
-  Remote = "remote",
-  ArcoCloud = "arco-cloud",
 }
 
 /************
@@ -55,6 +33,7 @@ enum SelectedRepoType {
  ************/
 
 const router = useRouter();
+const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
@@ -90,12 +69,6 @@ const pruningCardRef = ref();
 
 // Step 3
 const connectedRepos = ref<ent.Repository[]>([]);
-const selectedRepoAction = ref<SelectedRepoAction>(SelectedRepoAction.None);
-const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
-const createLocalRepoModalKey = "create_local_repo_modal";
-const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
-const createRemoteRepoModalKey = "create_remote_repo_modal";
-const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
 
 const isStep3Valid = computed(() => {
   return connectedRepos.value.length > 0;
@@ -108,7 +81,7 @@ const isStep3Valid = computed(() => {
 function getMaxWithPerStep(): string {
   switch (currentStep.value) {
     case Step.Repository:
-      return "";
+      return "max-w-[800px]";
     default:
       return "max-w-[600px]";
   }
@@ -164,19 +137,8 @@ function saveSchedule(schedule: ent.BackupSchedule | undefined) {
 }
 
 // Step 3
-function selectLocalRepo() {
-  selectedRepoType.value = SelectedRepoType.Local;
-  createLocalRepoModal.value?.showModal();
-}
-
-function selectRemoteRepo() {
-  selectedRepoType.value = SelectedRepoType.Remote;
-  createRemoteRepoModal.value?.showModal();
-}
-
-const addRepo = (repo: ent.Repository) => {
-  existingRepos.value.push(repo);
-  connectedRepos.value.push(repo);
+const connectRepos = (repos: ent.Repository[]) => {
+  connectedRepos.value = repos;
 };
 
 async function saveBackupProfile(): Promise<boolean> {
@@ -227,7 +189,8 @@ const nextStep = async () => {
         return;
       }
       if (await saveBackupProfile()) {
-        currentStep.value++;
+        toast.success("Backup profile created");
+        await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()))
       }
       break;
   }
@@ -301,7 +264,7 @@ getExistingRepositories();
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.back()'>Cancel</button>
+        <button class='btn btn-outline btn-neutral min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
@@ -321,7 +284,6 @@ getExistingRepositories();
         </PruningCard>
       </div>
 
-
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep2Valid' @click='nextStep'>Next</button>
@@ -330,110 +292,17 @@ getExistingRepositories();
 
     <!-- 3. Step - Repository -->
     <template v-if='currentStep === Step.Repository'>
-      <h2 class='text-3xl py-4'>Connect Repositories</h2>
-      <p class='text-lg'>Choose the repositories where you want to store your backups</p>
-
-      <div class='flex gap-4'>
-        <div class='hover:bg-success/50 p-4' v-for='(repo, index) in existingRepos' :key='index'
-             :class='{"bg-success": connectedRepos.some(r => r.id === repo.id)}'
-             @click='connectedRepos.some(r => r.id === repo.id) ? connectedRepos = connectedRepos.filter(r => r.id !== repo.id) : connectedRepos.push(repo)'
-        >
-          {{ repo.name }}
-        </div>
-      </div>
-
-      <div class='flex gap-4 pt-10 pb-6'>
-        <!-- Add new Repository Card -->
-        <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-             :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.CreateNew }'
-             @click='selectedRepoAction = SelectedRepoAction.CreateNew'>
-          <p>Create new repository</p>
-          <div class='relative size-24 group-hover:text-secondary'
-               :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.CreateNew}'>
-            <CircleStackIcon class='absolute inset-0 size-24 z-10' />
-            <div
-              class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-              <PlusCircleIcon class='size-10' />
-            </div>
-          </div>
-        </div>
-        <!-- Connect to existing Repository Card -->
-        <div class='group flex justify-between items-end ac-card-hover p-10 w-full'
-             :class='{ "ac-card-selected": selectedRepoAction === SelectedRepoAction.ConnectExisting }'
-             @click='selectedRepoAction = SelectedRepoAction.ConnectExisting; selectedRepoType = SelectedRepoType.None'>
-          <p>Connect to existing repository</p>
-          <div class='relative size-24 group-hover:text-secondary'
-               :class='{"text-secondary": selectedRepoAction === SelectedRepoAction.ConnectExisting}'>
-            <ArrowRightCircleIcon class='absolute inset-0 size-24 z-10' />
-          </div>
-        </div>
-      </div>
-
-      <!-- New Repository Options -->
-      <div class='flex gap-4 w-1/2 pr-2'
-           :class='{"hidden": selectedRepoAction !== SelectedRepoAction.CreateNew}'>
-        <!-- Local Repository Card -->
-        <div class='group flex flex-col ac-card-hover p-10 w-full'
-             :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Local }'
-             @click='selectLocalRepo'>
-          <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                               :class='{"text-secondary": selectedRepoType === SelectedRepoType.Local}' />
-          <p>Local Repository</p>
-          <div class='divider'></div>
-          <p>Store your backups on a local drive.</p>
-        </div>
-        <!-- Remote Repository Card -->
-        <div class='group flex flex-col ac-card-hover p-10 w-full'
-             :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.Remote }'
-             @click='selectRemoteRepo'>
-          <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                                 :class='{"text-secondary": selectedRepoType === SelectedRepoType.Remote}' />
-          <p>Remote Repository</p>
-          <div class='divider'></div>
-          <p>Store your backups on a remote server.</p>
-        </div>
-        <!-- Arco Cloud Card -->
-        <div class='group flex flex-col ac-card bg-neutral-300 p-10 w-full'
-             :class='{ "ac-card-selected": selectedRepoType === SelectedRepoType.ArcoCloud }'
-             @click='selectedRepoType = SelectedRepoType.ArcoCloud'>
-          <FireIcon class='size-24 self-center mb-4'
-                    :class='{"text-secondary": selectedRepoType === SelectedRepoType.ArcoCloud}' />
-          <p>Arco Cloud</p>
-          <div class='divider'></div>
-          <p>Store your backups in Arco Cloud.</p>
-          <p>Coming Soon</p>
-        </div>
-      </div>
-
-      <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
-                                  @close='selectedRepoType = SelectedRepoType.None'
-                                  @update:repo-created='(repo) => addRepo(repo)' />
-
-      <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
-                                   @close='selectedRepoType = SelectedRepoType.None'
-                                   @update:repo-created='(repo) => addRepo(repo)' />
+      <ConnectRepo
+        :show-connected-repos='true'
+        :show-add-repo='true'
+        :show-titles='true'
+        :existing-repos='existingRepos'
+        @update:connected-repos='connectRepos'>
+      </ConnectRepo>
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep3Valid' @click='nextStep'>Create</button>
-      </div>
-    </template>
-
-    <!-- 4. Step - Summary -->
-    <template v-if='currentStep === Step.Summary'>
-      <div class='flex items-center'>
-        <h2>Summary</h2>
-        <div>{{ backupProfile.name }}</div>
-        <div>{{ backupProfile.prefix }}</div>
-        <div>{{ backupProfile.backupPaths }}</div>
-      </div>
-
-      <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.push(rDashboardPage)'>Go to Dashboard
-        </button>
-        <button class='btn btn-primary min-w-24'
-                @click='router.push(withId(rBackupProfilePage, backupProfile.id.toString()))'>Go to Backup Profile
-        </button>
       </div>
     </template>
   </div>

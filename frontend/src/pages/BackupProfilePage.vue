@@ -1,14 +1,15 @@
 <script setup lang='ts'>
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
+import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as zod from "zod";
 import { object } from "zod";
-import { nextTick, ref, useTemplateRef, watch } from "vue";
+import { nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { backupprofile, ent, state } from "../../wailsjs/go/models";
-import { rDashboardPage } from "../router";
+import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
-import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import { CircleStackIcon, EllipsisVerticalIcon, PencilIcon, PlusCircleIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { useToast } from "vue-toastification";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { useForm } from "vee-validate";
@@ -18,6 +19,7 @@ import RepoCard from "../components/RepoCard.vue";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
+import ConnectRepo from "../components/ConnectRepo.vue";
 
 /************
  * Variables
@@ -28,12 +30,16 @@ const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
+const existingRepos = ref<ent.Repository[]>([]);
 const loading = ref(true);
 
 const nameInputKey = "name_input";
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
 const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
+
+const addRepoModalKey = useId();
+const addRepoModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(addRepoModalKey);
 
 const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
@@ -51,30 +57,34 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
  * Functions
  ************/
 
-async function getBackupProfile() {
+async function getData() {
   try {
-    loading.value = true;
     backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
     name.value = backupProfile.value.name;
-    if (backupProfile.value.edges?.repositories?.length && !selectedRepo.value) {
+
+    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.some(repo => repo.id === selectedRepo.value?.id)) {
       // Select the first repo by default
-      selectedRepo.value = backupProfile.value.edges.repositories[0];
+      selectedRepo.value = backupProfile.value.edges.repositories?.[0];
     }
     for (const repo of backupProfile.value?.edges?.repositories ?? []) {
       // Set all repo statuses to idle
       repoStatuses.value.set(repo.id, state.RepoStatus.idle);
     }
+
+    // Get existing repositories
+    existingRepos.value = await repoClient.All();
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
+  } finally {
+    loading.value = false;
   }
-  loading.value = false;
 }
 
 async function deleteBackupProfile() {
   try {
     await backupClient.DeleteBackupProfile(backupProfile.value.id, false);
-    await toast.success("Backup profile deleted");
-    await router.push(rDashboardPage);
+    toast.success("Backup profile deleted");
+    await router.replace({ path: Page.Dashboard, hash: `#${Anchor.BackupProfiles}` });
   } catch (error: any) {
     await showAndLogError("Failed to delete backup profile", error);
   }
@@ -136,9 +146,30 @@ async function saveIcon(icon: backupprofile.Icon) {
 
 async function setPruningRule(pruningRule: ent.PruningRule) {
   try {
-    backupProfile.value.edges.pruningRule = pruningRule
+    backupProfile.value.edges.pruningRule = pruningRule;
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);
+  }
+}
+
+async function addRepo(repo: ent.Repository) {
+  addRepoModal.value?.close();
+  try {
+    await backupClient.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
+    await getData();
+    toast.success("Repository added");
+  } catch (error: any) {
+    await showAndLogError("Failed to add repository", error);
+  }
+}
+
+async function removeRepo(repoId: number) {
+  try {
+    await backupClient.RemoveRepositoryFromBackupProfile(backupProfile.value.id, repoId);
+    await getData();
+    toast.success("Repository removed");
+  } catch (error: any) {
+    await showAndLogError("Failed to remove repository", error);
   }
 }
 
@@ -146,7 +177,7 @@ async function setPruningRule(pruningRule: ent.PruningRule) {
  * Lifecycle
  ************/
 
-getBackupProfile();
+getData();
 
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
@@ -236,17 +267,70 @@ watch(loading, async () => {
     <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
       <!-- Repositories -->
-      <div v-for='(repo, index) in backupProfile.edges?.repositories' :key='index'>
+      <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
         <RepoCard
           :repo-id='repo.id'
           :backup-profile-id='backupProfile.id'
           :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
           :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
-          :is-pruning-enabled='backupProfile.edges.pruningRule?.isEnabled ?? false'
+          :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
+          :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
           @click='() => selectedRepo = repo'
-          @repo:status='(event) => repoStatuses.set(repo.id, event)'>
+          @repo:status='(event) => repoStatuses.set(repo.id, event)'
+          @remove-repo='removeRepo(repo.id)'
+        >
         </RepoCard>
       </div>
+      <!-- Add Repository Card -->
+      <div @click='() => addRepoModal?.showModal()' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+        <PlusCircleIcon class='size-12' />
+        <div class='pl-2 text-lg font-semibold'>Add Repository</div>
+      </div>
+
+      <dialog
+        :ref='addRepoModalKey'
+        class='modal'
+        @click.stop
+      >
+        <form
+          method='dialog'
+          class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
+        >
+          <div class='modal-action'>
+            <div class='flex flex-col w-full justify-center gap-4'>
+              <ConnectRepo
+                :show-connected-repos='true'
+                :use-single-repo='true'
+                :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
+                @click:repo='(repo) => addRepo(repo)' />
+
+              <!-- Add new Repository -->
+              <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
+                <p>Create new repository</p>
+                <div class='relative size-24 group-hover:text-secondary'>
+                  <CircleStackIcon class='absolute inset-0 size-24 z-10' />
+                  <div
+                    class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
+                    <PlusCircleIcon class='size-10' />
+                  </div>
+                </div>
+              </div>
+
+              <div class='flex w-full justify-center gap-4'>
+                <button
+                  value='false'
+                  class='btn btn-outline'
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+        <form method='dialog' class='modal-backdrop'>
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
     <ArchivesCard v-if='selectedRepo'
                   :backup-profile-id='backupProfile.id'

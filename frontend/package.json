@@ -16,13 +16,13 @@
     "@formkit/tempo": "^0.1.2",
     "@heroicons/vue": "^2.1.5",
     "@types/deep-equal": "^1.0.4",
-    "@types/lodash": "^4.17.10",
-    "@vee-validate/zod": "^4.13.2",
+    "@types/lodash": "^4.17.12",
+    "@vee-validate/zod": "^4.14.6",
     "dayjs": "^1.11.13",
     "deep-equal": "^2.2.3",
     "lodash": "^4.17.21",
-    "vee-validate": "^4.13.2",
-    "vue": "^3.5.11",
+    "vee-validate": "^4.14.6",
+    "vue": "^3.5.12",
     "vue-i18n": "^9.14.1",
     "vue-router": "^4.4.5",
     "vue-tailwind-datepicker": "^1.7.3",
@@ -31,17 +31,18 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@babel/types": "^7.25.7",
-    "@types/node": "^22.7.5",
+    "@babel/types": "^7.26.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/node": "^22.8.1",
     "@vitejs/plugin-vue": "^5.1.4",
-    "@vue/devtools": "^7.4.6",
+    "@vue/devtools": "^7.5.4",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.13",
     "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.13",
+    "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
-    "vite": "^5.4.8",
+    "vite": "^5.4.10",
     "vue-i18n-extract": "^2.0.7",
-    "vue-tsc": "^2.1.6"
+    "vue-tsc": "^2.1.8"
   }
 }
