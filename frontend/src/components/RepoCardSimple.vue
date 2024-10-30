@@ -77,7 +77,7 @@ onUnmounted(() => {
 
 <template>
   <div class='group/repo flex justify-between ac-card-hover h-full w-full'
-    @click='router.push(withId(Page.RepositoryPage, repo.id))'>
+    @click='router.push(withId(Page.Repository, repo.id))'>
     <div class='flex flex-col w-full p-6'>
       <div class='flex-grow text-xl font-semibold pb-6' :class='getTextColor(location)'>{{ repo.name }}</div>
       <div class='flex justify-between'>

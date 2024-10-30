@@ -61,7 +61,7 @@ getRepos();
         <BackupCard :backup='backup' />
       </div>
       <!-- Add Backup Card -->
-      <div @click='router.push(Page.AddBackupProfilePage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+      <div @click='router.push(Page.AddBackupProfile)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
         <PlusCircleIcon class='size-12' />
         <div class='pl-2 text-lg font-semibold'>Add Backup</div>
       </div>
@@ -76,7 +76,7 @@ getRepos();
           <RepoCardSimple :repo='repo' />
         </div>
         <!-- Add Repository Card -->
-        <div @click='router.push(Page.AddRepositoryPage)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+        <div @click='router.push(Page.AddRepository)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
         </div>

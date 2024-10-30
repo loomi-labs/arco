@@ -3,18 +3,18 @@ import BackupProfilePage from "./pages/BackupProfilePage.vue";
 import RepositoryPage from "./pages/RepositoryPage.vue";
 import ErrorPage from "./pages/ErrorPage.vue";
 import DashboardPage from "./pages/DashboardPage.vue";
-import AddBackupProfilePage from "./pages/AddBackupProfilePage.vue";
-import AddRepositoryPage from "./pages/AddRepositoryPage.vue";
+import AddBackupProfilePage from "./pages/BackupProfileAddPage.vue";
+import AddRepositoryPage from "./pages/RepositoryAddPage.vue";
 
 // Pages
 export enum Page {
   Startup = "/",
-  DashboardPage = "/dashboard",
-  BackupProfilePage = "/backup-profile/:id",
-  AddBackupProfilePage = "/backup-profile/new",
-  RepositoryPage = "/repository/:id",
-  AddRepositoryPage = "/repository/new",
-  ErrorPage = "/error"
+  Dashboard = "/dashboard",
+  BackupProfile = "/backup-profile/:id",
+  AddBackupProfile = "/backup-profile/new",
+  Repository = "/repository/:id",
+  AddRepository = "/repository/new",
+  Error = "/error"
 }
 
 // Anchors
@@ -25,12 +25,12 @@ export enum Anchor {
 
 const routes: RouteRecordRaw[] = [
   { path: Page.Startup, component: ErrorPage },
-  { path: Page.DashboardPage, component: DashboardPage },
-  { path: Page.BackupProfilePage, component: BackupProfilePage },
-  { path: Page.AddBackupProfilePage, component: AddBackupProfilePage },
-  { path: Page.RepositoryPage, component: RepositoryPage },
-  { path: Page.AddRepositoryPage, component: AddRepositoryPage },
-  { path: Page.ErrorPage, component: ErrorPage }
+  { path: Page.Dashboard, component: DashboardPage },
+  { path: Page.BackupProfile, component: BackupProfilePage },
+  { path: Page.AddBackupProfile, component: AddBackupProfilePage },
+  { path: Page.Repository, component: RepositoryPage },
+  { path: Page.AddRepository, component: AddRepositoryPage },
+  { path: Page.Error, component: ErrorPage }
 ];
 
 export function withId(page: Page, id: string | number): string {

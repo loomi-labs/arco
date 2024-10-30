@@ -166,7 +166,7 @@ onUnmounted(() => {
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
       <a class='link mt-auto'
-         @click='router.push(withId(Page.RepositoryPage, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
+         @click='router.push(withId(Page.Repository, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>
     <div class='flex flex-col items-end'>
       <div class='flex mb-2'>

@@ -113,7 +113,7 @@ onUnmounted(() => {
 
 <template>
   <div class='group ac-card-hover h-full w-full'
-       @click='router.push(withId(Page.BackupProfilePage, backup.id.toString()))'>
+       @click='router.push(withId(Page.BackupProfile, backup.id.toString()))'>
     <div
       class='flex justify-between px-6 pt-4 pb-2'
       :class='icon.color'>

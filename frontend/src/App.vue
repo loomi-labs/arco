@@ -31,7 +31,7 @@ async function init() {
     if (errorMsg.message !== "") {
       hasStartupError.value = true;
       LogDebug("go to error page");
-      await router.push(Page.ErrorPage);
+      await router.push(Page.Error);
     } else {
       await getNotifications();
       await goToStartPage();
@@ -69,7 +69,7 @@ async function goToStartPage() {
     if (env.startPage) {
       await router.push(env.startPage);
     } else {
-      await router.push(Page.DashboardPage);
+      await router.push(Page.Dashboard);
     }
   } catch (error: any) {
     await showAndLogError("Failed to get env vars", error);

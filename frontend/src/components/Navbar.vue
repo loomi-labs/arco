@@ -100,13 +100,13 @@ watch(props, async () => {
 router.afterEach(() => {
   const path = router.currentRoute.value.matched.at(0)?.path;
   switch (path) {
-    case Page.BackupProfilePage:
+    case Page.BackupProfile:
       subroute.value = "Backup Profile";
       break;
-    case Page.RepositoryPage:
+    case Page.Repository:
       subroute.value = "Repository";
       break;
-    case Page.AddBackupProfilePage:
+    case Page.AddBackupProfile:
       subroute.value = "New Backup Profile";
       break;
     default:
@@ -120,7 +120,7 @@ router.afterEach(() => {
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <div class='flex items-center gap-2'>
-        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.DashboardPage)'>Arco
+        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.Dashboard)'>Arco
           <ArrowLongLeftIcon v-if='subroute' class='size-8' />
         </button>
         <p v-if='subroute'>{{ subroute }}</p>

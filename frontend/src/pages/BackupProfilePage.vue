@@ -74,7 +74,7 @@ async function deleteBackupProfile() {
   try {
     await backupClient.DeleteBackupProfile(backupProfile.value.id, false);
     toast.success("Backup profile deleted");
-    await router.replace({ path: Page.DashboardPage, hash: `#${Anchor.BackupProfiles}` });
+    await router.replace({ path: Page.Dashboard, hash: `#${Anchor.BackupProfiles}` });
   } catch (error: any) {
     await showAndLogError("Failed to delete backup profile", error);
   }

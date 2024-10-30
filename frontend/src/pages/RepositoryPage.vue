@@ -124,7 +124,7 @@ async function deleteRepo() {
   try {
     await repoClient.Delete(repoId);
     toast.success("Repository deleted");
-    await router.replace({ path: Page.DashboardPage, hash: `#${Anchor.Repositories}` });
+    await router.replace({ path: Page.Dashboard, hash: `#${Anchor.Repositories}` });
   } catch (error: any) {
     await showAndLogError("Failed to delete repository", error);
   }
