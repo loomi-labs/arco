@@ -159,6 +159,13 @@ func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, 
 		Save(r.ctx)
 }
 
+func (r *RepositoryClient) Delete(id int) error {
+	r.log.Debugf("Deleting repository %d", id)
+	return r.db.Repository.
+		DeleteOneID(id).
+		Exec(r.ctx)
+}
+
 func endOfMonth(t time.Time) time.Time {
 	// Add one month to the current time
 	nextMonth := t.AddDate(0, 1, 0)
