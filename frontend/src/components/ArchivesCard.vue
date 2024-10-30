@@ -329,7 +329,7 @@ onUnmounted(() => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th colspan='3'>
+          <th :colspan='showBackupProfileColumn ? 3 : 2'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
@@ -341,7 +341,7 @@ onUnmounted(() => {
           </th>
         </tr>
         <tr>
-          <th colspan='4'>
+          <th :colspan='showBackupProfileColumn ? 4 : 3'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
               <label class='form-control w-full'>
