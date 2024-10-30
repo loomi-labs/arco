@@ -329,7 +329,7 @@ onUnmounted(() => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th colspan='2'>
+          <th colspan='3'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
