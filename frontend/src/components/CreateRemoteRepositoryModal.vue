@@ -171,7 +171,7 @@ watch(() => values.location, async () => await setNameFromLocation());
         </FormField>
 
         <div class='modal-action'>
-          <button class='btn' type='reset'
+          <button class='btn btn-outline' type='reset'
                   @click.prevent='dialog?.close();'>
             Cancel
           </button>
