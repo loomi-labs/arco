@@ -9,6 +9,7 @@ import (
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"context"
 	"fmt"
+	"github.com/getlantern/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"os"
@@ -266,44 +267,36 @@ func (a *App) installBorgBinary() error {
 }
 
 func (a *App) initSystray() error {
-	//	iconData, err := a.config.Icon.ReadFile("icon.png")
-	//	if err != nil {
-	//		return fmt.Errorf("failed to read icon: %v", err)
-	//	}
-	//
-	//	readyFunc := func() {
-	//		systray.SetIcon(iconData)
-	//		systray.SetTitle(Name)
-	//		systray.SetTooltip(Name)
-	//
-	//		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
-	//		systray.AddSeparator()
-	//		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
-	//
-	//		// Sets the icon of a menu item. Only available on Mac and Windows.
-	//		mOpen.SetIcon(iconData)
-	//		mQuit.SetIcon(iconData)
-	//
-	//		go func() {
-	//			for {
-	//				select {
-	//				case <-mOpen.ClickedCh:
-	//					runtime.WindowShow(a.ctx)
-	//				case <-mQuit.ClickedCh:
-	//					a.Shutdown(a.ctx)
-	//				}
-	//			}
-	//		}()
-	//	}
-	//
-	//	exitFunc := func() {
-	//		// TODO: check if there is a running backup and ask the user if they want to cancel it
-	//		a.Shutdown(a.ctx)
-	//	}
-	//
-	//	// TODO: not working right now -> fix this
-	//	//systray.Run(readyFunc, exitFunc)
-	//	_, _ = readyFunc, exitFunc
+	readyFunc := func() {
+		systray.SetIcon(a.config.Icon)
+		systray.SetTitle(Name)
+		systray.SetTooltip(Name)
+
+		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
+		systray.AddSeparator()
+		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
+
+		// Sets the icon of a menu item. Only available on Mac and Windows.
+		mOpen.SetIcon(a.config.Icon)
+		mQuit.SetIcon(a.config.Icon)
+
+		go func() {
+			for {
+				select {
+				case <-mOpen.ClickedCh:
+					runtime.WindowShow(a.ctx)
+				case <-mQuit.ClickedCh:
+					a.Shutdown(a.ctx)
+				}
+			}
+		}()
+	}
+
+	exitFunc := func() {
+		a.Shutdown(a.ctx)
+	}
+
+	systray.Run(readyFunc, exitFunc)
 	return nil
 }
 

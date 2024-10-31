@@ -16,7 +16,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -99,7 +98,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, icon fs.FS, migrations fs.FS) (*types.Config, error) {
+func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -118,7 +117,7 @@ func initConfig(configDir string, icon fs.FS, migrations fs.FS) (*types.Config, 
 		Binaries:    binaries,
 		BorgPath:    filepath.Join(configDir, binaries[0].Name),
 		BorgVersion: binaries[0].Version,
-		Icon:        icon,
+		Icon:        iconData,
 		Migrations:  migrations,
 	}, nil
 }
@@ -154,20 +153,6 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
 		log.Fatalf("failed to convert log level: %v", err)
-	}
-
-	iconFile, err := config.Icon.Open("icon.png")
-	if err != nil {
-		log.Fatalf("failed to open icon: %v", err)
-	}
-
-	iconData, err := io.ReadAll(iconFile)
-	if err != nil {
-		log.Fatalf("failed to read icon: %v", err)
-	}
-	err = iconFile.Close()
-	if err != nil {
-		log.Fatalf("failed to close icon: %v", err)
 	}
 
 	if uniqueRunId == "" {
@@ -211,7 +196,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		MaxHeight:   3840,
 		StartHidden: startHidden,
 		Linux: &linux.Options{
-			Icon: iconData,
+			Icon: config.Icon,
 		},
 		Mac: &mac.Options{
 			TitleBar: mac.TitleBarHidden(),
@@ -249,11 +234,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		assets := cmd.Context().Value(assetsKey).(fs.FS)
-		icon := cmd.Context().Value(iconKey).(fs.FS)
+		iconData := cmd.Context().Value(iconKey).([]byte)
 		migrations := cmd.Context().Value(migrationsKey).(fs.FS)
 
 		// Initialize the configuration
-		config, err := initConfig(configDir, icon, migrations)
+		config, err := initConfig(configDir, iconData, migrations)
 		if err != nil {
 			return fmt.Errorf("failed to initialize config: %w", err)
 		}
@@ -279,9 +264,9 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(assets fs.FS, icon fs.FS, migrations fs.FS) {
+func Execute(assets fs.FS, iconData []byte, migrations fs.FS) {
 	ctx := context.WithValue(context.Background(), assetsKey, assets)
-	ctx = context.WithValue(ctx, iconKey, icon)
+	ctx = context.WithValue(ctx, iconKey, iconData)
 	ctx = context.WithValue(ctx, migrationsKey, migrations)
 
 	err := rootCmd.ExecuteContext(ctx)
