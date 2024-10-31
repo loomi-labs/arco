@@ -9,7 +9,6 @@ import (
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"context"
 	"fmt"
-	"github.com/getlantern/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"os"
@@ -267,38 +266,38 @@ func (a *App) installBorgBinary() error {
 }
 
 func (a *App) initSystray() error {
-	readyFunc := func() {
-		systray.SetIcon(a.config.Icon)
-		systray.SetTitle(Name)
-		systray.SetTooltip(Name)
-
-		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
-		systray.AddSeparator()
-		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
-
-		// Sets the icon of a menu item. Only available on Mac and Windows.
-		mOpen.SetIcon(a.config.Icon)
-		mQuit.SetIcon(a.config.Icon)
-
-		go func() {
-			for {
-				select {
-				case <-mOpen.ClickedCh:
-					runtime.WindowShow(a.ctx)
-				case <-mQuit.ClickedCh:
-					a.Shutdown(a.ctx)
-				case <-a.ctx.Done():
-					return
-				}
-			}
-		}()
-	}
-
-	exitFunc := func() {
-		a.Shutdown(a.ctx)
-	}
-
-	systray.Run(readyFunc, exitFunc)
+	//readyFunc := func() {
+	//	systray.SetIcon(a.config.Icon)
+	//	systray.SetTitle(Name)
+	//	systray.SetTooltip(Name)
+	//
+	//	mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
+	//	systray.AddSeparator()
+	//	mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
+	//
+	//	// Sets the icon of a menu item. Only available on Mac and Windows.
+	//	mOpen.SetIcon(a.config.Icon)
+	//	mQuit.SetIcon(a.config.Icon)
+	//
+	//	go func() {
+	//		for {
+	//			select {
+	//			case <-mOpen.ClickedCh:
+	//				runtime.WindowShow(a.ctx)
+	//			case <-mQuit.ClickedCh:
+	//				a.Shutdown(a.ctx)
+	//			case <-a.ctx.Done():
+	//				return
+	//			}
+	//		}
+	//	}()
+	//}
+	//
+	//exitFunc := func() {
+	//	a.Shutdown(a.ctx)
+	//}
+	//
+	//systray.Run(readyFunc, exitFunc)
 	return nil
 }
 
