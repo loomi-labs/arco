@@ -85,7 +85,7 @@ format: ensure-tools
 
 lint: ensure-tools
 	@echo "🔍 Running linter..."
-	@golangci-lint run --skip-dirs scripts --timeout=10m
+	@golangci-lint run
 	@echo "✅ Completed linting!"
 
 #################################
