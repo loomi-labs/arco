@@ -15,6 +15,9 @@ jobs:
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
+      # Install libayatana-appindicator3-dev (required for systray)
+      - name: Install libayatana-appindicator3-dev
+        run: sudo apt-get install -y libayatana-appindicator3-dev
       # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4

@@ -7,6 +7,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # Install libayatana-appindicator3-dev (required for systray)
+      - name: Install libayatana-appindicator3-dev
+        run: sudo apt-get install -y libayatana-appindicator3-dev
       # Checkout the repository
       - name: Check out repository code
         uses: actions/checkout@v4

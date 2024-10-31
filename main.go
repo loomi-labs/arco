@@ -6,13 +6,14 @@ import (
 	"embed"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"io"
 	"io/fs"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed icon.png
+//go:embed icon.svg
 var icon embed.FS
 
 //go:embed backend/ent/migrate/migrations
@@ -23,5 +24,19 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to get migrations directory: %w", err))
 	}
-	cmd.Execute(assets, icon, migrationsDir)
+
+	iconFile, err := icon.Open("icon.svg")
+	if err != nil {
+		panic(fmt.Errorf("failed to open icon: %w", err))
+	}
+	iconData, err := io.ReadAll(iconFile)
+	if err != nil {
+		panic(fmt.Errorf("failed to read icon: %w", err))
+	}
+	err = iconFile.Close()
+	if err != nil {
+		panic(fmt.Errorf("failed to close icon: %w", err))
+	}
+
+	cmd.Execute(assets, iconData, migrationsDir)
 }

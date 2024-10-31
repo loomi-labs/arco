@@ -41,7 +41,7 @@ type Config struct {
 	Binaries    []Binary
 	BorgPath    string
 	BorgVersion string
-	Icon        fs.FS
+	Icon        []byte
 	Migrations  fs.FS
 }
 
