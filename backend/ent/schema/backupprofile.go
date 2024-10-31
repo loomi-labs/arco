@@ -25,7 +25,7 @@ func (BackupProfile) Fields() []ent.Field {
 		field.String("prefix").
 			StructTag(`json:"prefix"`).
 			// Match the prefix to be an alphanumeric string ending with a hyphen
-			Match(regexp.MustCompile("^[a-zA-Z0-9]+-$")).
+			Match(regexp.MustCompile("^[a-z0-9]+-$")).
 			// The prefix must be unique to ensure that archives belong to a single profile
 			Unique().
 			// To simplify the rules, the prefix is immutable

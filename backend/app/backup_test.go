@@ -225,6 +225,7 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 		{"GetPrefixSuggestions with existing prefix and non-alphanumeric chars", "test!@#", &expectedPrefix{"test", false}, false},
 		{"GetPrefixSuggestions with existing prefix", "test", &expectedPrefix{"test", false}, false},
 		{"GetPrefixSuggestions with underscore and hyphen", "this-is_a.test", &expectedPrefix{"thisisatest-", true}, false},
+		{"GetPrefixSuggestions with uppercase prefix", "TEST123", &expectedPrefix{"test123-", true}, false},
 	}
 
 	for _, tt := range tests {

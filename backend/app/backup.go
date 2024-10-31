@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -191,9 +192,10 @@ func (b *BackupClient) GetPrefixSuggestion(name string) (string, error) {
 	if name == "" {
 		return "", errors.New("name cannot be empty")
 	}
+	name = strings.ToLower(name)
 
 	// Remove all non-alphanumeric characters
-	re := regexp.MustCompile("[^a-zA-Z0-9]")
+	re := regexp.MustCompile("[^a-z0-9]")
 	prefix := re.ReplaceAllString(name, "")
 
 	if prefix == "" {
