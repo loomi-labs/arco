@@ -287,6 +287,8 @@ func (a *App) initSystray() error {
 					runtime.WindowShow(a.ctx)
 				case <-mQuit.ClickedCh:
 					a.Shutdown(a.ctx)
+				case <-a.ctx.Done():
+					return
 				}
 			}
 		}()

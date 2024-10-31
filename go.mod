@@ -6,7 +6,6 @@ require (
 	ariga.io/atlas-go-sdk v0.6.4
 	entgo.io/ent v0.14.1
 	github.com/charmbracelet/keygen v0.5.1
-	github.com/eminarican/safetypes v0.0.8
 	github.com/getlantern/systray v1.2.2
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/mattn/go-sqlite3 v1.14.24
