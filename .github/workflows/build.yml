@@ -11,14 +11,10 @@ jobs:
         # Build Arco for Linux and MacOS
         build: [
           { name: arco, platform: linux/amd64, os: ubuntu-latest },
-#          { name: arco, platform: darwin/universal, os: macos-latest }
+          #          { name: arco, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
-      # Install libayatana-appindicator3-dev (required for systray)
-#      - name: Install libayatana-appindicator3-dev
-#        if: matrix.build.platform == 'linux/amd64'
-#        run: sudo apt-get install -y libayatana-appindicator3-dev
       # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -34,6 +30,18 @@ jobs:
           node-version: 22
           build-name: ${{ matrix.build.name }}
           build-platform: ${{ matrix.build.platform }}
-          package: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          package: false
+      # Create release PR
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: go
       - name: Debug show all files
-        run: ls -la
+        run: ls -la ./build/bin/
+      # Upload release artifact
+      - name: Upload release artifact
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #        run: gh release upload "Wails Build Linux arco" ./artifact/some-build-artifact.zip
+        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build/bin/
