@@ -16,7 +16,7 @@ jobs:
           release-type: go
           skip-github-release: true
       - name: Debug release please output
-        run: echo "tag_name=${{ steps.release.outputs.tag_name }}"
+        run: echo "tag_name=${{ steps.release.outputs }}"
 
   build:
     needs: create-release-pr
