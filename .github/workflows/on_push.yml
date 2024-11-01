@@ -15,3 +15,9 @@ jobs:
       - test
       - lint
     uses: ./.github/workflows/build.yml
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - build
+    uses: ./.github/workflows/releases_go.yml
