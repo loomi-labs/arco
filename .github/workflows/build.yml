@@ -36,24 +36,24 @@ jobs:
 #          package: false
 #      - name: Debug show all files
 #        run: ls -la ./build/bin/
-#      # Compress build artifact (only for Linux)
-#      - name: Compress build artifact
-#        if: ${{ matrix.build.os == 'ubuntu-latest' }}
-#        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
-#      # Rename build artifact (only for MacOS)
-#      - name: Rename build artifact
-#        if: ${{ matrix.build.os == 'macos-latest' }}
-#        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
-#      # Upload build assets
-#      - uses: actions/upload-artifact@v4
-#        if: inputs.package == 'true'
-#        id: upload
-#        with:
-#          name: build-asset-${{runner.os}}
-#          path: |
-#            */bin/
-#            *\bin\*
-#          retention-days: 1
+      # Compress build artifact (only for Linux)
+      - name: Compress build artifact
+        if: ${{ matrix.build.os == 'ubuntu-latest' }}
+        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
+      # Rename build artifact (only for MacOS)
+      - name: Rename build artifact
+        if: ${{ matrix.build.os == 'macos-latest' }}
+        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
+      # Upload build assets
+      - uses: actions/upload-artifact@v4
+        if: inputs.package == 'true'
+        id: upload
+        with:
+          name: build-asset-${{runner.os}}
+          path: |
+            */bin/
+            *\bin\*
+          retention-days: 1
 
       # Generate upload output
 #      - name: Generate upload output
@@ -74,15 +74,18 @@ jobs:
           release-type: go
       # Download release artifact
       - uses: actions/download-artifact@v4
+        if: ${{ steps.release.outputs.release_created }}
         with:
           path: build-asset
           pattern: build-asset-*
+#          pattern: Wails Build*
       # Debug show all files
-      - name: Debug show all files
-        run: ls -la ./build-asset/
+#      - name: Debug show all files
+#        run: ls -la ./build-asset/
       # Upload release artifact
       - name: Upload release artifact if release created
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
         run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
