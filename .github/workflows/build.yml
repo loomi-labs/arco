@@ -34,5 +34,3 @@ jobs:
           node-version: 22
           build-name: ${{ matrix.build.name }}
           build-platform: ${{ matrix.build.platform }}
-      # Create release PR
-      - uses: googleapis/release-please-action@v4
