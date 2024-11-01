@@ -20,4 +20,4 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - build
-    uses: ./.github/workflows/releases_go.yml
+    uses: ./.github/workflows/release.yml
