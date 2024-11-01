@@ -64,7 +64,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         id: upload
         with:
-          name: build-asset-${{runner.os}}
+          name: ${{ matrix.build.zip-name }}
           path: |
             */bin/
             *\bin\*
@@ -79,7 +79,10 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - create-release-pr
+      - build
+#    if: ${{ !needs.create-release-pr.outputs.updated }}
     steps:
       # Create release PR
       - uses: googleapis/release-please-action@v4
@@ -91,8 +94,8 @@ jobs:
       - uses: actions/download-artifact@v4
         if: ${{ steps.release.outputs.release_created }}
         with:
-          path: build-asset
-          pattern: build-asset-*
+#          path: build-asset
+          pattern: arco-*
 #          pattern: Wails Build*
       # Debug show all files
 #      - name: Debug show all files
@@ -103,4 +106,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
-        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
+        run: gh release upload ${{ steps.release.outputs.tag_name }} arco-linux.zip arco-macos.zip
