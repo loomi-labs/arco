@@ -7,7 +7,7 @@ jobs:
   create-release-pr:
     runs-on: ubuntu-latest
     outputs:
-      pr_tag_name: ${{ steps.release.outputs.tag_name }}
+      updated: ${{ steps.release.outputs.prs_created }}
     steps:
       # Create release PR
       - uses: googleapis/release-please-action@v4
@@ -16,11 +16,11 @@ jobs:
           release-type: go
           skip-github-release: true
       - name: Debug release please output
-        run: echo "tag_name=${{ steps.release.outputs }}"
+        run: echo "tag_name=${{ steps.release.outputs.prs_created }}"
 
   build:
     needs: create-release-pr
-    if: ${{ needs.create-release-pr.outputs.pr_tag_name != '' }}
+    if: ${{ needs.create-release-pr.outputs.updated }}
     strategy:
       fail-fast: false
       matrix:
