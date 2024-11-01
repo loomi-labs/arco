@@ -10,8 +10,8 @@ jobs:
       matrix:
         # Build Arco for Linux and MacOS
         build: [
-          { name: arco, platform: linux/amd64, os: ubuntu-latest },
-          #          { name: arco, platform: darwin/universal, os: macos-latest }
+          { zip-name: arco-linux.zip, platform: linux/amd64, os: ubuntu-latest },
+          { zip-name: arco-macos.zip, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
@@ -28,7 +28,7 @@ jobs:
         uses: dAppServer/wails-build-action@v2.2
         with:
           node-version: 22
-          build-name: ${{ matrix.build.name }}
+          build-name: arco
           build-platform: ${{ matrix.build.platform }}
           package: false
       # Create release PR
@@ -38,10 +38,12 @@ jobs:
           release-type: go
       - name: Debug show all files
         run: ls -la ./build/bin/
+      # Compress build artifact
+      - name: Compress build artifact
+        run: zip ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
       # Upload release artifact
       - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          #        run: gh release upload "Wails Build Linux arco" ./artifact/some-build-artifact.zip
-        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build/bin/arco
+        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build/bin/${{ matrix.build.zip-name }}
