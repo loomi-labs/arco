@@ -31,11 +31,6 @@ jobs:
           build-name: arco
           build-platform: ${{ matrix.build.platform }}
           package: false
-      # Create release PR
-      - uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          release-type: go
       - name: Debug show all files
         run: ls -la ./build/bin/
       # Compress build artifact (only for Linux)
@@ -46,9 +41,18 @@ jobs:
       - name: Rename build artifact
         if: ${{ matrix.build.os == 'macos-latest' }}
         run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
+
+#  release:
+#    steps:
+      # Create release PR
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: go
       # Upload release artifact
-      - name: Upload release artifact
-        if: ${{ steps.release.outputs.release_created }}
+      - name: Upload release artifact (if not prs_created
+        if: ${{ !steps.release.outputs.prs_created }}
+#        if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ steps.release.outputs.tag_name }} ./build/bin/${{ matrix.build.zip-name }}
