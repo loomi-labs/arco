@@ -12,20 +12,8 @@ jobs:
         id: release
         with:
           release-type: go
-      # Checkout the repository
-      - uses: actions/checkout@v4
-      # Tag major and minor versions
-      - name: tag major and minor versions
+      # Upload release artifact
+      - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git remote add gh-token "https://${{ secrets.GITHUB_TOKEN }}@github.com/googleapis/release-please-action.git"
-          git tag -d v${{ steps.release.outputs.major }} || true
-          git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
-          git push origin :v${{ steps.release.outputs.major }} || true
-          git push origin :v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
-          git tag -a v${{ steps.release.outputs.major }} -m "Release v${{ steps.release.outputs.major }}"
-          git tag -a v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} -m "Release v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}"
-          git push origin v${{ steps.release.outputs.major }}
-          git push origin v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}
+        run: gh release upload "Wails Build Linux arco-linux" ./artifact/some-build-artifact.zip
+#        run: gh release upload ${{ steps.release.outputs.tag_name }} ./artifact/some-build-artifact.zip

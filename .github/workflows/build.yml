@@ -10,8 +10,8 @@ jobs:
       matrix:
         # Build Arco for Linux and MacOS
         build: [
-          { name: arco, platform: linux/amd64, os: ubuntu-latest },
-          { name: arco, platform: darwin/universal, os: macos-latest }
+          { name: arco-linux, platform: linux/amd64, os: ubuntu-latest },
+          { name: arco-macos, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
