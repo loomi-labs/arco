@@ -11,14 +11,14 @@ jobs:
         # Build Arco for Linux and MacOS
         build: [
           { name: arco, platform: linux/amd64, os: ubuntu-latest },
-          { name: arco, platform: darwin/universal, os: macos-latest }
+#          { name: arco, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
       # Install libayatana-appindicator3-dev (required for systray)
-      - name: Install libayatana-appindicator3-dev
-        if: matrix.build.platform == 'linux/amd64'
-        run: sudo apt-get install -y libayatana-appindicator3-dev
+#      - name: Install libayatana-appindicator3-dev
+#        if: matrix.build.platform == 'linux/amd64'
+#        run: sudo apt-get install -y libayatana-appindicator3-dev
       # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -35,3 +35,5 @@ jobs:
           build-name: ${{ matrix.build.name }}
           build-platform: ${{ matrix.build.platform }}
           package: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+      - name: Debug show all files
+        run: ls -la
