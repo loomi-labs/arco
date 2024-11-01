@@ -15,5 +15,7 @@ jobs:
       # Upload release artifact
       - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "Wails Build Linux arco" ./artifact/some-build-artifact.zip
 #        run: gh release upload ${{ steps.release.outputs.tag_name }} ./artifact/some-build-artifact.zip

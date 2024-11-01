@@ -34,3 +34,4 @@ jobs:
           node-version: 22
           build-name: ${{ matrix.build.name }}
           build-platform: ${{ matrix.build.platform }}
+          package: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
