@@ -38,9 +38,14 @@ jobs:
           release-type: go
       - name: Debug show all files
         run: ls -la ./build/bin/
-      # Compress build artifact
+      # Compress build artifact (only for Linux)
       - name: Compress build artifact
-        run: zip ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
+        if: ${{ matrix.build.os == 'ubuntu-latest' }}
+        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
+      # Rename build artifact (only for MacOS)
+      - name: Rename build artifact
+        if: ${{ matrix.build.os == 'macos-latest' }}
+        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
       # Upload release artifact
       - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
