@@ -13,9 +13,9 @@ jobs:
           { zip-name: arco-linux.zip, platform: linux/amd64, os: ubuntu-latest },
           { zip-name: arco-macos.zip, platform: darwin/universal, os: macos-latest }
         ]
-    outputs:
-      output_ubuntu-latest: ${{ steps.gen_output.outputs.output_ubuntu-latest }}
-      output_macos-latest: ${{ steps.gen_output.outputs.output_macos-latest }}
+#    outputs:
+#      output_ubuntu-latest: ${{ steps.gen_output.outputs.output_ubuntu-latest }}
+#      output_macos-latest: ${{ steps.gen_output.outputs.output_macos-latest }}
     runs-on: ${{ matrix.build.os }}
     steps:
       # Checkout the repository
@@ -49,18 +49,19 @@ jobs:
         if: inputs.package == 'true'
         id: upload
         with:
-          name: Wails Build ${{runner.os}} ${{inputs.build-name}}
+          name: build-asset-${{runner.os}}
           path: |
             */bin/
             *\bin\*
           retention-days: 1
+
       # Generate upload output
-      - name: Generate upload output
-        id: gen_output
-        run: |
-          os="${{ matrix.os }}"
-          upload="${{ steps.upload.outputs.artifact-id }}"
-          echo "output_${os}=${upload}" >> "$GITHUB_OUTPUT"
+#      - name: Generate upload output
+#        id: gen_output
+#        run: |
+#          os="${{ matrix.build.os }}"
+#          upload="${{ steps.upload.outputs.artifact-id }}"
+#          echo "output_${os}=${upload}" >> "$GITHUB_OUTPUT"
 
   release:
     runs-on: ubuntu-latest
@@ -70,9 +71,17 @@ jobs:
         id: release
         with:
           release-type: go
+      # Download release artifact
+      - uses: actions/download-artifact@v4
+        with:
+          path: build-asset
+          pattern: build-asset-*
+      # Debug show all files
+      - name: Debug show all files
+        run: ls -la ./build-asset/
       # Upload release artifact
       - name: Upload release artifact if release created
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build/bin/${{ matrix.build.zip-name }}
+        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
