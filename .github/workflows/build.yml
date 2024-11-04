@@ -125,5 +125,4 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        #        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
-        run: gh release upload ${{ steps.release.outputs.tag_name }} arco-linux/arco-linux.zip arco-macos/arco-macos.zip
+        run: gh release upload ${{ steps.release.outputs.tag_name }} build-assets/arco-linux.zip build-assets/arco-macos.zip
