@@ -76,7 +76,7 @@ jobs:
       # Compress build artifact (only for Linux)
       - name: Compress build artifact
         if: ${{ matrix.build.os == 'ubuntu-latest' }}
-        run: zip -r ${{ matrix.build.zip-name }}.zip ./build/bin/arco
+        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
       # Rename build artifact (only for MacOS)
       - name: Rename build artifact
         if: ${{ matrix.build.os == 'macos-latest' }}
