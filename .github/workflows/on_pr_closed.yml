@@ -1,0 +1,11 @@
+name: Lint and Test
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/release.yml
