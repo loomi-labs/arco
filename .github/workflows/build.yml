@@ -16,7 +16,7 @@ jobs:
           release-type: go
           skip-github-release: true
       - name: Debug release please output
-        run: echo "tag_name=${{ steps.release.outputs.prs_created }}"
+        run: echo "outputs=${{ toJson(steps.release.outputs) }}"
 
   build:
     needs: create-release-pr
@@ -96,16 +96,18 @@ jobs:
       - uses: actions/download-artifact@v4
         if: ${{ steps.release.outputs.release_created }}
         with:
-#          path: build-asset
+          path: build-assets
           pattern: arco-*
 #          pattern: Wails Build*
       # Debug show all files
       - name: Debug show all files
-        run: ls -la
+        run: ls -la build-assets/arco-linux
+      - name: Debug show all files
+        run: ls -la build-assets/arco-macos
       # Upload release artifact
       - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
-        run: gh release upload ${{ steps.release.outputs.tag_name }} arco-linux arco-macos
+        run: gh release upload ${{ steps.release.outputs.tag_name }} arco-linux/arco-linux.zip arco-macos/arco-macos.zip
