@@ -25,13 +25,13 @@ jobs:
           version: 9
       # Build Arco with Wails
       - name: Build Arco
-        uses: dAppServer/wails-build-action@v2.2
+        uses: loomi-labs/wails-build-action/action.yml@main
         with:
           node-version: 22
           build-name: arco
           build-platform: ${{ matrix.build.platform }}
           package: false
-      # Compress build artifact (only for Linux)
+      # Compress build artifact (only for Linux)K
       - name: Compress build artifact
         if: ${{ matrix.build.os == 'ubuntu-latest' }}
         run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
