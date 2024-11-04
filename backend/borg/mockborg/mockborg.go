@@ -10,8 +10,8 @@
 package mockborg
 
 import (
-	borg "arco/backend/borg"
 	context "context"
+	borg "github.com/loomi-labs/arco/backend/borg"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

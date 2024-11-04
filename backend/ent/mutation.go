@@ -3,14 +3,6 @@
 package ent
 
 import (
-	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/notification"
-	"arco/backend/ent/predicate"
-	"arco/backend/ent/pruningrule"
-	"arco/backend/ent/repository"
-	"arco/backend/ent/settings"
 	"context"
 	"errors"
 	"fmt"
@@ -19,6 +11,14 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
+	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 const (

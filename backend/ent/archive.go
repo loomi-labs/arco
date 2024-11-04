@@ -3,15 +3,15 @@
 package ent
 
 import (
-	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
 // Archive is the model entity for the Archive schema.

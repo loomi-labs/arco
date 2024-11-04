@@ -3,13 +3,13 @@
 package ent
 
 import (
-	"arco/backend/ent/repository"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
 // Repository is the model entity for the Repository schema.

@@ -9,20 +9,19 @@ import (
 	"log"
 	"reflect"
 
-	"arco/backend/ent/migrate"
-
-	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/notification"
-	"arco/backend/ent/pruningrule"
-	"arco/backend/ent/repository"
-	"arco/backend/ent/settings"
+	"github.com/loomi-labs/arco/backend/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
+	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // Client is the client that holds all ent builders.

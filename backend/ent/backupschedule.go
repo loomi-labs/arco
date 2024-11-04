@@ -3,14 +3,14 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 )
 
 // BackupSchedule is the model entity for the BackupSchedule schema.

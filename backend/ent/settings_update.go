@@ -3,8 +3,6 @@
 package ent
 
 import (
-	"arco/backend/ent/predicate"
-	"arco/backend/ent/settings"
 	"context"
 	"errors"
 	"fmt"
@@ -12,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // SettingsUpdate is the builder for updating Settings entities.

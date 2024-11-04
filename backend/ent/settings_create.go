@@ -3,13 +3,13 @@
 package ent
 
 import (
-	"arco/backend/ent/settings"
 	"context"
 	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // SettingsCreate is the builder for creating a Settings entity.

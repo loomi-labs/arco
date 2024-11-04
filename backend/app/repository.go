@@ -1,15 +1,15 @@
 package app
 
 import (
-	"arco/backend/app/state"
-	"arco/backend/app/types"
-	"arco/backend/ent"
-	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/notification"
-	"arco/backend/ent/repository"
-	"arco/backend/util"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/util"
 	"net/url"
 	"time"
 )

@@ -1,26 +1,37 @@
 package app
 
 import (
-	appstate "arco/backend/app/state"
-	"arco/backend/app/types"
-	"arco/backend/borg"
-	"arco/backend/ent"
-	"arco/backend/util"
+	"archive/zip"
 	"ariga.io/atlas-go-sdk/atlasexec"
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/google/go-github/v66/github"
+	appstate "github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
+	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/util"
+	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
 	Name = "Arco"
+)
+
+var (
+	Version = ""
 )
 
 type EnvVar string
@@ -31,8 +42,16 @@ const (
 	EnvVarStartPage   EnvVar = "START_PAGE"
 )
 
-func (e EnvVar) String() string {
+func (e EnvVar) Name() string {
 	return string(e)
+}
+
+func (e EnvVar) String() string {
+	return os.Getenv(e.Name())
+}
+
+func (e EnvVar) Bool() bool {
+	return os.Getenv(e.Name()) == "true"
 }
 
 type App struct {
@@ -100,6 +119,24 @@ func (b *BackupClient) repoClient() *RepositoryClient {
 func (a *App) Startup(ctx context.Context) {
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
+	defer runtime.EventsEmit(a.ctx, types.EventAppReady.String())
+
+	a.log.Infof("Running Arco version %s", Version)
+
+	// Update Arco binary if necessary
+	needsRestart, err := a.updateArco()
+	if err != nil {
+		a.state.SetStartupError(err)
+		a.log.Error(err)
+		return
+	}
+	// Restart if an updates has been performed
+	if needsRestart {
+		a.log.Info("Updated Arco binary... restarting")
+		reload.Exec()
+		return
+	}
+
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
@@ -148,6 +185,9 @@ func (a *App) Shutdown(_ context.Context) {
 
 func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 	a.log.Debug("Received beforeclose command")
+	if a.state.GetStartupError() != nil {
+		return false
+	}
 	runtime.WindowHide(ctx)
 	return true
 }
@@ -155,6 +195,108 @@ func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 func (a *App) Wakeup() {
 	a.log.Debug("Received wakeup command")
 	runtime.WindowShow(a.ctx)
+}
+
+func (a *App) updateArco() (bool, error) {
+	if EnvVarDevelopment.Bool() {
+		a.log.Info("Development mode enabled, skipping update check")
+		return false, nil
+	}
+
+	client := github.NewClient(nil)
+
+	release, err := a.getLatestRelease(client)
+	if err != nil {
+		return false, err
+	}
+
+	if *release.TagName == a.config.Version {
+		a.log.Info("No updates available")
+		return false, nil
+	}
+
+	a.log.Infof("Updating Arco binary to version %s", *release.TagName)
+
+	releaseAsset, err := a.findReleaseAsset(release)
+	if err != nil {
+		return false, err
+	}
+
+	err = a.downloadReleaseAsset(client, releaseAsset)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (a *App) getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) {
+	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest release: %w", err)
+	}
+	if release.TagName == nil {
+		return nil, fmt.Errorf("could not find latest release")
+	}
+	return release, nil
+}
+
+func (a *App) findReleaseAsset(release *github.RepositoryRelease) (*github.ReleaseAsset, error) {
+	for _, ra := range release.Assets {
+		if ra.Name != nil && ra.BrowserDownloadURL != nil && *ra.Name == a.config.GithubAssetName {
+			return ra, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find release asset for version %s", a.config.Version)
+}
+
+func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset) error {
+	httpClient := &http.Client{Timeout: time.Second * 30}
+	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *asset.ID, httpClient)
+	if err != nil {
+		return fmt.Errorf("failed to download release asset: %w", err)
+	}
+	if readCloser == nil {
+		return fmt.Errorf("failed to download release asset: readCloser is nil")
+	}
+
+	var buf bytes.Buffer
+	size, err := io.Copy(&buf, readCloser)
+	if err != nil {
+		return fmt.Errorf("failed to write to buffer: %w", err)
+	}
+	reader := bytes.NewReader(buf.Bytes())
+
+	zipReader, err := zip.NewReader(reader, size)
+	if err != nil {
+		return fmt.Errorf("failed to read zip zipReader: %w", err)
+	}
+	return a.extractBinary(zipReader)
+}
+
+func (a *App) extractBinary(zipReader *zip.Reader) error {
+	open, err := zipReader.Open("arco")
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", "arco", err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer open.Close()
+
+	if err := os.Remove(a.config.ArcoPath); err == nil {
+		a.log.Debugf("Removed old binary at %s", a.config.ArcoPath)
+	}
+
+	binFile, err := os.OpenFile(a.config.ArcoPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer binFile.Close()
+
+	if _, err := io.Copy(binFile, open); err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
+	}
+	return nil
 }
 
 func (a *App) applyMigrations(opts string) error {
@@ -256,7 +398,7 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	binary, err := types.GetLatestBorgBinary(a.config.Binaries)
+	binary, err := types.GetLatestBorgBinary(a.config.BorgBinaries)
 	if err != nil {
 		return err
 	}

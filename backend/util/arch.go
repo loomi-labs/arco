@@ -20,3 +20,13 @@ func IsDarwin() bool {
 func (o OS) String() string {
 	return string(o)
 }
+
+func GithubAssetName() string {
+	if IsLinux() {
+		return "arco-linux.zip"
+	}
+	if IsDarwin() {
+		return "arco-macos.zip"
+	}
+	return ""
+}

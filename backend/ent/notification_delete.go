@@ -3,13 +3,13 @@
 package ent
 
 import (
-	"arco/backend/ent/notification"
-	"arco/backend/ent/predicate"
 	"context"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
 // NotificationDelete is the builder for deleting a Notification entity.

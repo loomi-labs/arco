@@ -2,7 +2,7 @@
 
 package runtime
 
-// The schema-stitching logic is generated in arco/backend/ent/runtime.go
+// The schema-stitching logic is generated in github.com/loomi-labs/arco/backend/ent/runtime.go
 
 const (
 	Version = "v0.14.1"                                         // Version of ent codegen.

@@ -1,28 +1,28 @@
 package types
 
 import (
-	"arco/backend/util"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"
 	"strings"
 )
 
-type Binary struct {
+type BorgBinary struct {
 	Name    string
 	Version string
 	Os      util.OS
 	Url     string
 }
 
-func GetLatestBorgBinary(binaries []Binary) (Binary, error) {
+func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 	for _, binary := range binaries {
 		if binary.Os == util.OS(runtime.GOOS) {
 			return binary, nil
 		}
 	}
-	return Binary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
+	return BorgBinary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
 }
 
 func GetOpenFileManagerCmd() (string, error) {

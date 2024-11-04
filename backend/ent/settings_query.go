@@ -3,8 +3,6 @@
 package ent
 
 import (
-	"arco/backend/ent/predicate"
-	"arco/backend/ent/settings"
 	"context"
 	"fmt"
 	"math"
@@ -13,6 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // SettingsQuery is the builder for querying Settings entities.

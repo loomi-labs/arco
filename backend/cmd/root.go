@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"arco/backend/app"
-	"arco/backend/app/state"
-	"arco/backend/app/types"
-	"arco/backend/util"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app"
+	"github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -18,11 +18,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 )
 
-var binaries = []types.Binary{
+var binaries = []types.BorgBinary{
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
@@ -38,7 +39,7 @@ var binaries = []types.Binary{
 }
 
 func initLogger(configDir string) *zap.SugaredLogger {
-	if os.Getenv(app.EnvVarDevelopment.String()) == "true" {
+	if app.EnvVarDevelopment.Bool() {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
@@ -61,7 +62,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 
 		// Create a production config
 		config := zap.NewProductionConfig()
-		if os.Getenv(app.EnvVarDebug.String()) == "true" {
+		if app.EnvVarDebug.Bool() {
 			config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 		}
 
@@ -112,13 +113,28 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Con
 		}
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	arcoBinaryDir := filepath.Join(homeDir, ".local", "bin")
+	if _, err := os.Stat(arcoBinaryDir); os.IsNotExist(err) {
+		err = os.MkdirAll(arcoBinaryDir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &types.Config{
-		Dir:         configDir,
-		Binaries:    binaries,
-		BorgPath:    filepath.Join(configDir, binaries[0].Name),
-		BorgVersion: binaries[0].Version,
-		Icon:        iconData,
-		Migrations:  migrations,
+		Dir:             configDir,
+		BorgBinaries:    binaries,
+		BorgPath:        filepath.Join(configDir, binaries[0].Name),
+		BorgVersion:     binaries[0].Version,
+		Icon:            iconData,
+		Migrations:      migrations,
+		GithubAssetName: util.GithubAssetName(),
+		Version:         app.Version,
+		ArcoPath:        path.Join(arcoBinaryDir, "arco"),
 	}, nil
 }
 

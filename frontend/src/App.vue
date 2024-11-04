@@ -26,21 +26,23 @@ const cleanupFunctions: (() => void)[] = [];
  ************/
 
 async function init() {
-  try {
-    const errorMsg = await appClient.GetStartupError();
-    if (errorMsg.message !== "") {
-      hasStartupError.value = true;
-      LogDebug("go to error page");
-      await router.push(Page.Error);
-    } else {
-      await getNotifications();
-      await goToStartPage();
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to get startup error", error);
-  } finally {
-    isInitialized.value = true;
-  }
+  cleanupFunctions.push(
+    runtime.EventsOn(types.Event.appReady, async () => {
+      try {
+        const errorMsg = await appClient.GetStartupError();
+        if (errorMsg.message !== "") {
+          hasStartupError.value = true;
+          await router.push(Page.Error);
+        } else {
+          await getNotifications();
+          await goToStartPage();
+        }
+      } catch (error: any) {
+        await showAndLogError("Failed to get startup error", error);
+      } finally {
+        isInitialized.value = true;
+      }
+    }));
 }
 
 async function getNotifications() {

@@ -3,9 +3,6 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/notification"
-	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
@@ -13,6 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
 // NotificationCreate is the builder for creating a Notification entity.

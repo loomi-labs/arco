@@ -1,10 +1,10 @@
 package state
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/borg"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"

@@ -1,3 +1,10 @@
+############################################
+###             Variables                ###
+############################################
+
+VERSION := $(shell git tag | grep ^v | sort -V | tail -n 1)
+REPO_PATH := $(shell git config --get remote.origin.url | sed 's/.*:\/\/\|.*@//;s/:/\//;s/\.git$$//')
+LDFLAGS := -ldflags "-X $(REPO_PATH)/backend/app.Version=${VERSION}"
 
 ############################################
 ### Ent database (https://entgo.io/docs) ###
@@ -105,13 +112,13 @@ test: ensure-tools mockgen
 .phony: build
 build: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
-	@wails build
+	@wails build $(LDFLAGS)
 	@echo "✅ Done!"
 
 .phony: build-assert
 build-assert: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
-	@wails build --tags=assert
+	@wails build --tags=assert $(LDFLAGS)
 	@echo "✅ Done!"
 
 #################################
@@ -144,4 +151,4 @@ install-tools: download
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
-	wails dev --tags=assert
+	wails dev --tags=assert $(LDFLAGS)

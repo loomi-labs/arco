@@ -3,9 +3,6 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/predicate"
 	"context"
 	"fmt"
 	"math"
@@ -14,6 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
 // BackupScheduleQuery is the builder for querying BackupSchedule entities.

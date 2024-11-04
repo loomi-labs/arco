@@ -1,12 +1,12 @@
 package app
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/borg/mockborg"
-	"arco/backend/ent"
-	"arco/backend/ent/enttest"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/enttest"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"

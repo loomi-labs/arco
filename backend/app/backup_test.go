@@ -1,10 +1,10 @@
 package app
 
 import (
-	"arco/backend/borg/mockborg"
-	"arco/backend/ent"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
