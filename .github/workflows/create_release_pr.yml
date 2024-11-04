@@ -1,0 +1,15 @@
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      # Create release PR
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: go
+          skip-github-release: true

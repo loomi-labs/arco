@@ -9,9 +9,9 @@ jobs:
   test:
     uses: ./.github/workflows/test.yml
 
-  build:
+  create-release-pr:
     if: github.ref == 'refs/heads/main'
     needs:
       - test
       - lint
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/create_release_pr.yml
