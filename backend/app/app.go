@@ -3,6 +3,7 @@ package app
 import (
 	"archive/zip"
 	"ariga.io/atlas-go-sdk/atlasexec"
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/google/go-github/v66/github"
@@ -19,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -260,37 +260,22 @@ func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseA
 		return fmt.Errorf("failed to download release asset: readCloser is nil")
 	}
 
-	zipFilePath := path.Join("/tmp", "arco.zip")
-	if err := a.saveToFile(zipFilePath, readCloser); err != nil {
-		return err
-	}
-
-	archive, err := zip.OpenReader(zipFilePath)
+	var buf bytes.Buffer
+	size, err := io.Copy(&buf, readCloser)
 	if err != nil {
-		return fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
+		return fmt.Errorf("failed to write to buffer: %w", err)
 	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer archive.Close()
+	reader := bytes.NewReader(buf.Bytes())
 
-	return a.extractBinary(archive)
+	zipReader, err := zip.NewReader(reader, size)
+	if err != nil {
+		return fmt.Errorf("failed to read zip zipReader: %w", err)
+	}
+	return a.extractBinary(zipReader)
 }
 
-func (a *App) saveToFile(filePath string, readCloser io.ReadCloser) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", filePath, err)
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer file.Close()
-
-	if _, err := io.Copy(file, readCloser); err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
-	}
-	return nil
-}
-
-func (a *App) extractBinary(archive *zip.ReadCloser) error {
-	open, err := archive.Open("arco")
+func (a *App) extractBinary(zipReader *zip.Reader) error {
+	open, err := zipReader.Open("arco")
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", "arco", err)
 	}
