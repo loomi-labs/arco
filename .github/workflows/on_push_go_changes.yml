@@ -1,0 +1,14 @@
+name: Lint and Test
+
+on:
+  push:
+    paths:
+      - '**.go'
+      - 'backend/**'
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test:
+    uses: ./.github/workflows/test.yml

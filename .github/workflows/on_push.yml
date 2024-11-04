@@ -1,17 +1,10 @@
 name: Lint and Test
 
-on: push
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  lint:
-    uses: ./.github/workflows/lint.yml
-
-  test:
-    uses: ./.github/workflows/test.yml
-
   create-release-pr:
-    if: github.ref == 'refs/heads/main'
-    needs:
-      - test
-      - lint
     uses: ./.github/workflows/create_release_pr.yml
