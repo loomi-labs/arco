@@ -1,10 +1,10 @@
 package main
 
 import (
-	"arco/backend/cmd"
-	_ "arco/backend/ent/runtime" // required to allow cyclic imports
 	"embed"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/cmd"
+	_ "github.com/loomi-labs/arco/backend/ent/runtime" // required to allow cyclic imports
 	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"io/fs"

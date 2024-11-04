@@ -1,9 +1,9 @@
 package app
 
 import (
-	"arco/backend/app/types"
-	"arco/backend/ent"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/ent"
 	"os"
 	"os/exec"
 	"os/user"

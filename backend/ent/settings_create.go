@@ -3,10 +3,10 @@
 package ent
 
 import (
-	"arco/backend/ent/settings"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"

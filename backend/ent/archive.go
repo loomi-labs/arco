@@ -3,10 +3,10 @@
 package ent
 
 import (
-	"arco/backend/ent/archive"
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/repository"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"strings"
 	"time"
 

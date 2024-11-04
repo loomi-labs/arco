@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"arco/backend/app"
-	"arco/backend/app/state"
-	"arco/backend/app/types"
-	"arco/backend/util"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app"
+	"github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"

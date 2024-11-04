@@ -3,9 +3,9 @@
 package ent
 
 import (
-	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/predicate"
 	"context"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"

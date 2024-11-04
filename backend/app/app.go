@@ -1,14 +1,14 @@
 package app
 
 import (
-	appstate "arco/backend/app/state"
-	"arco/backend/app/types"
-	"arco/backend/borg"
-	"arco/backend/ent"
-	"arco/backend/util"
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"context"
 	"fmt"
+	appstate "github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
+	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"os"

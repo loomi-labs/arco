@@ -1,10 +1,10 @@
 package types
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
-	"arco/backend/ent/settings"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 	"io/fs"
 )
 

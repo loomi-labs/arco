@@ -3,9 +3,9 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/backupschedule"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"strings"
 	"time"
 

@@ -1,4 +1,4 @@
-module arco
+module github.com/loomi-labs/arco
 
 go 1.23.0
 

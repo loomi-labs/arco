@@ -1,8 +1,8 @@
 package types
 
 import (
-	"arco/backend/util"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"

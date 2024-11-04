@@ -3,12 +3,12 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/notification"
-	"arco/backend/ent/repository"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"

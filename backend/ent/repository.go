@@ -3,8 +3,8 @@
 package ent
 
 import (
-	"arco/backend/ent/repository"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"strings"
 	"time"
 

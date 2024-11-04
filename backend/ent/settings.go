@@ -3,8 +3,8 @@
 package ent
 
 import (
-	"arco/backend/ent/settings"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 	"strings"
 
 	"entgo.io/ent"

@@ -3,9 +3,9 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/pruningrule"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"strings"
 	"time"
 

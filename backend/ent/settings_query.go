@@ -3,10 +3,10 @@
 package ent
 
 import (
-	"arco/backend/ent/predicate"
-	"arco/backend/ent/settings"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 	"math"
 
 	"entgo.io/ent"

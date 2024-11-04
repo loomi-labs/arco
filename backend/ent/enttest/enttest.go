@@ -5,11 +5,11 @@ package enttest
 import (
 	"context"
 
-	"arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent"
 	// required by schema hooks.
-	_ "arco/backend/ent/runtime"
+	_ "github.com/loomi-labs/arco/backend/ent/runtime"
 
-	"arco/backend/ent/migrate"
+	"github.com/loomi-labs/arco/backend/ent/migrate"
 
 	"entgo.io/ent/dialect/sql/schema"
 )

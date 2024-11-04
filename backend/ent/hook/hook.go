@@ -3,9 +3,9 @@
 package hook
 
 import (
-	"arco/backend/ent"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent"
 )
 
 // The ArchiveFunc type is an adapter to allow the use of ordinary

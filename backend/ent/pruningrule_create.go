@@ -3,11 +3,11 @@
 package ent
 
 import (
-	"arco/backend/ent/backupprofile"
-	"arco/backend/ent/pruningrule"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
