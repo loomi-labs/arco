@@ -218,10 +218,10 @@ func (a *App) updateArco() error {
 	}
 	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *releaseAsset.ID, httpclient)
 	if err != nil {
-		return fmt.Errorf("failed to download release ra: %w", err)
+		return fmt.Errorf("failed to download release asset: %w", err)
 	}
 	if readCloser == nil {
-		return fmt.Errorf("failed to download release ra: readCloser is nil")
+		return fmt.Errorf("failed to download release asset: readCloser is nil")
 	}
 
 	zipFilePath := path.Join("/tmp", "arco.zip")
