@@ -20,7 +20,7 @@ jobs:
 
   build:
     needs: create-release-pr
-    if: ${{ needs.create-release-pr.outputs.updated }}
+    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
@@ -50,22 +50,20 @@ jobs:
           build-name: arco
           build-platform: ${{ matrix.build.platform }}
           package: false
-#      # Compress build artifact (only for Linux)
-#      - name: Compress build artifact
-#        if: ${{ matrix.build.os == 'ubuntu-latest' }}
-#        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
-#      # Rename build artifact (only for MacOS)
-#      - name: Rename build artifact
-#        if: ${{ matrix.build.os == 'macos-latest' }}
-#        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
+      # Compress build artifact (only for Linux)
+      - name: Compress build artifact
+        if: ${{ matrix.build.os == 'ubuntu-latest' }}
+        run: zip -r ${{ matrix.build.zip-name }}.zip ./build/bin/arco
+      # Rename build artifact (only for MacOS)
+      - name: Rename build artifact
+        if: ${{ matrix.build.os == 'macos-latest' }}
+        run: mv ./build/bin/arco.app.zip ${{ matrix.build.zip-name }}.zip
       # Upload build assets
       - uses: actions/upload-artifact@v4
         id: upload
         with:
           name: ${{ matrix.build.zip-name }}
-          path: |
-            */bin/
-            *\bin\*
+          path: ${{ matrix.build.zip-name }}.zip
 
       # Generate upload output
 #      - name: Generate upload output
@@ -77,7 +75,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
     needs:
       - create-release-pr
       - build
@@ -101,8 +99,10 @@ jobs:
 #          pattern: Wails Build*
       # Debug show all files
       - name: Debug show all files
+        if: ${{ steps.release.outputs.release_created }}
         run: ls -la build-assets/arco-linux
       - name: Debug show all files
+        if: ${{ steps.release.outputs.release_created }}
         run: ls -la build-assets/arco-macos
       # Upload release artifact
       - name: Upload release artifact
