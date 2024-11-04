@@ -1,9 +1,6 @@
 name: Lint and Test
 
-on:
-  pull_request:
-    types:
-      - closed
+on: push
 
 jobs:
 #  lint:
