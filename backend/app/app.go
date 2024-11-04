@@ -176,6 +176,9 @@ func (a *App) Shutdown(_ context.Context) {
 
 func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 	a.log.Debug("Received beforeclose command")
+	if a.state.GetStartupError() != nil {
+		return false
+	}
 	runtime.WindowHide(ctx)
 	return true
 }
@@ -267,6 +270,13 @@ func (a *App) updateArco() error {
 	if err := os.Chmod(a.config.ArcoPath, 0755); err != nil {
 		return fmt.Errorf("failed to make file %s executable: %w", a.config.ArcoPath, err)
 	}
+
+	if EnvVarDevelopment.Bool() {
+		a.log.Info("Development mode: skipping binary update")
+		return nil
+	}
+	a.log.Info("Updated Arco binary... restarting")
+	reload.Exec()
 
 	return nil
 }
