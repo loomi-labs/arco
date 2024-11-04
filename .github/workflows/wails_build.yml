@@ -57,6 +57,11 @@ jobs:
         run: chmod +x build/bin/*
         shell: bash
 
+      # Compress build artifact (only for Linux)
+      - name: Compress build artifact
+        if: runner.os  == 'Linux'
+        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
+
       # Package and Sign MacOS
 #      - name: Import Code-Signing Certificates for macOS
 #        if: runner.os == 'macOS' && inputs.sign != 'false' && startsWith(github.ref, 'refs/tags/')
@@ -85,7 +90,7 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          ditto -c -k ./build/bin/arco.app ./build/bin/arco.app.zip
+          ditto -c -k ./build/bin/arco.app ${{ matrix.build.zip-name }}.zip
 #      - name: Building Installer
 #        if: runner.os == 'macOS' && inputs.sign != 'false' && inputs.sign-macos-installer-id != '' && startsWith(github.ref, 'refs/tags/')
 #        shell: bash
@@ -106,14 +111,6 @@ jobs:
 #        run: |
 #          gon -log-level=info ${{ inputs.app-working-directory }}/build/darwin/gon-notarize.json
 
-      # Compress build artifact (only for Linux)K
-      - name: Compress build artifact
-        if: ${{ matrix.build.os == 'ubuntu-latest' }}
-        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
-      # Rename build artifact (only for MacOS)
-      - name: Rename build artifact
-        if: ${{ matrix.build.os == 'macos-latest' }}
-        run: mv ./build/bin/arco.app.zip ${{ matrix.build.zip-name }}.zip
       # Upload build assets
       - uses: actions/upload-artifact@v4
         id: upload
