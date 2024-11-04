@@ -97,8 +97,8 @@ jobs:
           pattern: arco-*
 #          pattern: Wails Build*
       # Debug show all files
-#      - name: Debug show all files
-#        run: ls -la ./build-asset/
+      - name: Debug show all files
+        run: ls -la
       # Upload release artifact
       - name: Upload release artifact
         if: ${{ steps.release.outputs.release_created }}
