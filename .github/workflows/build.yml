@@ -26,8 +26,8 @@ jobs:
       matrix:
         # Build Arco for Linux and MacOS
         build: [
-          { zip-name: arco-linux.zip, platform: linux/amd64, os: ubuntu-latest },
-          { zip-name: arco-macos.zip, platform: darwin/universal, os: macos-latest }
+          { zip-name: arco-linux, platform: linux/amd64, os: ubuntu-latest },
+          { zip-name: arco-macos, platform: darwin/universal, os: macos-latest }
         ]
 #    outputs:
 #      output_ubuntu-latest: ${{ steps.gen_output.outputs.output_ubuntu-latest }}
@@ -50,16 +50,14 @@ jobs:
           build-name: arco
           build-platform: ${{ matrix.build.platform }}
           package: false
-#      - name: Debug show all files
-#        run: ls -la ./build/bin/
-      # Compress build artifact (only for Linux)
-      - name: Compress build artifact
-        if: ${{ matrix.build.os == 'ubuntu-latest' }}
-        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
-      # Rename build artifact (only for MacOS)
-      - name: Rename build artifact
-        if: ${{ matrix.build.os == 'macos-latest' }}
-        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
+#      # Compress build artifact (only for Linux)
+#      - name: Compress build artifact
+#        if: ${{ matrix.build.os == 'ubuntu-latest' }}
+#        run: zip -r ./build/bin/${{ matrix.build.zip-name }} ./build/bin/arco
+#      # Rename build artifact (only for MacOS)
+#      - name: Rename build artifact
+#        if: ${{ matrix.build.os == 'macos-latest' }}
+#        run: mv ./build/bin/arco.app.zip ./build/bin/${{ matrix.build.zip-name }}
       # Upload build assets
       - uses: actions/upload-artifact@v4
         id: upload
