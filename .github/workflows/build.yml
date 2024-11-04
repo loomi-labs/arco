@@ -19,6 +19,7 @@ jobs:
         run: echo "outputs=${{ steps.release.outputs.prs_created }}"
 
   debug-job-1:
+    needs: create-release-pr
     runs-on: ubuntu-latest
     if: ${{ ! needs.create-release-pr.outputs.updated }}
     steps:
@@ -26,6 +27,7 @@ jobs:
         run: echo "outputs=${{ needs.create-release-pr.outputs.updated }}"
 
   debug-job-2:
+    needs: create-release-pr
     runs-on: ubuntu-latest
     if: ${{ needs.create-release-pr.outputs.updated }}
     steps:
