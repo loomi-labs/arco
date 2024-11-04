@@ -121,6 +121,8 @@ func (a *App) Startup(ctx context.Context) {
 
 	defer runtime.EventsEmit(a.ctx, types.EventAppReady.String())
 
+	a.log.Infof("Running Arco version %s", Version)
+
 	// Update Arco binary if necessary
 	needsRestart, err := a.updateArco()
 	if err != nil {
@@ -196,100 +198,120 @@ func (a *App) Wakeup() {
 }
 
 func (a *App) updateArco() (bool, error) {
-	a.log.Infof("Running Arco version %s", Version)
+	if EnvVarDevelopment.Bool() {
+		a.log.Info("Development mode enabled, skipping update check")
+		return false, nil
+	}
 
 	client := github.NewClient(nil)
-	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
+
+	release, err := a.getLatestRelease(client)
 	if err != nil {
-		return false, fmt.Errorf("failed to get latest release: %w", err)
+		return false, err
 	}
-	if release.TagName == nil {
-		return false, fmt.Errorf("could not find latest release")
-	}
+
 	if *release.TagName == a.config.Version {
 		a.log.Info("No updates available")
 		return false, nil
 	}
+
 	a.log.Infof("Updating Arco binary to version %s", *release.TagName)
 
-	var releaseAsset *github.ReleaseAsset
-	for _, ra := range release.Assets {
-		if ra.Name != nil && ra.BrowserDownloadURL != nil && *ra.Name == a.config.GithubAssetName {
-			releaseAsset = ra
-			break
-		}
-	}
-	if releaseAsset == nil {
-		return false, fmt.Errorf("could not find release releaseAsset for version %s", a.config.Version)
+	releaseAsset, err := a.findReleaseAsset(release)
+	if err != nil {
+		return false, err
 	}
 
-	httpclient := &http.Client{
-		Timeout: time.Second * 30,
-	}
-	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *releaseAsset.ID, httpclient)
+	err = a.downloadReleaseAsset(client, releaseAsset)
 	if err != nil {
-		return false, fmt.Errorf("failed to download release asset: %w", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (a *App) getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) {
+	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest release: %w", err)
+	}
+	if release.TagName == nil {
+		return nil, fmt.Errorf("could not find latest release")
+	}
+	return release, nil
+}
+
+func (a *App) findReleaseAsset(release *github.RepositoryRelease) (*github.ReleaseAsset, error) {
+	for _, ra := range release.Assets {
+		if ra.Name != nil && ra.BrowserDownloadURL != nil && *ra.Name == a.config.GithubAssetName {
+			return ra, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find release asset for version %s", a.config.Version)
+}
+
+func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset) error {
+	httpClient := &http.Client{Timeout: time.Second * 30}
+	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *asset.ID, httpClient)
+	if err != nil {
+		return fmt.Errorf("failed to download release asset: %w", err)
 	}
 	if readCloser == nil {
-		return false, fmt.Errorf("failed to download release asset: readCloser is nil")
+		return fmt.Errorf("failed to download release asset: readCloser is nil")
 	}
 
 	zipFilePath := path.Join("/tmp", "arco.zip")
-
-	// Create the file
-	zipFile, err := os.Create(zipFilePath)
-	if err != nil {
-		return false, fmt.Errorf("failed to create file %s: %w", zipFilePath, err)
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer zipFile.Close()
-
-	// Writer the body to file
-	_, err = io.Copy(zipFile, readCloser)
-	if err != nil {
-		return false, fmt.Errorf("failed to write to file %s: %w", zipFilePath, err)
+	if err := a.saveToFile(zipFilePath, readCloser); err != nil {
+		return err
 	}
 
 	archive, err := zip.OpenReader(zipFilePath)
 	if err != nil {
-		return false, fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
+		return fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer archive.Close()
 
+	return a.extractBinary(archive)
+}
+
+func (a *App) saveToFile(filePath string, readCloser io.ReadCloser) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer file.Close()
+
+	if _, err := io.Copy(file, readCloser); err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
+	}
+	return nil
+}
+
+func (a *App) extractBinary(archive *zip.ReadCloser) error {
 	open, err := archive.Open("arco")
 	if err != nil {
-		return false, fmt.Errorf("failed to open file %s: %w", "arco", err)
+		return fmt.Errorf("failed to open file %s: %w", "arco", err)
 	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer open.Close()
 
-	// Remove the current binary
-	if _, err := os.Stat(a.config.ArcoPath); err == nil {
-		if err := os.Remove(a.config.ArcoPath); err != nil {
-			return false, fmt.Errorf("failed to remove file %s: %w", a.config.ArcoPath, err)
-		}
+	if err := os.Remove(a.config.ArcoPath); err == nil {
 		a.log.Debugf("Removed old binary at %s", a.config.ArcoPath)
 	}
 
-	// Create the file
-	binFile, err := os.Create(a.config.ArcoPath)
+	binFile, err := os.OpenFile(a.config.ArcoPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		return false, fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
+		return fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer binFile.Close()
 
-	// Writer the body to file
-	_, err = io.Copy(binFile, open)
-	if err != nil {
-		return false, fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
+	if _, err := io.Copy(binFile, open); err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
 	}
-
-	// Make the file executable
-	if err := os.Chmod(a.config.ArcoPath, 0755); err != nil {
-		return false, fmt.Errorf("failed to make file %s executable: %w", a.config.ArcoPath, err)
-	}
-
-	return true, nil
+	return nil
 }
 
 func (a *App) applyMigrations(opts string) error {
