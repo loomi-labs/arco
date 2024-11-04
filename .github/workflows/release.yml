@@ -5,70 +5,33 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        # Build Arco for Linux and MacOS
-        build: [
-          { zip-name: arco-linux, platform: linux/amd64, os: ubuntu-latest },
-          { zip-name: arco-macos, platform: darwin/universal, os: macos-latest }
-        ]
-    runs-on: ${{ matrix.build.os }}
-    steps:
-      # Checkout the repository
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      # Setup pnpm
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      # Build Arco with Wails
-      - name: Build Arco
-        uses: loomi-labs/wails-build-action/action.yml@main
-        with:
-          node-version: 22
-          build-name: arco
-          build-platform: ${{ matrix.build.platform }}
-          package: false
-      # Compress build artifact (only for Linux)K
-      - name: Compress build artifact
-        if: ${{ matrix.build.os == 'ubuntu-latest' }}
-        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
-      # Rename build artifact (only for MacOS)
-      - name: Rename build artifact
-        if: ${{ matrix.build.os == 'macos-latest' }}
-        run: mv ./build/bin/arco.app.zip ${{ matrix.build.zip-name }}.zip
-      # Upload build assets
-      - uses: actions/upload-artifact@v4
-        id: upload
-        with:
-          name: ${{ matrix.build.zip-name }}
-          path: ${{ matrix.build.zip-name }}.zip
+    uses: ./.github/workflows/wails_build.yml
+    with:
+      build-name: arco
 
-  release:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-    steps:
-      # Checkout the repository
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      # Create release PR
-      - uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          release-type: go
-          skip-github-pull-request: true
-      # Download release artifact
-      - uses: actions/download-artifact@v4
-        if: ${{ steps.release.outputs.release_created }}
-        with:
-          path: build-assets
-          pattern: arco-*
-      # Upload release artifact
-      - name: Upload release artifact
-        if: ${{ steps.release.outputs.release_created }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} build-assets/arco-linux/arco-linux.zip build-assets/arco-macos/arco-macos.zip
+#  release:
+#    runs-on: ubuntu-latest
+#    needs:
+#      - build
+#    steps:
+#      # Checkout the repository
+#      - name: Checkout repo
+#        uses: actions/checkout@v4
+#      # Create release PR
+#      - uses: googleapis/release-please-action@v4
+#        id: release
+#        with:
+#          release-type: go
+#          skip-github-pull-request: true
+#      # Download release artifact
+#      - uses: actions/download-artifact@v4
+#        if: ${{ steps.release.outputs.release_created }}
+#        with:
+#          path: build-assets
+#          pattern: arco-*
+#      # Upload release artifact
+#      - name: Upload release artifact
+#        if: ${{ steps.release.outputs.release_created }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: gh release upload ${{ steps.release.outputs.tag_name }} build-assets/arco-linux/arco-linux.zip build-assets/arco-macos/arco-macos.zip

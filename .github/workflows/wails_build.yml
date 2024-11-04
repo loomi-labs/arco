@@ -1,0 +1,216 @@
+name: Wails Build
+
+on:
+  workflow_call:
+    inputs:
+      build:
+        description: "Platform to build for"
+        required: false
+        default: "true"
+        type: boolean
+      sign:
+        description: "Sign the build"
+        required: false
+        default: "false"
+        type: boolean
+      nsis:
+        description: "Build a Windows Installer"
+        required: false
+        default: "true"
+        type: boolean
+      build-name:
+        description: "The name of the binary file"
+        required: true
+        type: string
+      wails-version:
+        description: "Wails version to use"
+        required: false
+        default: "latest"
+        type: string
+      wails-build-webview2:
+        description: "Webview2 installer method [download,embed,browser,error]"
+        required: false
+        default: "download"
+        type: string
+      go-version:
+        description: "Version of Go to use"
+        required: false
+        default: "^1.18"
+        type: string
+      app-working-directory:
+        description: "This gets run into bash, use the full command"
+        required: false
+        default: "."
+        type: string
+      deno-working-directory:
+        description: "This gets run into bash, use the full command"
+        required: false
+        default: "."
+        type: string
+      sign-macos-app-id:
+        description: "MacOS Application Certificate id"
+        required: false
+        default: ''
+        type: string
+      sign-macos-apple-password:
+        description: "MacOS Apple password"
+        required: false
+        default: ''
+        type: string
+      sign-macos-app-cert:
+        description: "MacOS Application Certificate"
+        required: false
+        default: ''
+        type: string
+      sign-macos-app-cert-password:
+        description: "MacOS Application Certificate Password"
+        required: false
+        default: ''
+        type: string
+      sign-macos-installer-id:
+        description: "MacOS Installer Certificate id"
+        required: false
+        default: ''
+        type: string
+      sign-macos-installer-cert:
+        description: "MacOS Installer Certificate"
+        required: false
+        default: ''
+        type: string
+      sign-macos-installer-cert-password:
+        description: "MacOS Installer Certificate Password"
+        required: false
+        default: ''
+        type: string
+      sign-windows-cert:
+        description: "Windows Signing Certificate"
+        required: false
+        default: ''
+        type: string
+      sign-windows-cert-password:
+        description: "Windows Signing Certificate Password"
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  wails_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Build Arco for Linux and MacOS
+        build: [
+          { zip-name: arco-linux, platform: linux/amd64, os: ubuntu-latest },
+          { zip-name: arco-macos, platform: darwin/universal, os: macos-latest }
+        ]
+    runs-on: ${{ matrix.build.os }}
+    steps:
+      # Checkout the repository
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      # Setup Golang
+      - name: 🐿 Setup Golang
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      # Setup pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      # Install wails
+      - name: Install Wails
+        if: inputs.build == 'true'
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        shell: bash
+      - name: Install Linux Wails deps
+        if: inputs.build == 'true' && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.0-dev gcc-aarch64-linux-gnu
+        shell: bash
+      - name: Install macOS Wails deps
+        if: runner.os == 'macOS'
+        run: brew install mitchellh/gon/gon
+        shell: bash
+
+      # Building step
+      - name: Build App
+        working-directory: ${{ inputs.app-working-directory }}
+        run: make build
+        shell: bash
+      - name: Add macOS perms
+        if: inputs.build == 'true' && runner.os == 'macOS'
+        working-directory: ${{ inputs.app-working-directory }}
+        run: chmod +x build/bin/*/Contents/MacOS/*
+        shell: bash
+      - name: Add Linux perms
+        if: inputs.build == 'true' && runner.os  == 'Linux'
+        working-directory: ${{ inputs.app-working-directory }}
+        run: chmod +x build/bin/*
+        shell: bash
+
+      # Package and Sign MacOS
+      - name: Import Code-Signing Certificates for macOS
+        if: runner.os == 'macOS' && inputs.sign != 'false' && startsWith(github.ref, 'refs/tags/')
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          keychain-password: ${{ inputs.sign-macos-apple-password }}
+          p12-file-base64: ${{ inputs.sign-macos-app-cert }}
+          p12-password: ${{ inputs.sign-macos-app-cert-password }}
+      - name: Import Code-Signing Certificates for macOS Installer
+        if: runner.os == 'macOS' && inputs.sign != 'false' && startsWith(github.ref, 'refs/tags/')
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          keychain-password: ${{ inputs.sign-macos-apple-password }}
+          p12-file-base64: ${{ inputs.sign-macos-installer-cert }}
+          p12-password: ${{ inputs.sign-macos-installer-cert-password }}
+          create-keychain: false
+      - name: Sign our macOS binary
+        if: runner.os == 'macOS' && inputs.sign != 'false' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        working-directory: ${{ inputs.app-working-directory }}
+        env:
+          APPLE_PASSWORD: ${{ inputs.sign-macos-apple-password }}
+        run: |
+          echo "Signing Package"
+          gon -log-level=info ./build/darwin/gon-sign.json
+      - name: Build .app zip file
+        if: runner.os == 'macOS'
+        working-directory: ${{ inputs.app-working-directory }}
+        shell: bash
+        run: |
+          ditto -c -k ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.app ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.app.zip
+      - name: Building Installer
+        if: runner.os == 'macOS' && inputs.sign != 'false' && inputs.sign-macos-installer-id != '' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        working-directory: ${{ inputs.app-working-directory }}
+        run: |
+          productbuild --sign '${{inputs.sign-macos-installer-id}}' --component ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.app ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.pkg
+      - name: Building Installery
+        if: runner.os == 'macOS' && inputs.sign-macos-installer-id == '' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        working-directory: ${{ inputs.app-working-directory }}
+        run: |
+          productbuild --component ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.app ${{ inputs.app-working-directory }}/build/bin/${{inputs.build-name}}.pkg
+      - name: Notarising Installer and zip
+        if: runner.os == 'macOS' && inputs.sign != 'false' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        working-directory: ${{ inputs.app-working-directory }}
+        env:
+          APPLE_PASSWORD: ${{ inputs.sign-macos-apple-password }}
+        run: |
+          gon -log-level=info ${{ inputs.app-working-directory }}/build/darwin/gon-notarize.json
+
+      # Compress build artifact (only for Linux)K
+      - name: Compress build artifact
+        if: ${{ matrix.build.os == 'ubuntu-latest' }}
+        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
+      # Rename build artifact (only for MacOS)
+      - name: Rename build artifact
+        if: ${{ matrix.build.os == 'macos-latest' }}
+        run: mv ./build/bin/arco.app.zip ${{ matrix.build.zip-name }}.zip
+      # Upload build assets
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: ${{ matrix.build.zip-name }}
+          path: ${{ matrix.build.zip-name }}.zip
