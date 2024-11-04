@@ -23,12 +23,15 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+      # Install tools
+      - name: Install tools
+        run: make install-tools
       # Setup pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
-      # Install wails
+      # Install Wails
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
         shell: bash
