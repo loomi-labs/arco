@@ -5,7 +5,6 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"go.uber.org/zap"
-	"os"
 )
 
 func (a *AppClient) GetStartupError() types.Notification {
@@ -45,8 +44,8 @@ type Env struct {
 
 func (a *AppClient) GetEnvVars() Env {
 	return Env{
-		Debug:     os.Getenv(EnvVarDebug.String()) == "true",
-		StartPage: os.Getenv(EnvVarStartPage.String()),
+		Debug:     EnvVarDebug.Bool(),
+		StartPage: EnvVarStartPage.String(),
 	}
 }
 

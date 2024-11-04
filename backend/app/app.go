@@ -11,6 +11,7 @@ import (
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"io"
@@ -41,8 +42,16 @@ const (
 	EnvVarStartPage   EnvVar = "START_PAGE"
 )
 
-func (e EnvVar) String() string {
+func (e EnvVar) Name() string {
 	return string(e)
+}
+
+func (e EnvVar) String() string {
+	return os.Getenv(e.Name())
+}
+
+func (e EnvVar) Bool() bool {
+	return os.Getenv(e.Name()) == "true"
 }
 
 type App struct {
@@ -189,6 +198,7 @@ func (a *App) updateArco() error {
 		a.log.Info("No updates available")
 		return nil
 	}
+
 	var releaseAsset *github.ReleaseAsset
 	for _, ra := range release.Assets {
 		if ra.Name != nil && ra.BrowserDownloadURL != nil && *ra.Name == a.config.GithubAssetName {

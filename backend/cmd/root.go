@@ -39,7 +39,7 @@ var binaries = []types.BorgBinary{
 }
 
 func initLogger(configDir string) *zap.SugaredLogger {
-	if os.Getenv(app.EnvVarDevelopment.String()) == "true" {
+	if app.EnvVarDevelopment.Bool() {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
@@ -62,7 +62,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 
 		// Create a production config
 		config := zap.NewProductionConfig()
-		if os.Getenv(app.EnvVarDebug.String()) == "true" {
+		if app.EnvVarDebug.Bool() {
 			config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 		}
 
