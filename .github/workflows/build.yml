@@ -18,9 +18,23 @@ jobs:
       - name: Debug release please output
         run: echo "outputs=${{ steps.release.outputs.prs_created }}"
 
+  debug-job-1:
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.create-release-pr.outputs.updated }}
+    steps:
+      - name: Only for debugging
+        run: echo "outputs=${{ needs.create-release-pr.outputs.updated }}"
+
+  debug-job-2:
+    runs-on: ubuntu-latest
+    if: ${{ needs.create-release-pr.outputs.updated }}
+    steps:
+      - name: Only for debugging
+        run: echo "outputs=${{ needs.create-release-pr.outputs.updated }}"
+
   build:
     needs: create-release-pr
-    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
+    #    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +43,9 @@ jobs:
           { zip-name: arco-linux, platform: linux/amd64, os: ubuntu-latest },
           { zip-name: arco-macos, platform: darwin/universal, os: macos-latest }
         ]
-#    outputs:
-#      output_ubuntu-latest: ${{ steps.gen_output.outputs.output_ubuntu-latest }}
-#      output_macos-latest: ${{ steps.gen_output.outputs.output_macos-latest }}
+    #    outputs:
+    #      output_ubuntu-latest: ${{ steps.gen_output.outputs.output_ubuntu-latest }}
+    #      output_macos-latest: ${{ steps.gen_output.outputs.output_macos-latest }}
     runs-on: ${{ matrix.build.os }}
     steps:
       # Checkout the repository
@@ -66,20 +80,20 @@ jobs:
           path: ${{ matrix.build.zip-name }}.zip
 
       # Generate upload output
-#      - name: Generate upload output
-#        id: gen_output
-#        run: |
-#          os="${{ matrix.build.os }}"
-#          upload="${{ steps.upload.outputs.artifact-id }}"
-#          echo "output_${os}=${upload}" >> "$GITHUB_OUTPUT"
+  #      - name: Generate upload output
+  #        id: gen_output
+  #        run: |
+  #          os="${{ matrix.build.os }}"
+  #          upload="${{ steps.upload.outputs.artifact-id }}"
+  #          echo "output_${os}=${upload}" >> "$GITHUB_OUTPUT"
 
   release:
     runs-on: ubuntu-latest
-    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
+    #    if: ${{ ! needs.create-release-pr.outputs.updated && github.ref == 'refs/heads/main' }}
     needs:
       - create-release-pr
       - build
-#    if: ${{ !needs.create-release-pr.outputs.updated }}
+    #    if: ${{ !needs.create-release-pr.outputs.updated }}
     steps:
       # Checkout the repository
       - name: Checkout repo
@@ -96,7 +110,7 @@ jobs:
         with:
           path: build-assets
           pattern: arco-*
-#          pattern: Wails Build*
+      #          pattern: Wails Build*
       # Debug show all files
       - name: Debug show all files
         if: ${{ steps.release.outputs.release_created }}
@@ -109,5 +123,5 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
+        #        run: gh release upload ${{ steps.release.outputs.tag_name }} ./build-asset/arco-linux.zip ./build-asset/arco-macos.zip
         run: gh release upload ${{ steps.release.outputs.tag_name }} arco-linux/arco-linux.zip arco-macos/arco-macos.zip
