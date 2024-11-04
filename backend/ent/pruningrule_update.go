@@ -6,14 +6,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/predicate"
-	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 )
 
 // PruningRuleUpdate is the builder for updating PruningRule entities.

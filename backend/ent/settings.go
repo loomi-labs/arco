@@ -4,11 +4,11 @@ package ent
 
 import (
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/settings"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // Settings is the model entity for the Settings schema.

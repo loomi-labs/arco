@@ -3,9 +3,8 @@
 package settings
 
 import (
-	"github.com/loomi-labs/arco/backend/ent/predicate"
-
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.

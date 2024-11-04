@@ -6,12 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/notification"
-	"github.com/loomi-labs/arco/backend/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
 // NotificationUpdate is the builder for updating Notification entities.

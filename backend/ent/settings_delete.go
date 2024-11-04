@@ -4,12 +4,12 @@ package ent
 
 import (
 	"context"
-	"github.com/loomi-labs/arco/backend/ent/predicate"
-	"github.com/loomi-labs/arco/backend/ent/settings"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // SettingsDelete is the builder for deleting a Settings entity.

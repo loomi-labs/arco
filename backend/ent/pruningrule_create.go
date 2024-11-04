@@ -6,12 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 )
 
 // PruningRuleCreate is the builder for creating a PruningRule entity.

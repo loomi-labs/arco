@@ -4,13 +4,13 @@ package ent
 
 import (
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 )
 
 // PruningRule is the model entity for the PruningRule schema.

@@ -3,11 +3,11 @@
 package notification
 
 import (
-	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.

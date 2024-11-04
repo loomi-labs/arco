@@ -6,6 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
+	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
@@ -13,11 +18,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
-
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
-	"entgo.io/ent/schema/field"
 )
 
 // BackupProfileUpdate is the builder for updating BackupProfile entities.

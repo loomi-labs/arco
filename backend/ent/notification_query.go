@@ -5,16 +5,16 @@ package ent
 import (
 	"context"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/notification"
-	"github.com/loomi-labs/arco/backend/ent/predicate"
-	"github.com/loomi-labs/arco/backend/ent/repository"
 	"math"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
 // NotificationQuery is the builder for querying Notification entities.

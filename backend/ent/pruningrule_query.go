@@ -5,15 +5,15 @@ package ent
 import (
 	"context"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/predicate"
-	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"math"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 )
 
 // PruningRuleQuery is the builder for querying PruningRule entities.

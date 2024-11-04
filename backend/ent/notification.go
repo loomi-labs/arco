@@ -4,14 +4,14 @@ package ent
 
 import (
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent/backupprofile"
-	"github.com/loomi-labs/arco/backend/ent/notification"
-	"github.com/loomi-labs/arco/backend/ent/repository"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
 // Notification is the model entity for the Notification schema.

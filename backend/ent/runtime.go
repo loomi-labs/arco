@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
@@ -10,7 +12,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
-	"time"
 )
 
 // The init function reads all schema descriptors with runtime code

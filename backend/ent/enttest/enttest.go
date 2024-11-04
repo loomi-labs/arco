@@ -9,9 +9,8 @@ import (
 	// required by schema hooks.
 	_ "github.com/loomi-labs/arco/backend/ent/runtime"
 
-	"github.com/loomi-labs/arco/backend/ent/migrate"
-
 	"entgo.io/ent/dialect/sql/schema"
+	"github.com/loomi-labs/arco/backend/ent/migrate"
 )
 
 type (
