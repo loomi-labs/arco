@@ -6,5 +6,3 @@ on:
 jobs:
   test-release:
     uses: ./.github/workflows/wails_build.yml
-    with:
-      build-name: arco
