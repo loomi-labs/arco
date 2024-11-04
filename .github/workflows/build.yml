@@ -16,7 +16,7 @@ jobs:
           release-type: go
           skip-github-release: true
       - name: Debug release please output
-        run: echo "outputs=${{ toJson(steps.release.outputs) }}"
+        run: echo "outputs=${{ steps.release.outputs.prs_created }}"
 
   build:
     needs: create-release-pr
