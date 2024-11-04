@@ -83,6 +83,9 @@ jobs:
       - build
 #    if: ${{ !needs.create-release-pr.outputs.updated }}
     steps:
+      # Checkout the repository
+      - name: Checkout repo
+        uses: actions/checkout@v4
       # Create release PR
       - uses: googleapis/release-please-action@v4
         id: release
