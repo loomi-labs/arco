@@ -37,12 +37,15 @@ func (b BackupId) String() string {
 }
 
 type Config struct {
-	Dir         string
-	Binaries    []Binary
-	BorgPath    string
-	BorgVersion string
-	Icon        []byte
-	Migrations  fs.FS
+	Dir             string
+	BorgBinaries    []BorgBinary
+	BorgPath        string
+	BorgVersion     string
+	Icon            []byte
+	Migrations      fs.FS
+	GithubAssetName string
+	Version         string
+	ArcoPath        string
 }
 
 var AllWeekdays = []backupschedule.Weekday{
@@ -75,6 +78,7 @@ var AllBackupScheduleModes = []backupschedule.Mode{
 type Event string
 
 const (
+	EventAppReady              Event = "appReady"
 	EventNotificationAvailable Event = "notificationAvailable"
 	EventBackupStateChanged    Event = "backupStateChanged"
 	EventPruneStateChanged     Event = "pruneStateChanged"
@@ -83,6 +87,7 @@ const (
 )
 
 var AllEvents = []Event{
+	EventAppReady,
 	EventNotificationAvailable,
 	EventBackupStateChanged,
 	EventPruneStateChanged,

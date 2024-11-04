@@ -1,9 +1,11 @@
 package app
 
 import (
+	"archive/zip"
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"context"
 	"fmt"
+	"github.com/google/go-github/v66/github"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -11,16 +13,24 @@ import (
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
 	Name = "Arco"
+)
+
+var (
+	Version = ""
 )
 
 type EnvVar string
@@ -100,6 +110,15 @@ func (b *BackupClient) repoClient() *RepositoryClient {
 func (a *App) Startup(ctx context.Context) {
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
+	defer runtime.EventsEmit(a.ctx, types.EventAppReady.String())
+
+	// Update Arco binary if necessary
+	if err := a.updateArco(); err != nil {
+		a.state.SetStartupError(err)
+		a.log.Error(err)
+		return
+	}
+
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
@@ -155,6 +174,91 @@ func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 func (a *App) Wakeup() {
 	a.log.Debug("Received wakeup command")
 	runtime.WindowShow(a.ctx)
+}
+
+func (a *App) updateArco() error {
+	client := github.NewClient(nil)
+	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
+	if err != nil {
+		return fmt.Errorf("failed to get latest release: %w", err)
+	}
+	if release.TagName == nil {
+		return fmt.Errorf("could not find latest release")
+	}
+	if *release.TagName == a.config.Version {
+		a.log.Info("No updates available")
+		return nil
+	}
+	var releaseAsset *github.ReleaseAsset
+	for _, ra := range release.Assets {
+		if ra.Name != nil && ra.BrowserDownloadURL != nil && *ra.Name == a.config.GithubAssetName {
+			releaseAsset = ra
+			break
+		}
+	}
+	if releaseAsset == nil {
+		return fmt.Errorf("could not find release releaseAsset for version %s", a.config.Version)
+	}
+
+	httpclient := &http.Client{
+		Timeout: time.Second * 30,
+	}
+	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *releaseAsset.ID, httpclient)
+	if err != nil {
+		return fmt.Errorf("failed to download release ra: %w", err)
+	}
+	if readCloser == nil {
+		return fmt.Errorf("failed to download release ra: readCloser is nil")
+	}
+
+	zipFilePath := path.Join("/tmp", "arco.zip")
+
+	// Create the file
+	zipFile, err := os.Create(zipFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", zipFilePath, err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer zipFile.Close()
+
+	// Writer the body to file
+	_, err = io.Copy(zipFile, readCloser)
+	if err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", zipFilePath, err)
+	}
+
+	archive, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer archive.Close()
+
+	open, err := archive.Open("arco")
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", "arco", err)
+	}
+
+	// Create the file
+	binFile, err := os.Create(a.config.ArcoPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer binFile.Close()
+
+	// Writer the body to file
+	_, err = io.Copy(binFile, open)
+	if err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
+	}
+
+	// Make the file executable
+	if err := os.Chmod(a.config.ArcoPath, 0755); err != nil {
+		return fmt.Errorf("failed to make file %s executable: %w", a.config.ArcoPath, err)
+	}
+
+	return nil
 }
 
 func (a *App) applyMigrations(opts string) error {
@@ -256,7 +360,7 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	binary, err := types.GetLatestBorgBinary(a.config.Binaries)
+	binary, err := types.GetLatestBorgBinary(a.config.BorgBinaries)
 	if err != nil {
 		return err
 	}

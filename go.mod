@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/keygen v0.5.1
 	github.com/eminarican/safetypes v0.0.8
 	github.com/golangci/golangci-lint v1.61.0
+	github.com/google/go-github/v66 v66.0.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/negrel/assert v0.2.0
 	github.com/prometheus/procfs v0.15.1
@@ -82,7 +83,7 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
 	github.com/flytam/filenamify v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/ghostiam/protogetter v0.3.6 // indirect
@@ -114,6 +115,7 @@ require (
 	github.com/golangci/revgrep v0.5.3 // indirect
 	github.com/golangci/unconvert v0.0.0-20240309020433-c5143eacb3ed // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
@@ -229,6 +231,7 @@ require (
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tc-hib/winres v0.2.1 // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
+	github.com/teamwork/reload v1.4.2 // indirect
 	github.com/tetafro/godot v1.4.17 // indirect
 	github.com/tidwall/gjson v1.9.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

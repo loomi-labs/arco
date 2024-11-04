@@ -18,11 +18,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 )
 
-var binaries = []types.Binary{
+var binaries = []types.BorgBinary{
 	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
@@ -112,13 +113,28 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Con
 		}
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	arcoBinaryDir := filepath.Join(homeDir, ".local", "bin")
+	if _, err := os.Stat(arcoBinaryDir); os.IsNotExist(err) {
+		err = os.MkdirAll(arcoBinaryDir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &types.Config{
-		Dir:         configDir,
-		Binaries:    binaries,
-		BorgPath:    filepath.Join(configDir, binaries[0].Name),
-		BorgVersion: binaries[0].Version,
-		Icon:        iconData,
-		Migrations:  migrations,
+		Dir:             configDir,
+		BorgBinaries:    binaries,
+		BorgPath:        filepath.Join(configDir, binaries[0].Name),
+		BorgVersion:     binaries[0].Version,
+		Icon:            iconData,
+		Migrations:      migrations,
+		GithubAssetName: util.GithubAssetName(),
+		Version:         app.Version,
+		ArcoPath:        path.Join(arcoBinaryDir, "arco"),
 	}, nil
 }
 
