@@ -11,6 +11,7 @@ import (
 )
 
 func (a *App) startScheduleChangeListener() {
+	a.log.Debug("Starting schedule change listener")
 	var timers []*time.Timer
 	for {
 		<-a.backupScheduleChangedCh
@@ -252,6 +253,7 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 /***********************************/
 
 func (a *App) startPruneScheduleChangeListener() {
+	a.log.Debug("Starting prune schedule change listener")
 	var timers []*time.Timer
 	for {
 		<-a.pruningScheduleChangedCh

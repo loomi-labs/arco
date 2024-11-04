@@ -122,9 +122,16 @@ func (a *App) Startup(ctx context.Context) {
 	defer runtime.EventsEmit(a.ctx, types.EventAppReady.String())
 
 	// Update Arco binary if necessary
-	if err := a.updateArco(); err != nil {
+	needsRestart, err := a.updateArco()
+	if err != nil {
 		a.state.SetStartupError(err)
 		a.log.Error(err)
+		return
+	}
+	// Restart if an updates has been performed
+	if needsRestart {
+		a.log.Info("Updated Arco binary... restarting")
+		reload.Exec()
 		return
 	}
 
@@ -188,19 +195,22 @@ func (a *App) Wakeup() {
 	runtime.WindowShow(a.ctx)
 }
 
-func (a *App) updateArco() error {
+func (a *App) updateArco() (bool, error) {
+	a.log.Infof("Running Arco version %s", Version)
+
 	client := github.NewClient(nil)
 	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
 	if err != nil {
-		return fmt.Errorf("failed to get latest release: %w", err)
+		return false, fmt.Errorf("failed to get latest release: %w", err)
 	}
 	if release.TagName == nil {
-		return fmt.Errorf("could not find latest release")
+		return false, fmt.Errorf("could not find latest release")
 	}
 	if *release.TagName == a.config.Version {
 		a.log.Info("No updates available")
-		return nil
+		return false, nil
 	}
+	a.log.Infof("Updating Arco binary to version %s", *release.TagName)
 
 	var releaseAsset *github.ReleaseAsset
 	for _, ra := range release.Assets {
@@ -210,7 +220,7 @@ func (a *App) updateArco() error {
 		}
 	}
 	if releaseAsset == nil {
-		return fmt.Errorf("could not find release releaseAsset for version %s", a.config.Version)
+		return false, fmt.Errorf("could not find release releaseAsset for version %s", a.config.Version)
 	}
 
 	httpclient := &http.Client{
@@ -218,10 +228,10 @@ func (a *App) updateArco() error {
 	}
 	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *releaseAsset.ID, httpclient)
 	if err != nil {
-		return fmt.Errorf("failed to download release asset: %w", err)
+		return false, fmt.Errorf("failed to download release asset: %w", err)
 	}
 	if readCloser == nil {
-		return fmt.Errorf("failed to download release asset: readCloser is nil")
+		return false, fmt.Errorf("failed to download release asset: readCloser is nil")
 	}
 
 	zipFilePath := path.Join("/tmp", "arco.zip")
@@ -229,7 +239,7 @@ func (a *App) updateArco() error {
 	// Create the file
 	zipFile, err := os.Create(zipFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", zipFilePath, err)
+		return false, fmt.Errorf("failed to create file %s: %w", zipFilePath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer zipFile.Close()
@@ -237,25 +247,33 @@ func (a *App) updateArco() error {
 	// Writer the body to file
 	_, err = io.Copy(zipFile, readCloser)
 	if err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", zipFilePath, err)
+		return false, fmt.Errorf("failed to write to file %s: %w", zipFilePath, err)
 	}
 
 	archive, err := zip.OpenReader(zipFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
+		return false, fmt.Errorf("failed to open zip file %s: %w", zipFilePath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer archive.Close()
 
 	open, err := archive.Open("arco")
 	if err != nil {
-		return fmt.Errorf("failed to open file %s: %w", "arco", err)
+		return false, fmt.Errorf("failed to open file %s: %w", "arco", err)
+	}
+
+	// Remove the current binary
+	if _, err := os.Stat(a.config.ArcoPath); err == nil {
+		if err := os.Remove(a.config.ArcoPath); err != nil {
+			return false, fmt.Errorf("failed to remove file %s: %w", a.config.ArcoPath, err)
+		}
+		a.log.Debugf("Removed old binary at %s", a.config.ArcoPath)
 	}
 
 	// Create the file
 	binFile, err := os.Create(a.config.ArcoPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
+		return false, fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer binFile.Close()
@@ -263,22 +281,15 @@ func (a *App) updateArco() error {
 	// Writer the body to file
 	_, err = io.Copy(binFile, open)
 	if err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
+		return false, fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
 	}
 
 	// Make the file executable
 	if err := os.Chmod(a.config.ArcoPath, 0755); err != nil {
-		return fmt.Errorf("failed to make file %s executable: %w", a.config.ArcoPath, err)
+		return false, fmt.Errorf("failed to make file %s executable: %w", a.config.ArcoPath, err)
 	}
 
-	if EnvVarDevelopment.Bool() {
-		a.log.Info("Development mode: skipping binary update")
-		return nil
-	}
-	a.log.Info("Updated Arco binary... restarting")
-	reload.Exec()
-
-	return nil
+	return true, nil
 }
 
 func (a *App) applyMigrations(opts string) error {

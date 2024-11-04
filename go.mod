@@ -14,6 +14,7 @@ require (
 	github.com/prometheus/procfs v0.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
+	github.com/teamwork/reload v1.4.2
 	github.com/wailsapp/wails/v2 v2.9.2
 	go.uber.org/mock v0.5.0
 	go.uber.org/zap v1.27.0
@@ -231,7 +232,6 @@ require (
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tc-hib/winres v0.2.1 // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
-	github.com/teamwork/reload v1.4.2 // indirect
 	github.com/tetafro/godot v1.4.17 // indirect
 	github.com/tidwall/gjson v1.9.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
