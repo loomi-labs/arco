@@ -7,4 +7,5 @@ on:
 
 jobs:
   create-release-pr:
+    if: ! (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release-please-'))
     uses: ./.github/workflows/create_release_pr.yml
