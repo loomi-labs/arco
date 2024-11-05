@@ -6,8 +6,6 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/wails_build.yml
-    with:
-      build-name: arco
 
   release:
     runs-on: ubuntu-latest
