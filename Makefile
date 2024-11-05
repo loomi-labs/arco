@@ -3,7 +3,7 @@
 ############################################
 
 VERSION := $(shell jq -r '.["."]' .release-please-manifest.json)
-LDFLAGS := -ldflags "-X github.com/loomi-labs/arco/backend/app.Version=${VERSION}"
+LDFLAGS := -ldflags "-X github.com/loomi-labs/arco/backend/app.Version=v${VERSION}"
 
 ############################################
 ### Ent database (https://entgo.io/docs) ###
