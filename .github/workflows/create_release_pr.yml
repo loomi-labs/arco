@@ -1,4 +1,4 @@
-name: Build
+name: Create Release PR
 
 on:
   workflow_call:

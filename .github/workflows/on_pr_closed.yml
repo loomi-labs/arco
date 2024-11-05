@@ -1,9 +1,11 @@
-name: Lint and Test
+name: Release
 
 on:
   pull_request:
     types:
       - closed
+    branches:
+      - 'release-please-**'
 
 jobs:
   release:
