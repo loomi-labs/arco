@@ -2,9 +2,8 @@
 ###             Variables                ###
 ############################################
 
-VERSION := $(shell git tag | grep ^v | sort -V | tail -n 1)
-REPO_PATH := $(shell git config --get remote.origin.url | sed 's/.*:\/\/\|.*@//;s/:/\//;s/\.git$$//')
-LDFLAGS := -ldflags "-X $(REPO_PATH)/backend/app.Version=${VERSION}"
+VERSION := $(shell jq -r '.["."]' .release-please-manifest.json)
+LDFLAGS := -ldflags "-X github.com/loomi-labs/arco/backend/app.Version=v${VERSION}"
 
 ############################################
 ### Ent database (https://entgo.io/docs) ###
@@ -80,6 +79,7 @@ ensure-tools:
 	@command -v golangci-lint >/dev/null 2>&1 || { printf >&2 "❌ golangci-lint not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
+	@command -v jq >/dev/null 2>&1 || { printf >&2 "❌ jq not found.\nPlease install it\n"; exit 1; }
 
 #################################
 ###   Formatting & Linting	  ###
