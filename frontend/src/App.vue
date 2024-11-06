@@ -26,43 +26,38 @@ const cleanupFunctions: (() => void)[] = [];
  ************/
 
 async function init() {
-  cleanupFunctions.push(
-    runtime.EventsOn(types.Event.appReady, async () => {
-      try {
-        const errorMsg = await appClient.GetStartupError();
-        if (errorMsg.message !== "") {
-          hasStartupError.value = true;
-          await router.push(Page.Error);
-        } else {
-          await getNotifications();
-          await goToStartPage();
-        }
-      } catch (error: any) {
-        await showAndLogError("Failed to get startup error", error);
-      } finally {
-        isInitialized.value = true;
-      }
-    }));
+  try {
+    const errorMsg = await appClient.GetStartupError();
+    if (errorMsg.message !== "") {
+      hasStartupError.value = true;
+      LogDebug("go to error page");
+      await router.push(Page.Error);
+    } else {
+      await getNotifications();
+      await goToStartPage();
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get startup error", error);
+  } finally {
+    isInitialized.value = true;
+  }
 }
 
 async function getNotifications() {
-  cleanupFunctions.push(
-    runtime.EventsOn(types.Event.notificationAvailable, async () => {
-      try {
-        const notifications = await appClient.GetNotifications();
-        for (const notification of notifications) {
-          if (notification.level === "error") {
-            toast.error(notification.message);
-          } else if (notification.level === "warning") {
-            toast.warning(notification.message);
-          } else if (notification.level === "info") {
-            toast.success(notification.message);
-          }
-        }
-      } catch (error: any) {
-        await showAndLogError("Failed to get notifications", error);
+  try {
+    const notifications = await appClient.GetNotifications();
+    for (const notification of notifications) {
+      if (notification.level === "error") {
+        toast.error(notification.message);
+      } else if (notification.level === "warning") {
+        toast.warning(notification.message);
+      } else if (notification.level === "info") {
+        toast.success(notification.message);
       }
-    }));
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to get notifications", error);
+  }
 }
 
 async function goToStartPage() {
@@ -83,6 +78,9 @@ async function goToStartPage() {
  ************/
 
 init();
+
+cleanupFunctions.push(runtime.EventsOn(types.Event.appReady, init));
+cleanupFunctions.push(runtime.EventsOn(types.Event.notificationAvailable, getNotifications));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
