@@ -5,7 +5,7 @@ import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
-import BackupCard from "../components/BackupCard.vue";
+import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { InformationCircleIcon, PlusCircleIcon } from "@heroicons/vue/24/solid";
 import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
@@ -73,7 +73,7 @@ getRepos();
     <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
       <!-- Backup Card -->
       <div v-for='backup in backups' :key='backup.id'>
-        <BackupCard :backup='backup' />
+        <BackupProfileCard :backup='backup' />
       </div>
       <!-- Add Backup Card -->
       <div @click='router.push(Page.AddBackupProfile)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
