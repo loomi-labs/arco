@@ -419,7 +419,7 @@ onUnmounted(() => {
             </span>
           </td>
           <!-- Action -->
-          <td class='flex items-center'>
+          <td class='flex items-center gap-2'>
             <span class='tooltip'
                   :class='{"invisible": !archiveMountStates.get(archive.id)?.isMounted}'
                   :data-tip='`Click to unmount archive at ${archiveMountStates.get(archive.id)?.mountPath}`'>
@@ -430,13 +430,13 @@ onUnmounted(() => {
             </span>
             <span class='tooltip tooltip-info'
                   data-tip='Browse files in this archive'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content ml-2'
+              <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content'
                       :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
                       @click='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               </button>
             </span>
-            <button class='btn btn-sm btn-ghost btn-circle btn-neutral ml-2'
+            <button class='btn btn-sm btn-ghost btn-circle btn-neutral'
                     :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='() => {
                         archiveToBeDeleted = archive.id;

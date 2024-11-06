@@ -25,8 +25,6 @@ interface Emits {
   (event: typeof emitConfirm, value: typeof props.confirmValue): void;
 
   (event: typeof emitSecondary, value: typeof props.secondaryOptionValue): void;
-
-  (event: typeof emitClose): void;
 }
 
 /************
