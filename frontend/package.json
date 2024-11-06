@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@formkit/tempo": "^0.1.2",
+    "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.1.5",
     "@types/deep-equal": "^1.0.4",
     "@types/lodash": "^4.17.12",

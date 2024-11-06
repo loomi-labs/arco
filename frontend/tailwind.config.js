@@ -68,6 +68,7 @@ export default {
           // "base-100": "#1c163a",
           // "base-200": "#1d0b36",
           "base-300": "#140428",
+          "error": "#DC2626",
         }
       }
     ]

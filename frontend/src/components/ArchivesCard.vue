@@ -3,7 +3,7 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
-import { computed, onUnmounted, ref, useTemplateRef, watch } from "vue";
+import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ArrowPathIcon,
@@ -24,7 +24,7 @@ import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import * as runtime from "../../wailsjs/runtime";
-import { archivesChanged, repoStateChangedEvent } from "../common/events";
+import { archivesChanged } from "../common/events";
 
 /************
  * Types
@@ -57,7 +57,7 @@ const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
 const archiveMountStates = ref<Map<number, types.MountState>>(new Map()); // Map<archiveId, MountState>
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
-const confirmDeleteModalKey = "confirm_delete_archive_modal";
+const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<app.BackupProfileFilter>();

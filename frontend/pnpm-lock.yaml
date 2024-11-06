@@ -11,6 +11,9 @@ importers:
       '@formkit/tempo':
         specifier: ^0.1.2
         version: 0.1.2
+      '@headlessui/vue':
+        specifier: ^1.7.23
+        version: 1.7.23(vue@3.5.12(typescript@5.6.3))
       '@heroicons/vue':
         specifier: ^2.1.5
         version: 2.1.5(vue@3.5.12(typescript@5.6.3))
@@ -265,6 +268,12 @@ packages:
   '@formkit/tempo@0.1.2':
     resolution: {integrity: sha512-jNPPbjL8oj7hK3eHX++CwbR6X4GKQt+x00/q4yeXkwynXHGKL27dylYhpEgwrmediPP4y7s0XtN1if/M/JYujg==}
 
+  '@headlessui/vue@1.7.23':
+    resolution: {integrity: sha512-JzdCNqurrtuu0YW6QaDtR2PIYCKPUWq28csDyMvN4zmGccmE7lz40Is6hc3LA4HFeCI7sekZ/PQMTNmn9I/4Wg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      vue: ^3.2.0
+
   '@heroicons/vue@2.1.5':
     resolution: {integrity: sha512-IpqR72sFqFs55kyKfFS7tN+Ww6odFNeH/7UxycIOrlVYfj4WUGAdzQtLBnJspucSeqWFQsKM0g0YrgU655BEfA==}
     peerDependencies:
@@ -425,6 +434,14 @@ packages:
     resolution: {integrity: sha512-AqhlCXl+8grUz8uqExv5OTtgpjuVIwFTSXTrh8y9/pw6q2ek7fJ+Y8ZEVw7EB2DCcuCOtEjf9w3+J3rzts01uA==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders || >=4.0.0-alpha.20'
+
+  '@tanstack/virtual-core@3.10.8':
+    resolution: {integrity: sha512-PBu00mtt95jbKFi6Llk9aik8bnR3tR/oQP1o3TSi+iG//+Q2RTIzCEgKkHG8BB86kxMNW6O8wku+Lmi+QFR6jA==}
+
+  '@tanstack/vue-virtual@3.10.8':
+    resolution: {integrity: sha512-DB5QA8c/LfqOqIUCpSs3RdOTVroRRdqeHMqBkYrcashSZtOzIv8xbiqHgg7RYxDfkH5F3Y+e0MkuuyGNDVB0BQ==}
+    peerDependencies:
+      vue: ^2.7.0 || ^3.0.0
 
   '@types/cacheable-request@6.0.3':
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
@@ -1914,6 +1931,11 @@ snapshots:
 
   '@formkit/tempo@0.1.2': {}
 
+  '@headlessui/vue@1.7.23(vue@3.5.12(typescript@5.6.3))':
+    dependencies:
+      '@tanstack/vue-virtual': 3.10.8(vue@3.5.12(typescript@5.6.3))
+      vue: 3.5.12(typescript@5.6.3)
+
   '@heroicons/vue@2.1.5(vue@3.5.12(typescript@5.6.3))':
     dependencies:
       vue: 3.5.12(typescript@5.6.3)
@@ -2040,6 +2062,13 @@ snapshots:
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
       tailwindcss: 3.4.14
+
+  '@tanstack/virtual-core@3.10.8': {}
+
+  '@tanstack/vue-virtual@3.10.8(vue@3.5.12(typescript@5.6.3))':
+    dependencies:
+      '@tanstack/virtual-core': 3.10.8
+      vue: 3.5.12(typescript@5.6.3)
 
   '@types/cacheable-request@6.0.3':
     dependencies:
