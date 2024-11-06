@@ -21,7 +21,6 @@ import RepoCardSimple from "../components/RepoCardSimple.vue";
 const router = useRouter();
 const backups = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
-const showBackupProfilesInfo = ref(true);
 
 /************
  * Functions
@@ -43,10 +42,6 @@ async function getRepos() {
   }
 }
 
-async function toggleInfo() {
-  showBackupProfilesInfo.value = !showBackupProfilesInfo.value;
-}
-
 /************
  * Lifecycle
  ************/
@@ -62,11 +57,9 @@ getRepos();
     <div class='flex items-center gap-2 pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup profiles</h1>
       <span class='flex tooltip tooltip-info' data-tip='Defines the rules of your backups'>
-        <button class='btn btn-sm btn-ghost btn-circle hover:text-info'
-                :class='""'
-                @click='toggleInfo'>
+        <span class='cursor-help hover:text-info'>
           <InformationCircleIcon class='size-8' />
-        </button>
+        </span>
       </span>
     </div>
 
@@ -87,11 +80,9 @@ getRepos();
       <div class='flex items-center gap-2 pb-2'>
         <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
         <span class='flex tooltip tooltip-info' data-tip='Defines where your backups are stored'>
-        <button class='btn btn-sm btn-ghost btn-circle hover:text-info'
-                :class='""'
-                @click='toggleInfo'>
+        <span class='cursor-help hover:text-info'>
           <InformationCircleIcon class='size-8' />
-        </button>
+        </span>
       </span>
       </div>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>

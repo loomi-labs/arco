@@ -11,7 +11,7 @@ const arcoPurple = {
   '700': '#9631bf',
   '800': '#7d2d9c',
   '900': '#66257e',
-  '950': '#4c1062',
+  '950': '#4E1066',
 };
 
 /** @type {import("tailwindcss").Config} */
@@ -60,14 +60,8 @@ export default {
           "primary-content": "#FFFFFF",
           "secondary": "#F97316",   // could also be ffc107
           "secondary-content": "#190211",
-          // "base-100": "#474352",
-          // "base-200": "#34333f",
-          // "base-300": "#27242F",
-          "base-100": "#241D4D",
-          "base-200": "#21093F",
-          // "base-100": "#1c163a",
-          // "base-200": "#1d0b36",
-          "base-300": "#140428",
+          "base-100": "#27242F",
+          "base-200": "#121212",
           "error": "#DC2626",
         }
       }
