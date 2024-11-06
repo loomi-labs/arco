@@ -28,4 +28,8 @@
     .badge-arco-purple-700 {
         @apply text-arco-purple-700;
     }
+
+    .text-base-strong {
+        @apply text-black dark:text-white;
+    }
 }

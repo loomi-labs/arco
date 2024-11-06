@@ -45,7 +45,7 @@ const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: zod.string({ required_error: "Enter a name for this backup profile" })
-        .min(3, { message: "Name length must be at least 3" })
+        .min(3, { message: "Name must be at least 3 characters long" })
         .max(30, { message: "Name is too long" })
     })
   )
@@ -193,7 +193,7 @@ watch(loading, async () => {
   </div>
   <div v-else class='container mx-auto text-left pt-10'>
     <!-- Data Section -->
-    <div class='flex items-center justify-between mb-4'>
+    <div class='flex items-center justify-between text-base-strong mb-4'>
       <!-- Name -->
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
@@ -254,7 +254,7 @@ watch(loading, async () => {
     </div>
 
     <!-- Schedule Section -->
-    <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
+    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>{{ $t("schedule") }}</h2>
     <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
       <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
                          @update:schedule='saveSchedule' />
@@ -266,7 +266,7 @@ watch(loading, async () => {
       </PruningCard>
     </div>
 
-    <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
+    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
       <!-- Repositories -->
       <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
