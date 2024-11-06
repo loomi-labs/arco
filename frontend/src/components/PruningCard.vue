@@ -416,9 +416,9 @@ defineExpose({
     <div class='flex gap-2 w-full'>
       <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
       <span v-if='isExaminePrune' class='loading loading-dots loading-md'></span>
-      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-4'>
+      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-2'>
         <div class='col-span-1'>{{ cleanupImpact.Summary }}</div>
-        <div v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
+        <div v-if='cleanupImpact.Rows.length > 1' v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
           <div>{{ row.RepositoryName }}</div>
           <div>{{ row.Impact }}</div>
         </div>
