@@ -260,6 +260,7 @@ onUnmounted(() => {
   </div>
 
   <ConfirmModal :ref='confirmUnmountModalKey'
+                title='Stop browsing'
                 confirm-text='Stop browsing and start backup'
                 confirm-class='btn-info'
                 @confirm='unmountAllAndRunBackups'>
@@ -275,6 +276,7 @@ onUnmounted(() => {
   </ConfirmModal>
 
   <ConfirmModal :ref='confirmRemoveLockModalKey'
+                :title='lockedRepos.length === 1 ? "Remove lock" : "Remove locks"'
                 show-exclamation
                 :confirm-text='lockedRepos.length === 1 ? "Remove lock" : "Remove locks"'
                 confirm-class='btn-error'

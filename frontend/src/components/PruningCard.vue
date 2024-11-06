@@ -409,6 +409,7 @@ defineExpose({
   </div>
 
   <ConfirmModal
+    title='Apply cleanup settings'
     :show-exclamation='cleanupImpact.ShowWarning'
     :ref='confirmSaveModalKey'
   >
