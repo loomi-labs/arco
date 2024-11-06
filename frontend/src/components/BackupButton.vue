@@ -275,6 +275,7 @@ onUnmounted(() => {
   </ConfirmModal>
 
   <ConfirmModal :ref='confirmRemoveLockModalKey'
+                show-exclamation
                 :confirm-text='lockedRepos.length === 1 ? "Remove lock" : "Remove locks"'
                 confirm-class='btn-error'
                 @confirm='breakLock'>

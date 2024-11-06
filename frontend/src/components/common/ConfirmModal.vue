@@ -39,7 +39,6 @@ const emit = defineEmits<Emits>();
 // Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm, cancel or backdrop click)
 const emitConfirm = "confirm";
 const emitSecondary = "secondary";
-const emitClose = "close";
 
 const isOpen = ref<boolean>(false);
 
@@ -47,21 +46,18 @@ const isOpen = ref<boolean>(false);
  * Functions
  ************/
 
-function cancel() {
+function close() {
   isOpen.value = false;
-  emit(emitClose);
 }
 
 function confirm() {
   isOpen.value = false;
   emit(emitConfirm, props.confirmValue);
-  emit(emitClose);
 }
 
 function secondary() {
   isOpen.value = false;
   emit(emitSecondary, props.secondaryOptionValue);
-  emit(emitClose);
 }
 
 function showModal() {
@@ -69,7 +65,8 @@ function showModal() {
 }
 
 defineExpose({
-  showModal
+  showModal,
+  close
 });
 
 /************
@@ -80,7 +77,7 @@ defineExpose({
 
 <template>
   <TransitionRoot as='template' :show='isOpen'>
-    <Dialog class='relative z-10' @close='cancel'>
+    <Dialog class='relative z-10' @close='close'>
       <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100' leave='ease-in duration-200'
                        leave-from='opacity-100' leave-to='opacity-0'>
         <div class='fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity' />
@@ -93,26 +90,28 @@ defineExpose({
                            leave-from='opacity-100 translate-y-0 sm:scale-100' leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
             <DialogPanel
               class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
-              <div class='flex p-6'>
+              <div class='flex p-8'>
                 <div v-if='showExclamation'
                      class='mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-200 sm:mx-0 sm:h-10 sm:w-10'>
                   <ExclamationTriangleIcon class='h-6 w-6 text-error' aria-hidden='true' />
                 </div>
                 <div class='pl-4'>
-                  <div class='flex items-start text-left gap-2'>
-                    <DialogTitle v-if='title' as='h3' class='text-base font-semibold'>{{ title }}</DialogTitle>
+                  <div class='flex flex-col text-left gap-1'>
+                    <DialogTitle v-if='title' as='h3' class='text-lg font-semibold'>{{ title }}</DialogTitle>
                     <div>
                       <slot />
                     </div>
                   </div>
-                  <div class='flex gap-3 pt-4'>
-                    <button type='button' class='btn btn-sm btn-outline' :class='cancelClass' @click='cancel'>Cancel</button>
+                  <slot name='actionButtons'>
+                  <div class='flex gap-3 pt-5'>
+                    <button type='button' class='btn btn-sm btn-outline' :class='cancelClass' @click='close'>Cancel</button>
                     <button type='button' class='btn btn-sm btn-success' :class='confirmClass' @click='confirm'>{{ confirmText ?? $t("confirm") }}
                     </button>
                     <button v-if='secondaryOptionText' type='button' class='btn btn-sm btn-secondary' :class='secondaryOptionClass'
                             @click='secondary'>{{ secondaryOptionText }}
                     </button>
                   </div>
+                  </slot>
                 </div>
               </div>
             </DialogPanel>

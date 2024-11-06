@@ -487,6 +487,7 @@ onUnmounted(() => {
     </div>
   </div>
   <ConfirmModal :ref='confirmDeleteModalKey'
+                show-exclamation
                 :confirmText='$t("delete")'
                 confirm-class='btn-error'
                 @confirm='deleteArchive()'

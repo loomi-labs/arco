@@ -223,6 +223,7 @@ onUnmounted(() => {
       </div>
 
       <ConfirmModal :ref='confirmDeleteModalKey'
+                    show-exclamation
                     confirm-text='Delete repository'
                     confirm-class='btn-error'
                     @confirm='deleteRepo()'>

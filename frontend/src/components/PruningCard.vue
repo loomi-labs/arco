@@ -64,6 +64,7 @@ const pruningOptionMap: PruningOptionMap = {
 interface CleanupImpact {
   Summary: string;
   Rows: Array<CleanupImpactRow>;
+  ShowWarning?: boolean;
 }
 
 interface CleanupImpactRow {
@@ -97,8 +98,7 @@ const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
 const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
-const pruningImpactText = ref<string>("");
-const cleanupImpactRows = ref<Array<CleanupImpactRow>>([]);
+const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false });
 const isExaminePrune = ref<boolean>(false);
 
 /************
@@ -164,7 +164,7 @@ function toPruningRule() {
 async function savePruningRule() {
   try {
     const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value);
-    await emits(emitUpdatePruningRule, result);
+    emits(emitUpdatePruningRule, result);
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);
   }
@@ -173,7 +173,7 @@ async function savePruningRule() {
 async function examinePrune(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
   try {
     isExaminePrune.value = true;
-    pruningImpactText.value = "";
+    cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false };
     return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
   } catch (error: any) {
     await showAndLogError("Failed to dry run pruning rule", error);
@@ -189,10 +189,13 @@ function toArchiveText(cnt: number) {
   return `${cnt} archives`;
 }
 
-function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImpact {
-  const rows = result.map((r) => {
+function toCleanupImpact(result: Array<app.ExaminePruningResult>): CleanupImpact {
+  const rows: CleanupImpactRow[] = result.map((r) => {
     if (r.Error) {
       return { RepositoryName: r.RepositoryName, Impact: "unknown" };
+    }
+    if (r.CntArchivesToBeDeleted === 0) {
+      return { RepositoryName: r.RepositoryName, Impact: "no archives will be deleted" };
     }
     return { RepositoryName: r.RepositoryName, Impact: `${toArchiveText(r.CntArchivesToBeDeleted)} will be deleted` };
   });
@@ -201,15 +204,18 @@ function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImp
   const hasErrors = result.map((r) => r.Error).some((e) => e);
 
   let summary: string;
+  let warning = false;
   if (total === 0 && !hasErrors) {
     summary = "Your cleanup settings will not delete any archives";
   } else if (hasErrors) {
     summary = `Your cleanup settings will delete at least ${toArchiveText(total)}`;
+    warning = true;
   } else {
     summary = `Your cleanup settings will delete ${toArchiveText(total)}`;
+    warning = true;
   }
 
-  return { Summary: summary, Rows: rows };
+  return { Summary: summary, Rows: rows, ShowWarning: warning };
 }
 
 async function apply() {
@@ -223,13 +229,12 @@ async function apply() {
   confirmSaveModal.value?.showModal();
   const result = await examinePrune(false);
   if (result) {
-    const impact = toExaminePruneText(result);
-    pruningImpactText.value = impact.Summary;
-    cleanupImpactRows.value = impact.Rows;
+    cleanupImpact.value = toCleanupImpact(result);
   }
 }
 
 async function discard(route?: string) {
+  confirmSaveModal.value?.close();
   copyCurrentPruningRule();
   if (route) {
     await router.push(route);
@@ -237,6 +242,7 @@ async function discard(route?: string) {
 }
 
 async function save(route?: string) {
+  confirmSaveModal.value?.close();
   await savePruningRule();
 
   if (route) {
@@ -402,13 +408,16 @@ defineExpose({
     </div>
   </div>
 
-  <ConfirmModal :ref='confirmSaveModalKey'>
+  <ConfirmModal
+    :show-exclamation='cleanupImpact.ShowWarning'
+    :ref='confirmSaveModalKey'
+  >
     <div class='flex gap-2 w-full'>
       <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
       <span v-if='isExaminePrune' class='loading loading-dots loading-md'></span>
       <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-4'>
-        <div class='col-span-1'>{{ pruningImpactText }}</div>
-        <div v-for='row in cleanupImpactRows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
+        <div class='col-span-1'>{{ cleanupImpact.Summary }}</div>
+        <div v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
           <div>{{ row.RepositoryName }}</div>
           <div>{{ row.Impact }}</div>
         </div>
@@ -418,14 +427,15 @@ defineExpose({
     <p v-if='!isExaminePrune'>Do you want to apply them now?</p>
 
     <template v-slot:actionButtons>
-      <div class='flex w-full justify-center gap-4'>
+      <div class='flex gap-3 pt-4'>
         <button
           value='false'
-          class='btn btn-outline'
+          class='btn btn-sm btn-outline'
+          @click='() => confirmSaveModal?.close()'
         >
           Cancel
         </button>
-        <button class='btn btn-outline btn-error'
+        <button class='btn btn-sm btn-outline btn-error'
                 :disabled='isExaminePrune'
                 @click='() => discard(wantToGoRoute)'
         >
@@ -433,7 +443,7 @@ defineExpose({
         </button>
         <button
           value='true'
-          class='btn btn-success'
+          class='btn btn-sm btn-success'
           @click='() => save(wantToGoRoute)'
           :disabled='isExaminePrune'
         >
