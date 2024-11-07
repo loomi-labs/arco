@@ -6,7 +6,8 @@ import { ent } from "../../wailsjs/go/models";
 import { ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
-import { InformationCircleIcon, PlusCircleIcon } from "@heroicons/vue/24/solid";
+import { PlusCircleIcon } from "@heroicons/vue/24/solid";
+import { InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 
@@ -56,7 +57,7 @@ getRepos();
   <div class='container mx-auto text-left pt-10'>
     <div class='flex items-center gap-2 pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup profiles</h1>
-      <span class='flex tooltip tooltip-info' data-tip='Defines the rules of your backups'>
+      <span class='flex tooltip tooltip-info' data-tip='Defines the data and rules of your backups'>
         <span class='cursor-help hover:text-info'>
           <InformationCircleIcon class='size-8' />
         </span>
