@@ -93,8 +93,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 rounded-r bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
+    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
   </div>
 </template>
 

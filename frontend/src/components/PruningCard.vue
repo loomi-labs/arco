@@ -300,7 +300,7 @@ defineExpose({
           {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
       </TooltipTextIcon>
       <div>
-        <FormField :size='Size.Small'>
+        <FormField :size='Size.Medium'>
           <input :class='formInputClass'
                  class='w-12'
                  min='0'
@@ -333,7 +333,7 @@ defineExpose({
       <p class='pt-1'>Custom</p>
       <div class='flex items-center gap-4'>
         <div class='flex flex-col'>
-          <FormField :size='Size.Small' label='Hourly'>
+          <FormField :size='Size.Medium' label='Hourly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -345,7 +345,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField :size='Size.Small' label='Daily'>
+          <FormField :size='Size.Medium' label='Daily'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -357,7 +357,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField :size='Size.Small' label='Weekly'>
+          <FormField :size='Size.Medium' label='Weekly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -369,7 +369,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField :size='Size.Small' label='Monthly'>
+          <FormField :size='Size.Medium' label='Monthly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -381,7 +381,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField :size='Size.Small' label='Yearly'>
+          <FormField :size='Size.Medium' label='Yearly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
