@@ -118,7 +118,7 @@ watch(() => props.existingRepos, (newRepos) => {
 
 <template>
   <div v-if='showConnectedRepos'>
-    <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Your repositories</h2>
+    <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Your Repositories</h2>
     <p class='text-lg'>Choose in which repositories you want to store your backups.</p>
 
     <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
