@@ -40,9 +40,9 @@ const emitClick = "click";
        class='group flex flex-col ac-card-hover p-10 w-full'
        :class='{ "ac-card-selected": isSelected }'
        @click='emit(emitClick)'>
-    <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                         :class='{"text-secondary": isSelected}' />
-    <p>Local Repository</p>
+    <ComputerDesktopIcon class='size-24 self-center group-hover:text-local-repo mb-4'
+                         :class='{"text-local-repo": isSelected}' />
+    <p class='group-hover:text-local-repo' :class='{"text-local-repo": isSelected}'>Local Repository</p>
     <div class='divider'></div>
     <p>Store your backups on a local drive.</p>
   </div>
@@ -51,9 +51,9 @@ const emitClick = "click";
        class='group flex flex-col ac-card-hover p-10 w-full'
        :class='{ "ac-card-selected": isSelected }'
        @click='emit(emitClick)'>
-    <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                           :class='{"text-secondary": isSelected}' />
-    <p>Remote Repository</p>
+    <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-remote-repo mb-4'
+                           :class='{"text-remote-repo": isSelected}' />
+    <p class='group-hover:text-remote-repo' :class='{"text-remote-repo": isSelected}'>Remote Repository</p>
     <div class='divider'></div>
     <p>Store your backups on a remote server.</p>
   </div>

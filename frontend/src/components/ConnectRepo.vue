@@ -122,7 +122,7 @@ watch(() => props.existingRepos, (newRepos) => {
 
     <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
          :class='`grid-rows-${Math.ceil(existingRepos.length / 4)}`'>
-      <div class='group ac-card flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
+      <div class='group ac-card ac-card-hover flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
            v-for='(repo, index) in existingRepos' :key='index'
            :class='getRepoCardClass(repo)'
            @click='connectOrDisconnectRepo(repo)'
