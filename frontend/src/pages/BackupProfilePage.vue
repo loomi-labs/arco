@@ -306,6 +306,8 @@ watch(loading, async () => {
                 :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
                 @click:repo='(repo) => addRepo(repo)' />
 
+              <div class='divider'> </div>
+
               <!-- Add new Repository -->
               <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
                 <p>Create new repository</p>
