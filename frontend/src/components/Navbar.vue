@@ -3,13 +3,13 @@
 import { Page } from "../router";
 import { useRouter } from "vue-router";
 import *  as runtime from "../../wailsjs/runtime";
-import { ArrowLongLeftIcon, MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
+import { MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
 import { showAndLogError } from "../common/error";
 import { ref, watch } from "vue";
 import * as appClient from "../../wailsjs/go/app/AppClient";
 import { settings } from "../../wailsjs/go/models";
-import Theme = settings.Theme;
 import ArcoLogo from "./common/ArcoLogo.vue";
+import Theme = settings.Theme;
 
 /************
  * Types
@@ -123,17 +123,25 @@ router.afterEach(() => {
 <template>
   <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
-      <div class='flex items-center gap-2'>
-        <button class='btn btn-ghost uppercase gap-6' :disabled='!isReady' @click='router.push(Page.Dashboard)'>
-          <ArcoLogo svgClass='size-8' />Arco
-          <ArrowLongLeftIcon v-if='subroute' class='size-8' />
-        </button>
-        <p v-if='subroute'>{{ subroute }}</p>
+      <div class="breadcrumbs">
+        <ul v-if='subroute'>
+          <li><a @click='router.replace(Page.Dashboard)'>Dashboard</a></li>
+          <li>{{ subroute }}</li>
+        </ul>
+        <ul v-else>
+          <li>Dashboard</li>
+        </ul>
       </div>
-      <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
-        <SunIcon class='swap-off size-10' @click='toggleTheme' />
-        <MoonIcon class='swap-on size-10' @click='toggleTheme' />
-      </label>
+      <div class='flex gap-6'>
+        <a class='flex items-center gap-2' @click='router.replace(Page.Dashboard)'>
+          <ArcoLogo svgClass='size-8' />Arco
+        </a>
+
+        <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
+          <SunIcon class='swap-off size-10' @click='toggleTheme' />
+          <MoonIcon class='swap-on size-10' @click='toggleTheme' />
+        </label>
+      </div>
     </div>
   </div>
 </template>
