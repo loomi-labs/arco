@@ -36,4 +36,28 @@
     .text-arco-cloud-repo {
         @apply text-arco-purple-700;
     }
+
+    .border-local-repo {
+        @apply border-arco-purple-700;
+    }
+
+    .border-remote-repo {
+        @apply border-arco-purple-700;
+    }
+
+    .border-arco-cloud-repo {
+        @apply border-arco-purple-700;
+    }
+
+    .badge-local-repo {
+        @apply badge badge-outline text-arco-purple-500 h-full;
+    }
+
+    .badge-remote-repo {
+        @apply badge badge-outline text-arco-purple-500 h-full;
+    }
+
+    .badge-arco-cloud-repo {
+        @apply badge badge-outline text-arco-purple-500 h-full;
+    }
 }

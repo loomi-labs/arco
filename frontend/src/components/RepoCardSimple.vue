@@ -9,7 +9,7 @@ import { onUnmounted, ref, watch } from "vue";
 import { Page, withId } from "../router";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
-import { getBadge, getBgColor, getLocation, getTextColor, getTooltipColor, Location } from "../common/repository";
+import { getLocation, Location } from "../common/repository";
 
 /************
  * Types
@@ -88,7 +88,7 @@ onUnmounted(() => {
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
         <span class='tooltip tooltip-primary' :data-tip='repo.location'>
-          <span class='badge bg-primary text-primary-content h-full'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='`badge-${location}-repo`'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>
     </div>

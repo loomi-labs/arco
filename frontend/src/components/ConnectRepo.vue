@@ -4,7 +4,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import { getBorderColor, getLocation, getTextColorOnlyHover, getTextColorWithHover, Location, RepoType } from "../common/repository";
+import { getLocation, Location, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 
 /************
@@ -100,8 +100,8 @@ function getRepoCardClass(repo: ent.Repository) {
   const location = getLocation(repo.location);
   const isConnected = connectedRepos.value.some(r => r.id === repo.id);
   const isConnectedClass = isConnected ?
-    `ac-card-selected ${getBorderColor(location)} ${getTextColorWithHover(location)}` :
-    `border-transparent ${getTextColorOnlyHover(location)}`;
+    `ac-card-selected border-${location}-repo text-${location}-repo` :
+    `border-transparent hover:text-${location}-repo group-hover:text-${location}-repo`;
   return `${isConnectedClass}`;
 }
 

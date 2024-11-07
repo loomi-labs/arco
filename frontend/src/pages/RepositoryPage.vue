@@ -9,7 +9,7 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
 import { object } from "zod";
-import { getBadge, getLocation, getTextColor, Location, toHumanReadableSize } from "../common/repository";
+import { getLocation, Location, toHumanReadableSize } from "../common/repository";
 import { toDurationBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
@@ -164,13 +164,13 @@ onUnmounted(() => {
         <input :ref='nameInputKey'
                type='text'
                class='text-2xl font-bold bg-transparent w-10'
-               :class='getTextColor(location)'
+               :class='`text-${location}-repo`'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
                @input='adjustNameWidth'
         />
-        <PencilIcon class='size-4' :class='getTextColor(location)' />
+        <PencilIcon class='size-4' :class='`text-${location}-repo`' />
         <span class='text-error'>{{ errors.name }}</span>
       </label>
     </div>
@@ -185,7 +185,7 @@ onUnmounted(() => {
         <div>{{ $t("location") }}</div>
         <div class='flex items-center gap-4'>
           <span>{{ repo.location }}</span>
-          <span :class='getBadge(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='`badge-${location}-repo`'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </div>
       </div>
       <div class='divider'></div>
