@@ -141,7 +141,7 @@ watch(() => values.location, async () => await setNameFromLocation());
     @close='resetAll()'
   >
     <div class='modal-box'>
-      <h2 class='text-2xl'>Add a new remote repository</h2>
+      <h2 class='text-2xl'>Add a Remote Repository</h2>
       <VeeForm class='flex flex-col gap-2'
                :validation-schema='values'>
 
