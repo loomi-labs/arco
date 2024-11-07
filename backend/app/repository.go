@@ -1,6 +1,7 @@
 package app
 
 import (
+	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -41,7 +42,10 @@ func (r *RepositoryClient) GetByBackupId(bId types.BackupId) (*ent.Repository, e
 func (r *RepositoryClient) All() ([]*ent.Repository, error) {
 	return r.db.Repository.
 		Query().
-		Order(ent.Desc(repository.FieldName)).
+		Order(func(s *sql.Selector) {
+			// Order by name, case-insensitive
+			s.OrderExpr(sql.Expr(fmt.Sprintf("%s COLLATE NOCASE", repository.FieldName)))
+		}).
 		All(r.ctx)
 }
 
