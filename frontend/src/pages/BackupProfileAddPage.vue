@@ -2,8 +2,8 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref, useId, useTemplateRef } from "vue";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { Page, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
@@ -13,10 +13,12 @@ import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
-import TooltipIcon from "../components/common/TooltipIcon.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
+import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
+import * as runtime from "../../wailsjs/runtime";
+import ConfirmModal from "../components/common/ConfirmModal.vue";
 
 /************
  * Types
@@ -37,6 +39,11 @@ const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
+const newBackupProfileCreated = ref(false);
+const wantToGoRoute = ref<string>();
+const discardChangesConfirmed = ref(false);
+const confirmLeaveModalKey = useId();
+const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmLeaveModalKey);
 
 // Step 1
 const directorySuggestions = ref<string[]>([]);
@@ -189,12 +196,20 @@ const nextStep = async () => {
         return;
       }
       if (await saveBackupProfile()) {
+        newBackupProfileCreated.value = true;
         toast.success("Backup profile created");
-        await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()))
+        await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()));
       }
       break;
   }
 };
+
+async function goTo() {
+  if (wantToGoRoute.value) {
+    discardChangesConfirmed.value = true;
+    await router.replace(wantToGoRoute.value);
+  }
+}
 
 /************
  * Lifecycle
@@ -203,11 +218,26 @@ const nextStep = async () => {
 newBackupProfile();
 getExistingRepositories();
 
+// If the user tries to leave the page with unsaved changes, show a modal to cancel/discard
+onBeforeRouteLeave(async (to, from) => {
+  if (currentStep.value === Step.SelectData) {
+    return true;
+  } else if (newBackupProfileCreated.value) {
+    return true;
+  } else if (discardChangesConfirmed.value) {
+    return true;
+  } else {
+    wantToGoRoute.value = to.path;
+    discardChangesConfirmed.value = false;
+    confirmLeaveModal.value?.showModal();
+    return false;
+  }
+});
+
 </script>
 
 <template>
   <div class='container mx-auto text-left flex flex-col' :class='getMaxWithPerStep()'>
-
     <h1 class='text-4xl font-bold text-center pt-10'>New Backup Profile</h1>
 
     <!-- Stepper -->
@@ -220,9 +250,10 @@ getExistingRepositories();
     <!-- 1. Step - Data Selection -->
     <template v-if='currentStep === Step.SelectData'>
       <!-- Data to backup Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup
-        <TooltipIcon text='Select any folder or file that you want to include in your backup.' />
-      </h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup</h2>
+      <p class='flex gap-2 mb-3'>
+        Select folders and files that you want to include in your backups.
+      </p>
       <DataSelection
         :paths='backupProfile.backupPaths'
         :suggestions='directorySuggestions'
@@ -234,11 +265,33 @@ getExistingRepositories();
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore
-        <!--        https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns-->
-        <TooltipIcon
-          text="Select files, folders or patterns that you don't want to include in your backups. This supports wildcards. Example: *.cache -> exclude alls .cache folders" />
-      </h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
+      <div class='mb-4'>
+        <p>
+          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span> that you don't want to include in your backups.<br>
+          Wildcards (*) are supported.<br>
+        </p>
+        <p class='pt-2'>Examples:</p>
+        <ul class='pl-4'>
+          <li class='flex gap-2'>
+            *.cache
+            <ArrowLongRightIcon class='size-6' />
+            exclude all .cache folders
+          </li>
+          <li class='flex gap-2'>
+            **/node_modules
+            <ArrowLongRightIcon class='size-6' />
+            exclude all node_modules
+          </li>
+        </ul>
+        <!--        link to borg help -->
+        <a @click='runtime.BrowserOpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
+           class='link flex gap-1 pt-1'>
+          Learn more about exclusion patterns
+          <QuestionMarkCircleIcon class='size-6' />
+        </a>
+      </div>
+
       <DataSelection
         :paths='backupProfile.excludePaths'
         :is-backup-selection='false'
@@ -306,6 +359,18 @@ getExistingRepositories();
       </div>
     </template>
   </div>
+
+  <ConfirmModal
+    title='Discard changes'
+    show-exclamation
+    :ref='confirmLeaveModalKey'
+    confirm-text='Discard changes'
+    confirm-class='btn-error'
+    @confirm='goTo'
+  >
+    <p>You did not finish your Backup Profile <span class='italic font-semibold'>{{ backupProfile.name }}</span></p>
+    <p>Do you wan to discard your changes?</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

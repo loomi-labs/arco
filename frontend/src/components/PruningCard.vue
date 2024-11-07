@@ -6,7 +6,7 @@ import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
-import { formInputClass } from "../common/form";
+import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
 
 /************
@@ -64,6 +64,7 @@ const pruningOptionMap: PruningOptionMap = {
 interface CleanupImpact {
   Summary: string;
   Rows: Array<CleanupImpactRow>;
+  ShowWarning?: boolean;
 }
 
 interface CleanupImpactRow {
@@ -97,8 +98,7 @@ const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
 const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
-const pruningImpactText = ref<string>("");
-const cleanupImpactRows = ref<Array<CleanupImpactRow>>([]);
+const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false });
 const isExaminePrune = ref<boolean>(false);
 
 /************
@@ -164,7 +164,7 @@ function toPruningRule() {
 async function savePruningRule() {
   try {
     const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value);
-    await emits(emitUpdatePruningRule, result);
+    emits(emitUpdatePruningRule, result);
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);
   }
@@ -173,7 +173,7 @@ async function savePruningRule() {
 async function examinePrune(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
   try {
     isExaminePrune.value = true;
-    pruningImpactText.value = "";
+    cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false };
     return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
   } catch (error: any) {
     await showAndLogError("Failed to dry run pruning rule", error);
@@ -189,10 +189,13 @@ function toArchiveText(cnt: number) {
   return `${cnt} archives`;
 }
 
-function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImpact {
-  const rows = result.map((r) => {
+function toCleanupImpact(result: Array<app.ExaminePruningResult>): CleanupImpact {
+  const rows: CleanupImpactRow[] = result.map((r) => {
     if (r.Error) {
       return { RepositoryName: r.RepositoryName, Impact: "unknown" };
+    }
+    if (r.CntArchivesToBeDeleted === 0) {
+      return { RepositoryName: r.RepositoryName, Impact: "no archives will be deleted" };
     }
     return { RepositoryName: r.RepositoryName, Impact: `${toArchiveText(r.CntArchivesToBeDeleted)} will be deleted` };
   });
@@ -201,15 +204,18 @@ function toExaminePruneText(result: Array<app.ExaminePruningResult>): CleanupImp
   const hasErrors = result.map((r) => r.Error).some((e) => e);
 
   let summary: string;
+  let warning = false;
   if (total === 0 && !hasErrors) {
     summary = "Your cleanup settings will not delete any archives";
   } else if (hasErrors) {
     summary = `Your cleanup settings will delete at least ${toArchiveText(total)}`;
+    warning = true;
   } else {
     summary = `Your cleanup settings will delete ${toArchiveText(total)}`;
+    warning = true;
   }
 
-  return { Summary: summary, Rows: rows };
+  return { Summary: summary, Rows: rows, ShowWarning: warning };
 }
 
 async function apply() {
@@ -223,13 +229,12 @@ async function apply() {
   confirmSaveModal.value?.showModal();
   const result = await examinePrune(false);
   if (result) {
-    const impact = toExaminePruneText(result);
-    pruningImpactText.value = impact.Summary;
-    cleanupImpactRows.value = impact.Rows;
+    cleanupImpact.value = toCleanupImpact(result);
   }
 }
 
 async function discard(route?: string) {
+  confirmSaveModal.value?.close();
   copyCurrentPruningRule();
   if (route) {
     await router.push(route);
@@ -237,6 +242,7 @@ async function discard(route?: string) {
 }
 
 async function save(route?: string) {
+  confirmSaveModal.value?.close();
   await savePruningRule();
 
   if (route) {
@@ -280,19 +286,21 @@ defineExpose({
 <template>
   <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Delete old archives'>
-        <h3 class='text-xl font-semibold'>Delete old archives</h3>
+      <TooltipTextIcon text='Delete old archives after some time. You can set the rules for when to delete old archives here.'>
+        <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
     </div>
     <!--  Keep days option -->
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Number of days to keep the archives'>
-        <h3 class='text-xl font-semibold'>Always keep the last
-          {{ pruningRule.keepWithinDays > 1 ? `${pruningRule.keepWithinDays} days` : "day" }}</h3>
+      <TooltipTextIcon text='Archives created in the last X days will never be deleted'>
+        <p>
+          Always keep the last
+          {{ pruningRule.keepWithinDays >= 1 ? `${pruningRule.keepWithinDays}` : "X" }}
+          {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
       </TooltipTextIcon>
       <div>
-        <FormField>
+        <FormField :size='Size.Medium'>
           <input :class='formInputClass'
                  class='w-12'
                  min='0'
@@ -306,9 +314,9 @@ defineExpose({
     <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Number of archives to keep'>
-        <h3 class='text-xl font-semibold'>Keep</h3>
+        <p>Keep</p>
       </TooltipTextIcon>
-      <select class='select select-bordered w-32'
+      <select class='select select-sm select-bordered w-32'
               :disabled='!pruningRule.isEnabled'
               v-model='pruningKeepOption'
               @change='toPruningRule'
@@ -321,11 +329,11 @@ defineExpose({
     </div>
 
     <!-- Custom option -->
-    <div class='flex items-center justify-between mb-4'>
-      <h3 class='text-xl font-semibold'>Custom</h3>
+    <div class='flex items-start justify-between mb-5'>
+      <p class='pt-1'>Custom</p>
       <div class='flex items-center gap-4'>
         <div class='flex flex-col'>
-          <FormField label='Hourly'>
+          <FormField :size='Size.Medium' label='Hourly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -337,7 +345,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Daily'>
+          <FormField :size='Size.Medium' label='Daily'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -349,7 +357,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Weekly'>
+          <FormField :size='Size.Medium' label='Weekly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -361,7 +369,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Monthly'>
+          <FormField :size='Size.Medium' label='Monthly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -373,7 +381,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Yearly'>
+          <FormField :size='Size.Medium' label='Yearly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -392,23 +400,27 @@ defineExpose({
       <span v-if='validationError' class='label'>
         <span class='label text-sm text-error'>{{ validationError }}</span>
       </span>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid'
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-sm btn-outline' :disabled='!hasUnsavedChanges || !isValid'
               @click='copyCurrentPruningRule'>Discard
         changes
       </button>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid'
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-sm btn-success' :disabled='!hasUnsavedChanges || !isValid'
               @click='apply'>Apply changes
       </button>
     </div>
   </div>
 
-  <ConfirmModal :ref='confirmSaveModalKey'>
+  <ConfirmModal
+    title='Apply cleanup settings'
+    :show-exclamation='cleanupImpact.ShowWarning'
+    :ref='confirmSaveModalKey'
+  >
     <div class='flex gap-2 w-full'>
       <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
       <span v-if='isExaminePrune' class='loading loading-dots loading-md'></span>
-      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-4'>
-        <div class='col-span-1'>{{ pruningImpactText }}</div>
-        <div v-for='row in cleanupImpactRows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
+      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-2'>
+        <div class='col-span-1'>{{ cleanupImpact.Summary }}</div>
+        <div v-if='cleanupImpact.Rows.length > 1' v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
           <div>{{ row.RepositoryName }}</div>
           <div>{{ row.Impact }}</div>
         </div>
@@ -418,14 +430,15 @@ defineExpose({
     <p v-if='!isExaminePrune'>Do you want to apply them now?</p>
 
     <template v-slot:actionButtons>
-      <div class='flex w-full justify-center gap-4'>
+      <div class='flex gap-3 pt-4'>
         <button
           value='false'
-          class='btn btn-outline'
+          class='btn btn-sm btn-outline'
+          @click='() => confirmSaveModal?.close()'
         >
           Cancel
         </button>
-        <button class='btn btn-outline btn-error'
+        <button class='btn btn-sm btn-outline btn-error'
                 :disabled='isExaminePrune'
                 @click='() => discard(wantToGoRoute)'
         >
@@ -433,7 +446,7 @@ defineExpose({
         </button>
         <button
           value='true'
-          class='btn btn-success'
+          class='btn btn-sm btn-success'
           @click='() => save(wantToGoRoute)'
           :disabled='isExaminePrune'
         >

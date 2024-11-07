@@ -1,6 +1,7 @@
 package app
 
 import (
+	"entgo.io/ent/dialect/sql"
 	"errors"
 	"fmt"
 	"github.com/eminarican/safetypes"
@@ -44,7 +45,10 @@ func (b *BackupClient) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 		WithRepositories().
 		WithBackupSchedule().
 		WithPruningRule().
-		Order(ent.Desc(backupprofile.FieldName)).
+		Order(func(s *sql.Selector) {
+			// Order by name, case-insensitive
+			s.OrderExpr(sql.Expr(fmt.Sprintf("%s COLLATE NOCASE", backupprofile.FieldName)))
+		}).
 		All(b.ctx)
 }
 

@@ -10,32 +10,32 @@ export interface Icon {
 export const icons: Icon[] = [
   {
     type: backupprofile.Icon.home,
-    color: "bg-indigo-700 group-hover:bg-indigo-400/50 hover:bg-indigo-400/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: HomeIcon
   },
   {
     type: backupprofile.Icon.briefcase,
-    color: "bg-purple-600 group-hover:bg-purple-600/50 hover:bg-purple-600/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: BriefcaseIcon
   },
   {
     type: backupprofile.Icon.fire,
-    color: "bg-fuchsia-500 group-hover:bg-violet-500/50 hover:bg-violet-500/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: FireIcon
   },
   {
     type: backupprofile.Icon.envelope,
-    color: "bg-blue-500 group-hover:bg-blue-500/50 hover:bg-blue-500/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: EnvelopeIcon
   },
   {
     type: backupprofile.Icon.camera,
-    color: "bg-blue-700 group-hover:bg-blue-800/50 hover:bg-blue-800/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: CameraIcon
   },
   {
     type: backupprofile.Icon.book,
-    color: "bg-sky-700 group-hover:bg-sky-400/50 hover:bg-sky-400/50 text-white",
+    color: "bg-primary text-primary-content hover:bg-primary/50",
     html: BookOpenIcon
   },
 ];

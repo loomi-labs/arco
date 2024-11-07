@@ -7,4 +7,7 @@ on:
 
 jobs:
   create-release-pr:
+    # We do not want to create a release PR when the push comes from a release
+    if:
+      ! (startsWith(github.event.head_commit.message, 'chore(main): release'))
     uses: ./.github/workflows/create_release_pr.yml

@@ -9,7 +9,7 @@ import { onUnmounted, ref, watch } from "vue";
 import { Page, withId } from "../router";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
-import { getBadge, getBgColor, getLocation, getTextColor, getTooltipColor, Location } from "../common/repository";
+import { getLocation, Location } from "../common/repository";
 
 /************
  * Types
@@ -79,7 +79,7 @@ onUnmounted(() => {
   <div class='group/repo flex justify-between ac-card-hover h-full w-full'
     @click='router.push(withId(Page.Repository, repo.id))'>
     <div class='flex flex-col w-full p-6'>
-      <div class='flex-grow text-xl font-semibold pb-6' :class='getTextColor(location)'>{{ repo.name }}</div>
+      <div class='flex-grow text-xl font-semibold text-base-strong pb-6'>{{ repo.name }}</div>
       <div class='flex justify-between'>
         <div>{{ $t("archives") }}</div>
         <div>{{ nbrOfArchives }}</div>
@@ -87,14 +87,14 @@ onUnmounted(() => {
       <div class='divider'></div>
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
-        <span class='tooltip' :class='getTooltipColor(location)' :data-tip='repo.location'>
-          <span :class='getBadge(location)'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+        <span class='tooltip tooltip-primary' :data-tip='repo.location'>
+          <span :class='`badge-${location}-repo`'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 text-white h-full w-full max-w-40 py-6' :class='getBgColor(location)'/>
+    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
   </div>
 </template>
 

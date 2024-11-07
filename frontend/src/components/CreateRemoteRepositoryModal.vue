@@ -141,8 +141,8 @@ watch(() => values.location, async () => await setNameFromLocation());
     @close='resetAll()'
   >
     <div class='modal-box'>
-      <h2 class='text-2xl'>Add a new remote repository</h2>
-      <VeeForm class='flex flex-col'
+      <h2 class='text-2xl'>Add a Remote Repository</h2>
+      <VeeForm class='flex flex-col gap-2'
                :validation-schema='values'>
 
         <div class='flex justify-between items-center'>
@@ -162,13 +162,16 @@ watch(() => values.location, async () => await setNameFromLocation());
           </div>
         </div>
 
-        <FormField label='Password' :error='errors.password'>
-          <input :class='formInputClass' type='password' v-model='password' v-bind='passwordAttrs' />
-        </FormField>
-
-        <FormField label='Name' :error='errors.name'>
-          <input :class='formInputClass' v-model='name' v-bind='nameAttrs' @input='isNameTouchedByUser = true' />
-        </FormField>
+        <div>
+          <FormField label='Password' :error='errors.password'>
+            <input :class='formInputClass' type='password' v-model='password' v-bind='passwordAttrs' />
+          </FormField>
+        </div>
+        <div>
+          <FormField label='Name' :error='errors.name'>
+            <input :class='formInputClass' v-model='name' v-bind='nameAttrs' @input='isNameTouchedByUser = true' />
+          </FormField>
+        </div>
 
         <div class='modal-action'>
           <button class='btn btn-outline' type='reset'

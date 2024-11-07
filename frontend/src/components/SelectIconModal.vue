@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { backupprofile } from "../../wailsjs/go/models";
-import { ref, useTemplateRef, watch } from "vue";
+import { ref, useId, useTemplateRef, watch } from "vue";
 import { getIcon, Icon, icons } from "../common/icons";
 
 /************
@@ -25,7 +25,7 @@ const emits = defineEmits<Emits>();
 const selectEmit = "select";
 
 const selectedIcon = ref<Icon>(getIcon(props.icon ?? icons[0].type));
-const selectIconModalKey = "select_icon_modal";
+const selectIconModalKey = useId();
 const selectIconModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(selectIconModalKey);
 
 /************

@@ -199,6 +199,8 @@ onUnmounted(() => {
   </div>
 
   <ConfirmModal :ref='confirmRemoveRepoModalKey'
+                title='Remove repository'
+                show-exclamation
                 confirmText='Remove repository'
                 confirm-class='btn-error'
                 @confirm='emits(emitRemoveRepo)'

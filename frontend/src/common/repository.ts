@@ -1,38 +1,49 @@
 export enum Location {
   Local = "local",
   Remote = "remote",
+  ArcoCloud = "arco-cloud",
 }
+
+// Required so that we can dynamically generate the CSS classes
+// Otherwise, Tailwind CSS will remove the unused classes
+// noinspection JSUnusedGlobalSymbols
+const _tailwindCssPlaceholder = "" +
+  "text-local-repo" +
+  "text-remote-repo" +
+  "text-arco-cloud-repo" +
+  "bg-local-repo" +
+  "bg-remote-repo" +
+  "bg-arco-cloud-repo" +
+  "border-local-repo" +
+  "border-remote-repo" +
+  "border-arco-cloud-repo" +
+  "tooltip-local-repo" +
+  "tooltip-remote-repo" +
+  "tooltip-arco-cloud-repo" +
+  "badge-local-repo" +
+  "badge-remote-repo" +
+  "badge-arco-cloud-repo" +
+  "hover:text-local-repo" +
+  "hover:text-remote-repo" +
+  "hover:text-arco-cloud-repo" +
+  "hover:bg-local-repo" +
+  "hover:bg-remote-repo" +
+  "hover:bg-arco-cloud-repo" +
+  "hover:border-local-repo" +
+  "hover:border-remote-repo" +
+  "hover:border-arco-cloud-repo" +
+  "group-hover:text-local-repo" +
+  "group-hover:text-remote-repo" +
+  "group-hover:text-arco-cloud-repo" +
+  "group-hover:bg-local-repo" +
+  "group-hover:bg-remote-repo" +
+  "group-hover:bg-arco-cloud-repo" +
+  "group-hover:border-local-repo" +
+  "group-hover:border-remote-repo" +
+  "group-hover:border-arco-cloud-repo";
 
 export function getLocation(locationStr: string): Location {
-  return locationStr.startsWith("ssh://") || locationStr.includes("@") ? Location.Remote : Location.Local;
-}
-
-export function getBgColor(location: Location): string {
-  return location === Location.Local ? "bg-arco-purple-500 group-hover/repo:bg-arco-purple-500/70" : "bg-arco-purple-700 group-hover/repo:bg-arco-purple-700/70";
-}
-
-export function getTextColor(location: Location): string {
-  return location === Location.Local ? "text-arco-purple-500" : "text-arco-purple-700";
-}
-
-export function getTextColorWithHover(location: Location): string {
-  return `${getTextColor(location)} ${getTextColorOnlyHover(location)}`;
-}
-
-export function getTextColorOnlyHover(location: Location): string {
-  return location === Location.Local ? "hover:text-arco-purple-500/70 group-hover:text-arco-purple-500/70" : "hover:text-arco-purple-700/70 group-hover:text-arco-purple-700/70";
-}
-
-export function getBorderColor(location: Location): string {
-  return location === Location.Local ? "border-arco-purple-500 hover:border-arco-purple-500/70 group-hover:border-arco-purple-500/70" : "border-arco-purple-700 hover:border-arco-purple-700/70 group-hover:border-arco-purple-700/70";
-}
-
-export function getTooltipColor(location: Location): string {
-  return location === Location.Local ? "tooltip-arco-purple-500" : "tooltip-arco-purple-700";
-}
-
-export function getBadge(location: Location): string {
-  return location === Location.Local ? "badge bg-arco-purple-500 dark:badge-outline dark:text-arco-purple-500 h-full" : "badge text-white bg-arco-purple-700 dark:badge-outline dark:text-arco-purple-700 h-full";
+  return locationStr.startsWith("/") ? Location.Local : Location.Remote;
 }
 
 export function toHumanReadableSize(size: number): string {

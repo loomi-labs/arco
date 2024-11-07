@@ -45,7 +45,7 @@ const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: zod.string({ required_error: "Enter a name for this backup profile" })
-        .min(3, { message: "Name length must be at least 3" })
+        .min(3, { message: "Name must be at least 3 characters long" })
         .max(30, { message: "Name is too long" })
     })
   )
@@ -193,12 +193,12 @@ watch(loading, async () => {
   </div>
   <div v-else class='container mx-auto text-left pt-10'>
     <!-- Data Section -->
-    <div class='flex items-center justify-between mb-4'>
+    <div class='flex items-center justify-between text-base-strong mb-4'>
       <!-- Name -->
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent w-10'
+               class='text-3xl font-bold bg-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -224,6 +224,8 @@ watch(loading, async () => {
           </ul>
         </div>
         <ConfirmModal :ref='confirmDeleteModalKey'
+                      show-exclamation
+                      title='Delete Backup Profile'
                       confirm-class='btn-error'
                       :confirm-text='$t("delete")'
                       @confirm='deleteBackupProfile'
@@ -252,7 +254,7 @@ watch(loading, async () => {
     </div>
 
     <!-- Schedule Section -->
-    <h2 class='text-2xl font-bold mb-4 mt-8'>{{ $t("schedule") }}</h2>
+    <h2 class='text-3xl font-bold text-base-strong mb-4 mt-8'>{{ $t("schedule") }}</h2>
     <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
       <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
                          @update:schedule='saveSchedule' />
@@ -264,7 +266,7 @@ watch(loading, async () => {
       </PruningCard>
     </div>
 
-    <h2 class='text-2xl font-bold mb-4 mt-8'>Stored on</h2>
+    <h2 class='text-3xl font-bold text-base-strong mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
       <!-- Repositories -->
       <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
@@ -304,10 +306,12 @@ watch(loading, async () => {
                 :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
                 @click:repo='(repo) => addRepo(repo)' />
 
+              <div class='divider'> </div>
+
               <!-- Add new Repository -->
               <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
                 <p>Create new repository</p>
-                <div class='relative size-24 group-hover:text-secondary'>
+                <div class='relative size-24 group-hover:text-arco-cloud-repo'>
                   <CircleStackIcon class='absolute inset-0 size-24 z-10' />
                   <div
                     class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>

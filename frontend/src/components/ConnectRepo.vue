@@ -4,7 +4,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import { getBorderColor, getLocation, getTextColorOnlyHover, getTextColorWithHover, Location, RepoType } from "../common/repository";
+import { getLocation, Location, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 
 /************
@@ -80,6 +80,7 @@ function addRepo(repo: ent.Repository) {
   existingRepos.value.push(repo);
   connectedRepos.value.push(repo);
   emit(emitUpdateRepoAdded, repo);
+  emit(emitUpdateConnectedRepos, connectedRepos.value);
 }
 
 function connectOrDisconnectRepo(repo: ent.Repository) {
@@ -97,11 +98,10 @@ function connectOrDisconnectRepo(repo: ent.Repository) {
 }
 
 function getRepoCardClass(repo: ent.Repository) {
-  const location = getLocation(repo.location);
   const isConnected = connectedRepos.value.some(r => r.id === repo.id);
   const isConnectedClass = isConnected ?
-    `ac-card-selected ${getBorderColor(location)} ${getTextColorWithHover(location)}` :
-    `border-transparent ${getTextColorOnlyHover(location)}`;
+    `ac-card-selected border-secondary text-secondary` :
+    `border-transparent hover:text-secondary group-hover:text-secondary`;
   return `${isConnectedClass}`;
 }
 
@@ -117,12 +117,12 @@ watch(() => props.existingRepos, (newRepos) => {
 
 <template>
   <div v-if='showConnectedRepos'>
-    <h2 v-if='showTitles' class='text-3xl py-4'>Your repositories</h2>
-    <p class='text-lg'>Choose the repositories where you want to store your backups</p>
+    <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Your Repositories</h2>
+    <p class='text-lg'>Choose in which repositories you want to store your backups.</p>
 
     <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
          :class='`grid-rows-${Math.ceil(existingRepos.length / 4)}`'>
-      <div class='group ac-card flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
+      <div class='group ac-card ac-card-hover flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
            v-for='(repo, index) in existingRepos' :key='index'
            :class='getRepoCardClass(repo)'
            @click='connectOrDisconnectRepo(repo)'
@@ -134,10 +134,13 @@ watch(() => props.existingRepos, (newRepos) => {
     </div>
   </div>
 
-  <div v-if='showAddRepo'>
-    <h2 v-if='showTitles' class='text-3xl py-4'>Add a repository</h2>
+  <div v-if='showConnectedRepos && showAddRepo' class='divider'></div>
 
-    <div class='flex gap-6'>
+  <div v-if='showAddRepo'>
+    <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Add Repository</h2>
+    <p class='text-lg'>Create a new repository or connect an existing one.</p>
+
+    <div class='flex gap-6 pt-4'>
       <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
       <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
       <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' />

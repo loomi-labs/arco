@@ -6,9 +6,9 @@ import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
-import FormFieldSmall from "./common/FormFieldSmall.vue";
-import { formInputClass } from "../common/form";
+import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
+import FormField from "./common/FormField.vue";
 
 /************
  * Types
@@ -276,19 +276,18 @@ onMounted(() => {
     <h2 v-if='showTitle' class='text-lg font-semibold mb-4'>
       {{ props.isBackupSelection ? $t("data_to_backup") : $t("data_to_ignore") }}</h2>
 
-    <table class='w-full table table-xs'>
-      <tbody>
+    <div class='flex flex-col gap-2'>
       <!-- Paths -->
-      <tr v-for='(field, index) in fields' :key='field.key'>
-        <td>
-          <FormFieldSmall :error='getError(index)'>
+      <div class='flex gap-2' v-for='(field, index) in fields' :key='field.key'>
+        <div class='grow'>
+          <FormField :size='Size.Small' :error='getError(index)'>
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput(index)'
                    :class='isSuggestion(field) ? `${formInputClass} text-half-hidden-light dark:text-half-hidden-dark` : `${formInputClass}`' />
-          </FormFieldSmall>
-        </td>
-        <td class='text-right align-top'>
+          </FormField>
+        </div>
+        <div class='text-right w-20'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
                  :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
                  @click='() => {
@@ -298,28 +297,25 @@ onMounted(() => {
             <PlusIcon class='swap-off size-4' />
             <XMarkIcon class='swap-on size-4' />
           </label>
-        </td>
-      </tr>
+        </div>
+      </div>
 
       <!-- Empty path -->
-      <tr>
-        <td>
-          <FormFieldSmall :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
+      <div class='flex gap-2'>
+        <div class='grow'>
+          <FormField :size='Size.Small' :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
             <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
-          </FormFieldSmall>
-        </td>
-        <td class='text-right align-top'>
-          <button class='btn btn-success btn-sm' @click='addDirectory()'>
+          </FormField>
+        </div>
+        <div class='text-right w-20'>
+          <button class='btn btn-sm btn-success' @click='addDirectory()'>
             {{ $t("add") }}
             <PlusIcon class='size-4' />
           </button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-    <span v-if='showMinOnePathError' class='label'>
-      <span class='label text-sm text-error'>{{ errors.paths }}</span>
-    </span>
+        </div>
+      </div>
+    </div>
+    <span v-if='showMinOnePathError' class='label text-sm text-error'>{{ errors.paths }}</span>
   </div>
 </template>
 
