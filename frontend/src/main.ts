@@ -6,6 +6,7 @@ import Toast, { PluginOptions } from "vue-toastification";
 import "vue-toastification/dist/index.css";
 import { createI18n } from "vue-i18n";
 import en from "./i18n/en.json";
+import Vue3Lottie from 'vue3-lottie'
 
 
 // Connect to the devtools in development mode
@@ -31,5 +32,6 @@ createApp(App)
   .use(router)
   .use(i18n)
   .use(Toast, options)
+  .use(Vue3Lottie)
   .mount("#app");
 
