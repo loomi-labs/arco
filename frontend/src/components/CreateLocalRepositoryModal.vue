@@ -60,7 +60,7 @@ const { meta, values, errors, resetForm, defineField, validate } = useForm({
           async (path) => {
             return await backupClient.IsDirectory(path);
           },
-          { message: "Path is not a directory" }
+          { message: "Path is not a folder" }
         ).refine(
           async (path) => {
             return await backupClient.IsDirectoryEmpty(path);
@@ -151,7 +151,7 @@ async function createDir() {
     location.value = path;
     await setNameFromLocation();
   } catch (error: any) {
-    await showAndLogError("Failed to create directory", error);
+    await showAndLogError("Failed to create folder", error);
   }
 }
 

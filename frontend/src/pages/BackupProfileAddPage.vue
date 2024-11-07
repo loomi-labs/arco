@@ -13,10 +13,11 @@ import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
-import TooltipIcon from "../components/common/TooltipIcon.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
+import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
+import * as runtime from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -190,7 +191,7 @@ const nextStep = async () => {
       }
       if (await saveBackupProfile()) {
         toast.success("Backup profile created");
-        await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()))
+        await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()));
       }
       break;
   }
@@ -207,7 +208,6 @@ getExistingRepositories();
 
 <template>
   <div class='container mx-auto text-left flex flex-col' :class='getMaxWithPerStep()'>
-
     <h1 class='text-4xl font-bold text-center pt-10'>New Backup Profile</h1>
 
     <!-- Stepper -->
@@ -220,9 +220,10 @@ getExistingRepositories();
     <!-- 1. Step - Data Selection -->
     <template v-if='currentStep === Step.SelectData'>
       <!-- Data to backup Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup
-        <TooltipIcon text='Select any folder or file that you want to include in your backup.' />
-      </h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup</h2>
+      <p class='flex gap-2 mb-3'>
+        Select folders and files that you want to include in your backups.
+      </p>
       <DataSelection
         :paths='backupProfile.backupPaths'
         :suggestions='directorySuggestions'
@@ -234,11 +235,33 @@ getExistingRepositories();
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore
-        <!--        https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns-->
-        <TooltipIcon
-          text="Select files, folders or patterns that you don't want to include in your backups. This supports wildcards. Example: *.cache -> exclude alls .cache folders" />
-      </h2>
+      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
+      <div class='mb-4'>
+        <p>
+          Select files, folders or patterns that you don't want to include in your backups.<br>
+          Wildcards (*) are supported.<br>
+        </p>
+        <p class='pt-2 font-semibold'>Examples:</p>
+        <ul class='pl-4'>
+          <li class='flex gap-2'>
+            *.cache
+            <ArrowLongRightIcon class='size-6' />
+            exclude all .cache folders
+          </li>
+          <li class='flex gap-2'>
+            **/node_modules
+            <ArrowLongRightIcon class='size-6' />
+            exclude all node_modules
+          </li>
+        </ul>
+        <!--        link to borg help -->
+        <a @click='runtime.BrowserOpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
+           class='link flex gap-1 pt-1'>
+          Learn more about exclusion patterns
+          <QuestionMarkCircleIcon class='size-6' />
+        </a>
+      </div>
+
       <DataSelection
         :paths='backupProfile.excludePaths'
         :is-backup-selection='false'
