@@ -180,15 +180,16 @@ watch(() => values.location, async () => await setNameFromLocation());
     @close='resetAll();'
   >
     <div class='modal-box flex flex-col text-left'>
-      <h2 class='text-2xl'>Add a new local repository</h2>
-      <VeeForm class='flex flex-col'
+      <h2 class='text-2xl'>Add a local repository</h2>
+      <p class='pt-1'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
+      <VeeForm class='flex flex-col gap-2 pt-2'
                :validation-schema='values'>
         <div class='flex justify-between items-start gap-4'>
           <div class='flex flex-col w-full'>
             <FormField label='Location' :error='errors.location'>
               <input :class='formInputClass' type='text' v-model='location' v-bind='locationAttrs' />
               <template #labelRight v-if='errors.location === pathDoesNotExistMsg'>
-                <button class='btn btn-outline btn-warning btn-xs' @click.prevent='createDir()'>
+                <button class='btn dark:btn-outline btn-warning btn-xs' @click.prevent='createDir()'>
                   Create
                 </button>
               </template>
@@ -212,22 +213,24 @@ watch(() => values.location, async () => await setNameFromLocation());
           <button class='btn btn-outline min-w-44 mt-9'
                   :class='{"btn-success": isEncrypted}'
                   @click.prevent='toggleEncrypted()'>
-            {{ isEncrypted ? "Encrypted" : "Not encrypted" }}
+            {{ isEncrypted ? "Encrypted" : "Not Encrypted" }}
             <LockClosedIcon class='size-6' v-if='isEncrypted' />
             <LockOpenIcon class='size-6' v-else />
           </button>
         </div>
 
-        <FormField label='Name' :error='errors.name'>
-          <input :class='formInputClass' v-model='name' v-bind='nameAttrs' @input='isNameTouchedByUser = true' />
-        </FormField>
+        <div>
+          <FormField label='Name' :error='errors.name'>
+            <input :class='formInputClass' v-model='name' v-bind='nameAttrs' @input='isNameTouchedByUser = true' />
+          </FormField>
+        </div>
 
         <div class='modal-action'>
           <button class='btn btn-outline' type='reset'
                   @click.prevent='dialog?.close();'>
             Cancel
           </button>
-          <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating'
+          <button class='btn btn-success' type='submit' :disabled='!meta.valid || isCreating'
                   @click.prevent='createRepo()'>
             Create
             <span v-if='isCreating' class='loading loading-spinner'></span>

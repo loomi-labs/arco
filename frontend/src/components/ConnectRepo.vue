@@ -80,6 +80,7 @@ function addRepo(repo: ent.Repository) {
   existingRepos.value.push(repo);
   connectedRepos.value.push(repo);
   emit(emitUpdateRepoAdded, repo);
+  emit(emitUpdateConnectedRepos, connectedRepos.value);
 }
 
 function connectOrDisconnectRepo(repo: ent.Repository) {
