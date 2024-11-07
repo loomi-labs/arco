@@ -33,7 +33,7 @@ export default {
         "half-hidden": {
           light: "#8C8C8C",
           dark: "#8C8C8C"
-        },
+        }
       }
     }
   },
@@ -52,7 +52,9 @@ export default {
           "secondary-content": "#190211",
           "base-100": "#FFFFFF",
           "base-200": "#F7F7F7",
-          "base-300": "#E5E6E6"
+          "base-300": "#E5E6E6",
+          "error": "#DC2626",
+          "success": "#16A34A"
         },
         dark: {
           ...require("daisyui/src/theming/themes")["dark"],
@@ -62,7 +64,8 @@ export default {
           "secondary-content": "#190211",
           "base-100": "#27242F",
           "base-200": "#121212",
-          "error": "#DC2626"
+          "error": "#DC2626",
+          "success": "#16A34A"
         }
       }
     ]
