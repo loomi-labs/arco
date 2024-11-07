@@ -4,7 +4,7 @@ export enum Location {
 }
 
 export function getLocation(locationStr: string): Location {
-  return locationStr.startsWith("ssh://") || locationStr.includes("@") ? Location.Remote : Location.Local;
+  return locationStr.startsWith("/") ? Location.Local : Location.Remote;
 }
 
 export function getBgColor(location: Location): string {
