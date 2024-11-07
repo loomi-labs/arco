@@ -7,5 +7,6 @@ on:
 
 jobs:
   create-release-pr:
-    if: ! (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release-please-'))
+    # We do not want to create a release PR when the push comes from a release
+    if: ! (startsWith(github.event.head_commit.message, 'chore(main): release'))
     uses: ./.github/workflows/create_release_pr.yml
