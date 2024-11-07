@@ -53,7 +53,7 @@ getData();
 <template>
   <!-- Backups profiles -->
   <div class='container mx-auto text-left py-10'>
-    <div class='flex items-center gap-2 pb-2'>
+    <div class='flex items-center text-base-strong gap-2 pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup Profiles</h1>
       <span class='flex tooltip tooltip-info' data-tip='Defines the data and rules of your backups'>
         <span class='cursor-help hover:text-info'>
@@ -76,7 +76,7 @@ getData();
 
     <!-- Repositories -->
     <div class='container text-left mx-auto pt-10'>
-      <div class='flex items-center gap-2 pb-2'>
+      <div class='flex items-center text-base-strong gap-2 pb-2'>
         <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
         <span class='flex tooltip tooltip-info' data-tip='Defines where your backups are stored'>
         <span class='cursor-help hover:text-info'>
