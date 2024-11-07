@@ -26,6 +26,8 @@ const cleanupFunctions: (() => void)[] = [];
  ************/
 
 async function init() {
+  if (isInitialized.value) return;
+
   try {
     const errorMsg = await appClient.GetStartupError();
     if (errorMsg.message !== "") {
