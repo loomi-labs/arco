@@ -2,8 +2,8 @@
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { backupprofile, ent } from "../../wailsjs/go/models";
-import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref, useId, useTemplateRef } from "vue";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { Page, withId } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
@@ -18,6 +18,7 @@ import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
 import * as runtime from "../../wailsjs/runtime";
+import ConfirmModal from "../components/common/ConfirmModal.vue";
 
 /************
  * Types
@@ -38,6 +39,11 @@ const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
+const newBackupProfileCreated = ref(false);
+const wantToGoRoute = ref<string>();
+const discardChangesConfirmed = ref(false);
+const confirmLeaveModalKey = useId();
+const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmLeaveModalKey);
 
 // Step 1
 const directorySuggestions = ref<string[]>([]);
@@ -190,6 +196,7 @@ const nextStep = async () => {
         return;
       }
       if (await saveBackupProfile()) {
+        newBackupProfileCreated.value = true;
         toast.success("Backup profile created");
         await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()));
       }
@@ -197,12 +204,35 @@ const nextStep = async () => {
   }
 };
 
+async function goTo() {
+  if (wantToGoRoute.value) {
+    discardChangesConfirmed.value = true;
+    await router.replace(wantToGoRoute.value);
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
 newBackupProfile();
 getExistingRepositories();
+
+// If the user tries to leave the page with unsaved changes, show a modal to cancel/discard
+onBeforeRouteLeave(async (to, from) => {
+  if (currentStep.value === Step.SelectData) {
+    return true;
+  } else if (newBackupProfileCreated.value) {
+    return true;
+  } else if (discardChangesConfirmed.value) {
+    return true;
+  } else {
+    wantToGoRoute.value = to.path;
+    discardChangesConfirmed.value = false;
+    confirmLeaveModal.value?.showModal();
+    return false;
+  }
+});
 
 </script>
 
@@ -329,6 +359,18 @@ getExistingRepositories();
       </div>
     </template>
   </div>
+
+  <ConfirmModal
+    title='Discard changes'
+    show-exclamation
+    :ref='confirmLeaveModalKey'
+    confirm-text='Discard changes'
+    confirm-class='btn-error'
+    @confirm='goTo'
+  >
+    <p>You did not finish your Backup Profile <span class='italic font-semibold'>{{ backupProfile.name }}</span></p>
+    <p>Do you wan to discard your changes?</p>
+  </ConfirmModal>
 </template>
 
 <style scoped>

@@ -50,7 +50,7 @@ const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: zod.string({ required_error: "Enter a name for this repository" })
-        .min(3, { message: "Name length must be at least 3" })
+        .min(3, { message: "Name must be at least 3 characters long" })
         .max(30, { message: "Name is too long" })
     })
   )
@@ -160,17 +160,17 @@ onUnmounted(() => {
     <!-- Data Section -->
     <div class='flex items-center justify-between mb-4'>
       <!-- Name -->
-      <label class='flex items-center gap-2'>
+      <label class='flex items-center gap-2'
+             :class='`text-${location}-repo`'>
         <input :ref='nameInputKey'
                type='text'
                class='text-2xl font-bold bg-transparent w-10'
-               :class='`text-${location}-repo`'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
                @input='adjustNameWidth'
         />
-        <PencilIcon class='size-4' :class='`text-${location}-repo`' />
+        <PencilIcon class='size-4' />
         <span class='text-error'>{{ errors.name }}</span>
       </label>
     </div>
