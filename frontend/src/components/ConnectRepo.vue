@@ -98,11 +98,10 @@ function connectOrDisconnectRepo(repo: ent.Repository) {
 }
 
 function getRepoCardClass(repo: ent.Repository) {
-  const location = getLocation(repo.location);
   const isConnected = connectedRepos.value.some(r => r.id === repo.id);
   const isConnectedClass = isConnected ?
-    `ac-card-selected border-${location}-repo text-${location}-repo` :
-    `border-transparent hover:text-${location}-repo group-hover:text-${location}-repo`;
+    `ac-card-selected border-secondary text-secondary` :
+    `border-transparent hover:text-secondary group-hover:text-secondary`;
   return `${isConnectedClass}`;
 }
 

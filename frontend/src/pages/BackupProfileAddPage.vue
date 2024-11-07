@@ -268,10 +268,10 @@ onBeforeRouteLeave(async (to, from) => {
       <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
       <div class='mb-4'>
         <p>
-          Select files, folders or patterns that you don't want to include in your backups.<br>
+          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span> that you don't want to include in your backups.<br>
           Wildcards (*) are supported.<br>
         </p>
-        <p class='pt-2 font-semibold'>Examples:</p>
+        <p class='pt-2'>Examples:</p>
         <ul class='pl-4'>
           <li class='flex gap-2'>
             *.cache
