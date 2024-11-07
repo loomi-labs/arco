@@ -6,7 +6,7 @@ import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
-import { formInputClass } from "../common/form";
+import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
 
 /************
@@ -286,19 +286,21 @@ defineExpose({
 <template>
   <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Delete old archives'>
-        <h3 class='text-xl font-semibold'>Delete old archives</h3>
+      <TooltipTextIcon text='Delete old archives after some time. You can set the rules for when to delete old archives here.'>
+        <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
     </div>
     <!--  Keep days option -->
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Number of days to keep the archives'>
-        <h3 class='text-xl font-semibold'>Always keep the last
-          {{ pruningRule.keepWithinDays > 1 ? `${pruningRule.keepWithinDays} days` : "day" }}</h3>
+      <TooltipTextIcon text='Archives created in the last X days will never be deleted'>
+        <p>
+          Always keep the last
+          {{ pruningRule.keepWithinDays >= 1 ? `${pruningRule.keepWithinDays}` : "X" }}
+          {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
       </TooltipTextIcon>
       <div>
-        <FormField>
+        <FormField :size='Size.Small'>
           <input :class='formInputClass'
                  class='w-12'
                  min='0'
@@ -312,9 +314,9 @@ defineExpose({
     <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Number of archives to keep'>
-        <h3 class='text-xl font-semibold'>Keep</h3>
+        <p>Keep</p>
       </TooltipTextIcon>
-      <select class='select select-bordered w-32'
+      <select class='select select-sm select-bordered w-32'
               :disabled='!pruningRule.isEnabled'
               v-model='pruningKeepOption'
               @change='toPruningRule'
@@ -327,11 +329,11 @@ defineExpose({
     </div>
 
     <!-- Custom option -->
-    <div class='flex items-center justify-between mb-4'>
-      <h3 class='text-xl font-semibold'>Custom</h3>
+    <div class='flex items-start justify-between mb-5'>
+      <p class='pt-1'>Custom</p>
       <div class='flex items-center gap-4'>
         <div class='flex flex-col'>
-          <FormField label='Hourly'>
+          <FormField :size='Size.Small' label='Hourly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -343,7 +345,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Daily'>
+          <FormField :size='Size.Small' label='Daily'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -355,7 +357,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Weekly'>
+          <FormField :size='Size.Small' label='Weekly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -367,7 +369,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Monthly'>
+          <FormField :size='Size.Small' label='Monthly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -379,7 +381,7 @@ defineExpose({
           </FormField>
         </div>
         <div class='flex flex-col'>
-          <FormField label='Yearly'>
+          <FormField :size='Size.Small' label='Yearly'>
             <input :class='formInputClass'
                    class='w-10'
                    min='0'
@@ -398,11 +400,11 @@ defineExpose({
       <span v-if='validationError' class='label'>
         <span class='label text-sm text-error'>{{ validationError }}</span>
       </span>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-outline' :disabled='!hasUnsavedChanges || !isValid'
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-sm btn-outline' :disabled='!hasUnsavedChanges || !isValid'
               @click='copyCurrentPruningRule'>Discard
         changes
       </button>
-      <button v-if='askForSaveBeforeLeaving' class='btn btn-success' :disabled='!hasUnsavedChanges || !isValid'
+      <button v-if='askForSaveBeforeLeaving' class='btn btn-sm btn-success' :disabled='!hasUnsavedChanges || !isValid'
               @click='apply'>Apply changes
       </button>
     </div>

@@ -6,9 +6,9 @@ import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import { FieldEntry, useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
-import FormFieldSmall from "./common/FormFieldSmall.vue";
-import { formInputClass } from "../common/form";
+import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
+import FormField from "./common/FormField.vue";
 
 /************
  * Types
@@ -280,12 +280,12 @@ onMounted(() => {
       <!-- Paths -->
       <div class='flex gap-2' v-for='(field, index) in fields' :key='field.key'>
         <div class='grow'>
-          <FormFieldSmall :error='getError(index)'>
+          <FormField :size='Size.Small' :error='getError(index)'>
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput(index)'
                    :class='isSuggestion(field) ? `${formInputClass} text-half-hidden-light dark:text-half-hidden-dark` : `${formInputClass}`' />
-          </FormFieldSmall>
+          </FormField>
         </div>
         <div class='text-right w-20'>
           <label class='btn btn-sm btn-circle swap swap-rotate'
@@ -303,12 +303,12 @@ onMounted(() => {
       <!-- Empty path -->
       <div class='flex gap-2'>
         <div class='grow'>
-          <FormFieldSmall :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
+          <FormField :size='Size.Small' :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
             <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
-          </FormFieldSmall>
+          </FormField>
         </div>
         <div class='text-right w-20'>
-          <button class='btn btn-success btn-sm' @click='addDirectory()'>
+          <button class='btn btn-sm btn-success' @click='addDirectory()'>
             {{ $t("add") }}
             <PlusIcon class='size-4' />
           </button>
