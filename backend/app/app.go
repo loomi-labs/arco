@@ -343,6 +343,11 @@ func (a *App) initDb() (*ent.Client, error) {
 		return nil, err
 	}
 
+	// Set permissions on the database file
+	if err := os.Chmod(filepath.Join(a.config.Dir, "arco.db"), 0600); err != nil {
+		return nil, fmt.Errorf("failed to set permissions on database file: %v", err)
+	}
+
 	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
