@@ -46,7 +46,11 @@ async function getData() {
 async function welcomeModalClosed() {
   if (settings.value.showWelcome) {
     settings.value.showWelcome = false;
-    await appClient.SaveSettings(settings.value);
+    try {
+      await appClient.SaveSettings(settings.value);
+    } catch (error: any) {
+      await showAndLogError("Failed to save settings", error);
+    }
   }
 }
 
