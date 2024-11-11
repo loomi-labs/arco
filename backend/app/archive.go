@@ -23,6 +23,9 @@ func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
 	return r.refreshArchives(repoId)
 }
 
+// refreshArchives fetches the archives from the borg repository and saves them to the database.
+// It also deletes the archives that don't exist anymore.
+// Precondition: the caller must have acquired the lock for the repository
 func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 	repo, err := r.db.Repository.
 		Query().
@@ -33,7 +36,7 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 		return nil, err
 	}
 
-	// Wait to acquire the lock and then set the repo as fetching info
+	// Set the repo as performing operation
 	r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusIdle)
 

@@ -27,7 +27,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repoUrl, password, prefix str
 	cmd := exec.CommandContext(ctx, b.path,
 		"delete",
 		"--glob-archives",
-		fmt.Sprintf("%s-*", prefix),
+		fmt.Sprintf("%s*", prefix),
 		repoUrl,
 	)
 	cmd.Env = Env{}.WithPassword(password).AsList()

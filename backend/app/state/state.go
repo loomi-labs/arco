@@ -21,9 +21,6 @@ type State struct {
 	backupStates map[types.BackupId]*BackupState
 	pruneStates  map[types.BackupId]*PruneState
 
-	// TODO: remove runningDeleteJobs and use the same pattern as backupStates and pruneStates
-	runningDeleteJobs map[types.BackupId]*cancelCtx
-
 	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
 }
@@ -206,8 +203,6 @@ func NewState(log *zap.SugaredLogger) *State {
 		repoStates:   make(map[int]*RepoState),
 		backupStates: map[types.BackupId]*BackupState{},
 		pruneStates:  map[types.BackupId]*PruneState{},
-
-		runningDeleteJobs: make(map[types.BackupId]*cancelCtx),
 
 		repoMounts:    make(map[int]*types.MountState),
 		archiveMounts: make(map[int]map[int]*types.MountState),
@@ -568,25 +563,6 @@ func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
 		}
 	}
 	return true, ""
-}
-
-func (s *State) AddRunningDeleteJob(ctx context.Context, id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.runningDeleteJobs[id] = newCancelCtx(ctx)
-}
-
-func (s *State) RemoveRunningDeleteJob(id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if ctx, ok := s.runningDeleteJobs[id]; ok {
-		s.log.Debugf("Cancelling context of delete job %v", id)
-		ctx.cancel()
-	}
-
-	delete(s.runningDeleteJobs, id)
 }
 
 /***********************************/
