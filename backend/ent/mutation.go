@@ -5877,6 +5877,7 @@ type SettingsMutation struct {
 	typ           string
 	id            *int
 	theme         *settings.Theme
+	show_welcome  *bool
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Settings, error)
@@ -6017,6 +6018,42 @@ func (m *SettingsMutation) ResetTheme() {
 	m.theme = nil
 }
 
+// SetShowWelcome sets the "show_welcome" field.
+func (m *SettingsMutation) SetShowWelcome(b bool) {
+	m.show_welcome = &b
+}
+
+// ShowWelcome returns the value of the "show_welcome" field in the mutation.
+func (m *SettingsMutation) ShowWelcome() (r bool, exists bool) {
+	v := m.show_welcome
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShowWelcome returns the old "show_welcome" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldShowWelcome(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShowWelcome is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShowWelcome requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShowWelcome: %w", err)
+	}
+	return oldValue.ShowWelcome, nil
+}
+
+// ResetShowWelcome resets all changes to the "show_welcome" field.
+func (m *SettingsMutation) ResetShowWelcome() {
+	m.show_welcome = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -6051,9 +6088,12 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.theme != nil {
 		fields = append(fields, settings.FieldTheme)
+	}
+	if m.show_welcome != nil {
+		fields = append(fields, settings.FieldShowWelcome)
 	}
 	return fields
 }
@@ -6065,6 +6105,8 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case settings.FieldTheme:
 		return m.Theme()
+	case settings.FieldShowWelcome:
+		return m.ShowWelcome()
 	}
 	return nil, false
 }
@@ -6076,6 +6118,8 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case settings.FieldTheme:
 		return m.OldTheme(ctx)
+	case settings.FieldShowWelcome:
+		return m.OldShowWelcome(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -6091,6 +6135,13 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTheme(v)
+		return nil
+	case settings.FieldShowWelcome:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShowWelcome(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -6143,6 +6194,9 @@ func (m *SettingsMutation) ResetField(name string) error {
 	switch name {
 	case settings.FieldTheme:
 		m.ResetTheme()
+		return nil
+	case settings.FieldShowWelcome:
+		m.ResetShowWelcome()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

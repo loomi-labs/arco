@@ -12,6 +12,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
+	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -114,4 +115,8 @@ func init() {
 	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
 	settingsFields := schema.Settings{}.Fields()
 	_ = settingsFields
+	// settingsDescShowWelcome is the schema descriptor for show_welcome field.
+	settingsDescShowWelcome := settingsFields[1].Descriptor()
+	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
+	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
 }

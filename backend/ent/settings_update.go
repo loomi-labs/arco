@@ -41,6 +41,20 @@ func (su *SettingsUpdate) SetNillableTheme(s *settings.Theme) *SettingsUpdate {
 	return su
 }
 
+// SetShowWelcome sets the "show_welcome" field.
+func (su *SettingsUpdate) SetShowWelcome(b bool) *SettingsUpdate {
+	su.mutation.SetShowWelcome(b)
+	return su
+}
+
+// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
+func (su *SettingsUpdate) SetNillableShowWelcome(b *bool) *SettingsUpdate {
+	if b != nil {
+		su.SetShowWelcome(*b)
+	}
+	return su
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (su *SettingsUpdate) Mutation() *SettingsMutation {
 	return su.mutation
@@ -98,6 +112,9 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := su.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
+	if value, ok := su.mutation.ShowWelcome(); ok {
+		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{settings.Label}
@@ -128,6 +145,20 @@ func (suo *SettingsUpdateOne) SetTheme(s settings.Theme) *SettingsUpdateOne {
 func (suo *SettingsUpdateOne) SetNillableTheme(s *settings.Theme) *SettingsUpdateOne {
 	if s != nil {
 		suo.SetTheme(*s)
+	}
+	return suo
+}
+
+// SetShowWelcome sets the "show_welcome" field.
+func (suo *SettingsUpdateOne) SetShowWelcome(b bool) *SettingsUpdateOne {
+	suo.mutation.SetShowWelcome(b)
+	return suo
+}
+
+// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
+func (suo *SettingsUpdateOne) SetNillableShowWelcome(b *bool) *SettingsUpdateOne {
+	if b != nil {
+		suo.SetShowWelcome(*b)
 	}
 	return suo
 }
@@ -218,6 +249,9 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 	}
 	if value, ok := suo.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
+	}
+	if value, ok := suo.mutation.ShowWelcome(); ok {
+		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
 	_node = &Settings{config: suo.config}
 	_spec.Assign = _node.assignValues

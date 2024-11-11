@@ -33,6 +33,20 @@ func (sc *SettingsCreate) SetNillableTheme(s *settings.Theme) *SettingsCreate {
 	return sc
 }
 
+// SetShowWelcome sets the "show_welcome" field.
+func (sc *SettingsCreate) SetShowWelcome(b bool) *SettingsCreate {
+	sc.mutation.SetShowWelcome(b)
+	return sc
+}
+
+// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
+func (sc *SettingsCreate) SetNillableShowWelcome(b *bool) *SettingsCreate {
+	if b != nil {
+		sc.SetShowWelcome(*b)
+	}
+	return sc
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (sc *SettingsCreate) Mutation() *SettingsMutation {
 	return sc.mutation
@@ -72,6 +86,10 @@ func (sc *SettingsCreate) defaults() {
 		v := settings.DefaultTheme
 		sc.mutation.SetTheme(v)
 	}
+	if _, ok := sc.mutation.ShowWelcome(); !ok {
+		v := settings.DefaultShowWelcome
+		sc.mutation.SetShowWelcome(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -83,6 +101,9 @@ func (sc *SettingsCreate) check() error {
 		if err := settings.ThemeValidator(v); err != nil {
 			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
 		}
+	}
+	if _, ok := sc.mutation.ShowWelcome(); !ok {
+		return &ValidationError{Name: "show_welcome", err: errors.New(`ent: missing required field "Settings.show_welcome"`)}
 	}
 	return nil
 }
@@ -113,6 +134,10 @@ func (sc *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := sc.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 		_node.Theme = value
+	}
+	if value, ok := sc.mutation.ShowWelcome(); ok {
+		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
+		_node.ShowWelcome = value
 	}
 	return _node, _spec
 }

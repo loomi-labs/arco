@@ -52,6 +52,11 @@ func IDLTE(id int) predicate.Settings {
 	return predicate.Settings(sql.FieldLTE(FieldID, id))
 }
 
+// ShowWelcome applies equality check predicate on the "show_welcome" field. It's identical to ShowWelcomeEQ.
+func ShowWelcome(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
+}
+
 // ThemeEQ applies the EQ predicate on the "theme" field.
 func ThemeEQ(v Theme) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldTheme, v))
@@ -70,6 +75,16 @@ func ThemeIn(vs ...Theme) predicate.Settings {
 // ThemeNotIn applies the NotIn predicate on the "theme" field.
 func ThemeNotIn(vs ...Theme) predicate.Settings {
 	return predicate.Settings(sql.FieldNotIn(FieldTheme, vs...))
+}
+
+// ShowWelcomeEQ applies the EQ predicate on the "show_welcome" field.
+func ShowWelcomeEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
+}
+
+// ShowWelcomeNEQ applies the NEQ predicate on the "show_welcome" field.
+func ShowWelcomeNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldShowWelcome, v))
 }
 
 // And groups predicates with the AND operator between them.
