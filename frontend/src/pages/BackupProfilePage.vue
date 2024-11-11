@@ -33,9 +33,11 @@ const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const existingRepos = ref<ent.Repository[]>([]);
 const loading = ref(true);
 
-const nameInputKey = "name_input";
+const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
-const confirmDeleteModalKey = "confirm_delete_backup_profile_modal";
+
+const deleteArchives = ref<boolean>(false);
+const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
 const addRepoModalKey = useId();
@@ -82,7 +84,7 @@ async function getData() {
 
 async function deleteBackupProfile() {
   try {
-    await backupClient.DeleteBackupProfile(backupProfile.value.id, false);
+    await backupClient.DeleteBackupProfile(backupProfile.value.id, deleteArchives.value);
     toast.success("Backup profile deleted");
     await router.replace({ path: Page.Dashboard, hash: `#${Anchor.BackupProfiles}` });
   } catch (error: any) {
@@ -163,14 +165,19 @@ async function addRepo(repo: ent.Repository) {
   }
 }
 
-async function removeRepo(repoId: number) {
+async function removeRepo(repoId: number, deleteArchives: boolean) {
   try {
-    await backupClient.RemoveRepositoryFromBackupProfile(backupProfile.value.id, repoId);
+    await backupClient.RemoveRepositoryFromBackupProfile(backupProfile.value.id, repoId, deleteArchives);
     await getData();
     toast.success("Repository removed");
   } catch (error: any) {
     await showAndLogError("Failed to remove repository", error);
   }
+}
+
+function showDeleteBackupProfileModal() {
+  deleteArchives.value = false;
+  confirmDeleteModal.value?.showModal();
 }
 
 /************
@@ -218,7 +225,7 @@ watch(loading, async () => {
             <EllipsisVerticalIcon class='size-6' />
           </div>
           <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
-            <li><a @click='() => confirmDeleteModal?.showModal()'>Delete
+            <li><a @click='showDeleteBackupProfileModal'>Delete
               <TrashIcon class='size-4' />
             </a></li>
           </ul>
@@ -227,10 +234,16 @@ watch(loading, async () => {
                       show-exclamation
                       title='Delete backup profile'
                       confirm-class='btn-error'
-                      :confirm-text='$t("delete")'
+                      :confirm-text='deleteArchives ? "Delete backup profile and archives" : "Delete backup profile"'
                       @confirm='deleteBackupProfile'
         >
-          <p>Are you sure you want to delete this backup profile?</p>
+          <p>Are you sure you want to delete this backup profile?</p><br>
+          <div class="flex gap-4">
+            <p>Delete archives</p>
+            <input type="checkbox" class="toggle toggle-error" v-model='deleteArchives' />
+          </div><br>
+          <p v-if='deleteArchives'>This will delete all archives associated with this backup profile!</p>
+          <p v-else>Archives will still be accessible via repository page.</p>
         </ConfirmModal>
       </div>
     </div>
@@ -279,7 +292,7 @@ watch(loading, async () => {
           :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
           @click='() => selectedRepo = repo'
           @repo:status='(event) => repoStatuses.set(repo.id, event)'
-          @remove-repo='removeRepo(repo.id)'
+          @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
         >
         </RepoCard>
       </div>
