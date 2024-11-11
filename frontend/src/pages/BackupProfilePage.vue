@@ -225,7 +225,7 @@ watch(loading, async () => {
         </div>
         <ConfirmModal :ref='confirmDeleteModalKey'
                       show-exclamation
-                      title='Delete Backup Profile'
+                      title='Delete backup profile'
                       confirm-class='btn-error'
                       :confirm-text='$t("delete")'
                       @confirm='deleteBackupProfile'

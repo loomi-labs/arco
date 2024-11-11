@@ -205,7 +205,9 @@ onUnmounted(() => {
                 confirm-class='btn-error'
                 @confirm='emits(emitRemoveRepo)'
   >
-    <p>Are you sure you want to remove this repository?</p>
+    <p>Are you sure you want to remove this repository from this backup profile?</p><br>
+    <p>Your archives will <span class='font-bold'>NOT</span> be deleted!</p>
+    <p>They will still be accessible via repository page.</p>
   </ConfirmModal>
 </template>
 
