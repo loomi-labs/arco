@@ -8,6 +8,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
 import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
+import { useToast } from "vue-toastification";
 
 /************
  * Types
@@ -64,7 +65,8 @@ const pruningOptionMap: PruningOptionMap = {
 interface CleanupImpact {
   Summary: string;
   Rows: Array<CleanupImpactRow>;
-  ShowWarning?: boolean;
+  ShowWarning: boolean;
+  AskForSave: boolean;
 }
 
 interface CleanupImpactRow {
@@ -93,13 +95,14 @@ const emits = defineEmits<Emits>();
 const emitUpdatePruningRule = "update:pruningRule";
 
 const router = useRouter();
+const toast = useToast();
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
 const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
 const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
-const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false });
-const isExaminePrune = ref<boolean>(false);
+const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false, AskForSave: false });
+const isExaminingPrunes = ref<boolean>(false);
 
 /************
  * Functions
@@ -170,15 +173,15 @@ async function savePruningRule() {
   }
 }
 
-async function examinePrune(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
+async function examinePrunes(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
   try {
-    isExaminePrune.value = true;
-    cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false };
+    isExaminingPrunes.value = true;
+    cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false, AskForSave: false };
     return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
   } catch (error: any) {
     await showAndLogError("Failed to dry run pruning rule", error);
   } finally {
-    isExaminePrune.value = false;
+    isExaminingPrunes.value = false;
   }
 }
 
@@ -204,21 +207,27 @@ function toCleanupImpact(result: Array<app.ExaminePruningResult>): CleanupImpact
   const hasErrors = result.map((r) => r.Error).some((e) => e);
 
   let summary: string;
-  let warning = false;
-  if (total === 0 && !hasErrors) {
-    summary = "Your cleanup settings will not delete any archives";
-  } else if (hasErrors) {
-    summary = `Your cleanup settings will delete at least ${toArchiveText(total)}`;
-    warning = true;
+  let warning = true;
+  let askForSave = true;
+  if (hasErrors) {
+    if (total === 0) {
+      summary = "Could not determine the impact of your cleanup settings. Maybe there is another operation in progress!";
+    } else {
+      summary = `Could not determine the full impact of your cleanup settings. Maybe there is another operation in progress!`;
+    }
   } else {
-    summary = `Your cleanup settings will delete ${toArchiveText(total)}`;
-    warning = true;
+    if (total === 0) {
+      summary = "Your cleanup settings will not delete any archives at the moment";
+      warning = false;
+      askForSave = false;
+    } else {
+      summary = `Your cleanup settings will delete ${toArchiveText(total)}`;
+    }
   }
-
-  return { Summary: summary, Rows: rows, ShowWarning: warning };
+  return { Summary: summary, Rows: rows, ShowWarning: warning, AskForSave: askForSave };
 }
 
-async function apply() {
+async function showApplyModal(autoSaveIfNoDeletion: boolean) {
   // If pruning is disabled, just save the rule
   if (!pruningRule.value.isEnabled) {
     await save();
@@ -227,9 +236,12 @@ async function apply() {
 
   wantToGoRoute.value = undefined;
   confirmSaveModal.value?.showModal();
-  const result = await examinePrune(false);
+  const result = await examinePrunes(false);
   if (result) {
     cleanupImpact.value = toCleanupImpact(result);
+    if (autoSaveIfNoDeletion && !cleanupImpact.value.AskForSave) {
+      await save(wantToGoRoute.value);
+    }
   }
 }
 
@@ -244,13 +256,14 @@ async function discard(route?: string) {
 async function save(route?: string) {
   confirmSaveModal.value?.close();
   await savePruningRule();
+  toast.success("Cleanup settings saved");
 
   if (route) {
     await router.push(route);
   }
 
   // We examine the prune again but this time with the saveResults flag set to true
-  examinePrune(true).then(r => r);  // We don't have to wait for this to finish
+  examinePrunes(true).then(r => r);  // We don't have to wait for this to finish
 }
 
 /************
@@ -270,7 +283,7 @@ onBeforeRouteLeave(async (to, from) => {
       return true;
     }
 
-    apply().then(r => r);
+    showApplyModal(false).then(r => r);
     wantToGoRoute.value = to.path;
     return false;
   }
@@ -405,7 +418,7 @@ defineExpose({
         changes
       </button>
       <button v-if='askForSaveBeforeLeaving' class='btn btn-sm btn-success' :disabled='!hasUnsavedChanges || !isValid'
-              @click='apply'>Apply changes
+              @click='showApplyModal(true)'>Apply changes
       </button>
     </div>
   </div>
@@ -416,9 +429,9 @@ defineExpose({
     :ref='confirmSaveModalKey'
   >
     <div class='flex gap-2 w-full'>
-      <span v-if='isExaminePrune'>Examining impact of new cleanup settings</span>
-      <span v-if='isExaminePrune' class='loading loading-dots loading-md'></span>
-      <div v-if='!isExaminePrune' class='grid grid-cols-1 gap-2'>
+      <span v-if='isExaminingPrunes'>Examining impact of your cleanup settings</span>
+      <span v-if='isExaminingPrunes' class='loading loading-dots loading-md'></span>
+      <div v-if='!isExaminingPrunes' class='grid grid-cols-1 gap-2'>
         <div class='col-span-1'>{{ cleanupImpact.Summary }}</div>
         <div v-if='cleanupImpact.Rows.length > 1' v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
           <div>{{ row.RepositoryName }}</div>
@@ -427,7 +440,7 @@ defineExpose({
       </div>
     </div>
     <br>
-    <p v-if='!isExaminePrune'>Do you want to apply them now?</p>
+    <p v-if='!isExaminingPrunes'>Do you want to apply them now?</p>
 
     <template v-slot:actionButtons>
       <div class='flex gap-3 pt-4'>
@@ -438,8 +451,8 @@ defineExpose({
         >
           Cancel
         </button>
-        <button class='btn btn-sm btn-outline btn-error'
-                :disabled='isExaminePrune'
+        <button class='btn btn-sm btn-warning'
+                :disabled='isExaminingPrunes'
                 @click='() => discard(wantToGoRoute)'
         >
           Discard changes
@@ -448,7 +461,7 @@ defineExpose({
           value='true'
           class='btn btn-sm btn-success'
           @click='() => save(wantToGoRoute)'
-          :disabled='isExaminePrune'
+          :disabled='isExaminingPrunes'
         >
           Apply changes
         </button>
