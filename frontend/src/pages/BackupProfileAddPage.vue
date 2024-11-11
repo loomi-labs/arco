@@ -364,8 +364,9 @@ onBeforeRouteLeave(async (to, from) => {
     title='Discard changes'
     show-exclamation
     :ref='confirmLeaveModalKey'
+    cancel-text='Finish Backup Profile'
     confirm-text='Discard changes'
-    confirm-class='btn-error'
+    confirm-class='btn-warning'
     @confirm='goTo'
   >
     <p>You did not finish your Backup Profile <span class='italic font-semibold'>{{ backupProfile.name }}</span></p>

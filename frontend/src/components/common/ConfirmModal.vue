@@ -102,7 +102,7 @@ defineExpose({
                   </div>
                   <slot name='actionButtons'>
                   <div class='flex gap-3 pt-5'>
-                    <button type='button' class='btn btn-sm btn-outline' :class='cancelClass' @click='close'>Cancel</button>
+                    <button type='button' class='btn btn-sm btn-outline' :class='cancelClass' @click='close'>{{ cancelText ?? $t("cancel")}}</button>
                     <button type='button' class='btn btn-sm btn-success' :class='confirmClass' @click='confirm'>{{ confirmText ?? $t("confirm") }}
                     </button>
                     <button v-if='secondaryOptionText' type='button' class='btn btn-sm btn-secondary' :class='secondaryOptionClass'
