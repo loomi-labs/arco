@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldTheme holds the string denoting the theme field in the database.
 	FieldTheme = "theme"
+	// FieldShowWelcome holds the string denoting the show_welcome field in the database.
+	FieldShowWelcome = "show_welcome"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -23,6 +25,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldTheme,
+	FieldShowWelcome,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -34,6 +37,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultShowWelcome holds the default value on creation for the "show_welcome" field.
+	DefaultShowWelcome bool
+)
 
 // Theme defines the type for the "theme" enum field.
 type Theme string
@@ -73,4 +81,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByTheme orders the results by the theme field.
 func ByTheme(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTheme, opts...).ToFunc()
+}
+
+// ByShowWelcome orders the results by the show_welcome field.
+func ByShowWelcome(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldShowWelcome, opts...).ToFunc()
 }

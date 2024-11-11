@@ -16,6 +16,9 @@ func (Settings) Fields() []ent.Field {
 		field.Enum("theme").
 			Values("system", "light", "dark").
 			Default("system"),
+		field.Bool("show_welcome").
+			StructTag(`json:"showWelcome"`).
+			Default(true),
 	}
 }
 

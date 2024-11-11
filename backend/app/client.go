@@ -58,5 +58,6 @@ func (a *AppClient) SaveSettings(settings *ent.Settings) error {
 	return a.db.Settings.
 		Update().
 		SetTheme(settings.Theme).
+		SetShowWelcome(settings.ShowWelcome).
 		Exec(a.ctx)
 }
