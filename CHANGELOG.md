@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/loomi-labs/arco/compare/v0.3.0...v0.4.0) (2024-11-13)
+
+
+### Features
+
+* add welcome message ([#84](https://github.com/loomi-labs/arco/issues/84)) ([035fa80](https://github.com/loomi-labs/arco/commit/035fa80d8964225f685cdf0ace7d4a411c6dd71c))
+
 ## [0.3.0](https://github.com/loomi-labs/arco/compare/v0.2.1...v0.3.0) (2024-11-07)
 
 ### Features
