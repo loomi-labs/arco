@@ -62,6 +62,7 @@ type App struct {
 	borg                     borg.Borg
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
+	eventEmitter             types.EventEmitter
 
 	// Startup
 	ctx    context.Context
@@ -72,8 +73,9 @@ type App struct {
 func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
+	eventEmitter types.EventEmitter,
 ) *App {
-	state := appstate.NewState(log)
+	state := appstate.NewState(log, eventEmitter)
 	return &App{
 		log:                      log,
 		config:                   config,
@@ -81,6 +83,7 @@ func NewApp(
 		borg:                     borg.NewBorg(config.BorgPath, log),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
+		eventEmitter:             eventEmitter,
 	}
 }
 
@@ -341,6 +344,11 @@ func (a *App) initDb() (*ent.Client, error) {
 	// Apply migrations
 	if err := a.applyMigrations(opts); err != nil {
 		return nil, err
+	}
+
+	// Set restrictive file permissions (owner read/write only) on the database file
+	if err := os.Chmod(filepath.Join(a.config.Dir, "arco.db"), 0600); err != nil {
+		return nil, fmt.Errorf("failed to set permissions on database file: %v", err)
 	}
 
 	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))

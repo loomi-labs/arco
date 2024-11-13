@@ -101,6 +101,7 @@ lint: ensure-tools
 
 mockgen:
 	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
+	@mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
 
 test: ensure-tools mockgen
 	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)

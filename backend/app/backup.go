@@ -247,24 +247,46 @@ func (b *BackupClient) UpdateBackupProfile(backup ent.BackupProfile) (*ent.Backu
 		Save(b.ctx)
 }
 
-func (b *BackupClient) DeleteBackupProfile(id int, withBackups bool) error {
-	if withBackups {
-		backupProfile, err := b.GetBackupProfile(id)
-		if err != nil {
-			return err
-		}
-		for _, repo := range backupProfile.Edges.Repositories {
+func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives bool) error {
+	backupProfile, err := b.GetBackupProfile(backupProfileId)
+	if err != nil {
+		return err
+	}
+
+	var deleteJobs []func()
+	// If deleteArchives is true, we prepare a delete job for each repository
+	if deleteArchives {
+		for _, r := range backupProfile.Edges.Repositories {
+			repo := r // Capture loop variable
 			bId := types.BackupId{
-				BackupProfileId: id,
+				BackupProfileId: backupProfileId,
 				RepositoryId:    repo.ID,
 			}
-			go b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
+			deleteJobs = append(deleteJobs, func() {
+				go func() {
+					_, err := b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
+					if err != nil {
+						b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
+					}
+				}()
+			})
 		}
 	}
-	err := b.db.BackupProfile.
-		DeleteOneID(id).
+
+	err = b.db.BackupProfile.
+		DeleteOneID(backupProfileId).
 		Exec(b.ctx)
-	return err
+	if err != nil {
+		return err
+	}
+	b.eventEmitter.EmitEvent(b.ctx, types.EventBackupProfileDeleted.String())
+
+	// Execute the delete jobs
+	for _, fn := range deleteJobs {
+		fn()
+	}
+
+	return nil
 }
 
 func (b *BackupClient) AddRepositoryToBackupProfile(backupProfileId int, repositoryId int) error {
@@ -284,15 +306,56 @@ func (b *BackupClient) AddRepositoryToBackupProfile(backupProfileId int, reposit
 		Exec(b.ctx)
 }
 
-func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, repositoryId int) error {
-	bs, err := b.GetBackupProfile(backupProfileId)
+func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, repositoryId int, deleteArchives bool) error {
+	b.log.Debug(fmt.Sprintf("Removing repository %d from backup profile %d (deleteArchives: %t)", repositoryId, backupProfileId, deleteArchives))
+
+	// Check if the repository is the only one in the backup profile
+	cnt, err := b.db.Repository.
+		Query().
+		Where(repository.HasBackupProfilesWith(backupprofile.ID(backupProfileId))).
+		Count(b.ctx)
 	if err != nil {
 		return err
 	}
-	assert.NotNil(bs.Edges.Repositories, "backup profile does not have repositories")
-	if len(bs.Edges.Repositories) == 1 {
+	if cnt <= 1 {
+		assert.NotEqual(cnt, 0, "backup profile does not have repositories")
 		return fmt.Errorf("cannot remove the only repository from the backup profile")
 	}
+
+	// Get the backup profile with the repository
+	backupProfile, err := b.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.ID(backupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(repositoryId)),
+		)).
+		WithRepositories(func(q *ent.RepositoryQuery) {
+			q.Where(repository.ID(repositoryId))
+		}).
+		Only(b.ctx)
+	if err != nil {
+		return err
+	}
+	assert.NotEmpty(backupProfile.Edges.Repositories, "repository does not have the backup profile")
+
+	// If deleteArchives is true, we run a delete job for the repository
+	if deleteArchives {
+		bId := types.BackupId{
+			BackupProfileId: backupProfileId,
+			RepositoryId:    repositoryId,
+		}
+		repo := backupProfile.Edges.Repositories[0]
+		if repo.ID == repositoryId {
+			location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
+			go func() {
+				_, err := b.runBorgDelete(bId, location, password, prefix)
+				if err != nil {
+					b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
+				}
+			}()
+		}
+	}
+
 	return b.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
@@ -502,7 +565,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 	if err != nil {
 		return err
 	}
-	_, err = b.db.Repository.
+	return b.db.Repository.
 		UpdateOneID(repoId).
 		SetStatsTotalSize(info.Cache.Stats.TotalSize).
 		SetStatsTotalCsize(info.Cache.Stats.TotalCSize).
@@ -510,8 +573,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 		SetStatsTotalUniqueChunks(info.Cache.Stats.TotalUniqueChunks).
 		SetStatsUniqueCsize(info.Cache.Stats.UniqueCSize).
 		SetStatsUniqueSize(info.Cache.Stats.UniqueSize).
-		Save(b.ctx)
-	return err
+		Exec(b.ctx)
 }
 
 func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
@@ -571,6 +633,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return BackupResultError, err
 	}
+	assert.NotEmpty(repo.Edges.BackupProfiles, "repository does not have backup profiles")
 	backupProfile := repo.Edges.BackupProfiles[0]
 	b.state.SetBackupWaiting(b.ctx, bId)
 
@@ -644,33 +707,51 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 	}
 }
 
-// TODO: do we need this function? Maybe refactor it to?
-func (b *BackupClient) runBorgDelete(bId types.BackupId, repoUrl, password, prefix string) {
+type DeleteResult string
+
+const (
+	DeleteResultSuccess   DeleteResult = "success"
+	DeleteResultCancelled DeleteResult = "cancelled"
+	DeleteResultError     DeleteResult = "error"
+)
+
+func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, prefix string) (DeleteResult, error) {
 	repoLock := b.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
 
 	// Wait to acquire the lock and then set the repo as locked
 	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusDeleting)
-	b.state.AddRunningDeleteJob(b.ctx, bId)
-	defer b.state.RemoveRunningDeleteJob(bId)
 
-	err := b.borg.DeleteArchives(b.ctx, repoUrl, password, prefix)
+	err := b.borg.DeleteArchives(b.ctx, location, password, prefix)
 	if err != nil {
 		if errors.As(err, &borg.CancelErr{}) {
-			b.state.AddNotification(b.ctx, "Delete job cancelled", types.LevelWarning)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return DeleteResultCancelled, nil
 		} else if errors.As(err, &borg.LockTimeout{}) {
-			//b.state.AddBorgLock(bId.RepositoryId)
 			b.state.AddNotification(b.ctx, "Delete job failed: repository is locked", types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
+			return DeleteResultError, err
 		} else {
-			b.state.AddNotification(b.ctx, err.Error(), types.LevelError)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Delete job failed: %s", err), types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return DeleteResultError, err
 		}
 	} else {
-		b.state.AddNotification(b.ctx, "Delete job completed", types.LevelInfo)
-		b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+		// Delete completed successfully
+		defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+		err = b.refreshRepoInfo(bId.RepositoryId, location, password)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+		}
+
+		_, err = b.repoClient().refreshArchives(bId.RepositoryId)
+		if err != nil {
+			b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+		}
+
+		return DeleteResultSuccess, nil
 	}
 }
 

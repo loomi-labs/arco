@@ -4,7 +4,7 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as appClient from "../../wailsjs/go/app/AppClient";
 import { ent } from "../../wailsjs/go/models";
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
@@ -14,6 +14,8 @@ import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Vue3Lottie } from "vue3-lottie";
 import RocketJson from "../assets/animations/rocket.json";
+import * as runtime from "../../wailsjs/runtime";
+import { backupProfileDeletedEvent, repoStateChangedEvent } from "../common/events";
 
 /************
  * Types
@@ -28,6 +30,8 @@ const backupProfiles = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
 const showWelcomeModal = computed(() => settings.value.showWelcome && backupProfiles.value.length === 0 && repos.value.length === 0);
 const settings = ref<ent.Settings>(ent.Settings.createFrom());
+
+const cleanupFunctions: (() => void)[] = [];
 
 /************
  * Functions
@@ -59,6 +63,12 @@ async function welcomeModalClosed() {
  ************/
 
 getData();
+
+cleanupFunctions.push(runtime.EventsOn(backupProfileDeletedEvent(), getData));
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
 
 </script>
 

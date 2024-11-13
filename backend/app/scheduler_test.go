@@ -1,6 +1,8 @@
 package app
 
 import (
+	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
+	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
@@ -68,13 +70,14 @@ func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) ti
 func TestScheduler(t *testing.T) {
 	var a *App
 	var mockBorg *mockborg.MockBorg
+	var mockEventEmitter *mocktypes.MockEventEmitter
 	var profile *ent.BackupProfile
 	var bs *ent.BackupSchedule
 	var now = time.Now()
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 
 	setup := func(t *testing.T) {
-		a, mockBorg = NewTestApp(t)
+		a, mockBorg, mockEventEmitter = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
@@ -222,9 +225,9 @@ func TestScheduler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// ARRANGE
 			setup(t)
 
-			// ARRANGE
 			err := a.BackupClient().SaveBackupSchedule(profile.ID, newBackupSchedule(tt.schedule))
 			assert.NoError(t, err, "Failed to save backup schedule")
 
@@ -242,12 +245,14 @@ func TestScheduler(t *testing.T) {
 	}
 
 	t.Run("delete backup profile", func(t *testing.T) {
+		// ARRANGE
 		setup(t)
 
-		// ARRANGE
 		schedule := newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly})
 		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
 		assert.NoError(t, err, "Failed to save backup schedule")
+
+		mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventBackupProfileDeleted.String())
 
 		// ACT
 		err = a.BackupClient().DeleteBackupProfile(profile.ID, false)

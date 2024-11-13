@@ -1,12 +1,17 @@
 package app
 
 import (
+	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"sync"
 	"testing"
 	"time"
 )
@@ -36,6 +41,18 @@ TestBackupClient_GetPrefixSuggestions
 * GetPrefixSuggestions with existing prefix and non-alphanumeric chars
 * GetPrefixSuggestions with existing prefix
 * GetPrefixSuggestions with underscore and hyphen
+
+TestBackupClient_DeleteBackupProfile
+* DeleteBackupProfile
+* DeleteBackupProfile with invalid ID
+* DeleteBackupProfile and archives
+
+TestBackupClient_RemoveRepositoryFromBackupProfile
+* RemoveRepositoryFromBackupProfile
+* RemoveRepositoryFromBackupProfile with invalid backup profile ID
+* RemoveRepositoryFromBackupProfile with invalid repository ID
+* RemoveRepositoryFromBackupProfile and delete archives
+
 */
 
 func TestBackupClient_SaveBackupSchedule(t *testing.T) {
@@ -46,7 +63,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 	var now = time.Now()
 
 	setup := func(t *testing.T) {
-		a, mockBorg = NewTestApp(t)
+		a, mockBorg, _ = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
@@ -193,7 +210,7 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 	var profile *ent.BackupProfile
 
 	setup := func(t *testing.T) {
-		a, mockBorg = NewTestApp(t)
+		a, mockBorg, _ = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
@@ -247,6 +264,270 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 					expectedLen := len(tt.expectedPrefix.prefix) + 5
 					assert.Lenf(t, suggestion, expectedLen, "Expected prefix length %d, got %d", expectedLen, len(suggestion))
 				}
+			}
+		})
+	}
+}
+
+func TestBackupClient_DeleteBackupProfile(t *testing.T) {
+	var a *App
+	var mockBorg *mockborg.MockBorg
+	var mockEventEmitter *mocktypes.MockEventEmitter
+	var profile *ent.BackupProfile
+	var repo *ent.Repository
+	var wg sync.WaitGroup
+
+	setup := func(t *testing.T) {
+		a, mockBorg, mockEventEmitter = NewTestApp(t)
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "/tmp", "", true)
+		assert.NoError(t, err, "Failed to create new repository")
+		repo = r
+
+		p, err := a.BackupClient().NewBackupProfile()
+		assert.NoError(t, err, "Failed to create new backup profile")
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
+	}
+
+	getBackupProfileId := func() int {
+		return profile.ID
+	}
+
+	getInvalidId := func() int {
+		return 0
+	}
+
+	getBackupProfileDeletedEvent := func() []string {
+		return []string{types.EventBackupProfileDeleted.String()}
+	}
+
+	getNoEvents := func() []string {
+		return []string{}
+	}
+
+	tests := []struct {
+		name               string
+		getBackupProfileId func() int
+		deleteArchives     bool
+		getEvents          func() []string
+		wantErr            bool
+	}{
+		{
+			"DeleteBackupProfile",
+			getBackupProfileId,
+			false,
+			getBackupProfileDeletedEvent,
+			false,
+		},
+		{
+			"DeleteBackupProfile with invalid ID",
+			getInvalidId,
+			false,
+			getNoEvents,
+			true,
+		},
+		{
+			"DeleteBackupProfile and archives",
+			getBackupProfileId,
+			true,
+			func() []string {
+				return []string{
+					types.EventBackupProfileDeleted.String(),
+					types.EventRepoStateChangedString(repo.ID),
+					types.EventRepoStateChangedString(repo.ID),
+					types.EventRepoStateChangedString(repo.ID),
+					types.EventRepoStateChangedString(repo.ID),
+				}
+			},
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// ARRANGE
+			setup(t)
+
+			for _, event := range tt.getEvents() {
+				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), event)
+			}
+			if tt.deleteArchives {
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				infoResponse := &borg.InfoResponse{
+					Archives:    nil,
+					Cache:       borg.Cache{},
+					Encryption:  borg.Encryption{},
+					Repository:  borg.Repository{},
+					SecurityDir: "",
+				}
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any()).Return(infoResponse, nil)
+				listResponse := &borg.ListResponse{
+					Archives:   nil,
+					Encryption: borg.Encryption{},
+					Repository: borg.Repository{},
+				}
+
+				wg.Add(1)
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(url, password string) {
+					wg.Done()
+				})
+			}
+
+			// ACT
+			err := a.BackupClient().DeleteBackupProfile(tt.getBackupProfileId(), tt.deleteArchives)
+
+			// Wait for all goroutines to finish
+			wg.Wait()
+
+			// ASSERT
+			cnt := a.db.BackupProfile.Query().CountX(a.ctx)
+			r := a.db.Repository.Query().WithBackupProfiles().Where(repository.ID(repo.ID)).OnlyX(a.ctx)
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+				assert.Equalf(t, 1, cnt, "Expected 1 backup profile, got %d", cnt)
+				assert.Equal(t, 1, len(r.Edges.BackupProfiles), "Expected 1 backup profile, got %d", len(r.Edges.BackupProfiles))
+			} else {
+				assert.NoError(t, err, "Expected no error, got %v", err)
+				assert.Equalf(t, 0, cnt, "Expected 0 backup profiles, got %d", cnt)
+				assert.Equal(t, 0, len(r.Edges.BackupProfiles), "Expected 0 backup profiles, got %d", len(r.Edges.BackupProfiles))
+			}
+		})
+	}
+}
+
+func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
+	var a *App
+	var mockBorg *mockborg.MockBorg
+	var mockEventEmitter *mocktypes.MockEventEmitter
+	var profile *ent.BackupProfile
+	var repo1 *ent.Repository
+	var repo2 *ent.Repository
+	var wg sync.WaitGroup
+
+	setup := func(t *testing.T) {
+		var err error
+		a, mockBorg, mockEventEmitter = NewTestApp(t)
+
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
+		repo1, err = a.RepoClient().Create("Test repo 1", "/tmp1", "", true)
+		assert.NoError(t, err, "Failed to create new repository")
+		repo2, err = a.RepoClient().Create("Test repo 2", "/tmp2", "", true)
+		assert.NoError(t, err, "Failed to create new repository")
+
+		p, err := a.BackupClient().NewBackupProfile()
+		assert.NoError(t, err, "Failed to create new backup profile")
+		p.Name = "Test profile"
+		p.Prefix = "test-"
+
+		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{repo1.ID, repo2.ID})
+		assert.NoError(t, err, "Failed to save backup profile")
+		assert.NotNil(t, profile, "Expected backup profile, got nil")
+	}
+
+	getBackupProfileId := func() int {
+		return profile.ID
+	}
+
+	getRepoId := func() int {
+		return repo1.ID
+	}
+
+	getInvalidId := func() int {
+		return 0
+	}
+
+	tests := []struct {
+		name               string
+		getBackupProfileId func() int
+		getRepoId          func() int
+		deleteArchives     bool
+		wantErr            bool
+	}{
+		{
+			"RemoveRepositoryFromBackupProfile",
+			getBackupProfileId,
+			getRepoId,
+			false,
+			false,
+		},
+		{
+			"RemoveRepositoryFromBackupProfile with invalid backup profile ID",
+			getInvalidId,
+			getRepoId,
+			false,
+			true,
+		},
+		{
+			"RemoveRepositoryFromBackupProfile with invalid repository ID",
+			getBackupProfileId,
+			getInvalidId,
+			false,
+			true,
+		},
+		{
+			"RemoveRepositoryFromBackupProfile and delete archives",
+			getBackupProfileId,
+			getRepoId,
+			true,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// ARRANGE
+			setup(t)
+
+			if tt.deleteArchives {
+				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventRepoStateChangedString(repo1.ID)).Times(4)
+
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				infoResponse := &borg.InfoResponse{
+					Archives:    nil,
+					Cache:       borg.Cache{},
+					Encryption:  borg.Encryption{},
+					Repository:  borg.Repository{},
+					SecurityDir: "",
+				}
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any()).Return(infoResponse, nil)
+				listResponse := &borg.ListResponse{
+					Archives:   nil,
+					Encryption: borg.Encryption{},
+					Repository: borg.Repository{},
+				}
+
+				wg.Add(1)
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(url, password string) {
+					wg.Done()
+				})
+			}
+
+			// ACT
+			err := a.BackupClient().RemoveRepositoryFromBackupProfile(tt.getBackupProfileId(), tt.getRepoId(), tt.deleteArchives)
+
+			// Wait for all goroutines to finish
+			wg.Wait()
+
+			// ASSERT
+			repo1 = a.db.Repository.Query().WithBackupProfiles().Where(repository.ID(repo1.ID)).OnlyX(a.ctx)
+			repo2 = a.db.Repository.Query().WithBackupProfiles().Where(repository.ID(repo2.ID)).OnlyX(a.ctx)
+			profile = a.db.BackupProfile.Query().WithRepositories().Where(backupprofile.ID(profile.ID)).OnlyX(a.ctx)
+			if tt.wantErr {
+				assert.Error(t, err, "Expected error, got nil")
+				assert.Equal(t, 1, len(repo1.Edges.BackupProfiles), "Expected 1 backup profile, got %d", len(repo1.Edges.BackupProfiles))
+				assert.Equal(t, 1, len(repo2.Edges.BackupProfiles), "Expected 1 backup profile, got %d", len(repo2.Edges.BackupProfiles))
+				assert.Equal(t, 2, len(profile.Edges.Repositories), "Expected 2 repositories, got %d", len(profile.Edges.Repositories))
+			} else {
+				assert.NoError(t, err, "Expected no error, got %v", err)
+				assert.Equal(t, 0, len(repo1.Edges.BackupProfiles), "Expected 0 backup profiles, got %d", len(repo1.Edges.BackupProfiles))
+				assert.Equal(t, 1, len(repo2.Edges.BackupProfiles), "Expected 1 backup profile, got %d", len(repo2.Edges.BackupProfiles))
+				assert.Equal(t, 1, len(profile.Edges.Repositories), "Expected 1 repository, got %d", len(profile.Edges.Repositories))
 			}
 		})
 	}

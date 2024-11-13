@@ -35,8 +35,8 @@ func DownloadFile(filepath string, url string) error {
 		return fmt.Errorf("failed to write to file %s: %w", filepath, err)
 	}
 
-	// Make the file executable
-	if err := os.Chmod(filepath, 0755); err != nil {
+	// Set restrictive file permissions (owner read/write only)
+	if err := os.Chmod(filepath, 0600); err != nil {
 		return fmt.Errorf("failed to change permissions for file %s: %w", filepath, err)
 	}
 	return nil

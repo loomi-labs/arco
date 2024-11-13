@@ -11,9 +11,9 @@ package mockborg
 
 import (
 	context "context"
-	borg "github.com/loomi-labs/arco/backend/borg"
 	reflect "reflect"
 
+	borg "github.com/loomi-labs/arco/backend/borg"
 	gomock "go.uber.org/mock/gomock"
 )
 

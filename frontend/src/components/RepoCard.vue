@@ -35,7 +35,7 @@ interface Emits {
 
   (event: typeof emitClick): void;
 
-  (event: typeof emitRemoveRepo): void;
+  (event: typeof emitRemoveRepo, deleteArchives: boolean): void;
 }
 
 /************
@@ -63,6 +63,7 @@ const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 
+const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
 const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(confirmRemoveRepoModalKey);
 
@@ -115,6 +116,11 @@ async function prune() {
   } catch (error: any) {
     await showAndLogError("Failed to prune repository", error);
   }
+}
+
+function showRemoveRepoModal() {
+  deleteArchives.value = false;
+  confirmRemoveRepoModal.value?.showModal();
 }
 
 /************
@@ -189,7 +195,7 @@ onUnmounted(() => {
         <button class='btn btn-ghost btn-circle'
                 :class='{ "invisible": !isDeleteShown }'
                 :disabled='repoState.status !== state.RepoStatus.idle'
-                @click.stop='confirmRemoveRepoModal?.showModal()'>
+                @click.stop='showRemoveRepoModal'>
           <TrashIcon class='size-6' />
         </button>
       </div>
@@ -201,11 +207,17 @@ onUnmounted(() => {
   <ConfirmModal :ref='confirmRemoveRepoModalKey'
                 title='Remove repository'
                 show-exclamation
-                confirmText='Remove repository'
-                confirm-class='btn-error'
-                @confirm='emits(emitRemoveRepo)'
+                :confirmText='deleteArchives ? "Remove repository and delete archives" : "Remove repository"'
+                :confirm-class='deleteArchives ? "btn-error" : "btn-warning"'
+                @confirm='emits(emitRemoveRepo, deleteArchives)'
   >
-    <p>Are you sure you want to remove this repository?</p>
+    <p>Are you sure you want to remove this repository from this backup profile?</p><br>
+    <div class="flex gap-4">
+      <p>Delete archives</p>
+      <input type="checkbox" class="toggle toggle-error" v-model='deleteArchives' />
+    </div><br>
+    <p v-if='deleteArchives'>This will delete all archives associated with this repository!</p>
+    <p v-else>Archives will still be accessible via repository page.</p>
   </ConfirmModal>
 </template>
 

@@ -6,7 +6,6 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/negrel/assert"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
 	"sync"
 )
@@ -14,15 +13,13 @@ import (
 type State struct {
 	log           *zap.SugaredLogger
 	mu            sync.Mutex
+	eventEmitter  types.EventEmitter
 	notifications []types.Notification
 	startupError  error
 
 	repoStates   map[int]*RepoState
 	backupStates map[types.BackupId]*BackupState
 	pruneStates  map[types.BackupId]*PruneState
-
-	// TODO: remove runningDeleteJobs and use the same pattern as backupStates and pruneStates
-	runningDeleteJobs map[types.BackupId]*cancelCtx
 
 	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
@@ -196,18 +193,17 @@ func newPruneState() *PruneState {
 	}
 }
 
-func NewState(log *zap.SugaredLogger) *State {
+func NewState(log *zap.SugaredLogger, eventEmitter types.EventEmitter) *State {
 	return &State{
 		log:           log,
 		mu:            sync.Mutex{},
+		eventEmitter:  eventEmitter,
 		notifications: []types.Notification{},
 		startupError:  nil,
 
 		repoStates:   make(map[int]*RepoState),
 		backupStates: map[types.BackupId]*BackupState{},
 		pruneStates:  map[types.BackupId]*PruneState{},
-
-		runningDeleteJobs: make(map[types.BackupId]*cancelCtx),
 
 		repoMounts:    make(map[int]*types.MountState),
 		archiveMounts: make(map[int]map[int]*types.MountState),
@@ -271,7 +267,7 @@ func (s *State) GetRepoLock(repoId int) *sync.Mutex {
 func (s *State) SetRepoStatus(ctx context.Context, repoId int, state RepoStatus) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
 
 	s.setRepoState(repoId, state)
 }
@@ -316,8 +312,8 @@ func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
 func (s *State) SetBackupWaiting(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusWaiting)
 }
@@ -334,8 +330,8 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 		}
 	}
 
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
@@ -350,8 +346,8 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 func (s *State) SetBackupCompleted(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCompleted)
 	if setRepoStateIdle {
@@ -362,8 +358,8 @@ func (s *State) SetBackupCompleted(ctx context.Context, bId types.BackupId, setR
 func (s *State) SetBackupCancelled(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCancelled)
 	if setRepoStateIdle {
@@ -374,8 +370,8 @@ func (s *State) SetBackupCancelled(ctx context.Context, bId types.BackupId, setR
 func (s *State) SetBackupError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusFailed)
 	s.backupStates[bId].Error = err.Error()
@@ -409,7 +405,7 @@ func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 func (s *State) UpdateBackupProgress(ctx context.Context, bId types.BackupId, progress borg.BackupProgress) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventBackupStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
 
 	if currentState, ok := s.backupStates[bId]; ok {
 		if currentState.Status == BackupStatusRunning {
@@ -470,8 +466,8 @@ func (s *State) CanRunPrune(id types.BackupId) (canRun bool, reason string) {
 func (s *State) SetPruneWaiting(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changePruneState(bId, PruningStatusWaiting)
 }
@@ -488,8 +484,8 @@ func (s *State) SetPruneRunning(ctx context.Context, bId types.BackupId) {
 		}
 	}
 
-	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changePruneState(bId, PruningStatusRunning)
 	s.pruneStates[bId].cancelCtx = newCancelCtx(ctx)
@@ -501,8 +497,8 @@ func (s *State) SetPruneRunning(ctx context.Context, bId types.BackupId) {
 func (s *State) SetPruneCompleted(ctx context.Context, bId types.BackupId, result PruneJobResult) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changePruneState(bId, PruningStatusCompleted)
 	s.pruneStates[bId].Result = &result
@@ -512,8 +508,8 @@ func (s *State) SetPruneCompleted(ctx context.Context, bId types.BackupId, resul
 func (s *State) SetPruneCancelled(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changePruneState(bId, PruningStatusCancelled)
 	s.setRepoState(bId.RepositoryId, RepoStatusIdle)
@@ -522,8 +518,8 @@ func (s *State) SetPruneCancelled(ctx context.Context, bId types.BackupId) {
 func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventPruneStateChangedString(bId))
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 	assert.True(err != nil, "error must not be nil")
 
 	s.changePruneState(bId, PruningStatusFailed)
@@ -570,25 +566,6 @@ func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
 	return true, ""
 }
 
-func (s *State) AddRunningDeleteJob(ctx context.Context, id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.runningDeleteJobs[id] = newCancelCtx(ctx)
-}
-
-func (s *State) RemoveRunningDeleteJob(id types.BackupId) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if ctx, ok := s.runningDeleteJobs[id]; ok {
-		s.log.Debugf("Cancelling context of delete job %v", id)
-		ctx.cancel()
-	}
-
-	delete(s.runningDeleteJobs, id)
-}
-
 /***********************************/
 /********** Notifications **********/
 /***********************************/
@@ -596,7 +573,7 @@ func (s *State) RemoveRunningDeleteJob(id types.BackupId) {
 func (s *State) AddNotification(ctx context.Context, msg string, level types.NotificationLevel) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventNotificationAvailable.String())
+	defer s.eventEmitter.EmitEvent(ctx, types.EventNotificationAvailable.String())
 
 	s.notifications = append(s.notifications, types.Notification{
 		Message: msg,
@@ -633,7 +610,7 @@ func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
 func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(repoId))
 
 	if _, ok := s.repoMounts[repoId]; !ok {
 		s.repoMounts[repoId] = &types.MountState{}
@@ -671,7 +648,7 @@ func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, 
 
 	if state.IsMounted {
 		s.setRepoState(repoId, RepoStatusMounted)
-		defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
+		defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(repoId))
 	} else {
 		hasOtherMounts := false
 		for _, aState := range s.archiveMounts[repoId] {
@@ -682,7 +659,7 @@ func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, 
 		}
 		if !hasOtherMounts {
 			s.setRepoState(repoId, RepoStatusIdle)
-			defer runtime.EventsEmit(ctx, types.EventRepoStateChangedString(repoId))
+			defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(repoId))
 		}
 	}
 }

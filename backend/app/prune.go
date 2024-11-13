@@ -99,8 +99,7 @@ func (b *BackupClient) startExaminePrune(bId types.BackupId, pruningRule *ent.Pr
 
 	cntToBeDeleted, err := b.examinePrune(bId, safetypes.Some(pruningRule), saveResults, false)
 	if err != nil {
-		b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
-		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to examine prune: %s", err), types.LevelError)
+		b.log.Debugf("Failed to examine prune: %s", err)
 		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
 		return
 	}

@@ -1,10 +1,12 @@
 package types
 
 import (
+	"context"
 	"fmt"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/settings"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"io/fs"
 )
 
@@ -84,6 +86,7 @@ const (
 	EventPruneStateChanged     Event = "pruneStateChanged"
 	EventRepoStateChanged      Event = "repoStateChanged"
 	EventArchivesChanged       Event = "archivesChanged"
+	EventBackupProfileDeleted  Event = "backupProfileDeleted"
 )
 
 var AllEvents = []Event{
@@ -93,6 +96,7 @@ var AllEvents = []Event{
 	EventPruneStateChanged,
 	EventRepoStateChanged,
 	EventArchivesChanged,
+	EventBackupProfileDeleted,
 }
 
 func (e Event) String() string {
@@ -113,6 +117,16 @@ func EventRepoStateChangedString(repoId int) string {
 
 func EventArchivesChangedString(repoId int) string {
 	return fmt.Sprintf("%s:%d", EventArchivesChanged.String(), repoId)
+}
+
+type EventEmitter interface {
+	EmitEvent(ctx context.Context, event string)
+}
+
+type RuntimeEventEmitter struct{}
+
+func (r *RuntimeEventEmitter) EmitEvent(ctx context.Context, event string) {
+	runtime.EventsEmit(ctx, event)
 }
 
 type MountState struct {
