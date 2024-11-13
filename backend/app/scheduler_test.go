@@ -74,7 +74,7 @@ func TestScheduler(t *testing.T) {
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 
 	setup := func(t *testing.T) {
-		a, mockBorg = NewTestApp(t)
+		a, mockBorg, _ = NewTestApp(t)
 		p, err := a.BackupClient().NewBackupProfile()
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"

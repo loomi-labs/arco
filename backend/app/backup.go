@@ -279,7 +279,7 @@ func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives b
 	if err != nil {
 		return err
 	}
-	runtime.EventsEmit(b.ctx, types.EventBackupProfileDeleted.String())
+	b.eventEmitter.EmitEvent(b.ctx, types.EventBackupProfileDeleted.String())
 
 	// Execute the delete jobs
 	for _, fn := range deleteJobs {
@@ -341,7 +341,7 @@ func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, re
 	if err != nil {
 		return err
 	}
-	runtime.EventsEmit(b.ctx, types.EventBackupProfileDeleted.String())
+	b.eventEmitter.EmitEvent(b.ctx, types.EventBackupProfileDeleted.String())
 	return nil
 }
 
@@ -548,7 +548,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 	if err != nil {
 		return err
 	}
-	_, err = b.db.Repository.
+	return b.db.Repository.
 		UpdateOneID(repoId).
 		SetStatsTotalSize(info.Cache.Stats.TotalSize).
 		SetStatsTotalCsize(info.Cache.Stats.TotalCSize).
@@ -556,8 +556,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 		SetStatsTotalUniqueChunks(info.Cache.Stats.TotalUniqueChunks).
 		SetStatsUniqueCsize(info.Cache.Stats.UniqueCSize).
 		SetStatsUniqueSize(info.Cache.Stats.UniqueSize).
-		Save(b.ctx)
-	return err
+		Exec(b.ctx)
 }
 
 func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
@@ -730,7 +729,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 			b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 		}
 
-		_, err := b.repoClient().refreshArchives(bId.RepositoryId)
+		_, err = b.repoClient().refreshArchives(bId.RepositoryId)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
 		}

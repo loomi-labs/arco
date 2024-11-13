@@ -62,6 +62,7 @@ type App struct {
 	borg                     borg.Borg
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
+	eventEmitter             types.EventEmitter
 
 	// Startup
 	ctx    context.Context
@@ -72,8 +73,9 @@ type App struct {
 func NewApp(
 	log *zap.SugaredLogger,
 	config *types.Config,
+	eventEmitter types.EventEmitter,
 ) *App {
-	state := appstate.NewState(log)
+	state := appstate.NewState(log, eventEmitter)
 	return &App{
 		log:                      log,
 		config:                   config,
@@ -81,6 +83,7 @@ func NewApp(
 		borg:                     borg.NewBorg(config.BorgPath, log),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
+		eventEmitter:             eventEmitter,
 	}
 }
 

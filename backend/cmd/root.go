@@ -164,7 +164,7 @@ func toTsEnums[T Stringer](states []T) []struct {
 }
 
 func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
-	arco := app.NewApp(log, config)
+	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
 
 	logLevel, err := logger.StringToLogLevel(log.Level().String())
 	if err != nil {
