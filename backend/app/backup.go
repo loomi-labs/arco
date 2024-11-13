@@ -308,41 +308,58 @@ func (b *BackupClient) AddRepositoryToBackupProfile(backupProfileId int, reposit
 
 func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, repositoryId int, deleteArchives bool) error {
 	b.log.Debug(fmt.Sprintf("Removing repository %d from backup profile %d (deleteArchives: %t)", repositoryId, backupProfileId, deleteArchives))
-	backupProfile, err := b.GetBackupProfile(backupProfileId)
+
+	// Check if the repository is the only one in the backup profile
+	cnt, err := b.db.Repository.
+		Query().
+		Where(repository.HasBackupProfilesWith(backupprofile.ID(backupProfileId))).
+		Count(b.ctx)
 	if err != nil {
 		return err
 	}
-	assert.NotNil(backupProfile.Edges.Repositories, "backup profile does not have repositories")
-	if len(backupProfile.Edges.Repositories) == 1 {
+	if cnt <= 1 {
+		assert.NotEqual(cnt, 0, "backup profile does not have repositories")
 		return fmt.Errorf("cannot remove the only repository from the backup profile")
 	}
+
+	// Get the backup profile with the repository
+	backupProfile, err := b.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.ID(backupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(repositoryId)),
+		)).
+		WithRepositories(func(q *ent.RepositoryQuery) {
+			q.Where(repository.ID(repositoryId))
+		}).
+		Only(b.ctx)
+	if err != nil {
+		return err
+	}
+	assert.NotEmpty(backupProfile.Edges.Repositories, "repository does not have the backup profile")
+
+	// If deleteArchives is true, we run a delete job for the repository
 	if deleteArchives {
 		bId := types.BackupId{
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
-		for _, r := range backupProfile.Edges.Repositories {
-			repo := r // Capture loop variable
-			if repo.ID == repositoryId {
-				location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
-				go func() {
-					_, err := b.runBorgDelete(bId, location, password, prefix)
-					if err != nil {
-						b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
-					}
-				}()
-			}
+		repo := backupProfile.Edges.Repositories[0]
+		if repo.ID == repositoryId {
+			location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
+			go func() {
+				_, err := b.runBorgDelete(bId, location, password, prefix)
+				if err != nil {
+					b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
+				}
+			}()
 		}
 	}
 
-	err = b.db.BackupProfile.
+	return b.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
 		Exec(b.ctx)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {
