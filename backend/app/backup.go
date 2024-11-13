@@ -256,15 +256,15 @@ func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives b
 	var deleteJobs []func()
 	// If deleteArchives is true, we prepare a delete job for each repository
 	if deleteArchives {
-		for _, repo := range backupProfile.Edges.Repositories {
+		for _, r := range backupProfile.Edges.Repositories {
+			repo := r // Capture loop variable
 			bId := types.BackupId{
 				BackupProfileId: backupProfileId,
 				RepositoryId:    repo.ID,
 			}
-			location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
 			deleteJobs = append(deleteJobs, func() {
 				go func() {
-					_, err := b.runBorgDelete(bId, location, password, prefix)
+					_, err := b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
 					if err != nil {
 						b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
 					}
@@ -321,7 +321,8 @@ func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, re
 			BackupProfileId: backupProfileId,
 			RepositoryId:    repositoryId,
 		}
-		for _, repo := range backupProfile.Edges.Repositories {
+		for _, r := range backupProfile.Edges.Repositories {
+			repo := r // Capture loop variable
 			if repo.ID == repositoryId {
 				location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
 				go func() {
@@ -341,7 +342,6 @@ func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, re
 	if err != nil {
 		return err
 	}
-	b.eventEmitter.EmitEvent(b.ctx, types.EventBackupProfileDeleted.String())
 	return nil
 }
 
@@ -616,7 +616,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return BackupResultError, err
 	}
-	assert.NotNil(repo.Edges.BackupProfiles, "repository does not have backup profiles")
+	assert.NotEmpty(repo.Edges.BackupProfiles, "repository does not have backup profiles")
 	backupProfile := repo.Edges.BackupProfiles[0]
 	b.state.SetBackupWaiting(b.ctx, bId)
 
