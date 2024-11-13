@@ -253,30 +253,16 @@ func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives b
 		return err
 	}
 
-	tx, err := b.db.Tx(b.ctx)
-	if err != nil {
-		return err
-	}
-
-	var deleteFuncs []func()
-
-	// Remove the backup profile from all repositories
-	for _, repo := range backupProfile.Edges.Repositories {
-		err = repo.Update().
-			RemoveBackupProfiles(backupProfile).
-			Exec(b.ctx)
-		if err != nil {
-			return rollback(tx, err)
-		}
-
-		// If deleteArchives is true, we prepare a delete job for each repository
-		if deleteArchives {
+	var deleteJobs []func()
+	// If deleteArchives is true, we prepare a delete job for each repository
+	if deleteArchives {
+		for _, repo := range backupProfile.Edges.Repositories {
 			bId := types.BackupId{
 				BackupProfileId: backupProfileId,
 				RepositoryId:    repo.ID,
 			}
 			location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
-			deleteFuncs = append(deleteFuncs, func() {
+			deleteJobs = append(deleteJobs, func() {
 				go func() {
 					_, err := b.runBorgDelete(bId, location, password, prefix)
 					if err != nil {
@@ -286,19 +272,17 @@ func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives b
 			})
 		}
 	}
-	err = tx.BackupProfile.
+
+	err = b.db.BackupProfile.
 		DeleteOneID(backupProfileId).
 		Exec(b.ctx)
 	if err != nil {
-		return rollback(tx, err)
-	}
-	err = tx.Commit()
-	if err != nil {
 		return err
 	}
+	runtime.EventsEmit(b.ctx, types.EventBackupProfileDeleted.String())
 
 	// Execute the delete jobs
-	for _, fn := range deleteFuncs {
+	for _, fn := range deleteJobs {
 		fn()
 	}
 
@@ -349,10 +333,16 @@ func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, re
 			}
 		}
 	}
-	return b.db.BackupProfile.
+
+	err = b.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
 		Exec(b.ctx)
+	if err != nil {
+		return err
+	}
+	runtime.EventsEmit(b.ctx, types.EventBackupProfileDeleted.String())
+	return nil
 }
 
 func (b *BackupClient) getRepoWithBackupProfile(repoId int, backupProfileId int) (*ent.Repository, error) {

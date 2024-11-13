@@ -12,3 +12,7 @@ export function repoStateChangedEvent(repositoryId: number): string {
 export function archivesChanged(repositoryId: number): string {
     return `${types.Event.archivesChanged}:${repositoryId}`;
 }
+
+export function backupProfileDeletedEvent(): string {
+    return `${types.Event.backupProfileDeleted}`;
+}

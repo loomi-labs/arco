@@ -84,6 +84,7 @@ const (
 	EventPruneStateChanged     Event = "pruneStateChanged"
 	EventRepoStateChanged      Event = "repoStateChanged"
 	EventArchivesChanged       Event = "archivesChanged"
+	EventBackupProfileDeleted  Event = "backupProfileDeleted"
 )
 
 var AllEvents = []Event{
@@ -93,6 +94,7 @@ var AllEvents = []Event{
 	EventPruneStateChanged,
 	EventRepoStateChanged,
 	EventArchivesChanged,
+	EventBackupProfileDeleted,
 }
 
 func (e Event) String() string {
