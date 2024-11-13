@@ -346,7 +346,7 @@ func (a *App) initDb() (*ent.Client, error) {
 		return nil, err
 	}
 
-	// Set permissions on the database file
+	// Set restrictive file permissions (owner read/write only) on the database file
 	if err := os.Chmod(filepath.Join(a.config.Dir, "arco.db"), 0600); err != nil {
 		return nil, fmt.Errorf("failed to set permissions on database file: %v", err)
 	}
