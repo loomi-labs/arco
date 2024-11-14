@@ -1,4 +1,5 @@
 import {
+  addSecond,
   diffDays,
   diffHours,
   diffMinutes,
@@ -209,4 +210,26 @@ export function toLongDateString(date: Date): string {
   const offsetToUTC = offset(now);
   date = removeOffset(date, offsetToUTC);
   return format(date, { date: "long", time: "short" });
+}
+
+/**
+ * toDurationString converts a number of seconds to a human-readable string.
+ * @param seconds The number of seconds to convert
+ * @returns A string in the format "Xs", "Xm Ys", "Xh Ym", or "Xd Yh"
+ */
+export function toDurationString(seconds: number): string {
+  if (seconds <= 0) {
+    return "-";
+  }
+  const date = addSecond(new Date(0), seconds);
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  if (seconds < 3600) {
+    return `${date.getMinutes()}m ${date.getSeconds()}s`;
+  }
+  if (seconds < 86400) {
+    return `${date.getHours()}h ${date.getMinutes()}m`;
+  }
+  return `${date.getDate()}d ${date.getHours()}h`;
 }
