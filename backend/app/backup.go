@@ -584,15 +584,16 @@ func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password s
 	if len(info.Archives) == 0 {
 		return fmt.Errorf("no archives found")
 	}
-
+	createdAt := time.Time(info.Archives[0].Start)
+	duration := time.Time(info.Archives[0].End).Sub(createdAt)
 	_, err = b.db.Archive.
 		Create().
 		SetRepositoryID(bId.RepositoryId).
 		SetBackupProfileID(bId.BackupProfileId).
 		SetBorgID(info.Archives[0].ID).
 		SetName(info.Archives[0].Name).
-		SetCreatedAt(time.Time(info.Archives[0].Start)).
-		SetDuration(time.Time(info.Archives[0].Duration)).
+		SetCreatedAt(createdAt).
+		SetDuration(duration.Seconds()).
 		Save(b.ctx)
 	return err
 }

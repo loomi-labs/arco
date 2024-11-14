@@ -47,7 +47,8 @@ type ArchiveMutation struct {
 	id                    *int
 	name                  *string
 	createdAt             *time.Time
-	duration              *time.Time
+	duration              *float64
+	addduration           *float64
 	borg_id               *string
 	will_be_pruned        *bool
 	clearedFields         map[string]struct{}
@@ -237,12 +238,13 @@ func (m *ArchiveMutation) ResetCreatedAt() {
 }
 
 // SetDuration sets the "duration" field.
-func (m *ArchiveMutation) SetDuration(t time.Time) {
-	m.duration = &t
+func (m *ArchiveMutation) SetDuration(f float64) {
+	m.duration = &f
+	m.addduration = nil
 }
 
 // Duration returns the value of the "duration" field in the mutation.
-func (m *ArchiveMutation) Duration() (r time.Time, exists bool) {
+func (m *ArchiveMutation) Duration() (r float64, exists bool) {
 	v := m.duration
 	if v == nil {
 		return
@@ -253,7 +255,7 @@ func (m *ArchiveMutation) Duration() (r time.Time, exists bool) {
 // OldDuration returns the old "duration" field's value of the Archive entity.
 // If the Archive object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ArchiveMutation) OldDuration(ctx context.Context) (v time.Time, err error) {
+func (m *ArchiveMutation) OldDuration(ctx context.Context) (v float64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDuration is only allowed on UpdateOne operations")
 	}
@@ -267,9 +269,28 @@ func (m *ArchiveMutation) OldDuration(ctx context.Context) (v time.Time, err err
 	return oldValue.Duration, nil
 }
 
+// AddDuration adds f to the "duration" field.
+func (m *ArchiveMutation) AddDuration(f float64) {
+	if m.addduration != nil {
+		*m.addduration += f
+	} else {
+		m.addduration = &f
+	}
+}
+
+// AddedDuration returns the value that was added to the "duration" field in this mutation.
+func (m *ArchiveMutation) AddedDuration() (r float64, exists bool) {
+	v := m.addduration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
 // ResetDuration resets all changes to the "duration" field.
 func (m *ArchiveMutation) ResetDuration() {
 	m.duration = nil
+	m.addduration = nil
 }
 
 // SetBorgID sets the "borg_id" field.
@@ -533,7 +554,7 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 		m.SetCreatedAt(v)
 		return nil
 	case archive.FieldDuration:
-		v, ok := value.(time.Time)
+		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -560,13 +581,21 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *ArchiveMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addduration != nil {
+		fields = append(fields, archive.FieldDuration)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *ArchiveMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case archive.FieldDuration:
+		return m.AddedDuration()
+	}
 	return nil, false
 }
 
@@ -575,6 +604,13 @@ func (m *ArchiveMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *ArchiveMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case archive.FieldDuration:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDuration(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Archive numeric field %s", name)
 }

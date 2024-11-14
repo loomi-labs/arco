@@ -66,7 +66,7 @@ func CreatedAt(v time.Time) predicate.Archive {
 }
 
 // Duration applies equality check predicate on the "duration" field. It's identical to DurationEQ.
-func Duration(v time.Time) predicate.Archive {
+func Duration(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldDuration, v))
 }
 
@@ -186,42 +186,42 @@ func CreatedAtLTE(v time.Time) predicate.Archive {
 }
 
 // DurationEQ applies the EQ predicate on the "duration" field.
-func DurationEQ(v time.Time) predicate.Archive {
+func DurationEQ(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldDuration, v))
 }
 
 // DurationNEQ applies the NEQ predicate on the "duration" field.
-func DurationNEQ(v time.Time) predicate.Archive {
+func DurationNEQ(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldNEQ(FieldDuration, v))
 }
 
 // DurationIn applies the In predicate on the "duration" field.
-func DurationIn(vs ...time.Time) predicate.Archive {
+func DurationIn(vs ...float64) predicate.Archive {
 	return predicate.Archive(sql.FieldIn(FieldDuration, vs...))
 }
 
 // DurationNotIn applies the NotIn predicate on the "duration" field.
-func DurationNotIn(vs ...time.Time) predicate.Archive {
+func DurationNotIn(vs ...float64) predicate.Archive {
 	return predicate.Archive(sql.FieldNotIn(FieldDuration, vs...))
 }
 
 // DurationGT applies the GT predicate on the "duration" field.
-func DurationGT(v time.Time) predicate.Archive {
+func DurationGT(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldGT(FieldDuration, v))
 }
 
 // DurationGTE applies the GTE predicate on the "duration" field.
-func DurationGTE(v time.Time) predicate.Archive {
+func DurationGTE(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldGTE(FieldDuration, v))
 }
 
 // DurationLT applies the LT predicate on the "duration" field.
-func DurationLT(v time.Time) predicate.Archive {
+func DurationLT(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldLT(FieldDuration, v))
 }
 
 // DurationLTE applies the LTE predicate on the "duration" field.
-func DurationLTE(v time.Time) predicate.Archive {
+func DurationLTE(v float64) predicate.Archive {
 	return predicate.Archive(sql.FieldLTE(FieldDuration, v))
 }
 

@@ -24,7 +24,7 @@ type Archive struct {
 	// CreatedAt holds the value of the "createdAt" field.
 	CreatedAt time.Time `json:"createdAt"`
 	// Duration holds the value of the "duration" field.
-	Duration time.Time `json:"duration"`
+	Duration float64 `json:"duration"`
 	// BorgID holds the value of the "borg_id" field.
 	BorgID string `json:"borgId"`
 	// WillBePruned holds the value of the "will_be_pruned" field.
@@ -78,11 +78,13 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case archive.FieldWillBePruned:
 			values[i] = new(sql.NullBool)
+		case archive.FieldDuration:
+			values[i] = new(sql.NullFloat64)
 		case archive.FieldID:
 			values[i] = new(sql.NullInt64)
 		case archive.FieldName, archive.FieldBorgID:
 			values[i] = new(sql.NullString)
-		case archive.FieldCreatedAt, archive.FieldDuration:
+		case archive.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case archive.ForeignKeys[0]: // archive_repository
 			values[i] = new(sql.NullInt64)
@@ -124,10 +126,10 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 				a.CreatedAt = value.Time
 			}
 		case archive.FieldDuration:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field duration", values[i])
 			} else if value.Valid {
-				a.Duration = value.Time
+				a.Duration = value.Float64
 			}
 		case archive.FieldBorgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,7 +217,7 @@ func (a *Archive) String() string {
 	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("duration=")
-	builder.WriteString(a.Duration.Format(time.ANSIC))
+	builder.WriteString(fmt.Sprintf("%v", a.Duration))
 	builder.WriteString(", ")
 	builder.WriteString("borg_id=")
 	builder.WriteString(a.BorgID)

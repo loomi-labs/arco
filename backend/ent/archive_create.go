@@ -35,8 +35,8 @@ func (ac *ArchiveCreate) SetCreatedAt(t time.Time) *ArchiveCreate {
 }
 
 // SetDuration sets the "duration" field.
-func (ac *ArchiveCreate) SetDuration(t time.Time) *ArchiveCreate {
-	ac.mutation.SetDuration(t)
+func (ac *ArchiveCreate) SetDuration(f float64) *ArchiveCreate {
+	ac.mutation.SetDuration(f)
 	return ac
 }
 
@@ -198,7 +198,7 @@ func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		_node.CreatedAt = value
 	}
 	if value, ok := ac.mutation.Duration(); ok {
-		_spec.SetField(archive.FieldDuration, field.TypeTime, value)
+		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
 		_node.Duration = value
 	}
 	if value, ok := ac.mutation.BorgID(); ok {
