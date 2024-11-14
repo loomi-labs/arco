@@ -253,22 +253,16 @@ function getPruningText(archiveId: number) {
 }
 
 async function rename(archive: ent.Archive) {
-  const name = inputValues.value[archive.id];
-  validateName(archive.id, name);
-
+  await validateName(archive.id);
   if (inputErrors.value[archive.id]) {
     return;
   }
 
   try {
     inputRenameInProgress.value[archive.id] = true;
-    const fullName = prefixForBackupProfile(archive) + name;
-    const result = await repoClient.RenameArchive(archive.id, fullName);
-    if (result.success) {
-      archive.name = fullName;
-    } else {
-      inputErrors.value[archive.id] = result.validationError || "";
-    }
+    const name = inputValues.value[archive.id];
+    const prefix = prefixForBackupProfile(archive);
+    await repoClient.RenameArchive(archive.id, prefix, name);
   } catch (error: any) {
     await showAndLogError("Failed to rename archive", error);
   } finally {
@@ -287,15 +281,17 @@ function archiveNameWithoutPrefix(archive: ent.Archive): string {
   return archive.name;
 }
 
-function validateName(archiveId: number, name: string | undefined) {
-  if (!name) {
-    inputErrors.value[archiveId] = "Name is required";
-  } else if (name.length < 3) {
-    inputErrors.value[archiveId] = "Name must be at least 3 characters long";
-  } else if (name.length > 30) {
-    inputErrors.value[archiveId] = "Name is too long";
-  } else {
-    delete inputErrors.value[archiveId];
+async function validateName(archiveId: number) {
+  const archive = archives.value.find(a => a.id === archiveId);
+  if (!archive) {
+    return;
+  }
+  try {
+    const name = inputValues.value[archiveId];
+    const prefix = prefixForBackupProfile(archive);
+    inputErrors.value[archiveId] = await repoClient.ValidateArchiveName(archiveId, prefix, name);
+  } catch (error: any) {
+    await showAndLogError("Failed to validate archive name", error);
   }
 }
 
@@ -308,9 +304,9 @@ function resizeInput(archiveId: number) {
   input.style.width = `${input.scrollWidth}px`;
 }
 
-function resizeAndValidateInput(archiveId: number) {
+async function resizeAndValidateInput(archiveId: number) {
   resizeInput(archiveId);
-  validateName(archiveId, inputValues.value[archiveId]);
+  await validateName(archiveId);
 }
 
 const customDateRangeShortcuts = () => {
