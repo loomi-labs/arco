@@ -257,6 +257,7 @@ func (s *State) SetStartupStatus(ctx context.Context, status StartupStatus, err 
 	if err != nil {
 		s.startupState.Error = err.Error()
 	}
+	// We never clear the error, it's only set once since the app should not recover from a startup error
 }
 
 func (s *State) GetStartupState() StartupState {
