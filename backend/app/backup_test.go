@@ -355,7 +355,10 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 			setup(t)
 
 			for _, event := range tt.getEvents() {
-				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), event)
+				wg.Add(1)
+				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), event).Do(func(_, _ any) {
+					wg.Done()
+				})
 			}
 			if tt.deleteArchives {
 				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -485,7 +488,11 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 			setup(t)
 
 			if tt.deleteArchives {
-				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventRepoStateChangedString(repo1.ID)).Times(4)
+				times := 4
+				wg.Add(times)
+				mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventRepoStateChangedString(repo1.ID)).Times(times).Do(func(_, _ any) {
+					wg.Done()
+				})
 
 				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				infoResponse := &borg.InfoResponse{
