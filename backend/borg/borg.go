@@ -22,6 +22,7 @@ type Borg interface {
 	Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
 	BreakLock(ctx context.Context, repository string, password string) error
 	Umount(path string) error
+	Rename(ctx context.Context, repository, archive, password, newName string) error
 }
 
 type borg struct {

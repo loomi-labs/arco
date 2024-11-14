@@ -9,6 +9,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"slices"
 	"strings"
@@ -16,8 +17,12 @@ import (
 )
 
 func (r *RepositoryClient) RefreshArchives(repoId int) ([]*ent.Archive, error) {
+	if r.state.GetRepoState(repoId).Status != state.RepoStatusIdle {
+		return nil, fmt.Errorf("can not refresh archives: the repository is busy")
+	}
+
 	repoLock := r.state.GetRepoLock(repoId)
-	repoLock.Lock()         // We might wait here for other operations to finish
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
 	return r.refreshArchives(repoId)
@@ -227,6 +232,7 @@ func (r *RepositoryClient) GetPaginatedArchives(req *PaginatedArchivesRequest) (
 		Query().
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.Select(backupprofile.FieldName)
+			q.Select(backupprofile.FieldPrefix)
 		}).
 		Where(archive.And(archivePredicates...)).
 		Order(ent.Desc(archive.FieldCreatedAt)).
@@ -316,6 +322,61 @@ func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {
 	return r.db.Archive.
 		Query().
 		WithRepository().
+		WithBackupProfile().
 		Where(archive.ID(id)).
 		Only(r.ctx)
+}
+
+type RenameArchiveResponse struct {
+	Success         bool   `json:"success"`
+	ValidationError string `json:"validationError,omitempty"`
+}
+
+func (r *RepositoryClient) RenameArchive(id int, newName string) (RenameArchiveResponse, error) {
+	response := RenameArchiveResponse{Success: false}
+	arch, err := r.getArchive(id)
+	if err != nil {
+		return response, err
+	}
+	assert.NotNil(arch.Edges.Repository, "archive must have a repository")
+
+	// Check if the new name starts with the backup profile prefix
+	if arch.Edges.BackupProfile != nil {
+		if !strings.HasPrefix(newName, arch.Edges.BackupProfile.Prefix) {
+			response.ValidationError = "The new name must start with the backup profile prefix"
+			return response, nil
+		}
+	}
+
+	exist, err := r.db.Archive.
+		Query().
+		Where(archive.Name(newName)).
+		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
+		Exist(r.ctx)
+	if err != nil {
+		return response, err
+	}
+	if exist {
+		response.ValidationError = "archive name must be unique"
+		return response, nil
+	}
+
+	if r.state.GetRepoState(arch.Edges.Repository.ID).Status != state.RepoStatusIdle {
+		return response, fmt.Errorf("can not rename archive: the repository is busy")
+	}
+
+	repoLock := r.state.GetRepoLock(arch.Edges.Repository.ID)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
+	err = r.borg.Rename(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, newName)
+	if err != nil {
+		return response, fmt.Errorf("failed to rename archive: %w", err)
+	}
+
+	response.Success = true
+	return response, r.db.Archive.
+		UpdateOneID(id).
+		SetName(newName).
+		Exec(r.ctx)
 }
