@@ -47,6 +47,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 	mockBorg := mockborg.NewMockBorg(gomock.NewController(t))
 	a.borg = mockBorg
 
+	mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventStartupStateChanged.String())
 	db, err := a.initDb()
 	if err != nil {
 		t.Fatalf("failed to init db: %v", err)
