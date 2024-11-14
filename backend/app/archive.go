@@ -372,7 +372,8 @@ func (r *RepositoryClient) ValidateArchiveName(archiveId int, prefix, name strin
 			return "", err
 		}
 		for _, bp := range backupProfiles {
-			if strings.HasPrefix(name, bp.Prefix) {
+			prefixWithoutTrailingDash := strings.TrimSuffix(bp.Prefix, "-")
+			if strings.HasPrefix(name, prefixWithoutTrailingDash) {
 				return "The new name must not start with the prefix of another backup profile", nil
 			}
 		}
