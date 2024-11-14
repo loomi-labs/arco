@@ -13,7 +13,7 @@ type ListResponse struct {
 }
 
 func (b *borg) List(repoUrl string, password string) (*ListResponse, error) {
-	cmd := exec.Command(b.path, "list", "--json", repoUrl)
+	cmd := exec.Command(b.path, "list", "--json", "--format", "`{end}`", repoUrl)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Get the list from the borg repository

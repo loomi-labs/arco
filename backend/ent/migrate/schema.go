@@ -13,7 +13,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "duration", Type: field.TypeTime},
+		{Name: "duration", Type: field.TypeFloat64},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
 		{Name: "archive_repository", Type: field.TypeInt},

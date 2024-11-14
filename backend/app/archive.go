@@ -84,12 +84,14 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 	cntNewArchives := 0
 	for _, arch := range listResponse.Archives {
 		if !slices.Contains(savedBorgIds, arch.ID) {
+			createdAt := time.Time(arch.Start)
+			duration := time.Time(arch.End).Sub(createdAt)
 			createQuery := r.db.Archive.
 				Create().
 				SetBorgID(arch.ID).
 				SetName(arch.Name).
-				SetCreatedAt(time.Time(arch.Start)).
-				SetDuration(time.Time(arch.Time)).
+				SetCreatedAt(createdAt).
+				SetDuration(duration.Seconds()).
 				SetRepositoryID(repoId)
 
 			// Find the backup profile that has the same prefix as the archive

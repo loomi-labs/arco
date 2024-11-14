@@ -10,7 +10,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
 import { object } from "zod";
 import { getLocation, Location, toHumanReadableSize } from "../common/repository";
-import { toDurationBadge } from "../common/badge";
+import { toCreationTimeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
@@ -195,7 +195,7 @@ onUnmounted(() => {
           <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </div>
       <div class='divider'></div>

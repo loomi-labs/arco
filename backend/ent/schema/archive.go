@@ -21,7 +21,8 @@ func (Archive) Fields() []ent.Field {
 			StructTag(`json:"name"`),
 		field.Time("createdAt").
 			StructTag(`json:"createdAt"`),
-		field.Time("duration").
+		// Duration is the time it took to create the archive in nanoseconds.
+		field.Float("duration").
 			StructTag(`json:"duration"`),
 		field.String("borg_id").
 			StructTag(`json:"borgId"`),

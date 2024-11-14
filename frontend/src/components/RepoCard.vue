@@ -9,7 +9,7 @@ import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toDurationBadge } from "../common/badge";
+import { toCreationTimeBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
@@ -175,7 +175,7 @@ onUnmounted(() => {
           <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toDurationBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>

@@ -18,8 +18,8 @@ import {
   TrashIcon,
   XMarkIcon
 } from "@heroicons/vue/24/solid";
-import { isInPast, toLongDateString, toRelativeTimeString } from "../common/time";
-import { toDurationBadge } from "../common/badge";
+import { isInPast, toDurationString, toLongDateString, toRelativeTimeString } from "../common/time";
+import { toCreationTimeBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
@@ -329,7 +329,7 @@ onUnmounted(() => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th :colspan='showBackupProfileColumn ? 3 : 2'>
+          <th :colspan='showBackupProfileColumn ? 4 : 3'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
@@ -341,7 +341,7 @@ onUnmounted(() => {
           </th>
         </tr>
         <tr>
-          <th :colspan='showBackupProfileColumn ? 4 : 3'>
+          <th :colspan='showBackupProfileColumn ? 5 : 4'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
               <label class='form-control w-full'>
@@ -391,6 +391,7 @@ onUnmounted(() => {
           <th>{{ $t("name") }}</th>
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th class='min-w-40 lg:min-w-48'>Creation time</th>
+          <th class='text-right'>Duration</th>
           <th class='w-40 pl-12'>
             {{ $t("action") }}
           </th>
@@ -412,11 +413,15 @@ onUnmounted(() => {
           <td v-if='showBackupProfileColumn'>
             <span>{{ archive?.edges.backupProfile?.name }}</span>
           </td>
-          <!-- Date -->
+          <!-- Creation time -->
           <td>
             <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
-              <span :class='toDurationBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
+              <span :class='toCreationTimeBadge(archive?.createdAt)'>{{ toRelativeTimeString(archive.createdAt) }}</span>
             </span>
+          </td>
+          <!-- Duration -->
+          <td>
+            <p class='text-right'>{{ toDurationString(archive.duration) }}</p>
           </td>
           <!-- Action -->
           <td class='flex items-center gap-2'>
@@ -448,7 +453,7 @@ onUnmounted(() => {
         </tr>
         <!-- Filler row (this is a hack to take up the same amount of space even if there are not enough rows) -->
         <tr v-for='index in (pagination.pageSize - archives.length)' :key='`empty-${index}`'>
-          <td colspan='4'>
+          <td colspan='5'>
             <button class='btn btn-sm invisible' disabled>
               <TrashIcon class='size-4' />
             </button>

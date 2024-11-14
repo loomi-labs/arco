@@ -59,16 +59,23 @@ func (au *ArchiveUpdate) SetNillableCreatedAt(t *time.Time) *ArchiveUpdate {
 }
 
 // SetDuration sets the "duration" field.
-func (au *ArchiveUpdate) SetDuration(t time.Time) *ArchiveUpdate {
-	au.mutation.SetDuration(t)
+func (au *ArchiveUpdate) SetDuration(f float64) *ArchiveUpdate {
+	au.mutation.ResetDuration()
+	au.mutation.SetDuration(f)
 	return au
 }
 
 // SetNillableDuration sets the "duration" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableDuration(t *time.Time) *ArchiveUpdate {
-	if t != nil {
-		au.SetDuration(*t)
+func (au *ArchiveUpdate) SetNillableDuration(f *float64) *ArchiveUpdate {
+	if f != nil {
+		au.SetDuration(*f)
 	}
+	return au
+}
+
+// AddDuration adds f to the "duration" field.
+func (au *ArchiveUpdate) AddDuration(f float64) *ArchiveUpdate {
+	au.mutation.AddDuration(f)
 	return au
 }
 
@@ -201,7 +208,10 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := au.mutation.Duration(); ok {
-		_spec.SetField(archive.FieldDuration, field.TypeTime, value)
+		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
+	}
+	if value, ok := au.mutation.AddedDuration(); ok {
+		_spec.AddField(archive.FieldDuration, field.TypeFloat64, value)
 	}
 	if value, ok := au.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
@@ -316,16 +326,23 @@ func (auo *ArchiveUpdateOne) SetNillableCreatedAt(t *time.Time) *ArchiveUpdateOn
 }
 
 // SetDuration sets the "duration" field.
-func (auo *ArchiveUpdateOne) SetDuration(t time.Time) *ArchiveUpdateOne {
-	auo.mutation.SetDuration(t)
+func (auo *ArchiveUpdateOne) SetDuration(f float64) *ArchiveUpdateOne {
+	auo.mutation.ResetDuration()
+	auo.mutation.SetDuration(f)
 	return auo
 }
 
 // SetNillableDuration sets the "duration" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableDuration(t *time.Time) *ArchiveUpdateOne {
-	if t != nil {
-		auo.SetDuration(*t)
+func (auo *ArchiveUpdateOne) SetNillableDuration(f *float64) *ArchiveUpdateOne {
+	if f != nil {
+		auo.SetDuration(*f)
 	}
+	return auo
+}
+
+// AddDuration adds f to the "duration" field.
+func (auo *ArchiveUpdateOne) AddDuration(f float64) *ArchiveUpdateOne {
+	auo.mutation.AddDuration(f)
 	return auo
 }
 
@@ -488,7 +505,10 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := auo.mutation.Duration(); ok {
-		_spec.SetField(archive.FieldDuration, field.TypeTime, value)
+		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
+	}
+	if value, ok := auo.mutation.AddedDuration(); ok {
+		_spec.AddField(archive.FieldDuration, field.TypeFloat64, value)
 	}
 	if value, ok := auo.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
