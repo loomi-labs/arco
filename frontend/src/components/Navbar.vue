@@ -15,15 +15,9 @@ import Theme = settings.Theme;
  * Types
  ************/
 
-interface Props {
-  isReady: boolean;
-}
-
 /************
  * Variables
  ************/
-
-const props = defineProps<Props>();
 
 const router = useRouter();
 const isLightTheme = ref<boolean | undefined>(undefined);
@@ -62,11 +56,6 @@ async function detectPreferredTheme() {
 }
 
 async function toggleTheme() {
-  // If the app is not ready, we don't do anything.
-  if (!props.isReady) {
-    return;
-  }
-
   try {
     isLightTheme.value = !isLightTheme.value;
     const settings = await appClient.GetSettings();
@@ -92,11 +81,7 @@ async function toggleTheme() {
  * Lifecycle
  ************/
 
-watch(props, async () => {
-  if (props.isReady) {
-    await detectPreferredTheme();
-  }
-});
+detectPreferredTheme();
 
 router.afterEach(() => {
   const path = router.currentRoute.value.matched.at(0)?.path;

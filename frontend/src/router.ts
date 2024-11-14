@@ -1,20 +1,17 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from "vue-router";
 import BackupProfilePage from "./pages/BackupProfilePage.vue";
 import RepositoryPage from "./pages/RepositoryPage.vue";
-import ErrorPage from "./pages/ErrorPage.vue";
 import DashboardPage from "./pages/DashboardPage.vue";
 import AddBackupProfilePage from "./pages/BackupProfileAddPage.vue";
 import AddRepositoryPage from "./pages/RepositoryAddPage.vue";
 
 // Pages
 export enum Page {
-  Startup = "/",
   Dashboard = "/dashboard",
   BackupProfile = "/backup-profile/:id",
   AddBackupProfile = "/backup-profile/new",
   Repository = "/repository/:id",
   AddRepository = "/repository/new",
-  Error = "/error"
 }
 
 // Anchors
@@ -24,13 +21,11 @@ export enum Anchor {
 }
 
 const routes: RouteRecordRaw[] = [
-  { path: Page.Startup, component: ErrorPage },
   { path: Page.Dashboard, component: DashboardPage },
   { path: Page.BackupProfile, component: BackupProfilePage },
   { path: Page.AddBackupProfile, component: AddBackupProfilePage },
   { path: Page.Repository, component: RepositoryPage },
-  { path: Page.AddRepository, component: AddRepositoryPage },
-  { path: Page.Error, component: ErrorPage }
+  { path: Page.AddRepository, component: AddRepositoryPage }
 ];
 
 export function withId(page: Page, id: string | number): string {
