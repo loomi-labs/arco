@@ -2,20 +2,14 @@ package app
 
 import (
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"go.uber.org/zap"
 )
 
-func (a *AppClient) GetStartupError() types.Notification {
-	var message string
-	if a.state.GetStartupError() != nil {
-		message = a.state.GetStartupError().Error()
-	}
-	return types.Notification{
-		Message: message,
-		Level:   types.LevelError,
-	}
+func (a *AppClient) GetStartupState() state.StartupState {
+	return a.state.GetStartupState()
 }
 
 func (a *AppClient) HandleError(msg string, fErr *types.FrontendError) {

@@ -120,22 +120,23 @@ func (b *BackupClient) repoClient() *RepositoryClient {
 }
 
 func (a *App) Startup(ctx context.Context) {
-	a.ctx, a.cancel = context.WithCancel(ctx)
-
-	defer runtime.EventsEmit(a.ctx, types.EventAppReady.String())
-
 	a.log.Infof("Running Arco version %s", Version)
+	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	// Update Arco binary if necessary
 	needsRestart, err := a.updateArco()
 	if err != nil {
-		a.state.SetStartupError(err)
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
 		a.log.Error(err)
 		return
 	}
 	// Restart if an updates has been performed
 	if needsRestart {
 		a.log.Info("Updated Arco binary... restarting")
+		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusRestartingArco, nil)
+
+		// Sleep for a few seconds to allow the frontend to show the update message
+		time.Sleep(3 * time.Second)
 		reload.Exec()
 		return
 	}
@@ -143,15 +144,25 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize the database
 	db, err := a.initDb()
 	if err != nil {
-		a.state.SetStartupError(err)
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
 		a.log.Error(err)
 		return
 	}
 	a.db = db
 
+	// Ensure Borg binary is installed
+	if err := a.ensureBorgBinary(); err != nil {
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
+		a.log.Error(err)
+		return
+	}
+
+	// Set a general status for the rest of the startup process
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
+
 	// Initialize the systray
 	if err := a.initSystray(); err != nil {
-		a.state.SetStartupError(err)
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
 		a.log.Error(err)
 		return
 	}
@@ -162,18 +173,14 @@ func (a *App) Startup(ctx context.Context) {
 	// Save mount states
 	a.RepoClient().setMountStates()
 
-	// Ensure Borg binary is installed
-	if err := a.ensureBorgBinary(); err != nil {
-		a.state.SetStartupError(err)
-		a.log.Error(err)
-		return
-	}
-
 	// Schedule backups
 	go a.startScheduleChangeListener()
 	go a.startPruneScheduleChangeListener()
 	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
+
+	// Set the app as ready
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
 }
 
 func (a *App) Shutdown(_ context.Context) {
@@ -188,7 +195,7 @@ func (a *App) Shutdown(_ context.Context) {
 
 func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
 	a.log.Debug("Received beforeclose command")
-	if a.state.GetStartupError() != nil {
+	if a.state.GetStartupState().Error != "" {
 		return false
 	}
 	runtime.WindowHide(ctx)
@@ -205,6 +212,7 @@ func (a *App) updateArco() (bool, error) {
 		a.log.Info("Development mode enabled, skipping update check")
 		return false, nil
 	}
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusCheckingForUpdates, nil)
 
 	client := github.NewClient(nil)
 
@@ -219,6 +227,7 @@ func (a *App) updateArco() (bool, error) {
 	}
 
 	a.log.Infof("Updating Arco binary to version %s", *release.TagName)
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusApplyingUpdates, nil)
 
 	releaseAsset, err := a.findReleaseAsset(release)
 	if err != nil {
@@ -336,6 +345,8 @@ func (a *App) applyMigrations(opts string) error {
 }
 
 func (a *App) initDb() (*ent.Client, error) {
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingDatabase, nil)
+
 	// - Set WAL mode (not strictly necessary each time because it's persisted in the database, but good for first run)
 	// - Set busy timeout, so concurrent writers wait on each other instead of erroring immediately
 	// - Enable foreign key checks
@@ -359,7 +370,9 @@ func (a *App) initDb() (*ent.Client, error) {
 }
 
 func (a *App) ensureBorgBinary() error {
+	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusCheckingForBorgUpdates, nil)
 	if !a.isTargetVersionInstalled(a.config.BorgVersion) {
+		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusUpdatingBorg, nil)
 		a.log.Info("Installing Borg binary")
 		if err := a.installBorgBinary(); err != nil {
 			return fmt.Errorf("failed to install Borg binary: %w", err)
