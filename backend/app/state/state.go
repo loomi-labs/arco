@@ -15,8 +15,8 @@ type State struct {
 	mu            sync.Mutex
 	eventEmitter  types.EventEmitter
 	notifications []types.Notification
-	startupError  error
 
+	startupState *StartupState
 	repoStates   map[int]*RepoState
 	backupStates map[types.BackupId]*BackupState
 	pruneStates  map[types.BackupId]*PruneState
@@ -25,9 +25,39 @@ type State struct {
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
 }
 
-type RepoLock struct {
-	IsLocked bool
-	*sync.Mutex
+type StartupStatus string
+
+const (
+	StartupStatusUnknown                StartupStatus = "unknown"
+	StartupStatusCheckingForUpdates     StartupStatus = "checkingForUpdates"
+	StartupStatusApplyingUpdates        StartupStatus = "applyingUpdates"
+	StartupStatusRestartingArco         StartupStatus = "restartingArco"
+	StartupStatusInitializingDatabase   StartupStatus = "initializingDatabase"
+	StartupStatusCheckingForBorgUpdates StartupStatus = "checkingForBorgUpdates"
+	StartupStatusUpdatingBorg           StartupStatus = "updatingBorg"
+	StartupStatusInitializingApp        StartupStatus = "initializingApp"
+	StartupStatusReady                  StartupStatus = "ready"
+)
+
+var AvailableStartupStatuses = []StartupStatus{
+	StartupStatusUnknown,
+	StartupStatusCheckingForUpdates,
+	StartupStatusApplyingUpdates,
+	StartupStatusRestartingArco,
+	StartupStatusInitializingDatabase,
+	StartupStatusCheckingForBorgUpdates,
+	StartupStatusUpdatingBorg,
+	StartupStatusInitializingApp,
+	StartupStatusReady,
+}
+
+func (ss StartupStatus) String() string {
+	return string(ss)
+}
+
+type StartupState struct {
+	Error  string        `json:"error"`
+	Status StartupStatus `json:"status"`
 }
 
 type cancelCtx struct {
@@ -44,11 +74,6 @@ type KeepArchive struct {
 type PruneJobResult struct {
 	PruneArchives []int         `json:"prune_archives"`
 	KeepArchives  []KeepArchive `json:"keep_archives"`
-}
-
-type PruneJob struct {
-	*cancelCtx
-	result PruneJobResult
 }
 
 type RepoStatus string
@@ -199,8 +224,10 @@ func NewState(log *zap.SugaredLogger, eventEmitter types.EventEmitter) *State {
 		mu:            sync.Mutex{},
 		eventEmitter:  eventEmitter,
 		notifications: []types.Notification{},
-		startupError:  nil,
 
+		startupState: &StartupState{
+			Status: StartupStatusUnknown,
+		},
 		repoStates:   make(map[int]*RepoState),
 		backupStates: map[types.BackupId]*BackupState{},
 		pruneStates:  map[types.BackupId]*PruneState{},
@@ -222,15 +249,20 @@ func newCancelCtx(ctx context.Context) *cancelCtx {
 /********** Startup Error **********/
 /***********************************/
 
-func (s *State) SetStartupError(err error) {
+func (s *State) SetStartupStatus(ctx context.Context, status StartupStatus, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventStartupStateChanged.String())
 
-	s.startupError = err
+	s.startupState.Status = status
+	if err != nil {
+		s.startupState.Error = err.Error()
+	}
+	// We never clear the error, it's only set once since the app should not recover from a startup error
 }
 
-func (s *State) GetStartupError() error {
-	return s.startupError
+func (s *State) GetStartupState() StartupState {
+	return *s.startupState
 }
 
 /***********************************/
@@ -555,9 +587,6 @@ func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
 /***********************************/
 
 func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
-	if s.startupError != nil {
-		return false, "Startup error"
-	}
 	if rs, ok := s.repoStates[repoId]; ok {
 		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
@@ -595,9 +624,6 @@ func (s *State) GetAndDeleteNotifications() []types.Notification {
 /***********************************/
 
 func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
-	if s.startupError != nil {
-		return false, "Startup error"
-	}
 	if rs, ok := s.repoStates[id]; ok {
 		// We can only mount a repository if it's idle or mounting
 		if rs.Status != RepoStatusIdle && rs.Status != RepoStatusMounted {

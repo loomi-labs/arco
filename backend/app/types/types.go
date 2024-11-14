@@ -80,7 +80,7 @@ var AllBackupScheduleModes = []backupschedule.Mode{
 type Event string
 
 const (
-	EventAppReady              Event = "appReady"
+	EventStartupStateChanged   Event = "startupStateChanged"
 	EventNotificationAvailable Event = "notificationAvailable"
 	EventBackupStateChanged    Event = "backupStateChanged"
 	EventPruneStateChanged     Event = "pruneStateChanged"
@@ -90,7 +90,7 @@ const (
 )
 
 var AllEvents = []Event{
-	EventAppReady,
+	EventStartupStateChanged,
 	EventNotificationAvailable,
 	EventBackupStateChanged,
 	EventPruneStateChanged,
