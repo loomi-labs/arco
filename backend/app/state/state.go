@@ -43,6 +43,7 @@ var AvailableStartupStatuses = []StartupStatus{
 	StartupStatusUnknown,
 	StartupStatusCheckingForUpdates,
 	StartupStatusApplyingUpdates,
+	StartupStatusRestartingArco,
 	StartupStatusInitializingDatabase,
 	StartupStatusCheckingForBorgUpdates,
 	StartupStatusUpdatingBorg,
