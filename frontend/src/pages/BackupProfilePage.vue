@@ -119,7 +119,7 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
   }
 }
 
-function adjustBackupNameWidth() {
+function resizeBackupNameWidth() {
   if (nameInput.value) {
     nameInput.value.style.width = "30px";
     nameInput.value.style.width = `${nameInput.value.scrollWidth}px`;
@@ -189,7 +189,7 @@ getData();
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
   await nextTick();
-  adjustBackupNameWidth();
+  resizeBackupNameWidth();
 });
 
 </script>
@@ -209,7 +209,7 @@ watch(loading, async () => {
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
-               @input='adjustBackupNameWidth'
+               @input='resizeBackupNameWidth'
         />
         <PencilIcon class='size-4' />
         <span class='text-error'>{{ errors.name }}</span>

@@ -3,7 +3,7 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
-import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ArrowPathIcon,
@@ -14,6 +14,7 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
   ScissorsIcon,
   TrashIcon,
   XMarkIcon
@@ -65,6 +66,9 @@ const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
 pruningDates.value.dates = [];
+const inputValues = ref<{ [key: number]: string }>({});
+const inputErrors = ref<{ [key: number]: string }>({});
+const inputRenameInProgress = ref<{ [key: number]: boolean }>({});
 const cleanupFunctions: (() => void)[] = [];
 
 const dateRange = ref({
@@ -77,13 +81,13 @@ const formatter = ref({
   month: "MMM"
 });
 
-/************
- * Functions
- ************/
-
 // Show the filter if there are more than 1 backup profiles (without the special options)
 // If set there is also an additional column for the backup profile
 const isBackupProfileFilterVisible = computed<boolean>(() => backupProfileFilterOptions.value.length > 1);
+
+/************
+ * Functions
+ ************/
 
 async function getPaginatedArchives() {
   try {
@@ -124,6 +128,18 @@ async function getPaginatedArchives() {
     // If we have archives tha will be pruned, get the next pruning dates
     if (archives.value.some(a => a.willBePruned)) {
       await getPruningDates();
+    }
+
+    // Reset input errors
+    inputErrors.value = {};
+    for (const archive of archives.value) {
+      inputValues.value[archive.id] = archiveNameWithoutPrefix(archive);
+    }
+
+    // Resize the input fields after the DOM has been updated
+    await nextTick();
+    for (const archive of archives.value) {
+      resizeInput(archive.id);
     }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
@@ -236,6 +252,67 @@ function getPruningText(archiveId: number) {
   return `This archive will be deleted ${toRelativeTimeString(nextRun, true)}`;
 }
 
+async function rename(archive: ent.Archive) {
+  const name = inputValues.value[archive.id];
+  validateName(archive.id, name);
+
+  if (inputErrors.value[archive.id]) {
+    return;
+  }
+
+  try {
+    inputRenameInProgress.value[archive.id] = true;
+    const fullName = prefixForBackupProfile(archive) + name;
+    const result = await repoClient.RenameArchive(archive.id, fullName);
+    if (result.success) {
+      archive.name = fullName;
+    } else {
+      inputErrors.value[archive.id] = result.validationError || "";
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to rename archive", error);
+  } finally {
+    inputRenameInProgress.value[archive.id] = false;
+  }
+}
+
+function prefixForBackupProfile(archive: ent.Archive): string {
+  return archive.edges.backupProfile?.prefix || "";
+}
+
+function archiveNameWithoutPrefix(archive: ent.Archive): string {
+  if (archive.edges.backupProfile?.prefix) {
+    return archive.name.replace(archive.edges.backupProfile.prefix, "");
+  }
+  return archive.name;
+}
+
+function validateName(archiveId: number, name: string | undefined) {
+  if (!name) {
+    inputErrors.value[archiveId] = "Name is required";
+  } else if (name.length < 3) {
+    inputErrors.value[archiveId] = "Name must be at least 3 characters long";
+  } else if (name.length > 30) {
+    inputErrors.value[archiveId] = "Name is too long";
+  } else {
+    delete inputErrors.value[archiveId];
+  }
+}
+
+function resizeInput(archiveId: number) {
+  const input = document.getElementById(`input-archive-${archiveId}`) as HTMLInputElement;
+  if (!input) {
+    return;
+  }
+  input.style.width = `30px`;
+  input.style.width = `${input.scrollWidth}px`;
+}
+
+function resizeAndValidateInput(archiveId: number) {
+  resizeInput(archiveId);
+  validateName(archiveId, inputValues.value[archiveId]);
+}
+
 const customDateRangeShortcuts = () => {
   return [
     {
@@ -335,6 +412,7 @@ onUnmounted(() => {
           </th>
           <th class='text-right'>
             <button class='btn btn-ghost btn-circle btn-info'
+                    :disabled='props.repoStatus !== state.RepoStatus.idle'
                     @click='refreshArchives'>
               <ArrowPathIcon class='size-6'></ArrowPathIcon>
             </button>
@@ -403,11 +481,27 @@ onUnmounted(() => {
             :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
           <!-- Name -->
-          <td class='flex items-center'>
-            <p>{{ archive.name }}</p>
-            <span v-if='archive.willBePruned' class='tooltip tooltip-info' :data-tip='getPruningText(archive.id)'>
-              <ScissorsIcon class='size-4 text-info ml-2' />
-            </span>
+          <td class='flex flex-col'>
+            <div class='flex items-center justify-between'>
+              <label class='flex items-center'>
+                <span>{{ prefixForBackupProfile(archive) }}</span>
+                <input :id='`input-archive-${archive.id}`'
+                       type='text'
+                       class='bg-transparent w-0'
+                       v-model='inputValues[archive.id]'
+                       @input='resizeAndValidateInput(archive.id)'
+                       @change='rename(archive)'
+                       :disabled='inputRenameInProgress[archive.id]'
+                />
+                <PencilIcon class='size-3 mx-2' />
+                <span v-if='inputRenameInProgress[archive.id]' class='loading loading-xs'></span>
+              </label>
+
+              <span v-if='archive.willBePruned' class='tooltip tooltip-info mr-2' :data-tip='getPruningText(archive.id)'>
+                <ScissorsIcon class='size-4 text-info ml-2' />
+              </span>
+            </div>
+            <p class='text-error'>{{ inputErrors[archive.id] }}</p>
           </td>
           <!-- Backup -->
           <td v-if='showBackupProfileColumn'>

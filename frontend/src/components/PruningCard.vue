@@ -329,7 +329,7 @@ defineExpose({
       <TooltipTextIcon text='Number of archives to keep'>
         <p>Keep</p>
       </TooltipTextIcon>
-      <select class='select select-sm select-bordered w-32'
+      <select class='select select-bordered w-32'
               :disabled='!pruningRule.isEnabled'
               v-model='pruningKeepOption'
               @change='toPruningRule'
