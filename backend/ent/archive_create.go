@@ -22,15 +22,37 @@ type ArchiveCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the "name" field.
-func (ac *ArchiveCreate) SetName(s string) *ArchiveCreate {
-	ac.mutation.SetName(s)
+// SetCreatedAt sets the "created_at" field.
+func (ac *ArchiveCreate) SetCreatedAt(t time.Time) *ArchiveCreate {
+	ac.mutation.SetCreatedAt(t)
 	return ac
 }
 
-// SetCreatedAt sets the "createdAt" field.
-func (ac *ArchiveCreate) SetCreatedAt(t time.Time) *ArchiveCreate {
-	ac.mutation.SetCreatedAt(t)
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (ac *ArchiveCreate) SetNillableCreatedAt(t *time.Time) *ArchiveCreate {
+	if t != nil {
+		ac.SetCreatedAt(*t)
+	}
+	return ac
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ac *ArchiveCreate) SetUpdatedAt(t time.Time) *ArchiveCreate {
+	ac.mutation.SetUpdatedAt(t)
+	return ac
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ac *ArchiveCreate) SetNillableUpdatedAt(t *time.Time) *ArchiveCreate {
+	if t != nil {
+		ac.SetUpdatedAt(*t)
+	}
+	return ac
+}
+
+// SetName sets the "name" field.
+func (ac *ArchiveCreate) SetName(s string) *ArchiveCreate {
+	ac.mutation.SetName(s)
 	return ac
 }
 
@@ -131,6 +153,14 @@ func (ac *ArchiveCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ac *ArchiveCreate) defaults() {
+	if _, ok := ac.mutation.CreatedAt(); !ok {
+		v := archive.DefaultCreatedAt()
+		ac.mutation.SetCreatedAt(v)
+	}
+	if _, ok := ac.mutation.UpdatedAt(); !ok {
+		v := archive.DefaultUpdatedAt()
+		ac.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := ac.mutation.WillBePruned(); !ok {
 		v := archive.DefaultWillBePruned
 		ac.mutation.SetWillBePruned(v)
@@ -139,11 +169,14 @@ func (ac *ArchiveCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ac *ArchiveCreate) check() error {
+	if _, ok := ac.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Archive.created_at"`)}
+	}
+	if _, ok := ac.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Archive.updated_at"`)}
+	}
 	if _, ok := ac.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Archive.name"`)}
-	}
-	if _, ok := ac.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "createdAt", err: errors.New(`ent: missing required field "Archive.createdAt"`)}
 	}
 	if _, ok := ac.mutation.Duration(); !ok {
 		return &ValidationError{Name: "duration", err: errors.New(`ent: missing required field "Archive.duration"`)}
@@ -189,13 +222,17 @@ func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := ac.mutation.Name(); ok {
-		_spec.SetField(archive.FieldName, field.TypeString, value)
-		_node.Name = value
-	}
 	if value, ok := ac.mutation.CreatedAt(); ok {
 		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := ac.mutation.UpdatedAt(); ok {
+		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
+	if value, ok := ac.mutation.Name(); ok {
+		_spec.SetField(archive.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := ac.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)

@@ -84,7 +84,7 @@ func TestScheduler(t *testing.T) {
 		p.Prefix = "test-"
 		bs = p.Edges.BackupSchedule
 
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 

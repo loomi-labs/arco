@@ -4,7 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"time"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
 // PruningRule holds the schema definition for the PruningRule entity.
@@ -12,14 +12,17 @@ type PruningRule struct {
 	ent.Schema
 }
 
+func (PruningRule) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
+}
+
 // Fields of the PruningRule.
 func (PruningRule) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("id").
 			StructTag(`json:"id"`),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.Bool("is_enabled").
 			StructTag(`json:"isEnabled"`),
 		// https://borgbackup.readthedocs.io/en/stable/usage/prune.html

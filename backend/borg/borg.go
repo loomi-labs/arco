@@ -10,19 +10,20 @@ import (
 )
 
 type Borg interface {
-	Compact(ctx context.Context, repoUrl string, repoPassword string) error
-	Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
-	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
-	DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error
-	Info(url, password string) (*InfoResponse, error)
-	Init(url, password string, noPassword bool) error
-	List(repoUrl string, password string) (*ListResponse, error)
-	MountRepository(repoUrl string, password string, mountPath string) error
-	MountArchive(repoUrl string, archive string, password string, mountPath string) error
-	Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
-	BreakLock(ctx context.Context, repository string, password string) error
-	Umount(path string) error
+	Info(ctx context.Context, repository, password string) (*InfoResponse, error)
+	Init(ctx context.Context, repository, password string, noPassword bool) error
+	List(ctx context.Context, repository string, password string) (*ListResponse, error)
+	Compact(ctx context.Context, repository string, password string) error
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
 	Rename(ctx context.Context, repository, archive, password, newName string) error
+	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
+	DeleteArchives(ctx context.Context, repository, password, prefix string) error
+	DeleteRepository(ctx context.Context, repository string, password string) error
+	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
+	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
+	Umount(ctx context.Context, path string) error
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
+	BreakLock(ctx context.Context, repository string, password string) error
 }
 
 type borg struct {
@@ -65,11 +66,17 @@ func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
 }
 
 type Env struct {
-	password string
+	password           string
+	deleteConfirmation bool
 }
 
 func (e Env) WithPassword(password string) Env {
 	e.password = password
+	return e
+}
+
+func (e Env) WithDeleteConfirmation() Env {
+	e.deleteConfirmation = true
 	return e
 }
 
@@ -87,6 +94,9 @@ func (e Env) AsList() []string {
 	)
 	if e.password != "" {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", e.password))
+	}
+	if e.deleteConfirmation {
+		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
 	}
 	return env
 }

@@ -37,23 +37,23 @@ const emitClick = "click";
 <template>
   <!-- Local Repository Card -->
   <div v-if='repoType === RepoType.Local'
-       class='group flex flex-col ac-card-hover p-10 w-full'
-       :class='{ "ac-card-selected": isSelected }'
+       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full'
+       :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected  }'
        @click='emit(emitClick)'>
-    <ComputerDesktopIcon class='size-24 self-center group-hover:text-local-repo mb-4'
-                         :class='{"text-local-repo": isSelected}' />
-    <p class='group-hover:text-local-repo' :class='{"text-local-repo": isSelected}'>Local Repository</p>
+    <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
+                         :class='{"text-secondary": isSelected}' />
+    <p>Local Repository</p>
     <div class='divider'></div>
     <p>Store your backups on a local drive.</p>
   </div>
   <!-- Remote Repository Card -->
   <div v-if='repoType === RepoType.Remote'
-       class='group flex flex-col ac-card-hover p-10 w-full'
-       :class='{ "ac-card-selected": isSelected }'
+       class='group flex flex-col ac-card border border-secondary p-10 w-full'
+       :class='{ "ac-card-selected ": isSelected, "border-transparent": !isSelected }'
        @click='emit(emitClick)'>
-    <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-remote-repo mb-4'
-                           :class='{"text-remote-repo": isSelected}' />
-    <p class='group-hover:text-remote-repo' :class='{"text-remote-repo": isSelected}'>Remote Repository</p>
+    <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
+                           :class='{"text-secondary": isSelected}' />
+    <p>Remote Repository</p>
     <div class='divider'></div>
     <p>Store your backups on a remote server.</p>
   </div>

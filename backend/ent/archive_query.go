@@ -27,6 +27,7 @@ type ArchiveQuery struct {
 	withRepository    *RepositoryQuery
 	withBackupProfile *BackupProfileQuery
 	withFKs           bool
+	modifiers         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -302,8 +303,9 @@ func (aq *ArchiveQuery) Clone() *ArchiveQuery {
 		withRepository:    aq.withRepository.Clone(),
 		withBackupProfile: aq.withBackupProfile.Clone(),
 		// clone intermediate query.
-		sql:  aq.sql.Clone(),
-		path: aq.path,
+		sql:       aq.sql.Clone(),
+		path:      aq.path,
+		modifiers: append([]func(*sql.Selector){}, aq.modifiers...),
 	}
 }
 
@@ -335,12 +337,12 @@ func (aq *ArchiveQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *Ar
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Archive.Query().
-//		GroupBy(archive.FieldName).
+//		GroupBy(archive.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (aq *ArchiveQuery) GroupBy(field string, fields ...string) *ArchiveGroupBy {
@@ -358,11 +360,11 @@ func (aq *ArchiveQuery) GroupBy(field string, fields ...string) *ArchiveGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.Archive.Query().
-//		Select(archive.FieldName).
+//		Select(archive.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (aq *ArchiveQuery) Select(fields ...string) *ArchiveSelect {
 	aq.ctx.Fields = append(aq.ctx.Fields, fields...)
@@ -427,6 +429,9 @@ func (aq *ArchiveQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Arch
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(aq.modifiers) > 0 {
+		_spec.Modifiers = aq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -519,6 +524,9 @@ func (aq *ArchiveQuery) loadBackupProfile(ctx context.Context, query *BackupProf
 
 func (aq *ArchiveQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := aq.querySpec()
+	if len(aq.modifiers) > 0 {
+		_spec.Modifiers = aq.modifiers
+	}
 	_spec.Node.Columns = aq.ctx.Fields
 	if len(aq.ctx.Fields) > 0 {
 		_spec.Unique = aq.ctx.Unique != nil && *aq.ctx.Unique
@@ -581,6 +589,9 @@ func (aq *ArchiveQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if aq.ctx.Unique != nil && *aq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range aq.modifiers {
+		m(selector)
+	}
 	for _, p := range aq.predicates {
 		p(selector)
 	}
@@ -596,6 +607,12 @@ func (aq *ArchiveQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (aq *ArchiveQuery) Modify(modifiers ...func(s *sql.Selector)) *ArchiveSelect {
+	aq.modifiers = append(aq.modifiers, modifiers...)
+	return aq.Select()
 }
 
 // ArchiveGroupBy is the group-by builder for Archive entities.
@@ -686,4 +703,10 @@ func (as *ArchiveSelect) sqlScan(ctx context.Context, root *ArchiveQuery, v any)
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (as *ArchiveSelect) Modify(modifiers ...func(s *sql.Selector)) *ArchiveSelect {
+	as.modifiers = append(as.modifiers, modifiers...)
+	return as
 }

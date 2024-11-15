@@ -4,11 +4,18 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
 // Repository holds the schema definition for the Repository entity.
 type Repository struct {
 	ent.Schema
+}
+
+func (Repository) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
 }
 
 // Fields of the Repository.

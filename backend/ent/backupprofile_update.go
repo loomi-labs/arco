@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -23,13 +24,20 @@ import (
 // BackupProfileUpdate is the builder for updating BackupProfile entities.
 type BackupProfileUpdate struct {
 	config
-	hooks    []Hook
-	mutation *BackupProfileMutation
+	hooks     []Hook
+	mutation  *BackupProfileMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
 func (bpu *BackupProfileUpdate) Where(ps ...predicate.BackupProfile) *BackupProfileUpdate {
 	bpu.mutation.Where(ps...)
+	return bpu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bpu *BackupProfileUpdate) SetUpdatedAt(t time.Time) *BackupProfileUpdate {
+	bpu.mutation.SetUpdatedAt(t)
 	return bpu
 }
 
@@ -256,6 +264,7 @@ func (bpu *BackupProfileUpdate) RemoveNotifications(n ...*Notification) *BackupP
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (bpu *BackupProfileUpdate) Save(ctx context.Context) (int, error) {
+	bpu.defaults()
 	return withHooks(ctx, bpu.sqlSave, bpu.mutation, bpu.hooks)
 }
 
@@ -281,6 +290,14 @@ func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (bpu *BackupProfileUpdate) defaults() {
+	if _, ok := bpu.mutation.UpdatedAt(); !ok {
+		v := backupprofile.UpdateDefaultUpdatedAt()
+		bpu.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (bpu *BackupProfileUpdate) check() error {
 	if v, ok := bpu.mutation.Name(); ok {
@@ -296,6 +313,12 @@ func (bpu *BackupProfileUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bpu *BackupProfileUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdate {
+	bpu.modifiers = append(bpu.modifiers, modifiers...)
+	return bpu
+}
+
 func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bpu.check(); err != nil {
 		return n, err
@@ -307,6 +330,9 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := bpu.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := bpu.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
@@ -526,6 +552,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bpu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, bpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupprofile.Label}
@@ -541,9 +568,16 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 // BackupProfileUpdateOne is the builder for updating a single BackupProfile entity.
 type BackupProfileUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *BackupProfileMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *BackupProfileMutation
+	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bpuo *BackupProfileUpdateOne) SetUpdatedAt(t time.Time) *BackupProfileUpdateOne {
+	bpuo.mutation.SetUpdatedAt(t)
+	return bpuo
 }
 
 // SetName sets the "name" field.
@@ -782,6 +816,7 @@ func (bpuo *BackupProfileUpdateOne) Select(field string, fields ...string) *Back
 
 // Save executes the query and returns the updated BackupProfile entity.
 func (bpuo *BackupProfileUpdateOne) Save(ctx context.Context) (*BackupProfile, error) {
+	bpuo.defaults()
 	return withHooks(ctx, bpuo.sqlSave, bpuo.mutation, bpuo.hooks)
 }
 
@@ -807,6 +842,14 @@ func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (bpuo *BackupProfileUpdateOne) defaults() {
+	if _, ok := bpuo.mutation.UpdatedAt(); !ok {
+		v := backupprofile.UpdateDefaultUpdatedAt()
+		bpuo.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (bpuo *BackupProfileUpdateOne) check() error {
 	if v, ok := bpuo.mutation.Name(); ok {
@@ -820,6 +863,12 @@ func (bpuo *BackupProfileUpdateOne) check() error {
 		}
 	}
 	return nil
+}
+
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bpuo *BackupProfileUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdateOne {
+	bpuo.modifiers = append(bpuo.modifiers, modifiers...)
+	return bpuo
 }
 
 func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupProfile, err error) {
@@ -850,6 +899,9 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := bpuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := bpuo.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
@@ -1069,6 +1121,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bpuo.modifiers...)
 	_node = &BackupProfile{config: bpuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

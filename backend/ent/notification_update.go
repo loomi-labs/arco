@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -17,13 +18,20 @@ import (
 // NotificationUpdate is the builder for updating Notification entities.
 type NotificationUpdate struct {
 	config
-	hooks    []Hook
-	mutation *NotificationMutation
+	hooks     []Hook
+	mutation  *NotificationMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the NotificationUpdate builder.
 func (nu *NotificationUpdate) Where(ps ...predicate.Notification) *NotificationUpdate {
 	nu.mutation.Where(ps...)
+	return nu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (nu *NotificationUpdate) SetUpdatedAt(t time.Time) *NotificationUpdate {
+	nu.mutation.SetUpdatedAt(t)
 	return nu
 }
 
@@ -68,6 +76,7 @@ func (nu *NotificationUpdate) Mutation() *NotificationMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (nu *NotificationUpdate) Save(ctx context.Context) (int, error) {
+	nu.defaults()
 	return withHooks(ctx, nu.sqlSave, nu.mutation, nu.hooks)
 }
 
@@ -93,6 +102,14 @@ func (nu *NotificationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (nu *NotificationUpdate) defaults() {
+	if _, ok := nu.mutation.UpdatedAt(); !ok {
+		v := notification.UpdateDefaultUpdatedAt()
+		nu.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (nu *NotificationUpdate) check() error {
 	if v, ok := nu.mutation.Action(); ok {
@@ -109,6 +126,12 @@ func (nu *NotificationUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (nu *NotificationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdate {
+	nu.modifiers = append(nu.modifiers, modifiers...)
+	return nu
+}
+
 func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := nu.check(); err != nil {
 		return n, err
@@ -121,6 +144,9 @@ func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := nu.mutation.UpdatedAt(); ok {
+		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := nu.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)
 	}
@@ -130,6 +156,7 @@ func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if nu.mutation.ActionCleared() {
 		_spec.ClearField(notification.FieldAction, field.TypeEnum)
 	}
+	_spec.AddModifiers(nu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, nu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{notification.Label}
@@ -145,9 +172,16 @@ func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // NotificationUpdateOne is the builder for updating a single Notification entity.
 type NotificationUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *NotificationMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *NotificationMutation
+	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (nuo *NotificationUpdateOne) SetUpdatedAt(t time.Time) *NotificationUpdateOne {
+	nuo.mutation.SetUpdatedAt(t)
+	return nuo
 }
 
 // SetSeen sets the "seen" field.
@@ -204,6 +238,7 @@ func (nuo *NotificationUpdateOne) Select(field string, fields ...string) *Notifi
 
 // Save executes the query and returns the updated Notification entity.
 func (nuo *NotificationUpdateOne) Save(ctx context.Context) (*Notification, error) {
+	nuo.defaults()
 	return withHooks(ctx, nuo.sqlSave, nuo.mutation, nuo.hooks)
 }
 
@@ -229,6 +264,14 @@ func (nuo *NotificationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (nuo *NotificationUpdateOne) defaults() {
+	if _, ok := nuo.mutation.UpdatedAt(); !ok {
+		v := notification.UpdateDefaultUpdatedAt()
+		nuo.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (nuo *NotificationUpdateOne) check() error {
 	if v, ok := nuo.mutation.Action(); ok {
@@ -243,6 +286,12 @@ func (nuo *NotificationUpdateOne) check() error {
 		return errors.New(`ent: clearing a required unique edge "Notification.repository"`)
 	}
 	return nil
+}
+
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (nuo *NotificationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdateOne {
+	nuo.modifiers = append(nuo.modifiers, modifiers...)
+	return nuo
 }
 
 func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notification, err error) {
@@ -274,6 +323,9 @@ func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notificat
 			}
 		}
 	}
+	if value, ok := nuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := nuo.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)
 	}
@@ -283,6 +335,7 @@ func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notificat
 	if nuo.mutation.ActionCleared() {
 		_spec.ClearField(notification.FieldAction, field.TypeEnum)
 	}
+	_spec.AddModifiers(nuo.modifiers...)
 	_node = &Notification{config: nuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

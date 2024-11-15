@@ -46,7 +46,7 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 	r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusIdle)
 
-	listResponse, err := r.borg.List(repo.Location, repo.Password)
+	listResponse, err := r.borg.List(r.ctx, repo.Location, repo.Password)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -17,6 +18,34 @@ type SettingsCreate struct {
 	config
 	mutation *SettingsMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (sc *SettingsCreate) SetCreatedAt(t time.Time) *SettingsCreate {
+	sc.mutation.SetCreatedAt(t)
+	return sc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (sc *SettingsCreate) SetNillableCreatedAt(t *time.Time) *SettingsCreate {
+	if t != nil {
+		sc.SetCreatedAt(*t)
+	}
+	return sc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (sc *SettingsCreate) SetUpdatedAt(t time.Time) *SettingsCreate {
+	sc.mutation.SetUpdatedAt(t)
+	return sc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (sc *SettingsCreate) SetNillableUpdatedAt(t *time.Time) *SettingsCreate {
+	if t != nil {
+		sc.SetUpdatedAt(*t)
+	}
+	return sc
 }
 
 // SetTheme sets the "theme" field.
@@ -82,6 +111,14 @@ func (sc *SettingsCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (sc *SettingsCreate) defaults() {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
+		v := settings.DefaultCreatedAt()
+		sc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := sc.mutation.UpdatedAt(); !ok {
+		v := settings.DefaultUpdatedAt()
+		sc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := sc.mutation.Theme(); !ok {
 		v := settings.DefaultTheme
 		sc.mutation.SetTheme(v)
@@ -94,6 +131,12 @@ func (sc *SettingsCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sc *SettingsCreate) check() error {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Settings.created_at"`)}
+	}
+	if _, ok := sc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Settings.updated_at"`)}
+	}
 	if _, ok := sc.mutation.Theme(); !ok {
 		return &ValidationError{Name: "theme", err: errors.New(`ent: missing required field "Settings.theme"`)}
 	}
@@ -131,6 +174,14 @@ func (sc *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 		_node = &Settings{config: sc.config}
 		_spec = sqlgraph.NewCreateSpec(settings.Table, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
 	)
+	if value, ok := sc.mutation.CreatedAt(); ok {
+		_spec.SetField(settings.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := sc.mutation.UpdatedAt(); ok {
+		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := sc.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 		_node.Theme = value

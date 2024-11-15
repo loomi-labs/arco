@@ -29,6 +29,7 @@ type RepositoryQuery struct {
 	withBackupProfiles *BackupProfileQuery
 	withArchives       *ArchiveQuery
 	withNotifications  *NotificationQuery
+	modifiers          []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -327,8 +328,9 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		withArchives:       rq.withArchives.Clone(),
 		withNotifications:  rq.withNotifications.Clone(),
 		// clone intermediate query.
-		sql:  rq.sql.Clone(),
-		path: rq.path,
+		sql:       rq.sql.Clone(),
+		path:      rq.path,
+		modifiers: append([]func(*sql.Selector){}, rq.modifiers...),
 	}
 }
 
@@ -371,12 +373,12 @@ func (rq *RepositoryQuery) WithNotifications(opts ...func(*NotificationQuery)) *
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Repository.Query().
-//		GroupBy(repository.FieldName).
+//		GroupBy(repository.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (rq *RepositoryQuery) GroupBy(field string, fields ...string) *RepositoryGroupBy {
@@ -394,11 +396,11 @@ func (rq *RepositoryQuery) GroupBy(field string, fields ...string) *RepositoryGr
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.Repository.Query().
-//		Select(repository.FieldName).
+//		Select(repository.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (rq *RepositoryQuery) Select(fields ...string) *RepositorySelect {
 	rq.ctx.Fields = append(rq.ctx.Fields, fields...)
@@ -457,6 +459,9 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -617,6 +622,9 @@ func (rq *RepositoryQuery) loadNotifications(ctx context.Context, query *Notific
 
 func (rq *RepositoryQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rq.querySpec()
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
+	}
 	_spec.Node.Columns = rq.ctx.Fields
 	if len(rq.ctx.Fields) > 0 {
 		_spec.Unique = rq.ctx.Unique != nil && *rq.ctx.Unique
@@ -679,6 +687,9 @@ func (rq *RepositoryQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if rq.ctx.Unique != nil && *rq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range rq.modifiers {
+		m(selector)
+	}
 	for _, p := range rq.predicates {
 		p(selector)
 	}
@@ -694,6 +705,12 @@ func (rq *RepositoryQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (rq *RepositoryQuery) Modify(modifiers ...func(s *sql.Selector)) *RepositorySelect {
+	rq.modifiers = append(rq.modifiers, modifiers...)
+	return rq.Select()
 }
 
 // RepositoryGroupBy is the group-by builder for Repository entities.
@@ -784,4 +801,10 @@ func (rs *RepositorySelect) sqlScan(ctx context.Context, root *RepositoryQuery, 
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (rs *RepositorySelect) Modify(modifiers ...func(s *sql.Selector)) *RepositorySelect {
+	rs.modifiers = append(rs.modifiers, modifiers...)
+	return rs
 }

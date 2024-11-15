@@ -21,6 +21,8 @@ type Notification struct {
 	ID int `json:"id"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updatedAt"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message"`
 	// Type holds the value of the "type" field.
@@ -81,7 +83,7 @@ func (*Notification) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case notification.FieldMessage, notification.FieldType, notification.FieldAction:
 			values[i] = new(sql.NullString)
-		case notification.FieldCreatedAt:
+		case notification.FieldCreatedAt, notification.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case notification.ForeignKeys[0]: // notification_backup_profile
 			values[i] = new(sql.NullInt64)
@@ -113,6 +115,12 @@ func (n *Notification) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				n.CreatedAt = value.Time
+			}
+		case notification.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				n.UpdatedAt = value.Time
 			}
 		case notification.FieldMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -200,6 +208,9 @@ func (n *Notification) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(n.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(n.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("message=")
 	builder.WriteString(n.Message)

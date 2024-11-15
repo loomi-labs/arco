@@ -19,14 +19,40 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	archiveMixin := schema.Archive{}.Mixin()
+	archiveMixinFields0 := archiveMixin[0].Fields()
+	_ = archiveMixinFields0
 	archiveFields := schema.Archive{}.Fields()
 	_ = archiveFields
+	// archiveDescCreatedAt is the schema descriptor for created_at field.
+	archiveDescCreatedAt := archiveMixinFields0[0].Descriptor()
+	// archive.DefaultCreatedAt holds the default value on creation for the created_at field.
+	archive.DefaultCreatedAt = archiveDescCreatedAt.Default.(func() time.Time)
+	// archiveDescUpdatedAt is the schema descriptor for updated_at field.
+	archiveDescUpdatedAt := archiveMixinFields0[1].Descriptor()
+	// archive.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	archive.DefaultUpdatedAt = archiveDescUpdatedAt.Default.(func() time.Time)
+	// archive.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	archive.UpdateDefaultUpdatedAt = archiveDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// archiveDescWillBePruned is the schema descriptor for will_be_pruned field.
-	archiveDescWillBePruned := archiveFields[5].Descriptor()
+	archiveDescWillBePruned := archiveFields[4].Descriptor()
 	// archive.DefaultWillBePruned holds the default value on creation for the will_be_pruned field.
 	archive.DefaultWillBePruned = archiveDescWillBePruned.Default.(bool)
+	backupprofileMixin := schema.BackupProfile{}.Mixin()
+	backupprofileMixinFields0 := backupprofileMixin[0].Fields()
+	_ = backupprofileMixinFields0
 	backupprofileFields := schema.BackupProfile{}.Fields()
 	_ = backupprofileFields
+	// backupprofileDescCreatedAt is the schema descriptor for created_at field.
+	backupprofileDescCreatedAt := backupprofileMixinFields0[0].Descriptor()
+	// backupprofile.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backupprofile.DefaultCreatedAt = backupprofileDescCreatedAt.Default.(func() time.Time)
+	// backupprofileDescUpdatedAt is the schema descriptor for updated_at field.
+	backupprofileDescUpdatedAt := backupprofileMixinFields0[1].Descriptor()
+	// backupprofile.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	backupprofile.DefaultUpdatedAt = backupprofileDescUpdatedAt.Default.(func() time.Time)
+	// backupprofile.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	backupprofile.UpdateDefaultUpdatedAt = backupprofileDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// backupprofileDescName is the schema descriptor for name field.
 	backupprofileDescName := backupprofileFields[1].Descriptor()
 	// backupprofile.NameValidator is a validator for the "name" field. It is called by the builders before save.
@@ -57,38 +83,74 @@ func init() {
 	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
 	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
 	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
+	backupscheduleMixin := schema.BackupSchedule{}.Mixin()
+	backupscheduleMixinFields0 := backupscheduleMixin[0].Fields()
+	_ = backupscheduleMixinFields0
 	backupscheduleFields := schema.BackupSchedule{}.Fields()
 	_ = backupscheduleFields
+	// backupscheduleDescCreatedAt is the schema descriptor for created_at field.
+	backupscheduleDescCreatedAt := backupscheduleMixinFields0[0].Descriptor()
+	// backupschedule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	backupschedule.DefaultCreatedAt = backupscheduleDescCreatedAt.Default.(func() time.Time)
 	// backupscheduleDescUpdatedAt is the schema descriptor for updated_at field.
-	backupscheduleDescUpdatedAt := backupscheduleFields[1].Descriptor()
+	backupscheduleDescUpdatedAt := backupscheduleMixinFields0[1].Descriptor()
 	// backupschedule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	backupschedule.DefaultUpdatedAt = backupscheduleDescUpdatedAt.Default.(func() time.Time)
 	// backupschedule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	backupschedule.UpdateDefaultUpdatedAt = backupscheduleDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// backupscheduleDescMonthday is the schema descriptor for monthday field.
-	backupscheduleDescMonthday := backupscheduleFields[6].Descriptor()
+	backupscheduleDescMonthday := backupscheduleFields[5].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
+	notificationMixin := schema.Notification{}.Mixin()
+	notificationMixinFields0 := notificationMixin[0].Fields()
+	_ = notificationMixinFields0
 	notificationFields := schema.Notification{}.Fields()
 	_ = notificationFields
 	// notificationDescCreatedAt is the schema descriptor for created_at field.
-	notificationDescCreatedAt := notificationFields[1].Descriptor()
+	notificationDescCreatedAt := notificationMixinFields0[0].Descriptor()
 	// notification.DefaultCreatedAt holds the default value on creation for the created_at field.
-	notification.DefaultCreatedAt = notificationDescCreatedAt.Default.(time.Time)
+	notification.DefaultCreatedAt = notificationDescCreatedAt.Default.(func() time.Time)
+	// notificationDescUpdatedAt is the schema descriptor for updated_at field.
+	notificationDescUpdatedAt := notificationMixinFields0[1].Descriptor()
+	// notification.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	notification.DefaultUpdatedAt = notificationDescUpdatedAt.Default.(func() time.Time)
+	// notification.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	notification.UpdateDefaultUpdatedAt = notificationDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// notificationDescSeen is the schema descriptor for seen field.
-	notificationDescSeen := notificationFields[4].Descriptor()
+	notificationDescSeen := notificationFields[3].Descriptor()
 	// notification.DefaultSeen holds the default value on creation for the seen field.
 	notification.DefaultSeen = notificationDescSeen.Default.(bool)
+	pruningruleMixin := schema.PruningRule{}.Mixin()
+	pruningruleMixinFields0 := pruningruleMixin[0].Fields()
+	_ = pruningruleMixinFields0
 	pruningruleFields := schema.PruningRule{}.Fields()
 	_ = pruningruleFields
+	// pruningruleDescCreatedAt is the schema descriptor for created_at field.
+	pruningruleDescCreatedAt := pruningruleMixinFields0[0].Descriptor()
+	// pruningrule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	pruningrule.DefaultCreatedAt = pruningruleDescCreatedAt.Default.(func() time.Time)
 	// pruningruleDescUpdatedAt is the schema descriptor for updated_at field.
-	pruningruleDescUpdatedAt := pruningruleFields[1].Descriptor()
+	pruningruleDescUpdatedAt := pruningruleMixinFields0[1].Descriptor()
 	// pruningrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	pruningrule.DefaultUpdatedAt = pruningruleDescUpdatedAt.Default.(func() time.Time)
 	// pruningrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	pruningrule.UpdateDefaultUpdatedAt = pruningruleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	repositoryMixin := schema.Repository{}.Mixin()
+	repositoryMixinFields0 := repositoryMixin[0].Fields()
+	_ = repositoryMixinFields0
 	repositoryFields := schema.Repository{}.Fields()
 	_ = repositoryFields
+	// repositoryDescCreatedAt is the schema descriptor for created_at field.
+	repositoryDescCreatedAt := repositoryMixinFields0[0].Descriptor()
+	// repository.DefaultCreatedAt holds the default value on creation for the created_at field.
+	repository.DefaultCreatedAt = repositoryDescCreatedAt.Default.(func() time.Time)
+	// repositoryDescUpdatedAt is the schema descriptor for updated_at field.
+	repositoryDescUpdatedAt := repositoryMixinFields0[1].Descriptor()
+	// repository.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	repository.DefaultUpdatedAt = repositoryDescUpdatedAt.Default.(func() time.Time)
+	// repository.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	repository.UpdateDefaultUpdatedAt = repositoryDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
 	repositoryDescStatsTotalChunks := repositoryFields[5].Descriptor()
 	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
@@ -113,8 +175,21 @@ func init() {
 	repositoryDescStatsUniqueCsize := repositoryFields[10].Descriptor()
 	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
 	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
+	settingsMixin := schema.Settings{}.Mixin()
+	settingsMixinFields0 := settingsMixin[0].Fields()
+	_ = settingsMixinFields0
 	settingsFields := schema.Settings{}.Fields()
 	_ = settingsFields
+	// settingsDescCreatedAt is the schema descriptor for created_at field.
+	settingsDescCreatedAt := settingsMixinFields0[0].Descriptor()
+	// settings.DefaultCreatedAt holds the default value on creation for the created_at field.
+	settings.DefaultCreatedAt = settingsDescCreatedAt.Default.(func() time.Time)
+	// settingsDescUpdatedAt is the schema descriptor for updated_at field.
+	settingsDescUpdatedAt := settingsMixinFields0[1].Descriptor()
+	// settings.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	settings.DefaultUpdatedAt = settingsDescUpdatedAt.Default.(func() time.Time)
+	// settings.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	settings.UpdateDefaultUpdatedAt = settingsDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// settingsDescShowWelcome is the schema descriptor for show_welcome field.
 	settingsDescShowWelcome := settingsFields[1].Descriptor()
 	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.

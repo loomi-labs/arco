@@ -180,7 +180,7 @@ watch(() => values.location, async () => await setNameFromLocation());
     @close='resetAll();'
   >
     <div class='modal-box flex flex-col text-left'>
-      <h2 class='text-2xl'>Add a Local Repository</h2>
+      <h2 class='text-2xl'>Add a local repository</h2>
       <p class='pt-1'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
       <VeeForm class='flex flex-col gap-2 pt-2'
                :validation-schema='values'>

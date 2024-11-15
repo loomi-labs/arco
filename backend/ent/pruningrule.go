@@ -18,8 +18,10 @@ type PruningRule struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	// IsEnabled holds the value of the "is_enabled" field.
 	IsEnabled bool `json:"isEnabled"`
 	// KeepHourly holds the value of the "keep_hourly" field.
@@ -78,7 +80,7 @@ func (*PruningRule) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case pruningrule.FieldLastRunStatus:
 			values[i] = new(sql.NullString)
-		case pruningrule.FieldUpdatedAt, pruningrule.FieldNextRun, pruningrule.FieldLastRun:
+		case pruningrule.FieldCreatedAt, pruningrule.FieldUpdatedAt, pruningrule.FieldNextRun, pruningrule.FieldLastRun:
 			values[i] = new(sql.NullTime)
 		case pruningrule.ForeignKeys[0]: // backup_profile_pruning_rule
 			values[i] = new(sql.NullInt64)
@@ -103,6 +105,12 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pr.ID = int(value.Int64)
+		case pruningrule.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				pr.CreatedAt = value.Time
+			}
 		case pruningrule.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
@@ -219,6 +227,9 @@ func (pr *PruningRule) String() string {
 	var builder strings.Builder
 	builder.WriteString("PruningRule(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")

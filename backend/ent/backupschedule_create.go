@@ -21,6 +21,20 @@ type BackupScheduleCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (bsc *BackupScheduleCreate) SetCreatedAt(t time.Time) *BackupScheduleCreate {
+	bsc.mutation.SetCreatedAt(t)
+	return bsc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (bsc *BackupScheduleCreate) SetNillableCreatedAt(t *time.Time) *BackupScheduleCreate {
+	if t != nil {
+		bsc.SetCreatedAt(*t)
+	}
+	return bsc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (bsc *BackupScheduleCreate) SetUpdatedAt(t time.Time) *BackupScheduleCreate {
 	bsc.mutation.SetUpdatedAt(t)
@@ -173,6 +187,10 @@ func (bsc *BackupScheduleCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bsc *BackupScheduleCreate) defaults() {
+	if _, ok := bsc.mutation.CreatedAt(); !ok {
+		v := backupschedule.DefaultCreatedAt()
+		bsc.mutation.SetCreatedAt(v)
+	}
 	if _, ok := bsc.mutation.UpdatedAt(); !ok {
 		v := backupschedule.DefaultUpdatedAt()
 		bsc.mutation.SetUpdatedAt(v)
@@ -185,6 +203,9 @@ func (bsc *BackupScheduleCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bsc *BackupScheduleCreate) check() error {
+	if _, ok := bsc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BackupSchedule.created_at"`)}
+	}
 	if _, ok := bsc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BackupSchedule.updated_at"`)}
 	}
@@ -255,6 +276,10 @@ func (bsc *BackupScheduleCreate) createSpec() (*BackupSchedule, *sqlgraph.Create
 	if id, ok := bsc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
+	}
+	if value, ok := bsc.mutation.CreatedAt(); ok {
+		_spec.SetField(backupschedule.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if value, ok := bsc.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupschedule.FieldUpdatedAt, field.TypeTime, value)

@@ -25,6 +25,7 @@ type BackupScheduleQuery struct {
 	predicates        []predicate.BackupSchedule
 	withBackupProfile *BackupProfileQuery
 	withFKs           bool
+	modifiers         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -277,8 +278,9 @@ func (bsq *BackupScheduleQuery) Clone() *BackupScheduleQuery {
 		predicates:        append([]predicate.BackupSchedule{}, bsq.predicates...),
 		withBackupProfile: bsq.withBackupProfile.Clone(),
 		// clone intermediate query.
-		sql:  bsq.sql.Clone(),
-		path: bsq.path,
+		sql:       bsq.sql.Clone(),
+		path:      bsq.path,
+		modifiers: append([]func(*sql.Selector){}, bsq.modifiers...),
 	}
 }
 
@@ -299,12 +301,12 @@ func (bsq *BackupScheduleQuery) WithBackupProfile(opts ...func(*BackupProfileQue
 // Example:
 //
 //	var v []struct {
-//		UpdatedAt time.Time `json:"updatedAt"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.BackupSchedule.Query().
-//		GroupBy(backupschedule.FieldUpdatedAt).
+//		GroupBy(backupschedule.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupScheduleGroupBy {
@@ -322,11 +324,11 @@ func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupS
 // Example:
 //
 //	var v []struct {
-//		UpdatedAt time.Time `json:"updatedAt"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.BackupSchedule.Query().
-//		Select(backupschedule.FieldUpdatedAt).
+//		Select(backupschedule.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (bsq *BackupScheduleQuery) Select(fields ...string) *BackupScheduleSelect {
 	bsq.ctx.Fields = append(bsq.ctx.Fields, fields...)
@@ -391,6 +393,9 @@ func (bsq *BackupScheduleQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(bsq.modifiers) > 0 {
+		_spec.Modifiers = bsq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -444,6 +449,9 @@ func (bsq *BackupScheduleQuery) loadBackupProfile(ctx context.Context, query *Ba
 
 func (bsq *BackupScheduleQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := bsq.querySpec()
+	if len(bsq.modifiers) > 0 {
+		_spec.Modifiers = bsq.modifiers
+	}
 	_spec.Node.Columns = bsq.ctx.Fields
 	if len(bsq.ctx.Fields) > 0 {
 		_spec.Unique = bsq.ctx.Unique != nil && *bsq.ctx.Unique
@@ -506,6 +514,9 @@ func (bsq *BackupScheduleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if bsq.ctx.Unique != nil && *bsq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range bsq.modifiers {
+		m(selector)
+	}
 	for _, p := range bsq.predicates {
 		p(selector)
 	}
@@ -521,6 +532,12 @@ func (bsq *BackupScheduleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (bsq *BackupScheduleQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
+	bsq.modifiers = append(bsq.modifiers, modifiers...)
+	return bsq.Select()
 }
 
 // BackupScheduleGroupBy is the group-by builder for BackupSchedule entities.
@@ -611,4 +628,10 @@ func (bss *BackupScheduleSelect) sqlScan(ctx context.Context, root *BackupSchedu
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (bss *BackupScheduleSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
+	bss.modifiers = append(bss.modifiers, modifiers...)
+	return bss
 }

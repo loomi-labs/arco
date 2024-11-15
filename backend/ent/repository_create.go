@@ -23,6 +23,34 @@ type RepositoryCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (rc *RepositoryCreate) SetCreatedAt(t time.Time) *RepositoryCreate {
+	rc.mutation.SetCreatedAt(t)
+	return rc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableCreatedAt(t *time.Time) *RepositoryCreate {
+	if t != nil {
+		rc.SetCreatedAt(*t)
+	}
+	return rc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (rc *RepositoryCreate) SetUpdatedAt(t time.Time) *RepositoryCreate {
+	rc.mutation.SetUpdatedAt(t)
+	return rc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableUpdatedAt(t *time.Time) *RepositoryCreate {
+	if t != nil {
+		rc.SetUpdatedAt(*t)
+	}
+	return rc
+}
+
 // SetName sets the "name" field.
 func (rc *RepositoryCreate) SetName(s string) *RepositoryCreate {
 	rc.mutation.SetName(s)
@@ -225,6 +253,14 @@ func (rc *RepositoryCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rc *RepositoryCreate) defaults() {
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		v := repository.DefaultCreatedAt()
+		rc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		v := repository.DefaultUpdatedAt()
+		rc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := rc.mutation.StatsTotalChunks(); !ok {
 		v := repository.DefaultStatsTotalChunks
 		rc.mutation.SetStatsTotalChunks(v)
@@ -253,6 +289,12 @@ func (rc *RepositoryCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (rc *RepositoryCreate) check() error {
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Repository.created_at"`)}
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Repository.updated_at"`)}
+	}
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Repository.name"`)}
 	}
@@ -311,6 +353,14 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if id, ok := rc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
+	}
+	if value, ok := rc.mutation.CreatedAt(); ok {
+		_spec.SetField(repository.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := rc.mutation.UpdatedAt(); ok {
+		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := rc.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)

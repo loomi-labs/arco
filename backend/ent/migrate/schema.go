@@ -11,8 +11,9 @@ var (
 	// ArchivesColumns holds the columns for the "archives" table.
 	ArchivesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString},
 		{Name: "duration", Type: field.TypeFloat64},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
@@ -28,19 +29,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "archives_repositories_repository",
-				Columns:    []*schema.Column{ArchivesColumns[6]},
+				Columns:    []*schema.Column{ArchivesColumns[7]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{ArchivesColumns[7]},
+				Columns:    []*schema.Column{ArchivesColumns[8]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
+				Columns:    []*schema.Column{ArchivesColumns[9]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -49,6 +50,8 @@ var (
 	// BackupProfilesColumns holds the columns for the "backup_profiles" table.
 	BackupProfilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 30},
 		{Name: "prefix", Type: field.TypeString, Unique: true},
 		{Name: "backup_paths", Type: field.TypeJSON},
@@ -64,6 +67,7 @@ var (
 	// BackupSchedulesColumns holds the columns for the "backup_schedules" table.
 	BackupSchedulesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "mode", Type: field.TypeEnum, Enums: []string{"disabled", "hourly", "daily", "weekly", "monthly"}, Default: "disabled"},
 		{Name: "daily_at", Type: field.TypeTime},
@@ -84,7 +88,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
-				Columns:    []*schema.Column{BackupSchedulesColumns[11]},
+				Columns:    []*schema.Column{BackupSchedulesColumns[12]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -93,7 +97,7 @@ var (
 			{
 				Name:    "backupschedule_next_run",
 				Unique:  false,
-				Columns: []*schema.Column{BackupSchedulesColumns[8]},
+				Columns: []*schema.Column{BackupSchedulesColumns[9]},
 			},
 		},
 	}
@@ -101,6 +105,7 @@ var (
 	NotificationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
@@ -116,13 +121,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "notifications_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{NotificationsColumns[6]},
+				Columns:    []*schema.Column{NotificationsColumns[7]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "notifications_repositories_repository",
-				Columns:    []*schema.Column{NotificationsColumns[7]},
+				Columns:    []*schema.Column{NotificationsColumns[8]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -131,6 +136,7 @@ var (
 	// PruningRulesColumns holds the columns for the "pruning_rules" table.
 	PruningRulesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "is_enabled", Type: field.TypeBool},
 		{Name: "keep_hourly", Type: field.TypeInt},
@@ -152,7 +158,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "pruning_rules_backup_profiles_pruning_rule",
-				Columns:    []*schema.Column{PruningRulesColumns[12]},
+				Columns:    []*schema.Column{PruningRulesColumns[13]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -161,6 +167,8 @@ var (
 	// RepositoriesColumns holds the columns for the "repositories" table.
 	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "location", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
@@ -181,6 +189,8 @@ var (
 	// SettingsColumns holds the columns for the "settings" table.
 	SettingsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "theme", Type: field.TypeEnum, Enums: []string{"system", "light", "dark"}, Default: "system"},
 		{Name: "show_welcome", Type: field.TypeBool, Default: true},
 	}

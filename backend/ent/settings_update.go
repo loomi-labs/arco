@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -17,13 +18,20 @@ import (
 // SettingsUpdate is the builder for updating Settings entities.
 type SettingsUpdate struct {
 	config
-	hooks    []Hook
-	mutation *SettingsMutation
+	hooks     []Hook
+	mutation  *SettingsMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the SettingsUpdate builder.
 func (su *SettingsUpdate) Where(ps ...predicate.Settings) *SettingsUpdate {
 	su.mutation.Where(ps...)
+	return su
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (su *SettingsUpdate) SetUpdatedAt(t time.Time) *SettingsUpdate {
+	su.mutation.SetUpdatedAt(t)
 	return su
 }
 
@@ -62,6 +70,7 @@ func (su *SettingsUpdate) Mutation() *SettingsMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (su *SettingsUpdate) Save(ctx context.Context) (int, error) {
+	su.defaults()
 	return withHooks(ctx, su.sqlSave, su.mutation, su.hooks)
 }
 
@@ -87,6 +96,14 @@ func (su *SettingsUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (su *SettingsUpdate) defaults() {
+	if _, ok := su.mutation.UpdatedAt(); !ok {
+		v := settings.UpdateDefaultUpdatedAt()
+		su.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (su *SettingsUpdate) check() error {
 	if v, ok := su.mutation.Theme(); ok {
@@ -95,6 +112,12 @@ func (su *SettingsUpdate) check() error {
 		}
 	}
 	return nil
+}
+
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (su *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
+	su.modifiers = append(su.modifiers, modifiers...)
+	return su
 }
 
 func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
@@ -109,12 +132,16 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := su.mutation.UpdatedAt(); ok {
+		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := su.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	if value, ok := su.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
+	_spec.AddModifiers(su.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{settings.Label}
@@ -130,9 +157,16 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // SettingsUpdateOne is the builder for updating a single Settings entity.
 type SettingsUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *SettingsMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *SettingsMutation
+	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (suo *SettingsUpdateOne) SetUpdatedAt(t time.Time) *SettingsUpdateOne {
+	suo.mutation.SetUpdatedAt(t)
+	return suo
 }
 
 // SetTheme sets the "theme" field.
@@ -183,6 +217,7 @@ func (suo *SettingsUpdateOne) Select(field string, fields ...string) *SettingsUp
 
 // Save executes the query and returns the updated Settings entity.
 func (suo *SettingsUpdateOne) Save(ctx context.Context) (*Settings, error) {
+	suo.defaults()
 	return withHooks(ctx, suo.sqlSave, suo.mutation, suo.hooks)
 }
 
@@ -208,6 +243,14 @@ func (suo *SettingsUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (suo *SettingsUpdateOne) defaults() {
+	if _, ok := suo.mutation.UpdatedAt(); !ok {
+		v := settings.UpdateDefaultUpdatedAt()
+		suo.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (suo *SettingsUpdateOne) check() error {
 	if v, ok := suo.mutation.Theme(); ok {
@@ -216,6 +259,12 @@ func (suo *SettingsUpdateOne) check() error {
 		}
 	}
 	return nil
+}
+
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (suo *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
+	suo.modifiers = append(suo.modifiers, modifiers...)
+	return suo
 }
 
 func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
@@ -247,12 +296,16 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 			}
 		}
 	}
+	if value, ok := suo.mutation.UpdatedAt(); ok {
+		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := suo.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	if value, ok := suo.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
+	_spec.AddModifiers(suo.modifiers...)
 	_node = &Settings{config: suo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

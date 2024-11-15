@@ -19,8 +19,9 @@ import (
 // PruningRuleUpdate is the builder for updating PruningRule entities.
 type PruningRuleUpdate struct {
 	config
-	hooks    []Hook
-	mutation *PruningRuleMutation
+	hooks     []Hook
+	mutation  *PruningRuleMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the PruningRuleUpdate builder.
@@ -301,6 +302,12 @@ func (pru *PruningRuleUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (pru *PruningRuleUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdate {
+	pru.modifiers = append(pru.modifiers, modifiers...)
+	return pru
+}
+
 func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := pru.check(); err != nil {
 		return n, err
@@ -402,6 +409,7 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(pru.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, pru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{pruningrule.Label}
@@ -417,9 +425,10 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // PruningRuleUpdateOne is the builder for updating a single PruningRule entity.
 type PruningRuleUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *PruningRuleMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *PruningRuleMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -707,6 +716,12 @@ func (pruo *PruningRuleUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (pruo *PruningRuleUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdateOne {
+	pruo.modifiers = append(pruo.modifiers, modifiers...)
+	return pruo
+}
+
 func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRule, err error) {
 	if err := pruo.check(); err != nil {
 		return _node, err
@@ -825,6 +840,7 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(pruo.modifiers...)
 	_node = &PruningRule{config: pruo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

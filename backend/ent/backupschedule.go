@@ -18,6 +18,8 @@ type BackupSchedule struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Mode holds the value of the "mode" field.
@@ -74,7 +76,7 @@ func (*BackupSchedule) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case backupschedule.FieldMode, backupschedule.FieldWeekday, backupschedule.FieldLastRunStatus:
 			values[i] = new(sql.NullString)
-		case backupschedule.FieldUpdatedAt, backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt, backupschedule.FieldNextRun, backupschedule.FieldLastRun:
+		case backupschedule.FieldCreatedAt, backupschedule.FieldUpdatedAt, backupschedule.FieldDailyAt, backupschedule.FieldWeeklyAt, backupschedule.FieldMonthlyAt, backupschedule.FieldNextRun, backupschedule.FieldLastRun:
 			values[i] = new(sql.NullTime)
 		case backupschedule.ForeignKeys[0]: // backup_profile_backup_schedule
 			values[i] = new(sql.NullInt64)
@@ -99,6 +101,12 @@ func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			bs.ID = int(value.Int64)
+		case backupschedule.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				bs.CreatedAt = value.Time
+			}
 		case backupschedule.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
@@ -209,6 +217,9 @@ func (bs *BackupSchedule) String() string {
 	var builder strings.Builder
 	builder.WriteString("BackupSchedule(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bs.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(bs.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(bs.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")

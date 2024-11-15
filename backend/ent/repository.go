@@ -17,6 +17,10 @@ type Repository struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updatedAt"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name"`
 	// Location holds the value of the "location" field.
@@ -92,7 +96,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
 			values[i] = new(sql.NullString)
-		case repository.FieldNextIntegrityCheck:
+		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldNextIntegrityCheck:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -115,6 +119,18 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			r.ID = int(value.Int64)
+		case repository.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				r.CreatedAt = value.Time
+			}
+		case repository.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				r.UpdatedAt = value.Time
+			}
 		case repository.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -227,6 +243,12 @@ func (r *Repository) String() string {
 	var builder strings.Builder
 	builder.WriteString("Repository(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
 	builder.WriteString(", ")
