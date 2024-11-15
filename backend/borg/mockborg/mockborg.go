@@ -55,32 +55,32 @@ func (mr *MockBorgMockRecorder) BreakLock(ctx, repository, password any) *gomock
 }
 
 // Compact mocks base method.
-func (m *MockBorg) Compact(ctx context.Context, repoUrl, repoPassword string) error {
+func (m *MockBorg) Compact(ctx context.Context, repository, password string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Compact", ctx, repoUrl, repoPassword)
+	ret := m.ctrl.Call(m, "Compact", ctx, repository, password)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Compact indicates an expected call of Compact.
-func (mr *MockBorgMockRecorder) Compact(ctx, repoUrl, repoPassword any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compact", reflect.TypeOf((*MockBorg)(nil).Compact), ctx, repoUrl, repoPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compact", reflect.TypeOf((*MockBorg)(nil).Compact), ctx, repository, password)
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan borg.BackupProgress) (string, error) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan borg.BackupProgress) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, repoUrl, password, prefix, backupPaths, excludePaths, ch)
+	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, ch)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockBorgMockRecorder) Create(ctx, repoUrl, password, prefix, backupPaths, excludePaths, ch any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backupPaths, excludePaths, ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repoUrl, password, prefix, backupPaths, excludePaths, ch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repository, password, prefix, backupPaths, excludePaths, ch)
 }
 
 // DeleteArchive mocks base method.
@@ -98,17 +98,17 @@ func (mr *MockBorgMockRecorder) DeleteArchive(ctx, repository, archive, password
 }
 
 // DeleteArchives mocks base method.
-func (m *MockBorg) DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error {
+func (m *MockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteArchives", ctx, repoUrl, password, prefix)
+	ret := m.ctrl.Call(m, "DeleteArchives", ctx, repository, password, prefix)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteArchives indicates an expected call of DeleteArchives.
-func (mr *MockBorgMockRecorder) DeleteArchives(ctx, repoUrl, password, prefix any) *gomock.Call {
+func (mr *MockBorgMockRecorder) DeleteArchives(ctx, repository, password, prefix any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArchives", reflect.TypeOf((*MockBorg)(nil).DeleteArchives), ctx, repoUrl, password, prefix)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArchives", reflect.TypeOf((*MockBorg)(nil).DeleteArchives), ctx, repository, password, prefix)
 }
 
 // DeleteRepository mocks base method.
@@ -155,60 +155,60 @@ func (mr *MockBorgMockRecorder) Init(ctx, url, password, noPassword any) *gomock
 }
 
 // List mocks base method.
-func (m *MockBorg) List(ctx context.Context, repoUrl, password string) (*borg.ListResponse, error) {
+func (m *MockBorg) List(ctx context.Context, repository, password string) (*borg.ListResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, repoUrl, password)
+	ret := m.ctrl.Call(m, "List", ctx, repository, password)
 	ret0, _ := ret[0].(*borg.ListResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockBorgMockRecorder) List(ctx, repoUrl, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) List(ctx, repository, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), ctx, repoUrl, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), ctx, repository, password)
 }
 
 // MountArchive mocks base method.
-func (m *MockBorg) MountArchive(ctx context.Context, repoUrl, archive, password, mountPath string) error {
+func (m *MockBorg) MountArchive(ctx context.Context, repository, archive, password, mountPath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MountArchive", ctx, repoUrl, archive, password, mountPath)
+	ret := m.ctrl.Call(m, "MountArchive", ctx, repository, archive, password, mountPath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // MountArchive indicates an expected call of MountArchive.
-func (mr *MockBorgMockRecorder) MountArchive(ctx, repoUrl, archive, password, mountPath any) *gomock.Call {
+func (mr *MockBorgMockRecorder) MountArchive(ctx, repository, archive, password, mountPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountArchive", reflect.TypeOf((*MockBorg)(nil).MountArchive), ctx, repoUrl, archive, password, mountPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountArchive", reflect.TypeOf((*MockBorg)(nil).MountArchive), ctx, repository, archive, password, mountPath)
 }
 
 // MountRepository mocks base method.
-func (m *MockBorg) MountRepository(ctx context.Context, repoUrl, password, mountPath string) error {
+func (m *MockBorg) MountRepository(ctx context.Context, repository, password, mountPath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MountRepository", ctx, repoUrl, password, mountPath)
+	ret := m.ctrl.Call(m, "MountRepository", ctx, repository, password, mountPath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // MountRepository indicates an expected call of MountRepository.
-func (mr *MockBorgMockRecorder) MountRepository(ctx, repoUrl, password, mountPath any) *gomock.Call {
+func (mr *MockBorgMockRecorder) MountRepository(ctx, repository, password, mountPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRepository", reflect.TypeOf((*MockBorg)(nil).MountRepository), ctx, repoUrl, password, mountPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRepository", reflect.TypeOf((*MockBorg)(nil).MountRepository), ctx, repository, password, mountPath)
 }
 
 // Prune mocks base method.
-func (m *MockBorg) Prune(ctx context.Context, repoUrl, password, prefix string, pruneOptions []string, isDryRun bool, ch chan borg.PruneResult) error {
+func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan borg.PruneResult) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Prune", ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch)
+	ret := m.ctrl.Call(m, "Prune", ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Prune indicates an expected call of Prune.
-func (mr *MockBorgMockRecorder) Prune(ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Prune(ctx, repository, password, prefix, pruneOptions, isDryRun, ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
 }
 
 // Rename mocks base method.

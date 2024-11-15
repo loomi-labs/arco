@@ -13,8 +13,8 @@ type ListResponse struct {
 	Repository Repository    `json:"repository"`
 }
 
-func (b *borg) List(ctx context.Context, repoUrl string, password string) (*ListResponse, error) {
-	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repoUrl)
+func (b *borg) List(ctx context.Context, repository string, password string) (*ListResponse, error) {
+	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Get the list from the borg repository

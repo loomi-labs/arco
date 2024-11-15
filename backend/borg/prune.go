@@ -25,7 +25,7 @@ type KeepArchive struct {
 	Reason string
 }
 
-func (b *borg) Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error {
+func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error {
 	defer close(ch)
 
 	if len(pruneOptions) == 0 {
@@ -46,7 +46,7 @@ func (b *borg) Prune(ctx context.Context, repoUrl string, password string, prefi
 	}
 
 	cmdStr = append(cmdStr, pruneOptions...)
-	cmdStr = append(cmdStr, repoUrl)
+	cmdStr = append(cmdStr, repository)
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
@@ -78,7 +78,7 @@ func (b *borg) Prune(ctx context.Context, repoUrl string, password string, prefi
 		}
 
 		// Run compact to free up space
-		return b.Compact(ctx, repoUrl, password)
+		return b.Compact(ctx, repository, password)
 	}
 }
 

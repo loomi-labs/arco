@@ -12,17 +12,17 @@ import (
 type Borg interface {
 	Info(ctx context.Context, url, password string) (*InfoResponse, error)
 	Init(ctx context.Context, url, password string, noPassword bool) error
-	List(ctx context.Context, repoUrl string, password string) (*ListResponse, error)
-	Compact(ctx context.Context, repoUrl string, repoPassword string) error
-	Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
+	List(ctx context.Context, repository string, password string) (*ListResponse, error)
+	Compact(ctx context.Context, repository string, password string) error
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
 	Rename(ctx context.Context, repository, archive, password, newName string) error
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
-	DeleteArchives(ctx context.Context, repoUrl, password, prefix string) error
+	DeleteArchives(ctx context.Context, repository, password, prefix string) error
 	DeleteRepository(ctx context.Context, repository string, password string) error
-	MountRepository(ctx context.Context, repoUrl string, password string, mountPath string) error
-	MountArchive(ctx context.Context, repoUrl string, archive string, password string, mountPath string) error
+	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
+	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
 	Umount(ctx context.Context, path string) error
-	Prune(ctx context.Context, repoUrl string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
 	BreakLock(ctx context.Context, repository string, password string) error
 }
 

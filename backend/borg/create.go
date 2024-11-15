@@ -20,8 +20,8 @@ type BackupProgress struct {
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) Create(ctx context.Context, repoUrl, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
-	archiveName := fmt.Sprintf("%s::%s%s", repoUrl, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
+	archiveName := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
 	totalFiles, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)

@@ -6,18 +6,18 @@ import (
 	"os/exec"
 )
 
-func (b *borg) MountRepository(ctx context.Context, repoUrl string, password string, mountPath string) error {
-	return b.mount(ctx, repoUrl, nil, password, mountPath)
+func (b *borg) MountRepository(ctx context.Context, repository string, password string, mountPath string) error {
+	return b.mount(ctx, repository, nil, password, mountPath)
 }
 
-func (b *borg) MountArchive(ctx context.Context, repoUrl string, archive string, password string, mountPath string) error {
-	return b.mount(ctx, repoUrl, &archive, password, mountPath)
+func (b *borg) MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error {
+	return b.mount(ctx, repository, &archive, password, mountPath)
 }
 
-func (b *borg) mount(ctx context.Context, repoUrl string, archive *string, password string, mountPath string) error {
-	archiveOrRepo := repoUrl
+func (b *borg) mount(ctx context.Context, repository string, archive *string, password string, mountPath string) error {
+	archiveOrRepo := repository
 	if archive != nil {
-		archiveOrRepo = fmt.Sprintf("%s::%s", repoUrl, *archive)
+		archiveOrRepo = fmt.Sprintf("%s::%s", repository, *archive)
 	}
 
 	cmd := exec.CommandContext(ctx, b.path, "mount", archiveOrRepo, mountPath)

@@ -8,10 +8,10 @@ import (
 )
 
 // Compact runs the borg compact command to free up space in the repository
-func (b *borg) Compact(ctx context.Context, repoUrl string, repoPassword string) error {
+func (b *borg) Compact(ctx context.Context, repository string, password string) error {
 	// Prepare compact command
-	cmd := exec.CommandContext(ctx, b.path, "compact", repoUrl)
-	cmd.Env = Env{}.WithPassword(repoPassword).AsList()
+	cmd := exec.CommandContext(ctx, b.path, "compact", repository)
+	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
