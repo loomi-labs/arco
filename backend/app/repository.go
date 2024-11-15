@@ -119,7 +119,7 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 }
 
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
-	if err := r.borg.Init(util.ExpandPath(location), password, noPassword); err != nil {
+	if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
 		return nil, err
 	}
 

@@ -561,7 +561,7 @@ func (b *BackupClient) sendBackupScheduleChanged() {
 /***********************************/
 
 func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
-	info, err := b.borg.Info(url, password)
+	info, err := b.borg.Info(b.ctx, url, password)
 	if err != nil {
 		return err
 	}
@@ -577,7 +577,7 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 }
 
 func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
-	info, err := b.borg.Info(archiveName, password)
+	info, err := b.borg.Info(b.ctx, archiveName, password)
 	if err != nil {
 		return err
 	}

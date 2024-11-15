@@ -27,7 +27,7 @@ func (r *RepositoryClient) MountRepository(repoId int) (state types.MountState, 
 		return
 	}
 
-	if err = r.borg.MountRepository(repo.Location, repo.Password, path); err != nil {
+	if err = r.borg.MountRepository(r.ctx, repo.Location, repo.Password, path); err != nil {
 		return
 	}
 
@@ -74,7 +74,7 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 	}
 	if !state.IsMounted {
 		// If not mounted, mount it
-		if err = r.borg.MountArchive(archive.Edges.Repository.Location, archive.Name, archive.Edges.Repository.Password, path); err != nil {
+		if err = r.borg.MountArchive(r.ctx, archive.Edges.Repository.Location, archive.Name, archive.Edges.Repository.Password, path); err != nil {
 			return
 		}
 
@@ -129,7 +129,7 @@ func (r *RepositoryClient) UnmountRepository(repoId int) (state types.MountState
 		return
 	}
 
-	if err = r.borg.Umount(path); err != nil {
+	if err = r.borg.Umount(r.ctx, path); err != nil {
 		return
 	}
 
@@ -153,7 +153,7 @@ func (r *RepositoryClient) UnmountArchive(archiveId int) (state types.MountState
 		return
 	}
 
-	if err = r.borg.Umount(path); err != nil {
+	if err = r.borg.Umount(r.ctx, path); err != nil {
 		return
 	}
 
