@@ -37,7 +37,11 @@ const sizeOnDisk = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string | undefined>(undefined);
 const isIntegrityCheckEnabled = ref(false);
+const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
+const confirmDeleteInput = ref<string>("");
 
+const confirmRemoveModalKey = useId();
+const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveModalKey);
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
@@ -62,7 +66,7 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
  * Functions
  ************/
 
-async function getRepo() {
+async function getData() {
   try {
     loading.value = true;
 
@@ -71,8 +75,10 @@ async function getRepo() {
 
     location.value = getLocation(repo.value.location);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
+
+    deletableBackupProfiles.value = await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId) ?? [];
   } catch (error: any) {
-    await showAndLogError("Failed to get repository", error);
+    await showAndLogError("Failed to get repository data", error);
   }
   loading.value = false;
 }
@@ -120,6 +126,16 @@ async function saveIntegrityCheckSettings() {
   }
 }
 
+async function removeRepo() {
+  try {
+    await repoClient.Remove(repoId);
+    toast.success("Repository removed");
+    await router.replace({ path: Page.Dashboard, hash: `#${Anchor.Repositories}` });
+  } catch (error: any) {
+    await showAndLogError("Failed to remove repository", error);
+  }
+}
+
 async function deleteRepo() {
   try {
     await repoClient.Delete(repoId);
@@ -134,7 +150,7 @@ async function deleteRepo() {
  * Lifecycle
  ************/
 
-getRepo();
+getData();
 getRepoState();
 
 watch(loading, async () => {
@@ -218,17 +234,70 @@ onUnmounted(() => {
                @change='saveIntegrityCheckSettings'>
       </div>
       <div class='divider'></div>
-      <div class='flex justify-end'>
-        <button class='btn btn-outline btn-error' @click='confirmDeleteModal?.showModal()'>Delete</button>
+      <div class='flex justify-end gap-2'>
+        <button class='btn btn-outline btn-error'
+                @click='confirmRemoveModal?.showModal()'
+                :disabled='repoState.status !== state.RepoStatus.idle'
+        >Remove
+        </button>
+        <button class='btn btn-outline btn-error'
+                @click='confirmDeleteModal?.showModal()'
+                :disabled='repoState.status !== state.RepoStatus.idle'
+        >Delete permanently
+        </button>
       </div>
 
+      <ConfirmModal :ref='confirmRemoveModalKey'
+                    title='Remove repository'
+                    show-exclamation
+                    confirm-text='Remove repository'
+                    confirm-class='btn-error'
+                    @confirm='removeRepo()'>
+        <div class='flex flex-col gap-2'>
+          <p>Are you sure you want to remove this repository?</p>
+          <p>Removing a repository will not delete any backups stored in it. You can add it back later.</p>
+          <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
+            will also be removed.</p>
+          <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be removed:
+            <ul class='list-disc font-semibold pl-5'>
+              <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+            </ul>
+          </div>
+        </div>
+      </ConfirmModal>
       <ConfirmModal :ref='confirmDeleteModalKey'
                     title='Delete repository'
                     show-exclamation
-                    confirm-text='Delete repository'
-                    confirm-class='btn-error'
-                    @confirm='deleteRepo()'>
-        <p>Are you sure you want to delete this repository?</p>
+                    @close='confirmDeleteInput = ""'
+      >
+        <div class='flex flex-col gap-2'>
+          <p>Are you sure you want to delete this repository?</p>
+          <p>This action is <span class='font-semibold'>irreversible</span> and will <span class='font-semibold'>delete all backups</span>
+            stored in this repository!</p>
+          <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
+            will also be deleted!</p>
+          <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be deleted:
+            <ul class='list-disc font-semibold pl-5'>
+              <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+            </ul>
+          </div>
+          <p class='pt-2'>Type <span class='italic font-semibold'>{{ repo.name }}</span> to confirm.</p>
+          <div class='flex items-center gap-2'>
+            <input type='text' class='input input-sm input-bordered' v-model='confirmDeleteInput' />
+          </div>
+        </div>
+        <template v-slot:actionButtons>
+          <div class='flex gap-3 pt-5'>
+            <button type='button' class='btn btn-sm btn-outline'
+                    @click='confirmDeleteInput = ""; confirmDeleteModal?.close()'
+            >{{ $t("cancel") }}</button>
+            <button type='button' class='btn btn-sm btn-error'
+                    :disabled='confirmDeleteInput !== repo.name'
+                    @click='deleteRepo()'
+            >Delete repository
+            </button>
+          </div>
+        </template>
       </ConfirmModal>
     </div>
 
