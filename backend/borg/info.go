@@ -15,8 +15,8 @@ type InfoResponse struct {
 	SecurityDir string        `json:"security_dir"`
 }
 
-func (b *borg) Info(ctx context.Context, url, password string) (*InfoResponse, error) {
-	cmd := exec.CommandContext(ctx, b.path, "info", "--json", url)
+func (b *borg) Info(ctx context.Context, repository, password string) (*InfoResponse, error) {
+	cmd := exec.CommandContext(ctx, b.path, "info", "--json", repository)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository

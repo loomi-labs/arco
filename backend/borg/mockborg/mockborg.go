@@ -126,32 +126,32 @@ func (mr *MockBorgMockRecorder) DeleteRepository(ctx, repository, password any) 
 }
 
 // Info mocks base method.
-func (m *MockBorg) Info(ctx context.Context, url, password string) (*borg.InfoResponse, error) {
+func (m *MockBorg) Info(ctx context.Context, repository, password string) (*borg.InfoResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Info", ctx, url, password)
+	ret := m.ctrl.Call(m, "Info", ctx, repository, password)
 	ret0, _ := ret[0].(*borg.InfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Info indicates an expected call of Info.
-func (mr *MockBorgMockRecorder) Info(ctx, url, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Info(ctx, repository, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), ctx, url, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), ctx, repository, password)
 }
 
 // Init mocks base method.
-func (m *MockBorg) Init(ctx context.Context, url, password string, noPassword bool) error {
+func (m *MockBorg) Init(ctx context.Context, repository, password string, noPassword bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", ctx, url, password, noPassword)
+	ret := m.ctrl.Call(m, "Init", ctx, repository, password, noPassword)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockBorgMockRecorder) Init(ctx, url, password, noPassword any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Init(ctx, repository, password, noPassword any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockBorg)(nil).Init), ctx, url, password, noPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockBorg)(nil).Init), ctx, repository, password, noPassword)
 }
 
 // List mocks base method.

@@ -10,8 +10,8 @@ import (
 )
 
 type Borg interface {
-	Info(ctx context.Context, url, password string) (*InfoResponse, error)
-	Init(ctx context.Context, url, password string, noPassword bool) error
+	Info(ctx context.Context, repository, password string) (*InfoResponse, error)
+	Init(ctx context.Context, repository, password string, noPassword bool) error
 	List(ctx context.Context, repository string, password string) (*ListResponse, error)
 	Compact(ctx context.Context, repository string, password string) error
 	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
