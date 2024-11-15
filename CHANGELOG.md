@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0](https://github.com/loomi-labs/arco/compare/v0.4.0...v0.5.0) (2024-11-15)
+
+
+### Features
+
+* add archive rename ([#90](https://github.com/loomi-labs/arco/issues/90)) ([0da554e](https://github.com/loomi-labs/arco/commit/0da554e5653f97ccedb5b44139f119a68f1144ff))
+* add duration to archives ([#89](https://github.com/loomi-labs/arco/issues/89)) ([4cf150a](https://github.com/loomi-labs/arco/commit/4cf150adca6bc511a36909a08aecba36fca85d1b))
+* add startup page ([#87](https://github.com/loomi-labs/arco/issues/87)) ([19de333](https://github.com/loomi-labs/arco/commit/19de33379c87942afd07a3b2f40f7e885256eb1f))
+
 ## [0.4.0](https://github.com/loomi-labs/arco/compare/v0.3.0...v0.4.0) (2024-11-13)
 
 
