@@ -44,3 +44,20 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 		return b.Compact(ctx, repository, password)
 	}
 }
+
+// DeleteRepository deletes the repository and all its archives
+func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) error {
+	cmd := exec.CommandContext(ctx, b.path, "delete", repository)
+	cmd.Env = Env{}.
+		WithPassword(password).
+		WithDeleteConfirmation().
+		AsList()
+
+	startTime := b.log.LogCmdStart(cmd.String())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+	}
+	b.log.LogCmdEnd(cmd.String(), startTime)
+	return nil
+}

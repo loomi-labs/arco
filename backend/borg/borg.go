@@ -66,11 +66,17 @@ func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
 }
 
 type Env struct {
-	password string
+	password           string
+	deleteConfirmation bool
 }
 
 func (e Env) WithPassword(password string) Env {
 	e.password = password
+	return e
+}
+
+func (e Env) WithDeleteConfirmation() Env {
+	e.deleteConfirmation = true
 	return e
 }
 
@@ -88,6 +94,9 @@ func (e Env) AsList() []string {
 	)
 	if e.password != "" {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", e.password))
+	}
+	if e.deleteConfirmation {
+		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
 	}
 	return env
 }

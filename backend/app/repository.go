@@ -140,11 +140,72 @@ func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, 
 		Save(r.ctx)
 }
 
-func (r *RepositoryClient) Delete(id int) error {
-	r.log.Debugf("Deleting repository %d", id)
-	return r.db.Repository.
+func (r *RepositoryClient) GetBackupProfilesThatHaveOnlyRepo(repoId int) ([]*ent.BackupProfile, error) {
+	backupProfiles, err := r.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.HasRepositoriesWith(repository.ID(repoId)),
+		)).
+		WithRepositories().
+		All(r.ctx)
+	if err != nil {
+		return nil, err
+	}
+	var result []*ent.BackupProfile
+	for _, bp := range backupProfiles {
+		if len(bp.Edges.Repositories) == 1 {
+			result = append(result, bp)
+		}
+	}
+	return result, nil
+}
+
+func (r *RepositoryClient) Remove(id int) error {
+	r.log.Debugf("Removing repository %d", id)
+	backupProfiles, err := r.GetBackupProfilesThatHaveOnlyRepo(id)
+	if err != nil {
+		return err
+	}
+	tx, err := r.db.Tx(r.ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(backupProfiles) > 0 {
+		bpIds := make([]int, 0, len(backupProfiles))
+		for _, bp := range backupProfiles {
+			bpIds = append(bpIds, bp.ID)
+		}
+
+		_, err = tx.BackupProfile.Delete().
+			Where(backupprofile.IDIn(bpIds...)).
+			Exec(r.ctx)
+		if err != nil {
+			return rollback(tx, err)
+		}
+	}
+
+	err = tx.Repository.
 		DeleteOneID(id).
 		Exec(r.ctx)
+	if err != nil {
+		return rollback(tx, err)
+	}
+	return tx.Commit()
+}
+
+func (r *RepositoryClient) Delete(id int) error {
+	r.log.Debugf("Deleting repository %d", id)
+
+	repo, err := r.Get(id)
+	if err != nil {
+		return err
+	}
+	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
+	if err != nil {
+		return err
+	}
+	return r.Remove(id)
 }
 
 func endOfMonth(t time.Time) time.Time {
