@@ -104,7 +104,7 @@ async function saveName() {
   }
 }
 
-function adjustNameWidth() {
+function resizeNameWidth() {
   if (nameInput.value) {
     nameInput.value.style.width = "30px";
     nameInput.value.style.width = `${nameInput.value.scrollWidth}px`;
@@ -140,7 +140,7 @@ getRepoState();
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
   await nextTick();
-  adjustNameWidth();
+  resizeNameWidth();
 });
 
 cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(repoId), async () => await getRepoState()));
@@ -168,7 +168,7 @@ onUnmounted(() => {
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
-               @input='adjustNameWidth'
+               @input='resizeNameWidth'
         />
         <PencilIcon class='size-4' />
         <span class='text-error'>{{ errors.name }}</span>

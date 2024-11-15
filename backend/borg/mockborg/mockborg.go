@@ -197,6 +197,20 @@ func (mr *MockBorgMockRecorder) Prune(ctx, repoUrl, password, prefix, pruneOptio
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repoUrl, password, prefix, pruneOptions, isDryRun, ch)
 }
 
+// Rename mocks base method.
+func (m *MockBorg) Rename(ctx context.Context, repository, archive, password, newName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Rename", ctx, repository, archive, password, newName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Rename indicates an expected call of Rename.
+func (mr *MockBorgMockRecorder) Rename(ctx, repository, archive, password, newName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rename", reflect.TypeOf((*MockBorg)(nil).Rename), ctx, repository, archive, password, newName)
+}
+
 // Umount mocks base method.
 func (m *MockBorg) Umount(path string) error {
 	m.ctrl.T.Helper()
