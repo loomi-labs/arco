@@ -201,11 +201,19 @@ func (r *RepositoryClient) Remove(id int) error {
 // It also deletes the physical repository on disk
 func (r *RepositoryClient) Delete(id int) error {
 	r.log.Debugf("Deleting repository %d", id)
-
 	repo, err := r.Get(id)
 	if err != nil {
 		return err
 	}
+
+	if canMount, reason := r.state.CanRunDeleteJob(repo.ID); !canMount {
+		return fmt.Errorf("cannot delete repository: %s", reason)
+	}
+
+	repoLock := r.state.GetRepoLock(repo.ID)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
 	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
 	if err != nil {
 		return err
