@@ -104,7 +104,7 @@ mockgen:
 	@mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
 
 test: ensure-tools mockgen
-	@go test -cover -mod=readonly $$(go list ./... | grep -v ent)
+	@go test -cover -mod=readonly --timeout 1m $$(go list ./... | grep -v ent)
 
 #################################
 ###           Build           ###

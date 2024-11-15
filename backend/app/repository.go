@@ -140,6 +140,7 @@ func (r *RepositoryClient) Update(repository *ent.Repository) (*ent.Repository, 
 		Save(r.ctx)
 }
 
+// GetBackupProfilesThatHaveOnlyRepo returns all backup profiles that only have the given repository
 func (r *RepositoryClient) GetBackupProfilesThatHaveOnlyRepo(repoId int) ([]*ent.BackupProfile, error) {
 	backupProfiles, err := r.db.BackupProfile.
 		Query().
@@ -160,6 +161,8 @@ func (r *RepositoryClient) GetBackupProfilesThatHaveOnlyRepo(repoId int) ([]*ent
 	return result, nil
 }
 
+// Remove deletes the repository with the given ID and all its backup profiles if they only have this repository
+// It does not delete the physical repository on disk
 func (r *RepositoryClient) Remove(id int) error {
 	r.log.Debugf("Removing repository %d", id)
 	backupProfiles, err := r.GetBackupProfilesThatHaveOnlyRepo(id)
@@ -194,6 +197,8 @@ func (r *RepositoryClient) Remove(id int) error {
 	return tx.Commit()
 }
 
+// Delete deletes the repository with the given ID and all its backup profiles if they only have this repository
+// It also deletes the physical repository on disk
 func (r *RepositoryClient) Delete(id int) error {
 	r.log.Debugf("Deleting repository %d", id)
 

@@ -111,76 +111,90 @@ func (mr *MockBorgMockRecorder) DeleteArchives(ctx, repoUrl, password, prefix an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArchives", reflect.TypeOf((*MockBorg)(nil).DeleteArchives), ctx, repoUrl, password, prefix)
 }
 
-// Info mocks base method.
-func (m *MockBorg) Info(url, password string) (*borg.InfoResponse, error) {
+// DeleteRepository mocks base method.
+func (m *MockBorg) DeleteRepository(ctx context.Context, repository, password string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Info", url, password)
+	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repository, password)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRepository indicates an expected call of DeleteRepository.
+func (mr *MockBorgMockRecorder) DeleteRepository(ctx, repository, password any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockBorg)(nil).DeleteRepository), ctx, repository, password)
+}
+
+// Info mocks base method.
+func (m *MockBorg) Info(ctx context.Context, url, password string) (*borg.InfoResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Info", ctx, url, password)
 	ret0, _ := ret[0].(*borg.InfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Info indicates an expected call of Info.
-func (mr *MockBorgMockRecorder) Info(url, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Info(ctx, url, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), url, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), ctx, url, password)
 }
 
 // Init mocks base method.
-func (m *MockBorg) Init(url, password string, noPassword bool) error {
+func (m *MockBorg) Init(ctx context.Context, url, password string, noPassword bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", url, password, noPassword)
+	ret := m.ctrl.Call(m, "Init", ctx, url, password, noPassword)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockBorgMockRecorder) Init(url, password, noPassword any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Init(ctx, url, password, noPassword any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockBorg)(nil).Init), url, password, noPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockBorg)(nil).Init), ctx, url, password, noPassword)
 }
 
 // List mocks base method.
-func (m *MockBorg) List(repoUrl, password string) (*borg.ListResponse, error) {
+func (m *MockBorg) List(ctx context.Context, repoUrl, password string) (*borg.ListResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", repoUrl, password)
+	ret := m.ctrl.Call(m, "List", ctx, repoUrl, password)
 	ret0, _ := ret[0].(*borg.ListResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockBorgMockRecorder) List(repoUrl, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) List(ctx, repoUrl, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), repoUrl, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), ctx, repoUrl, password)
 }
 
 // MountArchive mocks base method.
-func (m *MockBorg) MountArchive(repoUrl, archive, password, mountPath string) error {
+func (m *MockBorg) MountArchive(ctx context.Context, repoUrl, archive, password, mountPath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MountArchive", repoUrl, archive, password, mountPath)
+	ret := m.ctrl.Call(m, "MountArchive", ctx, repoUrl, archive, password, mountPath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // MountArchive indicates an expected call of MountArchive.
-func (mr *MockBorgMockRecorder) MountArchive(repoUrl, archive, password, mountPath any) *gomock.Call {
+func (mr *MockBorgMockRecorder) MountArchive(ctx, repoUrl, archive, password, mountPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountArchive", reflect.TypeOf((*MockBorg)(nil).MountArchive), repoUrl, archive, password, mountPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountArchive", reflect.TypeOf((*MockBorg)(nil).MountArchive), ctx, repoUrl, archive, password, mountPath)
 }
 
 // MountRepository mocks base method.
-func (m *MockBorg) MountRepository(repoUrl, password, mountPath string) error {
+func (m *MockBorg) MountRepository(ctx context.Context, repoUrl, password, mountPath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MountRepository", repoUrl, password, mountPath)
+	ret := m.ctrl.Call(m, "MountRepository", ctx, repoUrl, password, mountPath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // MountRepository indicates an expected call of MountRepository.
-func (mr *MockBorgMockRecorder) MountRepository(repoUrl, password, mountPath any) *gomock.Call {
+func (mr *MockBorgMockRecorder) MountRepository(ctx, repoUrl, password, mountPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRepository", reflect.TypeOf((*MockBorg)(nil).MountRepository), repoUrl, password, mountPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRepository", reflect.TypeOf((*MockBorg)(nil).MountRepository), ctx, repoUrl, password, mountPath)
 }
 
 // Prune mocks base method.
@@ -212,15 +226,15 @@ func (mr *MockBorgMockRecorder) Rename(ctx, repository, archive, password, newNa
 }
 
 // Umount mocks base method.
-func (m *MockBorg) Umount(path string) error {
+func (m *MockBorg) Umount(ctx context.Context, path string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Umount", path)
+	ret := m.ctrl.Call(m, "Umount", ctx, path)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Umount indicates an expected call of Umount.
-func (mr *MockBorgMockRecorder) Umount(path any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Umount(ctx, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Umount", reflect.TypeOf((*MockBorg)(nil).Umount), path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Umount", reflect.TypeOf((*MockBorg)(nil).Umount), ctx, path)
 }

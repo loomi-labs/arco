@@ -70,7 +70,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		p.Prefix = "test-"
 		bs = p.Edges.BackupSchedule
 
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
@@ -216,7 +216,7 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 		p.Name = "Test profile"
 		p.Prefix = "test-"
 
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
@@ -280,8 +280,8 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 	setup := func(t *testing.T) {
 		a, mockBorg, mockEventEmitter = NewTestApp(t)
 
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		r, err := a.RepoClient().Create("Test profile", "/tmp", "", true)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		r, err := a.RepoClient().Create("Test profile", "/tmp", "pw", true)
 		assert.NoError(t, err, "Failed to create new repository")
 		repo = r
 
@@ -369,7 +369,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 					Repository:  borg.Repository{},
 					SecurityDir: "",
 				}
-				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any()).Return(infoResponse, nil)
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, nil)
 				listResponse := &borg.ListResponse{
 					Archives:   nil,
 					Encryption: borg.Encryption{},
@@ -377,7 +377,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(url, password string) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}
@@ -417,7 +417,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 		var err error
 		a, mockBorg, mockEventEmitter = NewTestApp(t)
 
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 		repo1, err = a.RepoClient().Create("Test repo 1", "/tmp1", "", true)
 		assert.NoError(t, err, "Failed to create new repository")
 		repo2, err = a.RepoClient().Create("Test repo 2", "/tmp2", "", true)
@@ -502,7 +502,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 					Repository:  borg.Repository{},
 					SecurityDir: "",
 				}
-				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any()).Return(infoResponse, nil)
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, nil)
 				listResponse := &borg.ListResponse{
 					Archives:   nil,
 					Encryption: borg.Encryption{},
@@ -510,7 +510,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(url, password string) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}
