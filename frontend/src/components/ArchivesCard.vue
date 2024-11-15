@@ -3,7 +3,7 @@
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
-import { computed, nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
   ArrowPathIcon,
@@ -14,7 +14,6 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
-  PencilIcon,
   ScissorsIcon,
   TrashIcon,
   XMarkIcon
@@ -134,12 +133,6 @@ async function getPaginatedArchives() {
     inputErrors.value = {};
     for (const archive of archives.value) {
       inputValues.value[archive.id] = archiveNameWithoutPrefix(archive);
-    }
-
-    // Resize the input fields after the DOM has been updated
-    await nextTick();
-    for (const archive of archives.value) {
-      resizeInput(archive.id);
     }
   } catch (error: any) {
     await showAndLogError("Failed to get archives", error);
@@ -286,27 +279,21 @@ async function validateName(archiveId: number) {
   if (!archive) {
     return;
   }
+  const name = inputValues.value[archiveId];
+  const prefix = prefixForBackupProfile(archive);
+  const fullName = `${prefix}${name}`;
+
+  // If the name is the same as the current name, clear the error
+  if (archive.name === fullName) {
+    inputErrors.value[archiveId] = "";
+    return;
+  }
+
   try {
-    const name = inputValues.value[archiveId];
-    const prefix = prefixForBackupProfile(archive);
     inputErrors.value[archiveId] = await repoClient.ValidateArchiveName(archiveId, prefix, name);
   } catch (error: any) {
     await showAndLogError("Failed to validate archive name", error);
   }
-}
-
-function resizeInput(archiveId: number) {
-  const input = document.getElementById(`input-archive-${archiveId}`) as HTMLInputElement;
-  if (!input) {
-    return;
-  }
-  input.style.width = `30px`;
-  input.style.width = `${input.scrollWidth}px`;
-}
-
-async function resizeAndValidateInput(archiveId: number) {
-  resizeInput(archiveId);
-  await validateName(archiveId);
 }
 
 const customDateRangeShortcuts = () => {
@@ -479,21 +466,19 @@ onUnmounted(() => {
           <!-- Name -->
           <td class='flex flex-col'>
             <div class='flex items-center justify-between'>
-              <label class='flex items-center'>
-                <span>{{ prefixForBackupProfile(archive) }}</span>
-                <input :id='`input-archive-${archive.id}`'
-                       type='text'
-                       class='bg-transparent w-0'
-                       v-model='inputValues[archive.id]'
-                       @input='resizeAndValidateInput(archive.id)'
-                       @change='rename(archive)'
-                       :disabled='inputRenameInProgress[archive.id]'
-                />
-                <PencilIcon class='size-3 mx-2' />
-                <span v-if='inputRenameInProgress[archive.id]' class='loading loading-xs'></span>
-              </label>
+              <span>{{ prefixForBackupProfile(archive) }}</span>
+              <input type='text'
+                     class='bg-transparent w-full'
+                     v-model='inputValues[archive.id]'
+                     @input='validateName(archive.id)'
+                     @change='rename(archive)'
+                     :disabled='inputRenameInProgress[archive.id]  || props.repoStatus !== state.RepoStatus.idle'
+              />
+              <span class='loading loading-xs' :class='{"invisible": !inputRenameInProgress[archive.id]}'></span>
 
-              <span v-if='archive.willBePruned' class='tooltip tooltip-info mr-2' :data-tip='getPruningText(archive.id)'>
+              <span class='tooltip tooltip-info mr-2'
+                    :class='{"invisible": !archive.willBePruned}'
+                    :data-tip='getPruningText(archive.id)'>
                 <ScissorsIcon class='size-4 text-info ml-2' />
               </span>
             </div>
