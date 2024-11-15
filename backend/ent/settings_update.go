@@ -18,8 +18,9 @@ import (
 // SettingsUpdate is the builder for updating Settings entities.
 type SettingsUpdate struct {
 	config
-	hooks    []Hook
-	mutation *SettingsMutation
+	hooks     []Hook
+	mutation  *SettingsMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the SettingsUpdate builder.
@@ -113,6 +114,12 @@ func (su *SettingsUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (su *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
+	su.modifiers = append(su.modifiers, modifiers...)
+	return su
+}
+
 func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := su.check(); err != nil {
 		return n, err
@@ -134,6 +141,7 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := su.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
+	_spec.AddModifiers(su.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{settings.Label}
@@ -149,9 +157,10 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // SettingsUpdateOne is the builder for updating a single Settings entity.
 type SettingsUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *SettingsMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *SettingsMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -252,6 +261,12 @@ func (suo *SettingsUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (suo *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
+	suo.modifiers = append(suo.modifiers, modifiers...)
+	return suo
+}
+
 func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
 	if err := suo.check(); err != nil {
 		return _node, err
@@ -290,6 +305,7 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 	if value, ok := suo.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
+	_spec.AddModifiers(suo.modifiers...)
 	_node = &Settings{config: suo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

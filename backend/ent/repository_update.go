@@ -21,8 +21,9 @@ import (
 // RepositoryUpdate is the builder for updating Repository entities.
 type RepositoryUpdate struct {
 	config
-	hooks    []Hook
-	mutation *RepositoryMutation
+	hooks     []Hook
+	mutation  *RepositoryMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
@@ -374,6 +375,12 @@ func (ru *RepositoryUpdate) defaults() {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (ru *RepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdate {
+	ru.modifiers = append(ru.modifiers, modifiers...)
+	return ru
+}
+
 func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
@@ -572,6 +579,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(ru.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{repository.Label}
@@ -587,9 +595,10 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // RepositoryUpdateOne is the builder for updating a single Repository entity.
 type RepositoryUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *RepositoryMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *RepositoryMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -948,6 +957,12 @@ func (ruo *RepositoryUpdateOne) defaults() {
 	}
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (ruo *RepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdateOne {
+	ruo.modifiers = append(ruo.modifiers, modifiers...)
+	return ruo
+}
+
 func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, err error) {
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	id, ok := ruo.mutation.ID()
@@ -1163,6 +1178,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(ruo.modifiers...)
 	_node = &Repository{config: ruo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

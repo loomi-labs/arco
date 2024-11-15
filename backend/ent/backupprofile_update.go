@@ -24,8 +24,9 @@ import (
 // BackupProfileUpdate is the builder for updating BackupProfile entities.
 type BackupProfileUpdate struct {
 	config
-	hooks    []Hook
-	mutation *BackupProfileMutation
+	hooks     []Hook
+	mutation  *BackupProfileMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
@@ -312,6 +313,12 @@ func (bpu *BackupProfileUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bpu *BackupProfileUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdate {
+	bpu.modifiers = append(bpu.modifiers, modifiers...)
+	return bpu
+}
+
 func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bpu.check(); err != nil {
 		return n, err
@@ -545,6 +552,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bpu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, bpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupprofile.Label}
@@ -560,9 +568,10 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 // BackupProfileUpdateOne is the builder for updating a single BackupProfile entity.
 type BackupProfileUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *BackupProfileMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *BackupProfileMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -856,6 +865,12 @@ func (bpuo *BackupProfileUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bpuo *BackupProfileUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdateOne {
+	bpuo.modifiers = append(bpuo.modifiers, modifiers...)
+	return bpuo
+}
+
 func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupProfile, err error) {
 	if err := bpuo.check(); err != nil {
 		return _node, err
@@ -1106,6 +1121,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bpuo.modifiers...)
 	_node = &BackupProfile{config: bpuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

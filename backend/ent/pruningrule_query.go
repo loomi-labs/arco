@@ -25,6 +25,7 @@ type PruningRuleQuery struct {
 	predicates        []predicate.PruningRule
 	withBackupProfile *BackupProfileQuery
 	withFKs           bool
+	modifiers         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -277,8 +278,9 @@ func (prq *PruningRuleQuery) Clone() *PruningRuleQuery {
 		predicates:        append([]predicate.PruningRule{}, prq.predicates...),
 		withBackupProfile: prq.withBackupProfile.Clone(),
 		// clone intermediate query.
-		sql:  prq.sql.Clone(),
-		path: prq.path,
+		sql:       prq.sql.Clone(),
+		path:      prq.path,
+		modifiers: append([]func(*sql.Selector){}, prq.modifiers...),
 	}
 }
 
@@ -391,6 +393,9 @@ func (prq *PruningRuleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(prq.modifiers) > 0 {
+		_spec.Modifiers = prq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -444,6 +449,9 @@ func (prq *PruningRuleQuery) loadBackupProfile(ctx context.Context, query *Backu
 
 func (prq *PruningRuleQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := prq.querySpec()
+	if len(prq.modifiers) > 0 {
+		_spec.Modifiers = prq.modifiers
+	}
 	_spec.Node.Columns = prq.ctx.Fields
 	if len(prq.ctx.Fields) > 0 {
 		_spec.Unique = prq.ctx.Unique != nil && *prq.ctx.Unique
@@ -506,6 +514,9 @@ func (prq *PruningRuleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if prq.ctx.Unique != nil && *prq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range prq.modifiers {
+		m(selector)
+	}
 	for _, p := range prq.predicates {
 		p(selector)
 	}
@@ -521,6 +532,12 @@ func (prq *PruningRuleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (prq *PruningRuleQuery) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
+	prq.modifiers = append(prq.modifiers, modifiers...)
+	return prq.Select()
 }
 
 // PruningRuleGroupBy is the group-by builder for PruningRule entities.
@@ -611,4 +628,10 @@ func (prs *PruningRuleSelect) sqlScan(ctx context.Context, root *PruningRuleQuer
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (prs *PruningRuleSelect) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
+	prs.modifiers = append(prs.modifiers, modifiers...)
+	return prs
 }

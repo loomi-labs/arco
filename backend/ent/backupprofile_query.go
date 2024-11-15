@@ -33,6 +33,7 @@ type BackupProfileQuery struct {
 	withBackupSchedule *BackupScheduleQuery
 	withPruningRule    *PruningRuleQuery
 	withNotifications  *NotificationQuery
+	modifiers          []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -377,8 +378,9 @@ func (bpq *BackupProfileQuery) Clone() *BackupProfileQuery {
 		withPruningRule:    bpq.withPruningRule.Clone(),
 		withNotifications:  bpq.withNotifications.Clone(),
 		// clone intermediate query.
-		sql:  bpq.sql.Clone(),
-		path: bpq.path,
+		sql:       bpq.sql.Clone(),
+		path:      bpq.path,
+		modifiers: append([]func(*sql.Selector){}, bpq.modifiers...),
 	}
 }
 
@@ -531,6 +533,9 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(bpq.modifiers) > 0 {
+		_spec.Modifiers = bpq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -759,6 +764,9 @@ func (bpq *BackupProfileQuery) loadNotifications(ctx context.Context, query *Not
 
 func (bpq *BackupProfileQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := bpq.querySpec()
+	if len(bpq.modifiers) > 0 {
+		_spec.Modifiers = bpq.modifiers
+	}
 	_spec.Node.Columns = bpq.ctx.Fields
 	if len(bpq.ctx.Fields) > 0 {
 		_spec.Unique = bpq.ctx.Unique != nil && *bpq.ctx.Unique
@@ -821,6 +829,9 @@ func (bpq *BackupProfileQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if bpq.ctx.Unique != nil && *bpq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range bpq.modifiers {
+		m(selector)
+	}
 	for _, p := range bpq.predicates {
 		p(selector)
 	}
@@ -836,6 +847,12 @@ func (bpq *BackupProfileQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (bpq *BackupProfileQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
+	bpq.modifiers = append(bpq.modifiers, modifiers...)
+	return bpq.Select()
 }
 
 // BackupProfileGroupBy is the group-by builder for BackupProfile entities.
@@ -926,4 +943,10 @@ func (bps *BackupProfileSelect) sqlScan(ctx context.Context, root *BackupProfile
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (bps *BackupProfileSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
+	bps.modifiers = append(bps.modifiers, modifiers...)
+	return bps
 }

@@ -20,8 +20,9 @@ import (
 // ArchiveUpdate is the builder for updating Archive entities.
 type ArchiveUpdate struct {
 	config
-	hooks    []Hook
-	mutation *ArchiveMutation
+	hooks     []Hook
+	mutation  *ArchiveMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the ArchiveUpdate builder.
@@ -190,6 +191,12 @@ func (au *ArchiveUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (au *ArchiveUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdate {
+	au.modifiers = append(au.modifiers, modifiers...)
+	return au
+}
+
 func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := au.check(); err != nil {
 		return n, err
@@ -278,6 +285,7 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(au.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{archive.Label}
@@ -293,9 +301,10 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ArchiveUpdateOne is the builder for updating a single Archive entity.
 type ArchiveUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *ArchiveMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *ArchiveMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -471,6 +480,12 @@ func (auo *ArchiveUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (auo *ArchiveUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdateOne {
+	auo.modifiers = append(auo.modifiers, modifiers...)
+	return auo
+}
+
 func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err error) {
 	if err := auo.check(); err != nil {
 		return _node, err
@@ -576,6 +591,7 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(auo.modifiers...)
 	_node = &Archive{config: auo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

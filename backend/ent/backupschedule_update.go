@@ -19,8 +19,9 @@ import (
 // BackupScheduleUpdate is the builder for updating BackupSchedule entities.
 type BackupScheduleUpdate struct {
 	config
-	hooks    []Hook
-	mutation *BackupScheduleMutation
+	hooks     []Hook
+	mutation  *BackupScheduleMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the BackupScheduleUpdate builder.
@@ -267,6 +268,12 @@ func (bsu *BackupScheduleUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bsu *BackupScheduleUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupScheduleUpdate {
+	bsu.modifiers = append(bsu.modifiers, modifiers...)
+	return bsu
+}
+
 func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bsu.check(); err != nil {
 		return n, err
@@ -350,6 +357,7 @@ func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bsu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, bsu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupschedule.Label}
@@ -365,9 +373,10 @@ func (bsu *BackupScheduleUpdate) sqlSave(ctx context.Context) (n int, err error)
 // BackupScheduleUpdateOne is the builder for updating a single BackupSchedule entity.
 type BackupScheduleUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *BackupScheduleMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *BackupScheduleMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -621,6 +630,12 @@ func (bsuo *BackupScheduleUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (bsuo *BackupScheduleUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupScheduleUpdateOne {
+	bsuo.modifiers = append(bsuo.modifiers, modifiers...)
+	return bsuo
+}
+
 func (bsuo *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *BackupSchedule, err error) {
 	if err := bsuo.check(); err != nil {
 		return _node, err
@@ -721,6 +736,7 @@ func (bsuo *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *Backup
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(bsuo.modifiers...)
 	_node = &BackupSchedule{config: bsuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
