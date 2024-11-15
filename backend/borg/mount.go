@@ -1,25 +1,26 @@
 package borg
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 )
 
-func (b *borg) MountRepository(repoUrl string, password string, mountPath string) error {
-	return b.mount(repoUrl, nil, password, mountPath)
+func (b *borg) MountRepository(ctx context.Context, repoUrl string, password string, mountPath string) error {
+	return b.mount(ctx, repoUrl, nil, password, mountPath)
 }
 
-func (b *borg) MountArchive(repoUrl string, archive string, password string, mountPath string) error {
-	return b.mount(repoUrl, &archive, password, mountPath)
+func (b *borg) MountArchive(ctx context.Context, repoUrl string, archive string, password string, mountPath string) error {
+	return b.mount(ctx, repoUrl, &archive, password, mountPath)
 }
 
-func (b *borg) mount(repoUrl string, archive *string, password string, mountPath string) error {
+func (b *borg) mount(ctx context.Context, repoUrl string, archive *string, password string, mountPath string) error {
 	archiveOrRepo := repoUrl
 	if archive != nil {
 		archiveOrRepo = fmt.Sprintf("%s::%s", repoUrl, *archive)
 	}
 
-	cmd := exec.Command(b.path, "mount", archiveOrRepo, mountPath)
+	cmd := exec.CommandContext(ctx, b.path, "mount", archiveOrRepo, mountPath)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -31,8 +32,8 @@ func (b *borg) mount(repoUrl string, archive *string, password string, mountPath
 	return nil
 }
 
-func (b *borg) Umount(path string) error {
-	cmd := exec.Command(b.path, "umount", path)
+func (b *borg) Umount(ctx context.Context, path string) error {
+	cmd := exec.CommandContext(ctx, b.path, "umount", path)
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

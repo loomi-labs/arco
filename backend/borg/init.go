@@ -1,11 +1,12 @@
 package borg
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 )
 
-func (b *borg) Init(url, password string, noPassword bool) error {
+func (b *borg) Init(ctx context.Context, url, password string, noPassword bool) error {
 	cmdList := []string{"init"}
 	if noPassword {
 		cmdList = append(cmdList, "--encryption=none")
@@ -14,7 +15,7 @@ func (b *borg) Init(url, password string, noPassword bool) error {
 	}
 	cmdList = append(cmdList, url)
 
-	cmd := exec.Command(b.path, cmdList...)
+	cmd := exec.CommandContext(ctx, b.path, cmdList...)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())

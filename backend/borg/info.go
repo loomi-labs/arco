@@ -1,6 +1,7 @@
 package borg
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -14,8 +15,8 @@ type InfoResponse struct {
 	SecurityDir string        `json:"security_dir"`
 }
 
-func (b *borg) Info(url, password string) (*InfoResponse, error) {
-	cmd := exec.Command(b.path, "info", "--json", url)
+func (b *borg) Info(ctx context.Context, url, password string) (*InfoResponse, error) {
+	cmd := exec.CommandContext(ctx, b.path, "info", "--json", url)
 	cmd.Env = Env{}.WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
