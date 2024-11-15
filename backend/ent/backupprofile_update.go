@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -30,6 +31,12 @@ type BackupProfileUpdate struct {
 // Where appends a list predicates to the BackupProfileUpdate builder.
 func (bpu *BackupProfileUpdate) Where(ps ...predicate.BackupProfile) *BackupProfileUpdate {
 	bpu.mutation.Where(ps...)
+	return bpu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bpu *BackupProfileUpdate) SetUpdatedAt(t time.Time) *BackupProfileUpdate {
+	bpu.mutation.SetUpdatedAt(t)
 	return bpu
 }
 
@@ -256,6 +263,7 @@ func (bpu *BackupProfileUpdate) RemoveNotifications(n ...*Notification) *BackupP
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (bpu *BackupProfileUpdate) Save(ctx context.Context) (int, error) {
+	bpu.defaults()
 	return withHooks(ctx, bpu.sqlSave, bpu.mutation, bpu.hooks)
 }
 
@@ -278,6 +286,14 @@ func (bpu *BackupProfileUpdate) Exec(ctx context.Context) error {
 func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
 	if err := bpu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (bpu *BackupProfileUpdate) defaults() {
+	if _, ok := bpu.mutation.UpdatedAt(); !ok {
+		v := backupprofile.UpdateDefaultUpdatedAt()
+		bpu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -307,6 +323,9 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := bpu.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := bpu.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
@@ -546,6 +565,12 @@ type BackupProfileUpdateOne struct {
 	mutation *BackupProfileMutation
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (bpuo *BackupProfileUpdateOne) SetUpdatedAt(t time.Time) *BackupProfileUpdateOne {
+	bpuo.mutation.SetUpdatedAt(t)
+	return bpuo
+}
+
 // SetName sets the "name" field.
 func (bpuo *BackupProfileUpdateOne) SetName(s string) *BackupProfileUpdateOne {
 	bpuo.mutation.SetName(s)
@@ -782,6 +807,7 @@ func (bpuo *BackupProfileUpdateOne) Select(field string, fields ...string) *Back
 
 // Save executes the query and returns the updated BackupProfile entity.
 func (bpuo *BackupProfileUpdateOne) Save(ctx context.Context) (*BackupProfile, error) {
+	bpuo.defaults()
 	return withHooks(ctx, bpuo.sqlSave, bpuo.mutation, bpuo.hooks)
 }
 
@@ -804,6 +830,14 @@ func (bpuo *BackupProfileUpdateOne) Exec(ctx context.Context) error {
 func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
 	if err := bpuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (bpuo *BackupProfileUpdateOne) defaults() {
+	if _, ok := bpuo.mutation.UpdatedAt(); !ok {
+		v := backupprofile.UpdateDefaultUpdatedAt()
+		bpuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -850,6 +884,9 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := bpuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := bpuo.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)

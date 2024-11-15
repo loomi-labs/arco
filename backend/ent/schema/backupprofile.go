@@ -5,12 +5,19 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 	"regexp"
 )
 
 // BackupProfile holds the schema definition for the BackupProfile entity.
 type BackupProfile struct {
 	ent.Schema
+}
+
+func (BackupProfile) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
 }
 
 // Fields of the BackupProfile.

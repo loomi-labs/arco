@@ -36,6 +36,20 @@ func (nc *NotificationCreate) SetNillableCreatedAt(t *time.Time) *NotificationCr
 	return nc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (nc *NotificationCreate) SetUpdatedAt(t time.Time) *NotificationCreate {
+	nc.mutation.SetUpdatedAt(t)
+	return nc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (nc *NotificationCreate) SetNillableUpdatedAt(t *time.Time) *NotificationCreate {
+	if t != nil {
+		nc.SetUpdatedAt(*t)
+	}
+	return nc
+}
+
 // SetMessage sets the "message" field.
 func (nc *NotificationCreate) SetMessage(s string) *NotificationCreate {
 	nc.mutation.SetMessage(s)
@@ -140,8 +154,12 @@ func (nc *NotificationCreate) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (nc *NotificationCreate) defaults() {
 	if _, ok := nc.mutation.CreatedAt(); !ok {
-		v := notification.DefaultCreatedAt
+		v := notification.DefaultCreatedAt()
 		nc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := nc.mutation.UpdatedAt(); !ok {
+		v := notification.DefaultUpdatedAt()
+		nc.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := nc.mutation.Seen(); !ok {
 		v := notification.DefaultSeen
@@ -153,6 +171,9 @@ func (nc *NotificationCreate) defaults() {
 func (nc *NotificationCreate) check() error {
 	if _, ok := nc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Notification.created_at"`)}
+	}
+	if _, ok := nc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Notification.updated_at"`)}
 	}
 	if _, ok := nc.mutation.Message(); !ok {
 		return &ValidationError{Name: "message", err: errors.New(`ent: missing required field "Notification.message"`)}
@@ -214,6 +235,10 @@ func (nc *NotificationCreate) createSpec() (*Notification, *sqlgraph.CreateSpec)
 	if value, ok := nc.mutation.CreatedAt(); ok {
 		_spec.SetField(notification.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := nc.mutation.UpdatedAt(); ok {
+		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := nc.mutation.Message(); ok {
 		_spec.SetField(notification.FieldMessage, field.TypeString, value)

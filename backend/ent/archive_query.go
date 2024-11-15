@@ -335,12 +335,12 @@ func (aq *ArchiveQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *Ar
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Archive.Query().
-//		GroupBy(archive.FieldName).
+//		GroupBy(archive.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (aq *ArchiveQuery) GroupBy(field string, fields ...string) *ArchiveGroupBy {
@@ -358,11 +358,11 @@ func (aq *ArchiveQuery) GroupBy(field string, fields ...string) *ArchiveGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.Archive.Query().
-//		Select(archive.FieldName).
+//		Select(archive.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (aq *ArchiveQuery) Select(fields ...string) *ArchiveSelect {
 	aq.ctx.Fields = append(aq.ctx.Fields, fields...)

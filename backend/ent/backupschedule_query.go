@@ -299,12 +299,12 @@ func (bsq *BackupScheduleQuery) WithBackupProfile(opts ...func(*BackupProfileQue
 // Example:
 //
 //	var v []struct {
-//		UpdatedAt time.Time `json:"updatedAt"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.BackupSchedule.Query().
-//		GroupBy(backupschedule.FieldUpdatedAt).
+//		GroupBy(backupschedule.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupScheduleGroupBy {
@@ -322,11 +322,11 @@ func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupS
 // Example:
 //
 //	var v []struct {
-//		UpdatedAt time.Time `json:"updatedAt"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.BackupSchedule.Query().
-//		Select(backupschedule.FieldUpdatedAt).
+//		Select(backupschedule.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (bsq *BackupScheduleQuery) Select(fields ...string) *BackupScheduleSelect {
 	bsq.ctx.Fields = append(bsq.ctx.Fields, fields...)

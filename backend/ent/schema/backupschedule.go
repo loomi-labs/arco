@@ -5,7 +5,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"time"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
 // BackupSchedule holds the schema definition for the BackupSchedule entity.
@@ -13,17 +13,17 @@ type BackupSchedule struct {
 	ent.Schema
 }
 
+func (BackupSchedule) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
+}
+
 // Fields of the BackupSchedule.
-// Rules are enforced via hooks.
-// Fields for the rules are immutable to simplify the rules. To change the schedule, a new schedule must be created.
 func (BackupSchedule) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("id").
 			StructTag(`json:"id"`),
-		field.Time("updated_at").
-			StructTag(`json:"updatedAt"`).
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.Enum("mode").
 			StructTag(`json:"mode"`).
 			Values("disabled", "hourly", "daily", "weekly", "monthly").

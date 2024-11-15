@@ -19,10 +19,12 @@ type Archive struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updatedAt"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name"`
-	// CreatedAt holds the value of the "createdAt" field.
-	CreatedAt time.Time `json:"createdAt"`
 	// Duration holds the value of the "duration" field.
 	Duration float64 `json:"duration"`
 	// BorgID holds the value of the "borg_id" field.
@@ -84,7 +86,7 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case archive.FieldName, archive.FieldBorgID:
 			values[i] = new(sql.NullString)
-		case archive.FieldCreatedAt:
+		case archive.FieldCreatedAt, archive.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case archive.ForeignKeys[0]: // archive_repository
 			values[i] = new(sql.NullInt64)
@@ -113,17 +115,23 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			a.ID = int(value.Int64)
+		case archive.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				a.CreatedAt = value.Time
+			}
+		case archive.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				a.UpdatedAt = value.Time
+			}
 		case archive.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				a.Name = value.String
-			}
-		case archive.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field createdAt", values[i])
-			} else if value.Valid {
-				a.CreatedAt = value.Time
 			}
 		case archive.FieldDuration:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -210,11 +218,14 @@ func (a *Archive) String() string {
 	var builder strings.Builder
 	builder.WriteString("Archive(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(a.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(a.Name)
-	builder.WriteString(", ")
-	builder.WriteString("createdAt=")
-	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("duration=")
 	builder.WriteString(fmt.Sprintf("%v", a.Duration))

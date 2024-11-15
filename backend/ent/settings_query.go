@@ -262,12 +262,12 @@ func (sq *SettingsQuery) Clone() *SettingsQuery {
 // Example:
 //
 //	var v []struct {
-//		Theme settings.Theme `json:"theme,omitempty"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Settings.Query().
-//		GroupBy(settings.FieldTheme).
+//		GroupBy(settings.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sq *SettingsQuery) GroupBy(field string, fields ...string) *SettingsGroupBy {
@@ -285,11 +285,11 @@ func (sq *SettingsQuery) GroupBy(field string, fields ...string) *SettingsGroupB
 // Example:
 //
 //	var v []struct {
-//		Theme settings.Theme `json:"theme,omitempty"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.Settings.Query().
-//		Select(settings.FieldTheme).
+//		Select(settings.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (sq *SettingsQuery) Select(fields ...string) *SettingsSelect {
 	sq.ctx.Fields = append(sq.ctx.Fields, fields...)

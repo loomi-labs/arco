@@ -21,6 +21,20 @@ type PruningRuleCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (prc *PruningRuleCreate) SetCreatedAt(t time.Time) *PruningRuleCreate {
+	prc.mutation.SetCreatedAt(t)
+	return prc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (prc *PruningRuleCreate) SetNillableCreatedAt(t *time.Time) *PruningRuleCreate {
+	if t != nil {
+		prc.SetCreatedAt(*t)
+	}
+	return prc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (prc *PruningRuleCreate) SetUpdatedAt(t time.Time) *PruningRuleCreate {
 	prc.mutation.SetUpdatedAt(t)
@@ -171,6 +185,10 @@ func (prc *PruningRuleCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (prc *PruningRuleCreate) defaults() {
+	if _, ok := prc.mutation.CreatedAt(); !ok {
+		v := pruningrule.DefaultCreatedAt()
+		prc.mutation.SetCreatedAt(v)
+	}
 	if _, ok := prc.mutation.UpdatedAt(); !ok {
 		v := pruningrule.DefaultUpdatedAt()
 		prc.mutation.SetUpdatedAt(v)
@@ -179,6 +197,9 @@ func (prc *PruningRuleCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (prc *PruningRuleCreate) check() error {
+	if _, ok := prc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PruningRule.created_at"`)}
+	}
 	if _, ok := prc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PruningRule.updated_at"`)}
 	}
@@ -237,6 +258,10 @@ func (prc *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) 
 	if id, ok := prc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
+	}
+	if value, ok := prc.mutation.CreatedAt(); ok {
+		_spec.SetField(pruningrule.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if value, ok := prc.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)

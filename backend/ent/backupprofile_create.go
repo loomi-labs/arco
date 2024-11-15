@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -22,6 +23,34 @@ type BackupProfileCreate struct {
 	config
 	mutation *BackupProfileMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (bpc *BackupProfileCreate) SetCreatedAt(t time.Time) *BackupProfileCreate {
+	bpc.mutation.SetCreatedAt(t)
+	return bpc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillableCreatedAt(t *time.Time) *BackupProfileCreate {
+	if t != nil {
+		bpc.SetCreatedAt(*t)
+	}
+	return bpc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bpc *BackupProfileCreate) SetUpdatedAt(t time.Time) *BackupProfileCreate {
+	bpc.mutation.SetUpdatedAt(t)
+	return bpc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillableUpdatedAt(t *time.Time) *BackupProfileCreate {
+	if t != nil {
+		bpc.SetUpdatedAt(*t)
+	}
+	return bpc
 }
 
 // SetName sets the "name" field.
@@ -178,6 +207,14 @@ func (bpc *BackupProfileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bpc *BackupProfileCreate) defaults() {
+	if _, ok := bpc.mutation.CreatedAt(); !ok {
+		v := backupprofile.DefaultCreatedAt()
+		bpc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := bpc.mutation.UpdatedAt(); !ok {
+		v := backupprofile.DefaultUpdatedAt()
+		bpc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := bpc.mutation.BackupPaths(); !ok {
 		v := backupprofile.DefaultBackupPaths
 		bpc.mutation.SetBackupPaths(v)
@@ -190,6 +227,12 @@ func (bpc *BackupProfileCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpc *BackupProfileCreate) check() error {
+	if _, ok := bpc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BackupProfile.created_at"`)}
+	}
+	if _, ok := bpc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BackupProfile.updated_at"`)}
+	}
 	if _, ok := bpc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "BackupProfile.name"`)}
 	}
@@ -251,6 +294,14 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 	if id, ok := bpc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
+	}
+	if value, ok := bpc.mutation.CreatedAt(); ok {
+		_spec.SetField(backupprofile.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := bpc.mutation.UpdatedAt(); ok {
+		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := bpc.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)

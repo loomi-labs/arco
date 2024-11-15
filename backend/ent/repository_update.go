@@ -31,6 +31,12 @@ func (ru *RepositoryUpdate) Where(ps ...predicate.Repository) *RepositoryUpdate 
 	return ru
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (ru *RepositoryUpdate) SetUpdatedAt(t time.Time) *RepositoryUpdate {
+	ru.mutation.SetUpdatedAt(t)
+	return ru
+}
+
 // SetName sets the "name" field.
 func (ru *RepositoryUpdate) SetName(s string) *RepositoryUpdate {
 	ru.mutation.SetName(s)
@@ -334,6 +340,7 @@ func (ru *RepositoryUpdate) RemoveNotifications(n ...*Notification) *RepositoryU
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (ru *RepositoryUpdate) Save(ctx context.Context) (int, error) {
+	ru.defaults()
 	return withHooks(ctx, ru.sqlSave, ru.mutation, ru.hooks)
 }
 
@@ -359,6 +366,14 @@ func (ru *RepositoryUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ru *RepositoryUpdate) defaults() {
+	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		v := repository.UpdateDefaultUpdatedAt()
+		ru.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
@@ -367,6 +382,9 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ru.mutation.UpdatedAt(); ok {
+		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ru.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
@@ -572,6 +590,12 @@ type RepositoryUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *RepositoryMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ruo *RepositoryUpdateOne) SetUpdatedAt(t time.Time) *RepositoryUpdateOne {
+	ruo.mutation.SetUpdatedAt(t)
+	return ruo
 }
 
 // SetName sets the "name" field.
@@ -890,6 +914,7 @@ func (ruo *RepositoryUpdateOne) Select(field string, fields ...string) *Reposito
 
 // Save executes the query and returns the updated Repository entity.
 func (ruo *RepositoryUpdateOne) Save(ctx context.Context) (*Repository, error) {
+	ruo.defaults()
 	return withHooks(ctx, ruo.sqlSave, ruo.mutation, ruo.hooks)
 }
 
@@ -912,6 +937,14 @@ func (ruo *RepositoryUpdateOne) Exec(ctx context.Context) error {
 func (ruo *RepositoryUpdateOne) ExecX(ctx context.Context) {
 	if err := ruo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (ruo *RepositoryUpdateOne) defaults() {
+	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		v := repository.UpdateDefaultUpdatedAt()
+		ruo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -940,6 +973,9 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ruo.mutation.UpdatedAt(); ok {
+		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ruo.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)

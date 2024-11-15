@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -24,6 +25,12 @@ type SettingsUpdate struct {
 // Where appends a list predicates to the SettingsUpdate builder.
 func (su *SettingsUpdate) Where(ps ...predicate.Settings) *SettingsUpdate {
 	su.mutation.Where(ps...)
+	return su
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (su *SettingsUpdate) SetUpdatedAt(t time.Time) *SettingsUpdate {
+	su.mutation.SetUpdatedAt(t)
 	return su
 }
 
@@ -62,6 +69,7 @@ func (su *SettingsUpdate) Mutation() *SettingsMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (su *SettingsUpdate) Save(ctx context.Context) (int, error) {
+	su.defaults()
 	return withHooks(ctx, su.sqlSave, su.mutation, su.hooks)
 }
 
@@ -87,6 +95,14 @@ func (su *SettingsUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (su *SettingsUpdate) defaults() {
+	if _, ok := su.mutation.UpdatedAt(); !ok {
+		v := settings.UpdateDefaultUpdatedAt()
+		su.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (su *SettingsUpdate) check() error {
 	if v, ok := su.mutation.Theme(); ok {
@@ -108,6 +124,9 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := su.mutation.UpdatedAt(); ok {
+		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := su.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
@@ -133,6 +152,12 @@ type SettingsUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SettingsMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (suo *SettingsUpdateOne) SetUpdatedAt(t time.Time) *SettingsUpdateOne {
+	suo.mutation.SetUpdatedAt(t)
+	return suo
 }
 
 // SetTheme sets the "theme" field.
@@ -183,6 +208,7 @@ func (suo *SettingsUpdateOne) Select(field string, fields ...string) *SettingsUp
 
 // Save executes the query and returns the updated Settings entity.
 func (suo *SettingsUpdateOne) Save(ctx context.Context) (*Settings, error) {
+	suo.defaults()
 	return withHooks(ctx, suo.sqlSave, suo.mutation, suo.hooks)
 }
 
@@ -205,6 +231,14 @@ func (suo *SettingsUpdateOne) Exec(ctx context.Context) error {
 func (suo *SettingsUpdateOne) ExecX(ctx context.Context) {
 	if err := suo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (suo *SettingsUpdateOne) defaults() {
+	if _, ok := suo.mutation.UpdatedAt(); !ok {
+		v := settings.UpdateDefaultUpdatedAt()
+		suo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -246,6 +280,9 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := suo.mutation.UpdatedAt(); ok {
+		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := suo.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)

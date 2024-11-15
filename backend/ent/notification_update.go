@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -24,6 +25,12 @@ type NotificationUpdate struct {
 // Where appends a list predicates to the NotificationUpdate builder.
 func (nu *NotificationUpdate) Where(ps ...predicate.Notification) *NotificationUpdate {
 	nu.mutation.Where(ps...)
+	return nu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (nu *NotificationUpdate) SetUpdatedAt(t time.Time) *NotificationUpdate {
+	nu.mutation.SetUpdatedAt(t)
 	return nu
 }
 
@@ -68,6 +75,7 @@ func (nu *NotificationUpdate) Mutation() *NotificationMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (nu *NotificationUpdate) Save(ctx context.Context) (int, error) {
+	nu.defaults()
 	return withHooks(ctx, nu.sqlSave, nu.mutation, nu.hooks)
 }
 
@@ -90,6 +98,14 @@ func (nu *NotificationUpdate) Exec(ctx context.Context) error {
 func (nu *NotificationUpdate) ExecX(ctx context.Context) {
 	if err := nu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (nu *NotificationUpdate) defaults() {
+	if _, ok := nu.mutation.UpdatedAt(); !ok {
+		v := notification.UpdateDefaultUpdatedAt()
+		nu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -121,6 +137,9 @@ func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := nu.mutation.UpdatedAt(); ok {
+		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := nu.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)
 	}
@@ -148,6 +167,12 @@ type NotificationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NotificationMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (nuo *NotificationUpdateOne) SetUpdatedAt(t time.Time) *NotificationUpdateOne {
+	nuo.mutation.SetUpdatedAt(t)
+	return nuo
 }
 
 // SetSeen sets the "seen" field.
@@ -204,6 +229,7 @@ func (nuo *NotificationUpdateOne) Select(field string, fields ...string) *Notifi
 
 // Save executes the query and returns the updated Notification entity.
 func (nuo *NotificationUpdateOne) Save(ctx context.Context) (*Notification, error) {
+	nuo.defaults()
 	return withHooks(ctx, nuo.sqlSave, nuo.mutation, nuo.hooks)
 }
 
@@ -226,6 +252,14 @@ func (nuo *NotificationUpdateOne) Exec(ctx context.Context) error {
 func (nuo *NotificationUpdateOne) ExecX(ctx context.Context) {
 	if err := nuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (nuo *NotificationUpdateOne) defaults() {
+	if _, ok := nuo.mutation.UpdatedAt(); !ok {
+		v := notification.UpdateDefaultUpdatedAt()
+		nuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -273,6 +307,9 @@ func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notificat
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := nuo.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)

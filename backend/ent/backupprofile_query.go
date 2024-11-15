@@ -443,12 +443,12 @@ func (bpq *BackupProfileQuery) WithNotifications(opts ...func(*NotificationQuery
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.BackupProfile.Query().
-//		GroupBy(backupprofile.FieldName).
+//		GroupBy(backupprofile.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bpq *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupProfileGroupBy {
@@ -466,11 +466,11 @@ func (bpq *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupPr
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.BackupProfile.Query().
-//		Select(backupprofile.FieldName).
+//		Select(backupprofile.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (bpq *BackupProfileQuery) Select(fields ...string) *BackupProfileSelect {
 	bpq.ctx.Fields = append(bpq.ctx.Fields, fields...)

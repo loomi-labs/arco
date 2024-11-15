@@ -30,6 +30,12 @@ func (au *ArchiveUpdate) Where(ps ...predicate.Archive) *ArchiveUpdate {
 	return au
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (au *ArchiveUpdate) SetUpdatedAt(t time.Time) *ArchiveUpdate {
+	au.mutation.SetUpdatedAt(t)
+	return au
+}
+
 // SetName sets the "name" field.
 func (au *ArchiveUpdate) SetName(s string) *ArchiveUpdate {
 	au.mutation.SetName(s)
@@ -40,20 +46,6 @@ func (au *ArchiveUpdate) SetName(s string) *ArchiveUpdate {
 func (au *ArchiveUpdate) SetNillableName(s *string) *ArchiveUpdate {
 	if s != nil {
 		au.SetName(*s)
-	}
-	return au
-}
-
-// SetCreatedAt sets the "createdAt" field.
-func (au *ArchiveUpdate) SetCreatedAt(t time.Time) *ArchiveUpdate {
-	au.mutation.SetCreatedAt(t)
-	return au
-}
-
-// SetNillableCreatedAt sets the "createdAt" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableCreatedAt(t *time.Time) *ArchiveUpdate {
-	if t != nil {
-		au.SetCreatedAt(*t)
 	}
 	return au
 }
@@ -156,6 +148,7 @@ func (au *ArchiveUpdate) ClearBackupProfile() *ArchiveUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (au *ArchiveUpdate) Save(ctx context.Context) (int, error) {
+	au.defaults()
 	return withHooks(ctx, au.sqlSave, au.mutation, au.hooks)
 }
 
@@ -181,6 +174,14 @@ func (au *ArchiveUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (au *ArchiveUpdate) defaults() {
+	if _, ok := au.mutation.UpdatedAt(); !ok {
+		v := archive.UpdateDefaultUpdatedAt()
+		au.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (au *ArchiveUpdate) check() error {
 	if au.mutation.RepositoryCleared() && len(au.mutation.RepositoryIDs()) > 0 {
@@ -201,11 +202,11 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := au.mutation.UpdatedAt(); ok {
+		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := au.mutation.Name(); ok {
 		_spec.SetField(archive.FieldName, field.TypeString, value)
-	}
-	if value, ok := au.mutation.CreatedAt(); ok {
-		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := au.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
@@ -297,6 +298,12 @@ type ArchiveUpdateOne struct {
 	mutation *ArchiveMutation
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (auo *ArchiveUpdateOne) SetUpdatedAt(t time.Time) *ArchiveUpdateOne {
+	auo.mutation.SetUpdatedAt(t)
+	return auo
+}
+
 // SetName sets the "name" field.
 func (auo *ArchiveUpdateOne) SetName(s string) *ArchiveUpdateOne {
 	auo.mutation.SetName(s)
@@ -307,20 +314,6 @@ func (auo *ArchiveUpdateOne) SetName(s string) *ArchiveUpdateOne {
 func (auo *ArchiveUpdateOne) SetNillableName(s *string) *ArchiveUpdateOne {
 	if s != nil {
 		auo.SetName(*s)
-	}
-	return auo
-}
-
-// SetCreatedAt sets the "createdAt" field.
-func (auo *ArchiveUpdateOne) SetCreatedAt(t time.Time) *ArchiveUpdateOne {
-	auo.mutation.SetCreatedAt(t)
-	return auo
-}
-
-// SetNillableCreatedAt sets the "createdAt" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableCreatedAt(t *time.Time) *ArchiveUpdateOne {
-	if t != nil {
-		auo.SetCreatedAt(*t)
 	}
 	return auo
 }
@@ -436,6 +429,7 @@ func (auo *ArchiveUpdateOne) Select(field string, fields ...string) *ArchiveUpda
 
 // Save executes the query and returns the updated Archive entity.
 func (auo *ArchiveUpdateOne) Save(ctx context.Context) (*Archive, error) {
+	auo.defaults()
 	return withHooks(ctx, auo.sqlSave, auo.mutation, auo.hooks)
 }
 
@@ -458,6 +452,14 @@ func (auo *ArchiveUpdateOne) Exec(ctx context.Context) error {
 func (auo *ArchiveUpdateOne) ExecX(ctx context.Context) {
 	if err := auo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (auo *ArchiveUpdateOne) defaults() {
+	if _, ok := auo.mutation.UpdatedAt(); !ok {
+		v := archive.UpdateDefaultUpdatedAt()
+		auo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -498,11 +500,11 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 			}
 		}
 	}
+	if value, ok := auo.mutation.UpdatedAt(); ok {
+		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := auo.mutation.Name(); ok {
 		_spec.SetField(archive.FieldName, field.TypeString, value)
-	}
-	if value, ok := auo.mutation.CreatedAt(); ok {
-		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := auo.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)

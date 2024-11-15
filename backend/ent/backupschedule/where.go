@@ -55,6 +55,11 @@ func IDLTE(id int) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldLTE(FieldID, id))
 }
 
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldCreatedAt, v))
+}
+
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldUpdatedAt, v))
@@ -93,6 +98,46 @@ func LastRun(v time.Time) predicate.BackupSchedule {
 // LastRunStatus applies equality check predicate on the "last_run_status" field. It's identical to LastRunStatusEQ.
 func LastRunStatus(v string) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldLastRunStatus, v))
+}
+
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldCreatedAt, v))
+}
+
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldCreatedAt, v))
+}
+
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldCreatedAt, v))
+}
+
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.

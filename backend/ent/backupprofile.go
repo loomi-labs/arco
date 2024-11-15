@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -19,6 +20,10 @@ type BackupProfile struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updatedAt"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name"`
 	// Prefix holds the value of the "prefix" field.
@@ -112,6 +117,8 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
 			values[i] = new(sql.NullString)
+		case backupprofile.FieldCreatedAt, backupprofile.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -133,6 +140,18 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			bp.ID = int(value.Int64)
+		case backupprofile.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				bp.CreatedAt = value.Time
+			}
+		case backupprofile.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				bp.UpdatedAt = value.Time
+			}
 		case backupprofile.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -228,6 +247,12 @@ func (bp *BackupProfile) String() string {
 	var builder strings.Builder
 	builder.WriteString("BackupProfile(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bp.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(bp.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(bp.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(bp.Name)
 	builder.WriteString(", ")

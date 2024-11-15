@@ -3,11 +3,18 @@ package schema
 import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
 // Settings holds the schema definition for the Settings entity.
 type Settings struct {
 	ent.Schema
+}
+
+func (Settings) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
 }
 
 // Fields of the Settings.

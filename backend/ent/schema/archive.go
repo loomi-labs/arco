@@ -5,11 +5,18 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
 // Archive holds the schema definition for the Archive entity.
 type Archive struct {
 	ent.Schema
+}
+
+func (Archive) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.TimestampMixin{},
+	}
 }
 
 // Fields of the Archive.
@@ -19,8 +26,6 @@ func (Archive) Fields() []ent.Field {
 			StructTag(`json:"id"`),
 		field.String("name").
 			StructTag(`json:"name"`),
-		field.Time("createdAt").
-			StructTag(`json:"createdAt"`),
 		// Duration is the time it took to create the archive in nanoseconds.
 		field.Float("duration").
 			StructTag(`json:"duration"`),

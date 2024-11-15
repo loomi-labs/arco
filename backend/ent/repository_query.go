@@ -371,12 +371,12 @@ func (rq *RepositoryQuery) WithNotifications(opts ...func(*NotificationQuery)) *
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Repository.Query().
-//		GroupBy(repository.FieldName).
+//		GroupBy(repository.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (rq *RepositoryQuery) GroupBy(field string, fields ...string) *RepositoryGroupBy {
@@ -394,11 +394,11 @@ func (rq *RepositoryQuery) GroupBy(field string, fields ...string) *RepositoryGr
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name"`
+//		CreatedAt time.Time `json:"createdAt"`
 //	}
 //
 //	client.Repository.Query().
-//		Select(repository.FieldName).
+//		Select(repository.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (rq *RepositoryQuery) Select(fields ...string) *RepositorySelect {
 	rq.ctx.Fields = append(rq.ctx.Fields, fields...)
