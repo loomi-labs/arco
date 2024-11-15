@@ -298,6 +298,11 @@ func (rc *RepositoryCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Repository.name"`)}
 	}
+	if v, ok := rc.mutation.Name(); ok {
+		if err := repository.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
+		}
+	}
 	if _, ok := rc.mutation.Location(); !ok {
 		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "Repository.location"`)}
 	}

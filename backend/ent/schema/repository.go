@@ -5,6 +5,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
+	"regexp"
 )
 
 // Repository holds the schema definition for the Repository entity.
@@ -18,13 +19,23 @@ func (Repository) Mixin() []ent.Mixin {
 	}
 }
 
+var (
+	ValRepositoryMinNameLength = 3
+	ValRepositoryMaxNameLength = 30
+	ValRepositoryNamePattern   = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`) // Only letters, numbers, hyphens, and underscores
+)
+
 // Fields of the Repository.
 func (Repository) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("id").
 			StructTag(`json:"id"`),
 		field.String("name").
-			StructTag(`json:"name"`),
+			StructTag(`json:"name"`).
+			MinLen(ValRepositoryMinNameLength).
+			MaxLen(ValRepositoryMaxNameLength).
+			Match(ValRepositoryNamePattern).
+			Unique(),
 		field.String("location").
 			StructTag(`json:"location"`).
 			Unique(),
