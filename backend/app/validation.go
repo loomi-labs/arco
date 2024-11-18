@@ -118,22 +118,24 @@ func (v *ValidationClient) RepoName(name string) (string, error) {
 	return "", nil
 }
 
-func (v *ValidationClient) RepoPath(path string) (string, error) {
+func (v *ValidationClient) RepoPath(path string, isLocal bool) (string, error) {
 	if path == "" {
 		return "Path is required", nil
 	}
-	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
-		return "Path must start with / or ~", nil
-	}
-	if !v.backupClient().DoesPathExist(path) {
-		return "Path does not exist", nil
-	}
-	if !v.backupClient().IsDirectory(path) {
-		return "Path is not a folder", nil
-	}
-	if !v.backupClient().IsDirectoryEmpty(path) {
-		if !v.repoClient().IsBorgRepository(path) {
-			return "Folder must be empty", nil
+	if isLocal {
+		if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
+			return "Path must start with / or ~", nil
+		}
+		if !v.backupClient().DoesPathExist(path) {
+			return "Path does not exist", nil
+		}
+		if !v.backupClient().IsDirectory(path) {
+			return "Path is not a folder", nil
+		}
+		if !v.backupClient().IsDirectoryEmpty(path) {
+			if !v.repoClient().IsBorgRepository(path) {
+				return "Folder must be empty", nil
+			}
 		}
 	}
 

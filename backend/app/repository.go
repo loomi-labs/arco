@@ -125,18 +125,17 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 }
 
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
-	if r.IsBorgRepository(util.ExpandPath(location)) {
-		connection, err := r.testRepoConnection(location, password)
-		if err != nil {
-			return nil, err
-		}
-		if !connection {
-			return nil, fmt.Errorf("could not connect to repository")
-		}
-	} else {
+	result, err := r.testRepoConnection(location, password)
+	if err != nil {
+		return nil, err
+	}
+	if !result.Success && !result.IsBorgRepo {
+		// Create the repository if it does not exist
 		if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
 			return nil, err
 		}
+	} else if !result.Success {
+		return nil, fmt.Errorf("could not connect to repository")
 	}
 
 	// Create a new repository entity
@@ -328,49 +327,69 @@ func (r *RepositoryClient) IsBorgRepository(path string) bool {
 }
 
 type TestRepoConnectionResult struct {
-	Success       bool `json:"success"`
-	NeedsPassword bool `json:"needsPassword"`
+	Success         bool `json:"success"`
+	NeedsPassword   bool `json:"needsPassword"`
+	IsPasswordValid bool `json:"isPasswordValid"`
+	IsBorgRepo      bool `json:"isBorgRepo"`
 }
 
-func (r *RepositoryClient) testRepoConnection(path, password string) (bool, error) {
+type testRepoConnectionResult struct {
+	Success         bool `json:"success"`
+	IsPasswordValid bool `json:"isPasswordValid"`
+	IsBorgRepo      bool `json:"isBorgRepo"`
+}
+
+func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoConnectionResult, error) {
+	result := testRepoConnectionResult{
+		Success:         false,
+		IsPasswordValid: false,
+		IsBorgRepo:      false,
+	}
 	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
 	if err != nil {
 		if errors.As(err, &borg.PassphraseWrong{}) {
-			return false, nil
+			result.IsBorgRepo = true
+			return result, nil
 		}
-		return false, err
+		if errors.As(err, &borg.RepositoryDoesNotExist{}) {
+			return result, nil
+		}
+		return result, err
 	}
-	return true, nil
+	result.Success = true
+	result.IsPasswordValid = true
+	result.IsBorgRepo = true
+	return result, nil
 }
 
 func (r *RepositoryClient) TestRepoConnection(path, password string) (TestRepoConnectionResult, error) {
-	result := TestRepoConnectionResult{
-		Success:       false,
-		NeedsPassword: false,
-	}
-
-	randPassword, err := uuid.NewRandom()
-	if err != nil {
-		return result, err
-	}
-	success, err := r.testRepoConnection(path, randPassword.String())
-	if err != nil {
-		return result, err
-	}
-	if success {
-		result.Success = true
-		result.NeedsPassword = false
+	toTestRepoConnectionResult := func(t testRepoConnectionResult, err error, needsPassword bool) (TestRepoConnectionResult, error) {
+		if err != nil {
+			return TestRepoConnectionResult{}, err
+		}
+		result := TestRepoConnectionResult{}
+		result.Success = t.Success
+		result.IsPasswordValid = t.IsPasswordValid
+		result.IsBorgRepo = t.IsBorgRepo
+		result.NeedsPassword = needsPassword
 		return result, nil
 	}
 
-	result.NeedsPassword = true
-
-	if password != "" {
-		success, err = r.testRepoConnection(path, password)
-		if err != nil {
-			return result, err
-		}
-		result.Success = success
+	// First test with a random password
+	// If the test is successful, we know that the repository is not password protected
+	randPassword, err := uuid.NewRandom()
+	if err != nil {
+		return TestRepoConnectionResult{}, err
 	}
-	return result, nil
+	tr, err := r.testRepoConnection(path, randPassword.String())
+	if err != nil || tr.Success || !tr.IsBorgRepo {
+		return toTestRepoConnectionResult(tr, err, false)
+	}
+
+	// If we are here it means we need a password
+	if password != "" {
+		tr, err = r.testRepoConnection(path, password)
+		return toTestRepoConnectionResult(tr, err, true)
+	}
+	return toTestRepoConnectionResult(tr, nil, true)
 }
