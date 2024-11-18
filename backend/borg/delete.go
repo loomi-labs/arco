@@ -14,7 +14,7 @@ func (b *borg) DeleteArchive(ctx context.Context, repository string, archive str
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
@@ -36,7 +36,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	} else {
 		b.log.LogCmdEnd(cmd.String(), startTime)
 
@@ -56,7 +56,7 @@ func (b *borg) DeleteRepository(ctx context.Context, repository string, password
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil

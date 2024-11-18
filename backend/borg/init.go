@@ -21,7 +21,7 @@ func (b *borg) Init(ctx context.Context, repository, password string, noPassword
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil

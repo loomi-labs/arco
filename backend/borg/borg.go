@@ -38,6 +38,12 @@ func NewBorg(path string, log *zap.SugaredLogger) Borg {
 	}
 }
 
+const noErrorCtxKey = "noError"
+
+func NoErrorCtx(ctx context.Context) context.Context {
+	return context.WithValue(ctx, noErrorCtxKey, true)
+}
+
 type CmdLogger struct {
 	*zap.SugaredLogger
 }
@@ -55,9 +61,13 @@ func (z *CmdLogger) LogCmdEnd(cmd string, startTime time.Time) {
 	z.Infof("Finished command: `%s` in %s", cmd, time.Since(startTime))
 }
 
-func (z *CmdLogger) LogCmdError(cmd string, startTime time.Time, err error) error {
+func (z *CmdLogger) LogCmdError(ctx context.Context, cmd string, startTime time.Time, err error) error {
 	err = exitCodesToError(err)
-	z.Errorf("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
+	if ctx.Value(noErrorCtxKey) == nil {
+		z.Errorf("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
+	} else {
+		z.Infof("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
+	}
 	return err
 }
 

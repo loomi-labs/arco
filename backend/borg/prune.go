@@ -66,7 +66,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 			b.log.LogCmdCancelled(cmd.String(), startTime)
 			return CancelErr{}
 		}
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	} else {
 		scanner := bufio.NewScanner(strings.NewReader(string(out)))
 		b.log.LogCmdEnd(cmd.String(), startTime)

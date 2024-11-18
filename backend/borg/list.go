@@ -21,13 +21,13 @@ func (b *borg) List(ctx context.Context, repository string, password string) (*L
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, err)
+		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
 	var listResponse ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("failed to parse borg list output: %w", err))
+		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg list output: %w", err))
 	}
 
 	b.log.LogCmdEnd(cmd.String(), startTime)

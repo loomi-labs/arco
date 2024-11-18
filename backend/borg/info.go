@@ -23,13 +23,13 @@ func (b *borg) Info(ctx context.Context, repository, password string) (*InfoResp
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, err)
+		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
 	var info InfoResponse
 	err = json.Unmarshal(out, &info)
 	if err != nil {
-		return nil, b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("failed to parse borg info output: %w", err))
+		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg info output: %w", err))
 	}
 
 	b.log.LogCmdEnd(cmd.String(), startTime)
