@@ -189,6 +189,7 @@ func (b *BackupClient) IsDirectoryEmpty(path string) bool {
 }
 
 func (b *BackupClient) CreateDirectory(path string) error {
+	b.log.Debug(fmt.Sprintf("Creating directory %s", path))
 	return os.MkdirAll(util.ExpandPath(path), 0755)
 }
 

@@ -9,9 +9,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
-	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -328,76 +326,9 @@ func (r *RepositoryClient) getArchive(id int) (*ent.Archive, error) {
 		Only(r.ctx)
 }
 
-func (r *RepositoryClient) ValidateArchiveName(archiveId int, prefix, name string) (string, error) {
-	if name == "" {
-		return "Name is required", nil
-	}
-	if len(name) < 3 {
-		return "Name must be at least 3 characters long", nil
-	}
-	if len(name) > 50 {
-		return "Name can not be longer than 50 characters", nil
-	}
-	pattern := `^[a-zA-Z0-9-_]+$`
-	matched, err := regexp.MatchString(pattern, name)
-	if err != nil {
-		return "", err
-	}
-	if !matched {
-		return "Name can only contain letters, numbers, hyphens, and underscores", nil
-	}
-
-	arch, err := r.getArchive(archiveId)
-	if err != nil {
-		return "", err
-	}
-	assert.NotNil(arch.Edges.Repository, "archive must have a repository")
-
-	// Check if the new name starts with the backup profile prefix
-	if arch.Edges.BackupProfile != nil {
-		if !strings.HasPrefix(prefix, arch.Edges.BackupProfile.Prefix) {
-			return "The new name must start with the backup profile prefix", nil
-		}
-	} else {
-		if prefix != "" {
-			err = fmt.Errorf("the archive can not have a prefix if it is not connected to a backup profile")
-			assert.Error(err)
-			return "", err
-		}
-
-		// If it is not connected to a backup profile,
-		// it can not start with any prefix used by another backup profile of the repository
-		backupProfiles, err := arch.Edges.Repository.QueryBackupProfiles().All(r.ctx)
-		if err != nil {
-			return "", err
-		}
-		for _, bp := range backupProfiles {
-			prefixWithoutTrailingDash := strings.TrimSuffix(bp.Prefix, "-")
-			if strings.HasPrefix(name, prefixWithoutTrailingDash) {
-				return "The new name must not start with the prefix of another backup profile", nil
-			}
-		}
-	}
-
-	fullName := prefix + name
-	exist, err := r.db.Archive.
-		Query().
-		Where(archive.Name(fullName)).
-		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
-		Exist(r.ctx)
-	if err != nil {
-		return "", err
-	}
-	if exist {
-		return "Archive name must be unique", nil
-	}
-
-	return "", nil
-}
-
 func (r *RepositoryClient) RenameArchive(id int, prefix, name string) error {
 	r.log.Debugf("Renaming archive %d to %s", id, name)
-	validationError, err := r.ValidateArchiveName(id, prefix, name)
+	validationError, err := r.validationClient().ArchiveName(id, prefix, name)
 	if err != nil {
 		return err
 	}

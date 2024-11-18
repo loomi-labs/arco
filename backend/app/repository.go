@@ -2,9 +2,12 @@ package app
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -12,6 +15,9 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -291,6 +297,65 @@ func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
 	result := make([]string, 0, len(hosts))
 	for host := range hosts {
 		result = append(result, host)
+	}
+	return result, nil
+}
+
+func (r *RepositoryClient) IsBorgRepository(path string) bool {
+	//	Check if path has a README file with the string borg in it
+	fp := filepath.Join(path, "README")
+	_, err := os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err := os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(contents), "borg")
+}
+
+type TestRepoConnectionResult struct {
+	Success       bool
+	NeedsPassword bool
+}
+
+func (r *RepositoryClient) testRepoConnection(path, password string) (bool, error) {
+	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
+	if err != nil {
+		if errors.Is(err, borg.PassphraseWrong{}) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *RepositoryClient) TestRepoConnection(path, password string) (TestRepoConnectionResult, error) {
+	result := TestRepoConnectionResult{}
+
+	randPassword, err := uuid.NewRandom()
+	if err != nil {
+		return result, err
+	}
+	success, err := r.testRepoConnection(path, randPassword.String())
+	if err != nil {
+		return result, err
+	}
+	if success {
+		result.Success = true
+		result.NeedsPassword = false
+		return result, nil
+	}
+
+	result.NeedsPassword = true
+
+	if password == "" {
+		success, err = r.testRepoConnection(path, password)
+		if err != nil {
+			return result, err
+		}
 	}
 	return result, nil
 }
