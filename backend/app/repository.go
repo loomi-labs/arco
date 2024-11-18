@@ -230,7 +230,7 @@ func (r *RepositoryClient) Delete(id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if err != nil && errors.Is(err, borg.RepositoryDoesNotExist{}) {
+	if err != nil && errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
 		return err
 	}
@@ -340,6 +340,7 @@ type testRepoConnectionResult struct {
 }
 
 func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoConnectionResult, error) {
+	r.log.Debugf("Testing repository connection to %s", path)
 	result := testRepoConnectionResult{
 		Success:         false,
 		IsPasswordValid: false,
@@ -347,11 +348,15 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoCo
 	}
 	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
 	if err != nil {
-		if errors.As(err, &borg.PassphraseWrong{}) {
+		if errors.Is(err, borg.ErrorPassphraseWrong) {
 			result.IsBorgRepo = true
 			return result, nil
 		}
-		if errors.As(err, &borg.RepositoryDoesNotExist{}) {
+		if errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+			return result, nil
+		}
+		if errors.As(err, &borg.WithExitError{}) {
+			r.log.Debugf("Error testing repository connection: %s", err)
 			return result, nil
 		}
 		return result, err
