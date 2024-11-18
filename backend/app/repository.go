@@ -125,6 +125,7 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 }
 
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
+	r.log.Debugf("Creating repository %s at %s", name, location)
 	result, err := r.testRepoConnection(location, password)
 	if err != nil {
 		return nil, err
@@ -355,10 +356,10 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoCo
 		if errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
 			return result, nil
 		}
-		if errors.As(err, &borg.WithExitError{}) {
-			r.log.Debugf("Error testing repository connection: %s", err)
-			return result, nil
-		}
+		//if errors.As(err, &borg.WithExitError{}) {
+		//	r.log.Debugf("Error testing repository connection: %s", err)
+		//	return result, nil
+		//}
 		return result, err
 	}
 	result.Success = true
