@@ -356,10 +356,6 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoCo
 		if errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
 			return result, nil
 		}
-		//if errors.As(err, &borg.WithExitError{}) {
-		//	r.log.Debugf("Error testing repository connection: %s", err)
-		//	return result, nil
-		//}
 		return result, err
 	}
 	result.Success = true
