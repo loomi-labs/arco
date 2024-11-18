@@ -36,7 +36,7 @@ const dialog = ref<HTMLDialogElement>();
 const isBorgRepo = ref(false);
 const isEncrypted = ref(true);
 const needsPassword = ref(false);
-const lastTestConnectionValues = ref<[string, string | undefined] | undefined>(undefined);
+const lastTestConnectionValues = ref<[string | undefined, string | undefined] | undefined>(undefined);
 
 // password state can be correct, incorrect or we don't know yet
 const isPasswordCorrect = ref<boolean | undefined>(undefined);
@@ -79,7 +79,8 @@ function resetAll() {
 }
 
 async function createRepo() {
-  await validate(true);
+  await simpleValidate(true);
+  await fullValidate(true);
   if (!isValid.value) {
     return;
   }
@@ -140,8 +141,7 @@ async function toggleEncrypted() {
   }
 }
 
-async function validate(force = false) {
-  isValidating.value = true;
+async function simpleValidate(force = false) {
   try {
     if (name.value !== undefined || force) {
       nameError.value = await validationClient.RepoName(name.value ?? "");
@@ -153,14 +153,16 @@ async function validate(force = false) {
     if (location.value === undefined || locationError.value) {
       // Can't be a borg repo if the location is invalid
       isBorgRepo.value = false;
-    } else {
-      isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
     }
+  } catch (error: any) {
+    await showAndLogError("Failed to run validation", error);
+  }
+}
 
-    if (location.value === undefined || locationError.value) {
-      // Can't be a borg repo if the location is invalid
-      isBorgRepo.value = false;
-    } else if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
+async function fullValidate(force = false) {
+  isValidating.value = true;
+  try {
+    if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
       lastTestConnectionValues.value = [location.value, password.value];
 
       const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
@@ -196,6 +198,7 @@ async function validate(force = false) {
   }
 }
 
+
 async function getConnectedRemoteHosts() {
   try {
     hosts.value = await repoClient.GetConnectedRemoteHosts();
@@ -214,7 +217,7 @@ getConnectedRemoteHosts();
 watch(location, async () => await setNameFromLocation());
 
 watch([name, location, password, isEncrypted], async () => {
-  await validate();
+  await simpleValidate();
 });
 
 </script>
@@ -228,7 +231,7 @@ watch([name, location, password, isEncrypted], async () => {
     <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl pb-2'>Add a remote repository</h2>
       <p>You can create a new repository or you can connect an existing one.</p>
-      <div v-if='isBorgRepo' role="alert" class="alert alert-info py-2 pb-2">
+      <div v-if='isBorgRepo' role="alert" class="alert alert-info py-2 my-2">
         <span>Existing repository found.</span>
       </div>
       <div class='flex flex-col gap-2 pt-2'>
@@ -239,6 +242,7 @@ watch([name, location, password, isEncrypted], async () => {
                      type='text' v-model='location'
                      placeholder='user@host:path/to/repo'
                      list='locations'
+                     @change='fullValidate()'
               />
               <CheckCircleIcon v-if='isBorgRepo' class='size-6 text-success' />
             </FormField>
@@ -255,7 +259,10 @@ watch([name, location, password, isEncrypted], async () => {
         <div class='flex justify-between items-start gap-4'>
           <div class='flex flex-col w-full'>
             <FormField label='Password' :error='passwordError'>
-              <input :class='formInputClass' type='password' v-model='password'
+              <input :class='formInputClass'
+                     type='password'
+                     v-model='password'
+                     @change='fullValidate()'
                      :disabled='!isEncrypted' />
               <CheckCircleIcon v-if='isEncrypted && isPasswordCorrect' class='size-6 text-success' />
             </FormField>
@@ -264,6 +271,7 @@ watch([name, location, password, isEncrypted], async () => {
           <button class='btn btn-outline min-w-44 mt-9'
                   :class='{"btn-success": isEncrypted}'
                   @click='toggleEncrypted()'
+                  @change='fullValidate()'
                   :disabled='isBorgRepo || isValidating'
           >
             {{ isEncrypted ? "Encrypted" : "Not Encrypted" }}
@@ -274,7 +282,7 @@ watch([name, location, password, isEncrypted], async () => {
 
         <div>
           <FormField label='Name' :error='nameError'>
-            <input :class='formInputClass' v-model='name' @input='isNameTouchedByUser = true' />
+            <input :class='formInputClass' v-model='name' @input='isNameTouchedByUser = true' @change='fullValidate()' />
           </FormField>
         </div>
 
