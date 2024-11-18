@@ -215,9 +215,9 @@ watch([name, location, password, isEncrypted], async () => {
     @close='resetAll();'
   >
     <div class='modal-box flex flex-col text-left'>
-      <h2 class='text-2xl'>Add a local repository</h2>
+      <h2 class='text-2xl pb-2'>Add a local repository</h2>
       <p>You can create a new repository or you can connect an existing one.</p>
-      <div v-if='isBorgRepo' role='alert' class='alert alert-info py-2 my-2'>
+      <div v-if='isBorgRepo' role='alert' class='alert alert-info py-2 pb-2'>
         <span>Existing repository found.</span>
       </div>
       <div class='flex flex-col gap-2 pt-2'>
