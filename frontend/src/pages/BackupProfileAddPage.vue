@@ -255,7 +255,7 @@ onBeforeRouteLeave(async (to, from) => {
         Select folders and files that you want to include in your backups.
       </p>
       <DataSelection
-        :paths='backupProfile.backupPaths'
+        :paths='backupProfile.backupPaths ?? []'
         :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
@@ -293,7 +293,7 @@ onBeforeRouteLeave(async (to, from) => {
       </div>
 
       <DataSelection
-        :paths='backupProfile.excludePaths'
+        :paths='backupProfile.excludePaths ?? []'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'
