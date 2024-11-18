@@ -16,7 +16,7 @@ func (b *borg) Init(ctx context.Context, repository, password string, noPassword
 	cmdList = append(cmdList, repository)
 
 	cmd := exec.CommandContext(ctx, b.path, cmdList...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

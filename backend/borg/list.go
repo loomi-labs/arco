@@ -15,7 +15,7 @@ type ListResponse struct {
 
 func (b *borg) List(ctx context.Context, repository string, password string) (*ListResponse, error) {
 	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Get the list from the borg repository
 	startTime := b.log.LogCmdStart(cmd.String())

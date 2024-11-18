@@ -9,7 +9,7 @@ import (
 // BreakLock deletes the lock for the given repository.
 func (b *borg) BreakLock(ctx context.Context, repository string, password string) error {
 	cmd := exec.CommandContext(ctx, b.path, "break-lock", repository)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

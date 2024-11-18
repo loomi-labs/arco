@@ -48,7 +48,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	cmdStr = append(cmdStr, pruneOptions...)
 	cmdStr = append(cmdStr, repository)
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false

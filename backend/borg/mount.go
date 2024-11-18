@@ -21,7 +21,7 @@ func (b *borg) mount(ctx context.Context, repository string, archive *string, pa
 	}
 
 	cmd := exec.CommandContext(ctx, b.path, "mount", archiveOrRepo, mountPath)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

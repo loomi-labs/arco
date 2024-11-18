@@ -76,11 +76,12 @@ func NewApp(
 	eventEmitter types.EventEmitter,
 ) *App {
 	state := appstate.NewState(log, eventEmitter)
+	sshPrivateKeys := util.SearchSSHKeys(log)
 	return &App{
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgPath, log),
+		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,

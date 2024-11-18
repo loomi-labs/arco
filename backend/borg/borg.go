@@ -27,14 +27,16 @@ type Borg interface {
 }
 
 type borg struct {
-	path string
-	log  *CmdLogger
+	path           string
+	log            *CmdLogger
+	sshPrivateKeys []string
 }
 
-func NewBorg(path string, log *zap.SugaredLogger) Borg {
+func NewBorg(path string, log *zap.SugaredLogger, sshPrivateKeys []string) Borg {
 	return &borg{
-		path: path,
-		log:  NewCmdLogger(log),
+		path:           path,
+		log:            NewCmdLogger(log),
+		sshPrivateKeys: sshPrivateKeys,
 	}
 }
 
@@ -78,6 +80,13 @@ func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
 type Env struct {
 	password           string
 	deleteConfirmation bool
+	sshPrivateKeys     []string
+}
+
+func NewEnv(sshPrivateKeys []string) Env {
+	return Env{
+		sshPrivateKeys: sshPrivateKeys,
+	}
 }
 
 func (e Env) WithPassword(password string) Env {
@@ -95,12 +104,15 @@ func (e Env) AsList() []string {
 		"-oBatchMode=yes",
 		"-oStrictHostKeyChecking=accept-new",
 		"-oConnectTimeout=10",
-		"-i ~/.config/arco/id_rsa",
 	}
+	for _, key := range e.sshPrivateKeys {
+		sshOptions = append(sshOptions, fmt.Sprintf("-i %s", key))
+	}
+
 	env := append(
 		os.Environ(),
-		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
 		"BORG_EXIT_CODES=modern",
+		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
 	)
 	if e.password != "" {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", e.password))

@@ -41,7 +41,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
@@ -128,7 +128,7 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
