@@ -125,8 +125,18 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 }
 
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
-	if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
-		return nil, err
+	if r.IsBorgRepository(util.ExpandPath(location)) {
+		connection, err := r.testRepoConnection(location, password)
+		if err != nil {
+			return nil, err
+		}
+		if !connection {
+			return nil, fmt.Errorf("could not connect to repository")
+		}
+	} else {
+		if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
+			return nil, err
+		}
 	}
 
 	// Create a new repository entity
@@ -221,7 +231,8 @@ func (r *RepositoryClient) Delete(id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if err != nil {
+	if err != nil && errors.Is(err, borg.RepositoryDoesNotExist{}) {
+		// If the repository does not exist, we can ignore the error
 		return err
 	}
 	return r.Remove(id)
@@ -317,14 +328,14 @@ func (r *RepositoryClient) IsBorgRepository(path string) bool {
 }
 
 type TestRepoConnectionResult struct {
-	Success       bool
-	NeedsPassword bool
+	Success       bool `json:"success"`
+	NeedsPassword bool `json:"needsPassword"`
 }
 
 func (r *RepositoryClient) testRepoConnection(path, password string) (bool, error) {
 	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
 	if err != nil {
-		if errors.Is(err, borg.PassphraseWrong{}) {
+		if errors.As(err, &borg.PassphraseWrong{}) {
 			return false, nil
 		}
 		return false, err
@@ -333,7 +344,10 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (bool, erro
 }
 
 func (r *RepositoryClient) TestRepoConnection(path, password string) (TestRepoConnectionResult, error) {
-	result := TestRepoConnectionResult{}
+	result := TestRepoConnectionResult{
+		Success:       false,
+		NeedsPassword: false,
+	}
 
 	randPassword, err := uuid.NewRandom()
 	if err != nil {
@@ -351,11 +365,12 @@ func (r *RepositoryClient) TestRepoConnection(path, password string) (TestRepoCo
 
 	result.NeedsPassword = true
 
-	if password == "" {
+	if password != "" {
 		success, err = r.testRepoConnection(path, password)
 		if err != nil {
 			return result, err
 		}
+		result.Success = success
 	}
 	return result, nil
 }
