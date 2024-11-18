@@ -36,7 +36,9 @@ const dialog = ref<HTMLDialogElement>();
 const isBorgRepo = ref(false);
 const isEncrypted = ref(true);
 const needsPassword = ref(false);
-const isConnectionOk = ref<boolean | undefined>(undefined);
+
+// password state can be correct, incorrect or we don't know yet
+const isPasswordCorrect = ref<boolean | undefined>(undefined);
 const isNameTouchedByUser = ref(false);
 
 const pathDoesNotExistMsg = "Path does not exist";
@@ -52,7 +54,7 @@ const isValid = computed(() =>
   !nameError.value &&
   !locationError.value &&
   !passwordError.value &&
-  isConnectionOk.value === undefined || isConnectionOk.value
+  isPasswordCorrect.value === undefined || isPasswordCorrect.value
 );
 
 /************
@@ -158,10 +160,13 @@ async function validate(force = false) {
   }
 
   if (location.value === undefined || locationError.value) {
+    // Can't be a borg repo if the location is invalid
     isBorgRepo.value = false;
   } else {
     isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
   }
+
+  // If the repo is a borg repo, we need to test the connection
   if (isBorgRepo.value) {
     const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
     isEncrypted.value = result.needsPassword;
@@ -177,10 +182,10 @@ async function validate(force = false) {
       }
     }
 
-    isConnectionOk.value = result.success;
+    isPasswordCorrect.value = result.success;
   } else {
     needsPassword.value = false;
-    isConnectionOk.value = undefined;
+    isPasswordCorrect.value = undefined;
     if (password.value !== undefined || force) {
       passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
     }
@@ -240,7 +245,7 @@ watch([name, location, password, isEncrypted], async () => {
             <FormField label='Password' :error='passwordError'>
               <input :class='formInputClass' type='password' v-model='password'
                      :disabled='!isEncrypted' />
-              <CheckCircleIcon v-if='isConnectionOk' class='size-6 text-success' />
+              <CheckCircleIcon v-if='isPasswordCorrect' class='size-6 text-success' />
             </FormField>
           </div>
 
