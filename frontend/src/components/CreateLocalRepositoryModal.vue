@@ -40,6 +40,7 @@ const needsPassword = ref(false);
 // password state can be correct, incorrect or we don't know yet
 const isPasswordCorrect = ref<boolean | undefined>(undefined);
 const isNameTouchedByUser = ref(false);
+const lastTestConnectionValues = ref<[string | undefined, string | undefined] | undefined>(undefined);
 
 const pathDoesNotExistMsg = "Path does not exist";
 
@@ -153,42 +154,44 @@ async function validate(force = false) {
       nameError.value = await validationClient.RepoName(name.value ?? "");
     }
     if (location.value !== undefined || force) {
-      locationError.value = await validationClient.RepoPath(location.value ?? "");
+      locationError.value = await validationClient.RepoPath(location.value ?? "", true);
+    }
+
+    if (location.value === undefined || locationError.value) {
+      // Can't be a borg repo if the location is invalid
+      isBorgRepo.value = false;
+    } else {
+      isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
+    }
+
+    // If the repo is a borg repo, we need to test the connection
+    if (isBorgRepo.value) {
+      lastTestConnectionValues.value = [location.value, password.value];
+
+      const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
+      isEncrypted.value = result.needsPassword;
+      needsPassword.value = result.needsPassword;
+
+      if (password.value || force) {
+        if (result.needsPassword && !result.success) {
+          passwordError.value = "Password is wrong";
+        } else if (result.needsPassword && !result.success) {
+          passwordError.value = "Enter a password for this repository";
+        } else if (result.success) {
+          passwordError.value = undefined;
+        }
+      }
+
+      isPasswordCorrect.value = result.success;
+    } else {
+      needsPassword.value = false;
+      isPasswordCorrect.value = undefined;
+      if (password.value !== undefined || force) {
+        passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
+      }
     }
   } catch (error: any) {
     await showAndLogError("Failed to run validation", error);
-  }
-
-  if (location.value === undefined || locationError.value) {
-    // Can't be a borg repo if the location is invalid
-    isBorgRepo.value = false;
-  } else {
-    isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
-  }
-
-  // If the repo is a borg repo, we need to test the connection
-  if (isBorgRepo.value) {
-    const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
-    isEncrypted.value = result.needsPassword;
-    needsPassword.value = result.needsPassword;
-
-    if (password.value || force) {
-      if (result.needsPassword && !result.success) {
-        passwordError.value = "Password is wrong";
-      } else if (result.needsPassword && !result.success) {
-        passwordError.value = "Enter a password for this repository";
-      } else if (result.success) {
-        passwordError.value = undefined;
-      }
-    }
-
-    isPasswordCorrect.value = result.success;
-  } else {
-    needsPassword.value = false;
-    isPasswordCorrect.value = undefined;
-    if (password.value !== undefined || force) {
-      passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
-    }
   }
 }
 
@@ -214,7 +217,7 @@ watch([name, location, password, isEncrypted], async () => {
     <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl'>Add a local repository</h2>
       <p>You can create a new repository or you can connect an existing one.</p>
-      <div v-if='isBorgRepo' role="alert" class="alert alert-info py-2 my-2">
+      <div v-if='isBorgRepo' role='alert' class='alert alert-info py-2 my-2'>
         <span>Existing repository found.</span>
       </div>
       <div class='flex flex-col gap-2 pt-2'>

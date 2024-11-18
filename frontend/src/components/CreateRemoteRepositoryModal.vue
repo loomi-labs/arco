@@ -1,15 +1,13 @@
 <script setup lang='ts'>
-import { Form as VeeForm, useForm } from "vee-validate";
-import * as zod from "zod";
-import { object } from "zod";
-import { toTypedSchema } from "@vee-validate/zod";
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { formInputClass } from "../common/form";
+import * as validationClient from "../../wailsjs/go/app/ValidationClient";
 import FormField from "./common/FormField.vue";
+import { formInputClass } from "../common/form";
+import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 
 /************
@@ -33,28 +31,33 @@ defineExpose({
 
 const toast = useToast();
 const isCreating = ref(false);
+const isValidating = ref(false);
 const dialog = ref<HTMLDialogElement>();
+const isBorgRepo = ref(false);
+const isEncrypted = ref(true);
+const needsPassword = ref(false);
+const lastTestConnectionValues = ref<[string, string | undefined] | undefined>(undefined);
+
+// password state can be correct, incorrect or we don't know yet
+const isPasswordCorrect = ref<boolean | undefined>(undefined);
 const isNameTouchedByUser = ref(false);
+
 const hosts = ref<string[]>([]);
 
-const { meta, values, errors, resetForm, defineField } = useForm({
-  validationSchema: toTypedSchema(
-    object({
-      name: zod.string({ required_error: "Enter a name for this repository" })
-        .min(1, { message: "Enter a name for this repository" })
-        .max(25, { message: "Name is too long" }),
-      location: zod.string({ required_error: "Enter a valid SSH URL for this repository" })
-        .refine((path) => path.includes("@"),
-          { message: "Not a valid SSH URL" }
-        ),
-      password: zod.string({ required_error: "Enter a password for this repository" })
-        .min(1, { message: "Enter a password for this repository" })
-    }))
-});
+const name = ref<string | undefined>(undefined);
+const location = ref<string | undefined>(undefined);
+const password = ref<string | undefined>(undefined);
+const nameError = ref<string | undefined>(undefined);
+const locationError = ref<string | undefined>(undefined);
+const passwordError = ref<string | undefined>(undefined);
 
-const [location, locationAttrs] = defineField("location", { validateOnBlur: false });
-const [password, passwordAttrs] = defineField("password", { validateOnBlur: true });
-const [name, nameAttrs] = defineField("name", { validateOnBlur: true });
+const isValid = computed(() =>
+  !nameError.value &&
+  !locationError.value &&
+  !passwordError.value &&
+  isPasswordCorrect.value === undefined || isPasswordCorrect.value
+);
+
 
 /************
  * Functions
@@ -65,18 +68,30 @@ function showModal() {
 }
 
 function resetAll() {
-  resetForm();
+  isEncrypted.value = true;
   isNameTouchedByUser.value = false;
+  name.value = undefined;
+  location.value = undefined;
+  password.value = undefined;
+  nameError.value = undefined;
+  locationError.value = undefined;
+  passwordError.value = undefined;
 }
 
 async function createRepo() {
+  await validate(true);
+  if (!isValid.value) {
+    return;
+  }
+
   try {
     isCreating.value = true;
+    const noPassword = !isEncrypted.value;
     const repo = await repoClient.Create(
-      values.name!,
-      values.location!,
-      values.password!,
-      false
+      name.value!,
+      location.value!,
+      password.value!,
+      noPassword
     );
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
@@ -103,7 +118,7 @@ async function setNameFromLocation() {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   // If the user has touched the name field, we don't want to change it
-  if (!location.value || isNameTouchedByUser.value || errors.value.location) {
+  if (!location.value || isNameTouchedByUser.value || locationError.value) {
     return;
   }
 
@@ -112,6 +127,72 @@ async function setNameFromLocation() {
   if (newName) {
     // Capitalize the first letter
     name.value = capitalizeFirstLetter(newName);
+  }
+}
+
+async function toggleEncrypted() {
+  isEncrypted.value = !isEncrypted.value;
+
+  // If the password was never set, we set it to an empty string
+  // This will trigger the validation if the user toggles encryption again
+  if (password.value === undefined) {
+    password.value = "";
+  }
+}
+
+async function validate(force = false) {
+  isValidating.value = true;
+  try {
+    if (name.value !== undefined || force) {
+      nameError.value = await validationClient.RepoName(name.value ?? "");
+    }
+    if (location.value !== undefined || force) {
+      locationError.value = await validationClient.RepoPath(location.value ?? "", false);
+    }
+
+    if (location.value === undefined || locationError.value) {
+      // Can't be a borg repo if the location is invalid
+      isBorgRepo.value = false;
+    } else {
+      isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
+    }
+
+    if (location.value === undefined || locationError.value) {
+      // Can't be a borg repo if the location is invalid
+      isBorgRepo.value = false;
+    } else if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
+      lastTestConnectionValues.value = [location.value, password.value];
+
+      const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
+
+      isBorgRepo.value = result.isBorgRepo;
+
+      if (result.isBorgRepo) {
+        if (password.value || force) {
+          if (result.needsPassword && !result.success) {
+            passwordError.value = "Password is wrong";
+          } else if (result.needsPassword && !result.success) {
+            passwordError.value = "Enter a password for this repository";
+          } else if (result.success) {
+            passwordError.value = undefined;
+          }
+        }
+
+        isPasswordCorrect.value = result.success;
+        isEncrypted.value = result.needsPassword;
+        needsPassword.value = result.needsPassword;
+      } else {
+        needsPassword.value = false;
+        isPasswordCorrect.value = undefined;
+        if (password.value !== undefined || force) {
+          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
+        }
+      }
+    }
+  } catch (error: any) {
+    await showAndLogError("Failed to run validation", error);
+  } finally {
+    isValidating.value = false;
   }
 }
 
@@ -130,7 +211,11 @@ async function getConnectedRemoteHosts() {
 getConnectedRemoteHosts();
 
 // When the location changes, we want to set the name based on the last part of the path
-watch(() => values.location, async () => await setNameFromLocation());
+watch(location, async () => await setNameFromLocation());
+
+watch([name, location, password, isEncrypted], async () => {
+  await validate();
+});
 
 </script>
 
@@ -138,38 +223,58 @@ watch(() => values.location, async () => await setNameFromLocation());
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetAll()'
+    @close='resetAll();'
   >
-    <div class='modal-box'>
+    <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl'>Add a remote repository</h2>
-      <VeeForm class='flex flex-col gap-2'
-               :validation-schema='values'>
-
-        <div class='flex justify-between items-center'>
-          <div class='flex flex-col w-full pr-4'>
-            <FormField label='Remote Location' :error='errors.location'>
+      <p>You can create a new repository or you can connect an existing one.</p>
+      <div v-if='isBorgRepo' role="alert" class="alert alert-info py-2 my-2">
+        <span>Existing repository found.</span>
+      </div>
+      <div class='flex flex-col gap-2 pt-2'>
+        <div class='flex justify-between items-start gap-4 pb-4'>
+          <div class='flex flex-col w-full'>
+            <FormField label='Location' :error='locationError'>
               <input :class='formInputClass'
-                     type='text'
-                     v-model='location'
-                     v-bind='locationAttrs'
+                     type='text' v-model='location'
                      placeholder='user@host:path/to/repo'
-                     list='locations' />
-              <datalist id='locations'>
-                <option v-for='host in hosts'
-                        :value='host' />
-              </datalist>
+                     list='locations'
+              />
+              <CheckCircleIcon v-if='isBorgRepo' class='size-6 text-success' />
             </FormField>
+            <datalist id='locations'>
+              <option v-for='host in hosts'
+                      :value='host' />
+            </datalist>
           </div>
         </div>
 
-        <div>
-          <FormField label='Password' :error='errors.password'>
-            <input :class='formInputClass' type='password' v-model='password' v-bind='passwordAttrs' />
-          </FormField>
+        <p v-if='!isBorgRepo'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
+        <p v-else>This repository is encrypted and requires a password.</p>
+
+        <div class='flex justify-between items-start gap-4'>
+          <div class='flex flex-col w-full'>
+            <FormField label='Password' :error='passwordError'>
+              <input :class='formInputClass' type='password' v-model='password'
+                     :disabled='!isEncrypted' />
+              <CheckCircleIcon v-if='isEncrypted && isPasswordCorrect' class='size-6 text-success' />
+            </FormField>
+          </div>
+
+          <button class='btn btn-outline min-w-44 mt-9'
+                  :class='{"btn-success": isEncrypted}'
+                  @click='toggleEncrypted()'
+                  :disabled='isBorgRepo || isValidating'
+          >
+            {{ isEncrypted ? "Encrypted" : "Not Encrypted" }}
+            <LockClosedIcon class='size-6' v-if='isEncrypted' />
+            <LockOpenIcon class='size-6' v-else />
+          </button>
         </div>
+
         <div>
-          <FormField label='Name' :error='errors.name'>
-            <input :class='formInputClass' v-model='name' v-bind='nameAttrs' @input='isNameTouchedByUser = true' />
+          <FormField label='Name' :error='nameError'>
+            <input :class='formInputClass' v-model='name' @input='isNameTouchedByUser = true' />
           </FormField>
         </div>
 
@@ -178,13 +283,13 @@ watch(() => values.location, async () => await setNameFromLocation());
                   @click.prevent='dialog?.close();'>
             Cancel
           </button>
-          <button class='btn btn-primary' type='submit' :disabled='!meta.valid || isCreating'
-                  @click.prevent='createRepo()'>
-            Create
-            <span v-if='isCreating' class='loading loading-spinner'></span>
+          <button class='btn btn-success' type='submit' :disabled='!isValid || isCreating || isValidating'
+                  @click='createRepo()'>
+            {{ isBorgRepo ? "Connect" : "Create" }}
+            <span v-if='isCreating || isValidating' class='loading loading-spinner'></span>
           </button>
         </div>
-      </VeeForm>
+      </div>
     </div>
   </dialog>
 </template>
