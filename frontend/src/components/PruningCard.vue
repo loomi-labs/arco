@@ -14,54 +14,6 @@ import { useToast } from "vue-toastification";
  * Types
  ************/
 
-enum PruningKeepOption {
-  none = "none",
-  some = "some",
-  many = "many",
-  custom = "custom",
-}
-
-interface PruningOptionMap {
-  [key: string]: {
-    keepHourly: number;
-    keepDaily: number;
-    keepWeekly: number;
-    keepMonthly: number;
-    keepYearly: number;
-  };
-}
-
-const pruningOptionMap: PruningOptionMap = {
-  [PruningKeepOption.none]: {
-    keepHourly: 0,
-    keepDaily: 0,
-    keepWeekly: 0,
-    keepMonthly: 0,
-    keepYearly: 0
-  },
-  [PruningKeepOption.some]: {
-    keepHourly: 6,
-    keepDaily: 7,
-    keepWeekly: 4,
-    keepMonthly: 3,
-    keepYearly: 2
-  },
-  [PruningKeepOption.many]: {
-    keepHourly: 24,
-    keepDaily: 14,
-    keepWeekly: 8,
-    keepMonthly: 12,
-    keepYearly: 4
-  },
-  [PruningKeepOption.custom]: {
-    keepHourly: -1,
-    keepDaily: -1,
-    keepWeekly: -1,
-    keepMonthly: -1,
-    keepYearly: -1
-  }
-};
-
 interface CleanupImpact {
   Summary: string;
   Rows: Array<CleanupImpactRow>;
@@ -97,7 +49,8 @@ const emitUpdatePruningRule = "update:pruningRule";
 const router = useRouter();
 const toast = useToast();
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
-const pruningKeepOption = ref<PruningKeepOption>(PruningKeepOption.many);
+const pruningOptions = ref<app.PruningOption[]>([]);
+const selectedPruningOption = ref<app.PruningOption | undefined>(undefined);
 const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
@@ -119,7 +72,7 @@ const hasUnsavedChanges = computed(() => {
 });
 
 const validationError = computed(() => {
-  if (pruningRule.value.isEnabled && pruningRule.value.keepWithinDays < 1 && pruningKeepOption.value === PruningKeepOption.none) {
+  if (pruningRule.value.isEnabled && pruningRule.value.keepWithinDays < 1 && isAllZero(pruningRule.value)) {
     return "You must either keep archives within a certain number of days or keep a certain number of archives";
   }
   return "";
@@ -129,6 +82,19 @@ const isValid = computed(() => {
   return !validationError.value;
 });
 
+async function getPruningOptions() {
+  try {
+    pruningOptions.value = (await backupClient.GetPruningOptions()).options;
+    ruleToPruningOption(props.pruningRule);
+  } catch (error: any) {
+    await showAndLogError("Failed to get pruning options", error);
+  }
+}
+
+function isAllZero(rule: ent.PruningRule) {
+  return rule.keepHourly === 0 && rule.keepDaily === 0 && rule.keepWeekly === 0 && rule.keepMonthly === 0 && rule.keepYearly === 0;
+}
+
 function copyCurrentPruningRule() {
   pruningRule.value.isEnabled = props.pruningRule.isEnabled;
   pruningRule.value.keepWithinDays = props.pruningRule.keepWithinDays;
@@ -137,31 +103,29 @@ function copyCurrentPruningRule() {
   pruningRule.value.keepWeekly = props.pruningRule.keepWeekly;
   pruningRule.value.keepMonthly = props.pruningRule.keepMonthly;
   pruningRule.value.keepYearly = props.pruningRule.keepYearly;
-  ruleToPruningKeepOption(props.pruningRule);
+  ruleToPruningOption(props.pruningRule);
 }
 
-function ruleToPruningKeepOption(rule: ent.PruningRule) {
-  const option = Object.keys(pruningOptionMap).find((key) => {
-    const map = pruningOptionMap[key];
-    return rule.keepHourly === map.keepHourly &&
-      rule.keepDaily === map.keepDaily &&
-      rule.keepWeekly === map.keepWeekly &&
-      rule.keepMonthly === map.keepMonthly &&
-      rule.keepYearly === map.keepYearly;
-  });
-  if (option) {
-    pruningKeepOption.value = option as PruningKeepOption;
-  } else {
-    pruningKeepOption.value = PruningKeepOption.custom;
+function ruleToPruningOption(rule: ent.PruningRule) {
+  for (const option of pruningOptions.value) {
+    if (rule.keepHourly === option.keepHourly &&
+      rule.keepDaily === option.keepDaily &&
+      rule.keepWeekly === option.keepWeekly &&
+      rule.keepMonthly === option.keepMonthly &&
+      rule.keepYearly === option.keepYearly) {
+      selectedPruningOption.value = option;
+      return;
+    }
   }
+  selectedPruningOption.value = pruningOptions.value.find((o) => o.name === "custom");
 }
 
 function toPruningRule() {
-  pruningRule.value.keepHourly = pruningOptionMap[pruningKeepOption.value].keepHourly;
-  pruningRule.value.keepDaily = pruningOptionMap[pruningKeepOption.value].keepDaily;
-  pruningRule.value.keepWeekly = pruningOptionMap[pruningKeepOption.value].keepWeekly;
-  pruningRule.value.keepMonthly = pruningOptionMap[pruningKeepOption.value].keepMonthly;
-  pruningRule.value.keepYearly = pruningOptionMap[pruningKeepOption.value].keepYearly;
+  pruningRule.value.keepHourly = selectedPruningOption.value?.keepHourly ?? 0;
+  pruningRule.value.keepDaily = selectedPruningOption.value?.keepDaily ?? 0;
+  pruningRule.value.keepWeekly = selectedPruningOption.value?.keepWeekly ?? 0;
+  pruningRule.value.keepMonthly = selectedPruningOption.value?.keepMonthly ?? 0;
+  pruningRule.value.keepYearly = selectedPruningOption.value?.keepYearly ?? 0;
 }
 
 async function savePruningRule() {
@@ -270,6 +234,8 @@ async function save(route?: string) {
  * Lifecycle
  ************/
 
+getPruningOptions();
+
 // Create a copy of the current pruning rule
 // This way we can compare the current pruning rule with the new one and save or discard changes
 watchEffect(() => copyCurrentPruningRule());
@@ -331,12 +297,12 @@ defineExpose({
       </TooltipTextIcon>
       <select class='select select-bordered w-32'
               :disabled='!pruningRule.isEnabled'
-              v-model='pruningKeepOption'
+              v-model='selectedPruningOption'
               @change='toPruningRule'
       >
-        <option v-for='option in Object.keys(PruningKeepOption)' :key='option' :value='option'
-                :disabled='option === PruningKeepOption.custom'>
-          {{ option.charAt(0).toUpperCase() + option.slice(1) }}
+        <option v-for='option in Array.from(pruningOptions)' :key='option.name' :value='option'
+                :disabled='option.name === "custom"'>
+          {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
         </option>
       </select>
     </div>
@@ -354,7 +320,7 @@ defineExpose({
                    type='number'
                    :disabled='!pruningRule.isEnabled'
                    v-model='pruningRule.keepHourly'
-                   @change='ruleToPruningKeepOption(pruningRule)' />
+                   @change='ruleToPruningOption(pruningRule)' />
           </FormField>
         </div>
         <div class='flex flex-col'>
@@ -366,7 +332,7 @@ defineExpose({
                    type='number'
                    :disabled='!pruningRule.isEnabled'
                    v-model='pruningRule.keepDaily'
-                   @change='ruleToPruningKeepOption(pruningRule)' />
+                   @change='ruleToPruningOption(pruningRule)' />
           </FormField>
         </div>
         <div class='flex flex-col'>
@@ -378,7 +344,7 @@ defineExpose({
                    type='number'
                    :disabled='!pruningRule.isEnabled'
                    v-model='pruningRule.keepWeekly'
-                   @change='ruleToPruningKeepOption(pruningRule)' />
+                   @change='ruleToPruningOption(pruningRule)' />
           </FormField>
         </div>
         <div class='flex flex-col'>
@@ -390,7 +356,7 @@ defineExpose({
                    type='number'
                    :disabled='!pruningRule.isEnabled'
                    v-model='pruningRule.keepMonthly'
-                   @change='ruleToPruningKeepOption(pruningRule)' />
+                   @change='ruleToPruningOption(pruningRule)' />
           </FormField>
         </div>
         <div class='flex flex-col'>
@@ -402,7 +368,7 @@ defineExpose({
                    type='number'
                    :disabled='!pruningRule.isEnabled'
                    v-model='pruningRule.keepYearly'
-                   @change='ruleToPruningKeepOption(pruningRule)' />
+                   @change='ruleToPruningOption(pruningRule)' />
           </FormField>
         </div>
       </div>
