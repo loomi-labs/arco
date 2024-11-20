@@ -151,6 +151,25 @@ func init() {
 	repository.DefaultUpdatedAt = repositoryDescUpdatedAt.Default.(func() time.Time)
 	// repository.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	repository.UpdateDefaultUpdatedAt = repositoryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// repositoryDescName is the schema descriptor for name field.
+	repositoryDescName := repositoryFields[1].Descriptor()
+	// repository.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	repository.NameValidator = func() func(string) error {
+		validators := repositoryDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+			validators[2].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
 	repositoryDescStatsTotalChunks := repositoryFields[5].Descriptor()
 	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.

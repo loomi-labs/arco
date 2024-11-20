@@ -2,6 +2,7 @@ package borg
 
 import (
 	"errors"
+	"github.com/negrel/assert"
 	"os/exec"
 )
 
@@ -15,320 +16,172 @@ func (CancelErr) Error() string {
 	return "command canceled"
 }
 
-type WrappedExitErr struct {
+type WithExitError struct {
 	ExitError *exec.ExitError
 }
 
-func (e WrappedExitErr) Error() string {
+func (e WithExitError) Error() string {
 	return e.ExitError.Error()
+}
+
+type Error struct {
+	WithExitError
 }
 
 /***********************************/
 /********** Borg Errors ************/
 /***********************************/
 
-type Error struct {
-	WrappedExitErr
-}
-
-type ErrorWithTraceback struct {
-	WrappedExitErr
-}
-
-type BufferMemoryLimitExceeded struct {
-	WrappedExitErr
-}
-
-type EfficientCollectionQueueSizeUnderflow struct {
-	WrappedExitErr
-}
-
-type RTError struct {
-	WrappedExitErr
-}
-
-type CancelledByUser struct {
-	WrappedExitErr
-}
-
-type CommandError struct {
-	WrappedExitErr
-}
-
-type PlaceholderError struct {
-	WrappedExitErr
-}
-
-type InvalidPlaceholder struct {
-	WrappedExitErr
-}
-
-type RepositoryAlreadyExists struct {
-	WrappedExitErr
-}
-
-type RepositoryAtticRepository struct {
-	WrappedExitErr
-}
-
-type RepositoryCheckNeeded struct {
-	WrappedExitErr
-}
-
-type RepositoryDoesNotExist struct {
-	WrappedExitErr
-}
-
-type RepositoryInsufficientFreeSpaceError struct {
-	WrappedExitErr
-}
-
-type RepositoryInvalidRepository struct {
-	WrappedExitErr
-}
-
-type RepositoryInvalidRepositoryConfig struct {
-	WrappedExitErr
-}
-
-type RepositoryObjectNotFound struct {
-	WrappedExitErr
-}
-
-type RepositoryParentPathDoesNotExist struct {
-	WrappedExitErr
-}
-
-type RepositoryPathAlreadyExists struct {
-	WrappedExitErr
-}
-
-type RepositoryStorageQuotaExceeded struct {
-	WrappedExitErr
-}
-
-type RepositoryPathPermissionDenied struct {
-	WrappedExitErr
-}
-
-type MandatoryFeatureUnsupported struct {
-	WrappedExitErr
-}
-
-type NoManifestError struct {
-	WrappedExitErr
-}
-
-type UnsupportedManifestError struct {
-	WrappedExitErr
-}
-
-type ArchiveAlreadyExists struct {
-	WrappedExitErr
-}
-
-type ArchiveDoesNotExist struct {
-	WrappedExitErr
-}
-
-type ArchiveIncompatibleFilesystemEncodingError struct {
-	WrappedExitErr
-}
-
-type KeyfileInvalidError struct {
-	WrappedExitErr
-}
-
-type KeyfileMismatchError struct {
-	WrappedExitErr
-}
-
-type KeyfileNotFoundError struct {
-	WrappedExitErr
-}
-
-type NotABorgKeyFile struct {
-	WrappedExitErr
-}
-
-type RepoKeyNotFoundError struct {
-	WrappedExitErr
-}
-
-type RepoIdMismatch struct {
-	WrappedExitErr
-}
-
-type UnencryptedRepo struct {
-	WrappedExitErr
-}
-
-type UnknownKeyType struct {
-	WrappedExitErr
-}
-
-type UnsupportedPayloadError struct {
-	WrappedExitErr
-}
-
-type NoPassphraseFailure struct {
-	WrappedExitErr
-}
-
-type PasscommandFailure struct {
-	WrappedExitErr
-}
-
-type PassphraseWrong struct {
-	WrappedExitErr
-}
-
-type PasswordRetriesExceeded struct {
-	WrappedExitErr
-}
-
-type CacheCacheInitAbortedError struct {
-	WrappedExitErr
-}
-
-type CacheEncryptionMethodMismatch struct {
-	WrappedExitErr
-}
-
-type CacheRepositoryAccessAborted struct {
-	WrappedExitErr
-}
-
-type CacheRepositoryIDNotUnique struct {
-	WrappedExitErr
-}
-
-type CacheRepositoryReplay struct {
-	WrappedExitErr
-}
-
-type LockError struct {
-	WrappedExitErr
-}
-
-type LockErrorT struct {
-	WrappedExitErr
-}
-
-type LockFailed struct {
-	WrappedExitErr
-}
-
-type LockTimeout struct {
-	WrappedExitErr
-}
-
-type NotLocked struct {
-	WrappedExitErr
-}
-
-type NotMyLock struct {
-	WrappedExitErr
-}
-
-type ConnectionClosed struct {
-	WrappedExitErr
-}
-
-type ConnectionClosedWithHint struct {
-	WrappedExitErr
-}
-
-type InvalidRPCMethod struct {
-	WrappedExitErr
-}
-
-type PathNotAllowed struct {
-	WrappedExitErr
-}
-
-type RemoteRepositoryRPCServerOutdated struct {
-	WrappedExitErr
-}
-
-type UnexpectedRPCDataFormatFromClient struct {
-	WrappedExitErr
-}
-
-type UnexpectedRPCDataFormatFromServer struct {
-	WrappedExitErr
-}
-
-type ConnectionBrokenWithHint struct {
-	WrappedExitErr
-}
-
-type IntegrityError struct {
-	WrappedExitErr
-}
-
-type FileIntegrityError struct {
-	WrappedExitErr
-}
-
-type DecompressionError struct {
-	WrappedExitErr
-}
-
-type ArchiveTAMInvalid struct {
-	WrappedExitErr
-}
-
-type ArchiveTAMRequiredError struct {
-	WrappedExitErr
-}
-
-type TAMInvalid struct {
-	WrappedExitErr
-}
-
-type TAMRequiredError struct {
-	WrappedExitErr
-}
-
-type TAMUnsupportedSuiteError struct {
-	WrappedExitErr
-}
-
-type FileChangedWarning struct {
-	WrappedExitErr
-}
-
-type IncludePatternNeverMatchedWarning struct {
-	WrappedExitErr
-}
-
-type BackupError struct {
-	WrappedExitErr
-}
-
-type BackupRaceConditionError struct {
-	WrappedExitErr
-}
-
-type BackupOSError struct {
-	WrappedExitErr
-}
-
-type BackupPermissionError struct {
-	WrappedExitErr
-}
-
-func (e BackupPermissionError) Error() string {
-	return "permission error"
-}
-
-type BackupIOError struct {
-	WrappedExitErr
-}
-
-type BackupFileNotFoundError struct {
-	WrappedExitErr
+var (
+	ErrDefault                                 = errors.New("error")
+	ErrWithTraceback                           = errors.New("error with traceback")
+	ErrorBufferMemoryLimitExceeded             = errors.New("buffer memory limit exceeded")
+	ErrorEfficientCollectionQueueSizeUnderflow = errors.New("efficient collection queue size underflow")
+	ErrorRTError                               = errors.New("runtime error")
+	ErrorCancelledByUser                       = errors.New("cancelled by user")
+	ErrorCommandError                          = errors.New("command error")
+	ErrorPlaceholderError                      = errors.New("placeholder error")
+	ErrorInvalidPlaceholder                    = errors.New("invalid placeholder")
+	ErrorRepositoryAlreadyExists               = errors.New("repository already exists")
+	ErrorRepositoryAtticRepository             = errors.New("attic repository detected")
+	ErrorRepositoryCheckNeeded                 = errors.New("repository check needed")
+	ErrorRepositoryDoesNotExist                = errors.New("repository does not exist")
+	ErrorRepositoryInsufficientFreeSpaceError  = errors.New("insufficient free space")
+	ErrorRepositoryInvalidRepository           = errors.New("invalid repository")
+	ErrorRepositoryInvalidRepositoryConfig     = errors.New("invalid repository config")
+	ErrorRepositoryObjectNotFound              = errors.New("object not found in repository")
+	ErrorRepositoryParentPathDoesNotExist      = errors.New("parent path does not exist")
+	ErrorRepositoryPathAlreadyExists           = errors.New("path already exists")
+	ErrorRepositoryStorageQuotaExceeded        = errors.New("storage quota exceeded")
+	ErrorRepositoryPathPermissionDenied        = errors.New("permission denied to path")
+	ErrorMandatoryFeatureUnsupported           = errors.New("unsupported repository feature")
+	ErrorNoManifestError                       = errors.New("repository has no manifest")
+	ErrorUnsupportedManifestError              = errors.New("unsupported manifest envelope")
+	ErrorArchiveAlreadyExists                  = errors.New("archive already exists")
+	ErrorArchiveDoesNotExist                   = errors.New("archive does not exist")
+	ErrorArchiveIncompatibleFilesystemEncoding = errors.New("failed to encode filename")
+	ErrorKeyfileInvalidError                   = errors.New("invalid key data")
+	ErrorKeyfileMismatchError                  = errors.New("mismatch between repository and key file")
+	ErrorKeyfileNotFoundError                  = errors.New("no key file found")
+	ErrorNotABorgKeyFile                       = errors.New("not a borg key backup")
+	ErrorRepoKeyNotFoundError                  = errors.New("no key entry found")
+	ErrorRepoIdMismatch                        = errors.New("key backup for different repository")
+	ErrorUnencryptedRepo                       = errors.New("key management not available")
+	ErrorUnknownKeyType                        = errors.New("unknown key type")
+	ErrorUnsupportedPayloadError               = errors.New("unsupported payload type")
+	ErrorNoPassphraseFailure                   = errors.New("cannot acquire a passphrase")
+	ErrorPasscommandFailure                    = errors.New("passcommand failed")
+	ErrorPassphraseWrong                       = errors.New("incorrect passphrase")
+	ErrorPasswordRetriesExceeded               = errors.New("exceeded password retries")
+	ErrorCacheInitAborted                      = errors.New("cache initialization aborted")
+	ErrorCacheEncryptionMethodMismatch         = errors.New("encryption method mismatch")
+	ErrorCacheRepositoryAccessAborted          = errors.New("repository access aborted")
+	ErrorCacheRepositoryIDNotUnique            = errors.New("repository ID not unique")
+	ErrorCacheRepositoryReplay                 = errors.New("cache newer than repository")
+	ErrorLockError                             = errors.New("failed to acquire lock")
+	ErrorLockErrorT                            = errors.New("failed to acquire lock with traceback")
+	ErrorLockFailed                            = errors.New("failed to create/acquire lock")
+	ErrorLockTimeout                           = errors.New("lock timeout")
+	ErrorNotLocked                             = errors.New("failed to release lock (not locked)")
+	ErrorNotMyLock                             = errors.New("failed to release lock (not by me)")
+	ErrorConnectionClosed                      = errors.New("connection closed by remote host")
+	ErrorConnectionClosedWithHint              = errors.New("connection closed by remote host with hint")
+	ErrorInvalidRPCMethod                      = errors.New("invalid RPC method")
+	ErrorPathNotAllowed                        = errors.New("repository path not allowed")
+	ErrorRemoteRepositoryRPCServerOutdated     = errors.New("borg server too old")
+	ErrorUnexpectedRPCDataFormatFromClient     = errors.New("unexpected RPC data format from client")
+	ErrorUnexpectedRPCDataFormatFromServer     = errors.New("unexpected RPC data format from server")
+	ErrorConnectionBrokenWithHint              = errors.New("connection to remote host broken")
+	ErrorIntegrityError                        = errors.New("data integrity error")
+	ErrorFileIntegrityError                    = errors.New("file integrity check failed")
+	ErrorDecompressionError                    = errors.New("decompression error")
+	ErrorArchiveTAMInvalid                     = errors.New("archive TAM invalid")
+	ErrorArchiveTAMRequiredError               = errors.New("archive unauthenticated")
+	ErrorTAMInvalid                            = errors.New("TAM invalid")
+	ErrorTAMRequiredError                      = errors.New("manifest unauthenticated")
+	ErrorTAMUnsupportedSuiteError              = errors.New("unsupported suite")
+	ErrorFileChangedWarning                    = errors.New("file changed during backup")
+	ErrorIncludePatternNeverMatchedWarning     = errors.New("include pattern never matched")
+	ErrorBackupError                           = errors.New("backup error")
+	ErrorBackupRaceConditionError              = errors.New("file type or inode changed during backup")
+	ErrorBackupOSError                         = errors.New("backup OS error")
+	ErrorBackupPermissionError                 = errors.New("backup permission error")
+	ErrorBackupIOError                         = errors.New("backup IO error")
+	ErrorBackupFileNotFoundError               = errors.New("backup file not found")
+)
+
+var errorMap = map[int]error{
+	2:   ErrDefault,
+	3:   ErrorCancelledByUser,
+	4:   ErrorCommandError,
+	5:   ErrorPlaceholderError,
+	6:   ErrorInvalidPlaceholder,
+	10:  ErrorRepositoryAlreadyExists,
+	11:  ErrorRepositoryAtticRepository,
+	12:  ErrorRepositoryCheckNeeded,
+	13:  ErrorRepositoryDoesNotExist,
+	14:  ErrorRepositoryInsufficientFreeSpaceError,
+	15:  ErrorRepositoryInvalidRepository,
+	16:  ErrorRepositoryInvalidRepositoryConfig,
+	17:  ErrorRepositoryObjectNotFound,
+	18:  ErrorRepositoryParentPathDoesNotExist,
+	19:  ErrorRepositoryPathAlreadyExists,
+	20:  ErrorRepositoryStorageQuotaExceeded,
+	21:  ErrorRepositoryPathPermissionDenied,
+	25:  ErrorMandatoryFeatureUnsupported,
+	26:  ErrorNoManifestError,
+	27:  ErrorUnsupportedManifestError,
+	30:  ErrorArchiveAlreadyExists,
+	31:  ErrorArchiveDoesNotExist,
+	32:  ErrorArchiveIncompatibleFilesystemEncoding,
+	40:  ErrorKeyfileInvalidError,
+	41:  ErrorKeyfileMismatchError,
+	42:  ErrorKeyfileNotFoundError,
+	43:  ErrorNotABorgKeyFile,
+	44:  ErrorRepoKeyNotFoundError,
+	45:  ErrorRepoIdMismatch,
+	46:  ErrorUnencryptedRepo,
+	47:  ErrorUnknownKeyType,
+	48:  ErrorUnsupportedPayloadError,
+	50:  ErrorNoPassphraseFailure,
+	51:  ErrorPasscommandFailure,
+	52:  ErrorPassphraseWrong,
+	53:  ErrorPasswordRetriesExceeded,
+	60:  ErrorCacheInitAborted,
+	61:  ErrorCacheEncryptionMethodMismatch,
+	62:  ErrorCacheRepositoryAccessAborted,
+	63:  ErrorCacheRepositoryIDNotUnique,
+	64:  ErrorCacheRepositoryReplay,
+	70:  ErrorLockError,
+	71:  ErrorLockErrorT,
+	72:  ErrorLockFailed,
+	73:  ErrorLockTimeout,
+	74:  ErrorNotLocked,
+	75:  ErrorNotMyLock,
+	80:  ErrorConnectionClosed,
+	81:  ErrorConnectionClosedWithHint,
+	82:  ErrorInvalidRPCMethod,
+	83:  ErrorPathNotAllowed,
+	84:  ErrorRemoteRepositoryRPCServerOutdated,
+	85:  ErrorUnexpectedRPCDataFormatFromClient,
+	86:  ErrorUnexpectedRPCDataFormatFromServer,
+	87:  ErrorConnectionBrokenWithHint,
+	90:  ErrorIntegrityError,
+	91:  ErrorFileIntegrityError,
+	92:  ErrorDecompressionError,
+	95:  ErrorArchiveTAMInvalid,
+	96:  ErrorArchiveTAMRequiredError,
+	97:  ErrorTAMInvalid,
+	98:  ErrorTAMRequiredError,
+	99:  ErrorTAMUnsupportedSuiteError,
+	100: ErrorFileChangedWarning,
+	101: ErrorIncludePatternNeverMatchedWarning,
+	102: ErrorBackupError,
+	103: ErrorBackupRaceConditionError,
+	104: ErrorBackupOSError,
+	105: ErrorBackupPermissionError,
+	106: ErrorBackupIOError,
+	107: ErrorBackupFileNotFoundError,
 }
 
 func exitCodesToError(err error) error {
@@ -344,150 +197,10 @@ func exitCodesToError(err error) error {
 	}
 
 	// Return the error based on the exit code
-	switch exitError.ExitCode() {
-	case 2:
-		return Error{WrappedExitErr{ExitError: exitError}}
-	case 3:
-		return CancelledByUser{WrappedExitErr{ExitError: exitError}}
-	case 4:
-		return CommandError{WrappedExitErr{ExitError: exitError}}
-	case 5:
-		return PlaceholderError{WrappedExitErr{ExitError: exitError}}
-	case 6:
-		return InvalidPlaceholder{WrappedExitErr{ExitError: exitError}}
-	case 10:
-		return RepositoryAlreadyExists{WrappedExitErr{ExitError: exitError}}
-	case 11:
-		return RepositoryAtticRepository{WrappedExitErr{ExitError: exitError}}
-	case 12:
-		return RepositoryCheckNeeded{WrappedExitErr{ExitError: exitError}}
-	case 13:
-		return RepositoryDoesNotExist{WrappedExitErr{ExitError: exitError}}
-	case 14:
-		return RepositoryInsufficientFreeSpaceError{WrappedExitErr{ExitError: exitError}}
-	case 15:
-		return RepositoryInvalidRepository{WrappedExitErr{ExitError: exitError}}
-	case 16:
-		return RepositoryInvalidRepositoryConfig{WrappedExitErr{ExitError: exitError}}
-	case 17:
-		return RepositoryObjectNotFound{WrappedExitErr{ExitError: exitError}}
-	case 18:
-		return RepositoryParentPathDoesNotExist{WrappedExitErr{ExitError: exitError}}
-	case 19:
-		return RepositoryPathAlreadyExists{WrappedExitErr{ExitError: exitError}}
-	case 20:
-		return RepositoryStorageQuotaExceeded{WrappedExitErr{ExitError: exitError}}
-	case 21:
-		return RepositoryPathPermissionDenied{WrappedExitErr{ExitError: exitError}}
-	case 25:
-		return MandatoryFeatureUnsupported{WrappedExitErr{ExitError: exitError}}
-	case 26:
-		return NoManifestError{WrappedExitErr{ExitError: exitError}}
-	case 27:
-		return UnsupportedManifestError{WrappedExitErr{ExitError: exitError}}
-	case 30:
-		return ArchiveAlreadyExists{WrappedExitErr{ExitError: exitError}}
-	case 31:
-		return ArchiveDoesNotExist{WrappedExitErr{ExitError: exitError}}
-	case 32:
-		return ArchiveIncompatibleFilesystemEncodingError{WrappedExitErr{ExitError: exitError}}
-	case 40:
-		return KeyfileInvalidError{WrappedExitErr{ExitError: exitError}}
-	case 41:
-		return KeyfileMismatchError{WrappedExitErr{ExitError: exitError}}
-	case 42:
-		return KeyfileNotFoundError{WrappedExitErr{ExitError: exitError}}
-	case 43:
-		return NotABorgKeyFile{WrappedExitErr{ExitError: exitError}}
-	case 44:
-		return RepoKeyNotFoundError{WrappedExitErr{ExitError: exitError}}
-	case 45:
-		return RepoIdMismatch{WrappedExitErr{ExitError: exitError}}
-	case 46:
-		return UnencryptedRepo{WrappedExitErr{ExitError: exitError}}
-	case 47:
-		return UnknownKeyType{WrappedExitErr{ExitError: exitError}}
-	case 48:
-		return UnsupportedPayloadError{WrappedExitErr{ExitError: exitError}}
-	case 50:
-		return NoPassphraseFailure{WrappedExitErr{ExitError: exitError}}
-	case 51:
-		return PasscommandFailure{WrappedExitErr{ExitError: exitError}}
-	case 52:
-		return PassphraseWrong{WrappedExitErr{ExitError: exitError}}
-	case 53:
-		return PasswordRetriesExceeded{WrappedExitErr{ExitError: exitError}}
-	case 60:
-		return CacheCacheInitAbortedError{WrappedExitErr{ExitError: exitError}}
-	case 61:
-		return CacheEncryptionMethodMismatch{WrappedExitErr{ExitError: exitError}}
-	case 62:
-		return CacheRepositoryAccessAborted{WrappedExitErr{ExitError: exitError}}
-	case 63:
-		return CacheRepositoryIDNotUnique{WrappedExitErr{ExitError: exitError}}
-	case 64:
-		return CacheRepositoryReplay{WrappedExitErr{ExitError: exitError}}
-	case 70:
-		return LockError{WrappedExitErr{ExitError: exitError}}
-	case 71:
-		return LockErrorT{WrappedExitErr{ExitError: exitError}}
-	case 72:
-		return LockFailed{WrappedExitErr{ExitError: exitError}}
-	case 73:
-		return LockTimeout{WrappedExitErr{ExitError: exitError}}
-	case 74:
-		return NotLocked{WrappedExitErr{ExitError: exitError}}
-	case 75:
-		return NotMyLock{WrappedExitErr{ExitError: exitError}}
-	case 80:
-		return ConnectionClosed{WrappedExitErr{ExitError: exitError}}
-	case 81:
-		return ConnectionClosedWithHint{WrappedExitErr{ExitError: exitError}}
-	case 82:
-		return InvalidRPCMethod{WrappedExitErr{ExitError: exitError}}
-	case 83:
-		return PathNotAllowed{WrappedExitErr{ExitError: exitError}}
-	case 84:
-		return RemoteRepositoryRPCServerOutdated{WrappedExitErr{ExitError: exitError}}
-	case 85:
-		return UnexpectedRPCDataFormatFromClient{WrappedExitErr{ExitError: exitError}}
-	case 86:
-		return UnexpectedRPCDataFormatFromServer{WrappedExitErr{ExitError: exitError}}
-	case 87:
-		return ConnectionBrokenWithHint{WrappedExitErr{ExitError: exitError}}
-	case 90:
-		return IntegrityError{WrappedExitErr{ExitError: exitError}}
-	case 91:
-		return FileIntegrityError{WrappedExitErr{ExitError: exitError}}
-	case 92:
-		return DecompressionError{WrappedExitErr{ExitError: exitError}}
-	case 95:
-		return ArchiveTAMInvalid{WrappedExitErr{ExitError: exitError}}
-	case 96:
-		return ArchiveTAMRequiredError{WrappedExitErr{ExitError: exitError}}
-	case 97:
-		return TAMInvalid{WrappedExitErr{ExitError: exitError}}
-	case 98:
-		return TAMRequiredError{WrappedExitErr{ExitError: exitError}}
-	case 99:
-		return TAMUnsupportedSuiteError{WrappedExitErr{ExitError: exitError}}
-	case 100:
-		return FileChangedWarning{WrappedExitErr{ExitError: exitError}}
-	case 101:
-		return IncludePatternNeverMatchedWarning{WrappedExitErr{ExitError: exitError}}
-	case 102:
-		return BackupError{WrappedExitErr{ExitError: exitError}}
-	case 103:
-		return BackupRaceConditionError{WrappedExitErr{ExitError: exitError}}
-	case 104:
-		return BackupOSError{WrappedExitErr{ExitError: exitError}}
-	case 105:
-		return BackupPermissionError{WrappedExitErr{ExitError: exitError}}
-	case 106:
-		return BackupIOError{WrappedExitErr{ExitError: exitError}}
-	case 107:
-		return BackupFileNotFoundError{WrappedExitErr{ExitError: exitError}}
-	default:
-		return err
+	var exitCode = exitError.ExitCode()
+	if nErr, ok := errorMap[exitCode]; ok {
+		return errors.Join(WithExitError{ExitError: exitError}, nErr)
 	}
+	assert.Fail("exit code not handled")
+	return err
 }

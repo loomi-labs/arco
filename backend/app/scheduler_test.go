@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
@@ -84,8 +85,9 @@ func TestScheduler(t *testing.T) {
 		p.Prefix = "test-"
 		bs = p.Edges.BackupSchedule
 
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, borg.ErrorRepositoryDoesNotExist)
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		r, err := a.RepoClient().Create("Test profile", "test-", "test", false)
+		r, err := a.RepoClient().Create("TestRepo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
 		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})

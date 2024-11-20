@@ -375,6 +375,16 @@ func (ru *RepositoryUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ru *RepositoryUpdate) check() error {
+	if v, ok := ru.mutation.Name(); ok {
+		if err := repository.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (ru *RepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdate {
 	ru.modifiers = append(ru.modifiers, modifiers...)
@@ -382,6 +392,9 @@ func (ru *RepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *Rep
 }
 
 func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := ru.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -957,6 +970,16 @@ func (ruo *RepositoryUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ruo *RepositoryUpdateOne) check() error {
+	if v, ok := ruo.mutation.Name(); ok {
+		if err := repository.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (ruo *RepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdateOne {
 	ruo.modifiers = append(ruo.modifiers, modifiers...)
@@ -964,6 +987,9 @@ func (ruo *RepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) 
 }
 
 func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, err error) {
+	if err := ruo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	id, ok := ruo.mutation.ID()
 	if !ok {

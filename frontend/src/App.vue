@@ -63,7 +63,10 @@ async function getStartupState() {
 }
 
 // Convert strings like 'initializingDatabase' to 'Initializing database'
-function toTitleCase(str: string) {
+function toTitleCase(str: string | undefined): string {
+  if (!str) {
+    return "";
+  }
   return str.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
 }
 

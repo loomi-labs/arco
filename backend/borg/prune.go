@@ -48,7 +48,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	cmdStr = append(cmdStr, pruneOptions...)
 	cmdStr = append(cmdStr, repository)
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
@@ -66,7 +66,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 			b.log.LogCmdCancelled(cmd.String(), startTime)
 			return CancelErr{}
 		}
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	} else {
 		scanner := bufio.NewScanner(strings.NewReader(string(out)))
 		b.log.LogCmdEnd(cmd.String(), startTime)

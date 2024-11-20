@@ -9,6 +9,7 @@ require (
 	github.com/eminarican/safetypes v0.0.8
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/google/go-github/v66 v66.0.0
+	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/negrel/assert v0.2.0
 	github.com/prometheus/procfs v0.15.1
@@ -18,6 +19,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.9.2
 	go.uber.org/mock v0.5.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.28.0
 )
 
 require (
@@ -118,7 +120,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -265,7 +266,6 @@ require (
 	go-simpler.org/sloglint v0.7.2 // indirect
 	go.uber.org/automaxprocs v1.5.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/image v0.12.0 // indirect

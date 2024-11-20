@@ -41,7 +41,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
@@ -57,12 +57,12 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	// borg streams JSON messages to stderr
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
 	scanner := bufio.NewScanner(stderr)
@@ -75,7 +75,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 			b.log.LogCmdCancelled(cmd.String(), startTime)
 			return archiveName, CancelErr{}
 		}
-		return archiveName, b.log.LogCmdError(cmd.String(), startTime, err)
+		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
 	b.log.LogCmdEnd(cmd.String(), startTime)
@@ -128,7 +128,7 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
 	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
@@ -146,7 +146,7 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 			b.log.LogCmdCancelled(cmd.String(), startTime)
 			return 0, CancelErr{}
 		}
-		return 0, b.log.LogCmdError(cmd.String(), startTime, err)
+		return 0, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 

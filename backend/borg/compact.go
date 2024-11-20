@@ -11,7 +11,7 @@ import (
 func (b *borg) Compact(ctx context.Context, repository string, password string) error {
 	// Prepare compact command
 	cmd := exec.CommandContext(ctx, b.path, "compact", repository)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
 	hasBeenCanceled := false
@@ -29,7 +29,7 @@ func (b *borg) Compact(ctx context.Context, repository string, password string) 
 			b.log.LogCmdCancelled(cmd.String(), startTime)
 			return CancelErr{}
 		}
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	} else {
 		b.log.LogCmdEnd(cmd.String(), startTime)
 	}

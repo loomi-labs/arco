@@ -9,12 +9,12 @@ import (
 // DeleteArchive deletes a single archive from the repository
 func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) error {
 	cmd := exec.CommandContext(ctx, b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
@@ -30,13 +30,13 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 		fmt.Sprintf("%s*", prefix),
 		repository,
 	)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Run delete command
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	} else {
 		b.log.LogCmdEnd(cmd.String(), startTime)
 
@@ -48,7 +48,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 // DeleteRepository deletes the repository and all its archives
 func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) error {
 	cmd := exec.CommandContext(ctx, b.path, "delete", repository)
-	cmd.Env = Env{}.
+	cmd.Env = NewEnv(b.sshPrivateKeys).
 		WithPassword(password).
 		WithDeleteConfirmation().
 		AsList()
@@ -56,7 +56,7 @@ func (b *borg) DeleteRepository(ctx context.Context, repository string, password
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil

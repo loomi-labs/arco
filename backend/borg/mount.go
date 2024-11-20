@@ -21,12 +21,12 @@ func (b *borg) mount(ctx context.Context, repository string, archive *string, pa
 	}
 
 	cmd := exec.CommandContext(ctx, b.path, "mount", archiveOrRepo, mountPath)
-	cmd.Env = Env{}.WithPassword(password).AsList()
+	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil
@@ -38,7 +38,7 @@ func (b *borg) Umount(ctx context.Context, path string) error {
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return b.log.LogCmdError(cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
+		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
 	}
 	b.log.LogCmdEnd(cmd.String(), startTime)
 	return nil

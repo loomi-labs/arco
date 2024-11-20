@@ -198,7 +198,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetPruneCancelled(b.ctx, bId)
 			return PruneResultCanceled, nil
-		} else if errors.As(err, &borg.LockTimeout{}) {
+		} else if errors.Is(err, borg.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -369,7 +369,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if err != nil {
-		if errors.As(err, &borg.LockTimeout{}) {
+		if errors.Is(err, borg.ErrorLockTimeout) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return 0, fmt.Errorf("repository %s is locked", repo.Name)
 		} else {

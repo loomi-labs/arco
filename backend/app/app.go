@@ -76,11 +76,12 @@ func NewApp(
 	eventEmitter types.EventEmitter,
 ) *App {
 	state := appstate.NewState(log, eventEmitter)
+	sshPrivateKeys := util.SearchSSHKeys(log)
 	return &App{
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgPath, log),
+		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
@@ -99,6 +100,9 @@ type AppClient App
 // BackupClient is a client for backup related operations
 type BackupClient App
 
+// ValidationClient is a client for validation related operations
+type ValidationClient App
+
 func (a *App) RepoClient() *RepositoryClient {
 	return (*RepositoryClient)(a)
 }
@@ -111,8 +115,16 @@ func (a *App) BackupClient() *BackupClient {
 	return (*BackupClient)(a)
 }
 
+func (a *App) ValidationClient() *ValidationClient {
+	return (*ValidationClient)(a)
+}
+
 func (r *RepositoryClient) backupClient() *BackupClient {
 	return (*BackupClient)(r)
+}
+
+func (r *RepositoryClient) validationClient() *ValidationClient {
+	return (*ValidationClient)(r)
 }
 
 func (b *BackupClient) repoClient() *RepositoryClient {

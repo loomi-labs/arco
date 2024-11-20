@@ -2,7 +2,7 @@
 import { ent } from "../../wailsjs/go/models";
 import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
-import CreateRemoteRepositoryModal from "../components/CreateRemoteRepositoryModal.vue";
+import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import { getLocation, Location, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";

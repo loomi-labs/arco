@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
+import * as validationClient from "../../wailsjs/go/app/ValidationClient";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { app, ent, state, types } from "../../wailsjs/go/models";
 import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
@@ -290,7 +291,7 @@ async function validateName(archiveId: number) {
   }
 
   try {
-    inputErrors.value[archiveId] = await repoClient.ValidateArchiveName(archiveId, prefix, name);
+    inputErrors.value[archiveId] = await validationClient.ArchiveName(archiveId, prefix, name);
   } catch (error: any) {
     await showAndLogError("Failed to validate archive name", error);
   }

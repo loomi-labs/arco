@@ -2,9 +2,12 @@ package app
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -12,6 +15,9 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -119,8 +125,18 @@ func (r *RepositoryClient) GetWithActiveMounts() ([]*ent.Repository, error) {
 }
 
 func (r *RepositoryClient) Create(name, location, password string, noPassword bool) (*ent.Repository, error) {
-	if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
+	r.log.Debugf("Creating repository %s at %s", name, location)
+	result, err := r.testRepoConnection(location, password)
+	if err != nil {
 		return nil, err
+	}
+	if !result.Success && !result.IsBorgRepo {
+		// Create the repository if it does not exist
+		if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
+			return nil, err
+		}
+	} else if !result.Success {
+		return nil, fmt.Errorf("could not connect to repository")
 	}
 
 	// Create a new repository entity
@@ -215,7 +231,8 @@ func (r *RepositoryClient) Delete(id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if err != nil {
+	if err != nil && !errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+		// If the repository does not exist, we can ignore the error
 		return err
 	}
 	return r.Remove(id)
@@ -293,4 +310,105 @@ func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
 		result = append(result, host)
 	}
 	return result, nil
+}
+
+func (r *RepositoryClient) IsBorgRepository(path string) bool {
+	// Check if path has a README file with the string borg in it
+	fp := filepath.Join(path, "README")
+	_, err := os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err := os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+
+	if strings.Contains(string(contents), "borg") {
+		return true
+	}
+
+	// Otherwise check if we have a config file
+	fp = filepath.Join(path, "config")
+	_, err = os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err = os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(contents), "[repository]")
+}
+
+type TestRepoConnectionResult struct {
+	Success         bool `json:"success"`
+	NeedsPassword   bool `json:"needsPassword"`
+	IsPasswordValid bool `json:"isPasswordValid"`
+	IsBorgRepo      bool `json:"isBorgRepo"`
+}
+
+type testRepoConnectionResult struct {
+	Success         bool `json:"success"`
+	IsPasswordValid bool `json:"isPasswordValid"`
+	IsBorgRepo      bool `json:"isBorgRepo"`
+}
+
+func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoConnectionResult, error) {
+	r.log.Debugf("Testing repository connection to %s", path)
+	result := testRepoConnectionResult{
+		Success:         false,
+		IsPasswordValid: false,
+		IsBorgRepo:      false,
+	}
+	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
+	if err != nil {
+		if errors.Is(err, borg.ErrorPassphraseWrong) {
+			result.IsBorgRepo = true
+			return result, nil
+		}
+		if errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+			return result, nil
+		}
+		if errors.Is(err, borg.ErrorRepositoryInvalidRepository) {
+			return result, nil
+		}
+		return result, err
+	}
+	result.Success = true
+	result.IsPasswordValid = true
+	result.IsBorgRepo = true
+	return result, nil
+}
+
+func (r *RepositoryClient) TestRepoConnection(path, password string) (TestRepoConnectionResult, error) {
+	toTestRepoConnectionResult := func(t testRepoConnectionResult, err error, needsPassword bool) (TestRepoConnectionResult, error) {
+		if err != nil {
+			return TestRepoConnectionResult{}, err
+		}
+		result := TestRepoConnectionResult{}
+		result.Success = t.Success
+		result.IsPasswordValid = t.IsPasswordValid
+		result.IsBorgRepo = t.IsBorgRepo
+		result.NeedsPassword = needsPassword
+		return result, nil
+	}
+
+	// First test with a random password
+	// If the test is successful, we know that the repository is not password protected
+	randPassword, err := uuid.NewRandom()
+	if err != nil {
+		return TestRepoConnectionResult{}, err
+	}
+	tr, err := r.testRepoConnection(path, randPassword.String())
+	if err != nil || tr.Success || !tr.IsBorgRepo {
+		return toTestRepoConnectionResult(tr, err, false)
+	}
+
+	// If we are here it means we need a password
+	if password != "" {
+		tr, err = r.testRepoConnection(path, password)
+		return toTestRepoConnectionResult(tr, err, true)
+	}
+	return toTestRepoConnectionResult(tr, nil, true)
 }

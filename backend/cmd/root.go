@@ -195,6 +195,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			arco.AppClient(),
 			arco.BackupClient(),
 			arco.RepoClient(),
+			arco.ValidationClient(),
 		},
 		EnumBind: []interface{}{
 			toTsEnums(types.AllWeekdays),

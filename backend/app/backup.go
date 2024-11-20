@@ -189,6 +189,7 @@ func (b *BackupClient) IsDirectoryEmpty(path string) bool {
 }
 
 func (b *BackupClient) CreateDirectory(path string) error {
+	b.log.Debug(fmt.Sprintf("Creating directory %s", path))
 	return os.MkdirAll(util.ExpandPath(path), 0755)
 }
 
@@ -655,7 +656,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetBackupCancelled(b.ctx, bId, true)
 			return BackupResultCancelled, nil
-		} else if errors.As(err, &borg.LockTimeout{}) {
+		} else if errors.Is(err, borg.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -729,7 +730,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 		if errors.As(err, &borg.CancelErr{}) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 			return DeleteResultCancelled, nil
-		} else if errors.As(err, &borg.LockTimeout{}) {
+		} else if errors.Is(err, borg.ErrorLockTimeout) {
 			b.state.AddNotification(b.ctx, "Delete job failed: repository is locked", types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return DeleteResultError, err
