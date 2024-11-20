@@ -256,7 +256,14 @@ watch([name, location, password, isEncrypted], async () => {
         </div>
 
         <p v-if='!isBorgRepo'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
-        <p v-else>This repository is encrypted and requires a password.</p>
+        <p v-if='isBorgRepo && needsPassword'>This repository is encrypted and requires a password.</p>
+
+        <div class="form-control w-52">
+          <label class="label cursor-pointer">
+            <span class="label-text">Encrypt repository</span>
+            <input type="checkbox" class="toggle toggle-secondary" v-model='isEncrypted' :disabled='isBorgRepo || isValidating'/>
+          </label>
+        </div>
 
         <div class='flex justify-between items-start gap-4'>
           <div class='flex flex-col w-full'>
@@ -266,19 +273,11 @@ watch([name, location, password, isEncrypted], async () => {
                      v-model='password'
                      @change='fullValidate()'
                      :disabled='!isEncrypted' />
-              <CheckCircleIcon v-if='isEncrypted && isPasswordCorrect' class='size-6 text-success' />
+              <CheckCircleIcon v-if='needsPassword && isPasswordCorrect' class='size-6 text-success' />
+              <LockClosedIcon class='size-6' v-if='isEncrypted' />
+              <LockOpenIcon class='size-6' v-else />
             </FormField>
           </div>
-
-          <button class='btn btn-outline min-w-44 mt-9'
-                  :class='{"btn-success": isEncrypted}'
-                  @click='toggleEncrypted()'
-                  :disabled='isBorgRepo || isValidating'
-          >
-            {{ isEncrypted ? "Encrypted" : "Not Encrypted" }}
-            <LockClosedIcon class='size-6' v-if='isEncrypted' />
-            <LockOpenIcon class='size-6' v-else />
-          </button>
         </div>
 
         <div>
