@@ -55,6 +55,8 @@ const isValid = computed(() =>
   !nameError.value &&
   !locationError.value &&
   !passwordError.value &&
+  // If the repo is a borg repo, we need to check if the password is correct
+  // If it's not a borg repo, we can't check the password (it is therefore undefined)
   isPasswordCorrect.value === undefined || isPasswordCorrect.value
 );
 
