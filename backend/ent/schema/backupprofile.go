@@ -20,6 +20,10 @@ func (BackupProfile) Mixin() []ent.Mixin {
 	}
 }
 
+var (
+	ValPrefixPattern = regexp.MustCompile(`^[a-z0-9]+-$`) // Match the prefix to be an alphanumeric string ending with a hyphen
+)
+
 // Fields of the BackupProfile.
 func (BackupProfile) Fields() []ent.Field {
 	return []ent.Field{
@@ -31,8 +35,7 @@ func (BackupProfile) Fields() []ent.Field {
 			MaxLen(30),
 		field.String("prefix").
 			StructTag(`json:"prefix"`).
-			// Match the prefix to be an alphanumeric string ending with a hyphen
-			Match(regexp.MustCompile("^[a-z0-9]+-$")).
+			Match(ValPrefixPattern).
 			// The prefix must be unique to ensure that archives belong to a single profile
 			Unique().
 			// To simplify the rules, the prefix is immutable

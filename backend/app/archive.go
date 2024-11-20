@@ -12,6 +12,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -360,4 +361,62 @@ func (r *RepositoryClient) RenameArchive(id int, prefix, name string) error {
 		UpdateOneID(id).
 		SetName(newName).
 		Exec(r.ctx)
+}
+
+type RepositoryWithArchives struct {
+	Repository *ent.Repository `json:"repository"`
+	Archives   []*ent.Archive  `json:"archives"`
+}
+
+func (r *RepositoryClient) GetDisconnectedArchives(repoIds []int) ([]RepositoryWithArchives, error) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(repoIds))
+	busyRepoIds := make([]int, 0)
+	for _, repoId := range repoIds {
+		go func(repoId int) {
+			defer wg.Done()
+			if ok, _ := r.state.CanPerformRepoOperation(repoId); !ok {
+				busyRepoIds = append(busyRepoIds, repoId)
+				return
+			}
+
+			repoLock := r.state.GetRepoLock(repoId)
+			repoLock.Lock()
+			defer repoLock.Unlock()
+
+			_, err := r.refreshArchives(repoId)
+			if err != nil {
+				r.log.Error(fmt.Sprintf("Failed to refresh archives for repository %d: %v", repoId, err))
+			}
+		}(repoId)
+	}
+	wg.Wait()
+
+	var reposWithArchives []RepositoryWithArchives
+	for _, repoId := range repoIds {
+		archives, err := r.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasRepositoryWith(repository.ID(repoId)),
+				archive.Not(archive.HasBackupProfile()),
+			)).
+			All(r.ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(archives) > 0 {
+			repo, err := r.db.Repository.
+				Query().
+				Where(repository.ID(repoId)).
+				Only(r.ctx)
+			if err != nil {
+				return nil, err
+			}
+			reposWithArchives = append(reposWithArchives, RepositoryWithArchives{
+				Repository: repo,
+				Archives:   archives,
+			})
+		}
+	}
+	return reposWithArchives, nil
 }

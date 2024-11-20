@@ -19,6 +19,7 @@ import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
 import * as runtime from "../../wailsjs/runtime";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Types
@@ -37,6 +38,7 @@ enum Step {
 const router = useRouter();
 const toast = useToast();
 const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
+const diconnectedArchives = ref<ent.Archive[]>([]);
 const currentStep = ref<Step>(Step.SelectData);
 const existingRepos = ref<ent.Repository[]>([]);
 const newBackupProfileCreated = ref(false);
@@ -150,6 +152,11 @@ const connectRepos = (repos: ent.Repository[]) => {
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
+    const repoIds = connectedRepos.value.map((r) => r.id);
+    const result = await repoClient.GetDisconnectedArchives(repoIds);
+    result.map((r) => LogDebug(`Repo ${r.repository?.name} has ${r.archives.length} disconnected archives`));
+    return false;
+
     backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
     backupProfile.value.edges.repositories = connectedRepos.value;
     const savedBackupProfile = await backupClient.CreateBackupProfile(backupProfile.value, backupProfile.value.edges.repositories.map((r) => r.id));
