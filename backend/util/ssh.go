@@ -21,7 +21,12 @@ func GenerateKeyPair() (*keygen.KeyPair, error) {
 }
 
 func SearchSSHKeys(log *zap.SugaredLogger) []string {
-	sshDir := filepath.Join(os.Getenv("HOME"), ".ssh")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Warnf("Failed to get home directory: %v", err)
+		return nil
+	}
+	sshDir := filepath.Join(home, ".ssh")
 	files, err := os.ReadDir(sshDir)
 	if err != nil {
 		log.Warnf("Failed to read directory: %v", err)

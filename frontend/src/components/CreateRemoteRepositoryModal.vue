@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as validationClient from "../../wailsjs/go/app/ValidationClient";
@@ -139,6 +139,10 @@ async function toggleEncrypted() {
   if (password.value === undefined) {
     password.value = "";
   }
+
+  // Wait for simple validation to run before running full validation
+  await nextTick();
+  await fullValidate();
 }
 
 async function simpleValidate(force = false) {
@@ -172,9 +176,7 @@ async function fullValidate(force = false) {
       if (result.isBorgRepo) {
         if (password.value || force) {
           if (result.needsPassword && !result.success) {
-            passwordError.value = "Password is wrong";
-          } else if (result.needsPassword && !result.success) {
-            passwordError.value = "Enter a password for this repository";
+            passwordError.value = password.value ? "Incorrect password" : "Enter a password for this repository";
           } else if (result.success) {
             passwordError.value = undefined;
           }
@@ -271,7 +273,6 @@ watch([name, location, password, isEncrypted], async () => {
           <button class='btn btn-outline min-w-44 mt-9'
                   :class='{"btn-success": isEncrypted}'
                   @click='toggleEncrypted()'
-                  @change='fullValidate()'
                   :disabled='isBorgRepo || isValidating'
           >
             {{ isEncrypted ? "Encrypted" : "Not Encrypted" }}

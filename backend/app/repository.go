@@ -231,7 +231,7 @@ func (r *RepositoryClient) Delete(id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if err != nil && errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+	if err != nil && !errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
 		return err
 	}
@@ -313,7 +313,7 @@ func (r *RepositoryClient) GetConnectedRemoteHosts() ([]string, error) {
 }
 
 func (r *RepositoryClient) IsBorgRepository(path string) bool {
-	//	Check if path has a README file with the string borg in it
+	// Check if path has a README file with the string borg in it
 	fp := filepath.Join(path, "README")
 	_, err := os.Stat(fp)
 	if err != nil {
@@ -324,7 +324,21 @@ func (r *RepositoryClient) IsBorgRepository(path string) bool {
 		return false
 	}
 
-	return strings.Contains(string(contents), "borg")
+	if strings.Contains(string(contents), "borg") {
+		return true
+	}
+
+	// Otherwise check if we have a config file
+	fp = filepath.Join(path, "config")
+	_, err = os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err = os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(contents), "[repository]")
 }
 
 type TestRepoConnectionResult struct {

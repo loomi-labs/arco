@@ -17,7 +17,11 @@ const development = process.env.NODE_ENV === "development";
 export async function showAndLogError(message: string, error?: any): Promise<void> {
   const toast = useToast();
 
-  toast.error(message + "\n" + error);
+  if (development) {
+    toast.error(message + "\n" + error);
+  } else {
+    toast.error(message);
+  }
 
   const fe = types.FrontendError.createFrom();
 
