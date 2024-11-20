@@ -269,8 +269,8 @@ func (s *State) GetStartupState() StartupState {
 /********** Repo States ************/
 /***********************************/
 
-func (s *State) CanPerformRepoOperation(id types.BackupId) (canRun bool, reason string) {
-	if rs, ok := s.repoStates[id.RepositoryId]; ok {
+func (s *State) CanPerformRepoOperation(repositoryId int) (canRun bool, reason string) {
+	if rs, ok := s.repoStates[repositoryId]; ok {
 		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
 		}

@@ -341,7 +341,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	if !skipAcquiringRepoLock {
 		// We do not wait for other operations to finish
 		// Either we can run the operation or we return an error
-		if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+		if canRun, reason := b.state.CanPerformRepoOperation(bId.RepositoryId); !canRun {
 			return 0, fmt.Errorf("can not examine prune: %s", reason)
 		}
 
