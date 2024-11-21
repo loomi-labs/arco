@@ -142,7 +142,7 @@ func (a *App) Startup(ctx context.Context) {
 		a.log.Error(err)
 		return
 	}
-	// Restart if an updates has been performed
+	// Restart if an update has been performed
 	if needsRestart {
 		a.log.Info("Updated Arco binary... restarting")
 		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusRestartingArco, nil)

@@ -17,6 +17,45 @@ import (
 	"time"
 )
 
+type PruningOptionName string
+
+const (
+	PruningOptionNone   PruningOptionName = "none"
+	PruningOptionFew    PruningOptionName = "few"
+	PruningOptionMany   PruningOptionName = "many"
+	PruningOptionCustom PruningOptionName = "custom"
+)
+
+func (p PruningOptionName) String() string {
+	return string(p)
+}
+
+type PruningOption struct {
+	Name        PruningOptionName `json:"name"`
+	KeepHourly  int               `json:"keepHourly"`
+	KeepDaily   int               `json:"keepDaily"`
+	KeepWeekly  int               `json:"keepWeekly"`
+	KeepMonthly int               `json:"keepMonthly"`
+	KeepYearly  int               `json:"keepYearly"`
+}
+
+var PruningOptions = []PruningOption{
+	{Name: PruningOptionNone},
+	{Name: PruningOptionFew, KeepHourly: 8, KeepDaily: 7, KeepWeekly: 4, KeepMonthly: 3, KeepYearly: 1},
+	{Name: PruningOptionMany, KeepHourly: 24, KeepDaily: 14, KeepWeekly: 8, KeepMonthly: 6, KeepYearly: 2},
+	{Name: PruningOptionCustom},
+}
+
+var defaultPruningOption = PruningOptions[2]
+
+type GetPruningOptionsResponse struct {
+	Options []PruningOption `json:"options"`
+}
+
+func (b *BackupClient) GetPruningOptions() GetPruningOptionsResponse {
+	return GetPruningOptionsResponse{Options: PruningOptions}
+}
+
 func (b *BackupClient) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
 	defer b.sendPruningRuleChanged()
 
@@ -341,7 +380,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	if !skipAcquiringRepoLock {
 		// We do not wait for other operations to finish
 		// Either we can run the operation or we return an error
-		if canRun, reason := b.state.CanPerformRepoOperation(bId); !canRun {
+		if canRun, reason := b.state.CanPerformRepoOperation(bId.RepositoryId); !canRun {
 			return 0, fmt.Errorf("can not examine prune: %s", reason)
 		}
 
