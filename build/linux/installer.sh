@@ -27,7 +27,7 @@ Description=Arco Backup Service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/arco --hidden
+ExecStart=%h/.local/bin/arco --hidden
 Restart=on-failure
 Environment=HOME=%h
 
