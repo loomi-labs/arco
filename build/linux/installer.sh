@@ -30,6 +30,11 @@ if ! unzip -o /tmp/arco-linux.zip -d /tmp/arco-linux; then
     rm -f /tmp/arco-linux.zip
     exit 1
 fi
+if ! mkdir -p ~/.local/bin; then
+    printf "Failed to create directory\n"
+    rm -rf /tmp/arco-linux.zip /tmp/arco-linux
+    exit 1
+fi
 if ! cp /tmp/arco-linux/arco ~/.local/bin/arco; then
     printf "Failed to install Arco\n"
     rm -rf /tmp/arco-linux.zip /tmp/arco-linux
