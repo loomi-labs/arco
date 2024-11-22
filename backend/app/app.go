@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/energye/systray"
 	"github.com/google/go-github/v66/github"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -441,38 +442,40 @@ func (a *App) installBorgBinary() error {
 }
 
 func (a *App) initSystray() error {
-	//readyFunc := func() {
-	//	systray.SetIcon(a.config.Icon)
-	//	systray.SetTitle(Name)
-	//	systray.SetTooltip(Name)
-	//
-	//	mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
-	//	systray.AddSeparator()
-	//	mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
-	//
-	//	// Sets the icon of a menu item. Only available on Mac and Windows.
-	//	mOpen.SetIcon(a.config.Icon)
-	//	mQuit.SetIcon(a.config.Icon)
-	//
-	//	go func() {
-	//		for {
-	//			select {
-	//			case <-mOpen.ClickedCh:
-	//				runtime.WindowShow(a.ctx)
-	//			case <-mQuit.ClickedCh:
-	//				a.Shutdown(a.ctx)
-	//			case <-a.ctx.Done():
-	//				return
-	//			}
-	//		}
-	//	}()
-	//}
-	//
-	//exitFunc := func() {
-	//	a.Shutdown(a.ctx)
-	//}
-	//
-	//systray.Run(readyFunc, exitFunc)
+	readyFunc := func() {
+		systray.SetIcon(a.config.Icon)
+		systray.SetTitle(Name)
+		systray.SetTooltip(Name)
+		systray.SetOnClick(func(menu systray.IMenu) {
+			runtime.WindowShow(a.ctx)
+		})
+		systray.SetOnDClick(func(menu systray.IMenu) {
+			runtime.WindowShow(a.ctx)
+		})
+		systray.SetOnRClick(func(menu systray.IMenu) {
+			err := menu.ShowMenu()
+			if err != nil {
+				a.log.Error(err)
+			}
+		})
+
+		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
+		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
+
+		mOpen.Click(func() {
+			runtime.WindowShow(a.ctx)
+		})
+		mQuit.Click(func() {
+			a.Shutdown(a.ctx)
+		})
+	}
+
+	exitFunc := func() {
+		a.Shutdown(a.ctx)
+	}
+
+	startSysTray, _ := systray.RunWithExternalLoop(readyFunc, exitFunc)
+	startSysTray()
 	return nil
 }
 
