@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/energye/systray"
+	"fyne.io/systray"
 	"github.com/google/go-github/v66/github"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -446,28 +446,22 @@ func (a *App) initSystray() error {
 		systray.SetIcon(a.config.Icon)
 		systray.SetTitle(Name)
 		systray.SetTooltip(Name)
-		systray.SetOnClick(func(menu systray.IMenu) {
-			runtime.WindowShow(a.ctx)
-		})
-		systray.SetOnDClick(func(menu systray.IMenu) {
-			runtime.WindowShow(a.ctx)
-		})
-		systray.SetOnRClick(func(menu systray.IMenu) {
-			err := menu.ShowMenu()
-			if err != nil {
-				a.log.Error(err)
-			}
-		})
 
 		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
 		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
 
-		mOpen.Click(func() {
-			runtime.WindowShow(a.ctx)
-		})
-		mQuit.Click(func() {
-			a.Shutdown(a.ctx)
-		})
+		go func() {
+			for {
+				select {
+				case <-mOpen.ClickedCh:
+					runtime.WindowShow(a.ctx)
+				case <-mQuit.ClickedCh:
+					a.Shutdown(a.ctx)
+				case <-a.ctx.Done():
+					return
+				}
+			}
+		}()
 	}
 
 	exitFunc := func() {
