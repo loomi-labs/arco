@@ -13,7 +13,7 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed icon.svg
+//go:embed icon.png
 var icon embed.FS
 
 //go:embed backend/ent/migrate/migrations
@@ -25,7 +25,7 @@ func main() {
 		panic(fmt.Errorf("failed to get migrations directory: %w", err))
 	}
 
-	iconFile, err := icon.Open("icon.svg")
+	iconFile, err := icon.Open("icon.png")
 	if err != nil {
 		panic(fmt.Errorf("failed to open icon: %w", err))
 	}

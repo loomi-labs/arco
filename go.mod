@@ -7,6 +7,7 @@ require (
 	entgo.io/ent v0.14.1
 	github.com/charmbracelet/keygen v0.5.1
 	github.com/eminarican/safetypes v0.0.8
+	github.com/energye/systray v1.0.2
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/google/go-github/v66 v66.0.0
 	github.com/google/uuid v1.6.0
@@ -234,6 +235,7 @@ require (
 	github.com/tc-hib/winres v0.2.1 // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
 	github.com/tetafro/godot v1.4.17 // indirect
+	github.com/tevino/abool v0.0.0-20220530134649-2bfc934cb23c // indirect
 	github.com/tidwall/gjson v1.9.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
