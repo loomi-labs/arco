@@ -7,10 +7,10 @@ require (
 	entgo.io/ent v0.14.1
 	github.com/charmbracelet/keygen v0.5.1
 	github.com/eminarican/safetypes v0.0.8
+	github.com/energye/systray v1.0.2
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/google/go-github/v66 v66.0.0
 	github.com/google/uuid v1.6.0
-	github.com/iamspark1e/systray v0.0.0-20241022063709-572e49e14d1d
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/negrel/assert v0.2.0
 	github.com/prometheus/procfs v0.15.1
@@ -289,4 +289,4 @@ require (
 	mvdan.cc/unparam v0.0.0-20240528143540-8a5130ca722f // indirect
 )
 
-//replace github.com/energye/systray v1.0.2 => github.com/loomi-labs/systray v0.0.0-20241122181445-49da050baf34
+replace github.com/energye/systray v1.0.2 => github.com/loomi-labs/systray v0.0.0-20241122184630-ad7744092d6a
