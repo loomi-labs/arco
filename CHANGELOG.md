@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0](https://github.com/loomi-labs/arco/compare/v0.5.0...v0.6.0) (2024-11-21)
+
+
+### Features
+
+* add delete repository ([#91](https://github.com/loomi-labs/arco/issues/91)) ([52112ae](https://github.com/loomi-labs/arco/commit/52112aef417e087c7af46ebf6877ec17196c15e2))
+* add improved repository connector ([#93](https://github.com/loomi-labs/arco/issues/93)) ([8a9a2ed](https://github.com/loomi-labs/arco/commit/8a9a2ed691f35d0d3ef54ea6ebc294837a790fdd))
+* add linux installer script ([#94](https://github.com/loomi-labs/arco/issues/94)) ([716d447](https://github.com/loomi-labs/arco/commit/716d4476321d916bcc22a809c4f8ac542dcc6e3b))
+
 ## [0.5.0](https://github.com/loomi-labs/arco/compare/v0.4.0...v0.5.0) (2024-11-15)
 
 
