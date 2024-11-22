@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/loomi-labs/arco/compare/v0.6.0...v0.7.0) (2024-11-22)
+
+
+### Features
+
+* add systray ([#96](https://github.com/loomi-labs/arco/issues/96)) ([9f50aef](https://github.com/loomi-labs/arco/commit/9f50aef29e63864bab53cfe567f6de3a8c743a84))
+
 ## [0.6.0](https://github.com/loomi-labs/arco/compare/v0.5.0...v0.6.0) (2024-11-21)
 
 
