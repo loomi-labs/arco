@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/loomi-labs/arco/compare/v0.7.0...v0.8.0) (2024-11-25)
+
+
+### Features
+
+* add better version handling (2024-11-22)
+
 ## [0.7.0](https://github.com/loomi-labs/arco/compare/v0.6.0...v0.7.0) (2024-11-22)
 
 
