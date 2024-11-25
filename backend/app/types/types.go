@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/settings"
@@ -46,7 +47,7 @@ type Config struct {
 	Icon            []byte
 	Migrations      fs.FS
 	GithubAssetName string
-	Version         string
+	Version         *semver.Version
 	ArcoPath        string
 }
 

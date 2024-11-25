@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -125,6 +126,11 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Con
 		}
 	}
 
+	version, err := semver.NewVersion(app.Version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse version: %w", err)
+	}
+
 	return &types.Config{
 		Dir:             configDir,
 		BorgBinaries:    binaries,
@@ -133,7 +139,7 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Con
 		Icon:            iconData,
 		Migrations:      migrations,
 		GithubAssetName: util.GithubAssetName(),
-		Version:         app.Version,
+		Version:         version,
 		ArcoPath:        path.Join(arcoBinaryDir, "arco"),
 	}, nil
 }
@@ -255,15 +261,16 @@ var rootCmd = &cobra.Command{
 		iconData := cmd.Context().Value(iconKey).([]byte)
 		migrations := cmd.Context().Value(migrationsKey).(fs.FS)
 
+		log := initLogger(configDir)
+		//goland:noinspection GoUnhandledErrorResult
+		defer log.Sync() // flushes buffer, if any
+
 		// Initialize the configuration
 		config, err := initConfig(configDir, iconData, migrations)
 		if err != nil {
+			log.Errorf("failed to initialize config: %v", err)
 			return fmt.Errorf("failed to initialize config: %w", err)
 		}
-
-		log := initLogger(config.Dir)
-		//goland:noinspection GoUnhandledErrorResult
-		defer log.Sync() // flushes buffer, if any
 
 		if startHidden {
 			log.Info("starting hidden")

@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	ariga.io/atlas-go-sdk v0.6.4
 	entgo.io/ent v0.14.1
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/charmbracelet/keygen v0.5.1
 	github.com/eminarican/safetypes v0.0.8
 	github.com/energye/systray v1.0.2
@@ -40,7 +41,6 @@ require (
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v3 v3.3.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect

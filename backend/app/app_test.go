@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
@@ -31,7 +32,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		Icon:            nil,
 		Migrations:      migrationsDir,
 		GithubAssetName: "",
-		Version:         "",
+		Version:         semver.MustParse("0.0.0"),
 		ArcoPath:        "",
 	}
 
