@@ -442,6 +442,11 @@ func (a *App) installBorgBinary() error {
 }
 
 func (a *App) initSystray() error {
+	// systray is currently not working on macOS
+	if util.IsMacOS() {
+		return nil
+	}
+
 	readyFunc := func() {
 		systray.SetIcon(a.config.Icon)
 		systray.SetTitle(Name)

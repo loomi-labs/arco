@@ -13,7 +13,7 @@ func IsLinux() bool {
 	return runtime.GOOS == Linux.String()
 }
 
-func IsDarwin() bool {
+func IsMacOS() bool {
 	return runtime.GOOS == Darwin.String()
 }
 
@@ -25,7 +25,7 @@ func GithubAssetName() string {
 	if IsLinux() {
 		return "arco-linux.zip"
 	}
-	if IsDarwin() {
+	if IsMacOS() {
 		return "arco-macos.zip"
 	}
 	return ""

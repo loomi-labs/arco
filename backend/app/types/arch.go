@@ -29,7 +29,7 @@ func GetOpenFileManagerCmd() (string, error) {
 	if util.IsLinux() {
 		return "xdg-open", nil
 	}
-	if util.IsDarwin() {
+	if util.IsMacOS() {
 		return "open", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
@@ -39,7 +39,7 @@ func GetMountPath() (string, error) {
 	if util.IsLinux() {
 		return "/run/user", nil
 	}
-	if util.IsDarwin() {
+	if util.IsMacOS() {
 		return "/private/tmp", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
@@ -93,7 +93,7 @@ func GetMountStates(paths map[int]string) (states map[int]*MountState, err error
 	if util.IsLinux() {
 		return getLinuxMountStates(paths)
 	}
-	if util.IsDarwin() {
+	if util.IsMacOS() {
 		return getDarwinMountStates(paths)
 	}
 	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
