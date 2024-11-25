@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"github.com/energye/systray"
 	"github.com/google/go-github/v66/github"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
@@ -32,7 +33,7 @@ const (
 )
 
 var (
-	Version = ""
+	Version = "v0.0.0"
 )
 
 type EnvVar string
@@ -133,7 +134,7 @@ func (b *BackupClient) repoClient() *RepositoryClient {
 }
 
 func (a *App) Startup(ctx context.Context) {
-	a.log.Infof("Running Arco version %s", Version)
+	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	// Update Arco binary if necessary
@@ -234,12 +235,17 @@ func (a *App) updateArco() (bool, error) {
 		return false, err
 	}
 
-	if *release.TagName == a.config.Version {
+	releaseVersion, err := semver.NewVersion(release.GetTagName())
+	if err != nil {
+		return false, fmt.Errorf("failed to parse release version: %w", err)
+	}
+
+	if releaseVersion.LessThan(a.config.Version) {
 		a.log.Info("No updates available")
 		return false, nil
 	}
 
-	a.log.Infof("Updating Arco binary to version %s", *release.TagName)
+	a.log.Infof("Updating Arco binary to version %s", releaseVersion.String())
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusApplyingUpdates, nil)
 
 	releaseAsset, err := a.findReleaseAsset(release)
