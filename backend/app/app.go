@@ -240,7 +240,7 @@ func (a *App) updateArco() (bool, error) {
 		return false, fmt.Errorf("failed to parse release version: %w", err)
 	}
 
-	if releaseVersion.LessThan(a.config.Version) {
+	if releaseVersion.LessThanEqual(a.config.Version) {
 		a.log.Info("No updates available")
 		return false, nil
 	}
