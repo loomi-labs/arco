@@ -49,6 +49,7 @@ type Config struct {
 	GithubAssetName string
 	Version         *semver.Version
 	ArcoPath        string
+	CheckForUpdates bool
 }
 
 var AllWeekdays = []backupschedule.Weekday{
