@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 )
@@ -114,18 +113,6 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS, autoUpdate 
 		}
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	arcoBinaryDir := filepath.Join(homeDir, ".local", "bin")
-	if _, err := os.Stat(arcoBinaryDir); os.IsNotExist(err) {
-		err = os.MkdirAll(arcoBinaryDir, 0755)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	version, err := semver.NewVersion(app.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version: %w", err)
@@ -140,7 +127,6 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS, autoUpdate 
 		Migrations:      migrations,
 		GithubAssetName: util.GithubAssetName(),
 		Version:         version,
-		ArcoPath:        path.Join(arcoBinaryDir, "arco"),
 		CheckForUpdates: autoUpdate,
 	}, nil
 }

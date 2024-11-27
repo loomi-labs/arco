@@ -226,14 +226,14 @@ onUnmounted(() => {
       </div>
 
       <div class='divider'></div>
-      <div class='flex items-center justify-between mb-4'>
-        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>
-          <h3 class='text-xl font-semibold'>Run integrity checks</h3>
-        </TooltipTextIcon>
-        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'
-               @change='saveIntegrityCheckSettings'>
-      </div>
-      <div class='divider'></div>
+<!--      <div class='flex items-center justify-between mb-4'>-->
+<!--        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>-->
+<!--          <h3 class='text-xl font-semibold'>Run integrity checks</h3>-->
+<!--        </TooltipTextIcon>-->
+<!--        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'-->
+<!--               @change='saveIntegrityCheckSettings'>-->
+<!--      </div>-->
+<!--      <div class='divider'></div>-->
       <div class='flex justify-end gap-2'>
         <button class='btn btn-outline btn-error'
                 @click='confirmRemoveModal?.showModal()'

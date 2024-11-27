@@ -33,7 +33,6 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		Migrations:      migrationsDir,
 		GithubAssetName: "",
 		Version:         semver.MustParse("0.0.0"),
-		ArcoPath:        "",
 	}
 
 	mockEventEmitter := mocktypes.NewMockEventEmitter(gomock.NewController(t))

@@ -257,7 +257,17 @@ func (a *App) updateArco() (bool, error) {
 		return false, err
 	}
 
-	err = a.downloadReleaseAsset(client, releaseAsset)
+	// Get execution path
+	execPath, err := os.Executable()
+	if err != nil {
+		return false, fmt.Errorf("failed to get executable path: %w", err)
+	}
+	path, err := filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return false, err
+	}
+
+	err = a.downloadReleaseAsset(client, releaseAsset, path)
 	if err != nil {
 		return false, err
 	}
@@ -285,7 +295,7 @@ func (a *App) findReleaseAsset(release *github.RepositoryRelease) (*github.Relea
 	return nil, fmt.Errorf("could not find release asset for version %s", a.config.Version)
 }
 
-func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset) error {
+func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset, path string) error {
 	httpClient := &http.Client{Timeout: time.Second * 30}
 	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *asset.ID, httpClient)
 	if err != nil {
@@ -306,10 +316,10 @@ func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseA
 	if err != nil {
 		return fmt.Errorf("failed to read zip zipReader: %w", err)
 	}
-	return a.extractBinary(zipReader)
+	return a.extractBinary(zipReader, path)
 }
 
-func (a *App) extractBinary(zipReader *zip.Reader) error {
+func (a *App) extractBinary(zipReader *zip.Reader, path string) error {
 	arcoFilePath := "arco"
 
 	if util.IsMacOS() {
@@ -323,19 +333,19 @@ func (a *App) extractBinary(zipReader *zip.Reader) error {
 	//goland:noinspection GoUnhandledErrorResult
 	defer open.Close()
 
-	if err := os.Remove(a.config.ArcoPath); err == nil {
-		a.log.Debugf("Removed old binary at %s", a.config.ArcoPath)
+	if err := os.Remove(path); err == nil {
+		a.log.Debugf("Removed old binary at %s", path)
 	}
 
-	binFile, err := os.OpenFile(a.config.ArcoPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	binFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", a.config.ArcoPath, err)
+		return fmt.Errorf("failed to create file %s: %w", path, err)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer binFile.Close()
 
 	if _, err := io.Copy(binFile, open); err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", a.config.ArcoPath, err)
+		return fmt.Errorf("failed to write to file %s: %w", path, err)
 	}
 	return nil
 }

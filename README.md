@@ -1,23 +1,16 @@
-# README
+# Arco Backup
 
 ## About
 
-This is the official Wails Vue-TS template.
+Arco is a backup tool that aims to provide a simple and beautiful interface to manage your backups. 
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
-
-## Live Development
-
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+It uses [Borg](https://borgbackup.readthedocs.io/en/stable/index.html) and is compatible with any Borg repository starting from version 1.2.7.
 
 ## Building
 
-To build a redistributable, production mode package, use `wails build`.
+To build a redistributable, install [go](https://go.dev/doc/install), [pnpm](https://pnpm.io/installation), and [Wails](https://wails.io/docs/gettingstarted/installation). Then run `make build` in the project directory.
 
-## Borg
-Check out [Borg](https://manpages.debian.org/experimental/borgbackup/borg.1.en.html)
-for more information about the backup tool.
+## Live Development
+
+To run in live development mode, run `make dev` in the project directory. This will run a Vite development
+server that will provide very fast hot reload of your frontend changes.
