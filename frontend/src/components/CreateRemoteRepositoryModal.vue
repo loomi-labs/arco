@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { showAndLogError } from "../common/error";
 import { ent } from "../../wailsjs/go/models";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as validationClient from "../../wailsjs/go/app/ValidationClient";
@@ -133,20 +133,6 @@ async function setNameFromLocation() {
   }
 }
 
-async function toggleEncrypted() {
-  isEncrypted.value = !isEncrypted.value;
-
-  // If the password was never set, we set it to an empty string
-  // This will trigger the validation if the user toggles encryption again
-  if (password.value === undefined) {
-    password.value = "";
-  }
-
-  // Wait for simple validation to run before running full validation
-  await nextTick();
-  await fullValidate();
-}
-
 async function simpleValidate(force = false) {
   try {
     if (name.value !== undefined || force) {
@@ -190,7 +176,10 @@ async function fullValidate(force = false) {
       } else {
         needsPassword.value = false;
         isPasswordCorrect.value = undefined;
-        if (password.value !== undefined || force) {
+
+        if (!isEncrypted.value) {
+          passwordError.value = undefined;
+        } else if (password.value !== undefined || force) {
           passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
         }
       }
@@ -235,7 +224,7 @@ watch([name, location, password, isEncrypted], async () => {
     <div class='modal-box flex flex-col text-left'>
       <h2 class='text-2xl pb-2'>Add a remote repository</h2>
       <p>You can create a new repository or you can connect an existing one.</p>
-      <div v-if='isBorgRepo' role="alert" class="alert alert-info py-2 my-2">
+      <div v-if='isBorgRepo' role='alert' class='alert alert-info py-2 my-2'>
         <span>Existing repository found.</span>
       </div>
       <div class='flex flex-col gap-2 pt-2'>
@@ -260,10 +249,10 @@ watch([name, location, password, isEncrypted], async () => {
         <p v-if='!isBorgRepo'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
         <p v-if='isBorgRepo && needsPassword'>This repository is encrypted and requires a password.</p>
 
-        <div class="form-control w-52">
-          <label class="label cursor-pointer">
-            <span class="label-text">Encrypt repository</span>
-            <input type="checkbox" class="toggle toggle-secondary" v-model='isEncrypted' :disabled='isBorgRepo || isValidating'/>
+        <div class='form-control w-52'>
+          <label class='label cursor-pointer'>
+            <span class='label-text'>Encrypt repository</span>
+            <input type='checkbox' class='toggle toggle-secondary' v-model='isEncrypted' :disabled='isBorgRepo || isValidating' />
           </label>
         </div>
 

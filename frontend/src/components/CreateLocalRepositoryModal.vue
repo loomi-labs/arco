@@ -138,16 +138,6 @@ async function createDir() {
   }
 }
 
-async function toggleEncrypted() {
-  isEncrypted.value = !isEncrypted.value;
-
-  // If the password was never set, we set it to an empty string
-  // This will trigger the validation if the user toggles encryption again
-  if (password.value === undefined) {
-    password.value = "";
-  }
-}
-
 async function validate(force = false) {
   try {
     if (name.value !== undefined || force) {
@@ -186,7 +176,9 @@ async function validate(force = false) {
     } else {
       needsPassword.value = false;
       isPasswordCorrect.value = undefined;
-      if (password.value !== undefined || force) {
+      if (!isEncrypted.value) {
+        passwordError.value = undefined;
+      } else if (password.value !== undefined || force) {
         passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
       }
     }
