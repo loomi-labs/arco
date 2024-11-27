@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/loomi-labs/arco/compare/v0.8.0...v0.9.0) (2024-11-27)
+
+
+### Features
+
+* add auto-update flag ([#106](https://github.com/loomi-labs/arco/issues/106)) ([83bf624](https://github.com/loomi-labs/arco/commit/83bf624130aa86e9d8e1f48d4acfd9298b2c15cc))
+
 ## [0.8.0](https://github.com/loomi-labs/arco/compare/v0.7.0...v0.8.0) (2024-11-25)
 
 
