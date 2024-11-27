@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0](https://github.com/loomi-labs/arco/compare/v0.9.0...v0.10.0) (2024-11-27)
+
+
+### Features
+
+* make binary location independent ([249f6be](https://github.com/loomi-labs/arco/commit/249f6be1fed0040121112cf1d5105c45f0504f98))
+
+
+### Bug Fixes
+
+* borg binary permissions ([cae7325](https://github.com/loomi-labs/arco/commit/cae7325f4f773fc597666a62642afc48dab6916d))
+* password validation ([12b778b](https://github.com/loomi-labs/arco/commit/12b778b82a738183cac2e48b9ed76bb258f74aba))
+
 ## [0.9.0](https://github.com/loomi-labs/arco/compare/v0.8.0...v0.9.0) (2024-11-27)
 
 
