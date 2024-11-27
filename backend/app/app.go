@@ -137,22 +137,24 @@ func (a *App) Startup(ctx context.Context) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
-	// Update Arco binary if necessary
-	needsRestart, err := a.updateArco()
-	if err != nil {
-		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
-		a.log.Error(err)
-		return
-	}
-	// Restart if an update has been performed
-	if needsRestart {
-		a.log.Info("Updated Arco binary... restarting")
-		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusRestartingArco, nil)
+	if a.config.CheckForUpdates {
+		// Update Arco binary if necessary
+		needsRestart, err := a.updateArco()
+		if err != nil {
+			a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
+			a.log.Error(err)
+			return
+		}
+		// Restart if an update has been performed
+		if needsRestart {
+			a.log.Info("Updated Arco binary... restarting")
+			a.state.SetStartupStatus(a.ctx, appstate.StartupStatusRestartingArco, nil)
 
-		// Sleep for a few seconds to allow the frontend to show the update message
-		time.Sleep(3 * time.Second)
-		reload.Exec()
-		return
+			// Sleep for a few seconds to allow the frontend to show the update message
+			time.Sleep(3 * time.Second)
+			reload.Exec()
+			return
+		}
 	}
 
 	// Initialize the database
@@ -232,7 +234,9 @@ func (a *App) updateArco() (bool, error) {
 
 	release, err := a.getLatestRelease(client)
 	if err != nil {
-		return false, err
+		// We don't want to fail the startup process if the update check fails
+		a.log.Errorf("Failed to check for updates: %v", err)
+		return false, nil
 	}
 
 	releaseVersion, err := semver.NewVersion(release.GetTagName())
@@ -240,7 +244,7 @@ func (a *App) updateArco() (bool, error) {
 		return false, fmt.Errorf("failed to parse release version: %w", err)
 	}
 
-	if releaseVersion.LessThan(a.config.Version) {
+	if releaseVersion.LessThanEqual(a.config.Version) {
 		a.log.Info("No updates available")
 		return false, nil
 	}

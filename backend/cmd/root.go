@@ -100,7 +100,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Config, error) {
+func initConfig(configDir string, iconData []byte, migrations fs.FS, autoUpdate bool) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -141,6 +141,7 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS) (*types.Con
 		GithubAssetName: util.GithubAssetName(),
 		Version:         version,
 		ArcoPath:        path.Join(arcoBinaryDir, "arco"),
+		CheckForUpdates: autoUpdate,
 	}, nil
 }
 
@@ -256,6 +257,10 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to get unique run id flag: %w", err)
 		}
+		autoUpdate, err := cmd.Flags().GetBool(autoUpdateFlag)
+		if err != nil {
+			return fmt.Errorf("failed to get auto update flag: %w", err)
+		}
 
 		assets := cmd.Context().Value(assetsKey).(fs.FS)
 		iconData := cmd.Context().Value(iconKey).([]byte)
@@ -266,7 +271,7 @@ var rootCmd = &cobra.Command{
 		defer log.Sync() // flushes buffer, if any
 
 		// Initialize the configuration
-		config, err := initConfig(configDir, iconData, migrations)
+		config, err := initConfig(configDir, iconData, migrations, autoUpdate)
 		if err != nil {
 			log.Errorf("failed to initialize config: %v", err)
 			return fmt.Errorf("failed to initialize config: %w", err)
@@ -304,9 +309,11 @@ func Execute(assets fs.FS, iconData []byte, migrations fs.FS) {
 const configFlag = "config"
 const hiddenFlag = "hidden"
 const uniqueRunIdFlag = "unique-run-id"
+const autoUpdateFlag = "auto-update"
 
 func init() {
 	rootCmd.PersistentFlags().StringP(configFlag, "c", "", "config path (default is $HOME/.config/arco/)")
-	rootCmd.PersistentFlags().Bool(hiddenFlag, false, "start hidden")
+	rootCmd.PersistentFlags().Bool(hiddenFlag, false, "start hidden (default is false)")
 	rootCmd.PersistentFlags().String(uniqueRunIdFlag, "", "unique run id. Only one instance of Arco can run with the same id")
+	rootCmd.PersistentFlags().Bool(autoUpdateFlag, true, "enable auto update (default is true)")
 }
