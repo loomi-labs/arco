@@ -48,7 +48,6 @@ type Config struct {
 	Migrations      fs.FS
 	GithubAssetName string
 	Version         *semver.Version
-	ArcoPath        string
 	CheckForUpdates bool
 }
 
