@@ -22,7 +22,7 @@ generate-models:
 	@cd backend && go generate ./ent
 	@echo "✅ Done!"
 
-generate-migrations: ensure-tools
+generate-migrations: ensure-atlas
 	@echo "Creating ent migration..."
 	@atlas migrate diff migration_name \
                      --dir "file://backend/ent/migrate/migrations" \
@@ -30,20 +30,20 @@ generate-migrations: ensure-tools
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
-apply-migrations: ensure-tools
+apply-migrations: ensure-atlas
 	@echo "Migrating ent schema..."
 	@atlas migrate apply \
                      --dir "file://backend/ent/migrate/migrations" \
                      --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
 
-show-migrations: ensure-tools
+show-migrations: ensure-atlas
 	@atlas migrate status \
 					 --dir "file://backend/ent/migrate/migrations" \
 					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
 	@echo "✅ Done!"
 
-lint-migrations: ensure-tools
+lint-migrations: ensure-atlas
 	@echo "Linting ent migrations..."
 	@atlas migrate lint \
        --dev-url="sqlite://file?mode=memory" \
@@ -51,7 +51,7 @@ lint-migrations: ensure-tools
        --latest=1
 	@echo "✅ Done!"
 
-create-migration: ensure-tools
+create-migration: ensure-atlas
 ifndef name
 	$(error name is not set; use `make create-migration name=MyFancyMigration`)
 endif
@@ -60,7 +60,7 @@ endif
 					 --dir "file://backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
-hash-migrations: ensure-tools
+hash-migrations: ensure-atlas
 	@echo "Hashing ent migrations..."
 	@atlas migrate hash \
 	   --dir="file://backend/ent/migrate/migrations"
@@ -73,12 +73,14 @@ hash-migrations: ensure-tools
 ensure-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || { printf >&2 "❌ pnpm not found.\n - install: 'npm install -g pnpm'\n - nvm:     'nvm use latest'\n"; exit 1; }
 
+ensure-atlas:
+	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
+
 ensure-tools:
 	@command -v go >/dev/null 2>&1 || { printf >&2 "❌ go not found.\nPlease install it\n"; exit 1; }
 	@command -v gofmt >/dev/null 2>&1 || { printf >&2 "❌ gofmt not found.\nPlease install it\n"; exit 1; }
 	@command -v golangci-lint >/dev/null 2>&1 || { printf >&2 "❌ golangci-lint not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
-	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 	@command -v jq >/dev/null 2>&1 || { printf >&2 "❌ jq not found.\nPlease install it\n"; exit 1; }
 
 #################################
