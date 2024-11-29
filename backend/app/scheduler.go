@@ -126,6 +126,7 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 	if err != nil {
 		return nil, err
 	}
+	a.log.Debugf("Next run in %s", time.Until(nextBackupTime))
 	update.SetNextRun(nextBackupTime)
 	return update.Save(a.ctx)
 }
@@ -162,14 +163,17 @@ func weekdayToTimeWeekday(weekday backupschedule.Weekday) time.Weekday {
 
 // getNextBackupTime calculates the next time a backup should run based on the schedule
 func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, error) {
+	// Make sure we are working with UTC time (we don't care about the timezone)
+	fromTime = fromTime.In(time.UTC)
 	switch bs.Mode {
 	case backupschedule.ModeHourly:
 		return fromTime.Truncate(time.Hour).Add(time.Hour), nil
 	case backupschedule.ModeDaily:
+		dailyAt := bs.DailyAt.In(time.UTC)
 		// Calculate the wanted duration from the beginning of the day
 		wantedDuration :=
-			time.Duration(bs.DailyAt.Hour())*time.Hour + // hours
-				time.Duration(bs.DailyAt.Minute())*time.Minute // minutes
+			time.Duration(dailyAt.Hour())*time.Hour + // hours
+				time.Duration(dailyAt.Minute())*time.Minute // minutes
 
 		// Calculate the duration from the beginning of the day for the fromTime
 		fromTimeDuration :=
@@ -177,7 +181,7 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 				time.Duration(fromTime.Minute())*time.Minute // minutes
 
 		diff := wantedDuration - fromTimeDuration
-		if diff < 0 {
+		if diff <= 0 {
 			// If the difference is negative, we already passed the time for today
 			// so we return the time for tomorrow
 			return fromTime.Add(diff).AddDate(0, 0, 1), nil
@@ -185,11 +189,12 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		// Otherwise we just wait the difference
 		return fromTime.Add(diff), nil
 	case backupschedule.ModeWeekly:
+		weeklyAt := bs.WeeklyAt.In(time.UTC)
 		// Calculate the wanted duration from the beginning of the week
 		wantedDuration :=
 			time.Duration(weekdayToTimeWeekday(bs.Weekday))*24*time.Hour + // days
-				time.Duration(bs.WeeklyAt.Hour())*time.Hour + // hours
-				time.Duration(bs.WeeklyAt.Minute())*time.Minute // minutes
+				time.Duration(weeklyAt.Hour())*time.Hour + // hours
+				time.Duration(weeklyAt.Minute())*time.Minute // minutes
 
 		// Calculate the duration from the beginning of the week for the fromTime
 		fromTimeDuration :=
@@ -198,7 +203,7 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 				time.Duration(fromTime.Minute())*time.Minute // minutes
 
 		diff := wantedDuration - fromTimeDuration
-		if diff < 0 {
+		if diff <= 0 {
 			// If the difference is negative, we already passed the time for this week
 			// so we return the time for next week
 			return fromTime.Add(diff).AddDate(0, 0, 7), nil
@@ -207,6 +212,7 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		return fromTime.Add(diff), nil
 	case backupschedule.ModeMonthly:
 		monthday := bs.Monthday
+		monthlyAt := bs.MonthlyAt.In(time.UTC)
 
 		// If we are in February and the monthday is 29 or 30, we use the last day of the month
 		if fromTime.Month() == time.February && monthday > 28 {
@@ -226,8 +232,8 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		// Calculate the wanted duration from the beginning of the month
 		wantedDuration :=
 			time.Duration(monthday-1)*24*time.Hour + // days
-				time.Duration(bs.MonthlyAt.Hour())*time.Hour + // hours
-				time.Duration(bs.MonthlyAt.Minute())*time.Minute // minutes
+				time.Duration(monthlyAt.Hour())*time.Hour + // hours
+				time.Duration(monthlyAt.Minute())*time.Minute // minutes
 
 		// Calculate the duration from the beginning of the month for the fromTime
 		fromTimeDuration :=
@@ -236,7 +242,7 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 				time.Duration(fromTime.Minute())*time.Minute // minutes
 
 		diff := wantedDuration - fromTimeDuration
-		if diff < 0 {
+		if diff <= 0 {
 			// If the difference is negative, we already passed the time for this month
 			// so we return the time for next month
 			return fromTime.Add(diff).AddDate(0, 1, 0), nil

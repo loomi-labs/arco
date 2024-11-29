@@ -117,13 +117,15 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 		}
 	}
 
+	// We only care about the hour, minute, second and nanosecond (in local time for display purpose)
+	firstDayOfMonthAtNine := time.Date(2024, 1, 1, 9, 0, 0, 0, time.Local)
 	schedule := &ent.BackupSchedule{
 		Mode:      backupschedule.ModeHourly,
-		DailyAt:   time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		DailyAt:   firstDayOfMonthAtNine,
 		Weekday:   backupschedule.WeekdayMonday,
-		WeeklyAt:  time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		WeeklyAt:  firstDayOfMonthAtNine,
 		Monthday:  1,
-		MonthlyAt: time.Date(0, 1, 1, 9, 0, 0, 0, time.Local),
+		MonthlyAt: firstDayOfMonthAtNine,
 	}
 
 	pruningRule := &ent.PruningRule{
@@ -521,6 +523,7 @@ func (b *BackupClient) SaveBackupSchedule(backupProfileId int, schedule ent.Back
 			return err
 		}
 		nextRun = &nr
+		b.log.Debugf("Next run in %s", nextRun.Sub(time.Now()))
 	}
 
 	if doesExist {
