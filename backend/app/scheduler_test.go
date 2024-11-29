@@ -38,7 +38,7 @@ TestScheduler
 */
 
 func parseX(timeStr string) time.Time {
-	expected, err := time.ParseInLocation(time.DateTime, timeStr, time.Local)
+	expected, err := time.ParseInLocation(time.DateTime, timeStr, time.UTC)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func parseX(timeStr string) time.Time {
 }
 
 func hourMinute(date time.Time, hour int, minute int) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.Local)
+	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.UTC)
 }
 
 func hourMinutePtr(date time.Time, hour int, minute int) time.Time {
@@ -58,14 +58,14 @@ func weekdayHourMinute(date time.Time, weekday time.Weekday, hour int, minute in
 	for date.Weekday() != weekday {
 		date = date.AddDate(0, 0, 1)
 	}
-	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.Local)
+	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.UTC)
 }
 
 func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) time.Time {
 	for uint8(date.Day()) != monthday {
 		date = date.AddDate(0, 0, 1)
 	}
-	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.Local)
+	return time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, time.UTC)
 }
 
 func TestScheduler(t *testing.T) {
@@ -74,8 +74,8 @@ func TestScheduler(t *testing.T) {
 	var mockEventEmitter *mocktypes.MockEventEmitter
 	var profile *ent.BackupProfile
 	var bs *ent.BackupSchedule
-	var now = time.Now()
-	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
+	var now = time.Now().In(time.UTC)
+	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	setup := func(t *testing.T) {
 		a, mockBorg, mockEventEmitter = NewTestApp(t)
