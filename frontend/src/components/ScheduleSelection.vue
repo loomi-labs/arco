@@ -2,6 +2,7 @@
 import { backupschedule, ent } from "../../wailsjs/go/models";
 import { computed, ref, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
+import { isEqual } from "@formkit/tempo";
 
 /************
  * Types
@@ -95,12 +96,12 @@ function copySchedule(schedule: ent.BackupSchedule): ent.BackupSchedule {
   return newSchedule;
 }
 
-function isEqual(schedule1: ent.BackupSchedule, schedule2: ent.BackupSchedule): boolean {
+function isScheduleEqual(schedule1: ent.BackupSchedule, schedule2: ent.BackupSchedule): boolean {
   return schedule1.mode === schedule2.mode &&
-    schedule1.dailyAt === schedule2.dailyAt &&
-    schedule1.weeklyAt === schedule2.weeklyAt &&
+    isEqual(schedule1.dailyAt, schedule2.dailyAt) &&
+    isEqual(schedule1.weeklyAt, schedule2.weeklyAt) &&
     schedule1.weekday === schedule2.weekday &&
-    schedule1.monthlyAt === schedule2.monthlyAt &&
+    isEqual(schedule1.monthlyAt, schedule2.monthlyAt) &&
     schedule1.monthday === schedule2.monthday;
 }
 
@@ -117,7 +118,7 @@ function emitUpdateSchedule(schedule: ent.BackupSchedule) {
  ************/
 
 watchEffect(() => {
-  if (isEqual(schedule.value, originalSchedule.value)) {
+  if (isScheduleEqual(schedule.value, originalSchedule.value)) {
     return;
   }
 
