@@ -51,7 +51,6 @@ func (a *AppClient) SaveSettings(settings *ent.Settings) error {
 	a.log.Debugf("Saving settings: %s", settings)
 	return a.db.Settings.
 		Update().
-		SetTheme(settings.Theme).
 		SetShowWelcome(settings.ShowWelcome).
 		Exec(a.ctx)
 }

@@ -20,9 +20,6 @@ func (Settings) Mixin() []ent.Mixin {
 // Fields of the Settings.
 func (Settings) Fields() []ent.Field {
 	return []ent.Field{
-		field.Enum("theme").
-			Values("system", "light", "dark").
-			Default("system"),
 		field.Bool("show_welcome").
 			StructTag(`json:"showWelcome"`).
 			Default(true),

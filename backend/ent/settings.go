@@ -21,8 +21,6 @@ type Settings struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
-	// Theme holds the value of the "theme" field.
-	Theme settings.Theme `json:"theme,omitempty"`
 	// ShowWelcome holds the value of the "show_welcome" field.
 	ShowWelcome  bool `json:"showWelcome"`
 	selectValues sql.SelectValues
@@ -37,8 +35,6 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
-		case settings.FieldTheme:
-			values[i] = new(sql.NullString)
 		case settings.FieldCreatedAt, settings.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
@@ -73,12 +69,6 @@ func (s *Settings) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				s.UpdatedAt = value.Time
-			}
-		case settings.FieldTheme:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field theme", values[i])
-			} else if value.Valid {
-				s.Theme = settings.Theme(value.String)
 			}
 		case settings.FieldShowWelcome:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -127,9 +117,6 @@ func (s *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(s.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("theme=")
-	builder.WriteString(fmt.Sprintf("%v", s.Theme))
 	builder.WriteString(", ")
 	builder.WriteString("show_welcome=")
 	builder.WriteString(fmt.Sprintf("%v", s.ShowWelcome))

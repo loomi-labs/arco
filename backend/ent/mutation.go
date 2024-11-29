@@ -6346,7 +6346,6 @@ type SettingsMutation struct {
 	id            *int
 	created_at    *time.Time
 	updated_at    *time.Time
-	theme         *settings.Theme
 	show_welcome  *bool
 	clearedFields map[string]struct{}
 	done          bool
@@ -6524,42 +6523,6 @@ func (m *SettingsMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetTheme sets the "theme" field.
-func (m *SettingsMutation) SetTheme(s settings.Theme) {
-	m.theme = &s
-}
-
-// Theme returns the value of the "theme" field in the mutation.
-func (m *SettingsMutation) Theme() (r settings.Theme, exists bool) {
-	v := m.theme
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTheme returns the old "theme" field's value of the Settings entity.
-// If the Settings object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SettingsMutation) OldTheme(ctx context.Context) (v settings.Theme, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTheme is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTheme requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTheme: %w", err)
-	}
-	return oldValue.Theme, nil
-}
-
-// ResetTheme resets all changes to the "theme" field.
-func (m *SettingsMutation) ResetTheme() {
-	m.theme = nil
-}
-
 // SetShowWelcome sets the "show_welcome" field.
 func (m *SettingsMutation) SetShowWelcome(b bool) {
 	m.show_welcome = &b
@@ -6630,15 +6593,12 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 3)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, settings.FieldUpdatedAt)
-	}
-	if m.theme != nil {
-		fields = append(fields, settings.FieldTheme)
 	}
 	if m.show_welcome != nil {
 		fields = append(fields, settings.FieldShowWelcome)
@@ -6655,8 +6615,6 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case settings.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case settings.FieldTheme:
-		return m.Theme()
 	case settings.FieldShowWelcome:
 		return m.ShowWelcome()
 	}
@@ -6672,8 +6630,6 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldCreatedAt(ctx)
 	case settings.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case settings.FieldTheme:
-		return m.OldTheme(ctx)
 	case settings.FieldShowWelcome:
 		return m.OldShowWelcome(ctx)
 	}
@@ -6698,13 +6654,6 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
-		return nil
-	case settings.FieldTheme:
-		v, ok := value.(settings.Theme)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTheme(v)
 		return nil
 	case settings.FieldShowWelcome:
 		v, ok := value.(bool)
@@ -6767,9 +6716,6 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldUpdatedAt:
 		m.ResetUpdatedAt()
-		return nil
-	case settings.FieldTheme:
-		m.ResetTheme()
 		return nil
 	case settings.FieldShowWelcome:
 		m.ResetShowWelcome()

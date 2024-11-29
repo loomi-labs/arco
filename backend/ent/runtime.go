@@ -210,7 +210,7 @@ func init() {
 	// settings.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	settings.UpdateDefaultUpdatedAt = settingsDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// settingsDescShowWelcome is the schema descriptor for show_welcome field.
-	settingsDescShowWelcome := settingsFields[1].Descriptor()
+	settingsDescShowWelcome := settingsFields[0].Descriptor()
 	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
 	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
 }

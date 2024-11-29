@@ -191,7 +191,6 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "theme", Type: field.TypeEnum, Enums: []string{"system", "light", "dark"}, Default: "system"},
 		{Name: "show_welcome", Type: field.TypeBool, Default: true},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
