@@ -19,7 +19,7 @@ It uses [Borg](https://borgbackup.readthedocs.io/en/stable/index.html) and is co
 
 ## Motivation
 
-I was looking for an easy-to-use, open-source backup tool that allow me to save all my data encrypted in the cloud.<br>
+I was looking for an easy-to-use, open-source backup tool that allows me to save all my data encrypted in the cloud.<br>
 I found Borg, which is a great tool, but it does not have a graphical interface. I tried some of the available GUIs, but none of them satisfied me fully. So I decided to create my own.
 
 ## Building
