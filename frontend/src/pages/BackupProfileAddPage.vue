@@ -269,7 +269,6 @@ onBeforeRouteLeave(async (to, from) => {
       <div class='mb-4'>
         <p>
           Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span> that you don't want to include in your backups.<br>
-          Wildcards (*) are supported.<br>
         </p>
         <p class='pt-2'>Examples:</p>
         <ul class='pl-4'>
@@ -279,9 +278,9 @@ onBeforeRouteLeave(async (to, from) => {
             exclude all .cache folders
           </li>
           <li class='flex gap-2'>
-            **/node_modules
+            /home/secretfolder
             <ArrowLongRightIcon class='size-6' />
-            exclude all node_modules
+            exclude the secretfolder in your home directory
           </li>
         </ul>
         <!--        link to borg help -->
