@@ -44,7 +44,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
 	} else {
-		logDir := filepath.Join(configDir, "logs")
+		logDir := filepath.Join(util.ExpandPath(configDir), "logs")
 		if _, err := os.Stat(logDir); os.IsNotExist(err) {
 			err = os.MkdirAll(logDir, 0755)
 			if err != nil {
