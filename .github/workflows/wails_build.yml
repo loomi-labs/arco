@@ -48,6 +48,8 @@ jobs:
       - name: Build App
         run: make build
         shell: bash
+        env:
+          PLATFORM: ${{ matrix.build.platform }}
       - name: Add macOS perms
         if: runner.os == 'macOS'
         run: chmod +x build/bin/*/Contents/MacOS/*
