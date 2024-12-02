@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.2](https://github.com/loomi-labs/arco/compare/v0.11.1...v0.11.2) (2024-12-02)
+
+
+### Bug Fixes
+
+* CI/CD ([3ad1ddc](https://github.com/loomi-labs/arco/commit/3ad1ddc5fe75901acfb9c75fd660082508f3877c))
+* CI/CD ([0586d4a](https://github.com/loomi-labs/arco/commit/0586d4a0bdceff76fca06ed57c4853b998548a06))
+
 ## [0.11.1](https://github.com/loomi-labs/arco/compare/v0.11.0...v0.11.1) (2024-12-02)
 
 
