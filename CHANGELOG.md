@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.4](https://github.com/loomi-labs/arco/compare/v0.11.3...v0.11.4) (2024-12-02)
+
+
+### Bug Fixes
+
+* logger path ([9476dad](https://github.com/loomi-labs/arco/commit/9476dadb4e6b1b7caeb05b99e217cf6eaf529b68))
+
 ## [0.11.3](https://github.com/loomi-labs/arco/compare/v0.11.2...v0.11.3) (2024-12-02)
 
 
