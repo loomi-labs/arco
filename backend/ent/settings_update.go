@@ -35,20 +35,6 @@ func (su *SettingsUpdate) SetUpdatedAt(t time.Time) *SettingsUpdate {
 	return su
 }
 
-// SetTheme sets the "theme" field.
-func (su *SettingsUpdate) SetTheme(s settings.Theme) *SettingsUpdate {
-	su.mutation.SetTheme(s)
-	return su
-}
-
-// SetNillableTheme sets the "theme" field if the given value is not nil.
-func (su *SettingsUpdate) SetNillableTheme(s *settings.Theme) *SettingsUpdate {
-	if s != nil {
-		su.SetTheme(*s)
-	}
-	return su
-}
-
 // SetShowWelcome sets the "show_welcome" field.
 func (su *SettingsUpdate) SetShowWelcome(b bool) *SettingsUpdate {
 	su.mutation.SetShowWelcome(b)
@@ -104,16 +90,6 @@ func (su *SettingsUpdate) defaults() {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (su *SettingsUpdate) check() error {
-	if v, ok := su.mutation.Theme(); ok {
-		if err := settings.ThemeValidator(v); err != nil {
-			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
-		}
-	}
-	return nil
-}
-
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (su *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
 	su.modifiers = append(su.modifiers, modifiers...)
@@ -121,9 +97,6 @@ func (su *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *Setti
 }
 
 func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := su.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
 	if ps := su.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -134,9 +107,6 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := su.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := su.mutation.Theme(); ok {
-		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	if value, ok := su.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
@@ -166,20 +136,6 @@ type SettingsUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (suo *SettingsUpdateOne) SetUpdatedAt(t time.Time) *SettingsUpdateOne {
 	suo.mutation.SetUpdatedAt(t)
-	return suo
-}
-
-// SetTheme sets the "theme" field.
-func (suo *SettingsUpdateOne) SetTheme(s settings.Theme) *SettingsUpdateOne {
-	suo.mutation.SetTheme(s)
-	return suo
-}
-
-// SetNillableTheme sets the "theme" field if the given value is not nil.
-func (suo *SettingsUpdateOne) SetNillableTheme(s *settings.Theme) *SettingsUpdateOne {
-	if s != nil {
-		suo.SetTheme(*s)
-	}
 	return suo
 }
 
@@ -251,16 +207,6 @@ func (suo *SettingsUpdateOne) defaults() {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (suo *SettingsUpdateOne) check() error {
-	if v, ok := suo.mutation.Theme(); ok {
-		if err := settings.ThemeValidator(v); err != nil {
-			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
-		}
-	}
-	return nil
-}
-
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (suo *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
 	suo.modifiers = append(suo.modifiers, modifiers...)
@@ -268,9 +214,6 @@ func (suo *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *S
 }
 
 func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
-	if err := suo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
 	id, ok := suo.mutation.ID()
 	if !ok {
@@ -298,9 +241,6 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 	}
 	if value, ok := suo.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := suo.mutation.Theme(); ok {
-		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	if value, ok := suo.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)

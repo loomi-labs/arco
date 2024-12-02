@@ -48,20 +48,6 @@ func (sc *SettingsCreate) SetNillableUpdatedAt(t *time.Time) *SettingsCreate {
 	return sc
 }
 
-// SetTheme sets the "theme" field.
-func (sc *SettingsCreate) SetTheme(s settings.Theme) *SettingsCreate {
-	sc.mutation.SetTheme(s)
-	return sc
-}
-
-// SetNillableTheme sets the "theme" field if the given value is not nil.
-func (sc *SettingsCreate) SetNillableTheme(s *settings.Theme) *SettingsCreate {
-	if s != nil {
-		sc.SetTheme(*s)
-	}
-	return sc
-}
-
 // SetShowWelcome sets the "show_welcome" field.
 func (sc *SettingsCreate) SetShowWelcome(b bool) *SettingsCreate {
 	sc.mutation.SetShowWelcome(b)
@@ -119,10 +105,6 @@ func (sc *SettingsCreate) defaults() {
 		v := settings.DefaultUpdatedAt()
 		sc.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := sc.mutation.Theme(); !ok {
-		v := settings.DefaultTheme
-		sc.mutation.SetTheme(v)
-	}
 	if _, ok := sc.mutation.ShowWelcome(); !ok {
 		v := settings.DefaultShowWelcome
 		sc.mutation.SetShowWelcome(v)
@@ -136,14 +118,6 @@ func (sc *SettingsCreate) check() error {
 	}
 	if _, ok := sc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Settings.updated_at"`)}
-	}
-	if _, ok := sc.mutation.Theme(); !ok {
-		return &ValidationError{Name: "theme", err: errors.New(`ent: missing required field "Settings.theme"`)}
-	}
-	if v, ok := sc.mutation.Theme(); ok {
-		if err := settings.ThemeValidator(v); err != nil {
-			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
-		}
 	}
 	if _, ok := sc.mutation.ShowWelcome(); !ok {
 		return &ValidationError{Name: "show_welcome", err: errors.New(`ent: missing required field "Settings.show_welcome"`)}
@@ -181,10 +155,6 @@ func (sc *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := sc.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if value, ok := sc.mutation.Theme(); ok {
-		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
-		_node.Theme = value
 	}
 	if value, ok := sc.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)

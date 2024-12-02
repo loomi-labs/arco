@@ -6,7 +6,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
-	"github.com/loomi-labs/arco/backend/ent/settings"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"io/fs"
 )
@@ -133,10 +132,4 @@ func (r *RuntimeEventEmitter) EmitEvent(ctx context.Context, event string) {
 type MountState struct {
 	IsMounted bool   `json:"isMounted"`
 	MountPath string `json:"mountPath"`
-}
-
-var AllThemes = []settings.Theme{
-	settings.ThemeSystem,
-	settings.ThemeDark,
-	settings.ThemeLight,
 }

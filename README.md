@@ -1,10 +1,26 @@
+
+
+<div style="text-align: center;">
+    <img src="icon.png" alt="Icon" style="max-width: 200px;">
+</div>
+
 # Arco Backup
+
+[![CI][s0]][l0] 
+
+[s0]: https://github.com/loomi-labs/arco/actions/workflows/on_push_go_changes.yml/badge.svg
+[l0]: https://github.com/loomi-labs/arco/actions/workflows/on_push_go_changes.yml
 
 ## About
 
 Arco is a backup tool that aims to provide a simple and beautiful interface to manage your backups. 
 
 It uses [Borg](https://borgbackup.readthedocs.io/en/stable/index.html) and is compatible with any Borg repository starting from version 1.2.7.
+
+## Motivation
+
+I was looking for an easy-to-use, open-source backup tool that allows me to save all my data encrypted in the cloud.<br>
+I found Borg, which is a great tool, but it does not have a graphical interface. I tried some of the available GUIs, but none of them satisfied me fully. So I decided to create my own.
 
 ## Building
 

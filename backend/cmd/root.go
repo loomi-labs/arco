@@ -197,7 +197,6 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			toTsEnums(state.AvailableRepoStatuses),
 			toTsEnums(state.AvailableBackupButtonStatuses),
 			toTsEnums(types.AllEvents),
-			toTsEnums(types.AllThemes),
 			toTsEnums(types.AllBackupScheduleModes),
 			toTsEnums(state.AvailableStartupStatuses),
 		},

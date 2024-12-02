@@ -3,7 +3,6 @@
 package settings
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -18,8 +17,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldTheme holds the string denoting the theme field in the database.
-	FieldTheme = "theme"
 	// FieldShowWelcome holds the string denoting the show_welcome field in the database.
 	FieldShowWelcome = "show_welcome"
 	// Table holds the table name of the settings in the database.
@@ -31,7 +28,6 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldTheme,
 	FieldShowWelcome,
 }
 
@@ -56,33 +52,6 @@ var (
 	DefaultShowWelcome bool
 )
 
-// Theme defines the type for the "theme" enum field.
-type Theme string
-
-// ThemeSystem is the default value of the Theme enum.
-const DefaultTheme = ThemeSystem
-
-// Theme values.
-const (
-	ThemeSystem Theme = "system"
-	ThemeLight  Theme = "light"
-	ThemeDark   Theme = "dark"
-)
-
-func (t Theme) String() string {
-	return string(t)
-}
-
-// ThemeValidator is a validator for the "theme" field enum values. It is called by the builders before save.
-func ThemeValidator(t Theme) error {
-	switch t {
-	case ThemeSystem, ThemeLight, ThemeDark:
-		return nil
-	default:
-		return fmt.Errorf("settings: invalid enum value for theme field: %q", t)
-	}
-}
-
 // OrderOption defines the ordering options for the Settings queries.
 type OrderOption func(*sql.Selector)
 
@@ -99,11 +68,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByTheme orders the results by the theme field.
-func ByTheme(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTheme, opts...).ToFunc()
 }
 
 // ByShowWelcome orders the results by the show_welcome field.

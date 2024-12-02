@@ -13,9 +13,11 @@ import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Vue3Lottie } from "vue3-lottie";
-import RocketJson from "../assets/animations/rocket.json";
 import * as runtime from "../../wailsjs/runtime";
-import { backupProfileDeletedEvent, repoStateChangedEvent } from "../common/events";
+import { backupProfileDeletedEvent } from "../common/events";
+import RocketLightJson from "../assets/animations/rocket-light.json";
+import RocketDarkJson from "../assets/animations/rocket-dark.json";
+import { useDark } from "@vueuse/core";
 
 /************
  * Types
@@ -30,6 +32,7 @@ const backupProfiles = ref<ent.BackupProfile[]>([]);
 const repos = ref<ent.Repository[]>([]);
 const showWelcomeModal = computed(() => settings.value.showWelcome && backupProfiles.value.length === 0 && repos.value.length === 0);
 const settings = ref<ent.Settings>(ent.Settings.createFrom());
+const isDark = useDark();
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -138,13 +141,14 @@ onUnmounted(() => {
                 <div class='flex p-8'>
                   <div class='pl-4'>
                     <div class='flex flex-col items-center text-center gap-1'>
-                      <DialogTitle as='h3' class='text-lg font-semibold'>Welcome to Arco</DialogTitle>
                       <div class='w-1/4'>
-                        <Vue3Lottie :animationData='RocketJson' />
+                        <Vue3Lottie v-if='isDark' :animationData='RocketDarkJson' />
+                        <Vue3Lottie v-else :animationData='RocketLightJson' />
                       </div>
-                      <p>Start by adding your first <span class='font-semibold'>Backup Profile</span>.</p>
-                      <p class='pt-2'>If you used <span class='font-semibold'>Arco</span> or <span class='font-semibold'>Borg Backup</span> before you
-                        can add your previous <span class='font-semibold'>Repositories</span>.</p>
+                      <DialogTitle as='h3' class='text-lg font-semibold dark:text-white'>Welcome to Arco</DialogTitle>
+                      <p>Start by adding your first <span class='font-semibold dark:text-white'>backup profile</span>.</p>
+                      <p class='pt-2'>If you used <span class='font-semibold dark:text-white'>Arco</span> or <span class='font-semibold dark:text-white'>Borg Backup</span> before you
+                        can add your previous <span class='font-semibold dark:text-white'>repositories</span>.</p>
                       <div class='pt-4'>
                         <button type='button' class='btn btn-sm btn-success' @click='welcomeModalClosed'>Okay let's start</button>
                       </div>

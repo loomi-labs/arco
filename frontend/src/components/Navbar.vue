@@ -2,14 +2,10 @@
 
 import { Page } from "../router";
 import { useRouter } from "vue-router";
-import *  as runtime from "../../wailsjs/runtime";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
-import { showAndLogError } from "../common/error";
-import { ref, watch } from "vue";
-import * as appClient from "../../wailsjs/go/app/AppClient";
-import { settings } from "../../wailsjs/go/models";
+import { ref } from "vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
-import Theme = settings.Theme;
+import { useDark, useToggle } from "@vueuse/core";
 
 /************
  * Types
@@ -20,68 +16,21 @@ import Theme = settings.Theme;
  ************/
 
 const router = useRouter();
-const isLightTheme = ref<boolean | undefined>(undefined);
 const subroute = ref<string | undefined>(undefined);
+const isDark = useDark({
+  attribute: "data-theme",
+  valueDark: "dark",
+  valueLight: "light"
+});
+const toggleDark = useToggle(isDark);
 
 /************
  * Functions
  ************/
 
-function hide() {
-  runtime.WindowHide();
-}
-
-async function setTheme(theme: Theme.light | Theme.dark) {
-  try {
-    // Set theme on <html> element as data-theme attribute
-    const html = document.querySelector("html");
-    if (html) {
-      html.setAttribute("data-theme", theme.valueOf());
-    }
-  } catch (error: any) {
-    await showAndLogError("Failed to set theme", error);
-  }
-}
-
-async function detectPreferredTheme() {
-  try {
-    const settings = await appClient.GetSettings();
-    const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-
-    isLightTheme.value = settings.theme === Theme.light || (settings.theme === Theme.system && !darkThemeMq.matches);
-    await setTheme(isLightTheme.value ? Theme.light : Theme.dark);
-  } catch (error: any) {
-    await showAndLogError("Failed to detect preferred theme", error);
-  }
-}
-
-async function toggleTheme() {
-  try {
-    isLightTheme.value = !isLightTheme.value;
-    const settings = await appClient.GetSettings();
-    const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-    if (isLightTheme.value) {
-      // Theme set to light.
-      await setTheme(Theme.light);
-      // Save as system if system theme is also light. Otherwise, save as light.
-      settings.theme = !darkThemeMq.matches ? Theme.system : Theme.light;
-    } else {
-      // Theme set to dark.
-      await setTheme(Theme.dark);
-      // Save as system if system theme is also dark. Otherwise, save as dark.
-      settings.theme = darkThemeMq.matches ? Theme.system : Theme.dark;
-    }
-    await appClient.SaveSettings(settings);
-  } catch (error: any) {
-    await showAndLogError("Failed to toggle theme", error);
-  }
-}
-
 /************
  * Lifecycle
  ************/
-
-detectPreferredTheme();
 
 router.afterEach(() => {
   const path = router.currentRoute.value.matched.at(0)?.path;
@@ -122,9 +71,12 @@ router.afterEach(() => {
           <ArcoLogo svgClass='size-8' />Arco
         </a>
 
-        <label class='swap swap-rotate' :class='{"swap-active": isLightTheme}'>
-          <SunIcon class='swap-off size-10' @click='toggleTheme' />
-          <MoonIcon class='swap-on size-10' @click='toggleTheme' />
+        <label class='swap swap-rotate'>
+          <!-- this hidden checkbox controls the state -->
+          <input type="checkbox" :value='isDark'/>
+
+          <SunIcon class='swap-off size-10' @click='toggleDark()' />
+          <MoonIcon class='swap-on size-10' @click='toggleDark()' />
         </label>
       </div>
     </div>
