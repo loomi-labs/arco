@@ -118,7 +118,7 @@ func (b *BackupClient) NewBackupProfile() (*ent.BackupProfile, error) {
 	}
 
 	// We only care about the hour, minute, second and nanosecond (in local time for display purpose)
-	firstDayOfMonthAtNine := time.Date(2024, 1, 1, 9, 0, 0, 0, time.Local)
+	firstDayOfMonthAtNine := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
 	schedule := &ent.BackupSchedule{
 		Mode:      backupschedule.ModeHourly,
 		DailyAt:   firstDayOfMonthAtNine,
