@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.5](https://github.com/loomi-labs/arco/compare/v0.11.4...v0.11.5) (2024-12-02)
+
+
+### Bug Fixes
+
+* add default settings ([#127](https://github.com/loomi-labs/arco/issues/127)) ([6b9a209](https://github.com/loomi-labs/arco/commit/6b9a2097ee5b4193cdc33457b3e3640b963a2656))
+
 ## [0.11.4](https://github.com/loomi-labs/arco/compare/v0.11.3...v0.11.4) (2024-12-02)
 
 
