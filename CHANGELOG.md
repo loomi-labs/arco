@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.3](https://github.com/loomi-labs/arco/compare/v0.11.2...v0.11.3) (2024-12-02)
+
+
+### Bug Fixes
+
+* macos build ([#120](https://github.com/loomi-labs/arco/issues/120)) ([0139a93](https://github.com/loomi-labs/arco/commit/0139a93def8872dc00816f365dd184e9c44303e4))
+
 ## [0.11.2](https://github.com/loomi-labs/arco/compare/v0.11.1...v0.11.2) (2024-12-02)
 
 
