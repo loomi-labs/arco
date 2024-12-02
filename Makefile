@@ -125,13 +125,21 @@ test: ensure-tools mockgen
 .phony: build
 build: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
-	@wails build $(LDFLAGS)
+	@if [ -n "$$PLATFORM" ]; then \
+		wails build $(LDFLAGS) -webview2=download --platform $(PLATFORM); \
+	else \
+		wails build $(LDFLAGS) -webview2=download; \
+	fi
 	@echo "✅ Done!"
 
 .phony: build-assert
 build-assert: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
-	@wails build --tags=assert $(LDFLAGS)
+	@if [ -n "$$PLATFORM" ]; then \
+		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download --platform $(PLATFORM); \
+	else \
+		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download; \
+	fi
 	@echo "✅ Done!"
 
 #################################
