@@ -12,7 +12,7 @@ jobs:
       - name: Debug
         run: |
           echo "github.event_name: ${{ github.event_name }}"
-          echo "github.event: ${{ toJson(github.event)
+          echo "github.event: ${{ toJson(github.event) }}"
           echo "github.event.head_commit.message: ${{ github.event.head_commit.message }}"
 
   create-release-pr:
