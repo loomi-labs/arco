@@ -83,7 +83,7 @@ func NewApp(
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys),
+		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys, nil),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,

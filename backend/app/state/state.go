@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/negrel/assert"
 	"go.uber.org/zap"
 	"sync"
@@ -140,9 +140,9 @@ func (bs BackupStatus) String() string {
 
 type BackupState struct {
 	*cancelCtx
-	Status   BackupStatus         `json:"status"`
-	Progress *borg.BackupProgress `json:"progress,omitempty"`
-	Error    string               `json:"error,omitempty"`
+	Status   BackupStatus              `json:"status"`
+	Progress *borgtypes.BackupProgress `json:"progress,omitempty"`
+	Error    string                    `json:"error,omitempty"`
 }
 
 func newBackupState() *BackupState {
@@ -367,7 +367,7 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 
 	s.changeBackupState(bId, BackupStatusRunning)
 	s.backupStates[bId].cancelCtx = newCancelCtx(ctx)
-	s.backupStates[bId].Progress = &borg.BackupProgress{}
+	s.backupStates[bId].Progress = &borgtypes.BackupProgress{}
 	s.backupStates[bId].Error = ""
 
 	s.setRepoState(bId.RepositoryId, RepoStatusBackingUp)
@@ -434,7 +434,7 @@ func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
 	s.backupStates[bId].Status = newState
 }
 
-func (s *State) UpdateBackupProgress(ctx context.Context, bId types.BackupId, progress borg.BackupProgress) {
+func (s *State) UpdateBackupProgress(ctx context.Context, bId types.BackupId, progress borgtypes.BackupProgress) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
@@ -453,7 +453,7 @@ func (s *State) GetBackupState(id types.BackupId) BackupState {
 	return *newBackupState()
 }
 
-func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borg.BackupProgress {
+func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borgtypes.BackupProgress {
 	var totalFiles, processedFiles int
 	found := false
 	for _, id := range ids {
@@ -468,7 +468,7 @@ func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borg.BackupProg
 	if !found {
 		return nil
 	}
-	return &borg.BackupProgress{
+	return &borgtypes.BackupProgress{
 		TotalFiles:     totalFiles,
 		ProcessedFiles: processedFiles,
 	}
