@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/loomi-labs/arco/compare/v0.10.0...v0.11.0) (2024-12-02)
+
+
+### Features
+
+* simplify dark/light-mode settings ([de97019](https://github.com/loomi-labs/arco/commit/de97019886ab4a78015b2c575e6daad5a94bd87c))
+* update icons ([5d28a80](https://github.com/loomi-labs/arco/commit/5d28a80f11eb19581ee45a2d8f76e75052e9fa0c))
+* update welcome popup ([7f9e434](https://github.com/loomi-labs/arco/commit/7f9e4342f6e2454a5a711bb1a1b1d5ba9d1b4b6c))
+
+
+### Bug Fixes
+
+* schedule equality check ([27f0c28](https://github.com/loomi-labs/arco/commit/27f0c28b75a15f08fca4abb6a6f95fd24d904850))
+* timezone/scheduler bug ([181c320](https://github.com/loomi-labs/arco/commit/181c320f1b2d159ef62e69ac0eb8c8c8d050192c))
+
 ## [0.10.0](https://github.com/loomi-labs/arco/compare/v0.9.0...v0.10.0) (2024-11-27)
 
 
