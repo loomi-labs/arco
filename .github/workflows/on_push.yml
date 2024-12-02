@@ -6,7 +6,46 @@ on:
       - main
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.event: ${{ toJson(github.event) }}"
+          echo "github.event_name: ${{ github.event_name }}"
+
+  debug-run-1:
+    if: "!startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, 'release-please--branches--main')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.event: ${{ toJson(github.event) }}"
+          echo "github.event_name: ${{ github.event_name }}"
+
+  debug-run-2:
+    if: "startsWith(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'release-please--branches--main')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.event: ${{ toJson(github.event) }}"
+          echo "github.event_name: ${{ github.event_name }}"
+
+  debug-run-3:
+    if: "!startsWith(github.event.head_commit.message, 'chore(main): release')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.event: ${{ toJson(github.event) }}"
+          echo "github.event_name: ${{ github.event_name }}"
+
   create-release-pr:
     # We do not want to create a release PR when the push comes from a release
-    if: "!startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, 'release-please--branches--main')"
+    if: "!startsWith(github.event.head_commit.message, 'chore(main): release')"
     uses: ./.github/workflows/create_release_pr.yml
