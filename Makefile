@@ -66,6 +66,16 @@ hash-migrations: ensure-atlas
 	   --dir="file://backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
+set-migration-version: ensure-atlas
+ifndef version
+	$(error version is not set; use `make set-migration-version version=20241202145510`)
+endif
+	@echo "Setting migration version..."
+	@atlas migrate set $(version) \
+	   --dir="file://backend/ent/migrate/migrations" \
+	   --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
+	@echo "✅ Done!"
+
 #################################
 ###          Checks           ###
 #################################
