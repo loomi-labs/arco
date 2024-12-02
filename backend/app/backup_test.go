@@ -5,6 +5,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
@@ -365,18 +366,18 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 			}
 			if tt.deleteArchives {
 				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-				infoResponse := &borg.InfoResponse{
+				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
-					Cache:       borg.Cache{},
-					Encryption:  borg.Encryption{},
-					Repository:  borg.Repository{},
+					Cache:       borgtypes.Cache{},
+					Encryption:  borgtypes.Encryption{},
+					Repository:  borgtypes.Repository{},
 					SecurityDir: "",
 				}
 				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, nil)
-				listResponse := &borg.ListResponse{
+				listResponse := &borgtypes.ListResponse{
 					Archives:   nil,
-					Encryption: borg.Encryption{},
-					Repository: borg.Repository{},
+					Encryption: borgtypes.Encryption{},
+					Repository: borgtypes.Repository{},
 				}
 
 				wg.Add(1)
@@ -499,18 +500,18 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 				})
 
 				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-				infoResponse := &borg.InfoResponse{
+				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
-					Cache:       borg.Cache{},
-					Encryption:  borg.Encryption{},
-					Repository:  borg.Repository{},
+					Cache:       borgtypes.Cache{},
+					Encryption:  borgtypes.Encryption{},
+					Repository:  borgtypes.Repository{},
 					SecurityDir: "",
 				}
 				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, nil)
-				listResponse := &borg.ListResponse{
+				listResponse := &borgtypes.ListResponse{
 					Archives:   nil,
-					Encryption: borg.Encryption{},
-					Repository: borg.Repository{},
+					Encryption: borgtypes.Encryption{},
+					Repository: borgtypes.Repository{},
 				}
 
 				wg.Add(1)
