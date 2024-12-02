@@ -6,8 +6,6 @@
 ### Bug Fixes
 
 * logger path ([9476dad](https://github.com/loomi-labs/arco/commit/9476dadb4e6b1b7caeb05b99e217cf6eaf529b68))
-* something ([6f81480](https://github.com/loomi-labs/arco/commit/6f81480be16a313c5c20c7ee091493dc46505cf0))
-* something ([47b3a55](https://github.com/loomi-labs/arco/commit/47b3a551ae8715e4dc9e91862eed9d94c9771a2d))
 
 ## [0.11.3](https://github.com/loomi-labs/arco/compare/v0.11.2...v0.11.3) (2024-12-02)
 
