@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/loomi-labs/arco/compare/v0.11.0...v0.11.1) (2024-12-02)
+
+
+### Bug Fixes
+
+* parsing error when having a warning in `info` ([06fc3b4](https://github.com/loomi-labs/arco/commit/06fc3b402f5458ff30183244ce04071c2ab57944))
+
 ## [0.11.0](https://github.com/loomi-labs/arco/compare/v0.10.0...v0.11.0) (2024-12-02)
 
 
