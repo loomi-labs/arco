@@ -5,27 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 	"strings"
 	"syscall"
 )
 
-type PruneResult struct {
-	IsDryRun      bool
-	PruneArchives []*PruneArchive
-	KeepArchives  []*KeepArchive
-}
-
-type PruneArchive struct {
-	Name string
-}
-
-type KeepArchive struct {
-	Name   string
-	Reason string
-}
-
-func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error {
+func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error {
 	defer close(ch)
 
 	if len(pruneOptions) == 0 {
@@ -83,25 +69,25 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
-func decodePruneOutput(scanner *bufio.Scanner, isDryRun bool) PruneResult {
-	var prunedArchives []*PruneArchive
-	var keptArchives []*KeepArchive
+func decodePruneOutput(scanner *bufio.Scanner, isDryRun bool) types.PruneResult {
+	var prunedArchives []*types.PruneArchive
+	var keptArchives []*types.KeepArchive
 	for scanner.Scan() {
 		data := scanner.Text()
 
-		var typeMsg Type
+		var typeMsg types.Type
 		decoder := json.NewDecoder(strings.NewReader(data))
 		err := decoder.Decode(&typeMsg)
 		if err != nil {
 			// Continue if we can't decode the JSON
 			continue
 		}
-		if JSONType(typeMsg.Type) != LogMessageType {
+		if types.JSONType(typeMsg.Type) != types.LogMessageType {
 			// We only care about log messages
 			continue
 		}
 
-		var LogMsg LogMessage
+		var LogMsg types.LogMessage
 		decoder = json.NewDecoder(strings.NewReader(data))
 		err = decoder.Decode(&LogMsg)
 		if err != nil {
@@ -115,20 +101,20 @@ func decodePruneOutput(scanner *bufio.Scanner, isDryRun bool) PruneResult {
 			keptArchives = append(keptArchives, keep)
 		}
 	}
-	return PruneResult{
+	return types.PruneResult{
 		IsDryRun:      isDryRun,
 		PruneArchives: prunedArchives,
 		KeepArchives:  keptArchives,
 	}
 }
 
-func parsePruneOutput(logMsg LogMessage) (*PruneArchive, *KeepArchive) {
+func parsePruneOutput(logMsg types.LogMessage) (*types.PruneArchive, *types.KeepArchive) {
 	if strings.HasPrefix(logMsg.Message, "Would prune") || strings.HasPrefix(logMsg.Message, "Pruning") {
-		return &PruneArchive{
+		return &types.PruneArchive{
 			Name: parsePruneName(logMsg.Message),
 		}, nil
 	} else if strings.HasPrefix(logMsg.Message, "Keeping") {
-		return nil, &KeepArchive{
+		return nil, &types.KeepArchive{
 			Name:   parsePruneName(logMsg.Message),
 			Reason: parsePruneReason(logMsg.Message),
 		}

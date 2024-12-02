@@ -4,16 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 )
 
-type ListResponse struct {
-	Archives   []ArchiveList `json:"archives"`
-	Encryption Encryption    `json:"encryption"`
-	Repository Repository    `json:"repository"`
-}
-
-func (b *borg) List(ctx context.Context, repository string, password string) (*ListResponse, error) {
+func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, error) {
 	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
@@ -24,7 +19,7 @@ func (b *borg) List(ctx context.Context, repository string, password string) (*L
 		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
-	var listResponse ListResponse
+	var listResponse types.ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
 		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg list output: %w", err))

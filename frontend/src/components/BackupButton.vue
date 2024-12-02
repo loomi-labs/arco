@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { borg, ent, state, types } from "../../wailsjs/go/models";
+import { ent, state, types } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
 import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
 import * as backupClient from "../../wailsjs/go/app/BackupClient";
@@ -29,7 +29,7 @@ const { t } = useI18n();
 
 const showProgressSpinner = ref(false);
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
-const backupProgress = ref<borg.BackupProgress | undefined>(undefined);
+const backupProgress = ref<types.BackupProgress | undefined>(undefined);
 const lockedRepos = ref<ent.Repository[]>([]);
 const reposWithMounts = ref<ent.Repository[]>([]);
 

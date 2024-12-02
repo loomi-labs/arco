@@ -7,6 +7,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -227,7 +228,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 	}
 
 	// Create go routine to save prune result
-	borgCh := make(chan borg.PruneResult)
+	borgCh := make(chan borgtypes.PruneResult)
 	resultCh := make(chan state.PruneJobResult)
 	go b.savePruneResult(archives, borgCh, resultCh)
 
@@ -303,7 +304,7 @@ func pruneEntityToBorgCmd(pruningRule *ent.PruningRule) []string {
 	return cmd
 }
 
-func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borg.PruneResult, resultCh chan state.PruneJobResult) {
+func (b *BackupClient) savePruneResult(archives []*ent.Archive, ch chan borgtypes.PruneResult, resultCh chan state.PruneJobResult) {
 	defer close(resultCh)
 	for {
 		select {
@@ -401,7 +402,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	}
 
 	// Create go routine to save prune result
-	borgCh := make(chan borg.PruneResult)
+	borgCh := make(chan borgtypes.PruneResult)
 	resultCh := make(chan state.PruneJobResult)
 	go b.savePruneResult(archives, borgCh, resultCh)
 

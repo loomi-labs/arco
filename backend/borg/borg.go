@@ -3,18 +3,20 @@ package borg
 import (
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"go.uber.org/zap"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
 
 type Borg interface {
-	Info(ctx context.Context, repository, password string) (*InfoResponse, error)
+	Info(ctx context.Context, repository, password string) (*types.InfoResponse, error)
 	Init(ctx context.Context, repository, password string, noPassword bool) error
-	List(ctx context.Context, repository string, password string) (*ListResponse, error)
+	List(ctx context.Context, repository string, password string) (*types.ListResponse, error)
 	Compact(ctx context.Context, repository string, password string) error
-	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error)
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, error)
 	Rename(ctx context.Context, repository, archive, password, newName string) error
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
 	DeleteArchives(ctx context.Context, repository, password, prefix string) error
@@ -22,7 +24,7 @@ type Borg interface {
 	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
 	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
 	Umount(ctx context.Context, path string) error
-	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan PruneResult) error
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error
 	BreakLock(ctx context.Context, repository string, password string) error
 }
 
@@ -30,18 +32,33 @@ type borg struct {
 	path           string
 	log            *CmdLogger
 	sshPrivateKeys []string
+	commandRunner  CommandRunner
 }
 
-func NewBorg(path string, log *zap.SugaredLogger, sshPrivateKeys []string) Borg {
+type CommandRunner interface {
+	Info(cmd *exec.Cmd) ([]byte, error)
+}
+
+type commandRunner struct {
+}
+
+func NewBorg(path string, log *zap.SugaredLogger, sshPrivateKeys []string, cr CommandRunner) Borg {
+	if cr == nil {
+		cr = &commandRunner{}
+	}
 	return &borg{
 		path:           path,
 		log:            NewCmdLogger(log),
 		sshPrivateKeys: sshPrivateKeys,
+		commandRunner:  cr,
 	}
 }
 
 const noErrorCtxKey = "noError"
 
+// NoErrorCtx is a context value that can be used to suppress error logging for a specific command.
+// This is useful when the error is expected and handled by the caller.
+// The error will still be logged but at INFO level.
 func NoErrorCtx(ctx context.Context) context.Context {
 	return context.WithValue(ctx, noErrorCtxKey, true)
 }

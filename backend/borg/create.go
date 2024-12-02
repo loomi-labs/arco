@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,14 +14,9 @@ import (
 	"time"
 )
 
-type BackupProgress struct {
-	TotalFiles     int `json:"totalFiles"`
-	ProcessedFiles int `json:"processedFiles"`
-}
-
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan BackupProgress) (string, error) {
+func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, error) {
 	archiveName := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
@@ -83,32 +79,32 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
-func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- BackupProgress) {
+func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- types.BackupProgress) {
 	for scanner.Scan() {
 		data := scanner.Text()
 
-		var typeMsg Type
+		var typeMsg types.Type
 		decoder := json.NewDecoder(strings.NewReader(data))
 		err := decoder.Decode(&typeMsg)
 		if err != nil {
 			// Continue if we can't decode the JSON
 			continue
 		}
-		if JSONType(typeMsg.Type) != ArchiveProgressType {
+		if types.JSONType(typeMsg.Type) != types.ArchiveProgressType {
 			// We only care about archive progress
 			continue
 		}
 
-		var archiveProgress ArchiveProgress
+		var archiveProgress types.ArchiveProgress
 		decoder = json.NewDecoder(strings.NewReader(data))
 		err = decoder.Decode(&archiveProgress)
 		if err != nil {
 			continue
 		}
 		if archiveProgress.Finished {
-			ch <- BackupProgress{TotalFiles: totalFiles, ProcessedFiles: totalFiles}
+			ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: totalFiles}
 		} else if totalFiles > 0 && archiveProgress.NFiles > 0 {
-			ch <- BackupProgress{TotalFiles: totalFiles, ProcessedFiles: archiveProgress.NFiles}
+			ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: archiveProgress.NFiles}
 		}
 	}
 }
@@ -162,7 +158,7 @@ func countFiles(scanner *bufio.Scanner) int {
 	for scanner.Scan() {
 		data := scanner.Text()
 
-		var fileStatus FileStatus
+		var fileStatus types.FileStatus
 		decoder := json.NewDecoder(strings.NewReader(data))
 		err := decoder.Decode(&fileStatus)
 		if err != nil {

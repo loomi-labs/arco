@@ -1,6 +1,7 @@
 package borg
 
 import (
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -11,9 +12,9 @@ type inputOutput struct {
 }
 
 type logInputOutput struct {
-	input   LogMessage
-	output1 *PruneArchive
-	output2 *KeepArchive
+	input   types.LogMessage
+	output1 *types.PruneArchive
+	output2 *types.KeepArchive
 }
 
 func TestParsePruneReason(t *testing.T) {
@@ -83,46 +84,46 @@ func TestParsePruneName(t *testing.T) {
 func TestParsePruneOutput(t *testing.T) {
 	tests := []logInputOutput{
 		{
-			input: LogMessage{
+			input: types.LogMessage{
 				Message: "Keeping archive (rule: daily #1):            down-2024-07-22-21-19-22             Mon, 2024-07-22 21:19:23 [c8396fd6b334e09fa8e91d213039f91533b047bb22103a30613443ed7cdfc4056]",
 			},
 			output1: nil,
-			output2: &KeepArchive{
+			output2: &types.KeepArchive{
 				Name:   "down-2024-07-22-21-19-22",
 				Reason: "daily #1",
 			},
 		},
 		{
-			input: LogMessage{
+			input: types.LogMessage{
 				Message: "Would prune:                                 down-2024-07-22-21-19-20             Mon, 2024-07-22 21:19:21 [36535bbf6b2e563e805c73be8827d4c648cc39e2ad9eb82fa8b097ff52899019]",
 			},
-			output1: &PruneArchive{
+			output1: &types.PruneArchive{
 				Name: "down-2024-07-22-21-19-20",
 			},
 			output2: nil,
 		},
 		{
-			input: LogMessage{
+			input: types.LogMessage{
 				Message: "Keeping archive (rule: daily #2):            down-2024-07-21-18-16-03             Sun, 2024-07-21 18:16:04 [d22f69e1c874bff4d26a1d14440d1b8c0e12d968745145bb7f10e796a1912ff1]",
 			},
 			output1: nil,
-			output2: &KeepArchive{
+			output2: &types.KeepArchive{
 				Name:   "down-2024-07-21-18-16-03",
 				Reason: "daily #2",
 			},
 		},
 		{
-			input: LogMessage{
+			input: types.LogMessage{
 				Message: "Keeping archive (rule: daily[oldest] #3):    down-2024-07-21-16-21-11             Sun, 2024-07-21 16:21:12 [3dbb5b8b7eff848fb2fa3b4455ddc0af81fed0f125bd18e9799a065b014ab166]",
 			},
 			output1: nil,
-			output2: &KeepArchive{
+			output2: &types.KeepArchive{
 				Name:   "down-2024-07-21-16-21-11",
 				Reason: "daily[oldest] #3",
 			},
 		},
 		{
-			input: LogMessage{
+			input: types.LogMessage{
 				Message: "terminating with success status, rc 0",
 			},
 			output1: nil,

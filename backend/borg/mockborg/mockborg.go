@@ -11,9 +11,10 @@ package mockborg
 
 import (
 	context "context"
+	exec "os/exec"
 	reflect "reflect"
 
-	borg "github.com/loomi-labs/arco/backend/borg"
+	types "github.com/loomi-labs/arco/backend/borg/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -69,7 +70,7 @@ func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.C
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan borg.BackupProgress) (string, error) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, ch)
 	ret0, _ := ret[0].(string)
@@ -126,10 +127,10 @@ func (mr *MockBorgMockRecorder) DeleteRepository(ctx, repository, password any) 
 }
 
 // Info mocks base method.
-func (m *MockBorg) Info(ctx context.Context, repository, password string) (*borg.InfoResponse, error) {
+func (m *MockBorg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Info", ctx, repository, password)
-	ret0, _ := ret[0].(*borg.InfoResponse)
+	ret0, _ := ret[0].(*types.InfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -155,10 +156,10 @@ func (mr *MockBorgMockRecorder) Init(ctx, repository, password, noPassword any) 
 }
 
 // List mocks base method.
-func (m *MockBorg) List(ctx context.Context, repository, password string) (*borg.ListResponse, error) {
+func (m *MockBorg) List(ctx context.Context, repository, password string) (*types.ListResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, repository, password)
-	ret0, _ := ret[0].(*borg.ListResponse)
+	ret0, _ := ret[0].(*types.ListResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -198,7 +199,7 @@ func (mr *MockBorgMockRecorder) MountRepository(ctx, repository, password, mount
 }
 
 // Prune mocks base method.
-func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan borg.PruneResult) error {
+func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Prune", ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
 	ret0, _ := ret[0].(error)
@@ -237,4 +238,42 @@ func (m *MockBorg) Umount(ctx context.Context, path string) error {
 func (mr *MockBorgMockRecorder) Umount(ctx, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Umount", reflect.TypeOf((*MockBorg)(nil).Umount), ctx, path)
+}
+
+// MockCommandRunner is a mock of CommandRunner interface.
+type MockCommandRunner struct {
+	ctrl     *gomock.Controller
+	recorder *MockCommandRunnerMockRecorder
+}
+
+// MockCommandRunnerMockRecorder is the mock recorder for MockCommandRunner.
+type MockCommandRunnerMockRecorder struct {
+	mock *MockCommandRunner
+}
+
+// NewMockCommandRunner creates a new mock instance.
+func NewMockCommandRunner(ctrl *gomock.Controller) *MockCommandRunner {
+	mock := &MockCommandRunner{ctrl: ctrl}
+	mock.recorder = &MockCommandRunnerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCommandRunner) EXPECT() *MockCommandRunnerMockRecorder {
+	return m.recorder
+}
+
+// Info mocks base method.
+func (m *MockCommandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Info", cmd)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockCommandRunnerMockRecorder) Info(cmd any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockCommandRunner)(nil).Info), cmd)
 }

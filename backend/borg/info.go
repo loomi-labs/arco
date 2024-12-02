@@ -4,29 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 )
 
-type InfoResponse struct {
-	Archives    []ArchiveInfo `json:"archives"`
-	Cache       Cache         `json:"cache"`
-	Encryption  Encryption    `json:"encryption"`
-	Repository  Repository    `json:"repository"`
-	SecurityDir string        `json:"security_dir"`
+func (cr *commandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
+	return cmd.CombinedOutput()
 }
 
-func (b *borg) Info(ctx context.Context, repository, password string) (*InfoResponse, error) {
+func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, error) {
 	cmd := exec.CommandContext(ctx, b.path, "info", "--json", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
 	startTime := b.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
+	out, err := b.commandRunner.Info(cmd)
 	if err != nil {
 		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
 	}
 
-	var info InfoResponse
+	var info types.InfoResponse
 	err = json.Unmarshal(out, &info)
 	if err != nil {
 		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg info output: %w", err))

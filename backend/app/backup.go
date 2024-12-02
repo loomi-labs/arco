@@ -8,6 +8,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -425,9 +426,9 @@ func (b *BackupClient) SelectDirectory() (string, error) {
 }
 
 type BackupProgressResponse struct {
-	BackupId types.BackupId      `json:"backupId"`
-	Progress borg.BackupProgress `json:"progress"`
-	Found    bool                `json:"found"`
+	BackupId types.BackupId           `json:"backupId"`
+	Progress borgtypes.BackupProgress `json:"progress"`
+	Found    bool                     `json:"found"`
 }
 
 func (b *BackupClient) abortBackupJob(id types.BackupId) error {
@@ -462,7 +463,7 @@ func (b *BackupClient) GetBackupButtonStatus(bIds []types.BackupId) state.Backup
 	}
 }
 
-func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borg.BackupProgress {
+func (b *BackupClient) GetCombinedBackupProgress(bIds []types.BackupId) *borgtypes.BackupProgress {
 	return b.state.GetCombinedBackupProgress(bIds)
 }
 
@@ -650,7 +651,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 	ctx := b.state.SetBackupRunning(b.ctx, bId)
 
 	// Create go routine to receive progress info
-	ch := make(chan borg.BackupProgress)
+	ch := make(chan borgtypes.BackupProgress)
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
@@ -760,7 +761,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 	}
 }
 
-func (b *BackupClient) saveProgressInfo(id types.BackupId, ch chan borg.BackupProgress) {
+func (b *BackupClient) saveProgressInfo(id types.BackupId, ch chan borgtypes.BackupProgress) {
 	for {
 		select {
 		case <-b.ctx.Done():

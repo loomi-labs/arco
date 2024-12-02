@@ -1,4 +1,4 @@
-package borg
+package types
 
 import (
 	"bufio"
@@ -248,4 +248,38 @@ type Stats struct {
 type Cache struct {
 	Path  string `json:"path"`
 	Stats Stats  `json:"stats"`
+}
+
+type InfoResponse struct {
+	Archives    []ArchiveInfo `json:"archives"`
+	Cache       Cache         `json:"cache"`
+	Encryption  Encryption    `json:"encryption"`
+	Repository  Repository    `json:"repository"`
+	SecurityDir string        `json:"security_dir"`
+}
+
+type BackupProgress struct {
+	TotalFiles     int `json:"totalFiles"`
+	ProcessedFiles int `json:"processedFiles"`
+}
+
+type ListResponse struct {
+	Archives   []ArchiveList `json:"archives"`
+	Encryption Encryption    `json:"encryption"`
+	Repository Repository    `json:"repository"`
+}
+
+type PruneResult struct {
+	IsDryRun      bool
+	PruneArchives []*PruneArchive
+	KeepArchives  []*KeepArchive
+}
+
+type PruneArchive struct {
+	Name string
+}
+
+type KeepArchive struct {
+	Name   string
+	Reason string
 }
