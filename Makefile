@@ -24,7 +24,7 @@ generate-models:
 
 generate-migrations: ensure-atlas
 	@echo "Creating ent migration..."
-	@atlas migrate diff \
+	@atlas migrate diff gen \
                      --dir "file://backend/ent/migrate/migrations" \
                      --to "ent://backend/ent/schema" \
                      --dev-url "sqlite://file?mode=memory&_fk=1"

@@ -2,9 +2,10 @@ package app
 
 import (
 	"archive/zip"
-	"ariga.io/atlas-go-sdk/atlasexec"
 	"bytes"
 	"context"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/energye/systray"
@@ -14,6 +15,7 @@ import (
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
@@ -350,35 +352,34 @@ func (a *App) extractBinary(zipReader *zip.Reader, path string) error {
 	return nil
 }
 
-func (a *App) applyMigrations(opts string) error {
-	workdir, err := atlasexec.NewWorkingDir(
-		atlasexec.WithMigrations(
-			a.config.Migrations,
-		),
-	)
+func (a *App) applyMigrations(dbSource string) error {
+	db, err := sql.Open(dialect.SQLite, dbSource)
 	if err != nil {
-		return fmt.Errorf("failed to load working directory: %v", err)
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer workdir.Close()
-
-	// Initialize the atlasClient.
-	atlasClient, err := atlasexec.NewClient(workdir.Path(), "atlas")
-	if err != nil {
-		return fmt.Errorf("failed to initialize atlasClient: %v", err)
+		return fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
-	// Run `atlas migrate apply`
-	result, err := atlasClient.MigrateApply(a.ctx, &atlasexec.MigrateApplyParams{
-		URL: fmt.Sprintf("sqlite:///%s%s", filepath.Join(a.config.Dir, "arco.db"), opts),
-	})
-	if err != nil {
+	defer func(db *sql.Driver) {
+		err := db.Close()
+		if err != nil {
+			a.log.Error("failed to close database connection")
+		}
+	}(db)
+
+	// Add a prefix and suffix to the migrations (required by goose)
+	gooseMigrations := &util.CustomFS{
+		FS:     a.config.Migrations,
+		Prefix: "-- +goose Up\n-- +goose StatementBegin\n",
+		Suffix: "\n-- +goose StatementEnd\n",
+	}
+
+	goose.SetBaseFS(gooseMigrations)
+
+	if err := goose.SetDialect(dialect.SQLite); err != nil {
+		return fmt.Errorf("failed to set dialect: %v", err)
+	}
+
+	if err := goose.Up(db.DB(), "."); err != nil {
 		return fmt.Errorf("failed to apply migrations: %v", err)
-	}
-	a.log.Infof("Applied %d migrations", len(result.Applied))
-	a.log.Infof("Current db version: %s", result.Current)
-	if result.Current == "" && len(result.Applied) == 0 {
-		return fmt.Errorf("could not apply migrations")
 	}
 	return nil
 }
@@ -390,9 +391,10 @@ func (a *App) initDb() (*ent.Client, error) {
 	// - Set busy timeout, so concurrent writers wait on each other instead of erroring immediately
 	// - Enable foreign key checks
 	opts := "?_journal=WAL&_timeout=5000&_fk=1"
+	dbSource := fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts)
 
 	// Apply migrations
-	if err := a.applyMigrations(opts); err != nil {
+	if err := a.applyMigrations(dbSource); err != nil {
 		return nil, err
 	}
 
@@ -401,7 +403,7 @@ func (a *App) initDb() (*ent.Client, error) {
 		return nil, fmt.Errorf("failed to set permissions on database file: %v", err)
 	}
 
-	dbClient, err := ent.Open("sqlite3", fmt.Sprintf("file:%s%s", filepath.Join(a.config.Dir, "arco.db"), opts))
+	dbClient, err := ent.Open(dialect.SQLite, dbSource)
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
