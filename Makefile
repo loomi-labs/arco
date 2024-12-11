@@ -133,12 +133,12 @@ build: ensure-tools ensure-pnpm
 	@echo "✅ Done!"
 
 .phony: build-assert
-build-assert: ensure-tools ensure-pnpm
+build-dev: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 --tags=assert --platform $(PLATFORM); \
+		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert --platform $(PLATFORM); \
 	else \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 --tags=assert; \
+		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert; \
 	fi
 	@echo "✅ Done!"
 
