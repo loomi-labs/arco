@@ -358,6 +358,13 @@ func (a *App) applyMigrations(dbSource string) error {
 		return fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
+	defer func(db *sql.Driver) {
+		err := db.Close()
+		if err != nil {
+			a.log.Error("failed to close database connection")
+		}
+	}(db)
+
 	// Add a prefix and suffix to the migrations (required by goose)
 	gooseMigrations := &util.CustomFS{
 		FS:     a.config.Migrations,
