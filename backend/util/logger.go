@@ -40,3 +40,19 @@ func (z *zapLogWrapper) Error(message string) {
 func (z *zapLogWrapper) Fatal(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Fatalw(message)
 }
+
+type GooseLogger struct {
+	log *zap.SugaredLogger
+}
+
+func NewGooseLogger(log *zap.SugaredLogger) *GooseLogger {
+	return &GooseLogger{log: log}
+}
+
+func (g *GooseLogger) Fatalf(format string, v ...interface{}) {
+	g.log.Fatalf(format, v...)
+}
+
+func (g *GooseLogger) Printf(format string, v ...interface{}) {
+	g.log.Infof(format, v...)
+}
