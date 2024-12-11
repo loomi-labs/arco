@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/loomi-labs/arco/compare/v0.11.5...v0.12.0) (2024-12-11)
+
+
+### Features
+
+* add goose migrations ([#130](https://github.com/loomi-labs/arco/issues/130)) ([dd6208d](https://github.com/loomi-labs/arco/commit/dd6208d6788c2086087689638224a295376ec98a))
+* build with webkit2gtk 4.1 ([#132](https://github.com/loomi-labs/arco/issues/132)) ([009a267](https://github.com/loomi-labs/arco/commit/009a26762bc289190b220fccbeff62a7eff7f0fb))
+
 ## [0.11.5](https://github.com/loomi-labs/arco/compare/v0.11.4...v0.11.5) (2024-12-02)
 
 
