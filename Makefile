@@ -126,9 +126,9 @@ test: ensure-tools mockgen
 build: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
-		wails build $(LDFLAGS) -webview2=download --platform $(PLATFORM); \
+		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 --platform $(PLATFORM); \
 	else \
-		wails build $(LDFLAGS) -webview2=download; \
+		wails build $(LDFLAGS) -webview2=download -tags webkit2_41; \
 	fi
 	@echo "✅ Done!"
 
@@ -136,9 +136,9 @@ build: ensure-tools ensure-pnpm
 build-assert: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
-		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download --platform $(PLATFORM); \
+		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download -tags webkit2_41 --platform $(PLATFORM); \
 	else \
-		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download; \
+		wails build $(LDFLAGS) --tags=assert $(LDFLAGS) -webview2=download -tags webkit2_41; \
 	fi
 	@echo "✅ Done!"
 
