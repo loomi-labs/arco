@@ -4,8 +4,9 @@
 # Build files
 build/bin
 node_modules
-dist
 wailsjs
+dist/*
+!dist/.gitkeep
 
 # Environment variables
 .env*
