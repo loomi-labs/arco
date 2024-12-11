@@ -12,7 +12,7 @@ import (
 
 type State struct {
 	log           *zap.SugaredLogger
-	mu            sync.Mutex
+	mu            sync.RWMutex
 	eventEmitter  types.EventEmitter
 	notifications []types.Notification
 
@@ -221,7 +221,7 @@ func newPruneState() *PruneState {
 func NewState(log *zap.SugaredLogger, eventEmitter types.EventEmitter) *State {
 	return &State{
 		log:           log,
-		mu:            sync.Mutex{},
+		mu:            sync.RWMutex{},
 		eventEmitter:  eventEmitter,
 		notifications: []types.Notification{},
 
@@ -262,8 +262,8 @@ func (s *State) SetStartupStatus(ctx context.Context, status StartupStatus, err 
 }
 
 func (s *State) GetStartupState() StartupState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return *s.startupState
 }
@@ -273,8 +273,8 @@ func (s *State) GetStartupState() StartupState {
 /***********************************/
 
 func (s *State) CanPerformRepoOperation(repositoryId int) (canRun bool, reason string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if rs, ok := s.repoStates[repositoryId]; ok {
 		if rs.Status != RepoStatusIdle {
@@ -320,8 +320,8 @@ func (s *State) setRepoState(repoId int, state RepoStatus) {
 }
 
 func (s *State) GetRepoState(repoId int) RepoState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if rs, ok := s.repoStates[repoId]; ok {
 		return *rs
@@ -334,8 +334,8 @@ func (s *State) GetRepoState(repoId int) RepoState {
 /***********************************/
 
 func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if bs, ok := s.backupStates[id]; ok {
 		if bs.Status == BackupStatusRunning {
@@ -466,15 +466,15 @@ func (s *State) getBackupState(id types.BackupId) BackupState {
 }
 
 func (s *State) GetBackupState(id types.BackupId) BackupState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return s.getBackupState(id)
 }
 
 func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borgtypes.BackupProgress {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	var totalFiles, processedFiles int
 	found := false
@@ -501,8 +501,8 @@ func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borgtypes.Backu
 /***********************************/
 
 func (s *State) CanRunPrune(id types.BackupId) (canRun bool, reason string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if ps, ok := s.pruneStates[id]; ok {
 		if ps.Status == PruningStatusRunning {
@@ -612,8 +612,8 @@ func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
 /***********************************/
 
 func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if rs, ok := s.repoStates[repoId]; ok {
 		if rs.Status != RepoStatusIdle {
@@ -652,8 +652,8 @@ func (s *State) GetAndDeleteNotifications() []types.Notification {
 /***********************************/
 
 func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if rs, ok := s.repoStates[id]; ok {
 		// We can only mount a repository if it's idle or mounting
@@ -745,8 +745,8 @@ func (s *State) getRepoMount(id int) types.MountState {
 }
 
 func (s *State) GetRepoMount(id int) types.MountState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return s.getRepoMount(id)
 }
@@ -764,8 +764,8 @@ func (s *State) getArchiveMounts(repoId int) (states map[int]types.MountState) {
 }
 
 func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return s.getArchiveMounts(repoId)
 }
@@ -776,8 +776,8 @@ func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
 
 // GetBackupButtonStatus returns the status of the backup with the given ID.
 func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	// If the repository is locked, we can't do anything
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
@@ -824,8 +824,8 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 
 // GetCombinedBackupButtonStatus returns the status of all backups in the given list of backup IDs combined.
 func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButtonStatus {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	for _, bId := range bIds {
 		if rs, ok := s.repoStates[bId.RepositoryId]; ok {
