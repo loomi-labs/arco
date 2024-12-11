@@ -1,0 +1,10 @@
+name: Create Release PR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release-pr:
+    uses: ./.github/workflows/create_release_pr.yml
