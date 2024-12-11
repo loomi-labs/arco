@@ -34,12 +34,12 @@ type CustomFile struct {
 
 func (cf *CustomFile) Read(p []byte) (int, error) {
 	if cf.reader == nil {
-		content, err := io.ReadAll(cf.File)
-		if err != nil {
-			return 0, err
-		}
-		modifiedContent := cf.Prefix + string(content) + cf.Suffix
-		cf.reader = strings.NewReader(modifiedContent)
+		// Create a reader that concatenates the prefix, file content, and suffix
+		cf.reader = io.MultiReader(
+			strings.NewReader(cf.Prefix),
+			cf.File,
+			strings.NewReader(cf.Suffix),
+		)
 	}
 	return cf.reader.Read(p)
 }
