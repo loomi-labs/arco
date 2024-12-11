@@ -30,17 +30,15 @@ generate-migrations: ensure-atlas
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
-apply-migrations: ensure-atlas
+apply-migrations: ensure-goose
 	@echo "Migrating ent schema..."
-	@atlas migrate apply \
-                     --dir "file://backend/ent/migrate/migrations" \
-                     --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
+	@goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" up \
+					-dir "backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
-show-migrations: ensure-atlas
-	@atlas migrate status \
-					 --dir "file://backend/ent/migrate/migrations" \
-					 --url "sqlite://$$HOME/.config/arco/arco.db?_fk=1"
+show-migrations: ensure-goose
+	@goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" status \
+					-dir "backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
 lint-migrations: ensure-atlas
@@ -85,6 +83,9 @@ ensure-pnpm:
 
 ensure-atlas:
 	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
+
+ensure-goose:
+	@command -v goose >/dev/null 2>&1 || { printf >&2 "❌ goose not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 
 ensure-tools:
 	@command -v go >/dev/null 2>&1 || { printf >&2 "❌ go not found.\nPlease install it\n"; exit 1; }
@@ -132,7 +133,7 @@ build: ensure-tools ensure-pnpm
 	fi
 	@echo "✅ Done!"
 
-.phony: build-assert
+.phony: build-dev
 build-dev: ensure-tools ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
@@ -172,4 +173,4 @@ install-tools: download
 	@echo "✅ Done!"
 
 dev: ensure-tools ensure-pnpm
-	wails dev --tags=assert $(LDFLAGS)
+	wails dev $(LDFLAGS) -race --tags=assert
