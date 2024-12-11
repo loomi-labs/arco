@@ -262,6 +262,9 @@ func (s *State) SetStartupStatus(ctx context.Context, status StartupStatus, err 
 }
 
 func (s *State) GetStartupState() StartupState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return *s.startupState
 }
 
@@ -270,6 +273,9 @@ func (s *State) GetStartupState() StartupState {
 /***********************************/
 
 func (s *State) CanPerformRepoOperation(repositoryId int) (canRun bool, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if rs, ok := s.repoStates[repositoryId]; ok {
 		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
@@ -314,6 +320,9 @@ func (s *State) setRepoState(repoId int, state RepoStatus) {
 }
 
 func (s *State) GetRepoState(repoId int) RepoState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if rs, ok := s.repoStates[repoId]; ok {
 		return *rs
 	}
@@ -325,6 +334,9 @@ func (s *State) GetRepoState(repoId int) RepoState {
 /***********************************/
 
 func (s *State) CanRunBackup(id types.BackupId) (canRun bool, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if bs, ok := s.backupStates[id]; ok {
 		if bs.Status == BackupStatusRunning {
 			return false, "Backup is already running"
@@ -446,14 +458,24 @@ func (s *State) UpdateBackupProgress(ctx context.Context, bId types.BackupId, pr
 	}
 }
 
-func (s *State) GetBackupState(id types.BackupId) BackupState {
+func (s *State) getBackupState(id types.BackupId) BackupState {
 	if bs, ok := s.backupStates[id]; ok {
 		return *bs
 	}
 	return *newBackupState()
 }
 
+func (s *State) GetBackupState(id types.BackupId) BackupState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.getBackupState(id)
+}
+
 func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borgtypes.BackupProgress {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var totalFiles, processedFiles int
 	found := false
 	for _, id := range ids {
@@ -479,6 +501,9 @@ func (s *State) GetCombinedBackupProgress(ids []types.BackupId) *borgtypes.Backu
 /***********************************/
 
 func (s *State) CanRunPrune(id types.BackupId) (canRun bool, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if ps, ok := s.pruneStates[id]; ok {
 		if ps.Status == PruningStatusRunning {
 			return false, "Prune job is already running"
@@ -587,6 +612,9 @@ func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
 /***********************************/
 
 func (s *State) CanRunDeleteJob(repoId int) (canRun bool, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if rs, ok := s.repoStates[repoId]; ok {
 		if rs.Status != RepoStatusIdle {
 			return false, "Repository is busy"
@@ -624,6 +652,9 @@ func (s *State) GetAndDeleteNotifications() []types.Notification {
 /***********************************/
 
 func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if rs, ok := s.repoStates[id]; ok {
 		// We can only mount a repository if it's idle or mounting
 		if rs.Status != RepoStatusIdle && rs.Status != RepoStatusMounted {
@@ -706,14 +737,21 @@ func (s *State) SetArchiveMounts(ctx context.Context, repoId int, states map[int
 	}
 }
 
-func (s *State) GetRepoMount(id int) types.MountState {
+func (s *State) getRepoMount(id int) types.MountState {
 	if state, ok := s.repoMounts[id]; ok {
 		return *state
 	}
 	return types.MountState{}
 }
 
-func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
+func (s *State) GetRepoMount(id int) types.MountState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.getRepoMount(id)
+}
+
+func (s *State) getArchiveMounts(repoId int) (states map[int]types.MountState) {
 	states = make(map[int]types.MountState)
 	for rId, state := range s.archiveMounts {
 		if rId == repoId {
@@ -725,12 +763,22 @@ func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
 	return states
 }
 
+func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.getArchiveMounts(repoId)
+}
+
 /***********************************/
 /********** Backup Button **********/
 /***********************************/
 
 // GetBackupButtonStatus returns the status of the backup with the given ID.
 func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// If the repository is locked, we can't do anything
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
 		if rs.Status == RepoStatusLocked {
@@ -741,7 +789,7 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 		}
 	}
 
-	bs := s.GetBackupState(id)
+	bs := s.getBackupState(id)
 	switch bs.Status {
 	case BackupStatusWaiting:
 		return BackupButtonStatusWaiting
@@ -756,10 +804,10 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 		}
 
 		// If the repository or any of it's archives is mounted, the user has to unmount it before doing anything
-		if repoMount := s.GetRepoMount(id.RepositoryId); repoMount.IsMounted {
+		if repoMount := s.getRepoMount(id.RepositoryId); repoMount.IsMounted {
 			return BackupButtonStatusUnmount
 		}
-		if archiveMounts := s.GetArchiveMounts(id.RepositoryId); len(archiveMounts) > 0 {
+		if archiveMounts := s.getArchiveMounts(id.RepositoryId); len(archiveMounts) > 0 {
 			for _, state := range archiveMounts {
 				if state.IsMounted {
 					return BackupButtonStatusUnmount
@@ -776,6 +824,9 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 
 // GetCombinedBackupButtonStatus returns the status of all backups in the given list of backup IDs combined.
 func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButtonStatus {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, bId := range bIds {
 		if rs, ok := s.repoStates[bId.RepositoryId]; ok {
 			if rs.Status == RepoStatusLocked {
@@ -789,7 +840,7 @@ func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButto
 
 			// We have to check all non-idle repositories
 			if rs.Status != RepoStatusIdle {
-				bs := s.GetBackupState(bId).Status
+				bs := s.getBackupState(bId).Status
 
 				// If any of the backups is waiting or running, we show the waiting or abort button
 				if bs == BackupStatusWaiting {
@@ -808,10 +859,10 @@ func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButto
 
 	for _, bId := range bIds {
 		// If any of the repositories or any of it's archives is mounted, the user has to unmount it before doing anything
-		if repoMount := s.GetRepoMount(bId.RepositoryId); repoMount.IsMounted {
+		if repoMount := s.getRepoMount(bId.RepositoryId); repoMount.IsMounted {
 			return BackupButtonStatusUnmount
 		}
-		if archiveMounts := s.GetArchiveMounts(bId.RepositoryId); len(archiveMounts) > 0 {
+		if archiveMounts := s.getArchiveMounts(bId.RepositoryId); len(archiveMounts) > 0 {
 			for _, state := range archiveMounts {
 				if state.IsMounted {
 					return BackupButtonStatusUnmount
