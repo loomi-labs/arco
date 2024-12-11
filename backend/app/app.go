@@ -372,6 +372,7 @@ func (a *App) applyMigrations(dbSource string) error {
 		Suffix: "\n-- +goose StatementEnd\n",
 	}
 
+	goose.SetLogger(util.NewGooseLogger(a.log))
 	goose.SetBaseFS(gooseMigrations)
 
 	if err := goose.SetDialect(dialect.SQLite); err != nil {
