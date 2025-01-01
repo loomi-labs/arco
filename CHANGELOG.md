@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.1](https://github.com/loomi-labs/arco/compare/v0.12.0...v0.12.1) (2025-01-01)
+
+
+### Bug Fixes
+
+* eliminate race conditions in state.go ([74d7a93](https://github.com/loomi-labs/arco/commit/74d7a93d526d1712704943fc9635a3a07f686647))
+* linux CI/CD build ([#133](https://github.com/loomi-labs/arco/issues/133)) ([80879e0](https://github.com/loomi-labs/arco/commit/80879e029383fe1d86e9e40b6c6a77a049fe4fb6))
+* logging for migrations ([ce076a3](https://github.com/loomi-labs/arco/commit/ce076a3996e38da37fc69436edeefde7ecccb8bc))
+
 ## [0.12.0](https://github.com/loomi-labs/arco/compare/v0.11.5...v0.12.0) (2024-12-11)
 
 
