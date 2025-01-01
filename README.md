@@ -33,3 +33,12 @@ To build a redistributable, install [go](https://go.dev/doc/install), [pnpm](htt
 
 To run in live development mode, run `make dev` in the project directory. This will run a Vite development
 server that will provide very fast hot reload of your frontend changes.
+
+## Screenshots
+
+Here are some screenshots of the application:
+
+![Dashboard](docs/dashboard.png)
+![Add Backup Profile](docs/new-backup-profile.png)
+![Backup Profile](docs/backup-profile.png)
+![Dashboard Dark](docs/dashboard-dark.png)
