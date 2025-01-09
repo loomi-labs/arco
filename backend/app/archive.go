@@ -9,7 +9,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"slices"
 	"strings"
 	"time"
@@ -119,7 +118,7 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 	}
 
 	if cntDeletedArchives > 0 || cntNewArchives > 0 {
-		defer runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(repoId))
+		defer r.eventEmitter.EmitEvent(r.ctx, types.EventArchivesChangedString(repoId))
 	}
 
 	return archives, nil
@@ -154,7 +153,7 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	if err != nil {
 		return err
 	}
-	runtime.EventsEmit(r.ctx, types.EventArchivesChangedString(arch.Edges.Repository.ID))
+	r.eventEmitter.EmitEvent(r.ctx, types.EventArchivesChangedString(arch.Edges.Repository.ID))
 	return nil
 }
 

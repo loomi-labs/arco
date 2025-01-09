@@ -13,7 +13,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sync"
 	"time"
 )
@@ -361,7 +360,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	// If the pruning rule is not enabled, we don't need to call borg
 	if !pruningRule.IsEnabled {
 		if saveResults {
-			defer runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+			defer b.eventEmitter.EmitEvent(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
 			err = b.db.Archive.
 				Update().
 				Where(archive.And(
@@ -460,7 +459,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 					return 0, fmt.Errorf("failed to commit transaction: %w", err)
 				}
 				if cntToTrue+cntToFalse > 0 {
-					runtime.EventsEmit(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
+					b.eventEmitter.EmitEvent(b.ctx, types.EventArchivesChangedString(bId.RepositoryId))
 				}
 
 				return len(pruneResult.PruneArchives), nil
