@@ -1,14 +1,13 @@
 package borg
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
-	"os/exec"
 	"strings"
-	"syscall"
+	"time"
 )
 
 func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error {
@@ -33,78 +32,90 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 	cmdStr = append(cmdStr, pruneOptions...)
 	cmdStr = append(cmdStr, repository)
-	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
+
+	options := gocmd.Options{Buffered: false, Streaming: true}
+	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
-	// Add cancel functionality
-	hasBeenCanceled := false
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		hasBeenCanceled = true
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
-	}
+	// Run command
+	statusChan := cmd.Start()
 
-	// Run prune command
-	startTime := b.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if hasBeenCanceled {
-			b.log.LogCmdCancelled(cmd.String(), startTime)
-			return CancelErr{}
-		}
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	} else {
-		scanner := bufio.NewScanner(strings.NewReader(string(out)))
-		b.log.LogCmdEnd(cmd.String(), startTime)
+	go decodePruneOutput(cmd, isDryRun, ch)
 
-		ch <- decodePruneOutput(scanner, isDryRun)
-
-		if isDryRun {
-			return nil
+	select {
+	case <-ctx.Done():
+		// If the context gets cancelled we stop the command
+		err := cmd.Stop()
+		if err != nil {
+			b.log.Errorf("error stopping command: %v", err)
 		}
 
-		// Run compact to free up space
-		return b.Compact(ctx, repository, password)
+		// We still have to wait for the command to finish
+		_ = <-statusChan
+	case _ = <-statusChan:
+		// Break in case the command completes
+		break
 	}
+
+	// If we are here the command has completed or the context has been cancelled
+	status := cmd.Status()
+	if status.Error != nil {
+		return b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+	}
+	if !status.Complete {
+		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		return CancelErr{}
+	}
+	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
+
+	if isDryRun {
+		return nil
+	}
+
+	// Run compact to free up space
+	return b.Compact(ctx, repository, password)
 }
 
-// decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
-func decodePruneOutput(scanner *bufio.Scanner, isDryRun bool) types.PruneResult {
+// decodePruneOutput decodes the progress messages from borg and sends them to the channel.
+func decodePruneOutput(cmd *gocmd.Cmd, isDryRun bool, ch chan types.PruneResult) {
 	var prunedArchives []*types.PruneArchive
 	var keptArchives []*types.KeepArchive
-	for scanner.Scan() {
-		data := scanner.Text()
 
-		var typeMsg types.Type
-		decoder := json.NewDecoder(strings.NewReader(data))
-		err := decoder.Decode(&typeMsg)
-		if err != nil {
-			// Continue if we can't decode the JSON
-			continue
-		}
-		if types.JSONType(typeMsg.Type) != types.LogMessageType {
-			// We only care about log messages
-			continue
-		}
+	for {
+		select {
+		case _ = <-cmd.Stdout:
+			// ignore stdout (info comes through stderr)
+		case data := <-cmd.Stderr:
+			var typeMsg types.Type
+			if err := json.Unmarshal([]byte(data), &typeMsg); err != nil {
+				// Skip errors
+				continue
+			}
+			if types.JSONType(typeMsg.Type) != types.LogMessageType {
+				// We only care about log messages
+				continue
+			}
 
-		var LogMsg types.LogMessage
-		decoder = json.NewDecoder(strings.NewReader(data))
-		err = decoder.Decode(&LogMsg)
-		if err != nil {
-			continue
+			var logMsg types.LogMessage
+			if err := json.Unmarshal([]byte(data), &logMsg); err != nil {
+				// Skip errors
+				continue
+			}
+			prune, keep := parsePruneOutput(logMsg)
+			if prune != nil {
+				prunedArchives = append(prunedArchives, prune)
+			}
+			if keep != nil {
+				keptArchives = append(keptArchives, keep)
+			}
+		case <-cmd.Done():
+			ch <- types.PruneResult{
+				IsDryRun:      isDryRun,
+				PruneArchives: prunedArchives,
+				KeepArchives:  keptArchives,
+			}
+			return
 		}
-		prune, keep := parsePruneOutput(LogMsg)
-		if prune != nil {
-			prunedArchives = append(prunedArchives, prune)
-		}
-		if keep != nil {
-			keptArchives = append(keptArchives, keep)
-		}
-	}
-	return types.PruneResult{
-		IsDryRun:      isDryRun,
-		PruneArchives: prunedArchives,
-		KeepArchives:  keptArchives,
 	}
 }
 
