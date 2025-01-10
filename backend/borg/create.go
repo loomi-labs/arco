@@ -1,16 +1,12 @@
 package borg
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"os"
-	"os/exec"
-	"strings"
-	"syscall"
 	"time"
 )
 
@@ -36,75 +32,73 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
-	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
+
+	options := gocmd.Options{Buffered: false, Streaming: true}
+	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
-	// Add cancel functionality
-	hasBeenCanceled := false
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		hasBeenCanceled = true
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
-	}
-
 	// Run backup command
-	startTime := b.log.LogCmdStart(cmd.String())
+	statusChan := cmd.Start()
 
-	// borg streams JSON messages to stderr
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
-	}
+	go decodeBackupProgress(cmd, totalFiles, ch, b.log)
 
-	err = cmd.Start()
-	if err != nil {
-		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
-	}
-
-	scanner := bufio.NewScanner(stderr)
-	scanner.Split(bufio.ScanLines)
-	decodeBackupProgress(scanner, totalFiles, ch)
-
-	err = cmd.Wait()
-	if err != nil {
-		if hasBeenCanceled {
-			b.log.LogCmdCancelled(cmd.String(), startTime)
-			return archiveName, CancelErr{}
+	select {
+	case <-ctx.Done():
+		// If the context gets cancelled we stop the command
+		err = cmd.Stop()
+		if err != nil {
+			b.log.Errorf("error stopping command: %v", err)
 		}
-		return archiveName, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
+
+		// We still have to wait for the command to finish
+		_ = <-statusChan
+	case _ = <-statusChan:
+		// Break in case the command completes
+		break
 	}
 
-	b.log.LogCmdEnd(cmd.String(), startTime)
+	// If we are here the command has completed or the context has been cancelled
+	status := cmd.Status()
+	if status.Error != nil {
+		return archiveName, b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+	}
+	if !status.Complete {
+		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		return archiveName, CancelErr{}
+	}
+	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
 	return archiveName, nil
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
-func decodeBackupProgress(scanner *bufio.Scanner, totalFiles int, ch chan<- types.BackupProgress) {
-	for scanner.Scan() {
-		data := scanner.Text()
+func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.BackupProgress, log *CmdLogger) {
+	for {
+		select {
+		case _ = <-cmd.Stdout:
+			// ignore stdout (info comes through stderr)
+		case data := <-cmd.Stderr:
+			var typeMsg types.Type
+			if err := json.Unmarshal([]byte(data), &typeMsg); err != nil {
+				// Skip errors
+				continue
+			}
+			if types.JSONType(typeMsg.Type) != types.ArchiveProgressType {
+				// We only care about archive progress
+				continue
+			}
 
-		var typeMsg types.Type
-		decoder := json.NewDecoder(strings.NewReader(data))
-		err := decoder.Decode(&typeMsg)
-		if err != nil {
-			// Continue if we can't decode the JSON
-			continue
-		}
-		if types.JSONType(typeMsg.Type) != types.ArchiveProgressType {
-			// We only care about archive progress
-			continue
-		}
-
-		var archiveProgress types.ArchiveProgress
-		decoder = json.NewDecoder(strings.NewReader(data))
-		err = decoder.Decode(&archiveProgress)
-		if err != nil {
-			continue
-		}
-		if archiveProgress.Finished {
-			ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: totalFiles}
-		} else if totalFiles > 0 && archiveProgress.NFiles > 0 {
-			ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: archiveProgress.NFiles}
+			var archiveProgress types.ArchiveProgress
+			if err := json.Unmarshal([]byte(data), &archiveProgress); err != nil {
+				// Skip errors
+				continue
+			}
+			if archiveProgress.Finished {
+				ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: totalFiles}
+			} else if totalFiles > 0 && archiveProgress.NFiles > 0 {
+				ch <- types.BackupProgress{TotalFiles: totalFiles, ProcessedFiles: archiveProgress.NFiles}
+			}
+		case <-cmd.Done():
+			return
 		}
 	}
 }
@@ -123,54 +117,75 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
-	cmd := exec.CommandContext(ctx, b.path, cmdStr...)
+
+	options := gocmd.Options{Buffered: false, Streaming: true}
+	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
-	// Add cancel functionality
-	hasBeenCanceled := false
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		hasBeenCanceled = true
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
-	}
+	// Run dry-run command
+	statusChan := cmd.Start()
+	fileCountChan := make(chan int)
 
-	// Run backup command
-	startTime := b.log.LogCmdStart(cmd.String())
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if hasBeenCanceled {
-			b.log.LogCmdCancelled(cmd.String(), startTime)
-			return 0, CancelErr{}
+	go countFiles(cmd, fileCountChan)
+
+	select {
+	case <-ctx.Done():
+		// If the context gets cancelled we stop the command
+		err := cmd.Stop()
+		if err != nil {
+			b.log.Errorf("error stopping command: %v", err)
 		}
-		return 0, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
 
-	// Count the files of the output
-	scanner := bufio.NewScanner(bytes.NewReader(out))
-	scanner.Split(bufio.ScanLines)
-	return countFiles(scanner), nil
+		// We still have to wait for the command to finish
+		_ = <-statusChan
+	case _ = <-statusChan:
+		// Break in case the command completes
+		break
+	}
+
+	// If we are here the command has completed or the context has been cancelled
+	status := cmd.Status()
+	if status.Error != nil {
+		return 0, b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+	}
+	if !status.Complete {
+		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		return 0, CancelErr{}
+	}
+	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
+
+	select {
+	case totalFiles := <-fileCountChan:
+		return totalFiles, nil
+	case <-time.After(10 * time.Second):
+		return 0, fmt.Errorf("timeout reached while counting files")
+	}
 }
 
 // countFiles counts the number of files in the output of the borg --list command.
-func countFiles(scanner *bufio.Scanner) int {
+func countFiles(cmd *gocmd.Cmd, fileCountChan chan int) {
 	totalFiles := 0
-	for scanner.Scan() {
-		data := scanner.Text()
 
-		var fileStatus types.FileStatus
-		decoder := json.NewDecoder(strings.NewReader(data))
-		err := decoder.Decode(&fileStatus)
-		if err != nil {
-			continue
-		}
+	for {
+		select {
+		case _ = <-cmd.Stdout:
+			// ignore stdout (info comes through stderr)
+		case data := <-cmd.Stderr:
+			var fileStatus types.FileStatus
+			if err := json.Unmarshal([]byte(data), &fileStatus); err != nil {
+				// Skip errors
+				continue
+			}
 
-		stat, err := os.Stat(fileStatus.Path)
-		if err != nil || stat.IsDir() {
-			// Skip errors and directories
-			continue
+			stat, err := os.Stat(fileStatus.Path)
+			if err != nil || stat.IsDir() {
+				// Skip errors and directories
+				continue
+			}
+			totalFiles++
+		case <-cmd.Done():
+			fileCountChan <- totalFiles
+			return
 		}
-		totalFiles++
 	}
-	return totalFiles
 }

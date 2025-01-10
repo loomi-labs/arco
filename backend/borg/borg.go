@@ -77,21 +77,33 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 }
 
 func (z *CmdLogger) LogCmdEnd(cmd string, startTime time.Time) {
-	z.Infof("Finished command: `%s` in %s", cmd, time.Since(startTime))
+	z.LogCmdEndD(cmd, time.Since(startTime))
+}
+
+func (z *CmdLogger) LogCmdEndD(cmd string, duration time.Duration) {
+	z.Infof("Finished command: `%s` in %s", cmd, duration)
 }
 
 func (z *CmdLogger) LogCmdError(ctx context.Context, cmd string, startTime time.Time, err error) error {
+	return z.LogCmdErrorD(ctx, cmd, time.Since(startTime), err)
+}
+
+func (z *CmdLogger) LogCmdErrorD(ctx context.Context, cmd string, duration time.Duration, err error) error {
 	err = exitCodesToError(err)
 	if ctx.Value(noErrorCtxKey) == nil {
-		z.Errorf("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
+		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, err)
 	} else {
-		z.Infof("Command `%s` failed after %s: %s", cmd, time.Since(startTime), err)
+		z.Infof("Command `%s` failed after %s: %s", cmd, duration, err)
 	}
 	return err
 }
 
 func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
-	z.Infof("Command `%s` cancelled after %s", cmd, time.Since(startTime))
+	z.LogCmdCancelledD(cmd, time.Since(startTime))
+}
+
+func (z *CmdLogger) LogCmdCancelledD(cmd string, duration time.Duration) {
+	z.Infof("Command `%s` cancelled after %s", cmd, duration)
 }
 
 type Env struct {
