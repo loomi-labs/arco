@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/loomi-labs/arco/compare/v0.12.1...v0.12.2) (2025-01-16)
+
+
+### Bug Fixes
+
+* memory usage ([#137](https://github.com/loomi-labs/arco/issues/137)) ([eff770b](https://github.com/loomi-labs/arco/commit/eff770b31ef1d410e424b62746e293b8ede2e2f5))
+
 ## [0.12.1](https://github.com/loomi-labs/arco/compare/v0.12.0...v0.12.1) (2025-01-01)
 
 
