@@ -14,10 +14,7 @@
 [s1]: https://goreportcard.com/badge/github.com/loomi-labs/arco
 [l1]: https://goreportcard.com/report/github.com/loomi-labs/arco
 
-<video width="100%" controls>
-    <source src="docs/showcase.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-</video>
+[![Showcase](https://github.com/loomi-labs/arco/raw/refs/heads/main/docs/showcase.mp4)](https://github.com/loomi-labs/arco/raw/refs/heads/main/docs/showcase.mp4)
 
 ## About
 
