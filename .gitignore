@@ -1,6 +1,9 @@
 # JetBrains IDE project files
 .idea
 
+# Vsode project files
+.vscode
+
 # Build files
 build/bin
 

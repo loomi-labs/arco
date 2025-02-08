@@ -1,7 +1,7 @@
 
 
 <div style="text-align: center;">
-    <img src="icon.png" alt="Icon" style="max-width: 200px;">
+    <img src="icon-small.png" alt="Icon" style="max-width: 200px;">
 </div>
 
 # Arco Backup
@@ -13,6 +13,11 @@
 [l0]: https://github.com/loomi-labs/arco/actions/workflows/on_push_go_changes.yml
 [s1]: https://goreportcard.com/badge/github.com/loomi-labs/arco
 [l1]: https://goreportcard.com/report/github.com/loomi-labs/arco
+
+<video width="100%" controls>
+    <source src="docs/showcase.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
 
 ## About
 
@@ -33,12 +38,3 @@ To build a redistributable, install [go](https://go.dev/doc/install), [pnpm](htt
 
 To run in live development mode, run `make dev` in the project directory. This will run a Vite development
 server that will provide very fast hot reload of your frontend changes.
-
-## Screenshots
-
-Here are some screenshots of the application:
-
-![Dashboard](docs/dashboard.png)
-![Add Backup Profile](docs/new-backup-profile.png)
-![Backup Profile](docs/backup-profile.png)
-![Dashboard Dark](docs/dashboard-dark.png)
