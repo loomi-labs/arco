@@ -1,8 +1,6 @@
 
 
-<div style="text-align: center;">
-    <img src="icon-small.png" alt="Icon" style="max-width: 200px;">
-</div>
+![Icon](icon-small.png)
 
 # Arco Backup
 
