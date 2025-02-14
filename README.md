@@ -14,7 +14,7 @@
 [s1]: https://goreportcard.com/badge/github.com/loomi-labs/arco
 [l1]: https://goreportcard.com/report/github.com/loomi-labs/arco
 
-[![Showcase](https://github.com/loomi-labs/arco/raw/refs/heads/main/docs/showcase.mp4)](https://github.com/loomi-labs/arco/raw/refs/heads/main/docs/showcase.mp4)
+![Demo](docs/demo_old.gif)
 
 ## About
 
