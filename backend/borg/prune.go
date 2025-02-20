@@ -33,6 +33,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 	options := gocmd.Options{Buffered: false, Streaming: true}
 	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
+	cmdLog := fmt.Sprintf("%s %s", b.path, strings.Join(cmdStr, " "))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Run command
@@ -56,15 +57,16 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	}
 
 	// If we are here the command has completed or the context has been cancelled
+	b.log.LogCmdStart(cmdLog)
 	status := cmd.Status()
 	if status.Error != nil {
-		return b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+		return b.log.LogCmdErrorD(ctx, cmdLog, time.Duration(status.Runtime), status.Error)
 	}
 	if !status.Complete {
-		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		b.log.LogCmdCancelledD(cmdLog, time.Duration(status.Runtime))
 		return CancelErr{}
 	}
-	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
+	b.log.LogCmdEndD(cmdLog, time.Duration(status.Runtime))
 
 	if isDryRun {
 		return nil
