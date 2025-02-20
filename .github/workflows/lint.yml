@@ -15,9 +15,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      # Lint go files with golangci-lint
-      - name: Lint go files with golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          args: --timeout=10m
+      - name: Install tools
+        run: make install-tools
+      # Lint go files
+      - name: Lint go files
+        run: make lint
