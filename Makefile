@@ -30,14 +30,14 @@ generate-migrations: ensure-atlas
                      --dev-url "sqlite://file?mode=memory&_fk=1"
 	@echo "✅ Done!"
 
-apply-migrations: ensure-goose
+apply-migrations:
 	@echo "Migrating ent schema..."
-	@goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" up \
+	@go tool goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" up \
 					-dir "backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
-show-migrations: ensure-goose
-	@goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" status \
+show-migrations:
+	@go tool goose sqlite "$$HOME/.config/arco/arco.db?_fk=1" status \
 					-dir "backend/ent/migrate/migrations"
 	@echo "✅ Done!"
 
@@ -84,28 +84,21 @@ ensure-pnpm:
 ensure-atlas:
 	@command -v atlas >/dev/null 2>&1 || { printf >&2 "❌ atlas not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
 
-ensure-goose:
-	@command -v goose >/dev/null 2>&1 || { printf >&2 "❌ goose not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
-
-ensure-tools:
-	@command -v go >/dev/null 2>&1 || { printf >&2 "❌ go not found.\nPlease install it\n"; exit 1; }
-	@command -v gofmt >/dev/null 2>&1 || { printf >&2 "❌ gofmt not found.\nPlease install it\n"; exit 1; }
-	@command -v golangci-lint >/dev/null 2>&1 || { printf >&2 "❌ golangci-lint not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
-	@command -v wails >/dev/null 2>&1 || { printf >&2 "❌ wails not found.\nPlease run 'make install-tools' to install it\n"; exit 1; }
+ensure-jq:
 	@command -v jq >/dev/null 2>&1 || { printf >&2 "❌ jq not found.\nPlease install it\n"; exit 1; }
 
 #################################
 ###   Formatting & Linting	  ###
 #################################
 
-format: ensure-tools
+format:
 	@echo "🧹 Running formatter..."
-	@gofmt -l -w .
+	@go tool gofmt -l -w .
 	@echo "✅ Completed formatting!"
 
-lint: ensure-tools
+lint:
 	@echo "🔍 Running linter..."
-	@golangci-lint run
+	@go tool golangci-lint run
 	@echo "✅ Completed linting!"
 
 #################################
@@ -113,10 +106,10 @@ lint: ensure-tools
 #################################
 
 mockgen:
-	@mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
-	@mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
+	@go tool mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
+	@go tool mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
 
-test: ensure-tools mockgen
+test: mockgen
 	@go test -cover -mod=readonly --timeout 1m $$(go list ./... | grep -v ent)
 
 #################################
@@ -124,22 +117,22 @@ test: ensure-tools mockgen
 #################################
 
 .phony: build
-build: ensure-tools ensure-pnpm
+build: ensure-jq ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 --platform $(PLATFORM); \
+		go tool wails build $(LDFLAGS) -webview2=download -tags webkit2_41 --platform $(PLATFORM); \
 	else \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41; \
+		go tool wails build $(LDFLAGS) -webview2=download -tags webkit2_41; \
 	fi
 	@echo "✅ Done!"
 
 .phony: build-dev
-build-dev: ensure-tools ensure-pnpm
+build-dev: ensure-jq ensure-pnpm
 	@echo "🏗️ Building..."
 	@if [ -n "$$PLATFORM" ]; then \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert --platform $(PLATFORM); \
+		go tool wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert --platform $(PLATFORM); \
 	else \
-		wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert; \
+		go tool wails build $(LDFLAGS) -webview2=download -tags webkit2_41 -race --tags=assert; \
 	fi
 	@echo "✅ Done!"
 
@@ -152,25 +145,9 @@ download:
 	@go mod download
 
 install-tools: download
-	@echo "🛠️ Installing tools..."
-	@for tool in $$(cat tools/tools.go | grep _ | awk '{print $$2}' | tr -d '"'); do \
-		version=""; \
-		toolInGoMod=$$tool; \
-		while [ -z "$$version" ] && [ "$${toolInGoMod}" != "" ]; do \
-			version=$$(grep -E "$${toolInGoMod} v" go.mod | awk '{print $$2}'); \
-			if [ -z "$$version" ]; then \
-				toolInGoMod=$$(echo "$${toolInGoMod}" | sed 's/\/[^\/]*$$//'); \
-			fi; \
-		done; \
-		if [ -n "$$version" ]; then \
-			go install "$${tool}@$$version"; \
-		else \
-			echo "❌ Could not find version for tool: $${tool}"; \
-		fi; \
-	done
 	@echo "🌍 Installing atlas..."
 	@curl -sSf https://atlasgo.sh | sh -s -- -y
 	@echo "✅ Done!"
 
-dev: ensure-tools ensure-pnpm
-	wails dev $(LDFLAGS) -race --tags=assert
+dev: ensure-pnpm
+	go tool wails dev $(LDFLAGS) -race --tags=assert

@@ -22,6 +22,7 @@ import (
 type MockBorg struct {
 	ctrl     *gomock.Controller
 	recorder *MockBorgMockRecorder
+	isgomock struct{}
 }
 
 // MockBorgMockRecorder is the mock recorder for MockBorg.
@@ -244,6 +245,7 @@ func (mr *MockBorgMockRecorder) Umount(ctx, path any) *gomock.Call {
 type MockCommandRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockCommandRunnerMockRecorder
+	isgomock struct{}
 }
 
 // MockCommandRunnerMockRecorder is the mock recorder for MockCommandRunner.
