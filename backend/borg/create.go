@@ -7,6 +7,7 @@ import (
 	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -35,9 +36,11 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 	options := gocmd.Options{Buffered: false, Streaming: true}
 	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
+	cmdLog := fmt.Sprintf("%s %s", b.path, strings.Join(cmdStr, " "))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Run backup command
+	b.log.LogCmdStart(cmdLog)
 	statusChan := cmd.Start()
 
 	go decodeBackupProgress(cmd, totalFiles, ch, b.log)
@@ -60,13 +63,13 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
 	if status.Error != nil {
-		return archiveName, b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+		return archiveName, b.log.LogCmdErrorD(ctx, cmdLog, time.Duration(status.Runtime), status.Error)
 	}
 	if !status.Complete {
-		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		b.log.LogCmdCancelledD(cmdLog, time.Duration(status.Runtime))
 		return archiveName, CancelErr{}
 	}
-	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
+	b.log.LogCmdEndD(cmdLog, time.Duration(status.Runtime))
 	return archiveName, nil
 }
 
@@ -120,9 +123,11 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 
 	options := gocmd.Options{Buffered: false, Streaming: true}
 	cmd := gocmd.NewCmdOptions(options, b.path, cmdStr...)
+	cmdLog := fmt.Sprintf("%s %s", b.path, strings.Join(cmdStr, " "))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Run dry-run command
+	b.log.LogCmdStart(cmdLog)
 	statusChan := cmd.Start()
 	fileCountChan := make(chan int)
 
@@ -146,13 +151,13 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
 	if status.Error != nil {
-		return 0, b.log.LogCmdErrorD(ctx, status.Cmd, time.Duration(status.Runtime), status.Error)
+		return 0, b.log.LogCmdErrorD(ctx, cmdLog, time.Duration(status.Runtime), status.Error)
 	}
 	if !status.Complete {
-		b.log.LogCmdCancelledD(status.Cmd, time.Duration(status.Runtime))
+		b.log.LogCmdCancelledD(cmdLog, time.Duration(status.Runtime))
 		return 0, CancelErr{}
 	}
-	b.log.LogCmdEndD(status.Cmd, time.Duration(status.Runtime))
+	b.log.LogCmdEndD(cmdLog, time.Duration(status.Runtime))
 
 	select {
 	case totalFiles := <-fileCountChan:
