@@ -6,6 +6,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
+	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
 	"time"
 )
@@ -15,6 +16,7 @@ func (a *App) startScheduleChangeListener() {
 	var timers []*time.Timer
 	for {
 		<-a.backupScheduleChangedCh
+		util.LogMemS(a.log, "startScheduleChangeListener - 1")
 
 		// Stop all scheduled backups
 		for _, t := range timers {
@@ -23,6 +25,7 @@ func (a *App) startScheduleChangeListener() {
 
 		// Schedule all backups
 		timers = a.scheduleBackups()
+		util.LogMemS(a.log, "startScheduleChangeListener - 2")
 	}
 }
 
@@ -263,6 +266,7 @@ func (a *App) startPruneScheduleChangeListener() {
 	var timers []*time.Timer
 	for {
 		<-a.pruningScheduleChangedCh
+		util.LogMemS(a.log, "startPruneScheduleChangeListener - 1")
 
 		// Stop all scheduled prunes
 		for _, t := range timers {
@@ -271,6 +275,7 @@ func (a *App) startPruneScheduleChangeListener() {
 
 		// Schedule all prunes
 		timers = a.schedulePrunes()
+		util.LogMemS(a.log, "startPruneScheduleChangeListener - 2")
 	}
 }
 

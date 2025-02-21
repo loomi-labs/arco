@@ -139,6 +139,8 @@ func (a *App) Startup(ctx context.Context) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
+	util.LogMemS(a.log, "Startup - 1")
+
 	if a.config.CheckForUpdates {
 		// Update Arco binary if necessary
 		needsRestart, err := a.updateArco()
@@ -158,6 +160,7 @@ func (a *App) Startup(ctx context.Context) {
 			return
 		}
 	}
+	util.LogMemS(a.log, "Startup - 2")
 
 	// Initialize the database
 	db, err := a.initDb()
@@ -168,12 +171,16 @@ func (a *App) Startup(ctx context.Context) {
 	}
 	a.db = db
 
+	util.LogMemS(a.log, "Startup - 3")
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
 		a.log.Error(err)
 		return
 	}
+
+	util.LogMemS(a.log, "Startup - 4")
 
 	// Set a general status for the rest of the startup process
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
@@ -185,11 +192,17 @@ func (a *App) Startup(ctx context.Context) {
 		return
 	}
 
+	util.LogMemS(a.log, "Startup - 5")
+
 	// Register signal handler
 	a.registerSignalHandler()
 
+	util.LogMemS(a.log, "Startup - 6")
+
 	// Save mount states
 	a.RepoClient().setMountStates()
+
+	util.LogMemS(a.log, "Startup - 7")
 
 	// Schedule backups
 	go a.startScheduleChangeListener()
@@ -197,8 +210,12 @@ func (a *App) Startup(ctx context.Context) {
 	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
 
+	util.LogMemS(a.log, "Startup - 8")
+
 	// Set the app as ready
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
+
+	util.LogMemS(a.log, "Startup - 9")
 }
 
 func (a *App) Shutdown(_ context.Context) {

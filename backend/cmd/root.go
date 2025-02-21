@@ -272,6 +272,14 @@ var rootCmd = &cobra.Command{
 			log.Infof("using unique run id: %s", uniqueRunId)
 		}
 
+		go func() {
+			// loop that logs every 5 seconds
+			for {
+				util.LogMemS(log, "loop")
+				time.Sleep(5 * time.Second)
+			}
+		}()
+
 		startApp(log, config, assets, startHidden, uniqueRunId)
 		return nil
 	},
