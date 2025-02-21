@@ -1,12 +1,13 @@
 package schema
 
 import (
+	"regexp"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
-	"regexp"
 )
 
 // BackupProfile holds the schema definition for the BackupProfile entity.
@@ -47,6 +48,12 @@ func (BackupProfile) Fields() []ent.Field {
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),
+		field.Bool("data_section_collapsed").
+			StructTag(`json:"dataSectionCollapsed"`).
+			Default(false),
+		field.Bool("schedule_section_collapsed").
+			StructTag(`json:"scheduleSectionCollapsed"`).
+			Default(false),
 	}
 }
 

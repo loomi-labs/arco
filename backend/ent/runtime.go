@@ -83,6 +83,14 @@ func init() {
 	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
 	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
 	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
+	// backupprofileDescDataSectionCollapsed is the schema descriptor for data_section_collapsed field.
+	backupprofileDescDataSectionCollapsed := backupprofileFields[6].Descriptor()
+	// backupprofile.DefaultDataSectionCollapsed holds the default value on creation for the data_section_collapsed field.
+	backupprofile.DefaultDataSectionCollapsed = backupprofileDescDataSectionCollapsed.Default.(bool)
+	// backupprofileDescScheduleSectionCollapsed is the schema descriptor for schedule_section_collapsed field.
+	backupprofileDescScheduleSectionCollapsed := backupprofileFields[7].Descriptor()
+	// backupprofile.DefaultScheduleSectionCollapsed holds the default value on creation for the schedule_section_collapsed field.
+	backupprofile.DefaultScheduleSectionCollapsed = backupprofileDescScheduleSectionCollapsed.Default.(bool)
 	backupscheduleMixin := schema.BackupSchedule{}.Mixin()
 	backupscheduleMixinFields0 := backupscheduleMixin[0].Fields()
 	_ = backupscheduleMixinFields0

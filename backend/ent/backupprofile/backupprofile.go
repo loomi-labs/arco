@@ -29,6 +29,10 @@ const (
 	FieldExcludePaths = "exclude_paths"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
+	// FieldDataSectionCollapsed holds the string denoting the data_section_collapsed field in the database.
+	FieldDataSectionCollapsed = "data_section_collapsed"
+	// FieldScheduleSectionCollapsed holds the string denoting the schedule_section_collapsed field in the database.
+	FieldScheduleSectionCollapsed = "schedule_section_collapsed"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -86,6 +90,8 @@ var Columns = []string{
 	FieldBackupPaths,
 	FieldExcludePaths,
 	FieldIcon,
+	FieldDataSectionCollapsed,
+	FieldScheduleSectionCollapsed,
 }
 
 var (
@@ -119,6 +125,10 @@ var (
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
 	DefaultExcludePaths []string
+	// DefaultDataSectionCollapsed holds the default value on creation for the "data_section_collapsed" field.
+	DefaultDataSectionCollapsed bool
+	// DefaultScheduleSectionCollapsed holds the default value on creation for the "schedule_section_collapsed" field.
+	DefaultScheduleSectionCollapsed bool
 )
 
 // Icon defines the type for the "icon" enum field.
@@ -179,6 +189,16 @@ func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 // ByIcon orders the results by the icon field.
 func ByIcon(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIcon, opts...).ToFunc()
+}
+
+// ByDataSectionCollapsed orders the results by the data_section_collapsed field.
+func ByDataSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDataSectionCollapsed, opts...).ToFunc()
+}
+
+// ByScheduleSectionCollapsed orders the results by the schedule_section_collapsed field.
+func ByScheduleSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScheduleSectionCollapsed, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

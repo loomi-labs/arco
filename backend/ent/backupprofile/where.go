@@ -75,6 +75,16 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
+// DataSectionCollapsed applies equality check predicate on the "data_section_collapsed" field. It's identical to DataSectionCollapsedEQ.
+func DataSectionCollapsed(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldDataSectionCollapsed, v))
+}
+
+// ScheduleSectionCollapsed applies equality check predicate on the "schedule_section_collapsed" field. It's identical to ScheduleSectionCollapsedEQ.
+func ScheduleSectionCollapsed(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldScheduleSectionCollapsed, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldCreatedAt, v))
@@ -313,6 +323,26 @@ func IconIn(vs ...Icon) predicate.BackupProfile {
 // IconNotIn applies the NotIn predicate on the "icon" field.
 func IconNotIn(vs ...Icon) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotIn(FieldIcon, vs...))
+}
+
+// DataSectionCollapsedEQ applies the EQ predicate on the "data_section_collapsed" field.
+func DataSectionCollapsedEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldDataSectionCollapsed, v))
+}
+
+// DataSectionCollapsedNEQ applies the NEQ predicate on the "data_section_collapsed" field.
+func DataSectionCollapsedNEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldDataSectionCollapsed, v))
+}
+
+// ScheduleSectionCollapsedEQ applies the EQ predicate on the "schedule_section_collapsed" field.
+func ScheduleSectionCollapsedEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldScheduleSectionCollapsed, v))
+}
+
+// ScheduleSectionCollapsedNEQ applies the NEQ predicate on the "schedule_section_collapsed" field.
+func ScheduleSectionCollapsedNEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldScheduleSectionCollapsed, v))
 }
 
 // HasRepositories applies the HasEdge predicate on the "repositories" edge.

@@ -20,6 +20,7 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
+import { LogDebug } from "../../wailsjs/runtime";
 
 /************
  * Variables
@@ -32,6 +33,8 @@ const selectedRepo = ref<ent.Repository | undefined>(undefined);
 const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
 const existingRepos = ref<ent.Repository[]>([]);
 const loading = ref(true);
+const dataSectionCollapsed = ref(false);
+const scheduleSectionCollapsed = ref(false);
 
 const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -75,6 +78,9 @@ async function getData() {
 
     // Get existing repositories
     existingRepos.value = await repoClient.All();
+
+    dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
+    scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
   } catch (error: any) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -175,6 +181,22 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
   }
 }
 
+async function toggleCollapse(type: "data" | "schedule") {
+  if (type === "data") {
+    dataSectionCollapsed.value = !dataSectionCollapsed.value;
+  } else {
+    scheduleSectionCollapsed.value = !scheduleSectionCollapsed.value;
+  }
+  try {
+    backupProfile.value.dataSectionCollapsed = dataSectionCollapsed.value;
+    backupProfile.value.scheduleSectionCollapsed = scheduleSectionCollapsed.value;
+    await backupClient.UpdateBackupProfile(backupProfile.value);
+    LogDebug(`toggleCollapse: ${type}; dataSectionCollapsed: ${dataSectionCollapsed.value}; scheduleSectionCollapsed: ${scheduleSectionCollapsed.value}`);
+  } catch (error: any) {
+    await showAndLogError("Failed to save collapsed state", error);
+  }
+}
+
 function showDeleteBackupProfileModal() {
   deleteArchives.value = false;
   confirmDeleteModal.value?.showModal();
@@ -199,8 +221,8 @@ watch(loading, async () => {
     <div class='loading loading-ring loading-lg'></div>
   </div>
   <div v-else class='container mx-auto text-left pt-10'>
-    <!-- Data Section -->
-    <div class='flex items-center justify-between text-base-strong mb-4'>
+    <!-- Name and Menu Section -->
+    <div class='flex items-center justify-between text-base-strong mb-4 pl-4'>
       <!-- Name -->
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
@@ -238,124 +260,146 @@ watch(loading, async () => {
                       @confirm='deleteBackupProfile'
         >
           <p>Are you sure you want to delete this backup profile?</p><br>
-          <div class="flex gap-4">
+          <div class='flex gap-4'>
             <p>Delete archives</p>
-            <input type="checkbox" class="toggle toggle-error" v-model='deleteArchives' />
-          </div><br>
+            <input type='checkbox' class='toggle toggle-error' v-model='deleteArchives' />
+          </div>
+          <br>
           <p v-if='deleteArchives'>This will delete all archives associated with this backup profile!</p>
           <p v-else>Archives will still be accessible via repository page.</p>
         </ConfirmModal>
       </div>
     </div>
 
-    <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
-      <!-- Data to backup Card -->
-      <DataSelection
-        show-title
-        :paths='backupProfile.backupPaths ?? []'
-        :is-backup-selection='true'
-        :run-min-one-path-validation='true'
-        @update:paths='saveBackupPaths'
-      />
-      <!-- Data to ignore Card -->
-      <DataSelection
-        show-title
-        :paths='backupProfile.excludePaths ?? []'
-        :is-backup-selection='false'
-        @update:paths='saveExcludePaths'
-      />
+    <!-- Data Section -->
+    <div tabindex='0' class='collapse collapse-arrow' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div class='collapse-title text-xl font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+           @click='toggleCollapse("data")'>
+        Data
+      </div>
+
+      <div class='collapse-content peer-hover:bg-base-300'>
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <!-- Data to backup Card -->
+          <DataSelection
+            show-title
+            :paths='backupProfile.backupPaths ?? []'
+            :is-backup-selection='true'
+            :run-min-one-path-validation='true'
+            @update:paths='saveBackupPaths'
+          />
+          <!-- Data to ignore Card -->
+          <DataSelection
+            show-title
+            :paths='backupProfile.excludePaths ?? []'
+            :is-backup-selection='false'
+            @update:paths='saveExcludePaths'
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Schedule Section -->
-    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>{{ $t("schedule") }}</h2>
-    <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-      <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
-                         @update:schedule='saveSchedule' />
+    <div tabindex='0' class='collapse collapse-arrow' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div class='collapse-title text-xl font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+           @click='toggleCollapse("schedule")'>
+        {{ $t("schedule") }}
+      </div>
 
-      <PruningCard :backup-profile-id='backupProfile.id'
-                   :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
-                   :ask-for-save-before-leaving='true'
-                   @update:pruning-rule='setPruningRule'>
-      </PruningCard>
+      <div class='collapse-content peer-hover:bg-base-300'>
+        <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
+          <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
+                             @update:schedule='saveSchedule' />
+
+          <PruningCard :backup-profile-id='backupProfile.id'
+                       :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
+                       :ask-for-save-before-leaving='true'
+                       @update:pruning-rule='setPruningRule'>
+          </PruningCard>
+        </div>
+      </div>
     </div>
 
-    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>Stored on</h2>
-    <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-      <!-- Repositories -->
-      <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
-        <RepoCard
-          :repo-id='repo.id'
-          :backup-profile-id='backupProfile.id'
-          :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
-          :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
-          :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
-          :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
-          @click='() => selectedRepo = repo'
-          @repo:status='(event) => repoStatuses.set(repo.id, event)'
-          @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
+    <!-- Repositories Section -->
+    <div class='p-4'>
+      <h2 class='text-xl font-bold text-base-strong mb-4'>Stored on</h2>
+      <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
+        <!-- Repositories -->
+        <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
+          <RepoCard
+            :repo-id='repo.id'
+            :backup-profile-id='backupProfile.id'
+            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+            :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
+            :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
+            :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
+            @click='() => selectedRepo = repo'
+            @repo:status='(event) => repoStatuses.set(repo.id, event)'
+            @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
+          >
+          </RepoCard>
+        </div>
+        <!-- Add Repository Card -->
+        <div @click='() => addRepoModal?.showModal()' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+          <PlusCircleIcon class='size-12' />
+          <div class='pl-2 text-lg font-semibold'>Add Repository</div>
+        </div>
+
+        <dialog
+          :ref='addRepoModalKey'
+          class='modal'
+          @click.stop
         >
-        </RepoCard>
-      </div>
-      <!-- Add Repository Card -->
-      <div @click='() => addRepoModal?.showModal()' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
-        <PlusCircleIcon class='size-12' />
-        <div class='pl-2 text-lg font-semibold'>Add Repository</div>
-      </div>
+          <form
+            method='dialog'
+            class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
+          >
+            <div class='modal-action'>
+              <div class='flex flex-col w-full justify-center gap-4'>
+                <ConnectRepo
+                  :show-connected-repos='true'
+                  :use-single-repo='true'
+                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
+                  @click:repo='(repo) => addRepo(repo)' />
 
-      <dialog
-        :ref='addRepoModalKey'
-        class='modal'
-        @click.stop
-      >
-        <form
-          method='dialog'
-          class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
-        >
-          <div class='modal-action'>
-            <div class='flex flex-col w-full justify-center gap-4'>
-              <ConnectRepo
-                :show-connected-repos='true'
-                :use-single-repo='true'
-                :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
-                @click:repo='(repo) => addRepo(repo)' />
+                <div class='divider'></div>
 
-              <div class='divider'> </div>
-
-              <!-- Add new Repository -->
-              <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
-                <p>Create new repository</p>
-                <div class='relative size-24 group-hover:text-arco-cloud-repo'>
-                  <CircleStackIcon class='absolute inset-0 size-24 z-10' />
-                  <div
-                    class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-                    <PlusCircleIcon class='size-10' />
+                <!-- Add new Repository -->
+                <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
+                  <p>Create new repository</p>
+                  <div class='relative size-24 group-hover:text-arco-cloud-repo'>
+                    <CircleStackIcon class='absolute inset-0 size-24 z-10' />
+                    <div
+                      class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
+                      <PlusCircleIcon class='size-10' />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class='flex w-full justify-center gap-4'>
-                <button
-                  value='false'
-                  class='btn btn-outline'
-                >
-                  Cancel
-                </button>
+                <div class='flex w-full justify-center gap-4'>
+                  <button
+                    value='false'
+                    class='btn btn-outline'
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </form>
-        <form method='dialog' class='modal-backdrop'>
-          <button>close</button>
-        </form>
-      </dialog>
+          </form>
+          <form method='dialog' class='modal-backdrop'>
+            <button>close</button>
+          </form>
+        </dialog>
+      </div>
+      <ArchivesCard v-if='selectedRepo'
+                    :backup-profile-id='backupProfile.id'
+                    :repo='selectedRepo!'
+                    :repo-status='repoStatuses.get(selectedRepo.id)!'
+                    :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
+                    :show-name='true'>
+      </ArchivesCard>
     </div>
-    <ArchivesCard v-if='selectedRepo'
-                  :backup-profile-id='backupProfile.id'
-                  :repo='selectedRepo!'
-                  :repo-status='repoStatuses.get(selectedRepo.id)!'
-                  :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
-                  :show-name='true'>
-    </ArchivesCard>
   </div>
 </template>
 
