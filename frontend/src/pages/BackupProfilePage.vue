@@ -59,14 +59,11 @@ const { meta, errors, defineField } = useForm({
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 const dataSectionDetails = computed(() => {
-  if (!dataSectionCollapsed.value) return "";
   return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup,
   ${backupProfile.value.excludePaths?.length ?? 0} path${backupProfile.value.excludePaths?.length === 1 ? "" : "s"} excluded`;
 });
 
 const scheduleSectionDetails = computed(() => {
-  if (!scheduleSectionCollapsed.value) return "";
-
   const schedule = backupProfile.value.edges.backupSchedule;
   const pruning = backupProfile.value.edges.pruningRule;
 
@@ -322,7 +319,7 @@ watch(loading, async () => {
       <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
-        <span class='ml-2'>{{ dataSectionDetails }}</span>
+        <span class='ml-2 transition-opacity duration-500' :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{ dataSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>
@@ -351,7 +348,7 @@ watch(loading, async () => {
       <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2'>{{ scheduleSectionDetails }}</span>
+        <span class='ml-2 transition-opacity duration-500' :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{ scheduleSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>
