@@ -273,7 +273,7 @@ watch(loading, async () => {
 
     <!-- Data Section -->
     <div tabindex='0' class='collapse collapse-arrow' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-xl font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+      <div class='collapse-title text-lg font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
            @click='toggleCollapse("data")'>
         Data
       </div>
@@ -301,7 +301,7 @@ watch(loading, async () => {
 
     <!-- Schedule Section -->
     <div tabindex='0' class='collapse collapse-arrow' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-xl font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+      <div class='collapse-title text-lg font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
            @click='toggleCollapse("schedule")'>
         {{ $t("schedule") }}
       </div>
@@ -322,7 +322,7 @@ watch(loading, async () => {
 
     <!-- Repositories Section -->
     <div class='p-4'>
-      <h2 class='text-xl font-bold text-base-strong mb-4'>Stored on</h2>
+      <h2 class='text-lg font-bold text-base-strong mb-4'>Stored on</h2>
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- Repositories -->
         <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
