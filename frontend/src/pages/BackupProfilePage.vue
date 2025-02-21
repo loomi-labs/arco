@@ -3,9 +3,9 @@ import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import * as zod from "zod";
 import { object } from "zod";
-import { nextTick, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { backupprofile, ent, state } from "../../wailsjs/go/models";
+import { backupprofile, backupschedule, ent, state } from "../../wailsjs/go/models";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
@@ -57,6 +57,52 @@ const { meta, errors, defineField } = useForm({
 });
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
+
+const dataSectionDetails = computed(() => {
+  if (!dataSectionCollapsed.value) return "";
+  return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup,
+  ${backupProfile.value.excludePaths?.length ?? 0} path${backupProfile.value.excludePaths?.length === 1 ? "" : "s"} excluded`;
+});
+
+const scheduleSectionDetails = computed(() => {
+  if (!scheduleSectionCollapsed.value) return "";
+
+  const schedule = backupProfile.value.edges.backupSchedule;
+  const pruning = backupProfile.value.edges.pruningRule;
+
+  if (!schedule || (schedule.mode === backupschedule.Mode.disabled && !pruning?.isEnabled)) {
+    return "No schedules";
+  }
+
+  let details = "";
+  switch (schedule.mode) {
+    case backupschedule.Mode.hourly:
+      details = "Backs up every hour";
+      break;
+    case backupschedule.Mode.daily:
+      details = `Backs up daily at ${new Date(schedule.dailyAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      break;
+    case backupschedule.Mode.weekly:
+      details = `Backs up every ${schedule.weekday} at ${new Date(schedule.weeklyAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      break;
+    case backupschedule.Mode.monthly:
+      details = `Backs up monthly on day ${schedule.monthday} at ${new Date(schedule.monthlyAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })}`;
+      break;
+  }
+
+  if (pruning?.isEnabled) {
+    if (details) {
+      details += ", auto-cleanup enabled";
+    } else {
+      details = "Auto-cleanup enabled";
+    }
+  }
+
+  return details;
+});
 
 /************
  * Functions
@@ -273,9 +319,10 @@ watch(loading, async () => {
 
     <!-- Data Section -->
     <div tabindex='0' class='collapse collapse-arrow' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-lg font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("data")'>
-        Data
+        <span class='text-lg font-bold text-base-strong'>Data</span>
+        <span class='ml-2'>{{ dataSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>
@@ -301,9 +348,10 @@ watch(loading, async () => {
 
     <!-- Schedule Section -->
     <div tabindex='0' class='collapse collapse-arrow' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-lg font-bold text-base-strong cursor-pointer select-none peer hover:bg-base-300'
+      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("schedule")'>
-        {{ $t("schedule") }}
+        <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
+        <span class='ml-2'>{{ scheduleSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>
