@@ -205,7 +205,7 @@ watch(loading, async () => {
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-3xl font-bold bg-transparent w-10'
+               class='text-2xl font-bold bg-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -267,7 +267,7 @@ watch(loading, async () => {
     </div>
 
     <!-- Schedule Section -->
-    <h2 class='text-3xl font-bold text-base-strong mb-4 mt-8'>{{ $t("schedule") }}</h2>
+    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>{{ $t("schedule") }}</h2>
     <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
       <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
                          @update:schedule='saveSchedule' />
@@ -279,7 +279,7 @@ watch(loading, async () => {
       </PruningCard>
     </div>
 
-    <h2 class='text-3xl font-bold text-base-strong mb-4 mt-8'>Stored on</h2>
+    <h2 class='text-2xl font-bold text-base-strong mb-4 mt-8'>Stored on</h2>
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
       <!-- Repositories -->
       <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
