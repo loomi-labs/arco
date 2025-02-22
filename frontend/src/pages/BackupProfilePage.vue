@@ -21,6 +21,7 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { LogDebug } from "../../wailsjs/runtime";
+import { format } from "@formkit/tempo";
 
 /************
  * Variables
@@ -77,16 +78,13 @@ const scheduleSectionDetails = computed(() => {
       details = "Backs up every hour";
       break;
     case backupschedule.Mode.daily:
-      details = `Backs up daily at ${new Date(schedule.dailyAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
       break;
     case backupschedule.Mode.weekly:
-      details = `Backs up every ${schedule.weekday} at ${new Date(schedule.weeklyAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
       break;
     case backupschedule.Mode.monthly:
-      details = `Backs up monthly on day ${schedule.monthday} at ${new Date(schedule.monthlyAt).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })}`;
+      details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
       break;
   }
 
