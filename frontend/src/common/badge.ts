@@ -45,10 +45,10 @@ export function toCreationTimeBadge(date: Date | undefined): string {
 export function toRepoTypeBadge(type: RepoType): string {
   switch (type) {
     case RepoType.Local:
-      return "badge border-arco-purple-500 text-arco-purple-500 truncate";
+      return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
     case RepoType.Remote:
-      return "badge border-arco-purple-500 text-arco-purple-500 truncate";
+      return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
     case RepoType.ArcoCloud:
-      return "badge border-arco-purple-500 text-arco-purple-500 truncate";
+      return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
   }
 }
