@@ -268,7 +268,7 @@ watch(loading, async () => {
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent w-10'
+               class='text-2xl font-bold bg-transparent border-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -287,7 +287,7 @@ watch(loading, async () => {
           <div tabindex='0' role='button' class='btn btn-square'>
             <EllipsisVerticalIcon class='size-6' />
           </div>
-          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'>
+          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
             <li><a @click='showDeleteBackupProfileModal'>Delete
               <TrashIcon class='size-4' />
             </a></li>
