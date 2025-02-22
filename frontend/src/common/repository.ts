@@ -1,4 +1,4 @@
-export enum Location {
+export enum RepoType {
   Local = "local",
   Remote = "remote",
   ArcoCloud = "arco-cloud",
@@ -42,8 +42,8 @@ const _tailwindCssPlaceholder = "" +
   "group-hover:border-remote-repo" +
   "group-hover:border-arco-cloud-repo";
 
-export function getLocation(locationStr: string): Location {
-  return locationStr.startsWith("/") ? Location.Local : Location.Remote;
+export function getRepoType(locationStr: string): RepoType {
+  return locationStr.startsWith("/") ? RepoType.Local : RepoType.Remote;
 }
 
 export function toHumanReadableSize(size: number): string {
@@ -64,8 +64,3 @@ export function toHumanReadableSize(size: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export enum RepoType {
-  Local = "local",
-  Remote = "remote",
-  ArcoCloud = "arco-cloud",
-}

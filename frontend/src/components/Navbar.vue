@@ -55,7 +55,7 @@ router.afterEach(() => {
 </script>
 
 <template>
-  <div class='container mx-auto text-primary-content bg-gradient-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
+  <div class='container mx-auto text-primary-content bg-linear-to-r from-primary to-[#6F0CD3] rounded-b-xl'>
     <div class='flex items-center justify-between px-5'>
       <div class="breadcrumbs">
         <ul v-if='subroute'>

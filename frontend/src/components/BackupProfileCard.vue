@@ -9,14 +9,14 @@ import { showAndLogError } from "../common/error";
 import { onUnmounted, ref } from "vue";
 import { Page, withId } from "../router";
 import { useRouter } from "vue-router";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import * as runtime from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import { getIcon, Icon } from "../common/icons";
-import { getLocation } from "../common/repository";
+import { getRepoType } from "../common/repository";
 
 /************
  * Types
@@ -126,7 +126,7 @@ onUnmounted(() => {
           <p>{{ $t("last_backup") }}</p>
           <div>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-              <span class='badge badge-error dark:badge-outline h-full'>{{ $t("failed") }}</span>
+              <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent truncate cursor-pointer'>{{ $t("failed") }}</span>
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
@@ -151,7 +151,7 @@ onUnmounted(() => {
           <ul class='text-right'>
             <li v-for='repo in props.backup.edges?.repositories ?? []' :key='repo.id'
                 class='mx-1'
-                :class='`badge-${getLocation(repo.location)}-repo`'
+                :class='`${toRepoTypeBadge(getRepoType(repo.location))}`'
             >
               {{ repo.name }}
             </li>

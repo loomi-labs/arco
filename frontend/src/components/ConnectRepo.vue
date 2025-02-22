@@ -4,7 +4,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import { getLocation, Location, RepoType } from "../common/repository";
+import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 
 /************
@@ -127,7 +127,7 @@ watch(() => props.existingRepos, (newRepos) => {
            :class='getRepoCardClass(repo)'
            @click='connectOrDisconnectRepo(repo)'
       >
-        <ComputerDesktopIcon v-if='getLocation(repo.location) === Location.Local' class='size-12' />
+        <ComputerDesktopIcon v-if='getRepoType(repo.location) === RepoType.Local' class='size-12' />
         <GlobeEuropeAfricaIcon v-else class='size-12' />
         {{ repo.name }}
       </div>
