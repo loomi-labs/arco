@@ -99,6 +99,34 @@ func (bpu *BackupProfileUpdate) SetNillableIcon(b *backupprofile.Icon) *BackupPr
 	return bpu
 }
 
+// SetDataSectionCollapsed sets the "data_section_collapsed" field.
+func (bpu *BackupProfileUpdate) SetDataSectionCollapsed(b bool) *BackupProfileUpdate {
+	bpu.mutation.SetDataSectionCollapsed(b)
+	return bpu
+}
+
+// SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillableDataSectionCollapsed(b *bool) *BackupProfileUpdate {
+	if b != nil {
+		bpu.SetDataSectionCollapsed(*b)
+	}
+	return bpu
+}
+
+// SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
+func (bpu *BackupProfileUpdate) SetScheduleSectionCollapsed(b bool) *BackupProfileUpdate {
+	bpu.mutation.SetScheduleSectionCollapsed(b)
+	return bpu
+}
+
+// SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
+func (bpu *BackupProfileUpdate) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileUpdate {
+	if b != nil {
+		bpu.SetScheduleSectionCollapsed(*b)
+	}
+	return bpu
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
 func (bpu *BackupProfileUpdate) AddRepositoryIDs(ids ...int) *BackupProfileUpdate {
 	bpu.mutation.AddRepositoryIDs(ids...)
@@ -358,6 +386,12 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := bpu.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+	}
+	if value, ok := bpu.mutation.DataSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
+	}
+	if value, ok := bpu.mutation.ScheduleSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
 	}
 	if bpu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -634,6 +668,34 @@ func (bpuo *BackupProfileUpdateOne) SetIcon(b backupprofile.Icon) *BackupProfile
 func (bpuo *BackupProfileUpdateOne) SetNillableIcon(b *backupprofile.Icon) *BackupProfileUpdateOne {
 	if b != nil {
 		bpuo.SetIcon(*b)
+	}
+	return bpuo
+}
+
+// SetDataSectionCollapsed sets the "data_section_collapsed" field.
+func (bpuo *BackupProfileUpdateOne) SetDataSectionCollapsed(b bool) *BackupProfileUpdateOne {
+	bpuo.mutation.SetDataSectionCollapsed(b)
+	return bpuo
+}
+
+// SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillableDataSectionCollapsed(b *bool) *BackupProfileUpdateOne {
+	if b != nil {
+		bpuo.SetDataSectionCollapsed(*b)
+	}
+	return bpuo
+}
+
+// SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
+func (bpuo *BackupProfileUpdateOne) SetScheduleSectionCollapsed(b bool) *BackupProfileUpdateOne {
+	bpuo.mutation.SetScheduleSectionCollapsed(b)
+	return bpuo
+}
+
+// SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
+func (bpuo *BackupProfileUpdateOne) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileUpdateOne {
+	if b != nil {
+		bpuo.SetScheduleSectionCollapsed(*b)
 	}
 	return bpuo
 }
@@ -927,6 +989,12 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 	}
 	if value, ok := bpuo.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
+	}
+	if value, ok := bpuo.mutation.DataSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
+	}
+	if value, ok := bpuo.mutation.ScheduleSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
 	}
 	if bpuo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

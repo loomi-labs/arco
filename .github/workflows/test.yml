@@ -15,12 +15,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      # Create frontend/dist directory
-      - name: Create frontend/dist directory
-        run: mkdir -p frontend/dist
-      # Create empty index.html file (required for main.go to build)
-      - name: Create empty index.html file
-        run: touch frontend/dist/index.html
       # Install tools
       - name: Install tools
         run: make install-tools

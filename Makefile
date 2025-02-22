@@ -110,6 +110,9 @@ mockgen:
 	@go tool mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
 
 test: mockgen
+	@echo "🧪 Running tests..."
+	@mkdir -p frontend/dist
+	@touch frontend/dist/index.html
 	@go test -cover -mod=readonly --timeout 1m $$(go list ./... | grep -v ent)
 
 #################################

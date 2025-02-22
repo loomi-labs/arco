@@ -34,6 +34,10 @@ type BackupProfile struct {
 	ExcludePaths []string `json:"excludePaths"`
 	// Icon holds the value of the "icon" field.
 	Icon backupprofile.Icon `json:"icon"`
+	// DataSectionCollapsed holds the value of the "data_section_collapsed" field.
+	DataSectionCollapsed bool `json:"dataSectionCollapsed"`
+	// ScheduleSectionCollapsed holds the value of the "schedule_section_collapsed" field.
+	ScheduleSectionCollapsed bool `json:"scheduleSectionCollapsed"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -113,6 +117,8 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
+		case backupprofile.FieldDataSectionCollapsed, backupprofile.FieldScheduleSectionCollapsed:
+			values[i] = new(sql.NullBool)
 		case backupprofile.FieldID:
 			values[i] = new(sql.NullInt64)
 		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
@@ -185,6 +191,18 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field icon", values[i])
 			} else if value.Valid {
 				bp.Icon = backupprofile.Icon(value.String)
+			}
+		case backupprofile.FieldDataSectionCollapsed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field data_section_collapsed", values[i])
+			} else if value.Valid {
+				bp.DataSectionCollapsed = value.Bool
+			}
+		case backupprofile.FieldScheduleSectionCollapsed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field schedule_section_collapsed", values[i])
+			} else if value.Valid {
+				bp.ScheduleSectionCollapsed = value.Bool
 			}
 		default:
 			bp.selectValues.Set(columns[i], values[i])
@@ -267,6 +285,12 @@ func (bp *BackupProfile) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Icon))
+	builder.WriteString(", ")
+	builder.WriteString("data_section_collapsed=")
+	builder.WriteString(fmt.Sprintf("%v", bp.DataSectionCollapsed))
+	builder.WriteString(", ")
+	builder.WriteString("schedule_section_collapsed=")
+	builder.WriteString(fmt.Sprintf("%v", bp.ScheduleSectionCollapsed))
 	builder.WriteByte(')')
 	return builder.String()
 }

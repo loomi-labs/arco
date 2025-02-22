@@ -83,6 +83,34 @@ func (bpc *BackupProfileCreate) SetIcon(b backupprofile.Icon) *BackupProfileCrea
 	return bpc
 }
 
+// SetDataSectionCollapsed sets the "data_section_collapsed" field.
+func (bpc *BackupProfileCreate) SetDataSectionCollapsed(b bool) *BackupProfileCreate {
+	bpc.mutation.SetDataSectionCollapsed(b)
+	return bpc
+}
+
+// SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillableDataSectionCollapsed(b *bool) *BackupProfileCreate {
+	if b != nil {
+		bpc.SetDataSectionCollapsed(*b)
+	}
+	return bpc
+}
+
+// SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
+func (bpc *BackupProfileCreate) SetScheduleSectionCollapsed(b bool) *BackupProfileCreate {
+	bpc.mutation.SetScheduleSectionCollapsed(b)
+	return bpc
+}
+
+// SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
+func (bpc *BackupProfileCreate) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileCreate {
+	if b != nil {
+		bpc.SetScheduleSectionCollapsed(*b)
+	}
+	return bpc
+}
+
 // SetID sets the "id" field.
 func (bpc *BackupProfileCreate) SetID(i int) *BackupProfileCreate {
 	bpc.mutation.SetID(i)
@@ -223,6 +251,14 @@ func (bpc *BackupProfileCreate) defaults() {
 		v := backupprofile.DefaultExcludePaths
 		bpc.mutation.SetExcludePaths(v)
 	}
+	if _, ok := bpc.mutation.DataSectionCollapsed(); !ok {
+		v := backupprofile.DefaultDataSectionCollapsed
+		bpc.mutation.SetDataSectionCollapsed(v)
+	}
+	if _, ok := bpc.mutation.ScheduleSectionCollapsed(); !ok {
+		v := backupprofile.DefaultScheduleSectionCollapsed
+		bpc.mutation.SetScheduleSectionCollapsed(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -259,6 +295,12 @@ func (bpc *BackupProfileCreate) check() error {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
+	}
+	if _, ok := bpc.mutation.DataSectionCollapsed(); !ok {
+		return &ValidationError{Name: "data_section_collapsed", err: errors.New(`ent: missing required field "BackupProfile.data_section_collapsed"`)}
+	}
+	if _, ok := bpc.mutation.ScheduleSectionCollapsed(); !ok {
+		return &ValidationError{Name: "schedule_section_collapsed", err: errors.New(`ent: missing required field "BackupProfile.schedule_section_collapsed"`)}
 	}
 	if len(bpc.mutation.RepositoriesIDs()) == 0 {
 		return &ValidationError{Name: "repositories", err: errors.New(`ent: missing required edge "BackupProfile.repositories"`)}
@@ -322,6 +364,14 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 	if value, ok := bpc.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 		_node.Icon = value
+	}
+	if value, ok := bpc.mutation.DataSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
+		_node.DataSectionCollapsed = value
+	}
+	if value, ok := bpc.mutation.ScheduleSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
+		_node.ScheduleSectionCollapsed = value
 	}
 	if nodes := bpc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

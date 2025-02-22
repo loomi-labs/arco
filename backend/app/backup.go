@@ -248,6 +248,8 @@ func (b *BackupClient) UpdateBackupProfile(backup ent.BackupProfile) (*ent.Backu
 		SetIcon(backup.Icon).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
+		SetDataSectionCollapsed(backup.DataSectionCollapsed).
+		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
 		Save(b.ctx)
 }
 

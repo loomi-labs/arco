@@ -806,35 +806,37 @@ func (m *ArchiveMutation) ResetEdge(name string) error {
 // BackupProfileMutation represents an operation that mutates the BackupProfile nodes in the graph.
 type BackupProfileMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	created_at             *time.Time
-	updated_at             *time.Time
-	name                   *string
-	prefix                 *string
-	backup_paths           *[]string
-	appendbackup_paths     []string
-	exclude_paths          *[]string
-	appendexclude_paths    []string
-	icon                   *backupprofile.Icon
-	clearedFields          map[string]struct{}
-	repositories           map[int]struct{}
-	removedrepositories    map[int]struct{}
-	clearedrepositories    bool
-	archives               map[int]struct{}
-	removedarchives        map[int]struct{}
-	clearedarchives        bool
-	backup_schedule        *int
-	clearedbackup_schedule bool
-	pruning_rule           *int
-	clearedpruning_rule    bool
-	notifications          map[int]struct{}
-	removednotifications   map[int]struct{}
-	clearednotifications   bool
-	done                   bool
-	oldValue               func(context.Context) (*BackupProfile, error)
-	predicates             []predicate.BackupProfile
+	op                         Op
+	typ                        string
+	id                         *int
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	name                       *string
+	prefix                     *string
+	backup_paths               *[]string
+	appendbackup_paths         []string
+	exclude_paths              *[]string
+	appendexclude_paths        []string
+	icon                       *backupprofile.Icon
+	data_section_collapsed     *bool
+	schedule_section_collapsed *bool
+	clearedFields              map[string]struct{}
+	repositories               map[int]struct{}
+	removedrepositories        map[int]struct{}
+	clearedrepositories        bool
+	archives                   map[int]struct{}
+	removedarchives            map[int]struct{}
+	clearedarchives            bool
+	backup_schedule            *int
+	clearedbackup_schedule     bool
+	pruning_rule               *int
+	clearedpruning_rule        bool
+	notifications              map[int]struct{}
+	removednotifications       map[int]struct{}
+	clearednotifications       bool
+	done                       bool
+	oldValue                   func(context.Context) (*BackupProfile, error)
+	predicates                 []predicate.BackupProfile
 }
 
 var _ ent.Mutation = (*BackupProfileMutation)(nil)
@@ -1237,6 +1239,78 @@ func (m *BackupProfileMutation) ResetIcon() {
 	m.icon = nil
 }
 
+// SetDataSectionCollapsed sets the "data_section_collapsed" field.
+func (m *BackupProfileMutation) SetDataSectionCollapsed(b bool) {
+	m.data_section_collapsed = &b
+}
+
+// DataSectionCollapsed returns the value of the "data_section_collapsed" field in the mutation.
+func (m *BackupProfileMutation) DataSectionCollapsed() (r bool, exists bool) {
+	v := m.data_section_collapsed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDataSectionCollapsed returns the old "data_section_collapsed" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldDataSectionCollapsed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDataSectionCollapsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDataSectionCollapsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDataSectionCollapsed: %w", err)
+	}
+	return oldValue.DataSectionCollapsed, nil
+}
+
+// ResetDataSectionCollapsed resets all changes to the "data_section_collapsed" field.
+func (m *BackupProfileMutation) ResetDataSectionCollapsed() {
+	m.data_section_collapsed = nil
+}
+
+// SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
+func (m *BackupProfileMutation) SetScheduleSectionCollapsed(b bool) {
+	m.schedule_section_collapsed = &b
+}
+
+// ScheduleSectionCollapsed returns the value of the "schedule_section_collapsed" field in the mutation.
+func (m *BackupProfileMutation) ScheduleSectionCollapsed() (r bool, exists bool) {
+	v := m.schedule_section_collapsed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduleSectionCollapsed returns the old "schedule_section_collapsed" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldScheduleSectionCollapsed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduleSectionCollapsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduleSectionCollapsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduleSectionCollapsed: %w", err)
+	}
+	return oldValue.ScheduleSectionCollapsed, nil
+}
+
+// ResetScheduleSectionCollapsed resets all changes to the "schedule_section_collapsed" field.
+func (m *BackupProfileMutation) ResetScheduleSectionCollapsed() {
+	m.schedule_section_collapsed = nil
+}
+
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
 func (m *BackupProfileMutation) AddRepositoryIDs(ids ...int) {
 	if m.repositories == nil {
@@ -1511,7 +1585,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, backupprofile.FieldCreatedAt)
 	}
@@ -1532,6 +1606,12 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
+	}
+	if m.data_section_collapsed != nil {
+		fields = append(fields, backupprofile.FieldDataSectionCollapsed)
+	}
+	if m.schedule_section_collapsed != nil {
+		fields = append(fields, backupprofile.FieldScheduleSectionCollapsed)
 	}
 	return fields
 }
@@ -1555,6 +1635,10 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIcon:
 		return m.Icon()
+	case backupprofile.FieldDataSectionCollapsed:
+		return m.DataSectionCollapsed()
+	case backupprofile.FieldScheduleSectionCollapsed:
+		return m.ScheduleSectionCollapsed()
 	}
 	return nil, false
 }
@@ -1578,6 +1662,10 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
+	case backupprofile.FieldDataSectionCollapsed:
+		return m.OldDataSectionCollapsed(ctx)
+	case backupprofile.FieldScheduleSectionCollapsed:
+		return m.OldScheduleSectionCollapsed(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -1635,6 +1723,20 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIcon(v)
+		return nil
+	case backupprofile.FieldDataSectionCollapsed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDataSectionCollapsed(v)
+		return nil
+	case backupprofile.FieldScheduleSectionCollapsed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduleSectionCollapsed(v)
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
@@ -1714,6 +1816,12 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
+		return nil
+	case backupprofile.FieldDataSectionCollapsed:
+		m.ResetDataSectionCollapsed()
+		return nil
+	case backupprofile.FieldScheduleSectionCollapsed:
+		m.ResetScheduleSectionCollapsed()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)

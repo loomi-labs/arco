@@ -185,22 +185,22 @@ onUnmounted(() => {
     </div>
     <div class='flex flex-col items-end gap-2'>
       <div class='flex gap-2'>
-        <button class='btn btn-ghost btn-circle'
-                :class='{ "invisible": !isPruningShown }'
+        <button v-if='isPruningShown' class='btn btn-ghost btn-circle'
                 :disabled='repoState.status !== state.RepoStatus.idle'
                 @click.stop='prune'
         >
           <ScissorsIcon class='size-6' />
         </button>
-        <button class='btn btn-ghost btn-circle'
-                :class='{ "invisible": !isDeleteShown }'
+        <button v-if='isDeleteShown' class='btn btn-ghost btn-circle'
                 :disabled='repoState.status !== state.RepoStatus.idle'
                 @click.stop='showRemoveRepoModal'>
           <TrashIcon class='size-6' />
         </button>
       </div>
 
-      <BackupButton :backup-ids='[backupId]' />
+      <div class='mt-auto'>
+        <BackupButton :backup-ids='[backupId]' />
+      </div>
     </div>
   </div>
 

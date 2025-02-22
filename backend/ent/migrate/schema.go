@@ -57,6 +57,8 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
+		{Name: "data_section_collapsed", Type: field.TypeBool, Default: false},
+		{Name: "schedule_section_collapsed", Type: field.TypeBool, Default: false},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
