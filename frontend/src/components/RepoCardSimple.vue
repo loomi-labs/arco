@@ -94,8 +94,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='repoType === RepoType.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
+    <ComputerDesktopIcon v-if='repoType === RepoType.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
   </div>
 </template>
 
