@@ -469,7 +469,7 @@ onUnmounted(() => {
             <div class='flex items-center justify-between'>
               <span>{{ prefixForBackupProfile(archive) }}</span>
               <input type='text'
-                     class='bg-transparent w-full'
+                     class='bg-transparent border-transparent w-full'
                      v-model='inputValues[archive.id]'
                      @input='validateName(archive.id)'
                      @change='rename(archive)'

@@ -229,23 +229,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if='buttonStatus' class='stack'>
-    <div class='flex items-center justify-center w-[94px] h-[94px]'>
-      <button class='btn btn-circle p-4 m-0 w-16 h-16'
-              :class='buttonColor'
-              :disabled='isButtonDisabled'
-              @click.stop='runButtonAction'
-      >{{ buttonText }}
-      </button>
+  <div v-if='buttonStatus' class='relative flex items-center justify-center w-[94px] h-[94px]'>
+    <div class='absolute radial-progress bg-transparent'
+         :class='buttonTextColor'
+         :style='`--value:${progress}; --size:95px; --thickness: 6px;`'
+         role='progressbar'>
     </div>
-    <div class='relative'>
-      <div
-        class='radial-progress absolute bottom-[2px] left-0'
-        :class='buttonTextColor'
-        :style='`--value:${progress}; --size:95px; --thickness: 6px;`'
-        role='progressbar'>
-      </div>
-    </div>
+    <button class='absolute btn btn-circle p-4 m-0 w-16 h-16 '
+            :class='buttonColor'
+            :disabled='isButtonDisabled'
+            @click.stop='runButtonAction'>
+      {{ buttonText }}
+    </button>
   </div>
   <div v-else>
     <span class='loading loading-ring w-[94px] h-[94px]'></span>

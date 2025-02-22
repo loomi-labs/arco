@@ -172,7 +172,7 @@ onUnmounted(() => {
       <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
       <p>{{ $t("last_backup") }}:
         <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-          <span class='badge badge-error dark:badge-outline'>{{ $t("failed") }}</span>
+          <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>

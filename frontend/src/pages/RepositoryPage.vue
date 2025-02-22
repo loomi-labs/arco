@@ -9,13 +9,12 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
 import { object } from "zod";
-import { getLocation, Location, toHumanReadableSize } from "../common/repository";
-import { toCreationTimeBadge } from "../common/badge";
+import { getRepoType, RepoType, toHumanReadableSize } from "../common/repository";
+import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
-import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import { Anchor, Page } from "../router";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { useToast } from "vue-toastification";
@@ -30,7 +29,7 @@ const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const loading = ref(true);
-const location = ref<Location>(Location.Local);
+const repoType = ref<RepoType>(RepoType.Local);
 const nbrOfArchives = ref<number>(0);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
@@ -73,7 +72,7 @@ async function getData() {
     repo.value = await repoClient.Get(repoId);
     name.value = repo.value.name;
 
-    location.value = getLocation(repo.value.location);
+    repoType.value = getRepoType(repo.value.location);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
     deletableBackupProfiles.value = await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId) ?? [];
@@ -177,10 +176,10 @@ onUnmounted(() => {
     <div class='flex items-center justify-between mb-4'>
       <!-- Name -->
       <label class='flex items-center gap-2'
-             :class='`text-${location}-repo`'>
+             :class='`text-arco-purple-500`'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent w-10'
+               class='text-2xl font-bold bg-transparent border-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
@@ -201,7 +200,7 @@ onUnmounted(() => {
         <div>{{ $t("location") }}</div>
         <div class='flex items-center gap-4'>
           <span>{{ repo.location }}</span>
-          <span :class='`badge-${location}-repo`'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
         </div>
       </div>
       <div class='divider'></div>

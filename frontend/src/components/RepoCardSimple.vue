@@ -9,7 +9,8 @@ import { onUnmounted, ref, watch } from "vue";
 import { Page, withId } from "../router";
 import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
-import { getLocation, Location } from "../common/repository";
+import { getRepoType, RepoType } from "../common/repository";
+import { toRepoTypeBadge } from "../common/badge";
 
 /************
  * Types
@@ -28,7 +29,7 @@ const props = defineProps<Props>();
 const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
-const location = ref<Location>(getLocation(props.repo.location) );
+const repoType = ref<RepoType>(getRepoType(props.repo.location) );
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -76,10 +77,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='group/repo flex justify-between ac-card-hover h-full w-full'
+  <div class='group/repo flex justify-between ac-card-hover h-full w-full '
     @click='router.push(withId(Page.Repository, repo.id))'>
     <div class='flex flex-col w-full p-6'>
-      <div class='flex-grow text-xl font-semibold text-base-strong pb-6'>{{ repo.name }}</div>
+      <div class='grow text-xl font-semibold text-base-strong pb-6'>{{ repo.name }}</div>
       <div class='flex justify-between'>
         <div>{{ $t("archives") }}</div>
         <div>{{ nbrOfArchives }}</div>
@@ -88,13 +89,13 @@ onUnmounted(() => {
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
         <span class='tooltip tooltip-primary' :data-tip='repo.location'>
-          <span :class='`badge-${location}-repo`'>{{ location === Location.Local ? $t("local") : $t("remote") }}</span>
+          <span :class='toRepoTypeBadge(getRepoType(repoType))'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='location === Location.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6'/>
+    <ComputerDesktopIcon v-if='repoType === RepoType.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
+    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
   </div>
 </template>
 
