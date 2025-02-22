@@ -284,7 +284,7 @@ onMounted(() => {
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput(index)'
-                   :class='isSuggestion(field) ? `${formInputClass} text-half-hidden-light dark:text-half-hidden-dark` : `${formInputClass}`' />
+                   :class='isSuggestion(field) ? `${formInputClass} text-half-hidden` : `${formInputClass}`' />
           </FormField>
         </div>
         <div class='text-right w-20'>
