@@ -18,6 +18,7 @@ import { backupProfileDeletedEvent } from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
+import ArcoFooter from "../components/common/ArcoFooter.vue";
 
 /************
  * Types
@@ -161,6 +162,8 @@ onUnmounted(() => {
         </div>
       </Dialog>
     </TransitionRoot>
+    
+    <ArcoFooter />
   </div>
 </template>
 
