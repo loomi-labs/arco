@@ -194,11 +194,7 @@ async function saveIcon(icon: backupprofile.Icon) {
 }
 
 async function setPruningRule(pruningRule: ent.PruningRule) {
-  try {
-    backupProfile.value.edges.pruningRule = pruningRule;
-  } catch (error: any) {
-    await showAndLogError("Failed to save pruning rule", error);
-  }
+  backupProfile.value.edges.pruningRule = pruningRule;
 }
 
 async function addRepo(repo: ent.Repository) {
@@ -317,7 +313,8 @@ watch(loading, async () => {
       <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
-        <span class='ml-2 transition-opacity duration-500' :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{ dataSectionDetails }}</span>
+        <span class='ml-2 transition-opacity duration-500'
+              :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{ dataSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>
@@ -346,7 +343,8 @@ watch(loading, async () => {
       <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
            @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2 transition-opacity duration-500' :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{ scheduleSectionDetails }}</span>
+        <span class='ml-2 transition-opacity duration-500'
+              :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{ scheduleSectionDetails }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300'>

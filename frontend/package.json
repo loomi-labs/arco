@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check": "vue-tsc --noEmit",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "i18n-report": "vue-i18n-extract report --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",

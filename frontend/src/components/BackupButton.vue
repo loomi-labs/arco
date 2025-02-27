@@ -46,46 +46,51 @@ const cleanupFunctions: (() => void)[] = [];
  ************/
 
 const buttonText = computed(() => {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    return t("run_backup");
-  } else if (buttonStatus.value === state.BackupButtonStatus.waiting) {
-    return t("waiting");
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    return `${t("abort")} ${progress.value}%`;
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    return t("remove_lock");
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return t("run_backup");
-  } else if (buttonStatus.value === state.BackupButtonStatus.busy) {
-    return t("busy");
+  switch (buttonStatus.value) {
+    case state.BackupButtonStatus.runBackup:
+      return t("run_backup");
+    case state.BackupButtonStatus.waiting:
+      return t("waiting");
+    case state.BackupButtonStatus.abort:
+      return `${t("abort")} ${progress.value}%`;
+    case state.BackupButtonStatus.locked:
+      return t("remove_lock");
+    case state.BackupButtonStatus.unmount:
+      return t("run_backup");
+    case state.BackupButtonStatus.busy:
+      return t("busy");
+    default:
+      return "";
   }
 });
 
 const buttonColor = computed(() => {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    return "btn-success";
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    return "btn-warning";
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    return "btn-error";
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return "btn-success";
-  } else {
-    return "btn-neutral";
+  switch (buttonStatus.value) {
+    case state.BackupButtonStatus.runBackup:
+      return "btn-success";
+    case state.BackupButtonStatus.abort:
+      return "btn-warning";
+    case state.BackupButtonStatus.locked:
+      return "btn-error";
+    case state.BackupButtonStatus.unmount:
+      return "btn-success";
+    default:
+      return "btn-neutral";
   }
 });
 
 const buttonTextColor = computed(() => {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
-    return "text-success";
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
-    return "text-warning";
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
-    return "text-error";
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
-    return "text-success";
-  } else {
-    return "text-neutral";
+  switch (buttonStatus.value) {
+    case state.BackupButtonStatus.runBackup:
+      return "text-success";
+    case state.BackupButtonStatus.abort:
+      return "text-warning";
+    case state.BackupButtonStatus.locked:
+      return "text-error";
+    case state.BackupButtonStatus.unmount:
+      return "text-success";
+    default:
+      return "text-neutral";
   }
 });
 
