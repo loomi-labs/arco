@@ -153,6 +153,10 @@ function toFutureString(date: Date, now: Date): string {
   }
 
   const dMonths = diffMonths(date, now);
+  if (dMonths === 0) {
+    // If less than a month in the future, show in weeks
+    return `in ${dWeeks} week${dWeeks !== 1 ? "s" : ""}`;
+  }
   if (dMonths < 12) {
     return `in ${dMonths} month${dMonths !== 1 ? "s" : ""}`;
   }
@@ -193,6 +197,10 @@ function toPastString(date: Date, now: Date): string {
   }
 
   const dMonths = diffMonths(now, date);
+  if (dMonths === 0) {
+    // If less than a month ago, show in weeks
+    return `${dWeeks} week${dWeeks !== 1 ? "s" : ""} ago`;
+  }
   if (dMonths < 12) {
     return `${dMonths} month${dMonths !== 1 ? "s" : ""} ago`;
   }
