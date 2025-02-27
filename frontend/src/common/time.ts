@@ -79,8 +79,11 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
   if (split.length !== 2) {
     return value;
   }
-  const [hours, minutes] = split.map(Number);
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+  const [hours, minutes] = split.map((val) => {
+    const num = Number(val);
+    return isNaN(num) ? undefined : num;
+  });
+  if (hours === undefined || minutes === undefined || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
     return value;
   }
   const date = new Date();

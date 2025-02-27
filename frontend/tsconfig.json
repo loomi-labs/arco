@@ -18,6 +18,18 @@
 
     // Report error when not all code paths return a value
     "noImplicitReturns": true,
+    // Report errors for fallthrough cases in switch
+    "noFallthroughCasesInSwitch": true,
+    // Ensure overriding members are marked with override
+    "noImplicitOverride": true,
+    // Ensure consistent casing in file names
+    "forceConsistentCasingInFileNames": true,
+    // Report errors for unreachable code
+    "allowUnreachableCode": false,
+    // Raise error on expressions with implied 'any' type
+    "noImplicitAny": true,
+    // Enable strict null checks
+    "strictNullChecks": true
   },
   "include": [
     "src/**/*.ts",
