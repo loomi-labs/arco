@@ -14,7 +14,10 @@
       "ESNext",
       "DOM"
     ],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    // Report error when not all code paths return a value
+    "noImplicitReturns": true,
   },
   "include": [
     "src/**/*.ts",

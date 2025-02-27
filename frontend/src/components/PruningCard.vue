@@ -147,6 +147,7 @@ async function examinePrunes(saveResults: boolean): Promise<Array<app.ExaminePru
   } finally {
     isExaminingPrunes.value = false;
   }
+  return undefined;
 }
 
 function toArchiveText(cnt: number) {
@@ -253,6 +254,7 @@ onBeforeRouteLeave(async (to, from) => {
     wantToGoRoute.value = to.path;
     return false;
   }
+  return true;
 });
 
 defineExpose({

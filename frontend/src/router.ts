@@ -48,6 +48,7 @@ const router = createRouter({
         }, delay);
       });
     }
+    return savedPosition || { left: 0, top: 0 };
   },
   routes
 });
