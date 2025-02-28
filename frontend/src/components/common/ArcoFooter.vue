@@ -1,30 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { InformationCircleIcon } from '@heroicons/vue/24/outline';
-import * as appClient from '../../../wailsjs/go/app/AppClient';
-import { app } from '../../../wailsjs/go/models';
+import { ref } from "vue";
+import * as appClient from "../../../wailsjs/go/app/AppClient";
+import { app } from "../../../wailsjs/go/models";
+
+/************
+ * Variables
+ ************/
 
 const appInfo = ref<app.AppInfo | null>(null);
 
-onMounted(async () => {
+/************
+ * Functions
+ ************/
+
+async function getAppInfo() {
   try {
     appInfo.value = await appClient.GetAppInfo();
   } catch (error) {
-    console.error('Failed to get app info:', error);
+    console.error("Failed to get app info:", error);
   }
-});
+}
+
+
+/************
+ * Lifecycle
+ ************/
+
+getAppInfo();
+
 </script>
 
 <template>
-  <footer class="footer footer-center p-4 mt-10 text-base-content border-t border-base-300">
-    <div class="flex items-center gap-2">
-      <div v-if="appInfo" class="text-xs opacity-70">
-        Version {{ appInfo.version }}
-      </div>
-      <div v-if="appInfo" class="dropdown dropdown-top">
+  <footer class="p-4 mt-10 text-base-content border-t border-base-300">
+    <div class="container mx-auto flex justify-end">
+      <div v-if="appInfo" class="dropdown dropdown-hover dropdown-end dropdown-top">
         <div tabindex="0" role="button" class="text-xs opacity-70 flex items-center gap-1 cursor-pointer hover:text-info">
-          <InformationCircleIcon class="size-4" />
-          Info
+          <span>Cooked with</span>
+          <span class="text-red-500">❤️</span>
         </div>
         <div tabindex="0" class="dropdown-content z-10 menu p-4 shadow bg-base-200 rounded-box w-80 text-left">
           <div class="text-sm">
