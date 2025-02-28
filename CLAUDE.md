@@ -16,7 +16,7 @@
 
 ## Code Style Guide
 - Go: Use standard Go formatting/linting conventions
-- Frontend: Use TypeScript, Vue 3 Composition API with script setup
+- Frontend: Use TypeScript, Vue 3 Composition API with script setup, Tailwind CSS and DaisyUI, prefer await syntax over then
 - Error handling: Check errors with proper context message
 - Naming: Use camelCase for variables, PascalCase for types in both Go and TypeScript
 - Imports: Group standard library, external, then internal imports

@@ -54,3 +54,19 @@ func (a *AppClient) SaveSettings(settings *ent.Settings) error {
 		SetShowWelcome(settings.ShowWelcome).
 		Exec(a.ctx)
 }
+
+type AppInfo struct {
+	Version     string `json:"version"`
+	WebsiteURL  string `json:"websiteUrl"`
+	GithubURL   string `json:"githubUrl"`
+	Description string `json:"description"`
+}
+
+func (a *AppClient) GetAppInfo() AppInfo {
+	return AppInfo{
+		Version:     Version,
+		WebsiteURL:  "https://arco-backup.com",
+		GithubURL:   "https://github.com/loomi-labs/arco",
+		Description: "Arco is a modern, user-friendly backup tool powered by Borg Backup.",
+	}
+}
