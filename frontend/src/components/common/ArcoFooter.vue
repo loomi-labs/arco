@@ -4,7 +4,6 @@ import * as appClient from "../../../wailsjs/go/app/AppClient";
 import { app } from "../../../wailsjs/go/models";
 import { showAndLogError } from "../../common/error";
 import { useToast } from "vue-toastification";
-import { EnvelopeIcon } from "@heroicons/vue/24/solid";
 import { BrowserOpenURL } from "../../../wailsjs/runtime";
 
 /************
@@ -51,7 +50,7 @@ getAppInfo();
           <span>Cooked with</span>
           <span class="text-red-500">❤️</span>
         </div>
-        <button tabindex="0" class="btn btn-xs btn-outline btn-info">Show Recipe</button>
+        <button tabindex="0" class="btn btn-xs btn-outline">Show Recipe</button>
         <div tabindex="0" class="dropdown-content z-10 p-4 shadow bg-base-200 rounded-box w-80 text-left">
           <div class="text-sm">
             <p class="text-base font-semibold mb-2">Arco Backup</p>
@@ -71,9 +70,12 @@ getAppInfo();
                 GitHub
               </a>
               <div class="text-xs flex items-center gap-1">
-                <EnvelopeIcon class="size-3" />
-                <a @click="BrowserOpenURL('mailto:mail@arco-backup.com')" class="link link-info cursor-pointer">mail@arco-backup.com</a>
-                <button @click="copyEmail" class="btn btn-xs btn-ghost p-0">
+                <a @click="BrowserOpenURL('mailto:mail@arco-backup.com')" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z" />
+                  </svg>
+                  mail@arco-backup.com</a>
+                <button @click="copyEmail" class="btn btn-xs btn-circle btn-ghost p-0">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
                   </svg>
@@ -85,12 +87,12 @@ getAppInfo();
                 <p class="text-base font-semibold mb-2">Ingredients</p>
                 <ul class="text-xs opacity-80 list-disc list-inside">
                   <li>A pinch of <span class="font-bold">Go</span> for the backend</li>
-                  <li>2 cups of <a @click="BrowserOpenURL('https://vuejs.org/')" class="font-bold link link-info cursor-pointer">Vue 3</a>, freshly brewed</li>
-                  <li>A splash of <a @click="BrowserOpenURL('https://tailwindcss.com/')" class="font-bold link link-info cursor-pointer">Tailwind CSS</a> with <a @click="BrowserOpenURL('https://daisyui.com/')" class="font-bold link link-info cursor-pointer">daisyUI</a></li>
-                  <li>A sprinkle of <a @click="BrowserOpenURL('https://entgo.io/')" class="font-bold link link-info cursor-pointer">Ent ORM</a> for data persistence</li>
+                  <li>2 cups of <a @click="BrowserOpenURL('https://vuejs.org/')" class="link link-info cursor-pointer">Vue 3</a>, freshly brewed</li>
+                  <li>A splash of <a @click="BrowserOpenURL('https://tailwindcss.com/')" class="link link-info cursor-pointer">Tailwind CSS</a> with <a @click="BrowserOpenURL('https://daisyui.com/')" class="link link-info cursor-pointer">daisyUI</a></li>
+                  <li>A sprinkle of <a @click="BrowserOpenURL('https://entgo.io/')" class="link link-info cursor-pointer">Ent ORM</a> for data persistence</li>
                   <li>Stored in a <span class="font-bold">SQLite</span> jar</li>
-                  <li><a @click="BrowserOpenURL('https://www.borgbackup.org/')" class="font-bold link link-info cursor-pointer">BorgBackup</a> as the secret sauce</li>
-                  <li>Baked with <a @click="BrowserOpenURL('https://wails.io/')" class="font-bold link link-info cursor-pointer">Wails</a> to create a native experience</li>
+                  <li><a @click="BrowserOpenURL('https://www.borgbackup.org/')" class="link link-info cursor-pointer">BorgBackup</a> as the secret sauce</li>
+                  <li>Baked with <a @click="BrowserOpenURL('https://wails.io/')" class="link link-info cursor-pointer">Wails</a> to create a native experience</li>
                 </ul>
               </div>
             </div>
