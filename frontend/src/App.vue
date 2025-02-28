@@ -9,6 +9,7 @@ import { Page } from "./router";
 import Navbar from "./components/Navbar.vue";
 import { state, types } from "../wailsjs/go/models";
 import { computed, onUnmounted, ref, watchEffect } from "vue";
+import ArcoFooter from "./components/common/ArcoFooter.vue";
 
 /************
  * Variables
@@ -92,9 +93,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if='isInitialized' class='bg-base-200 min-w-svw min-h-svh'>
+  <div v-if='isInitialized' class='bg-base-200 min-w-svw min-h-svh flex flex-col'>
     <Navbar></Navbar>
-    <RouterView />
+    <RouterView class='flex-grow' />
+    <ArcoFooter />
   </div>
   <div v-else class='bg-base-200 min-w-svw min-h-svh'>
     <div class='container mx-auto flex items-center justify-center h-svh'>

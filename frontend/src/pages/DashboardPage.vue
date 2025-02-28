@@ -162,8 +162,6 @@ onUnmounted(() => {
         </div>
       </Dialog>
     </TransitionRoot>
-    
-    <ArcoFooter />
   </div>
 </template>
 
