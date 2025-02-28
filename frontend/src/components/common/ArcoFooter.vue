@@ -25,7 +25,6 @@ async function getAppInfo() {
   }
 }
 
-
 async function copyEmail() {
   try {
     await navigator.clipboard.writeText("mail@arco-backup.com");
@@ -52,7 +51,7 @@ getAppInfo();
           <span class="text-red-500">❤️</span>
         </div>
         <button tabindex="0" class="btn btn-xs btn-outline btn-info">Show Recipe</button>
-        <div tabindex="0" class="dropdown-content z-10 menu p-4 shadow bg-base-200 rounded-box w-80 text-left">
+        <div tabindex="0" class="dropdown-content z-10 p-4 shadow bg-base-200 rounded-box w-80 text-left">
           <div class="text-sm">
             <p class="text-base font-semibold mb-2">Arco Backup</p>
             <p class="mb-2 text-xs opacity-80">{{ appInfo.description }}</p>
@@ -80,10 +79,25 @@ getAppInfo();
                 </button>
               </div>
               <div class="text-xs opacity-70 mt-1">Version: {{ appInfo.version }}</div>
+              <div class="divider my-1"></div>
+              <div>
+                <p class="text-base font-semibold mb-2">Ingredients</p>
+                <ul class="text-xs opacity-80 list-disc list-inside">
+                  <li>A pinch of <span class="font-bold">Go</span> for the backend</li>
+                  <li>2 cups of <span class="font-bold">Vue 3</span>, freshly brewed</li>
+                  <li>A splash of <span class="font-bold">Tailwind CSS</span> with <span class="font-bold">daisyUI</span></li>
+                  <li>A sprinkle of <span class="font-bold">Ent ORM</span> for data persistence</li>
+                  <li>Stored in a <span class="font-bold">SQLite</span> jar</li>
+                  <li><span class="font-bold">BorgBackup</span> as the secret sauce</li>
+                  <li>Baked with <span class="font-bold">Wails</span> to create a native experience</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+
   </footer>
 </template>
