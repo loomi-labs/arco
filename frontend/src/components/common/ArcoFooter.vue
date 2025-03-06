@@ -94,7 +94,7 @@ getAppInfo();
                   <li>A sprinkle of <a @click="Browser.OpenURL('https://entgo.io/')" class="link link-info cursor-pointer">Ent ORM</a> for data persistence</li>
                   <li>Stored in a <span class="font-bold">SQLite</span> jar</li>
                   <li><a @click="Browser.OpenURL('https://www.borgbackup.org/')" class="link link-info cursor-pointer">BorgBackup</a> as the secret sauce</li>
-                  <li>Baked with <a @click="Browser.OpenURL('https://wails.io/')" class="link link-info cursor-pointer">Wails</a> to create a native experience</li>
+                  <li>Baked with <a @click="Browser.OpenURL('https://wails.io/')" class="link link-info cursor-pointer">Wails</a> to deliver a delicious experience</li>
                 </ul>
               </div>
             </div>
