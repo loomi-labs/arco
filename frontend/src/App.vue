@@ -10,7 +10,7 @@ import ArcoFooter from "./components/common/ArcoFooter.vue";
 import * as appClient from "../bindings/github.com/loomi-labs/arco/backend/app/appclient";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
-import {Events} from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 
 /************
  * Variables
