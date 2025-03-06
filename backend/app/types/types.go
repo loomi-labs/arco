@@ -6,9 +6,11 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"io/fs"
 )
+
+const WindowTitle = "Arco"
 
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {

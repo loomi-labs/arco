@@ -17,7 +17,7 @@ import (
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 	"io"
 	"net/http"

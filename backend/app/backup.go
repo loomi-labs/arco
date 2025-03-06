@@ -18,7 +18,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"math/rand"
 	"os"
 	"regexp"
