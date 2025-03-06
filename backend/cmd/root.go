@@ -9,9 +9,11 @@ import (
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -93,7 +95,7 @@ func createConfigDir() (string, error) {
 	return configDir, nil
 }
 
-func initConfig(configDir string, iconData []byte, migrations fs.FS, autoUpdate bool) (*types.Config, error) {
+func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpdate bool) (*types.Config, error) {
 	if configDir == "" {
 		var err error
 		configDir, err = createConfigDir()
@@ -117,7 +119,7 @@ func initConfig(configDir string, iconData []byte, migrations fs.FS, autoUpdate 
 		BorgBinaries:    binaries,
 		BorgPath:        filepath.Join(configDir, binaries[0].Name),
 		BorgVersion:     binaries[0].Version,
-		Icon:            iconData,
+		Icons:           icons,
 		Migrations:      migrations,
 		GithubAssetName: util.GithubAssetName(),
 		Version:         version,
@@ -153,59 +155,91 @@ func toTsEnums[T Stringer](states []T) []struct {
 func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
 	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
 
-	logLevel, err := logger.StringToLogLevel(log.Level().String())
-	if err != nil {
-		log.Fatalf("failed to convert log level: %v", err)
-	}
-
 	if uniqueRunId == "" {
 		uniqueRunId = "4ffabbd3-334a-454e-8c66-dee8d1ff9afb"
 	}
 
-	// Create arco with options
-	err = wails.Run(&options.App{
-		Title: "Arco",
-		AssetServer: &assetserver.Options{
-			Assets: assets,
+	wailsApp := application.New(application.Options{
+		Name:        "Arco",
+		Description: "Arco is a backup tool.",
+		Services: []application.Service{
+			application.NewService(arco.AppClient()),
+			application.NewService(arco.BackupClient()),
+			application.NewService(arco.RepoClient()),
+			application.NewService(arco.ValidationClient()),
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        arco.Startup,
-		OnShutdown:       arco.Shutdown,
-		OnBeforeClose:    arco.BeforeClose,
-		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: uniqueRunId,
-			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: uniqueRunId,
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 				arco.Wakeup()
 			},
 		},
-		Bind: []interface{}{
-			arco.AppClient(),
-			arco.BackupClient(),
-			arco.RepoClient(),
-			arco.ValidationClient(),
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
 		},
-		EnumBind: []interface{}{
-			toTsEnums(types.AllWeekdays),
-			toTsEnums(types.AllIcons),
-			toTsEnums(state.AvailableBackupStatuses),
-			toTsEnums(state.AvailableRepoStatuses),
-			toTsEnums(state.AvailableBackupButtonStatuses),
-			toTsEnums(types.AllEvents),
-			toTsEnums(types.AllBackupScheduleModes),
-			toTsEnums(state.AvailableStartupStatuses),
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
-		LogLevel:    logLevel,
-		Logger:      util.NewZapLogWrapper(log),
-		MaxWidth:    3840,
-		MaxHeight:   3840,
-		StartHidden: startHidden,
-		Linux: &linux.Options{
-			Icon: config.Icon,
+		LogLevel: slog.Level(log.Level() * 4), // slog uses a multiplier of 4
+		ShouldQuit: func() bool {
+			return arco.ShouldQuit()
 		},
-		Mac: &mac.Options{
-			TitleBar: mac.TitleBarHidden(),
+		OnShutdown: func() {
+			arco.Shutdown()
 		},
 	})
+
+	startState := application.WindowStateNormal
+	if startHidden {
+		startState = application.WindowStateMinimised
+	}
+	wailsApp.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		Title: types.WindowTitle,
+		Mac: application.MacWindow{
+			InvisibleTitleBarHeight: 50,
+			Backdrop:                application.MacBackdropTranslucent,
+			TitleBar:                application.MacTitleBarHiddenInset,
+		},
+		Linux: application.LinuxWindow{
+			Icon: config.Icons.AppIconLight,
+		},
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		URL:              "/",
+		StartState:       startState,
+		MaxWidth:         3840,
+		MaxHeight:        3840,
+	})
+
+	wailsApp.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
+		// TODO: what about the context?
+		arco.Startup(context.TODO())
+	})
+
+	systray := wailsApp.NewSystemTray()
+	systray.SetLabel(app.Name)
+	if util.IsMacOS() {
+		// Support for template icons on macOS
+		systray.SetTemplateIcon(config.Icons.DarwinIcons)
+	} else {
+		// Support for light/dark mode icons
+		systray.SetDarkModeIcon(config.Icons.AppIconDark)
+		systray.SetIcon(config.Icons.AppIconLight)
+	}
+
+	// Add menu
+	menu := wailsApp.NewMenu()
+	menu.Add("Open").OnClick(func(_ *application.Context) {
+		// TODO: fix this
+		//arco.Show()
+	})
+	menu.Add("Quit").OnClick(func(_ *application.Context) {
+		arco.SetQuit()
+		wailsApp.Quit()
+	})
+	systray.SetMenu(menu)
+
+	// Run the application. This blocks until the application has been exited.
+	err := wailsApp.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -242,7 +276,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		assets := cmd.Context().Value(assetsKey).(fs.FS)
-		iconData := cmd.Context().Value(iconKey).([]byte)
+		icons := cmd.Context().Value(iconKey).(*types.Icons)
 		migrations := cmd.Context().Value(migrationsKey).(fs.FS)
 
 		log := initLogger(configDir)
@@ -250,7 +284,7 @@ var rootCmd = &cobra.Command{
 		defer log.Sync() // flushes buffer, if any
 
 		// Initialize the configuration
-		config, err := initConfig(configDir, iconData, migrations, autoUpdate)
+		config, err := initConfig(configDir, icons, migrations, autoUpdate)
 		if err != nil {
 			log.Errorf("failed to initialize config: %v", err)
 			return fmt.Errorf("failed to initialize config: %w", err)
@@ -273,9 +307,9 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(assets fs.FS, iconData []byte, migrations fs.FS) {
+func Execute(assets fs.FS, icons *types.Icons, migrations fs.FS) {
 	ctx := context.WithValue(context.Background(), assetsKey, assets)
-	ctx = context.WithValue(ctx, iconKey, iconData)
+	ctx = context.WithValue(ctx, iconKey, icons)
 	ctx = context.WithValue(ctx, migrationsKey, migrations)
 
 	err := rootCmd.ExecuteContext(ctx)

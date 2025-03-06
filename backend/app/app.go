@@ -8,7 +8,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
-	"github.com/energye/systray"
 	"github.com/google/go-github/v66/github"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -67,6 +66,7 @@ type App struct {
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
 	eventEmitter             types.EventEmitter
+	shouldQuit               bool
 
 	// Startup
 	ctx    context.Context
@@ -89,6 +89,7 @@ func NewApp(
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
+		shouldQuit:               false,
 	}
 }
 
@@ -178,15 +179,8 @@ func (a *App) Startup(ctx context.Context) {
 	// Set a general status for the rest of the startup process
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
 
-	// Initialize the systray
-	if err := a.initSystray(); err != nil {
-		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
-		a.log.Error(err)
-		return
-	}
-
 	// Register signal handler
-	a.registerSignalHandler()
+	//a.registerSignalHandler()
 
 	// Save mount states
 	a.RepoClient().setMountStates()
@@ -201,28 +195,33 @@ func (a *App) Startup(ctx context.Context) {
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
 }
 
-func (a *App) Shutdown(_ context.Context) {
+func (a *App) Shutdown() {
 	a.log.Info(fmt.Sprintf("Shutting down %s", Name))
 	a.cancel()
 	err := a.db.Close()
 	if err != nil {
 		a.log.Error("Failed to close database connection")
 	}
-	os.Exit(0)
-}
-
-func (a *App) BeforeClose(ctx context.Context) (prevent bool) {
-	a.log.Debug("Received beforeclose command")
-	if a.state.GetStartupState().Error != "" {
-		return false
-	}
-	runtime.WindowHide(ctx)
-	return true
+	//os.Exit(0)
 }
 
 func (a *App) Wakeup() {
-	a.log.Debug("Received wakeup command")
-	runtime.WindowShow(a.ctx)
+	a.log.Debug("Wake up called")
+	application.Get().Show()
+}
+
+func (a *App) SetQuit() {
+	a.shouldQuit = true
+}
+
+func (a *App) ShouldQuit() bool {
+	a.log.Debug("ShouldQuit called")
+	return a.state.GetStartupState().Error != "" || a.shouldQuit
+}
+
+func (a *App) Show() {
+	a.log.Debug("Show called")
+	application.Get().Show()
 }
 
 func (a *App) updateArco() (bool, error) {
@@ -470,56 +469,14 @@ func (a *App) installBorgBinary() error {
 	return util.DownloadFile(a.config.BorgPath, binary.Url)
 }
 
-func (a *App) initSystray() error {
-	// systray is currently not working on macOS
-	if util.IsMacOS() {
-		return nil
-	}
-
-	readyFunc := func() {
-		systray.SetIcon(a.config.Icon)
-		systray.SetTitle(Name)
-		systray.SetTooltip(Name)
-		systray.SetOnClick(func(menu systray.IMenu) {
-			runtime.WindowShow(a.ctx)
-		})
-		systray.SetOnDClick(func(menu systray.IMenu) {
-			runtime.WindowShow(a.ctx)
-		})
-		systray.SetOnRClick(func(menu systray.IMenu) {
-			err := menu.ShowMenu()
-			if err != nil {
-				a.log.Error(err)
-			}
-		})
-
-		mOpen := systray.AddMenuItem(fmt.Sprintf("Open %s", Name), fmt.Sprintf("Open %s", Name))
-		mQuit := systray.AddMenuItem(fmt.Sprintf("Quit %s", Name), fmt.Sprintf("Quit %s", Name))
-
-		mOpen.Click(func() {
-			runtime.WindowShow(a.ctx)
-		})
-		mQuit.Click(func() {
-			a.Shutdown(a.ctx)
-		})
-	}
-
-	exitFunc := func() {
-		a.Shutdown(a.ctx)
-	}
-
-	startSysTray, _ := systray.RunWithExternalLoop(readyFunc, exitFunc)
-	startSysTray()
-	return nil
-}
-
 // RegisterSignalHandler listens to interrupt signals and shuts down the application on receiving one
 func (a *App) registerSignalHandler() {
+	// TODO: do we still need this?
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-signalChan
-		a.Shutdown(a.ctx)
+		a.Shutdown()
 	}()
 }
 
