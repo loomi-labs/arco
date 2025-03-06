@@ -1,15 +1,16 @@
 <script setup lang='ts'>
 import { showAndLogError } from "../common/error";
-import { ent } from "../../wailsjs/go/models";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as validationClient from "../../wailsjs/go/app/ValidationClient";
 import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { capitalizeFirstLetter } from "../common/util";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+
 
 /************
  * Types
@@ -91,7 +92,7 @@ async function createRepo() {
       location.value!,
       password.value!,
       noPassword
-    );
+    ) ?? ent.Repository.createFrom();
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
     dialog.value?.close();
@@ -235,10 +236,10 @@ watch([name, location, password, isEncrypted], async () => {
         <p v-if='!isBorgRepo'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
         <p v-else>This repository is encrypted and requires a password.</p>
 
-        <div class="form-control w-52">
-          <label class="label cursor-pointer">
-            <span class="label-text">Encrypt repository</span>
-            <input type="checkbox" class="toggle toggle-secondary" v-model='isEncrypted' :disabled='isBorgRepo'/>
+        <div class='form-control w-52'>
+          <label class='label cursor-pointer'>
+            <span class='label-text'>Encrypt repository</span>
+            <input type='checkbox' class='toggle toggle-secondary' v-model='isEncrypted' :disabled='isBorgRepo' />
           </label>
         </div>
 

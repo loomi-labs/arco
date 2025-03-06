@@ -1,6 +1,5 @@
 <script setup lang='ts'>
 
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { computed, onMounted, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
@@ -9,6 +8,8 @@ import * as yup from "yup";
 import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
 import FormField from "./common/FormField.vue";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+
 
 /************
  * Types

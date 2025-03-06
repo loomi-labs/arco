@@ -1,11 +1,15 @@
 <script setup lang='ts'>
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
 import * as zod from "zod";
 import { object } from "zod";
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { backupprofile, backupschedule, ent, state } from "../../wailsjs/go/models";
+import { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import { BackupProfile, Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { RepoStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/error";
 import DataSelection from "../components/DataSelection.vue";
@@ -20,7 +24,6 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
-import { LogDebug } from "../../wailsjs/runtime";
 import { format } from "@formkit/tempo";
 
 /************
@@ -29,10 +32,11 @@ import { format } from "@formkit/tempo";
 
 const router = useRouter();
 const toast = useToast();
-const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
-const selectedRepo = ref<ent.Repository | undefined>(undefined);
-const repoStatuses = ref<Map<number, state.RepoStatus>>(new Map());
-const existingRepos = ref<ent.Repository[]>([]);
+
+const backupProfile = ref<BackupProfile>(BackupProfile.createFrom());
+const selectedRepo = ref<Repository | undefined>(undefined);
+const repoStatuses = ref<Map<number, RepoStatus>>(new Map());
+const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
 const scheduleSectionCollapsed = ref(false);
@@ -68,25 +72,25 @@ const scheduleSectionDetails = computed(() => {
   const schedule = backupProfile.value.edges.backupSchedule;
   const pruning = backupProfile.value.edges.pruningRule;
 
-  if (!schedule || (schedule.mode === backupschedule.Mode.disabled && !pruning?.isEnabled)) {
-    return "No schedules";
-  }
+if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
+  return "No schedules";
+}
 
-  let details = "";
-  switch (schedule.mode) {
-    case backupschedule.Mode.hourly:
-      details = "Backs up every hour";
-      break;
-    case backupschedule.Mode.daily:
-      details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
-      break;
-    case backupschedule.Mode.weekly:
-      details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
-      break;
-    case backupschedule.Mode.monthly:
-      details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
-      break;
-  }
+let details = "";
+switch (schedule.mode) {
+  case backupschedule.Mode.ModeHourly:
+    details = "Backs up every hour";
+    break;
+  case backupschedule.Mode.ModeDaily:
+    details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
+    break;
+  case backupschedule.Mode.ModeWeekly:
+    details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
+    break;
+  case backupschedule.Mode.ModeMonthly:
+    details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
+    break;
+}
 
   if (pruning?.isEnabled) {
     if (details) {
@@ -105,20 +109,20 @@ const scheduleSectionDetails = computed(() => {
 
 async function getData() {
   try {
-    backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string));
+    backupProfile.value = await backupClient.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string)) ?? BackupProfile.createFrom();
     name.value = backupProfile.value.name;
 
-    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.some(repo => repo.id === selectedRepo.value?.id)) {
+    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepo.value?.id)) {
       // Select the first repo by default
-      selectedRepo.value = backupProfile.value.edges.repositories?.[0];
+      selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] ?? undefined;
     }
-    for (const repo of backupProfile.value?.edges?.repositories ?? []) {
+    for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
       // Set all repo statuses to idle
-      repoStatuses.value.set(repo.id, state.RepoStatus.idle);
+      repoStatuses.value.set(repo.id, RepoStatus.RepoStatusIdle);
     }
 
     // Get existing repositories
-    existingRepos.value = await repoClient.All();
+    existingRepos.value = (await repoClient.All()).filter(r => r !== null) ;
 
     dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
@@ -184,7 +188,7 @@ async function saveBackupName() {
   }
 }
 
-async function saveIcon(icon: backupprofile.Icon) {
+async function saveIcon(icon: Icon) {
   try {
     backupProfile.value.icon = icon;
     await backupClient.UpdateBackupProfile(backupProfile.value);
@@ -194,7 +198,11 @@ async function saveIcon(icon: backupprofile.Icon) {
 }
 
 async function setPruningRule(pruningRule: ent.PruningRule) {
-  backupProfile.value.edges.pruningRule = pruningRule;
+  try {
+    backupProfile.value.edges.pruningRule = pruningRule;
+  } catch (error: any) {
+    await showAndLogError("Failed to save pruning rule", error);
+  }
 }
 
 async function addRepo(repo: ent.Repository) {
@@ -228,7 +236,6 @@ async function toggleCollapse(type: "data" | "schedule") {
     backupProfile.value.dataSectionCollapsed = dataSectionCollapsed.value;
     backupProfile.value.scheduleSectionCollapsed = scheduleSectionCollapsed.value;
     await backupClient.UpdateBackupProfile(backupProfile.value);
-    LogDebug(`toggleCollapse: ${type}; dataSectionCollapsed: ${dataSectionCollapsed.value}; scheduleSectionCollapsed: ${scheduleSectionCollapsed.value}`);
   } catch (error: any) {
     await showAndLogError("Failed to save collapsed state", error);
   }
@@ -264,7 +271,7 @@ watch(loading, async () => {
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent border-transparent w-10'
+               class='text-2xl font-bold bg-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -366,7 +373,7 @@ watch(loading, async () => {
       <h2 class='text-lg font-bold text-base-strong mb-4'>Stored on</h2>
       <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
         <!-- Repositories -->
-        <div v-for='repo in backupProfile.edges?.repositories' :key='repo.id'>
+        <div v-for='repo in backupProfile.edges?.repositories?.filter(r => r !== null)' :key='repo.id'>
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
@@ -400,7 +407,7 @@ watch(loading, async () => {
                 <ConnectRepo
                   :show-connected-repos='true'
                   :use-single-repo='true'
-                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.some(repo => repo.id === r.id))'
+                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.filter(r => r !== null).some(repo => repo.id === r.id))'
                   @click:repo='(repo) => addRepo(repo)' />
 
                 <div class='divider'></div>

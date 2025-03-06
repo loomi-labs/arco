@@ -1,15 +1,16 @@
 <script lang='ts' setup>
 
 import { useToast } from "vue-toastification";
-import * as appClient from "../wailsjs/go/app/AppClient";
-import * as runtime from "../wailsjs/runtime";
 import { showAndLogError } from "./common/error";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Navbar from "./components/Navbar.vue";
-import { state, types } from "../wailsjs/go/models";
 import { computed, onUnmounted, ref, watchEffect } from "vue";
 import ArcoFooter from "./components/common/ArcoFooter.vue";
+import * as appClient from "../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
+import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Variables
@@ -19,7 +20,7 @@ const router = useRouter();
 const toast = useToast();
 const cleanupFunctions: (() => void)[] = [];
 const startupState = ref<state.StartupState>(state.StartupState.createFrom());
-const isInitialized = computed(() => startupState.value.status === state.StartupStatus.ready);
+const isInitialized = computed(() => startupState.value.status === state.StartupStatus.StartupStatusReady);
 
 /************
  * Functions
@@ -83,8 +84,8 @@ watchEffect(() => {
   }
 });
 
-cleanupFunctions.push(runtime.EventsOn(types.Event.startupStateChanged, getStartupState));
-cleanupFunctions.push(runtime.EventsOn(types.Event.notificationAvailable, getNotifications));
+cleanupFunctions.push(Events.On(types.Event.EventStartupStateChanged, getStartupState));
+cleanupFunctions.push(Events.On(types.Event.EventNotificationAvailable, getNotifications));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());

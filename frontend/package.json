@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "check": "vue-tsc --noEmit",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc && vite build --mode production",
+    "build:dev": "vue-tsc && vite build --minify false --mode development",
     "preview": "vite preview",
     "i18n-report": "vue-i18n-extract report --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
     "i18n-add": "vue-i18n-extract report --add --exclude types --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/i18n/*.?(json|yml|yaml|js)'",
@@ -21,6 +22,7 @@
     "@types/lodash": "^4.17.15",
     "@vee-validate/zod": "^4.15.0",
     "@vueuse/core": "^12.7.0",
+    "@wailsio/runtime": "3.0.0-alpha.66",
     "dayjs": "^1.11.13",
     "deep-equal": "^2.2.3",
     "lodash": "^4.17.21",
