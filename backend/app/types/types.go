@@ -127,8 +127,8 @@ type EventEmitter interface {
 
 type RuntimeEventEmitter struct{}
 
-func (r *RuntimeEventEmitter) EmitEvent(ctx context.Context, event string) {
-	runtime.EventsEmit(ctx, event)
+func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string) {
+	application.Get().EmitEvent(event)
 }
 
 type MountState struct {

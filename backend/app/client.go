@@ -70,3 +70,7 @@ func (a *AppClient) GetAppInfo() AppInfo {
 		Description: "Arco is a modern, user-friendly backup tool powered by Borg Backup.",
 	}
 }
+
+func (a *AppClient) GetAllEvents() []types.Event {
+	return types.AllEvents
+}
