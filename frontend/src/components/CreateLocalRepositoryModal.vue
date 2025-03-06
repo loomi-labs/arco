@@ -10,6 +10,7 @@ import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
 import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
 
 
 /************
@@ -120,7 +121,11 @@ async function setNameFromLocation() {
 }
 
 async function selectDirectory() {
-  const pathStr = await backupClient.SelectDirectory();
+  const data = SelectDirectoryData.createFrom()
+  data.title = "Select a directory";
+  data.message = "Select the directory where you want to store your backups";
+  data.buttonText = "Select";
+  const pathStr = await backupClient.SelectDirectory(data);
   if (pathStr) {
     location.value = pathStr;
   }

@@ -9,6 +9,7 @@ import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
 import FormField from "./common/FormField.vue";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
 
 
 /************
@@ -184,7 +185,11 @@ function sanitizePath(path: string): string {
 }
 
 async function addDirectory() {
-  const pathStr = await backupClient.SelectDirectory();
+  const data = SelectDirectoryData.createFrom()
+  data.title = props.isBackupSelection ? "Select data to backup" : "Select data to ignore";
+  data.message = props.isBackupSelection ? "Select the data you want to backup" : "Select the data you want to ignore";
+  data.buttonText = "Select";
+  const pathStr = await backupClient.SelectDirectory(data);
   if (pathStr) {
     newPath.value = pathStr;
     await newPathForm.validate();

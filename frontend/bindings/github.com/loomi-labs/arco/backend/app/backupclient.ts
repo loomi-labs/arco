@@ -186,8 +186,8 @@ export function SavePruningRule(backupId: number, rule: ent$0.PruningRule): Prom
     return $typingPromise;
 }
 
-export function SelectDirectory(): Promise<string> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1473199266) as any;
+export function SelectDirectory(data: $models.SelectDirectoryData): Promise<string> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(1473199266, data) as any;
     return $resultPromise;
 }
 

@@ -341,6 +341,35 @@ export enum PruningOptionName {
     PruningOptionCustom = "custom",
 };
 
+export class SelectDirectoryData {
+    "title": string;
+    "message": string;
+    "buttonText": string;
+
+    /** Creates a new SelectDirectoryData instance. */
+    constructor($$source: Partial<SelectDirectoryData> = {}) {
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("message" in $$source)) {
+            this["message"] = "";
+        }
+        if (!("buttonText" in $$source)) {
+            this["buttonText"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SelectDirectoryData instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SelectDirectoryData {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SelectDirectoryData($$parsedSource as Partial<SelectDirectoryData>);
+    }
+}
+
 export class TestRepoConnectionResult {
     "success": boolean;
     "needsPassword": boolean;
