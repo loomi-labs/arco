@@ -19,7 +19,7 @@ release: "1"
 contents:
   - src: "./bin/wailsv3"
     dst: "/usr/local/bin/wailsv3"
-  - src: "./build/appicon.png"
+  - src: "./build/appicon-light.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/wailsv3.png"
   - src: "./build/linux/wailsv3.desktop"
     dst: "/usr/share/applications/wailsv3.desktop"
