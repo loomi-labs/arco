@@ -204,8 +204,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	// Add menu
 	menu := wailsApp.NewMenu()
 	menu.Add("Open").OnClick(func(_ *application.Context) {
-		// TODO: fix this
-		//arco.Show()
+		arco.Show()
 	})
 	menu.Add("Quit").OnClick(func(_ *application.Context) {
 		arco.SetQuit()
