@@ -32,6 +32,7 @@ Before building or developing Arco, you need to install the following:
 1. [Go](https://go.dev/doc/install) - Programming language
 2. [Wails v3](https://v3alpha.wails.io/) - Framework for building desktop applications with Go and web technologies
    ```bash
+   # You can install Wails v3 system-wide (or you just use go tool wails
    go install github.com/wailsapp/wails/v3/cmd/wails3@latest
    ```
 3. [pnpm](https://pnpm.io/installation) - Package manager for the frontend

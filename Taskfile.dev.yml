@@ -14,7 +14,7 @@ tasks:
   dev:
     summary: Runs the application in development mode
     cmds:
-      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+      - go tool wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   go:update:
     summary: Updates Go dependencies
