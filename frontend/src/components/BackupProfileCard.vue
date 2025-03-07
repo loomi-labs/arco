@@ -1,9 +1,6 @@
 <script setup lang='ts'>
 import { useI18n } from "vue-i18n";
 import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
-import { ent, types } from "../../wailsjs/go/models";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { isAfter } from "@formkit/tempo";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref } from "vue";
@@ -11,12 +8,17 @@ import { Page, withId } from "../router";
 import { useRouter } from "vue-router";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
-import * as runtime from "../../wailsjs/runtime";
 import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import { getIcon, Icon } from "../common/icons";
 import { getRepoType } from "../common/repository";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+
+import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -38,12 +40,13 @@ const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string>("");
 const icon = ref<Icon>(getIcon(props.backup.icon));
 
-const bIds = props.backup.edges?.repositories?.map((r) => {
-  const backupId = types.BackupId.createFrom();
-  backupId.backupProfileId = props.backup.id;
-  backupId.repositoryId = r.id;
-  return backupId;
-}) ?? [];
+const bIds = props.backup.edges?.repositories?.filter((r) => r !== null)
+  .map((r) => {
+    const backupId = types.BackupId.createFrom();
+    backupId.backupProfileId = props.backup.id;
+    backupId.repositoryId = r.id;
+    return backupId;
+  }) ?? [];
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -52,7 +55,7 @@ const cleanupFunctions: (() => void)[] = [];
  ************/
 
 async function getFailedBackupRun() {
-  for (const repoId of props.backup.edges?.repositories?.map((r) => r.id) ?? []) {
+  for (const repoId of props.backup.edges?.repositories?.filter(r => r !== null).map((r) => r.id) ?? []) {
     try {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
@@ -72,7 +75,7 @@ async function getFailedBackupRun() {
 async function getLastArchives() {
   try {
     let newLastArchive = undefined;
-    for (const repo of props.backup.edges?.repositories ?? []) {
+    for (const repo of props.backup.edges?.repositories?.filter(r => r !== null) ?? []) {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
@@ -102,7 +105,7 @@ for (const backupId of bIds) {
     await getLastArchives();
   }, 200);
 
-  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
+  cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
 }
 
 onUnmounted(() => {
@@ -149,7 +152,7 @@ onUnmounted(() => {
             Repositories
           </div>
           <ul class='text-right'>
-            <li v-for='repo in props.backup.edges?.repositories ?? []' :key='repo.id'
+            <li v-for='repo in props.backup.edges?.repositories?.filter(r => r !== null) ?? []' :key='repo.id'
                 class='mx-1'
                 :class='`${toRepoTypeBadge(getRepoType(repo.location))}`'
             >

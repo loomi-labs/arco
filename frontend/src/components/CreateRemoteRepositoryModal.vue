@@ -1,14 +1,15 @@
 <script setup lang='ts'>
 import { showAndLogError } from "../common/error";
-import { ent } from "../../wailsjs/go/models";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as validationClient from "../../wailsjs/go/app/ValidationClient";
 import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+
 
 /************
  * Types
@@ -95,7 +96,7 @@ async function createRepo() {
       location.value!,
       password.value!,
       noPassword
-    );
+    ) ?? ent.Repository.createFrom();
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
     dialog.value?.close();

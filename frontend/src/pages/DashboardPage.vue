@@ -1,9 +1,5 @@
 <script setup lang='ts'>
 import { useRouter } from "vue-router";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as appClient from "../../wailsjs/go/app/AppClient";
-import { ent } from "../../wailsjs/go/models";
 import { computed, onUnmounted, ref } from "vue";
 import { showAndLogError } from "../common/error";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
@@ -13,11 +9,16 @@ import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Vue3Lottie } from "vue3-lottie";
-import * as runtime from "../../wailsjs/runtime";
 import { backupProfileDeletedEvent } from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
+import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -42,9 +43,9 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getData() {
   try {
-    backupProfiles.value = await backupClient.GetBackupProfiles();
-    repos.value = await repoClient.All();
-    settings.value = await appClient.GetSettings();
+    backupProfiles.value = (await backupClient.GetBackupProfiles()).filter(p => p !== null) ?? [];
+    repos.value = (await repoClient.All()).filter((repo): repo is Repository => repo !== null);
+    settings.value = await appClient.GetSettings() ?? ent.Settings.createFrom();
   } catch (error: any) {
     await showAndLogError("Failed to get data", error);
   }
@@ -67,7 +68,7 @@ async function welcomeModalClosed() {
 
 getData();
 
-cleanupFunctions.push(runtime.EventsOn(backupProfileDeletedEvent(), getData));
+cleanupFunctions.push(Events.On(backupProfileDeletedEvent(), getData));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -147,7 +148,8 @@ onUnmounted(() => {
                       </div>
                       <DialogTitle as='h3' class='text-lg font-semibold dark:text-white'>Welcome to Arco</DialogTitle>
                       <p>Start by adding your first <span class='font-semibold dark:text-white'>backup profile</span>.</p>
-                      <p class='pt-2'>If you used <span class='font-semibold dark:text-white'>Arco</span> or <span class='font-semibold dark:text-white'>Borg Backup</span> before you
+                      <p class='pt-2'>If you used <span class='font-semibold dark:text-white'>Arco</span> or <span
+                        class='font-semibold dark:text-white'>Borg Backup</span> before you
                         can add your previous <span class='font-semibold dark:text-white'>repositories</span>.</p>
                       <div class='pt-4'>
                         <button type='button' class='btn btn-sm btn-success' @click='welcomeModalClosed'>Okay let's start</button>

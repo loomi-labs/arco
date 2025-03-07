@@ -5,7 +5,13 @@
 .vscode
 
 # Build files
+bin
 build/bin
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+
+# Task files
+.task
 
 # Environment variables
 .env*

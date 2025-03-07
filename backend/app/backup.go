@@ -18,7 +18,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"math/rand"
 	"os"
 	"regexp"
@@ -423,8 +423,32 @@ func (b *BackupClient) StartBackupJobs(bIds []types.BackupId) error {
 	return nil
 }
 
-func (b *BackupClient) SelectDirectory() (string, error) {
-	return runtime.OpenDirectoryDialog(b.ctx, runtime.OpenDialogOptions{})
+type SelectDirectoryData struct {
+	Title      string `json:"title"`
+	Message    string `json:"message"`
+	ButtonText string `json:"buttonText"`
+}
+
+func (b *BackupClient) SelectDirectory(data SelectDirectoryData) (string, error) {
+	dialog := application.OpenFileDialogWithOptions(&application.OpenFileDialogOptions{
+		CanChooseDirectories:            true,
+		CanChooseFiles:                  false,
+		CanCreateDirectories:            true,
+		ShowHiddenFiles:                 false,
+		ResolvesAliases:                 true,
+		AllowsMultipleSelection:         false,
+		HideExtension:                   true,
+		CanSelectHiddenExtension:        false,
+		TreatsFilePackagesAsDirectories: false,
+		AllowsOtherFileTypes:            false,
+		Filters:                         nil,
+		Window:                          nil,
+		Title:                           data.Title,
+		Message:                         data.Message,
+		ButtonText:                      data.ButtonText,
+		Directory:                       "",
+	})
+	return dialog.PromptForSingleSelection()
 }
 
 type BackupProgressResponse struct {

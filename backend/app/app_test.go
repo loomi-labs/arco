@@ -29,7 +29,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		BorgBinaries:    nil,
 		BorgPath:        "",
 		BorgVersion:     "",
-		Icon:            nil,
+		Icons:           nil,
 		Migrations:      migrationsDir,
 		GithubAssetName: "",
 		Version:         semver.MustParse("0.0.0"),

@@ -1,9 +1,5 @@
 <script setup lang='ts'>
 
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as validationClient from "../../wailsjs/go/app/ValidationClient";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import { app, ent, state, types } from "../../wailsjs/go/models";
 import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { showAndLogError } from "../common/error";
 import {
@@ -24,8 +20,15 @@ import { toCreationTimeBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
-import * as runtime from "../../wailsjs/runtime";
 import { archivesChanged } from "../common/events";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -111,9 +114,9 @@ async function getPaginatedArchives() {
     // Add a day to the end date to include the end date itself
     request.endDate = dateRange.value.endDate ? dayEnd(new Date(dateRange.value.endDate)) : undefined;
 
-    const result = await repoClient.GetPaginatedArchives(request);
+    const result = await repoClient.GetPaginatedArchives(request) ?? app.PaginatedArchivesResponse.createFrom();
 
-    archives.value = result.archives;
+    archives.value = result.archives.filter(a => a !== null);
     pagination.value = {
       page: pagination.value.page,
       pageSize: pagination.value.pageSize,
@@ -376,7 +379,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
 });
 
-cleanupFunctions.push(runtime.EventsOn(archivesChanged(props.repo.id), getPaginatedArchives));
+cleanupFunctions.push(Events.On(archivesChanged(props.repo.id), getPaginatedArchives));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -396,7 +399,7 @@ onUnmounted(() => {
           </th>
           <th class='text-right'>
             <button class='btn btn-ghost btn-circle btn-info'
-                    :disabled='props.repoStatus !== state.RepoStatus.idle'
+                    :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
                     @click='refreshArchives'>
               <ArrowPathIcon class='size-6'></ArrowPathIcon>
             </button>
@@ -473,7 +476,7 @@ onUnmounted(() => {
                      v-model='inputValues[archive.id]'
                      @input='validateName(archive.id)'
                      @change='rename(archive)'
-                     :disabled='inputRenameInProgress[archive.id]  || props.repoStatus !== state.RepoStatus.idle'
+                     :disabled='inputRenameInProgress[archive.id]  || props.repoStatus !== state.RepoStatus.RepoStatusIdle'
               />
               <span class='loading loading-xs' :class='{"invisible": !inputRenameInProgress[archive.id]}'></span>
 
@@ -512,13 +515,13 @@ onUnmounted(() => {
             <span class='tooltip tooltip-info'
                   data-tip='Browse files in this archive'>
               <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content'
-                      :disabled='props.repoStatus !== state.RepoStatus.idle && props.repoStatus !== state.RepoStatus.mounted'
+                      :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle && props.repoStatus !== state.RepoStatus.RepoStatusMounted'
                       @click='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4'></DocumentMagnifyingGlassIcon>
               </button>
             </span>
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral'
-                    :disabled='props.repoStatus !== state.RepoStatus.idle'
+                    :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
                     @click='() => {
                         archiveToBeDeleted = archive.id;
                         confirmDeleteModal?.showModal();

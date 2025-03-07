@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/cmd"
 	_ "github.com/loomi-labs/arco/backend/ent/runtime" // required to allow cyclic imports
 	_ "github.com/mattn/go-sqlite3"
@@ -13,30 +14,61 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed icon.png
-var icon embed.FS
+//go:embed build/appicon-dark.png
+var appIconDarkFs embed.FS
+
+//go:embed build/appicon-light.png
+var appIconLightFs embed.FS
+
+//go:embed build/darwin/icons.icns
+var darwinIconsFs embed.FS
+
+//go:embed build/windows/icon.ico
+//var windowsIconFs embed.FS
 
 //go:embed backend/ent/migrate/migrations
 var migrations embed.FS
 
-func main() {
+func readEmbeddedFile(embeddedFS embed.FS, path string) []byte {
+	file, err := embeddedFS.Open(path)
+	if err != nil {
+		panic(fmt.Errorf("failed to open file %s: %w", path, err))
+	}
+	defer func(file fs.File) {
+		err := file.Close()
+		if err != nil {
+			panic(fmt.Errorf("failed to close file %s: %w", path, err))
+		}
+	}(file)
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		panic(fmt.Errorf("failed to read file %s: %w", path, err))
+	}
+
+	return content
+}
+
+func getIcons() *types.Icons {
+	appIconDark := readEmbeddedFile(appIconDarkFs, "build/appicon-dark.png")
+	appIconLight := readEmbeddedFile(appIconLightFs, "build/appicon-light.png")
+	darwinIcons := readEmbeddedFile(darwinIconsFs, "build/darwin/icons.icns")
+
+	return &types.Icons{
+		AppIconDark:  appIconDark,
+		AppIconLight: appIconLight,
+		DarwinIcons:  darwinIcons,
+	}
+}
+
+func getMigrations() fs.FS {
 	migrationsDir, err := fs.Sub(migrations, "backend/ent/migrate/migrations")
 	if err != nil {
 		panic(fmt.Errorf("failed to get migrations directory: %w", err))
 	}
+	return migrationsDir
+}
 
-	iconFile, err := icon.Open("icon.png")
-	if err != nil {
-		panic(fmt.Errorf("failed to open icon: %w", err))
-	}
-	iconData, err := io.ReadAll(iconFile)
-	if err != nil {
-		panic(fmt.Errorf("failed to read icon: %w", err))
-	}
-	err = iconFile.Close()
-	if err != nil {
-		panic(fmt.Errorf("failed to close icon: %w", err))
-	}
-
-	cmd.Execute(assets, iconData, migrationsDir)
+func main() {
+	cmd.Execute(assets, getIcons(), getMigrations())
 }

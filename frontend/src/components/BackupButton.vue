@@ -1,15 +1,18 @@
 <script setup lang='ts'>
 
-import { ent, state, types } from "../../wailsjs/go/models";
 import { useI18n } from "vue-i18n";
 import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import * as runtime from "../../wailsjs/runtime";
 import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import * as borgtypes from "../../bindings/github.com/loomi-labs/arco/backend/borg/types";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -29,7 +32,7 @@ const { t } = useI18n();
 
 const showProgressSpinner = ref(false);
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
-const backupProgress = ref<types.BackupProgress | undefined>(undefined);
+const backupProgress = ref<borgtypes.BackupProgress | undefined>(undefined);
 const lockedRepos = ref<ent.Repository[]>([]);
 const reposWithMounts = ref<ent.Repository[]>([]);
 
@@ -47,17 +50,17 @@ const cleanupFunctions: (() => void)[] = [];
 
 const buttonText = computed(() => {
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.runBackup:
+    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
       return t("run_backup");
-    case state.BackupButtonStatus.waiting:
+    case state.BackupButtonStatus.BackupButtonStatusWaiting:
       return t("waiting");
-    case state.BackupButtonStatus.abort:
+    case state.BackupButtonStatus.BackupButtonStatusAbort:
       return `${t("abort")} ${progress.value}%`;
-    case state.BackupButtonStatus.locked:
+    case state.BackupButtonStatus.BackupButtonStatusLocked:
       return t("remove_lock");
-    case state.BackupButtonStatus.unmount:
+    case state.BackupButtonStatus.BackupButtonStatusUnmount:
       return t("run_backup");
-    case state.BackupButtonStatus.busy:
+    case state.BackupButtonStatus.BackupButtonStatusBusy:
       return t("busy");
     default:
       return "";
@@ -66,13 +69,13 @@ const buttonText = computed(() => {
 
 const buttonColor = computed(() => {
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.runBackup:
+    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "btn-success";
-    case state.BackupButtonStatus.abort:
+    case state.BackupButtonStatus.BackupButtonStatusAbort:
       return "btn-warning";
-    case state.BackupButtonStatus.locked:
+    case state.BackupButtonStatus.BackupButtonStatusLocked:
       return "btn-error";
-    case state.BackupButtonStatus.unmount:
+    case state.BackupButtonStatus.BackupButtonStatusUnmount:
       return "btn-success";
     default:
       return "btn-neutral";
@@ -81,13 +84,13 @@ const buttonColor = computed(() => {
 
 const buttonTextColor = computed(() => {
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.runBackup:
+    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "text-success";
-    case state.BackupButtonStatus.abort:
+    case state.BackupButtonStatus.BackupButtonStatusAbort:
       return "text-warning";
-    case state.BackupButtonStatus.locked:
+    case state.BackupButtonStatus.BackupButtonStatusLocked:
       return "text-error";
-    case state.BackupButtonStatus.unmount:
+    case state.BackupButtonStatus.BackupButtonStatusUnmount:
       return "text-success";
     default:
       return "text-neutral";
@@ -95,8 +98,8 @@ const buttonTextColor = computed(() => {
 });
 
 const isButtonDisabled = computed(() => {
-  return buttonStatus.value === state.BackupButtonStatus.busy
-    || buttonStatus.value === state.BackupButtonStatus.waiting;
+  return buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusBusy
+    || buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusWaiting;
 });
 
 const progress = computed(() => {
@@ -124,7 +127,7 @@ async function getButtonStatus() {
 
 async function getBackupProgress() {
   try {
-    backupProgress.value = await backupClient.GetCombinedBackupProgress(props.backupIds);
+    backupProgress.value = await backupClient.GetCombinedBackupProgress(props.backupIds) ?? undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get backup progress", error);
   }
@@ -132,7 +135,7 @@ async function getBackupProgress() {
 
 async function getLockedRepos() {
   try {
-    const result = await repoClient.GetLocked();
+    const result = (await repoClient.GetLocked()).filter(r => r !== null) ?? [];
     lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
   } catch (error: any) {
     await showAndLogError("Failed to get locked repositories", error);
@@ -141,7 +144,7 @@ async function getLockedRepos() {
 
 async function getReposWithMounts() {
   try {
-    const result = await repoClient.GetWithActiveMounts();
+    const result = (await repoClient.GetWithActiveMounts()).filter(r => r !== null) ?? [];
     reposWithMounts.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
   } catch (error: any) {
     await showAndLogError("Failed to get mounted repositories", error);
@@ -149,13 +152,13 @@ async function getReposWithMounts() {
 }
 
 async function runButtonAction() {
-  if (buttonStatus.value === state.BackupButtonStatus.runBackup) {
+  if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusRunBackup) {
     await runBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.abort) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusAbort) {
     await abortBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.locked) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusLocked) {
     confirmRemoveLockModal.value?.showModal();
-  } else if (buttonStatus.value === state.BackupButtonStatus.unmount) {
+  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusUnmount) {
     confirmUnmountModal.value?.showModal();
   }
 }
@@ -216,7 +219,7 @@ for (const backupId of props.backupIds) {
     await getBackupProgress();
   }, 200);
 
-  cleanupFunctions.push(runtime.EventsOn(backupStateChangedEvent(backupId), handleBackupStateChanged));
+  cleanupFunctions.push(Events.On(backupStateChangedEvent(backupId), handleBackupStateChanged));
 
   const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
@@ -224,7 +227,7 @@ for (const backupId of props.backupIds) {
     await getReposWithMounts();
   }, 200);
 
-  cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
+  cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
 }
 
 onUnmounted(() => {
@@ -265,7 +268,7 @@ onUnmounted(() => {
                 confirm-class='btn-info'
                 @confirm='unmountAllAndRunBackups'>
     <p v-if='reposWithMounts.length === 1'>You are currently browsing the repository <span
-      class='italic'>{{reposWithMounts[0].name}}</span>.</p>
+      class='italic'>{{ reposWithMounts[0].name }}</span>.</p>
     <div v-else>
       <p>You are currently browsing the following repositories:</p>
       <ul class='mb-4'>

@@ -1,5 +1,6 @@
-import { backupprofile } from "../../wailsjs/go/models";
 import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
+import * as backupprofile from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+
 
 export interface Icon {
   type: backupprofile.Icon;
@@ -9,32 +10,32 @@ export interface Icon {
 
 export const icons: Icon[] = [
   {
-    type: backupprofile.Icon.home,
+    type: backupprofile.Icon.IconHome,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: HomeIcon
   },
   {
-    type: backupprofile.Icon.briefcase,
+    type: backupprofile.Icon.IconBriefcase,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: BriefcaseIcon
   },
   {
-    type: backupprofile.Icon.fire,
+    type: backupprofile.Icon.IconFire,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: FireIcon
   },
   {
-    type: backupprofile.Icon.envelope,
+    type: backupprofile.Icon.IconEnvelope,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: EnvelopeIcon
   },
   {
-    type: backupprofile.Icon.camera,
+    type: backupprofile.Icon.IconCamera,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: CameraIcon
   },
   {
-    type: backupprofile.Icon.book,
+    type: backupprofile.Icon.IconBook,
     color: "bg-primary text-primary-content hover:bg-primary/50",
     html: BookOpenIcon
   },

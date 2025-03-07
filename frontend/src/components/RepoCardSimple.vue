@@ -1,16 +1,17 @@
 <script setup lang='ts'>
 
-import { ent, state } from "../../wailsjs/go/models";
 import { useRouter } from "vue-router";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
 import { showAndLogError } from "../common/error";
 import { onUnmounted, ref, watch } from "vue";
 import { Page, withId } from "../router";
-import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType } from "../common/repository";
 import { toRepoTypeBadge } from "../common/badge";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -29,7 +30,7 @@ const props = defineProps<Props>();
 const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
-const repoType = ref<RepoType>(getRepoType(props.repo.location) );
+const repoType = ref<RepoType>(getRepoType(props.repo.location));
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -68,7 +69,7 @@ watch(repoState, async (newState, oldState) => {
   await getNbrOfArchives();
 });
 
-cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(props.repo.id), async () => await getRepoState()));
+cleanupFunctions.push(Events.On(repoStateChangedEvent(props.repo.id), async () => await getRepoState()));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -78,7 +79,7 @@ onUnmounted(() => {
 
 <template>
   <div class='group/repo flex justify-between ac-card-hover h-full w-full '
-    @click='router.push(withId(Page.Repository, repo.id))'>
+       @click='router.push(withId(Page.Repository, repo.id))'>
     <div class='flex flex-col w-full p-6'>
       <div class='grow text-xl font-semibold text-base-strong pb-6'>{{ repo.name }}</div>
       <div class='flex justify-between'>
@@ -94,8 +95,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <ComputerDesktopIcon v-if='repoType === RepoType.Local' class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
-    <GlobeEuropeAfricaIcon v-else class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'/>
+    <ComputerDesktopIcon v-if='repoType === RepoType.Local'
+                         class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50' />
+    <GlobeEuropeAfricaIcon v-else
+                           class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50' />
   </div>
 </template>
 

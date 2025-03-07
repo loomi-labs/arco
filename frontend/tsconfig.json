@@ -15,6 +15,8 @@
       "DOM"
     ],
     "skipLibCheck": true,
+    "noUnusedParameters": false,
+    "noEmit": true,
 
     // Report error when not all code paths return a value
     "noImplicitReturns": true,
@@ -29,7 +31,7 @@
     // Raise error on expressions with implied 'any' type
     "noImplicitAny": true,
     // Enable strict null checks
-    "strictNullChecks": true
+    "strictNullChecks": true,
   },
   "include": [
     "src/**/*.ts",

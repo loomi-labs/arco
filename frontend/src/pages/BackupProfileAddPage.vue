@@ -1,7 +1,4 @@
 <script setup lang='ts'>
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { backupprofile, ent } from "../../wailsjs/go/models";
 import { computed, ref, useId, useTemplateRef } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { Page, withId } from "../router";
@@ -17,8 +14,12 @@ import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
-import * as runtime from "../../wailsjs/runtime";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import { BackupProfile, BackupSchedule, PruningRule, Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { Browser } from "@wailsio/runtime";
 
 /************
  * Types
@@ -36,9 +37,9 @@ enum Step {
 
 const router = useRouter();
 const toast = useToast();
-const backupProfile = ref<ent.BackupProfile>(ent.BackupProfile.createFrom());
+const backupProfile = ref<BackupProfile>(BackupProfile.createFrom());
 const currentStep = ref<Step>(Step.SelectData);
-const existingRepos = ref<ent.Repository[]>([]);
+const existingRepos = ref<Repository[]>([]);
 const newBackupProfileCreated = ref(false);
 const wantToGoRoute = ref<string>();
 const discardChangesConfirmed = ref(false);
@@ -75,7 +76,7 @@ const isStep2Valid = computed(() => {
 const pruningCardRef = ref();
 
 // Step 3
-const connectedRepos = ref<ent.Repository[]>([]);
+const connectedRepos = ref<Repository[]>([]);
 
 const isStep3Valid = computed(() => {
   return connectedRepos.value.length > 0;
@@ -117,13 +118,13 @@ function saveExcludePaths(paths: string[]) {
   backupProfile.value.excludePaths = paths;
 }
 
-function selectIcon(icon: backupprofile.Icon) {
+function selectIcon(icon: Icon) {
   backupProfile.value.icon = icon;
 }
 
 async function newBackupProfile() {
   try {
-    backupProfile.value = await backupClient.NewBackupProfile();
+    backupProfile.value = await backupClient.NewBackupProfile() ?? BackupProfile.createFrom();
     directorySuggestions.value = await backupClient.GetDirectorySuggestions();
   } catch (error: any) {
     await showAndLogError("Failed to create backup profile", error);
@@ -132,27 +133,31 @@ async function newBackupProfile() {
 
 async function getExistingRepositories() {
   try {
-    existingRepos.value = await repoClient.All();
+    existingRepos.value = (await repoClient.All()).filter((r) => r !== null);
   } catch (error: any) {
     await showAndLogError("Failed to get existing repositories", error);
   }
 }
 
 // Step 2
-function saveSchedule(schedule: ent.BackupSchedule | undefined) {
+function saveSchedule(schedule: BackupSchedule | undefined) {
   backupProfile.value.edges.backupSchedule = schedule;
 }
 
 // Step 3
-const connectRepos = (repos: ent.Repository[]) => {
+const connectRepos = (repos: Repository[]) => {
   connectedRepos.value = repos;
 };
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
+    backupProfile.value.edges = backupProfile.value.edges ?? {};
     backupProfile.value.edges.repositories = connectedRepos.value;
-    const savedBackupProfile = await backupClient.CreateBackupProfile(backupProfile.value, backupProfile.value.edges.repositories.map((r) => r.id));
+    const savedBackupProfile = await backupClient.CreateBackupProfile(
+      backupProfile.value,
+      (backupProfile.value.edges.repositories ?? []).filter((r) => r !== null).map((r) => r.id)
+    ) ?? BackupProfile.createFrom();
 
     if (backupProfile.value.edges.backupSchedule) {
       await backupClient.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
@@ -162,7 +167,7 @@ async function saveBackupProfile(): Promise<boolean> {
       await backupClient.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
     }
 
-    backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id);
+    backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
   } catch (error: any) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
@@ -268,7 +273,8 @@ onBeforeRouteLeave(async (to, from) => {
       <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
       <div class='mb-4'>
         <p>
-          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span> that you don't want to include in your backups.<br>
+          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span>
+          that you don't want to include in your backups.<br>
         </p>
         <p class='pt-2'>Examples:</p>
         <ul class='pl-4'>
@@ -284,7 +290,7 @@ onBeforeRouteLeave(async (to, from) => {
           </li>
         </ul>
         <!--        link to borg help -->
-        <a @click='runtime.BrowserOpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
+        <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
            class='link flex gap-1 pt-1'>
           Learn more about exclusion patterns
           <QuestionMarkCircleIcon class='size-6' />
@@ -325,13 +331,13 @@ onBeforeRouteLeave(async (to, from) => {
     <template v-if='currentStep === Step.Schedule'>
       <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
       <div class='flex flex-col gap-10'>
-        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
+        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? BackupSchedule.createFrom()'
                            @update:schedule='saveSchedule'
                            @delete:schedule='() => saveSchedule(undefined)' />
 
         <PruningCard ref='pruningCardRef'
                      :backup-profile-id='backupProfile.id'
-                     :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
+                     :pruning-rule='backupProfile.edges.pruningRule ?? PruningRule.createFrom()'
                      :ask-for-save-before-leaving='false'>
         </PruningCard>
       </div>

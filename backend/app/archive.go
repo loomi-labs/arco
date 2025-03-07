@@ -297,7 +297,7 @@ func (r *RepositoryClient) GetLastArchiveByBackupId(backupId types.BackupId) (*e
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(r.ctx)
 	if err != nil && ent.IsNotFound(err) {
-		return nil, nil
+		return &ent.Archive{}, nil
 	}
 	return first, err
 }
@@ -311,7 +311,7 @@ func (r *RepositoryClient) GetLastArchiveByRepoId(repoId int) (*ent.Archive, err
 		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(r.ctx)
 	if err != nil && ent.IsNotFound(err) {
-		return nil, nil
+		return &ent.Archive{}, nil
 	}
 	return first, err
 }
