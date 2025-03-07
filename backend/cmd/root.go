@@ -127,47 +127,12 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	}, nil
 }
 
-func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
-	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
-
-	if uniqueRunId == "" {
-		uniqueRunId = "4ffabbd3-334a-454e-8c66-dee8d1ff9afb"
+func showOrCreateMainWindow(config *types.Config) {
+	wailsApp := application.Get()
+	if wailsApp.GetWindowByName(types.WindowTitle) != nil {
+		wailsApp.GetWindowByName(types.WindowTitle).Show()
 	}
 
-	wailsApp := application.New(application.Options{
-		Name:        "Arco",
-		Description: "Arco is a backup tool.",
-		Services: []application.Service{
-			application.NewService(arco.AppClient()),
-			application.NewService(arco.BackupClient()),
-			application.NewService(arco.RepoClient()),
-			application.NewService(arco.ValidationClient()),
-		},
-		SingleInstance: &application.SingleInstanceOptions{
-			UniqueID: uniqueRunId,
-			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
-				arco.Wakeup()
-			},
-		},
-		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
-		},
-		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: true,
-		},
-		LogLevel: slog.Level(log.Level() * 4), // slog uses a multiplier of 4
-		ShouldQuit: func() bool {
-			return arco.ShouldQuit()
-		},
-		OnShutdown: func() {
-			arco.Shutdown()
-		},
-	})
-
-	startState := application.WindowStateNormal
-	if startHidden {
-		startState = application.WindowStateMinimised
-	}
 	wailsApp.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title: types.WindowTitle,
 		Mac: application.MacWindow{
@@ -180,10 +145,56 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
-		StartState:       startState,
+		StartState:       application.WindowStateMinimised,
 		MaxWidth:         3840,
 		MaxHeight:        3840,
 	})
+}
+
+func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
+	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
+
+	if uniqueRunId == "" {
+		uniqueRunId = "4ffabbd3-334a-454e-8c66-dee8d1ff9afb"
+	}
+
+	wailsApp := application.New(application.Options{
+		Name:        app.Name,
+		Description: "Arco is a backup tool.",
+		Services: []application.Service{
+			application.NewService(arco.AppClient()),
+			application.NewService(arco.BackupClient()),
+			application.NewService(arco.RepoClient()),
+			application.NewService(arco.ValidationClient()),
+		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: uniqueRunId,
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				log.Debug("Wake up %s", app.Name)
+				showOrCreateMainWindow(config)
+			},
+		},
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
+		},
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: false,
+		},
+		Linux: application.LinuxOptions{
+			DisableQuitOnLastWindowClosed: true,
+		},
+		LogLevel: slog.Level(log.Level() * 4), // slog uses a multiplier of 4
+		ShouldQuit: func() bool {
+			return arco.ShouldQuit()
+		},
+		OnShutdown: func() {
+			arco.Shutdown()
+		},
+	})
+
+	if !startHidden {
+		showOrCreateMainWindow(config)
+	}
 
 	wailsApp.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
 		// TODO: what about the context?
@@ -204,9 +215,11 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	// Add menu
 	menu := wailsApp.NewMenu()
 	menu.Add("Open").OnClick(func(_ *application.Context) {
-		arco.Show()
+		log.Debug("Opening %s", app.Name)
+		showOrCreateMainWindow(config)
 	})
 	menu.Add("Quit").OnClick(func(_ *application.Context) {
+		log.Debug("Quitting %s", app.Name)
 		arco.SetQuit()
 		wailsApp.Quit()
 	})

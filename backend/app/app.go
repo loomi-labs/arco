@@ -16,7 +16,6 @@ import (
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -205,11 +204,6 @@ func (a *App) Shutdown() {
 	//os.Exit(0)
 }
 
-func (a *App) Wakeup() {
-	a.log.Debug("Wake up called")
-	application.Get().Show()
-}
-
 func (a *App) SetQuit() {
 	a.shouldQuit = true
 }
@@ -217,11 +211,6 @@ func (a *App) SetQuit() {
 func (a *App) ShouldQuit() bool {
 	a.log.Debug("ShouldQuit called")
 	return a.state.GetStartupState().Error != "" || a.shouldQuit
-}
-
-func (a *App) Show() {
-	a.log.Debug("Show called")
-	application.Get().Show()
 }
 
 func (a *App) updateArco() (bool, error) {
