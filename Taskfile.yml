@@ -5,6 +5,8 @@ includes:
   windows: ./build/windows/Taskfile.yml
   darwin: ./build/darwin/Taskfile.yml
   linux: ./build/linux/Taskfile.yml
+  db: ./Taskfile.db.yml
+  dev: ./Taskfile.dev.yml
 
 vars:
   APP_NAME: "arco"
@@ -26,9 +28,3 @@ tasks:
     summary: Runs the application
     cmds:
       - task: "{{OS}}:run"
-
-  dev:
-    summary: Runs the application in development mode
-    cmds:
-      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
-

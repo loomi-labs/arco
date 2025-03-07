@@ -38,7 +38,6 @@ tasks:
     vars:
       BUILD_COMMAND: '{{if eq .PRODUCTION "true"}}build{{else}}build:dev{{end}}'
 
-
   generate:bindings:
     summary: Generates bindings for the frontend
     deps:
