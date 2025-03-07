@@ -6,12 +6,12 @@
 name: "arco"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.1.0"
+version: ""
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "My Product Description"
-vendor: "My Company"
+description: "A modern, user-friendly Borg backup client"
+vendor: "Raphael Thurnherr"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
@@ -26,7 +26,8 @@ contents:
 
 depends:
   - gtk3
-  - libwebkit2gtk
+#  - libwebkit2gtk
+  - webkit2gtk-4.1
 
 # replaces:
 #   - foobar

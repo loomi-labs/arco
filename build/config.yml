@@ -5,13 +5,13 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "My Company" # The name of the company
-  productName: "My Product" # The name of the application
-  productIdentifier: "com.mycompany.myproduct" # The unique product identifier
-  description: "A program that does X" # The application description
-  copyright: "(c) 2024, My Company" # Copyright text
-  comments: "Some Product Comments" # Comments
-  version: "v0.0.1" # The application version
+  companyName: "Raphael Thurnherr" # The name of the company
+  productName: "Arco" # The name of the application
+  productIdentifier: "com.backup.arco" # The unique product identifier
+  description: "A modern, user-friendly Borg backup client" # The application description
+  copyright: "(c) 2024, Raphael Thurnherr" # Copyright text
+  comments: "Desktop client for BorgBackup" # Comments
+  homepage: "https://arco-backup.com" # The homepage of the application
 
 # Dev mode configuration
 dev_mode:

@@ -4,17 +4,17 @@
         <key>CFBundlePackageType</key>
         <string>APPL</string>
         <key>CFBundleName</key>
-        <string>My Product</string>
+        <string>Arco</string>
         <key>CFBundleExecutable</key>
-        <string>wailsv3</string>
+        <string>arco</string>
         <key>CFBundleIdentifier</key>
-        <string>com.wails.wailsv3</string>
+        <string>com.backup.arco</string>
         <key>CFBundleVersion</key>
-        <string>0.1.0</string>
+        <string></string>
         <key>CFBundleGetInfoString</key>
-        <string>This is a comment</string>
+        <string>Desktop client for BorgBackup</string>
         <key>CFBundleShortVersionString</key>
-        <string>0.1.0</string>
+        <string></string>
         <key>CFBundleIconFile</key>
         <string>icons</string>
         <key>LSMinimumSystemVersion</key>
@@ -22,7 +22,7 @@
         <key>NSHighResolutionCapable</key>
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
-        <string>© now, My Company</string>
+        <string>(c) 2024, Raphael Thurnherr</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

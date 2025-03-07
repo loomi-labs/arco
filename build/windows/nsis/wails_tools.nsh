@@ -14,10 +14,10 @@
     !define INFO_PRODUCTNAME "Arco"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION "0.1.0"
+    !define INFO_PRODUCTVERSION ""
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "© now, Raphael Thurnherr"
+    !define INFO_COPYRIGHT "(c) 2024, Raphael Thurnherr"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"
