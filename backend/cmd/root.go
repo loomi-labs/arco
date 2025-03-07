@@ -258,6 +258,16 @@ var rootCmd = &cobra.Command{
 	Use:   "arco",
 	Short: "Arco is a backup tool that uses Borg to create backups.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Check if version flag is set
+		showVersion, err := cmd.Flags().GetBool(versionFlag)
+		if err != nil {
+			return fmt.Errorf("failed to get version flag: %w", err)
+		}
+		if showVersion {
+			fmt.Printf("%s %s\n", app.Name, app.Version)
+			return nil
+		}
+
 		configDir, err := cmd.Flags().GetString(configFlag)
 		if err != nil {
 			return fmt.Errorf("failed to get config flag: %w", err)
@@ -323,10 +333,12 @@ const configFlag = "config"
 const hiddenFlag = "hidden"
 const uniqueRunIdFlag = "unique-run-id"
 const autoUpdateFlag = "auto-update"
+const versionFlag = "version"
 
 func init() {
 	rootCmd.PersistentFlags().StringP(configFlag, "c", "", "config path (default is $HOME/.config/arco/)")
 	rootCmd.PersistentFlags().Bool(hiddenFlag, false, "start hidden (default is false)")
 	rootCmd.PersistentFlags().String(uniqueRunIdFlag, "", "unique run id. Only one instance of Arco can run with the same id")
 	rootCmd.PersistentFlags().Bool(autoUpdateFlag, true, "enable auto update (default is true)")
+	rootCmd.PersistentFlags().BoolP(versionFlag, "v", false, "print version information and exit")
 }
