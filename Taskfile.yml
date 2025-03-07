@@ -13,7 +13,7 @@ vars:
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
   VERSION:
-    sh: jq -r '.["."]' .release-please-manifest.json
+    sh: sed -n 's/.*"\."\s*:\s*"\([0-9.]*\)".*/\1/p' .release-please-manifest.json
 
 tasks:
   build:

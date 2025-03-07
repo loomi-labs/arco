@@ -20,7 +20,8 @@ tasks:
       - cmd: rm -f *.syso
         platforms: [linux, darwin]
     vars:
-      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -X github.com/loomi-labs/arco/backend/app.Version=v{{.VERSION}} -H windowsgui"{{else}}-buildvcs=false -gcflags=all="-l" -ldflags="-X github.com/loomi-labs/arco/backend/app.Version=v{{.VERSION}}"{{end}}'
+      LD_FLAGS: '-X github.com/loomi-labs/arco/backend/app.Version=v{{.VERSION}}'
+      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s {{.LD_FLAGS}} -H windowsgui"{{else}}-buildvcs=false -gcflags=all="-l" -ldflags="{{.LD_FLAGS}}"{{end}}'
     env:
       GOOS: windows
       CGO_ENABLED: 0
