@@ -127,31 +127,6 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	}, nil
 }
 
-type Stringer interface {
-	String() string
-}
-
-func toTsEnums[T Stringer](states []T) []struct {
-	Value  T
-	TSName string
-} {
-	var allBs = make([]struct {
-		Value  T
-		TSName string
-	}, len(states))
-
-	for i, bs := range states {
-		allBs[i] = struct {
-			Value  T
-			TSName string
-		}{
-			Value:  bs,
-			TSName: bs.String(),
-		}
-	}
-	return allBs
-}
-
 func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
 	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
 
