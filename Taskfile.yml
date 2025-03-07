@@ -12,6 +12,8 @@ vars:
   APP_NAME: "arco"
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  VERSION:
+    sh: jq -r '.["."]' .release-please-manifest.json
 
 tasks:
   build:
