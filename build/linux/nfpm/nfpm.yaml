@@ -3,7 +3,7 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "wailsv3"
+name: "arco"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
@@ -17,12 +17,12 @@ license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/wailsv3"
-    dst: "/usr/local/bin/wailsv3"
+  - src: "./bin/arco"
+    dst: "/usr/local/bin/arco"
   - src: "./build/appicon-light.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/wailsv3.png"
-  - src: "./build/linux/wailsv3.desktop"
-    dst: "/usr/share/applications/wailsv3.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/arco.png"
+  - src: "./build/linux/arco.desktop"
+    dst: "/usr/share/applications/arco.desktop"
 
 depends:
   - gtk3
