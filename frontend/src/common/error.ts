@@ -1,7 +1,9 @@
 import { useToast } from "vue-toastification";
-import * as appClient from "../../wailsjs/go/app/AppClient";
 
-import { types } from "../../wailsjs/go/models";
+import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+
+
 
 const development = process.env.NODE_ENV === "development";
 

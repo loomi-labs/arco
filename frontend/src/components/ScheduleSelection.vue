@@ -1,8 +1,10 @@
 <script setup lang='ts'>
-import { backupschedule, ent } from "../../wailsjs/go/models";
 import { computed, ref, watchEffect } from "vue";
 import { getTime, setTime } from "../common/time";
 import { isEqual } from "@formkit/tempo";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
+
 
 /************
  * Types
@@ -27,11 +29,11 @@ const emitUpdate = "update:schedule";
 
 const schedule = ref<ent.BackupSchedule>(props.schedule);
 const originalSchedule = ref<ent.BackupSchedule>(copySchedule(props.schedule));
-const isScheduleEnabled = computed(() => schedule.value.mode !== backupschedule.Mode.disabled);
-const isHourly = computed(() => schedule.value.mode === backupschedule.Mode.hourly);
-const isDaily = computed(() => schedule.value.mode === backupschedule.Mode.daily);
-const isWeekly = computed(() => schedule.value.mode === backupschedule.Mode.weekly);
-const isMonthly = computed(() => schedule.value.mode === backupschedule.Mode.monthly);
+const isScheduleEnabled = computed(() => schedule.value.mode !== backupschedule.Mode.ModeDisabled);
+const isHourly = computed(() => schedule.value.mode === backupschedule.Mode.ModeHourly);
+const isDaily = computed(() => schedule.value.mode === backupschedule.Mode.ModeDaily);
+const isWeekly = computed(() => schedule.value.mode === backupschedule.Mode.ModeWeekly);
+const isMonthly = computed(() => schedule.value.mode === backupschedule.Mode.ModeMonthly);
 
 const dailyAtDateTime = defineModel("dailyAtDateTime", {
   get() {
@@ -106,7 +108,7 @@ function isScheduleEqual(schedule1: ent.BackupSchedule, schedule2: ent.BackupSch
 }
 
 function toggleIsScheduleEnabled() {
-  schedule.value.mode = isScheduleEnabled.value ? backupschedule.Mode.disabled : backupschedule.Mode.hourly;
+  schedule.value.mode = isScheduleEnabled.value ? backupschedule.Mode.ModeDisabled : backupschedule.Mode.ModeHourly;
 }
 
 function emitUpdateSchedule(schedule: ent.BackupSchedule) {
@@ -142,11 +144,11 @@ watchEffect(() => {
         <!-- Hourly -->
         <div class='flex justify-between space-x-2 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isHourly}'
-             @click='schedule.mode = backupschedule.Mode.hourly'>
+             @click='schedule.mode = backupschedule.Mode.ModeHourly'>
           <label for='hourly'>{{ $t("hour") }}</label>
           <input type='radio' name='backupFrequency' class='radio radio-secondary' id='hourly'
                  :disabled='!isScheduleEnabled'
-                 :value='backupschedule.Mode.hourly'
+                 :value='backupschedule.Mode.ModeHourly'
                  v-model='schedule.mode'>
         </div>
         <div class='divider divider-horizontal'></div>
@@ -154,12 +156,12 @@ watchEffect(() => {
         <!-- Daily -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isDaily}'
-             @click='schedule.mode = backupschedule.Mode.daily'>
+             @click='schedule.mode = backupschedule.Mode.ModeDaily'>
           <div class='flex justify-between space-x-2'>
             <label for='daily'>{{ $t("day") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='daily'
                    :disabled='!isScheduleEnabled'
-                   :value='backupschedule.Mode.daily'
+                   :value='backupschedule.Mode.ModeDaily'
                    v-model='schedule.mode'>
           </div>
           <input type='time' class='input input-bordered input-sm'
@@ -171,18 +173,18 @@ watchEffect(() => {
         <!-- Weekly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isWeekly}'
-             @click='schedule.mode = backupschedule.Mode.weekly'>
+             @click='schedule.mode = backupschedule.Mode.ModeWeekly'>
           <div class='flex justify-between space-x-2'>
             <label for='weekly'>{{ $t("week") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='weekly'
                    :disabled='!isScheduleEnabled'
-                   :value='backupschedule.Mode.weekly'
+                   :value='backupschedule.Mode.ModeWeekly'
                    v-model='schedule.mode'>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='weekday'
-                  @focus='schedule.mode = backupschedule.Mode.weekly'>
+                  @focus='schedule.mode = backupschedule.Mode.ModeWeekly'>
             <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
@@ -196,18 +198,18 @@ watchEffect(() => {
         <!-- Monthly -->
         <div class='flex flex-col space-y-3 w-40 rounded-lg p-2'
              :class='{"cursor-pointer hover:bg-secondary/50": isScheduleEnabled && !isMonthly}'
-             @click='schedule.mode = backupschedule.Mode.monthly'>
+             @click='schedule.mode = backupschedule.Mode.ModeMonthly'>
           <div class='flex justify-between space-x-2'>
             <label for='monthly'>{{ $t("month") }}</label>
             <input type='radio' name='backupFrequency' class='radio radio-secondary' id='monthly'
                    :disabled='!isScheduleEnabled'
-                   :value='backupschedule.Mode.monthly'
+                   :value='backupschedule.Mode.ModeMonthly'
                    v-model='schedule.mode'>
           </div>
           <select class='select select-bordered select-sm'
                   :disabled='!isScheduleEnabled'
                   v-model='monthday'
-                  @focus='schedule.mode = backupschedule.Mode.monthly'>
+                  @focus='schedule.mode = backupschedule.Mode.ModeMonthly'>
             <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
               {{ option }}
             </option>

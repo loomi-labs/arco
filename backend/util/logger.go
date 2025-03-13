@@ -1,43 +1,42 @@
 package util
 
 import (
-	"github.com/wailsapp/wails/v2/pkg/logger"
 	"go.uber.org/zap"
 )
 
-type zapLogWrapper struct {
+type ZapLogWrapper struct {
 	log *zap.SugaredLogger
 }
 
-func NewZapLogWrapper(logger *zap.SugaredLogger) logger.Logger {
-	return &zapLogWrapper{log: logger}
+func NewZapLogWrapper(logger *zap.SugaredLogger) *ZapLogWrapper {
+	return &ZapLogWrapper{log: logger}
 }
 
-func (z *zapLogWrapper) Print(message string) {
+func (z *ZapLogWrapper) Print(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Info(message)
 }
 
-func (z *zapLogWrapper) Trace(message string) {
+func (z *ZapLogWrapper) Trace(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Debug(message)
 }
 
-func (z *zapLogWrapper) Debug(message string) {
+func (z *ZapLogWrapper) Debug(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Debug(message)
 }
 
-func (z *zapLogWrapper) Info(message string) {
+func (z *ZapLogWrapper) Info(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Info(message)
 }
 
-func (z *zapLogWrapper) Warning(message string) {
+func (z *ZapLogWrapper) Warning(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Warn(message)
 }
 
-func (z *zapLogWrapper) Error(message string) {
+func (z *ZapLogWrapper) Error(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Errorw(message)
 }
 
-func (z *zapLogWrapper) Fatal(message string) {
+func (z *ZapLogWrapper) Fatal(message string) {
 	z.log.WithOptions(zap.AddCallerSkip(1)).Fatalw(message)
 }
 

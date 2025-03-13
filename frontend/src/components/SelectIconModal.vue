@@ -1,7 +1,8 @@
 <script setup lang='ts'>
-import { backupprofile } from "../../wailsjs/go/models";
 import { ref, useId, useTemplateRef, watch } from "vue";
 import { getIcon, Icon, icons } from "../common/icons";
+import * as backupprofile from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+
 
 /************
  * Types

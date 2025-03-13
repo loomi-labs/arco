@@ -1,0 +1,51 @@
+# Feel free to remove those if you don't want/need to use them.
+# Make sure to check the documentation at https://nfpm.goreleaser.com
+#
+# The lines below are called `modelines`. See `:help modeline`
+
+name: "arco"
+arch: ${GOARCH}
+platform: "linux"
+version: ""
+section: "default"
+priority: "extra"
+maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
+description: "A modern, user-friendly Borg backup client"
+vendor: "Raphael Thurnherr"
+homepage: "https://wails.io"
+license: "MIT"
+release: "1"
+
+contents:
+  - src: "./bin/arco"
+    dst: "/usr/local/bin/arco"
+  - src: "./build/appicon-light.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/arco.png"
+  - src: "./build/linux/arco.desktop"
+    dst: "/usr/share/applications/arco.desktop"
+
+depends:
+  - gtk3
+#  - libwebkit2gtk
+  - webkit2gtk-4.1
+
+# replaces:
+#   - foobar
+# provides:
+#   - bar
+# depends:
+#   - gtk3
+#   - libwebkit2gtk
+# recommends:
+#   - whatever
+# suggests:
+#   - something-else
+# conflicts:
+#   - not-foo
+#   - not-bar
+# changelog: "changelog.yaml"
+# scripts:
+#   preinstall: ./build/linux/nfpm/scripts/preinstall.sh
+#   postinstall: ./build/linux/nfpm/scripts/postinstall.sh
+#   preremove: ./build/linux/nfpm/scripts/preremove.sh
+#   postremove: ./build/linux/nfpm/scripts/postremove.sh

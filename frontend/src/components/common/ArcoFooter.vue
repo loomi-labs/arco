@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import * as appClient from "../../../wailsjs/go/app/AppClient";
-import { app } from "../../../wailsjs/go/models";
 import { showAndLogError } from "../../common/error";
 import { useToast } from "vue-toastification";
-import { BrowserOpenURL } from "../../../wailsjs/runtime";
+
+import * as appClient from "../../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as app from "../../../bindings/github.com/loomi-labs/arco/backend/app";
+
+import {Browser} from "@wailsio/runtime";
 
 /************
  * Variables
@@ -57,20 +59,20 @@ getAppInfo();
             <p class="mb-2 text-xs opacity-80">{{ appInfo.description }}</p>
             <div class="divider my-1"></div>
             <div class="flex flex-col gap-2">
-              <a @click="BrowserOpenURL(appInfo.websiteUrl)" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
+              <a @click="Browser.OpenURL(appInfo.websiteUrl)" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
                 </svg>
                 Website
               </a>
-              <a @click="BrowserOpenURL(appInfo.githubUrl)" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
+              <a @click="Browser.OpenURL(appInfo.githubUrl)" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-3" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2Z" />
                 </svg>
                 GitHub
               </a>
               <div class="text-xs flex items-center gap-1">
-                <a @click="BrowserOpenURL('mailto:mail@arco-backup.com')" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
+                <a @click="Browser.OpenURL('mailto:mail@arco-backup.com')" class="link link-info text-xs flex items-center gap-1 cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z" />
                   </svg>
@@ -87,12 +89,12 @@ getAppInfo();
                 <p class="text-base font-semibold mb-2">Ingredients</p>
                 <ul class="text-xs opacity-80 list-disc list-inside">
                   <li>A pinch of <span class="font-bold">Go</span> for the backend</li>
-                  <li>2 cups of <a @click="BrowserOpenURL('https://vuejs.org/')" class="link link-info cursor-pointer">Vue 3</a>, freshly brewed</li>
-                  <li>A splash of <a @click="BrowserOpenURL('https://tailwindcss.com/')" class="link link-info cursor-pointer">Tailwind CSS</a> with <a @click="BrowserOpenURL('https://daisyui.com/')" class="link link-info cursor-pointer">daisyUI</a></li>
-                  <li>A sprinkle of <a @click="BrowserOpenURL('https://entgo.io/')" class="link link-info cursor-pointer">Ent ORM</a> for data persistence</li>
+                  <li>2 cups of <a @click="Browser.OpenURL('https://vuejs.org/')" class="link link-info cursor-pointer">Vue 3</a>, freshly brewed</li>
+                  <li>A splash of <a @click="Browser.OpenURL('https://tailwindcss.com/')" class="link link-info cursor-pointer">Tailwind CSS</a> with <a @click="Browser.OpenURL('https://daisyui.com/')" class="link link-info cursor-pointer">daisyUI</a></li>
+                  <li>A sprinkle of <a @click="Browser.OpenURL('https://entgo.io/')" class="link link-info cursor-pointer">Ent ORM</a> for data persistence</li>
                   <li>Stored in a <span class="font-bold">SQLite</span> jar</li>
-                  <li><a @click="BrowserOpenURL('https://www.borgbackup.org/')" class="link link-info cursor-pointer">BorgBackup</a> as the secret sauce</li>
-                  <li>Baked with <a @click="BrowserOpenURL('https://wails.io/')" class="link link-info cursor-pointer">Wails</a> to create a native experience</li>
+                  <li><a @click="Browser.OpenURL('https://www.borgbackup.org/')" class="link link-info cursor-pointer">BorgBackup</a> as the secret sauce</li>
+                  <li>Baked with <a @click="Browser.OpenURL('https://wails.io/')" class="link link-info cursor-pointer">Wails</a> to deliver a delicious experience</li>
                 </ul>
               </div>
             </div>

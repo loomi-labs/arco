@@ -1,6 +1,4 @@
 <script setup lang='ts'>
-import * as repoClient from "../../wailsjs/go/app/RepositoryClient";
-import { ent, state } from "../../wailsjs/go/models";
 import { nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
@@ -13,11 +11,14 @@ import { getRepoType, RepoType, toHumanReadableSize } from "../common/repository
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
-import * as runtime from "../../wailsjs/runtime";
 import { repoStateChangedEvent } from "../common/events";
 import { Anchor, Page } from "../router";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { useToast } from "vue-toastification";
+import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import {Events} from "@wailsio/runtime";
 
 /************
  * Variables
@@ -69,13 +70,13 @@ async function getData() {
   try {
     loading.value = true;
 
-    repo.value = await repoClient.Get(repoId);
+    repo.value = await repoClient.Get(repoId) ?? ent.Repository.createFrom();
     name.value = repo.value.name;
 
     repoType.value = getRepoType(repo.value.location);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
-    deletableBackupProfiles.value = await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId) ?? [];
+    deletableBackupProfiles.value = (await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(r => r !== null) ?? [];
   } catch (error: any) {
     await showAndLogError("Failed to get repository data", error);
   }
@@ -92,7 +93,7 @@ async function getRepoState() {
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
     failedBackupRun.value = await repoClient.GetLastBackupErrorMsg(repoId);
 
-    lastArchive.value = await repoClient.GetLastArchiveByRepoId(repoId);
+    lastArchive.value = await repoClient.GetLastArchiveByRepoId(repoId) ?? undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get repository state", error);
   }
@@ -119,7 +120,7 @@ function resizeNameWidth() {
 async function saveIntegrityCheckSettings() {
   try {
     const result = await repoClient.SaveIntegrityCheckSettings(repoId, isIntegrityCheckEnabled.value);
-    repo.value.nextIntegrityCheck = result.nextIntegrityCheck;
+    repo.value.nextIntegrityCheck = result?.nextIntegrityCheck;
   } catch (error: any) {
     await showAndLogError("Failed to save integrity check settings", error);
   }
@@ -158,7 +159,7 @@ watch(loading, async () => {
   resizeNameWidth();
 });
 
-cleanupFunctions.push(runtime.EventsOn(repoStateChangedEvent(repoId), async () => await getRepoState()));
+cleanupFunctions.push(Events.On(repoStateChangedEvent(repoId), async () => await getRepoState()));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -225,23 +226,23 @@ onUnmounted(() => {
       </div>
 
       <div class='divider'></div>
-<!--      <div class='flex items-center justify-between mb-4'>-->
-<!--        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>-->
-<!--          <h3 class='text-xl font-semibold'>Run integrity checks</h3>-->
-<!--        </TooltipTextIcon>-->
-<!--        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'-->
-<!--               @change='saveIntegrityCheckSettings'>-->
-<!--      </div>-->
-<!--      <div class='divider'></div>-->
+      <!--      <div class='flex items-center justify-between mb-4'>-->
+      <!--        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>-->
+      <!--          <h3 class='text-xl font-semibold'>Run integrity checks</h3>-->
+      <!--        </TooltipTextIcon>-->
+      <!--        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'-->
+      <!--               @change='saveIntegrityCheckSettings'>-->
+      <!--      </div>-->
+      <!--      <div class='divider'></div>-->
       <div class='flex justify-end gap-2'>
         <button class='btn btn-outline btn-error'
                 @click='confirmRemoveModal?.showModal()'
-                :disabled='repoState.status !== state.RepoStatus.idle'
+                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
         >Remove
         </button>
         <button class='btn btn-outline btn-error'
                 @click='confirmDeleteModal?.showModal()'
-                :disabled='repoState.status !== state.RepoStatus.idle'
+                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
         >Delete permanently
         </button>
       </div>
@@ -289,7 +290,8 @@ onUnmounted(() => {
           <div class='flex gap-3 pt-5'>
             <button type='button' class='btn btn-sm btn-outline'
                     @click='confirmDeleteInput = ""; confirmDeleteModal?.close()'
-            >{{ $t("cancel") }}</button>
+            >{{ $t("cancel") }}
+            </button>
             <button type='button' class='btn btn-sm btn-error'
                     :disabled='confirmDeleteInput !== repo.name'
                     @click='deleteRepo()'

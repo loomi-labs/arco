@@ -13,11 +13,9 @@ import { Page, withId } from "../router";
 
 const router = useRouter();
 
-
 /************
  * Functions
  ************/
-
 
 /************
  * Lifecycle

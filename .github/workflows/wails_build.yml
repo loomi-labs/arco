@@ -23,18 +23,18 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      # Install tools
-      - name: Install tools
-        run: make install-tools
-      # Setup pnpm
+      # Install task
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # Install pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
-      # Install Wails
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-        shell: bash
+          version: 10
+      # Install Wails deps
       - name: Install Linux Wails deps
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
@@ -46,23 +46,17 @@ jobs:
 
       # Building step
       - name: Build App
-        run: make build
+        run: task build PRODUCTION=true
         shell: bash
         env:
           PLATFORM: ${{ matrix.build.platform }}
-      - name: Add macOS perms
-        if: runner.os == 'macOS'
-        run: chmod +x build/bin/*/Contents/MacOS/*
-        shell: bash
-      - name: Add Linux perms
-        if: runner.os  == 'Linux'
-        run: chmod +x build/bin/*
+      - name: Add execute permissions
+        run: chmod +x bin/*
         shell: bash
 
-      # Compress build artifact (only for Linux)
+      # Compress build artifact
       - name: Compress build artifact
-        if: runner.os  == 'Linux'
-        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
+        run: cd ./bin; zip -j ../${{ matrix.build.zip-name }}.zip arco
 
       # Package and Sign MacOS
 #      - name: Import Code-Signing Certificates for macOS
@@ -88,11 +82,11 @@ jobs:
 #        run: |
 #          echo "Signing Package"
 #          gon -log-level=info ./build/darwin/gon-sign.json
-      - name: Build .app zip file
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          ditto -c -k ./build/bin/arco.app ${{ matrix.build.zip-name }}.zip
+#      - name: Build .app zip file
+#        if: runner.os == 'macOS'
+#        shell: bash
+#        run: |
+#          ditto -c -k ./bin/arco.app ${{ matrix.build.zip-name }}.zip
 #      - name: Building Installer
 #        if: runner.os == 'macOS' && inputs.sign != 'false' && inputs.sign-macos-installer-id != '' && startsWith(github.ref, 'refs/tags/')
 #        shell: bash

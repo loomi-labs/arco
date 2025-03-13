@@ -1,0 +1,57 @@
+version: '3'
+
+includes:
+  common: ./build/Taskfile.yml
+
+vars:
+  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+
+tasks:
+  default:
+    deps:
+      - dev
+
+  dev:
+    summary: Runs the application in development mode
+    cmds:
+      - go tool wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+
+  go:update:
+    summary: Updates Go dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # Formatting & Linting
+  go:format:
+    summary: Formats Go code
+    deps:
+      - task: common:go:mod:tidy
+    cmds:
+      - go tool gofmt -l -w .
+
+  go:lint:
+    summary: Lints Go code
+    deps:
+      - task: common:go:mod:tidy
+    cmds:
+      - go tool golangci-lint run
+
+  # Testing
+  mockgen:
+    summary: Generates mock implementations
+    deps:
+      - task: common:go:mod:tidy
+    cmds:
+      - go tool mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
+      - go tool mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
+
+  test:
+    summary: Runs tests
+    deps:
+      - task: mockgen
+    preconditions:
+      - mkdir -p frontend/dist
+      - touch frontend/dist/index.html
+    cmds:
+      - go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)
