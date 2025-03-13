@@ -22,4 +22,4 @@ jobs:
           version: 3.x
       # Test & coverage report creation
       - name: Test & coverage report creation
-        run: task test
+        run: task dev:test

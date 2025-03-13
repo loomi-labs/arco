@@ -22,4 +22,4 @@ jobs:
           version: 3.x
       # Lint go files
       - name: Lint go files
-        run: task go:lint
+        run: task dev:go:lint
