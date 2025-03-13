@@ -20,6 +20,11 @@ jobs:
         uses: arduino/setup-task@v2
         with:
           version: 3.x
+      # Install Linux Wails deps
+      - name: Install Linux Wails deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
+        shell: bash
       # Test & coverage report creation
       - name: Test & coverage report creation
         run: task dev:test
