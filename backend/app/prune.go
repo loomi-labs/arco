@@ -440,7 +440,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 					SetWillBePruned(true).
 					Save(b.ctx)
 				if err != nil {
-					return 0, rollback(tx, fmt.Errorf("failed to update werwer: %w", err))
+					return 0, rollback(tx, fmt.Errorf("failed to update newnew: %w", err))
 				}
 
 				cntToFalse, err := tx.Archive.
