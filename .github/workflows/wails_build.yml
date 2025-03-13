@@ -46,7 +46,7 @@ jobs:
 
       # Building step
       - name: Build App
-        run: task build
+        run: task build PRODUCTION=true
         shell: bash
         env:
           PLATFORM: ${{ matrix.build.platform }}
