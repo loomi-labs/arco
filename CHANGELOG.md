@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.13.0](https://github.com/loomi-labs/arco/compare/v0.12.2...v0.13.0) (2025-03-13)
+
+
+### Features
+
+* add footer ([#145](https://github.com/loomi-labs/arco/issues/145)) ([2c7bf04](https://github.com/loomi-labs/arco/commit/2c7bf04681a5aaf6ed21c899b058555173dece55))
+* improve UI ([b934661](https://github.com/loomi-labs/arco/commit/b934661a8f523b1649a4c701417a4e5c58b43a54))
+* make data/schedule sections collapsible ([e0fba4a](https://github.com/loomi-labs/arco/commit/e0fba4a89ad8c564a5bc8a57dad4e1f49f3708b5))
+* upgrade to wails v3 ([#146](https://github.com/loomi-labs/arco/issues/146)) ([5d5f459](https://github.com/loomi-labs/arco/commit/5d5f459b55ea4db6ef2ac10a4ed5ada969c542f4))
+
+
+### Bug Fixes
+
+* layout glitch of pruning/deletion ([496f779](https://github.com/loomi-labs/arco/commit/496f779cbe61b3f04c4173509df401ede5cd68d4))
+* logging of create/prune command ([f8e1def](https://github.com/loomi-labs/arco/commit/f8e1defea57fd41b0a86c694c71fe46c38e64023))
+* logging of create/prune command ([4444957](https://github.com/loomi-labs/arco/commit/444495768ce43a1bcf003fc8c3b85a06596c6852))
+* show correct time for archives ([5e96eb3](https://github.com/loomi-labs/arco/commit/5e96eb341e85406f72e541004b548542326af632))
+
 ## [0.13.0](https://github.com/loomi-labs/arco/compare/v0.12.2...v0.13.0) (2025-02-28)
 
 
