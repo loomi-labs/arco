@@ -23,9 +23,11 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      # Install tools
-      - name: Install tools
-        run: make install-tools
+      # Install task
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
       # Setup pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -46,7 +48,7 @@ jobs:
 
       # Building step
       - name: Build App
-        run: make build
+        run: task build
         shell: bash
         env:
           PLATFORM: ${{ matrix.build.platform }}

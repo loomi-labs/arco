@@ -15,9 +15,11 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      # Install tools
-      - name: Install tools
-        run: make install-tools
+      # Install task
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
       # Test & coverage report creation
       - name: Test & coverage report creation
-        run: make test
+        run: task test
