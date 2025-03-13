@@ -82,7 +82,9 @@ async function getRepo() {
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
     failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
 
-    lastArchive.value = await repoClient.GetLastArchiveByBackupId(backupId) ?? undefined;
+    const archive = await repoClient.GetLastArchiveByBackupId(backupId) ?? undefined;
+    // Only set lastArchive if it has a valid ID (id > 0)
+    lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get repository", error);
   }
@@ -179,6 +181,7 @@ onUnmounted(() => {
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
+        <span v-else>-</span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
