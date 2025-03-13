@@ -55,7 +55,7 @@ jobs:
         shell: bash
       - name: Add Linux perms
         if: runner.os  == 'Linux'
-        run: chmod +x build/bin/*
+        run: chmod +x bin/*
         shell: bash
 
       # Compress build artifact (only for Linux)
