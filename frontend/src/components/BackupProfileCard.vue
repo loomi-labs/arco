@@ -133,7 +133,8 @@ onUnmounted(() => {
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
-          </span>
+            </span>
+            <span v-else>-</span>
           </div>
         </div>
         <div class='divider'></div>

@@ -93,7 +93,9 @@ async function getRepoState() {
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
     failedBackupRun.value = await repoClient.GetLastBackupErrorMsg(repoId);
 
-    lastArchive.value = await repoClient.GetLastArchiveByRepoId(repoId) ?? undefined;
+    const archive = await repoClient.GetLastArchiveByRepoId(repoId) ?? undefined;
+    // Only set lastArchive if it has a valid ID (id > 0)
+    lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: any) {
     await showAndLogError("Failed to get repository state", error);
   }
@@ -213,6 +215,7 @@ onUnmounted(() => {
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
+        <span v-else>-</span>
       </div>
       <div class='divider'></div>
       <div class='flex justify-between'>
