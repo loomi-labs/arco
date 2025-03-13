@@ -50,19 +50,14 @@ jobs:
         shell: bash
         env:
           PLATFORM: ${{ matrix.build.platform }}
-      - name: Add macOS perms
-        if: runner.os == 'macOS'
-        run: chmod +x bin/*/Contents/MacOS/*
-        shell: bash
-      - name: Add Linux perms
-        if: runner.os  == 'Linux'
+      - name: Add execute permissions
         run: chmod +x bin/*
         shell: bash
 
       # Compress build artifact (only for Linux)
       - name: Compress build artifact
         if: runner.os  == 'Linux'
-        run: cd ./bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
+        run: cd ./bin; zip -j ../${{ matrix.build.zip-name }}.zip arco
 
       # Package and Sign MacOS
 #      - name: Import Code-Signing Certificates for macOS
