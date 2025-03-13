@@ -20,6 +20,7 @@ jobs:
         uses: arduino/setup-task@v2
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Install Linux Wails deps
       - name: Install Linux Wails deps
         if: runner.os == 'Linux'
