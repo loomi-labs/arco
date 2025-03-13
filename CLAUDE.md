@@ -1,18 +1,27 @@
 # Arco Development Commands
 
 ## Build & Run
-- Build: `make build`
-- Dev: `make dev`
-- Run tests: `go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)`
+- Build: `task build`
+- Dev: `task dev`
+- Run tests: `task test`
 - Run single test: `go test -v -run TestName ./path/to/package`
-- Format: `make format`
-- Lint: `make lint`
-- Generate ent schema: `make generate-models`
+- Format Go code: `task go:format`
+- Lint Go code: `task go:lint`
+- Update Go dependencies: `task go:update`
+
+## Database Operations
+- Generate Ent models: `task generate:models`
+- Create new Ent model: `task create:ent:model -- ModelName`
+- Generate migrations: `task generate:migrations`
+- Apply migrations: `task apply:migrations`
+- Show migration status: `task show:migrations`
+- Create new migration: `task create:migration -- MigrationName`
 
 ## Frontend
-- Run frontend: `cd frontend && pnpm run dev`
-- Build frontend: `cd frontend && pnpm run build`
-- TypeScript checks: `cd frontend && pnpm run check`
+- Install dependencies: `task install:frontend:deps`
+- Build frontend: `task build:frontend`
+- Run frontend dev server: `task dev:frontend`
+- Generate bindings: `task generate:bindings`
 
 ## Code Style Guide
 - Go: Use standard Go formatting/linting conventions

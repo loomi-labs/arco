@@ -1,14 +1,16 @@
 <script setup lang='ts'>
 import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
-import { app, ent } from "../../wailsjs/go/models";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import * as backupClient from "../../wailsjs/go/app/BackupClient";
 import { showAndLogError } from "../common/error";
 import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
 import { useToast } from "vue-toastification";
+import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+
 
 /************
  * Types
@@ -130,7 +132,7 @@ function toPruningRule() {
 
 async function savePruningRule() {
   try {
-    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value);
+    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value) ?? ent.PruningRule.createFrom();
     emits(emitUpdatePruningRule, result);
   } catch (error: any) {
     await showAndLogError("Failed to save pruning rule", error);

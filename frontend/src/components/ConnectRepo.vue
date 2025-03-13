@@ -1,11 +1,12 @@
 <script setup lang='ts'>
-import { ent } from "../../wailsjs/go/models";
 import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+
 
 /************
  * Types
@@ -89,7 +90,7 @@ function connectOrDisconnectRepo(repo: ent.Repository) {
     return;
   }
 
-  if (connectedRepos.value.some(r => r.id === repo.id)) {
+  if (connectedRepos.value.filter(r => r !== null).some(r => r.id === repo.id)) {
     connectedRepos.value = connectedRepos.value.filter(r => r.id !== repo.id);
   } else {
     connectedRepos.value.push(repo);

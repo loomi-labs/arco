@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "{{.Info.ProductVersion}}"
+		"file_version": ""
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "{{.Info.ProductVersion}}",
-			"CompanyName": "{{.Info.CompanyName}}",
-			"FileDescription": "{{.Info.ProductName}}",
-			"LegalCopyright": "{{.Info.Copyright}}",
-			"ProductName": "{{.Info.ProductName}}",
-			"Comments": "{{.Info.Comments}}"
+			"ProductVersion": "",
+			"CompanyName": "Raphael Thurnherr",
+			"FileDescription": "A modern, user-friendly Borg backup client",
+			"LegalCopyright": "(c) 2024, Raphael Thurnherr",
+			"ProductName": "Arco",
+			"Comments": "Desktop client for BorgBackup"
 		}
 	}
 }
