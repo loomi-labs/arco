@@ -1,0 +1,85 @@
+From ef0075cabfe8bb0559e999ea5a92001f78a6217d Mon Sep 17 00:00:00 2001
+From: rapha <dev@uupi.cloud>
+Date: Thu, 13 Mar 2025 13:06:14 +0100
+Subject: [PATCH] fix: CI/CD
+
+---
+ .github/workflows/lint.yml        |  2 +-
+ .github/workflows/test.yml        |  2 +-
+ .github/workflows/wails_build.yml | 15 ++++++---------
+ 3 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/.github/workflows/lint.yml b/.github/workflows/lint.yml
+index d6b4ec0..29edc57 100644
+--- a/.github/workflows/lint.yml
++++ b/.github/workflows/lint.yml
+@@ -22,4 +22,4 @@ jobs:
+           version: 3.x
+       # Lint go files
+       - name: Lint go files
+-        run: task go:lint
++        run: task dev:go:lint
+diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml
+index 8118a3e..b84f3e4 100644
+--- a/.github/workflows/test.yml
++++ b/.github/workflows/test.yml
+@@ -22,4 +22,4 @@ jobs:
+           version: 3.x
+       # Test & coverage report creation
+       - name: Test & coverage report creation
+-        run: task test
+\ No newline at end of file
++        run: task dev:test
+diff --git a/.github/workflows/wails_build.yml b/.github/workflows/wails_build.yml
+index af51b47..b70adc5 100644
+--- a/.github/workflows/wails_build.yml
++++ b/.github/workflows/wails_build.yml
+@@ -28,15 +28,12 @@ jobs:
+         uses: arduino/setup-task@v2
+         with:
+           version: 3.x
+-      # Setup pnpm
++      # Install pnpm
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 9
+-      # Install Wails
+-      - name: Install Wails
+-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+-        shell: bash
++          version: 10
++      # Install Wails deps
+       - name: Install Linux Wails deps
+         if: runner.os == 'Linux'
+         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
+@@ -54,7 +51,7 @@ jobs:
+           PLATFORM: ${{ matrix.build.platform }}
+       - name: Add macOS perms
+         if: runner.os == 'macOS'
+-        run: chmod +x build/bin/*/Contents/MacOS/*
++        run: chmod +x bin/*/Contents/MacOS/*
+         shell: bash
+       - name: Add Linux perms
+         if: runner.os  == 'Linux'
+@@ -64,7 +61,7 @@ jobs:
+       # Compress build artifact (only for Linux)
+       - name: Compress build artifact
+         if: runner.os  == 'Linux'
+-        run: cd ./build/bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
++        run: cd ./bin; zip -j ../../${{ matrix.build.zip-name }}.zip arco
+ 
+       # Package and Sign MacOS
+ #      - name: Import Code-Signing Certificates for macOS
+@@ -94,7 +91,7 @@ jobs:
+         if: runner.os == 'macOS'
+         shell: bash
+         run: |
+-          ditto -c -k ./build/bin/arco.app ${{ matrix.build.zip-name }}.zip
++          ditto -c -k ./bin/arco.app ${{ matrix.build.zip-name }}.zip
+ #      - name: Building Installer
+ #        if: runner.os == 'macOS' && inputs.sign != 'false' && inputs.sign-macos-installer-id != '' && startsWith(github.ref, 'refs/tags/')
+ #        shell: bash
+-- 
+2.48.1
+
