@@ -21,10 +21,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -456,17 +454,6 @@ func (a *App) installBorgBinary() error {
 
 	// Download the binary
 	return util.DownloadFile(a.config.BorgPath, binary.Url)
-}
-
-// RegisterSignalHandler listens to interrupt signals and shuts down the application on receiving one
-func (a *App) registerSignalHandler() {
-	// TODO: do we still need this?
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		<-signalChan
-		a.Shutdown()
-	}()
 }
 
 // rollback calls to tx.Rollback and wraps the given error
