@@ -310,10 +310,6 @@ func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseA
 func (a *App) extractBinary(zipReader *zip.Reader, path string) error {
 	arcoFilePath := "arco"
 
-	if util.IsMacOS() {
-		arcoFilePath = "Contents/MacOS/arco"
-	}
-
 	open, err := zipReader.Open(arcoFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", arcoFilePath, err)
