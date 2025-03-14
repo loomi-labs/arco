@@ -129,11 +129,15 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 
 func showOrCreateMainWindow(config *types.Config) {
 	wailsApp := application.Get()
-	if wailsApp.GetWindowByName(types.WindowTitle) != nil {
-		wailsApp.GetWindowByName(types.WindowTitle).Show()
+	window := wailsApp.GetWindowByName(types.WindowTitle)
+	if window != nil {
+		window.Show()
+		window.Focus()
+		return
 	}
 
 	wailsApp.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		Name:  types.WindowTitle,
 		Title: types.WindowTitle,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
@@ -215,11 +219,11 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	// Add menu
 	menu := wailsApp.NewMenu()
 	menu.Add("Open").OnClick(func(_ *application.Context) {
-		log.Debug("Opening %s", app.Name)
+		log.Debugf("Opening %s", app.Name)
 		showOrCreateMainWindow(config)
 	})
 	menu.Add("Quit").OnClick(func(_ *application.Context) {
-		log.Debug("Quitting %s", app.Name)
+		log.Debugf("Quitting %s", app.Name)
 		arco.SetQuit()
 		wailsApp.Quit()
 	})
