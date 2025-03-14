@@ -16,23 +16,41 @@
 
 ## About
 
-Arco is a backup tool that aims to provide a simple and beautiful interface to manage your backups. 
+Arco is a backup tool that provides a simple and beautiful GUI for managing backups.
 
 It uses [Borg](https://borgbackup.readthedocs.io/en/stable/index.html) and is compatible with any Borg repository starting from version 1.2.7.
 
-## Motivation
+Checkout the [website](https://arco-backup.com) for more information.
 
-I was looking for an easy-to-use, open-source backup tool that allows me to save all my data encrypted in the cloud.<br>
-I found Borg, which is a great tool, but it does not have a graphical interface. I tried some of the available GUIs, but none of them satisfied me fully. So I decided to create my own.
+## Installation
 
-## Prerequisites
+### MacOS
+```bash
+sh -c "$(curl -sSL 'https://arco-backup.com/macos/install.sh')"
+```
+
+### Linux
+```bash
+sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')"
+```
+
+## Features
+- Step-by-step process to create a backup profile
+- Automatic backups based on schedules
+- Backup with encryption, compression, and deduplication
+- Backup to local or remote repositories
+- Restore backups
+
+## Development
+
+### Prerequisites
 
 Before building or developing Arco, you need to install the following:
 
 1. [Go](https://go.dev/doc/install) - Programming language
 2. [Wails v3](https://v3alpha.wails.io/) - Framework for building desktop applications with Go and web technologies
    ```bash
-   # You can install Wails v3 system-wide (or you just use go tool wails
+   # You can install Wails v3 system-wide (or you just use go tool wails3)
    go install github.com/wailsapp/wails/v3/cmd/wails3@latest
    ```
 3. [pnpm](https://pnpm.io/installation) - Package manager for the frontend
@@ -45,7 +63,7 @@ Before building or developing Arco, you need to install the following:
    sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
    ```
 
-## Building
+### Building
 
 To build a redistributable, run the following command in the project directory:
 ```bash
@@ -54,7 +72,7 @@ task build
 
 This will build both the frontend and backend, and package the application for your platform.
 
-## Live Development
+### Live Development
 
 To run in live development mode, run:
 ```bash
@@ -68,6 +86,6 @@ For frontend-only development, you can run:
 task dev:frontend
 ```
 
-## Additional Commands
+### Additional Commands
 
 For more development commands, see the [CLAUDE.md](CLAUDE.md) file, which contains a comprehensive list of all available commands for building, testing, and developing Arco.
