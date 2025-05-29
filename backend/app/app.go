@@ -21,10 +21,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -167,6 +165,7 @@ func (a *App) Startup(ctx context.Context) {
 		return
 	}
 	a.db = db
+	a.config.Migrations = nil // Free up memory
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -177,9 +176,6 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Set a general status for the rest of the startup process
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
-
-	// Register signal handler
-	//a.registerSignalHandler()
 
 	// Save mount states
 	a.RepoClient().setMountStates()
@@ -266,7 +262,10 @@ func (a *App) updateArco() (bool, error) {
 }
 
 func (a *App) getLatestRelease(client *github.Client) (*github.RepositoryRelease, error) {
-	release, _, err := client.Repositories.GetLatestRelease(a.ctx, "loomi-labs", "arco")
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
+
+	release, _, err := client.Repositories.GetLatestRelease(ctx, "loomi-labs", "arco")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest release: %w", err)
 	}
@@ -294,6 +293,7 @@ func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseA
 	if readCloser == nil {
 		return fmt.Errorf("failed to download release asset: readCloser is nil")
 	}
+	defer readCloser.Close()
 
 	var buf bytes.Buffer
 	size, err := io.Copy(&buf, readCloser)
@@ -306,15 +306,13 @@ func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseA
 	if err != nil {
 		return fmt.Errorf("failed to read zip zipReader: %w", err)
 	}
+	defer buf.Reset()
+
 	return a.extractBinary(zipReader, path)
 }
 
 func (a *App) extractBinary(zipReader *zip.Reader, path string) error {
 	arcoFilePath := "arco"
-
-	if util.IsMacOS() {
-		arcoFilePath = "Contents/MacOS/arco"
-	}
 
 	open, err := zipReader.Open(arcoFilePath)
 	if err != nil {
@@ -456,17 +454,6 @@ func (a *App) installBorgBinary() error {
 
 	// Download the binary
 	return util.DownloadFile(a.config.BorgPath, binary.Url)
-}
-
-// RegisterSignalHandler listens to interrupt signals and shuts down the application on receiving one
-func (a *App) registerSignalHandler() {
-	// TODO: do we still need this?
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		<-signalChan
-		a.Shutdown()
-	}()
 }
 
 // rollback calls to tx.Rollback and wraps the given error

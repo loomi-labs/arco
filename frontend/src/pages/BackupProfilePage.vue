@@ -316,15 +316,15 @@ watch(loading, async () => {
     </div>
 
     <!-- Data Section -->
-    <div tabindex='0' class='collapse collapse-arrow' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
+    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
            @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
-        <span class='ml-2 transition-opacity duration-500'
+        <span class='ml-2 transition-all duration-1000 ease-in-out'
               :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{ dataSectionDetails }}</span>
       </div>
 
-      <div class='collapse-content peer-hover:bg-base-300'>
+      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
         <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
           <!-- Data to backup Card -->
           <DataSelection
@@ -346,15 +346,15 @@ watch(loading, async () => {
     </div>
 
     <!-- Schedule Section -->
-    <div tabindex='0' class='collapse collapse-arrow' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300'
+    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
            @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2 transition-opacity duration-500'
+        <span class='ml-2 transition-all duration-1000 ease-in-out'
               :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{ scheduleSectionDetails }}</span>
       </div>
 
-      <div class='collapse-content peer-hover:bg-base-300'>
+      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
         <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
           <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
                              @update:schedule='saveSchedule' />

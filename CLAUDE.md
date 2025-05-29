@@ -48,40 +48,39 @@
     ```vue
     <script setup lang='ts'>
     # ... add imports here
-  
+
     /************
      * Types
      ************/
-    
+
     # ... add types, enums, interfaces here
-    
+
     /************
      * Variables
      ************/
-    
+
     # ... add variables here
-    
+
     /************
      * Functions
      ************/
-    
+
     # ... add functions here
-    
+
     /************
      * Lifecycle
      ************/
-    
+
     # ... add lifecycle hooks, watchers, etc. here
-    
+
     </script>
-    
+
     <template>
       # ... add template here
     </template>
     ```
 
 ## Linear
-- Queries: always use "tech" as teamName
 - Assignee: use "dev@uupi.cloud" for new issues
 - Fix/Bugs: use "Bug" label
 - Statuses: is one of ["Backlog", "Todo", "In Progress", "Code Review", "Done", "Canceled", "Duplicate"]
