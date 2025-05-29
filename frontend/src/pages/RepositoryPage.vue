@@ -216,13 +216,13 @@ onUnmounted(() => {
         <div
           tabindex='0'
           role='button'
-          class='btn btn-ghost btn-circle'
+          class='btn btn-square'
         >
           <EllipsisVerticalIcon class='size-6' />
         </div>
         <ul
           tabindex='0'
-          class='dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10'
+          class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'
         >
           <li>
             <button
@@ -231,7 +231,7 @@ onUnmounted(() => {
                                 repoState.status !==
                                 state.RepoStatus.RepoStatusIdle
                             '
-              class='text-error'
+              class='text-error hover:bg-error hover:text-error-content'
             >
               Remove Repository
             </button>
@@ -243,7 +243,7 @@ onUnmounted(() => {
                                 repoState.status !==
                                 state.RepoStatus.RepoStatusIdle
                             '
-              class='text-error'
+              class='text-error hover:bg-error hover:text-error-content'
             >
               Delete Permanently
             </button>
