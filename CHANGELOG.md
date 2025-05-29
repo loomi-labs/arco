@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/loomi-labs/arco/compare/v0.13.0...v0.13.1) (2025-05-29)
+
+
+### Bug Fixes
+
+* Show last backup only for current backup profile ([#153](https://github.com/loomi-labs/arco/issues/153)) ([7489f0d](https://github.com/loomi-labs/arco/commit/7489f0db3bb093567d8e27320c9f4072094c4f1b))
+
 ## [0.13.0](https://github.com/loomi-labs/arco/compare/v0.12.2...v0.13.0) (2025-03-13)
 
 
