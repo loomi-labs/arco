@@ -63,6 +63,10 @@ const archiveMountStates = ref<Map<number, types.MountState>>(new Map()); // Map
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
+const selectedArchives = ref<Set<number>>(new Set());
+const isAllSelected = ref<boolean>(false);
+const confirmDeleteMultipleModalKey = useId();
+const confirmDeleteMultipleModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteMultipleModalKey);
 const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
@@ -300,6 +304,47 @@ async function validateName(archiveId: number) {
   }
 }
 
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedArchives.value.clear();
+  } else {
+    archives.value.forEach(archive => {
+      selectedArchives.value.add(archive.id);
+    });
+  }
+  isAllSelected.value = !isAllSelected.value;
+}
+
+function toggleArchiveSelection(archiveId: number) {
+  if (selectedArchives.value.has(archiveId)) {
+    selectedArchives.value.delete(archiveId);
+  } else {
+    selectedArchives.value.add(archiveId);
+  }
+  
+  // Update the select all checkbox state
+  isAllSelected.value = selectedArchives.value.size === archives.value.length && archives.value.length > 0;
+}
+
+async function deleteSelectedArchives() {
+  try {
+    progressSpinnerText.value = "Deleting archives";
+    const archiveIds = Array.from(selectedArchives.value);
+    
+    for (const archiveId of archiveIds) {
+      await repoClient.DeleteArchive(archiveId);
+      markArchiveAndFadeOut(archiveId);
+    }
+    
+    selectedArchives.value.clear();
+    isAllSelected.value = false;
+  } catch (error: any) {
+    await showAndLogError("Failed to delete archives", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
 const customDateRangeShortcuts = () => {
   return [
     {
@@ -373,10 +418,14 @@ watch([() => props.repoStatus, () => props.repo], async () => {
   await getPaginatedArchives();
   await getArchiveMountStates();
   await getBackupProfileFilterOptions();
+  selectedArchives.value.clear();
+  isAllSelected.value = false;
 });
 
 watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
+  selectedArchives.value.clear();
+  isAllSelected.value = false;
 });
 
 cleanupFunctions.push(Events.On(archivesChanged(props.repo.id), getPaginatedArchives));
@@ -393,20 +442,28 @@ onUnmounted(() => {
       <table class='w-full table table-xs table-zebra'>
         <thead>
         <tr>
-          <th :colspan='showBackupProfileColumn ? 4 : 3'>
+          <th :colspan='showBackupProfileColumn ? 5 : 4'>
             <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
           <th class='text-right'>
-            <button class='btn btn-ghost btn-circle btn-info'
-                    :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
-                    @click='refreshArchives'>
-              <ArrowPathIcon class='size-6'></ArrowPathIcon>
-            </button>
+            <div class='flex justify-end gap-2'>
+              <button v-if='selectedArchives.size > 0'
+                      class='btn btn-sm btn-error'
+                      @click='confirmDeleteMultipleModal?.showModal()'>
+                <TrashIcon class='size-4' />
+                {{ $t("delete") }} ({{ selectedArchives.size }})
+              </button>
+              <button class='btn btn-ghost btn-circle btn-info'
+                      :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
+                      @click='refreshArchives'>
+                <ArrowPathIcon class='size-6'></ArrowPathIcon>
+              </button>
+            </div>
           </th>
         </tr>
         <tr>
-          <th :colspan='showBackupProfileColumn ? 5 : 4'>
+          <th :colspan='showBackupProfileColumn ? 6 : 5'>
             <div class='flex items-end gap-3'>
               <!-- Date filter -->
               <label class='form-control w-full'>
@@ -453,6 +510,13 @@ onUnmounted(() => {
           </th>
         </tr>
         <tr>
+          <th class='w-12'>
+            <input type='checkbox'
+                   class='checkbox checkbox-sm'
+                   :checked='isAllSelected'
+                   @change='toggleSelectAll'
+                   :disabled='archives.length === 0' />
+          </th>
           <th>{{ $t("name") }}</th>
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th class='min-w-40 lg:min-w-48'>Creation time</th>
@@ -467,6 +531,14 @@ onUnmounted(() => {
         <tr v-for='(archive, index) in archives' :key='index'
             :class='{ "transition-none bg-red-100": deletedArchive === archive.id }'
             :style='{ transition: "opacity 1s", opacity: deletedArchive === archive.id ? 0 : 1 }'>
+          <!-- Checkbox -->
+          <td>
+            <input type='checkbox'
+                   class='checkbox checkbox-sm'
+                   :checked='selectedArchives.has(archive.id)'
+                   @change='toggleArchiveSelection(archive.id)'
+                   :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle' />
+          </td>
           <!-- Name -->
           <td class='flex flex-col'>
             <div class='flex items-center justify-between'>
@@ -532,7 +604,7 @@ onUnmounted(() => {
         </tr>
         <!-- Filler row (this is a hack to take up the same amount of space even if there are not enough rows) -->
         <tr v-for='index in (pagination.pageSize - archives.length)' :key='`empty-${index}`'>
-          <td colspan='5'>
+          <td :colspan='showBackupProfileColumn ? 6 : 5'>
             <button class='btn btn-sm invisible' disabled>
               <TrashIcon class='size-4' />
             </button>
@@ -579,6 +651,18 @@ onUnmounted(() => {
                 @close='archiveToBeDeleted = undefined'
   >
     <p>{{ $t("confirm_delete_archive") }}</p>
+  </ConfirmModal>
+  
+  <ConfirmModal :ref='confirmDeleteMultipleModalKey'
+                title='Delete selected archives'
+                show-exclamation
+                :confirmText='$t("delete")'
+                confirm-class='btn-error'
+                @confirm='deleteSelectedArchives()'
+                @close='selectedArchives.clear()'
+  >
+    <p>Are you sure you want to delete {{ selectedArchives.size }} selected archive{{ selectedArchives.size > 1 ? 's' : '' }}?</p>
+    <p class='mt-2 text-sm text-error'>This action cannot be undone.</p>
   </ConfirmModal>
 </template>
 
