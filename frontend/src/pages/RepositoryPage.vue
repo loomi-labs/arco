@@ -2,7 +2,7 @@
 import { nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { showAndLogError } from "../common/error";
-import { PencilIcon } from "@heroicons/vue/24/solid";
+import { PencilIcon, EllipsisVerticalIcon } from "@heroicons/vue/24/solid";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as zod from "zod";
@@ -175,141 +175,168 @@ onUnmounted(() => {
     <div class='loading loading-ring loading-lg'></div>
   </div>
   <div v-else class='container mx-auto text-left pt-10'>
-    <!-- Data Section -->
-    <div class='flex items-center justify-between mb-4'>
+    <!-- Header Section -->
+    <div class='flex items-center justify-between mb-8'>
       <!-- Name -->
       <label class='flex items-center gap-2'
              :class='`text-arco-purple-500`'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent border-transparent w-10'
+               class='text-3xl font-bold bg-transparent border-transparent w-10'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
                @input='resizeNameWidth'
         />
-        <PencilIcon class='size-4' />
-        <span class='text-error'>{{ errors.name }}</span>
+        <PencilIcon class='size-5' />
+        <span class='text-error text-sm'>{{ errors.name }}</span>
       </label>
+      
+      <!-- Actions Dropdown -->
+      <div class='dropdown dropdown-end'>
+        <div tabindex='0' role='button' class='btn btn-ghost btn-circle'>
+          <EllipsisVerticalIcon class='size-6' />
+        </div>
+        <ul tabindex='0' class='dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10'>
+          <li>
+            <button @click='confirmRemoveModal?.showModal()'
+                    :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
+                    class='text-warning'>
+              Remove Repository
+            </button>
+          </li>
+          <li>
+            <button @click='confirmDeleteModal?.showModal()'
+                    :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
+                    class='text-error'>
+              Delete Permanently
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
-    <div class='flex flex-col w-full py-6'>
-      <div class='flex justify-between'>
-        <div>{{ $t("archives") }}</div>
-        <div>{{ nbrOfArchives }}</div>
-      </div>
-      <div class='divider'></div>
-      <div class='flex justify-between'>
-        <div>{{ $t("location") }}</div>
-        <div class='flex items-center gap-4'>
-          <span>{{ repo.location }}</span>
-          <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
+    <!-- Repository Info Cards -->
+    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
+      <!-- Archives Card -->
+      <div class='card bg-base-100 shadow-xl'>
+        <div class='card-body'>
+          <h3 class='card-title text-lg'>{{ $t("archives") }}</h3>
+          <p class='text-3xl font-bold text-primary dark:text-white'>{{ nbrOfArchives }}</p>
         </div>
-      </div>
-      <div class='divider'></div>
-      <div class='flex justify-between'>
-        <div>{{ $t("last_backup") }}</div>
-        <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-          <span class='badge badge-outline badge-error'>{{ $t("failed") }}</span>
-        </span>
-        <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
-        </span>
-        <span v-else>-</span>
-      </div>
-      <div class='divider'></div>
-      <div class='flex justify-between'>
-        <div>{{ $t("total_size") }}</div>
-        <div>{{ totalSize }}</div>
-      </div>
-      <div class='divider'></div>
-      <div class='flex justify-between'>
-        <div>{{ $t("size_on_disk") }}</div>
-        <div>{{ sizeOnDisk }}</div>
       </div>
 
-      <div class='divider'></div>
-      <!--      <div class='flex items-center justify-between mb-4'>-->
-      <!--        <TooltipTextIcon text='Integrity checks help you to identify data corruptions of your backups'>-->
-      <!--          <h3 class='text-xl font-semibold'>Run integrity checks</h3>-->
-      <!--        </TooltipTextIcon>-->
-      <!--        <input type='checkbox' class='toggle toggle-secondary self-end' v-model='isIntegrityCheckEnabled'-->
-      <!--               @change='saveIntegrityCheckSettings'>-->
-      <!--      </div>-->
-      <!--      <div class='divider'></div>-->
-      <div class='flex justify-end gap-2'>
-        <button class='btn btn-outline btn-error'
-                @click='confirmRemoveModal?.showModal()'
-                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
-        >Remove
-        </button>
-        <button class='btn btn-outline btn-error'
-                @click='confirmDeleteModal?.showModal()'
-                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
-        >Delete permanently
-        </button>
+      <!-- Storage Card -->
+      <div class='card bg-base-100 shadow-xl'>
+        <div class='card-body'>
+          <h3 class='card-title text-lg'>Storage</h3>
+          <div class='space-y-2'>
+            <div class='flex justify-between items-center'>
+              <span class='text-sm opacity-70'>{{ $t("total_size") }}</span>
+              <span class='font-semibold'>{{ totalSize }}</span>
+            </div>
+            <div class='flex justify-between items-center'>
+              <span class='text-sm opacity-70'>{{ $t("size_on_disk") }}</span>
+              <span class='font-semibold'>{{ sizeOnDisk }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <ConfirmModal :ref='confirmRemoveModalKey'
-                    title='Remove repository'
-                    show-exclamation
-                    confirm-text='Remove repository'
-                    confirm-class='btn-error'
-                    @confirm='removeRepo()'>
-        <div class='flex flex-col gap-2'>
-          <p>Are you sure you want to remove this repository?</p>
-          <p>Removing a repository will not delete any backups stored in it. You can add it back later.</p>
-          <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
-            will also be removed.</p>
-          <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be removed:
-            <ul class='list-disc font-semibold pl-5'>
-              <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
-            </ul>
+      <!-- Last Backup Card -->
+      <div class='card bg-base-100 shadow-xl'>
+        <div class='card-body'>
+          <h3 class='card-title text-lg'>{{ $t("last_backup") }}</h3>
+          <div class='flex items-center h-full'>
+            <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
+              <span class='badge badge-error'>{{ $t("failed") }}</span>
+            </span>
+            <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
+              <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+            </span>
+            <span v-else class='text-lg opacity-50'>-</span>
           </div>
         </div>
-      </ConfirmModal>
-      <ConfirmModal :ref='confirmDeleteModalKey'
-                    title='Delete repository'
-                    show-exclamation
-                    @close='confirmDeleteInput = ""'
-      >
-        <div class='flex flex-col gap-2'>
-          <p>Are you sure you want to delete this repository?</p>
-          <p>This action is <span class='font-semibold'>irreversible</span> and will <span class='font-semibold'>delete all backups</span>
-            stored in this repository!</p>
-          <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
-            will also be deleted!</p>
-          <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be deleted:
-            <ul class='list-disc font-semibold pl-5'>
-              <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
-            </ul>
-          </div>
-          <p class='pt-2'>Type <span class='italic font-semibold'>{{ repo.name }}</span> to confirm.</p>
-          <div class='flex items-center gap-2'>
-            <input type='text' class='input input-sm input-bordered' v-model='confirmDeleteInput' />
-          </div>
-        </div>
-        <template v-slot:actionButtons>
-          <div class='flex gap-3 pt-5'>
-            <button type='button' class='btn btn-sm btn-outline'
-                    @click='confirmDeleteInput = ""; confirmDeleteModal?.close()'
-            >{{ $t("cancel") }}
-            </button>
-            <button type='button' class='btn btn-sm btn-error'
-                    :disabled='confirmDeleteInput !== repo.name'
-                    @click='deleteRepo()'
-            >Delete repository
-            </button>
-          </div>
-        </template>
-      </ConfirmModal>
+      </div>
     </div>
 
+    <!-- Repository Details Card -->
+    <div class='card bg-base-100 shadow-xl mb-8'>
+      <div class='card-body'>
+        <h3 class='card-title mb-4'>Repository Details</h3>
+        <div class='space-y-4'>
+          <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
+            <span class='font-medium'>{{ $t("location") }}</span>
+            <div class='flex items-center gap-2'>
+              <span class='text-sm opacity-70 break-all'>{{ repo.location }}</span>
+              <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archives Section -->
     <ArchivesCard :repo='repo'
                   :repo-status='repoState.status'
                   :highlight='false'
                   :show-backup-profile-column='true'>
     </ArchivesCard>
+
+    <!-- Modals -->
+    <ConfirmModal :ref='confirmRemoveModalKey'
+                  title='Remove repository'
+                  show-exclamation
+                  confirm-text='Remove repository'
+                  confirm-class='btn-error'
+                  @confirm='removeRepo()'>
+      <div class='flex flex-col gap-2'>
+        <p>Are you sure you want to remove this repository?</p>
+        <p>Removing a repository will not delete any backups stored in it. You can add it back later.</p>
+        <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
+          will also be removed.</p>
+        <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be removed:
+          <ul class='list-disc font-semibold pl-5'>
+            <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+          </ul>
+        </div>
+      </div>
+    </ConfirmModal>
+    <ConfirmModal :ref='confirmDeleteModalKey'
+                  title='Delete repository'
+                  show-exclamation
+                  @close='confirmDeleteInput = ""'
+    >
+      <div class='flex flex-col gap-2'>
+        <p>Are you sure you want to delete this repository?</p>
+        <p>This action is <span class='font-semibold'>irreversible</span> and will <span class='font-semibold'>delete all backups</span>
+          stored in this repository!</p>
+        <p v-if='deletableBackupProfiles.length === 1'>The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
+          will also be deleted!</p>
+        <div v-else-if='deletableBackupProfiles.length > 1'>The following backup profiles will also be deleted:
+          <ul class='list-disc font-semibold pl-5'>
+            <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+          </ul>
+        </div>
+        <p class='pt-2'>Type <span class='italic font-semibold'>{{ repo.name }}</span> to confirm.</p>
+        <div class='flex items-center gap-2'>
+          <input type='text' class='input input-sm input-bordered' v-model='confirmDeleteInput' />
+        </div>
+      </div>
+      <template v-slot:actionButtons>
+        <div class='flex gap-3 pt-5'>
+          <button type='button' class='btn btn-sm btn-outline'
+                  @click='confirmDeleteInput = ""; confirmDeleteModal?.close()'
+          >{{ $t("cancel") }}
+          </button>
+          <button type='button' class='btn btn-sm btn-error'
+                  :disabled='confirmDeleteInput !== repo.name'
+                  @click='deleteRepo()'
+          >Delete repository
+          </button>
+        </div>
+      </template>
+    </ConfirmModal>
   </div>
 </template>
 
