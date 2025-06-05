@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package arco.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+service AuthService {
+  rpc SendMagicLink(SendMagicLinkRequest) returns (SendMagicLinkResponse) {}
+  rpc LoginWithMagicLink(LoginWithMagicLinkRequest) returns (LoginWithMagicLinkResponse) {}
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {}
+}
+
+message SendMagicLinkRequest {
+  string email = 1;
+}
+
+message SendMagicLinkResponse {
+  bool sent = 1;
+  string message = 2;
+}
+
+message LoginWithMagicLinkRequest {
+  string token = 1;
+}
+
+message LoginWithMagicLinkResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  User user = 4;
+  bool is_new_user = 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+
+message User {
+  string id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}

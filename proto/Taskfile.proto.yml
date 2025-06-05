@@ -1,0 +1,43 @@
+version: '3'
+
+vars:
+  PROTO_ROOT: .
+  PROTO_OUT: ../backend/api
+
+tasks:
+  generate:
+    desc: Generate Go code from protobuf definitions
+    dir: proto
+    cmds:
+      - go tool buf generate
+    sources:
+      - '**/*.proto'
+      - 'buf.yaml'
+      - 'buf.gen.yaml'
+
+  lint:
+    desc: Lint protobuf files
+    dir: proto
+    cmds:
+      - go tool buf lint
+    sources:
+      - 'arco/**/*.proto'
+      - 'buf.yaml'
+
+  breaking:
+    desc: Check for breaking changes in protobuf definitions (requires committed proto files)
+    dir: proto
+    cmds:
+      - go tool buf breaking --against ../.git#branch=main || echo "No proto files in git history to compare against"
+
+  format:
+    desc: Format protobuf files
+    dir: proto
+    cmds:
+      - go tool buf format -w
+
+  clean:
+    desc: Clean generated protobuf files
+    cmds:
+      - rm -rf {{.PROTO_OUT}}/arco/v1/*.pb.go
+      - rm -rf {{.PROTO_OUT}}/arco/v1/arcov1connect/

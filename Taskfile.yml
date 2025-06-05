@@ -7,6 +7,7 @@ includes:
   linux: ./build/linux/Taskfile.yml
   db: ./Taskfile.db.yml
   dev: ./Taskfile.dev.yml
+  proto: ./proto/Taskfile.proto.yml
 
 vars:
   APP_NAME: "arco"
