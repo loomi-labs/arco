@@ -5,88 +5,6 @@
 // @ts-ignore: Unused imports
 import {Create as $Create} from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as timestamppb$0 from "../../../../../../google.golang.org/protobuf/types/known/timestamppb/models.js";
-
-/**
- * AuthStatus represents the current state of an authentication session.
- */
-export enum AuthStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = 0,
-
-    /**
-     * Authentication is in progress, waiting for user action.
-     */
-    AuthStatus_PENDING = 0,
-
-    /**
-     * User has successfully authenticated via magic link.
-     */
-    AuthStatus_AUTHENTICATED = 1,
-
-    /**
-     * Authentication session has expired (10 minutes timeout).
-     */
-    AuthStatus_EXPIRED = 2,
-
-    /**
-     * Authentication was cancelled by the user or system.
-     */
-    AuthStatus_CANCELLED = 3,
-};
-
-/**
- * CheckAuthStatusResponse provides current authentication status.
- */
-export class CheckAuthStatusResponse {
-    /**
-     * Current authentication status.
-     */
-    "status"?: AuthStatus;
-
-    /**
-     * JWT access token (only set when status = AUTHENTICATED).
-     */
-    "access_token"?: string;
-
-    /**
-     * Long-lived refresh token (only set when status = AUTHENTICATED).
-     */
-    "refresh_token"?: string;
-
-    /**
-     * Access token lifetime in seconds (only set when status = AUTHENTICATED).
-     */
-    "expires_in"?: number;
-
-    /**
-     * User information (only set when status = AUTHENTICATED).
-     */
-    "user"?: User | null;
-
-    /** Creates a new CheckAuthStatusResponse instance. */
-    constructor($$source: Partial<CheckAuthStatusResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new CheckAuthStatusResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): CheckAuthStatusResponse {
-        const $$createField4_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("user" in $$parsedSource) {
-            $$parsedSource["user"] = $$createField4_0($$parsedSource["user"]);
-        }
-        return new CheckAuthStatusResponse($$parsedSource as Partial<CheckAuthStatusResponse>);
-    }
-}
-
 /**
  * LoginResponse contains the result of a login initiation.
  */
@@ -104,7 +22,7 @@ export class LoginResponse {
 
     /**
      * Unique session identifier for this authentication attempt.
-     * Use this with WaitForAuthentication or CheckAuthStatus.
+     * Use this with WaitForAuthentication.
      */
     "session_id"?: string;
 
@@ -176,7 +94,7 @@ export class RegisterResponse {
 
     /**
      * Unique session identifier for this authentication attempt.
-     * Use this with WaitForAuthentication or CheckAuthStatus.
+     * Use this with WaitForAuthentication.
      */
     "session_id"?: string;
 
@@ -194,66 +112,3 @@ export class RegisterResponse {
         return new RegisterResponse($$parsedSource as Partial<RegisterResponse>);
     }
 }
-
-/**
- * User represents a user account in the system.
- */
-export class User {
-    /**
-     * Unique user identifier.
-     */
-    "id"?: string;
-
-    /**
-     * User's email address (verified via authentication).
-     */
-    "email"?: string;
-
-    /**
-     * Timestamp of the user's last successful authentication.
-     * Null for users who have registered but never logged in.
-     */
-    "last_logged_in"?: timestamppb$0.Timestamp | null;
-
-    /**
-     * When the user account was created.
-     */
-    "created_at"?: timestamppb$0.Timestamp | null;
-
-    /**
-     * When the user account was last updated.
-     */
-    "updated_at"?: timestamppb$0.Timestamp | null;
-
-    /** Creates a new User instance. */
-    constructor($$source: Partial<User> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new User instance from a string or object.
-     */
-    static createFrom($$source: any = {}): User {
-        const $$createField2_0 = $$createType3;
-        const $$createField3_0 = $$createType3;
-        const $$createField4_0 = $$createType3;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("last_logged_in" in $$parsedSource) {
-            $$parsedSource["last_logged_in"] = $$createField2_0($$parsedSource["last_logged_in"]);
-        }
-        if ("created_at" in $$parsedSource) {
-            $$parsedSource["created_at"] = $$createField3_0($$parsedSource["created_at"]);
-        }
-        if ("updated_at" in $$parsedSource) {
-            $$parsedSource["updated_at"] = $$createField4_0($$parsedSource["updated_at"]);
-        }
-        return new User($$parsedSource as Partial<User>);
-    }
-}
-
-// Private type creation functions
-const $$createType0 = User.createFrom;
-const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = timestamppb$0.Timestamp.createFrom;
-const $$createType3 = $Create.Nullable($$createType2);

@@ -19,7 +19,7 @@ import { useAuth } from "../common/auth";
  ************/
 
 const router = useRouter();
-const { isAuthenticated, user, logout } = useAuth();
+const { isAuthenticated, logout } = useAuth();
 
 const subroute = ref<string | undefined>(undefined);
 const isDark = useDark({
@@ -97,14 +97,14 @@ router.afterEach(() => {
         </a>
 
         <!-- Auth Status -->
-        <div v-if='isAuthenticated && user' class='flex items-center gap-2'>
+        <div v-if='isAuthenticated' class='flex items-center gap-2'>
           <div class='dropdown dropdown-end'>
             <div tabindex='0' role='button' class='btn btn-ghost btn-circle avatar'>
               <UserCircleIcon class='size-8' />
             </div>
             <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
               <li class='menu-title'>
-                <span>{{ user.email }}</span>
+                <span>Authenticated</span>
               </li>
               <li><a @click='handleLogout'>Logout</a></li>
             </ul>

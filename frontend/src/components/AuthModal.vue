@@ -24,7 +24,7 @@ defineExpose({
   showModal
 })
 
-const { startRegister, startLogin, waitForAuthentication, isLoading, AuthStatus } = useAuth()
+const { startRegister, startLogin, isLoading, isAuthenticated } = useAuth()
 
 const dialog = ref<HTMLDialogElement>()
 const activeTab = ref<'login' | 'register'>('login')
@@ -35,7 +35,6 @@ const currentEmail = ref('')
 const isRegistration = ref(false)
 const isWaitingForAuth = ref(false)
 
-let authMonitoringStarted = false
 
 /************
  * Computed
@@ -86,7 +85,6 @@ function resetAll() {
   currentEmail.value = ''
   isRegistration.value = false
   isWaitingForAuth.value = false
-  authMonitoringStarted = false
 }
 
 function switchTab(tab: 'login' | 'register') {
@@ -116,7 +114,6 @@ async function sendMagicLink() {
     
     // Switch to waiting for authentication state
     isWaitingForAuth.value = true
-    startAuthMonitoring()
     
   } catch (error: any) {
     if (error.message?.includes('not found') || error.message?.includes('No account')) {
@@ -148,26 +145,8 @@ function closeModal() {
 }
 
 
-function startAuthMonitoring() {
-  if (authMonitoringStarted || !currentSessionId.value) return
-  authMonitoringStarted = true
-  
-  // Start monitoring for magic link authentication
-  waitForAuthentication(currentSessionId.value, (status) => {
-    if (status.status === AuthStatus.AuthStatus_AUTHENTICATED) {
-      // User authenticated via magic link
-      emit('authenticated')
-      closeModal()
-    } else if (status.status === AuthStatus.AuthStatus_EXPIRED) {
-      emailError.value = 'Session has expired. Please start over.'
-      isWaitingForAuth.value = false
-    }
-  })
-}
-
 function goBackToEmail() {
   isWaitingForAuth.value = false
-  authMonitoringStarted = false
 }
 
 async function resendMagicLink() {
@@ -196,6 +175,15 @@ async function resendMagicLink() {
 function onEmailInput() {
   validateEmail()
 }
+
+// Watch for authentication success
+watch(isAuthenticated, (authenticated) => {
+  if (authenticated && isWaitingForAuth.value) {
+    // User authenticated via magic link
+    emit('authenticated')
+    closeModal()
+  }
+})
 
 
 </script>

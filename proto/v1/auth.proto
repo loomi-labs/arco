@@ -19,7 +19,6 @@ service AuthService {
   //
   // Returns a session_id that can be used with:
   // - WaitForAuthentication (for real-time status updates)
-  // - CheckAuthStatus (for polling-based status updates)
   // - Magic link verification (via web REST endpoint)
   rpc Register(RegisterRequest) returns (RegisterResponse);
   
@@ -31,7 +30,6 @@ service AuthService {
   //
   // Returns a session_id that can be used with:
   // - WaitForAuthentication (for real-time status updates)
-  // - CheckAuthStatus (for polling-based status updates)
   // - Magic link verification (via web REST endpoint)
   rpc Login(LoginRequest) returns (LoginResponse);
   
@@ -41,21 +39,9 @@ service AuthService {
   // receive instant notifications when the user completes authentication via
   // magic link.
   //
-  // The stream automatically times out after 10 minutes and sends status updates
-  // every 2 seconds until authentication is completed or expired.
-  //
-  // Preferred over CheckAuthStatus for real-time applications.
+  // The stream automatically times out after 10 minutes and provides instant
+  // notifications when authentication is completed or expired.
   rpc WaitForAuthentication(WaitForAuthRequest) returns (stream AuthStatusResponse);
-  
-  // CheckAuthStatus provides polling-based authentication status checking.
-  //
-  // This is a fallback for applications that cannot use streaming connections.
-  // Desktop applications should poll this endpoint every few seconds after
-  // initiating authentication with Register/Login.
-  //
-  // Returns the current authentication status and tokens if authentication
-  // has been completed.
-  rpc CheckAuthStatus(CheckAuthStatusRequest) returns (CheckAuthStatusResponse);
   
   // RefreshToken exchanges a refresh token for new access and refresh tokens.
   //
@@ -83,7 +69,7 @@ message RegisterResponse {
   string message = 2;
   
   // Unique session identifier for this authentication attempt.
-  // Use this with WaitForAuthentication or CheckAuthStatus.
+  // Use this with WaitForAuthentication.
   string session_id = 3;
 }
 
@@ -104,7 +90,7 @@ message LoginResponse {
   string message = 2;
   
   // Unique session identifier for this authentication attempt.
-  // Use this with WaitForAuthentication or CheckAuthStatus.
+  // Use this with WaitForAuthentication.
   string session_id = 3;
 }
 
@@ -132,29 +118,6 @@ message AuthStatusResponse {
   User user = 5;
 }
 
-// CheckAuthStatusRequest polls for authentication status.
-message CheckAuthStatusRequest {
-  // The session ID returned from Register or Login calls.
-  string session_id = 1;
-}
-
-// CheckAuthStatusResponse provides current authentication status.
-message CheckAuthStatusResponse {
-  // Current authentication status.
-  AuthStatus status = 1;
-  
-  // JWT access token (only set when status = AUTHENTICATED).
-  string access_token = 2;
-  
-  // Long-lived refresh token (only set when status = AUTHENTICATED).
-  string refresh_token = 3;
-  
-  // Access token lifetime in seconds (only set when status = AUTHENTICATED).
-  int64 expires_in = 4;
-  
-  // User information (only set when status = AUTHENTICATED).
-  User user = 5;
-}
 
 // AuthStatus represents the current state of an authentication session.
 enum AuthStatus {

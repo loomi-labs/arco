@@ -37,10 +37,10 @@ var (
 type EnvVar string
 
 const (
-	EnvVarDebug        EnvVar = "DEBUG"
-	EnvVarDevelopment  EnvVar = "DEVELOPMENT"
-	EnvVarStartPage    EnvVar = "START_PAGE"
-	EnvVarCloudRPCURL  EnvVar = "ARCO_CLOUD_RPC_URL"
+	EnvVarDebug       EnvVar = "DEBUG"
+	EnvVarDevelopment EnvVar = "DEVELOPMENT"
+	EnvVarStartPage   EnvVar = "START_PAGE"
+	EnvVarCloudRPCURL EnvVar = "ARCO_CLOUD_RPC_URL"
 )
 
 func (e EnvVar) Name() string {
@@ -181,6 +181,12 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Set a general status for the rest of the startup process
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
+
+	// Recover any pending authentication sessions
+	if err := a.AuthClient().RecoverAuthSessions(a.ctx); err != nil {
+		a.log.Errorf("Failed to recover authentication sessions: %v", err)
+		// Don't fail startup for session recovery errors, just log them
+	}
 
 	// Save mount states
 	a.RepoClient().setMountStates()

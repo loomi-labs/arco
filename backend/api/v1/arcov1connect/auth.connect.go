@@ -40,9 +40,6 @@ const (
 	// AuthServiceWaitForAuthenticationProcedure is the fully-qualified name of the AuthService's
 	// WaitForAuthentication RPC.
 	AuthServiceWaitForAuthenticationProcedure = "/arco.v1.AuthService/WaitForAuthentication"
-	// AuthServiceCheckAuthStatusProcedure is the fully-qualified name of the AuthService's
-	// CheckAuthStatus RPC.
-	AuthServiceCheckAuthStatusProcedure = "/arco.v1.AuthService/CheckAuthStatus"
 	// AuthServiceRefreshTokenProcedure is the fully-qualified name of the AuthService's RefreshToken
 	// RPC.
 	AuthServiceRefreshTokenProcedure = "/arco.v1.AuthService/RefreshToken"
@@ -57,7 +54,6 @@ type AuthServiceClient interface {
 	//
 	// Returns a session_id that can be used with:
 	// - WaitForAuthentication (for real-time status updates)
-	// - CheckAuthStatus (for polling-based status updates)
 	// - Magic link verification (via web REST endpoint)
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Login initiates authentication for existing users only.
@@ -68,7 +64,6 @@ type AuthServiceClient interface {
 	//
 	// Returns a session_id that can be used with:
 	// - WaitForAuthentication (for real-time status updates)
-	// - CheckAuthStatus (for polling-based status updates)
 	// - Magic link verification (via web REST endpoint)
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	// WaitForAuthentication provides real-time streaming updates for authentication status.
@@ -77,20 +72,9 @@ type AuthServiceClient interface {
 	// receive instant notifications when the user completes authentication via
 	// magic link.
 	//
-	// The stream automatically times out after 10 minutes and sends status updates
-	// every 2 seconds until authentication is completed or expired.
-	//
-	// Preferred over CheckAuthStatus for real-time applications.
+	// The stream automatically times out after 10 minutes and provides instant
+	// notifications when authentication is completed or expired.
 	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest]) (*connect.ServerStreamForClient[v1.AuthStatusResponse], error)
-	// CheckAuthStatus provides polling-based authentication status checking.
-	//
-	// This is a fallback for applications that cannot use streaming connections.
-	// Desktop applications should poll this endpoint every few seconds after
-	// initiating authentication with Register/Login.
-	//
-	// Returns the current authentication status and tokens if authentication
-	// has been completed.
-	CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error)
 	// RefreshToken exchanges a refresh token for new access and refresh tokens.
 	//
 	// Access tokens expire after a short duration (typically 15 minutes).
@@ -128,12 +112,6 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("WaitForAuthentication")),
 			connect.WithClientOptions(opts...),
 		),
-		checkAuthStatus: connect.NewClient[v1.CheckAuthStatusRequest, v1.CheckAuthStatusResponse](
-			httpClient,
-			baseURL+AuthServiceCheckAuthStatusProcedure,
-			connect.WithSchema(authServiceMethods.ByName("CheckAuthStatus")),
-			connect.WithClientOptions(opts...),
-		),
 		refreshToken: connect.NewClient[v1.RefreshTokenRequest, v1.RefreshTokenResponse](
 			httpClient,
 			baseURL+AuthServiceRefreshTokenProcedure,
@@ -148,7 +126,6 @@ type authServiceClient struct {
 	register              *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	waitForAuthentication *connect.Client[v1.WaitForAuthRequest, v1.AuthStatusResponse]
-	checkAuthStatus       *connect.Client[v1.CheckAuthStatusRequest, v1.CheckAuthStatusResponse]
 	refreshToken          *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 }
 
@@ -167,11 +144,6 @@ func (c *authServiceClient) WaitForAuthentication(ctx context.Context, req *conn
 	return c.waitForAuthentication.CallServerStream(ctx, req)
 }
 
-// CheckAuthStatus calls arco.v1.AuthService.CheckAuthStatus.
-func (c *authServiceClient) CheckAuthStatus(ctx context.Context, req *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error) {
-	return c.checkAuthStatus.CallUnary(ctx, req)
-}
-
 // RefreshToken calls arco.v1.AuthService.RefreshToken.
 func (c *authServiceClient) RefreshToken(ctx context.Context, req *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {
 	return c.refreshToken.CallUnary(ctx, req)
@@ -186,7 +158,6 @@ type AuthServiceHandler interface {
 	//
 	// Returns a session_id that can be used with:
 	// - WaitForAuthentication (for real-time status updates)
-	// - CheckAuthStatus (for polling-based status updates)
 	// - Magic link verification (via web REST endpoint)
 	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	// Login initiates authentication for existing users only.
@@ -197,7 +168,6 @@ type AuthServiceHandler interface {
 	//
 	// Returns a session_id that can be used with:
 	// - WaitForAuthentication (for real-time status updates)
-	// - CheckAuthStatus (for polling-based status updates)
 	// - Magic link verification (via web REST endpoint)
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 	// WaitForAuthentication provides real-time streaming updates for authentication status.
@@ -206,20 +176,9 @@ type AuthServiceHandler interface {
 	// receive instant notifications when the user completes authentication via
 	// magic link.
 	//
-	// The stream automatically times out after 10 minutes and sends status updates
-	// every 2 seconds until authentication is completed or expired.
-	//
-	// Preferred over CheckAuthStatus for real-time applications.
+	// The stream automatically times out after 10 minutes and provides instant
+	// notifications when authentication is completed or expired.
 	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error
-	// CheckAuthStatus provides polling-based authentication status checking.
-	//
-	// This is a fallback for applications that cannot use streaming connections.
-	// Desktop applications should poll this endpoint every few seconds after
-	// initiating authentication with Register/Login.
-	//
-	// Returns the current authentication status and tokens if authentication
-	// has been completed.
-	CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error)
 	// RefreshToken exchanges a refresh token for new access and refresh tokens.
 	//
 	// Access tokens expire after a short duration (typically 15 minutes).
@@ -253,12 +212,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("WaitForAuthentication")),
 		connect.WithHandlerOptions(opts...),
 	)
-	authServiceCheckAuthStatusHandler := connect.NewUnaryHandler(
-		AuthServiceCheckAuthStatusProcedure,
-		svc.CheckAuthStatus,
-		connect.WithSchema(authServiceMethods.ByName("CheckAuthStatus")),
-		connect.WithHandlerOptions(opts...),
-	)
 	authServiceRefreshTokenHandler := connect.NewUnaryHandler(
 		AuthServiceRefreshTokenProcedure,
 		svc.RefreshToken,
@@ -273,8 +226,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceLoginHandler.ServeHTTP(w, r)
 		case AuthServiceWaitForAuthenticationProcedure:
 			authServiceWaitForAuthenticationHandler.ServeHTTP(w, r)
-		case AuthServiceCheckAuthStatusProcedure:
-			authServiceCheckAuthStatusHandler.ServeHTTP(w, r)
 		case AuthServiceRefreshTokenProcedure:
 			authServiceRefreshTokenHandler.ServeHTTP(w, r)
 		default:
@@ -296,10 +247,6 @@ func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v
 
 func (UnimplementedAuthServiceHandler) WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.WaitForAuthentication is not implemented"))
-}
-
-func (UnimplementedAuthServiceHandler) CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.CheckAuthStatus is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {

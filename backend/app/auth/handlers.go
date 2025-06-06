@@ -18,7 +18,7 @@ import (
 type AuthServiceHandler struct {
 	db         *ent.Client
 	jwtService *JWTService
-	rpcClient  arcov1connect.AuthServiceClient
+	RpcClient  arcov1connect.AuthServiceClient
 }
 
 func NewAuthServiceHandler(db *ent.Client, jwtService *JWTService, cloudRPCURL string) *AuthServiceHandler {
@@ -31,13 +31,13 @@ func NewAuthServiceHandler(db *ent.Client, jwtService *JWTService, cloudRPCURL s
 	return &AuthServiceHandler{
 		db:         db,
 		jwtService: jwtService,
-		rpcClient:  rpcClient,
+		RpcClient:  rpcClient,
 	}
 }
 
 func (h *AuthServiceHandler) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
 	// Proxy request to external auth service
-	resp, err := h.rpcClient.Register(ctx, req)
+	resp, err := h.RpcClient.Register(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (h *AuthServiceHandler) Register(ctx context.Context, req *connect.Request[
 
 func (h *AuthServiceHandler) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	// Proxy request to external auth service
-	resp, err := h.rpcClient.Login(ctx, req)
+	resp, err := h.RpcClient.Login(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -89,71 +89,50 @@ func (h *AuthServiceHandler) WaitForAuthentication(ctx context.Context, req *con
 		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("session_id is required"))
 	}
 
-	// Poll external service and send updates to stream
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	// Open stream to external service
+	externalStream, err := h.RpcClient.WaitForAuthentication(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer externalStream.Close()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			// Check external service status
-			checkReq := connect.NewRequest(&v1.CheckAuthStatusRequest{SessionId: sessionID})
-			resp, err := h.rpcClient.CheckAuthStatus(ctx, checkReq)
+	// Forward stream updates from external service to local client
+	for externalStream.Receive() {
+		resp := externalStream.Msg()
+
+		// Send response to local client stream
+		if err := stream.Send(resp); err != nil {
+			return err
+		}
+
+		// If authenticated, sync tokens locally and end stream
+		if resp.Status == v1.AuthStatus_AUTHENTICATED {
+			h.syncAuthenticatedSession(ctx, sessionID, resp)
+			return nil
+		} else if resp.Status != v1.AuthStatus_PENDING {
+			// Session expired or cancelled, update local session
+			err = h.db.AuthSession.Update().
+				Where(authsession.IDEQ(sessionID)).
+				SetStatus(authsession.Status(resp.Status.String())).
+				Exec(ctx)
 			if err != nil {
-				continue
+				fmt.Printf("Warning: failed to update local session status: %v\n", err)
 			}
-
-			// Convert to AuthStatusResponse and send to stream
-			authResponse := &v1.AuthStatusResponse{
-				Status:       resp.Msg.Status,
-				AccessToken:  resp.Msg.AccessToken,
-				RefreshToken: resp.Msg.RefreshToken,
-				ExpiresIn:    resp.Msg.ExpiresIn,
-				User:         resp.Msg.User,
-			}
-			if err := stream.Send(authResponse); err != nil {
-				return err
-			}
-
-			// If authenticated, sync tokens locally and end stream
-			if resp.Msg.Status == v1.AuthStatus_AUTHENTICATED {
-				h.syncAuthenticatedSession(ctx, sessionID, resp.Msg)
-				return nil
-			} else if resp.Msg.Status != v1.AuthStatus_PENDING {
-				// Session expired or cancelled, update local session
-				err = h.db.AuthSession.Update().
-					Where(authsession.IDEQ(sessionID)).
-					SetStatus(authsession.Status(resp.Msg.Status.String())).
-					Exec(ctx)
-				if err != nil {
-					fmt.Printf("Warning: failed to update local session status: %v\n", err)
-				}
-				return nil
-			}
+			return nil
 		}
 	}
-}
 
-func (h *AuthServiceHandler) CheckAuthStatus(ctx context.Context, req *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error) {
-	// Check external service first
-	resp, err := h.rpcClient.CheckAuthStatus(ctx, req)
-	if err != nil {
-		return nil, err
+	// Handle stream error
+	if err := externalStream.Err(); err != nil {
+		return err
 	}
 
-	// If authenticated, sync tokens locally
-	if resp.Msg.Status == v1.AuthStatus_AUTHENTICATED {
-		h.syncAuthenticatedSession(ctx, req.Msg.SessionId, resp.Msg)
-	}
-
-	return resp, nil
+	return nil
 }
 
 func (h *AuthServiceHandler) RefreshToken(ctx context.Context, req *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {
 	// Proxy to external service
-	resp, err := h.rpcClient.RefreshToken(ctx, req)
+	resp, err := h.RpcClient.RefreshToken(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +163,8 @@ func (h *AuthServiceHandler) RefreshToken(ctx context.Context, req *connect.Requ
 	return resp, nil
 }
 
-// syncAuthenticatedSession syncs tokens from external service to local storage
-func (h *AuthServiceHandler) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.CheckAuthStatusResponse) {
+// syncAuthenticatedSession syncs tokens from external service to local db
+func (h *AuthServiceHandler) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.AuthStatusResponse) {
 	if authResp.User == nil {
 		return
 	}
@@ -239,23 +218,4 @@ func (h *AuthServiceHandler) syncAuthenticatedSession(ctx context.Context, sessi
 	if err != nil {
 		fmt.Printf("Error updating session status: %v\n", err)
 	}
-}
-
-func (h *AuthServiceHandler) CompleteAuthentication(ctx context.Context, sessionID string) error {
-	// Check database session status
-	session, err := h.db.AuthSession.Query().
-		Where(authsession.IDEQ(sessionID)).
-		First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return fmt.Errorf("session not found")
-		}
-		return fmt.Errorf("failed to query session: %w", err)
-	}
-
-	if session.Status == authsession.StatusAUTHENTICATED {
-		return nil // Already completed
-	}
-
-	return fmt.Errorf("authentication not yet completed")
 }
