@@ -7,6 +7,7 @@ import AuthModal from "./AuthModal.vue";
 import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import { useAuth } from "../common/auth";
+import { useFeatureFlags } from "../common/featureFlags";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
@@ -53,6 +54,7 @@ const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
 const { isAuthenticated } = useAuth();
+const { featureFlags } = useFeatureFlags();
 
 const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);
 
@@ -173,7 +175,7 @@ watch(() => props.existingRepos, (newRepos) => {
     <div class='flex gap-6 pt-4'>
       <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
       <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
-      <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
+      <ConnectRepoCard v-if='featureFlags.loginBetaEnabled' :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
     </div>
 
     <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
@@ -184,7 +186,7 @@ watch(() => props.existingRepos, (newRepos) => {
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
 
-    <AuthModal :ref='authModalKey'
+    <AuthModal v-if='featureFlags.loginBetaEnabled' :ref='authModalKey'
                @close='onAuthModalClose'
                @authenticated='onAuthenticated' />
   </div>

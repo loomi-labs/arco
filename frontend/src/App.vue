@@ -11,6 +11,7 @@ import * as appClient from "../bindings/github.com/loomi-labs/arco/backend/app/a
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
 import { Events } from "@wailsio/runtime";
+import { initializeFeatureFlags } from "./common/featureFlags";
 
 /************
  * Variables
@@ -58,6 +59,7 @@ async function goToNextPage() {
 
 async function getStartupState() {
   try {
+    await initializeFeatureFlags();
     startupState.value = await appClient.GetStartupState();
   } catch (error: any) {
     await showAndLogError("Failed to get startup state", error);

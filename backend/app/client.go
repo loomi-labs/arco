@@ -32,14 +32,16 @@ func (a *AppClient) GetNotifications() []types.Notification {
 }
 
 type Env struct {
-	Debug     bool   `json:"debug"`
-	StartPage string `json:"startPage"`
+	Debug            bool   `json:"debug"`
+	StartPage        string `json:"startPage"`
+	LoginBetaEnabled bool   `json:"loginBetaEnabled"`
 }
 
 func (a *AppClient) GetEnvVars() Env {
 	return Env{
-		Debug:     EnvVarDebug.Bool(),
-		StartPage: EnvVarStartPage.String(),
+		Debug:            EnvVarDebug.Bool(),
+		StartPage:        EnvVarStartPage.String(),
+		LoginBetaEnabled: EnvVarEnableLoginBeta.Bool(),
 	}
 }
 

@@ -9,6 +9,7 @@ import ArcoLogo from "./common/ArcoLogo.vue";
 import AuthModal from "./AuthModal.vue";
 import { useDark, useToggle } from "@vueuse/core";
 import { useAuth } from "../common/auth";
+import { useFeatureFlags } from "../common/featureFlags";
 
 /************
  * Types
@@ -20,6 +21,7 @@ import { useAuth } from "../common/auth";
 
 const router = useRouter();
 const { isAuthenticated, logout } = useAuth();
+const { featureFlags } = useFeatureFlags();
 
 const subroute = ref<string | undefined>(undefined);
 const isDark = useDark({
@@ -96,26 +98,28 @@ router.afterEach(() => {
           <ArcoLogo svgClass='size-8' />Arco
         </a>
 
-        <!-- Auth Status -->
-        <div v-if='isAuthenticated' class='flex items-center gap-2'>
-          <div class='dropdown dropdown-end'>
-            <div tabindex='0' role='button' class='btn btn-ghost btn-circle avatar'>
-              <UserCircleIcon class='size-8' />
+        <!-- Auth Status (only show if login beta is enabled) -->
+        <template v-if='featureFlags.loginBetaEnabled'>
+          <div v-if='isAuthenticated' class='flex items-center gap-2'>
+            <div class='dropdown dropdown-end'>
+              <div tabindex='0' role='button' class='btn btn-ghost btn-circle avatar'>
+                <UserCircleIcon class='size-8' />
+              </div>
+              <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
+                <li class='menu-title'>
+                  <span>Authenticated</span>
+                </li>
+                <li><a @click='handleLogout'>Logout</a></li>
+              </ul>
             </div>
-            <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
-              <li class='menu-title'>
-                <span>Authenticated</span>
-              </li>
-              <li><a @click='handleLogout'>Logout</a></li>
-            </ul>
           </div>
-        </div>
-        
-        <div v-else class='flex items-center gap-2'>
-          <button class='btn btn-sm btn-outline btn-primary' @click='showAuthModal'>
-            Login
-          </button>
-        </div>
+          
+          <div v-else class='flex items-center gap-2'>
+            <button class='btn btn-sm btn-outline btn-primary' @click='showAuthModal'>
+              Login
+            </button>
+          </div>
+        </template>
 
         <label class='swap swap-rotate'>
           <!-- this hidden checkbox controls the state -->
@@ -128,8 +132,8 @@ router.afterEach(() => {
     </div>
   </div>
 
-  <!-- Auth Modal -->
-  <AuthModal :ref='authModalKey' @authenticated='onAuthenticated' />
+  <!-- Auth Modal (only include if login beta is enabled) -->
+  <AuthModal v-if='featureFlags.loginBetaEnabled' :ref='authModalKey' @authenticated='onAuthenticated' />
 </template>
 
 <style scoped>
