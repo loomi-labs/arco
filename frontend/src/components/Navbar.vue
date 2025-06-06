@@ -3,9 +3,12 @@
 import { Page } from "../router";
 import { useRouter } from "vue-router";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
-import { ref } from "vue";
+import { UserCircleIcon } from "@heroicons/vue/24/outline";
+import { ref, useId, useTemplateRef } from "vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
+import AuthModal from "./AuthModal.vue";
 import { useDark, useToggle } from "@vueuse/core";
+import { useAuth } from "../common/auth";
 
 /************
  * Types
@@ -16,6 +19,8 @@ import { useDark, useToggle } from "@vueuse/core";
  ************/
 
 const router = useRouter();
+const { isAuthenticated, user, logout } = useAuth();
+
 const subroute = ref<string | undefined>(undefined);
 const isDark = useDark({
   attribute: "data-theme",
@@ -24,9 +29,29 @@ const isDark = useDark({
 });
 const toggleDark = useToggle(isDark);
 
+const authModalKey = useId();
+const authModal = useTemplateRef<InstanceType<typeof AuthModal>>(authModalKey);
+
 /************
  * Functions
  ************/
+
+function showAuthModal() {
+  authModal.value?.showModal();
+}
+
+function onAuthenticated() {
+  // User has successfully authenticated
+  // No additional action needed - auth state will update automatically
+}
+
+async function handleLogout() {
+  try {
+    await logout();
+  } catch (error) {
+    // Error is handled in auth composable
+  }
+}
 
 /************
  * Lifecycle
@@ -66,10 +91,31 @@ router.afterEach(() => {
           <li>Dashboard</li>
         </ul>
       </div>
-      <div class='flex gap-6'>
+      <div class='flex gap-6 items-center'>
         <a class='flex items-center gap-2' @click='router.replace(Page.Dashboard)'>
           <ArcoLogo svgClass='size-8' />Arco
         </a>
+
+        <!-- Auth Status -->
+        <div v-if='isAuthenticated && user' class='flex items-center gap-2'>
+          <div class='dropdown dropdown-end'>
+            <div tabindex='0' role='button' class='btn btn-ghost btn-circle avatar'>
+              <UserCircleIcon class='size-8' />
+            </div>
+            <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
+              <li class='menu-title'>
+                <span>{{ user.email }}</span>
+              </li>
+              <li><a @click='handleLogout'>Logout</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div v-else class='flex items-center gap-2'>
+          <button class='btn btn-sm btn-outline btn-primary' @click='showAuthModal'>
+            Login
+          </button>
+        </div>
 
         <label class='swap swap-rotate'>
           <!-- this hidden checkbox controls the state -->
@@ -81,6 +127,9 @@ router.afterEach(() => {
       </div>
     </div>
   </div>
+
+  <!-- Auth Modal -->
+  <AuthModal :ref='authModalKey' @authenticated='onAuthenticated' />
 </template>
 
 <style scoped>

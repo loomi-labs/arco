@@ -3,8 +3,10 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
+import AuthModal from "./AuthModal.vue";
 import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
+import { useAuth } from "../common/auth";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
@@ -50,6 +52,8 @@ const emitUpdateConnectedRepos = "update:connected-repos";
 const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
+const { isAuthenticated } = useAuth();
+
 const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);
 
 const connectedRepos = ref<ent.Repository[]>([]);
@@ -58,6 +62,8 @@ const createLocalRepoModalKey = useId();
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
 const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
+const authModalKey = useId();
+const authModal = useTemplateRef<InstanceType<typeof AuthModal>>(authModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
 // noinspection JSUnusedGlobalSymbols
@@ -75,6 +81,29 @@ function selectLocalRepo() {
 function selectRemoteRepo() {
   selectedRepoType.value = SelectedRepoType.Remote;
   createRemoteRepoModal.value?.showModal();
+}
+
+async function selectArcoCloud() {
+  selectedRepoType.value = SelectedRepoType.ArcoCloud;
+  
+  if (isAuthenticated.value) {
+    // TODO: Open cloud repository creation modal when available
+    console.log('User is authenticated, proceed to cloud repo creation');
+  } else {
+    // Show auth modal
+    authModal.value?.showModal();
+  }
+}
+
+function onAuthenticated() {
+  // User has successfully authenticated
+  selectedRepoType.value = SelectedRepoType.None;
+  // TODO: Open cloud repository creation modal when available
+  console.log('User authenticated, proceed to cloud repo creation');
+}
+
+function onAuthModalClose() {
+  selectedRepoType.value = SelectedRepoType.None;
 }
 
 function addRepo(repo: ent.Repository) {
@@ -144,7 +173,7 @@ watch(() => props.existingRepos, (newRepos) => {
     <div class='flex gap-6 pt-4'>
       <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
       <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
-      <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' />
+      <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
     </div>
 
     <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
@@ -154,6 +183,10 @@ watch(() => props.existingRepos, (newRepos) => {
     <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
+
+    <AuthModal :ref='authModalKey'
+               @close='onAuthModalClose'
+               @authenticated='onAuthenticated' />
   </div>
 </template>
 
