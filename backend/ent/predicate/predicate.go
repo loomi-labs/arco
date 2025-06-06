@@ -9,6 +9,9 @@ import (
 // Archive is the predicate function for archive builders.
 type Archive func(*sql.Selector)
 
+// AuthSession is the predicate function for authsession builders.
+type AuthSession func(*sql.Selector)
+
 // BackupProfile is the predicate function for backupprofile builders.
 type BackupProfile func(*sql.Selector)
 
@@ -21,8 +24,14 @@ type Notification func(*sql.Selector)
 // PruningRule is the predicate function for pruningrule builders.
 type PruningRule func(*sql.Selector)
 
+// RefreshToken is the predicate function for refreshtoken builders.
+type RefreshToken func(*sql.Selector)
+
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)
 
 // Settings is the predicate function for settings builders.
 type Settings func(*sql.Selector)
+
+// User is the predicate function for user builders.
+type User func(*sql.Selector)

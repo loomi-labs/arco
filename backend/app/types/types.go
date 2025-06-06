@@ -55,6 +55,7 @@ type Config struct {
 	GithubAssetName string
 	Version         *semver.Version
 	CheckForUpdates bool
+	CloudRPCURL     string
 }
 
 var AllIcons = []backupprofile.Icon{

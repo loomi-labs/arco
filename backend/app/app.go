@@ -37,9 +37,10 @@ var (
 type EnvVar string
 
 const (
-	EnvVarDebug       EnvVar = "DEBUG"
-	EnvVarDevelopment EnvVar = "DEVELOPMENT"
-	EnvVarStartPage   EnvVar = "START_PAGE"
+	EnvVarDebug        EnvVar = "DEBUG"
+	EnvVarDevelopment  EnvVar = "DEVELOPMENT"
+	EnvVarStartPage    EnvVar = "START_PAGE"
+	EnvVarCloudRPCURL  EnvVar = "ARCO_CLOUD_RPC_URL"
 )
 
 func (e EnvVar) Name() string {
@@ -119,6 +120,10 @@ func (a *App) BackupClient() *BackupClient {
 
 func (a *App) ValidationClient() *ValidationClient {
 	return (*ValidationClient)(a)
+}
+
+func (a *App) GetDB() *ent.Client {
+	return a.db
 }
 
 func (r *RepositoryClient) backupClient() *BackupClient {

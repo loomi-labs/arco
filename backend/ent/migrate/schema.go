@@ -47,6 +47,21 @@ var (
 			},
 		},
 	}
+	// AuthSessionsColumns holds the columns for the "auth_sessions" table.
+	AuthSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "user_email", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "AUTHENTICATED", "EXPIRED", "CANCELLED"}, Default: "PENDING"},
+		{Name: "expires_at", Type: field.TypeTime},
+	}
+	// AuthSessionsTable holds the schema information for the "auth_sessions" table.
+	AuthSessionsTable = &schema.Table{
+		Name:       "auth_sessions",
+		Columns:    AuthSessionsColumns,
+		PrimaryKey: []*schema.Column{AuthSessionsColumns[0]},
+	}
 	// BackupProfilesColumns holds the columns for the "backup_profiles" table.
 	BackupProfilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -166,6 +181,29 @@ var (
 			},
 		},
 	}
+	// RefreshTokensColumns holds the columns for the "refresh_tokens" table.
+	RefreshTokensColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "token_hash", Type: field.TypeString},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// RefreshTokensTable holds the schema information for the "refresh_tokens" table.
+	RefreshTokensTable = &schema.Table{
+		Name:       "refresh_tokens",
+		Columns:    RefreshTokensColumns,
+		PrimaryKey: []*schema.Column{RefreshTokensColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "refresh_tokens_users_refresh_tokens",
+				Columns:    []*schema.Column{RefreshTokensColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// RepositoriesColumns holds the columns for the "repositories" table.
 	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -201,6 +239,20 @@ var (
 		Columns:    SettingsColumns,
 		PrimaryKey: []*schema.Column{SettingsColumns[0]},
 	}
+	// UsersColumns holds the columns for the "users" table.
+	UsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "last_logged_in", Type: field.TypeTime, Nullable: true},
+	}
+	// UsersTable holds the schema information for the "users" table.
+	UsersTable = &schema.Table{
+		Name:       "users",
+		Columns:    UsersColumns,
+		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
 	// BackupProfileRepositoriesColumns holds the columns for the "backup_profile_repositories" table.
 	BackupProfileRepositoriesColumns = []*schema.Column{
 		{Name: "backup_profile_id", Type: field.TypeInt},
@@ -229,12 +281,15 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ArchivesTable,
+		AuthSessionsTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
 		NotificationsTable,
 		PruningRulesTable,
+		RefreshTokensTable,
 		RepositoriesTable,
 		SettingsTable,
+		UsersTable,
 		BackupProfileRepositoriesTable,
 	}
 )
@@ -247,6 +302,7 @@ func init() {
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable
 	PruningRulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }

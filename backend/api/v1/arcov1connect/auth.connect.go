@@ -33,12 +33,16 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceSendMagicLinkProcedure is the fully-qualified name of the AuthService's SendMagicLink
-	// RPC.
-	AuthServiceSendMagicLinkProcedure = "/arco.v1.AuthService/SendMagicLink"
-	// AuthServiceLoginWithMagicLinkProcedure is the fully-qualified name of the AuthService's
-	// LoginWithMagicLink RPC.
-	AuthServiceLoginWithMagicLinkProcedure = "/arco.v1.AuthService/LoginWithMagicLink"
+	// AuthServiceRegisterProcedure is the fully-qualified name of the AuthService's Register RPC.
+	AuthServiceRegisterProcedure = "/arco.v1.AuthService/Register"
+	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
+	AuthServiceLoginProcedure = "/arco.v1.AuthService/Login"
+	// AuthServiceWaitForAuthenticationProcedure is the fully-qualified name of the AuthService's
+	// WaitForAuthentication RPC.
+	AuthServiceWaitForAuthenticationProcedure = "/arco.v1.AuthService/WaitForAuthentication"
+	// AuthServiceCheckAuthStatusProcedure is the fully-qualified name of the AuthService's
+	// CheckAuthStatus RPC.
+	AuthServiceCheckAuthStatusProcedure = "/arco.v1.AuthService/CheckAuthStatus"
 	// AuthServiceRefreshTokenProcedure is the fully-qualified name of the AuthService's RefreshToken
 	// RPC.
 	AuthServiceRefreshTokenProcedure = "/arco.v1.AuthService/RefreshToken"
@@ -46,8 +50,52 @@ const (
 
 // AuthServiceClient is a client for the arco.v1.AuthService service.
 type AuthServiceClient interface {
-	SendMagicLink(context.Context, *connect.Request[v1.SendMagicLinkRequest]) (*connect.Response[v1.SendMagicLinkResponse], error)
-	LoginWithMagicLink(context.Context, *connect.Request[v1.LoginWithMagicLinkRequest]) (*connect.Response[v1.LoginWithMagicLinkResponse], error)
+	// Register initiates user registration by sending a magic link.
+	//
+	// If the user already exists, this gracefully falls back to login behavior.
+	// Rate limited to 5 requests per hour per email address.
+	//
+	// Returns a session_id that can be used with:
+	// - WaitForAuthentication (for real-time status updates)
+	// - CheckAuthStatus (for polling-based status updates)
+	// - Magic link verification (via web REST endpoint)
+	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
+	// Login initiates authentication for existing users only.
+	//
+	// Sends a magic link to the user's email.
+	// Returns an error if no account exists with the provided email.
+	// Rate limited to 5 requests per hour per email address.
+	//
+	// Returns a session_id that can be used with:
+	// - WaitForAuthentication (for real-time status updates)
+	// - CheckAuthStatus (for polling-based status updates)
+	// - Magic link verification (via web REST endpoint)
+	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// WaitForAuthentication provides real-time streaming updates for authentication status.
+	//
+	// Desktop applications should call this immediately after Register/Login to
+	// receive instant notifications when the user completes authentication via
+	// magic link.
+	//
+	// The stream automatically times out after 10 minutes and sends status updates
+	// every 2 seconds until authentication is completed or expired.
+	//
+	// Preferred over CheckAuthStatus for real-time applications.
+	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest]) (*connect.ServerStreamForClient[v1.AuthStatusResponse], error)
+	// CheckAuthStatus provides polling-based authentication status checking.
+	//
+	// This is a fallback for applications that cannot use streaming connections.
+	// Desktop applications should poll this endpoint every few seconds after
+	// initiating authentication with Register/Login.
+	//
+	// Returns the current authentication status and tokens if authentication
+	// has been completed.
+	CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error)
+	// RefreshToken exchanges a refresh token for new access and refresh tokens.
+	//
+	// Access tokens expire after a short duration (typically 15 minutes).
+	// Refresh tokens are long-lived (360 days) and should be used to obtain
+	// new access tokens without requiring re-authentication.
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 }
 
@@ -62,16 +110,28 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_v1_auth_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		sendMagicLink: connect.NewClient[v1.SendMagicLinkRequest, v1.SendMagicLinkResponse](
+		register: connect.NewClient[v1.RegisterRequest, v1.RegisterResponse](
 			httpClient,
-			baseURL+AuthServiceSendMagicLinkProcedure,
-			connect.WithSchema(authServiceMethods.ByName("SendMagicLink")),
+			baseURL+AuthServiceRegisterProcedure,
+			connect.WithSchema(authServiceMethods.ByName("Register")),
 			connect.WithClientOptions(opts...),
 		),
-		loginWithMagicLink: connect.NewClient[v1.LoginWithMagicLinkRequest, v1.LoginWithMagicLinkResponse](
+		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
 			httpClient,
-			baseURL+AuthServiceLoginWithMagicLinkProcedure,
-			connect.WithSchema(authServiceMethods.ByName("LoginWithMagicLink")),
+			baseURL+AuthServiceLoginProcedure,
+			connect.WithSchema(authServiceMethods.ByName("Login")),
+			connect.WithClientOptions(opts...),
+		),
+		waitForAuthentication: connect.NewClient[v1.WaitForAuthRequest, v1.AuthStatusResponse](
+			httpClient,
+			baseURL+AuthServiceWaitForAuthenticationProcedure,
+			connect.WithSchema(authServiceMethods.ByName("WaitForAuthentication")),
+			connect.WithClientOptions(opts...),
+		),
+		checkAuthStatus: connect.NewClient[v1.CheckAuthStatusRequest, v1.CheckAuthStatusResponse](
+			httpClient,
+			baseURL+AuthServiceCheckAuthStatusProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CheckAuthStatus")),
 			connect.WithClientOptions(opts...),
 		),
 		refreshToken: connect.NewClient[v1.RefreshTokenRequest, v1.RefreshTokenResponse](
@@ -85,19 +145,31 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	sendMagicLink      *connect.Client[v1.SendMagicLinkRequest, v1.SendMagicLinkResponse]
-	loginWithMagicLink *connect.Client[v1.LoginWithMagicLinkRequest, v1.LoginWithMagicLinkResponse]
-	refreshToken       *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
+	register              *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
+	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	waitForAuthentication *connect.Client[v1.WaitForAuthRequest, v1.AuthStatusResponse]
+	checkAuthStatus       *connect.Client[v1.CheckAuthStatusRequest, v1.CheckAuthStatusResponse]
+	refreshToken          *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 }
 
-// SendMagicLink calls arco.v1.AuthService.SendMagicLink.
-func (c *authServiceClient) SendMagicLink(ctx context.Context, req *connect.Request[v1.SendMagicLinkRequest]) (*connect.Response[v1.SendMagicLinkResponse], error) {
-	return c.sendMagicLink.CallUnary(ctx, req)
+// Register calls arco.v1.AuthService.Register.
+func (c *authServiceClient) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
+	return c.register.CallUnary(ctx, req)
 }
 
-// LoginWithMagicLink calls arco.v1.AuthService.LoginWithMagicLink.
-func (c *authServiceClient) LoginWithMagicLink(ctx context.Context, req *connect.Request[v1.LoginWithMagicLinkRequest]) (*connect.Response[v1.LoginWithMagicLinkResponse], error) {
-	return c.loginWithMagicLink.CallUnary(ctx, req)
+// Login calls arco.v1.AuthService.Login.
+func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return c.login.CallUnary(ctx, req)
+}
+
+// WaitForAuthentication calls arco.v1.AuthService.WaitForAuthentication.
+func (c *authServiceClient) WaitForAuthentication(ctx context.Context, req *connect.Request[v1.WaitForAuthRequest]) (*connect.ServerStreamForClient[v1.AuthStatusResponse], error) {
+	return c.waitForAuthentication.CallServerStream(ctx, req)
+}
+
+// CheckAuthStatus calls arco.v1.AuthService.CheckAuthStatus.
+func (c *authServiceClient) CheckAuthStatus(ctx context.Context, req *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error) {
+	return c.checkAuthStatus.CallUnary(ctx, req)
 }
 
 // RefreshToken calls arco.v1.AuthService.RefreshToken.
@@ -107,8 +179,52 @@ func (c *authServiceClient) RefreshToken(ctx context.Context, req *connect.Reque
 
 // AuthServiceHandler is an implementation of the arco.v1.AuthService service.
 type AuthServiceHandler interface {
-	SendMagicLink(context.Context, *connect.Request[v1.SendMagicLinkRequest]) (*connect.Response[v1.SendMagicLinkResponse], error)
-	LoginWithMagicLink(context.Context, *connect.Request[v1.LoginWithMagicLinkRequest]) (*connect.Response[v1.LoginWithMagicLinkResponse], error)
+	// Register initiates user registration by sending a magic link.
+	//
+	// If the user already exists, this gracefully falls back to login behavior.
+	// Rate limited to 5 requests per hour per email address.
+	//
+	// Returns a session_id that can be used with:
+	// - WaitForAuthentication (for real-time status updates)
+	// - CheckAuthStatus (for polling-based status updates)
+	// - Magic link verification (via web REST endpoint)
+	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
+	// Login initiates authentication for existing users only.
+	//
+	// Sends a magic link to the user's email.
+	// Returns an error if no account exists with the provided email.
+	// Rate limited to 5 requests per hour per email address.
+	//
+	// Returns a session_id that can be used with:
+	// - WaitForAuthentication (for real-time status updates)
+	// - CheckAuthStatus (for polling-based status updates)
+	// - Magic link verification (via web REST endpoint)
+	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// WaitForAuthentication provides real-time streaming updates for authentication status.
+	//
+	// Desktop applications should call this immediately after Register/Login to
+	// receive instant notifications when the user completes authentication via
+	// magic link.
+	//
+	// The stream automatically times out after 10 minutes and sends status updates
+	// every 2 seconds until authentication is completed or expired.
+	//
+	// Preferred over CheckAuthStatus for real-time applications.
+	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error
+	// CheckAuthStatus provides polling-based authentication status checking.
+	//
+	// This is a fallback for applications that cannot use streaming connections.
+	// Desktop applications should poll this endpoint every few seconds after
+	// initiating authentication with Register/Login.
+	//
+	// Returns the current authentication status and tokens if authentication
+	// has been completed.
+	CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error)
+	// RefreshToken exchanges a refresh token for new access and refresh tokens.
+	//
+	// Access tokens expire after a short duration (typically 15 minutes).
+	// Refresh tokens are long-lived (360 days) and should be used to obtain
+	// new access tokens without requiring re-authentication.
 	RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error)
 }
 
@@ -119,16 +235,28 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_v1_auth_proto.Services().ByName("AuthService").Methods()
-	authServiceSendMagicLinkHandler := connect.NewUnaryHandler(
-		AuthServiceSendMagicLinkProcedure,
-		svc.SendMagicLink,
-		connect.WithSchema(authServiceMethods.ByName("SendMagicLink")),
+	authServiceRegisterHandler := connect.NewUnaryHandler(
+		AuthServiceRegisterProcedure,
+		svc.Register,
+		connect.WithSchema(authServiceMethods.ByName("Register")),
 		connect.WithHandlerOptions(opts...),
 	)
-	authServiceLoginWithMagicLinkHandler := connect.NewUnaryHandler(
-		AuthServiceLoginWithMagicLinkProcedure,
-		svc.LoginWithMagicLink,
-		connect.WithSchema(authServiceMethods.ByName("LoginWithMagicLink")),
+	authServiceLoginHandler := connect.NewUnaryHandler(
+		AuthServiceLoginProcedure,
+		svc.Login,
+		connect.WithSchema(authServiceMethods.ByName("Login")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceWaitForAuthenticationHandler := connect.NewServerStreamHandler(
+		AuthServiceWaitForAuthenticationProcedure,
+		svc.WaitForAuthentication,
+		connect.WithSchema(authServiceMethods.ByName("WaitForAuthentication")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceCheckAuthStatusHandler := connect.NewUnaryHandler(
+		AuthServiceCheckAuthStatusProcedure,
+		svc.CheckAuthStatus,
+		connect.WithSchema(authServiceMethods.ByName("CheckAuthStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceRefreshTokenHandler := connect.NewUnaryHandler(
@@ -139,10 +267,14 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/arco.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceSendMagicLinkProcedure:
-			authServiceSendMagicLinkHandler.ServeHTTP(w, r)
-		case AuthServiceLoginWithMagicLinkProcedure:
-			authServiceLoginWithMagicLinkHandler.ServeHTTP(w, r)
+		case AuthServiceRegisterProcedure:
+			authServiceRegisterHandler.ServeHTTP(w, r)
+		case AuthServiceLoginProcedure:
+			authServiceLoginHandler.ServeHTTP(w, r)
+		case AuthServiceWaitForAuthenticationProcedure:
+			authServiceWaitForAuthenticationHandler.ServeHTTP(w, r)
+		case AuthServiceCheckAuthStatusProcedure:
+			authServiceCheckAuthStatusHandler.ServeHTTP(w, r)
 		case AuthServiceRefreshTokenProcedure:
 			authServiceRefreshTokenHandler.ServeHTTP(w, r)
 		default:
@@ -154,12 +286,20 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) SendMagicLink(context.Context, *connect.Request[v1.SendMagicLinkRequest]) (*connect.Response[v1.SendMagicLinkResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.SendMagicLink is not implemented"))
+func (UnimplementedAuthServiceHandler) Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.Register is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) LoginWithMagicLink(context.Context, *connect.Request[v1.LoginWithMagicLinkRequest]) (*connect.Response[v1.LoginWithMagicLinkResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.LoginWithMagicLink is not implemented"))
+func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.Login is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.WaitForAuthentication is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) CheckAuthStatus(context.Context, *connect.Request[v1.CheckAuthStatusRequest]) (*connect.Response[v1.CheckAuthStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("arco.v1.AuthService.CheckAuthStatus is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) RefreshToken(context.Context, *connect.Request[v1.RefreshTokenRequest]) (*connect.Response[v1.RefreshTokenResponse], error) {

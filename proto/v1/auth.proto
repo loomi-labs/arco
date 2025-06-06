@@ -6,48 +6,204 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 
+// AuthService provides magic link authentication for both desktop and web applications.
+// 
+// The service supports magic link authentication with real-time status updates.
+// Desktop apps initiate auth and wait for magic link clicks, while web browsers
+// handle the magic link verification directly.
 service AuthService {
-  rpc SendMagicLink(SendMagicLinkRequest) returns (SendMagicLinkResponse) {}
-  rpc LoginWithMagicLink(LoginWithMagicLinkRequest) returns (LoginWithMagicLinkResponse) {}
-  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {}
+  // Register initiates user registration by sending a magic link.
+  // 
+  // If the user already exists, this gracefully falls back to login behavior.
+  // Rate limited to 5 requests per hour per email address.
+  //
+  // Returns a session_id that can be used with:
+  // - WaitForAuthentication (for real-time status updates)
+  // - CheckAuthStatus (for polling-based status updates)
+  // - Magic link verification (via web REST endpoint)
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  
+  // Login initiates authentication for existing users only.
+  //
+  // Sends a magic link to the user's email.
+  // Returns an error if no account exists with the provided email.
+  // Rate limited to 5 requests per hour per email address.
+  //
+  // Returns a session_id that can be used with:
+  // - WaitForAuthentication (for real-time status updates)
+  // - CheckAuthStatus (for polling-based status updates)
+  // - Magic link verification (via web REST endpoint)
+  rpc Login(LoginRequest) returns (LoginResponse);
+  
+  // WaitForAuthentication provides real-time streaming updates for authentication status.
+  //
+  // Desktop applications should call this immediately after Register/Login to
+  // receive instant notifications when the user completes authentication via
+  // magic link.
+  //
+  // The stream automatically times out after 10 minutes and sends status updates
+  // every 2 seconds until authentication is completed or expired.
+  //
+  // Preferred over CheckAuthStatus for real-time applications.
+  rpc WaitForAuthentication(WaitForAuthRequest) returns (stream AuthStatusResponse);
+  
+  // CheckAuthStatus provides polling-based authentication status checking.
+  //
+  // This is a fallback for applications that cannot use streaming connections.
+  // Desktop applications should poll this endpoint every few seconds after
+  // initiating authentication with Register/Login.
+  //
+  // Returns the current authentication status and tokens if authentication
+  // has been completed.
+  rpc CheckAuthStatus(CheckAuthStatusRequest) returns (CheckAuthStatusResponse);
+  
+  // RefreshToken exchanges a refresh token for new access and refresh tokens.
+  //
+  // Access tokens expire after a short duration (typically 15 minutes).
+  // Refresh tokens are long-lived (360 days) and should be used to obtain
+  // new access tokens without requiring re-authentication.
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
 }
 
-message SendMagicLinkRequest {
+// RegisterRequest initiates user registration.
+message RegisterRequest {
+  // The email address for the new user account.
+  // Must be a valid email format.
   string email = 1;
 }
 
-message SendMagicLinkResponse {
+// RegisterResponse contains the result of a registration initiation.
+message RegisterResponse {
+  // Whether the email was successfully sent.
   bool sent = 1;
+  
+  // Human-readable message describing the result.
+  // Examples: "A registration link has been sent to your email"
+  //          "A login link has been sent to your email" (fallback case)
   string message = 2;
+  
+  // Unique session identifier for this authentication attempt.
+  // Use this with WaitForAuthentication or CheckAuthStatus.
+  string session_id = 3;
 }
 
-message LoginWithMagicLinkRequest {
-  string token = 1;
+// LoginRequest initiates authentication for existing users.
+message LoginRequest {
+  // The email address of the existing user account.
+  // Must be a valid email format and correspond to an existing user.
+  string email = 1;
 }
 
-message LoginWithMagicLinkResponse {
-  string access_token = 1;
-  string refresh_token = 2;
-  int64 expires_in = 3;
-  User user = 4;
-  bool is_new_user = 5;
+// LoginResponse contains the result of a login initiation.
+message LoginResponse {
+  // Whether the email was successfully sent.
+  bool sent = 1;
+  
+  // Human-readable message describing the result.
+  // Example: "A login link has been sent to your email"
+  string message = 2;
+  
+  // Unique session identifier for this authentication attempt.
+  // Use this with WaitForAuthentication or CheckAuthStatus.
+  string session_id = 3;
 }
 
+// WaitForAuthRequest initiates streaming authentication status monitoring.
+message WaitForAuthRequest {
+  // The session ID returned from Register or Login calls.
+  string session_id = 1;
+}
+
+// AuthStatusResponse provides real-time authentication status updates.
+message AuthStatusResponse {
+  // Current authentication status.
+  AuthStatus status = 1;
+  
+  // JWT access token (only set when status = AUTHENTICATED).
+  string access_token = 2;
+  
+  // Long-lived refresh token (only set when status = AUTHENTICATED).
+  string refresh_token = 3;
+  
+  // Access token lifetime in seconds (only set when status = AUTHENTICATED).
+  int64 expires_in = 4;
+  
+  // User information (only set when status = AUTHENTICATED).
+  User user = 5;
+}
+
+// CheckAuthStatusRequest polls for authentication status.
+message CheckAuthStatusRequest {
+  // The session ID returned from Register or Login calls.
+  string session_id = 1;
+}
+
+// CheckAuthStatusResponse provides current authentication status.
+message CheckAuthStatusResponse {
+  // Current authentication status.
+  AuthStatus status = 1;
+  
+  // JWT access token (only set when status = AUTHENTICATED).
+  string access_token = 2;
+  
+  // Long-lived refresh token (only set when status = AUTHENTICATED).
+  string refresh_token = 3;
+  
+  // Access token lifetime in seconds (only set when status = AUTHENTICATED).
+  int64 expires_in = 4;
+  
+  // User information (only set when status = AUTHENTICATED).
+  User user = 5;
+}
+
+// AuthStatus represents the current state of an authentication session.
+enum AuthStatus {
+  // Authentication is in progress, waiting for user action.
+  PENDING = 0;
+  
+  // User has successfully authenticated via magic link.
+  AUTHENTICATED = 1;
+  
+  // Authentication session has expired (10 minutes timeout).
+  EXPIRED = 2;
+  
+  // Authentication was cancelled by the user or system.
+  CANCELLED = 3;
+}
+
+// RefreshTokenRequest exchanges a refresh token for new tokens.
 message RefreshTokenRequest {
+  // The long-lived refresh token obtained from authentication.
   string refresh_token = 1;
 }
 
+// RefreshTokenResponse contains new authentication tokens.
 message RefreshTokenResponse {
+  // New JWT access token for API authentication.
   string access_token = 1;
+  
+  // New long-lived refresh token (rotated for security).
   string refresh_token = 2;
+  
+  // New access token lifetime in seconds.
   int64 expires_in = 3;
 }
 
-
+// User represents a user account in the system.
 message User {
+  // Unique user identifier.
   string id = 1;
+  
+  // User's email address (verified via authentication).
   string email = 2;
-  bool email_verified = 3;
+  
+  // Timestamp of the user's last successful authentication.
+  // Null for users who have registered but never logged in.
+  google.protobuf.Timestamp last_logged_in = 3;
+  
+  // When the user account was created.
   google.protobuf.Timestamp created_at = 4;
+  
+  // When the user account was last updated.
   google.protobuf.Timestamp updated_at = 5;
 }

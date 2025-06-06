@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Archive is the client for interacting with the Archive builders.
 	Archive *ArchiveClient
+	// AuthSession is the client for interacting with the AuthSession builders.
+	AuthSession *AuthSessionClient
 	// BackupProfile is the client for interacting with the BackupProfile builders.
 	BackupProfile *BackupProfileClient
 	// BackupSchedule is the client for interacting with the BackupSchedule builders.
@@ -22,10 +24,14 @@ type Tx struct {
 	Notification *NotificationClient
 	// PruningRule is the client for interacting with the PruningRule builders.
 	PruningRule *PruningRuleClient
+	// RefreshToken is the client for interacting with the RefreshToken builders.
+	RefreshToken *RefreshTokenClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 	// Settings is the client for interacting with the Settings builders.
 	Settings *SettingsClient
+	// User is the client for interacting with the User builders.
+	User *UserClient
 
 	// lazily loaded.
 	client     *Client
@@ -158,12 +164,15 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Archive = NewArchiveClient(tx.config)
+	tx.AuthSession = NewAuthSessionClient(tx.config)
 	tx.BackupProfile = NewBackupProfileClient(tx.config)
 	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
 	tx.Notification = NewNotificationClient(tx.config)
 	tx.PruningRule = NewPruningRuleClient(tx.config)
+	tx.RefreshToken = NewRefreshTokenClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
 	tx.Settings = NewSettingsClient(tx.config)
+	tx.User = NewUserClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
