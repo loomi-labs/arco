@@ -63,14 +63,12 @@ message RegisterResponse {
   // Whether the email was successfully sent.
   bool sent = 1;
   
-  // Human-readable message describing the result.
-  // Examples: "A registration link has been sent to your email"
-  //          "A login link has been sent to your email" (fallback case)
-  string message = 2;
-  
   // Unique session identifier for this authentication attempt.
   // Use this with WaitForAuthentication.
-  string session_id = 3;
+  string session_id = 2;
+  
+  // When the authentication session expires.
+  google.protobuf.Timestamp expires_at = 3;
 }
 
 // LoginRequest initiates authentication for existing users.
@@ -85,13 +83,12 @@ message LoginResponse {
   // Whether the email was successfully sent.
   bool sent = 1;
   
-  // Human-readable message describing the result.
-  // Example: "A login link has been sent to your email"
-  string message = 2;
-  
   // Unique session identifier for this authentication attempt.
   // Use this with WaitForAuthentication.
-  string session_id = 3;
+  string session_id = 2;
+  
+  // When the authentication session expires.
+  google.protobuf.Timestamp expires_at = 3;
 }
 
 // WaitForAuthRequest initiates streaming authentication status monitoring.
@@ -112,10 +109,13 @@ message AuthStatusResponse {
   string refresh_token = 3;
   
   // Access token lifetime in seconds (only set when status = AUTHENTICATED).
-  int64 expires_in = 4;
+  int64 access_token_expires_in = 4;
   
   // User information (only set when status = AUTHENTICATED).
   User user = 5;
+  
+  // Refresh token lifetime in seconds (only set when status = AUTHENTICATED).
+  int64 refresh_token_expires_in = 6;
 }
 
 

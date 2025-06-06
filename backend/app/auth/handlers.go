@@ -15,6 +15,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/user"
 )
 
+
 type AuthServiceHandler struct {
 	db         *ent.Client
 	jwtService *JWTService
@@ -46,11 +47,13 @@ func (h *AuthServiceHandler) Register(ctx context.Context, req *connect.Request[
 	sessionID := resp.Msg.SessionId
 	email := req.Msg.Email
 
+	// Use server-provided expiration time
+	expiresAt := resp.Msg.ExpiresAt.AsTime()
 	_, err = h.db.AuthSession.Create().
 		SetID(sessionID).
 		SetUserEmail(email).
 		SetStatus(authsession.StatusPENDING).
-		SetExpiresAt(time.Now().Add(10 * time.Minute)).
+		SetExpiresAt(expiresAt).
 		Save(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create local auth session: %w", err))
@@ -70,11 +73,13 @@ func (h *AuthServiceHandler) Login(ctx context.Context, req *connect.Request[v1.
 	sessionID := resp.Msg.SessionId
 	email := req.Msg.Email
 
+	// Use server-provided expiration time
+	expiresAt := resp.Msg.ExpiresAt.AsTime()
 	_, err = h.db.AuthSession.Create().
 		SetID(sessionID).
 		SetUserEmail(email).
 		SetStatus(authsession.StatusPENDING).
-		SetExpiresAt(time.Now().Add(10 * time.Minute)).
+		SetExpiresAt(expiresAt).
 		Save(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create local auth session: %w", err))
@@ -148,11 +153,16 @@ func (h *AuthServiceHandler) RefreshToken(ctx context.Context, req *connect.Requ
 	if err == nil && storedToken != nil {
 		newTokenHash := h.jwtService.HashRefreshToken(resp.Msg.RefreshToken)
 
+		// Calculate expiration with 10% buffer for refresh token
+		expiresIn := time.Duration(resp.Msg.ExpiresIn) * time.Second
+		buffer := expiresIn / 10
+		expiresAt := time.Now().Add(expiresIn - buffer)
+
 		err = h.db.RefreshToken.Update().
 			Where(refreshtoken.IDEQ(storedToken.ID)).
 			SetTokenHash(newTokenHash).
 			SetLastUsedAt(time.Now()).
-			SetExpiresAt(time.Now().Add(360 * 24 * time.Hour)).
+			SetExpiresAt(expiresAt).
 			Exec(ctx)
 		if err != nil {
 			// Log error but don't fail the request since external service succeeded
@@ -200,10 +210,16 @@ func (h *AuthServiceHandler) syncAuthenticatedSession(ctx context.Context, sessi
 	// Store refresh token locally
 	if authResp.RefreshToken != "" {
 		refreshTokenHash := h.jwtService.HashRefreshToken(authResp.RefreshToken)
+
+		// Calculate expiration with 10% buffer from server-provided refresh token expiration
+		expiresIn := time.Duration(authResp.RefreshTokenExpiresIn) * time.Second
+		buffer := expiresIn / 10
+		expiresAt := time.Now().Add(expiresIn - buffer)
+
 		_, err = h.db.RefreshToken.Create().
 			SetUserID(userEntity.ID).
 			SetTokenHash(refreshTokenHash).
-			SetExpiresAt(time.Now().Add(360 * 24 * time.Hour)).
+			SetExpiresAt(expiresAt).
 			Save(ctx)
 		if err != nil {
 			fmt.Printf("Error saving refresh token: %v\n", err)

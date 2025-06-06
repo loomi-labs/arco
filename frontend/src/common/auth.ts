@@ -86,7 +86,7 @@ export function useAuth() {
       
       authState.value.currentSessionId = response.session_id || null
       
-      toast.success(response.message || 'Registration email sent! Check your email for the magic link.')
+      toast.success('Registration email sent! Check your email for the magic link.')
       return response
     } catch (error) {
       await showAndLogError('Failed to start registration', error)
@@ -107,7 +107,7 @@ export function useAuth() {
       
       authState.value.currentSessionId = response.session_id || null
       
-      toast.success(response.message || 'Login email sent! Check your email for the magic link.')
+      toast.success('Login email sent! Check your email for the magic link.')
       return response
     } catch (error) {
       await showAndLogError('Failed to start login', error)

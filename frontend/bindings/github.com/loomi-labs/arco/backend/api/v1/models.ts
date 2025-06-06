@@ -5,6 +5,10 @@
 // @ts-ignore: Unused imports
 import {Create as $Create} from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as timestamppb$0 from "../../../../../../google.golang.org/protobuf/types/known/timestamppb/models.js";
+
 /**
  * LoginResponse contains the result of a login initiation.
  */
@@ -15,16 +19,15 @@ export class LoginResponse {
     "sent"?: boolean;
 
     /**
-     * Human-readable message describing the result.
-     * Example: "A login link has been sent to your email"
-     */
-    "message"?: string;
-
-    /**
      * Unique session identifier for this authentication attempt.
      * Use this with WaitForAuthentication.
      */
     "session_id"?: string;
+
+    /**
+     * When the authentication session expires.
+     */
+    "expires_at"?: timestamppb$0.Timestamp | null;
 
     /** Creates a new LoginResponse instance. */
     constructor($$source: Partial<LoginResponse> = {}) {
@@ -36,7 +39,11 @@ export class LoginResponse {
      * Creates a new LoginResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): LoginResponse {
+        const $$createField2_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("expires_at" in $$parsedSource) {
+            $$parsedSource["expires_at"] = $$createField2_0($$parsedSource["expires_at"]);
+        }
         return new LoginResponse($$parsedSource as Partial<LoginResponse>);
     }
 }
@@ -85,18 +92,15 @@ export class RegisterResponse {
     "sent"?: boolean;
 
     /**
-     * Human-readable message describing the result.
-     * Examples: "A registration link has been sent to your email"
-     * 
-     * 	"A login link has been sent to your email" (fallback case)
-     */
-    "message"?: string;
-
-    /**
      * Unique session identifier for this authentication attempt.
      * Use this with WaitForAuthentication.
      */
     "session_id"?: string;
+
+    /**
+     * When the authentication session expires.
+     */
+    "expires_at"?: timestamppb$0.Timestamp | null;
 
     /** Creates a new RegisterResponse instance. */
     constructor($$source: Partial<RegisterResponse> = {}) {
@@ -108,7 +112,15 @@ export class RegisterResponse {
      * Creates a new RegisterResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): RegisterResponse {
+        const $$createField2_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("expires_at" in $$parsedSource) {
+            $$parsedSource["expires_at"] = $$createField2_0($$parsedSource["expires_at"]);
+        }
         return new RegisterResponse($$parsedSource as Partial<RegisterResponse>);
     }
 }
+
+// Private type creation functions
+const $$createType0 = timestamppb$0.Timestamp.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);

@@ -61,10 +61,6 @@ func init() {
 	authsessionDescUserEmail := authsessionFields[1].Descriptor()
 	// authsession.UserEmailValidator is a validator for the "user_email" field. It is called by the builders before save.
 	authsession.UserEmailValidator = authsessionDescUserEmail.Validators[0].(func(string) error)
-	// authsessionDescExpiresAt is the schema descriptor for expires_at field.
-	authsessionDescExpiresAt := authsessionFields[3].Descriptor()
-	// authsession.DefaultExpiresAt holds the default value on creation for the expires_at field.
-	authsession.DefaultExpiresAt = authsessionDescExpiresAt.Default.(func() time.Time)
 	backupprofileMixin := schema.BackupProfile{}.Mixin()
 	backupprofileMixinFields0 := backupprofileMixin[0].Fields()
 	_ = backupprofileMixinFields0

@@ -5,7 +5,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 	"regexp"
-	"time"
 )
 
 type AuthSession struct {
@@ -35,10 +34,7 @@ func (AuthSession) Fields() []ent.Field {
 			Values("PENDING", "AUTHENTICATED", "EXPIRED", "CANCELLED").
 			Default("PENDING"),
 		field.Time("expires_at").
-			StructTag(`json:"expiresAt"`).
-			Default(func() time.Time {
-				return time.Now().Add(10 * time.Minute)
-			}),
+			StructTag(`json:"expiresAt"`),
 	}
 }
 

@@ -57,8 +57,6 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// UserEmailValidator is a validator for the "user_email" field. It is called by the builders before save.
 	UserEmailValidator func(string) error
-	// DefaultExpiresAt holds the default value on creation for the "expires_at" field.
-	DefaultExpiresAt func() time.Time
 )
 
 // Status defines the type for the "status" enum field.

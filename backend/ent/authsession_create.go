@@ -74,14 +74,6 @@ func (asc *AuthSessionCreate) SetExpiresAt(t time.Time) *AuthSessionCreate {
 	return asc
 }
 
-// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
-func (asc *AuthSessionCreate) SetNillableExpiresAt(t *time.Time) *AuthSessionCreate {
-	if t != nil {
-		asc.SetExpiresAt(*t)
-	}
-	return asc
-}
-
 // SetID sets the "id" field.
 func (asc *AuthSessionCreate) SetID(s string) *AuthSessionCreate {
 	asc.mutation.SetID(s)
@@ -134,10 +126,6 @@ func (asc *AuthSessionCreate) defaults() {
 	if _, ok := asc.mutation.Status(); !ok {
 		v := authsession.DefaultStatus
 		asc.mutation.SetStatus(v)
-	}
-	if _, ok := asc.mutation.ExpiresAt(); !ok {
-		v := authsession.DefaultExpiresAt()
-		asc.mutation.SetExpiresAt(v)
 	}
 }
 
