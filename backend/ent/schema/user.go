@@ -2,7 +2,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
@@ -36,12 +35,23 @@ func (User) Fields() []ent.Field {
 			StructTag(`json:"lastLoggedIn"`).
 			Nillable().
 			Optional(),
+		field.String("refresh_token").
+			Sensitive().
+			Nillable().
+			Optional(),
+		field.String("access_token").
+			Sensitive().
+			Nillable().
+			Optional(),
+		field.Time("access_token_expires_at").
+			Nillable().
+			Optional(),
+		field.Time("refresh_token_expires_at").
+			Nillable().
+			Optional(),
 	}
 }
 
 func (User) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.To("refresh_tokens", RefreshToken.Type).
-			StructTag(`json:"refreshTokens,omitempty"`),
-	}
+	return []ent.Edge{}
 }

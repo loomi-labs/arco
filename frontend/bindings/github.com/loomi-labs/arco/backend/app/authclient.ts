@@ -14,19 +14,15 @@ export function RecoverAuthSessions(): Promise<void> & { cancel(): void } {
     return $resultPromise;
 }
 
-export function RefreshToken(refreshToken: string): Promise<arcov1$0.RefreshTokenResponse | null> & { cancel(): void } {
+export function RefreshToken(refreshToken: string): Promise<boolean> & { cancel(): void } {
     let $resultPromise = $Call.ByID(459351207, refreshToken) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    return $resultPromise;
 }
 
 export function StartLogin(email: string): Promise<arcov1$0.LoginResponse | null> & { cancel(): void } {
     let $resultPromise = $Call.ByID(668674002, email) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType3($result);
+        return $$createType1($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
@@ -35,16 +31,22 @@ export function StartLogin(email: string): Promise<arcov1$0.LoginResponse | null
 export function StartRegister(email: string): Promise<arcov1$0.RegisterResponse | null> & { cancel(): void } {
     let $resultPromise = $Call.ByID(1890475488, email) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType5($result);
+        return $$createType3($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
 }
 
+/**
+ * WaitForAuthentication handles authentication status streaming with a channel-based approach
+ */
+export function WaitForAuthentication(sessionID: string, responseChan: any): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2740086057, sessionID, responseChan) as any;
+    return $resultPromise;
+}
+
 // Private type creation functions
-const $$createType0 = arcov1$0.RefreshTokenResponse.createFrom;
+const $$createType0 = arcov1$0.LoginResponse.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = arcov1$0.LoginResponse.createFrom;
+const $$createType2 = arcov1$0.RegisterResponse.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = arcov1$0.RegisterResponse.createFrom;
-const $$createType5 = $Create.Nullable($$createType4);

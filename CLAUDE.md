@@ -2,7 +2,7 @@
 
 ## Build & Run
 - Build: `task build`
-- Dev mode: `task dev`
+- Dev mode: `NO_COLOR=1 task dev`
 - Run tests: `task test`
 - Run single test: `go test -v -run TestName ./path/to/package`
 - Format Go code: `task dev:go:format`
@@ -22,11 +22,9 @@
 - Set migration version: `task db:set:migration:version -- VERSION`
 
 ## Frontend
-- Install dependencies: `task install:frontend:deps`
-- Build frontend: `task build:frontend`
-- Run frontend dev server: `task dev:frontend`
-- Generate bindings: `task generate:bindings`
-- Generate icons: `task generate:icons`
+- Install dependencies: `task common:install:frontend:deps`
+- Build frontend: `task common:build:frontend`
+- Generate bindings: `task common:generate:bindings`
 
 ## Code Style Guide
 - Error handling: Check errors with proper context message

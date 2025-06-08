@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -23,17 +22,16 @@ const (
 	FieldEmail = "email"
 	// FieldLastLoggedIn holds the string denoting the last_logged_in field in the database.
 	FieldLastLoggedIn = "last_logged_in"
-	// EdgeRefreshTokens holds the string denoting the refresh_tokens edge name in mutations.
-	EdgeRefreshTokens = "refresh_tokens"
+	// FieldRefreshToken holds the string denoting the refresh_token field in the database.
+	FieldRefreshToken = "refresh_token"
+	// FieldAccessToken holds the string denoting the access_token field in the database.
+	FieldAccessToken = "access_token"
+	// FieldAccessTokenExpiresAt holds the string denoting the access_token_expires_at field in the database.
+	FieldAccessTokenExpiresAt = "access_token_expires_at"
+	// FieldRefreshTokenExpiresAt holds the string denoting the refresh_token_expires_at field in the database.
+	FieldRefreshTokenExpiresAt = "refresh_token_expires_at"
 	// Table holds the table name of the user in the database.
 	Table = "users"
-	// RefreshTokensTable is the table that holds the refresh_tokens relation/edge.
-	RefreshTokensTable = "refresh_tokens"
-	// RefreshTokensInverseTable is the table name for the RefreshToken entity.
-	// It exists in this package in order to avoid circular dependency with the "refreshtoken" package.
-	RefreshTokensInverseTable = "refresh_tokens"
-	// RefreshTokensColumn is the table column denoting the refresh_tokens relation/edge.
-	RefreshTokensColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -43,6 +41,10 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldEmail,
 	FieldLastLoggedIn,
+	FieldRefreshToken,
+	FieldAccessToken,
+	FieldAccessTokenExpiresAt,
+	FieldRefreshTokenExpiresAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -96,23 +98,22 @@ func ByLastLoggedIn(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastLoggedIn, opts...).ToFunc()
 }
 
-// ByRefreshTokensCount orders the results by refresh_tokens count.
-func ByRefreshTokensCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newRefreshTokensStep(), opts...)
-	}
+// ByRefreshToken orders the results by the refresh_token field.
+func ByRefreshToken(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefreshToken, opts...).ToFunc()
 }
 
-// ByRefreshTokens orders the results by refresh_tokens terms.
-func ByRefreshTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRefreshTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
+// ByAccessToken orders the results by the access_token field.
+func ByAccessToken(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAccessToken, opts...).ToFunc()
 }
-func newRefreshTokensStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RefreshTokensInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, RefreshTokensTable, RefreshTokensColumn),
-	)
+
+// ByAccessTokenExpiresAt orders the results by the access_token_expires_at field.
+func ByAccessTokenExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAccessTokenExpiresAt, opts...).ToFunc()
+}
+
+// ByRefreshTokenExpiresAt orders the results by the refresh_token_expires_at field.
+func ByRefreshTokenExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefreshTokenExpiresAt, opts...).ToFunc()
 }

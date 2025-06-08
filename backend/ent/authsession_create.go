@@ -48,12 +48,6 @@ func (asc *AuthSessionCreate) SetNillableUpdatedAt(t *time.Time) *AuthSessionCre
 	return asc
 }
 
-// SetUserEmail sets the "user_email" field.
-func (asc *AuthSessionCreate) SetUserEmail(s string) *AuthSessionCreate {
-	asc.mutation.SetUserEmail(s)
-	return asc
-}
-
 // SetStatus sets the "status" field.
 func (asc *AuthSessionCreate) SetStatus(a authsession.Status) *AuthSessionCreate {
 	asc.mutation.SetStatus(a)
@@ -137,14 +131,6 @@ func (asc *AuthSessionCreate) check() error {
 	if _, ok := asc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "AuthSession.updated_at"`)}
 	}
-	if _, ok := asc.mutation.UserEmail(); !ok {
-		return &ValidationError{Name: "user_email", err: errors.New(`ent: missing required field "AuthSession.user_email"`)}
-	}
-	if v, ok := asc.mutation.UserEmail(); ok {
-		if err := authsession.UserEmailValidator(v); err != nil {
-			return &ValidationError{Name: "user_email", err: fmt.Errorf(`ent: validator failed for field "AuthSession.user_email": %w`, err)}
-		}
-	}
 	if _, ok := asc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "AuthSession.status"`)}
 	}
@@ -198,10 +184,6 @@ func (asc *AuthSessionCreate) createSpec() (*AuthSession, *sqlgraph.CreateSpec) 
 	if value, ok := asc.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if value, ok := asc.mutation.UserEmail(); ok {
-		_spec.SetField(authsession.FieldUserEmail, field.TypeString, value)
-		_node.UserEmail = value
 	}
 	if value, ok := asc.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)

@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/loomi-labs/arco/backend/ent/refreshtoken"
 	"github.com/loomi-labs/arco/backend/ent/user"
 )
 
@@ -70,6 +69,62 @@ func (uc *UserCreate) SetNillableLastLoggedIn(t *time.Time) *UserCreate {
 	return uc
 }
 
+// SetRefreshToken sets the "refresh_token" field.
+func (uc *UserCreate) SetRefreshToken(s string) *UserCreate {
+	uc.mutation.SetRefreshToken(s)
+	return uc
+}
+
+// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
+func (uc *UserCreate) SetNillableRefreshToken(s *string) *UserCreate {
+	if s != nil {
+		uc.SetRefreshToken(*s)
+	}
+	return uc
+}
+
+// SetAccessToken sets the "access_token" field.
+func (uc *UserCreate) SetAccessToken(s string) *UserCreate {
+	uc.mutation.SetAccessToken(s)
+	return uc
+}
+
+// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAccessToken(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAccessToken(*s)
+	}
+	return uc
+}
+
+// SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
+func (uc *UserCreate) SetAccessTokenExpiresAt(t time.Time) *UserCreate {
+	uc.mutation.SetAccessTokenExpiresAt(t)
+	return uc
+}
+
+// SetNillableAccessTokenExpiresAt sets the "access_token_expires_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAccessTokenExpiresAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetAccessTokenExpiresAt(*t)
+	}
+	return uc
+}
+
+// SetRefreshTokenExpiresAt sets the "refresh_token_expires_at" field.
+func (uc *UserCreate) SetRefreshTokenExpiresAt(t time.Time) *UserCreate {
+	uc.mutation.SetRefreshTokenExpiresAt(t)
+	return uc
+}
+
+// SetNillableRefreshTokenExpiresAt sets the "refresh_token_expires_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillableRefreshTokenExpiresAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetRefreshTokenExpiresAt(*t)
+	}
+	return uc
+}
+
 // SetID sets the "id" field.
 func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	uc.mutation.SetID(u)
@@ -82,21 +137,6 @@ func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
 		uc.SetID(*u)
 	}
 	return uc
-}
-
-// AddRefreshTokenIDs adds the "refresh_tokens" edge to the RefreshToken entity by IDs.
-func (uc *UserCreate) AddRefreshTokenIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddRefreshTokenIDs(ids...)
-	return uc
-}
-
-// AddRefreshTokens adds the "refresh_tokens" edges to the RefreshToken entity.
-func (uc *UserCreate) AddRefreshTokens(r ...*RefreshToken) *UserCreate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return uc.AddRefreshTokenIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -215,21 +255,21 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldLastLoggedIn, field.TypeTime, value)
 		_node.LastLoggedIn = &value
 	}
-	if nodes := uc.mutation.RefreshTokensIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
+	if value, ok := uc.mutation.RefreshToken(); ok {
+		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
+		_node.RefreshToken = &value
+	}
+	if value, ok := uc.mutation.AccessToken(); ok {
+		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
+		_node.AccessToken = &value
+	}
+	if value, ok := uc.mutation.AccessTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)
+		_node.AccessTokenExpiresAt = &value
+	}
+	if value, ok := uc.mutation.RefreshTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldRefreshTokenExpiresAt, field.TypeTime, value)
+		_node.RefreshTokenExpiresAt = &value
 	}
 	return _node, _spec
 }

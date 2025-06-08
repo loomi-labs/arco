@@ -74,11 +74,6 @@ func UpdatedAt(v time.Time) predicate.AuthSession {
 	return predicate.AuthSession(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// UserEmail applies equality check predicate on the "user_email" field. It's identical to UserEmailEQ.
-func UserEmail(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldEQ(FieldUserEmail, v))
-}
-
 // ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
 func ExpiresAt(v time.Time) predicate.AuthSession {
 	return predicate.AuthSession(sql.FieldEQ(FieldExpiresAt, v))
@@ -162,71 +157,6 @@ func UpdatedAtLT(v time.Time) predicate.AuthSession {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.AuthSession {
 	return predicate.AuthSession(sql.FieldLTE(FieldUpdatedAt, v))
-}
-
-// UserEmailEQ applies the EQ predicate on the "user_email" field.
-func UserEmailEQ(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldEQ(FieldUserEmail, v))
-}
-
-// UserEmailNEQ applies the NEQ predicate on the "user_email" field.
-func UserEmailNEQ(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldNEQ(FieldUserEmail, v))
-}
-
-// UserEmailIn applies the In predicate on the "user_email" field.
-func UserEmailIn(vs ...string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldIn(FieldUserEmail, vs...))
-}
-
-// UserEmailNotIn applies the NotIn predicate on the "user_email" field.
-func UserEmailNotIn(vs ...string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldNotIn(FieldUserEmail, vs...))
-}
-
-// UserEmailGT applies the GT predicate on the "user_email" field.
-func UserEmailGT(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldGT(FieldUserEmail, v))
-}
-
-// UserEmailGTE applies the GTE predicate on the "user_email" field.
-func UserEmailGTE(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldGTE(FieldUserEmail, v))
-}
-
-// UserEmailLT applies the LT predicate on the "user_email" field.
-func UserEmailLT(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldLT(FieldUserEmail, v))
-}
-
-// UserEmailLTE applies the LTE predicate on the "user_email" field.
-func UserEmailLTE(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldLTE(FieldUserEmail, v))
-}
-
-// UserEmailContains applies the Contains predicate on the "user_email" field.
-func UserEmailContains(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldContains(FieldUserEmail, v))
-}
-
-// UserEmailHasPrefix applies the HasPrefix predicate on the "user_email" field.
-func UserEmailHasPrefix(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldHasPrefix(FieldUserEmail, v))
-}
-
-// UserEmailHasSuffix applies the HasSuffix predicate on the "user_email" field.
-func UserEmailHasSuffix(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldHasSuffix(FieldUserEmail, v))
-}
-
-// UserEmailEqualFold applies the EqualFold predicate on the "user_email" field.
-func UserEmailEqualFold(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldEqualFold(FieldUserEmail, v))
-}
-
-// UserEmailContainsFold applies the ContainsFold predicate on the "user_email" field.
-func UserEmailContainsFold(v string) predicate.AuthSession {
-	return predicate.AuthSession(sql.FieldContainsFold(FieldUserEmail, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

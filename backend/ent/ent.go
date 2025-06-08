@@ -18,7 +18,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
-	"github.com/loomi-labs/arco/backend/ent/refreshtoken"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/settings"
 	"github.com/loomi-labs/arco/backend/ent/user"
@@ -88,7 +87,6 @@ func checkColumn(table, column string) error {
 			backupschedule.Table: backupschedule.ValidColumn,
 			notification.Table:   notification.ValidColumn,
 			pruningrule.Table:    pruningrule.ValidColumn,
-			refreshtoken.Table:   refreshtoken.ValidColumn,
 			repository.Table:     repository.ValidColumn,
 			settings.Table:       settings.ValidColumn,
 			user.Table:           user.ValidColumn,

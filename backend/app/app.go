@@ -189,6 +189,12 @@ func (a *App) Startup(ctx context.Context) {
 		// Don't fail startup for session recovery errors, just log them
 	}
 
+	// Validate and clean up stored refresh tokens
+	if err := a.AuthClient().validateAndRenewStoredTokens(a.ctx); err != nil {
+		a.log.Errorf("Failed to validate stored tokens: %v", err)
+		// Don't fail startup for token validation errors, just log them
+	}
+
 	// Save mount states
 	a.RepoClient().setMountStates()
 

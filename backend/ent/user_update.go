@@ -11,9 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
-	"github.com/loomi-labs/arco/backend/ent/refreshtoken"
 	"github.com/loomi-labs/arco/backend/ent/user"
 )
 
@@ -71,45 +69,89 @@ func (uu *UserUpdate) ClearLastLoggedIn() *UserUpdate {
 	return uu
 }
 
-// AddRefreshTokenIDs adds the "refresh_tokens" edge to the RefreshToken entity by IDs.
-func (uu *UserUpdate) AddRefreshTokenIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.AddRefreshTokenIDs(ids...)
+// SetRefreshToken sets the "refresh_token" field.
+func (uu *UserUpdate) SetRefreshToken(s string) *UserUpdate {
+	uu.mutation.SetRefreshToken(s)
 	return uu
 }
 
-// AddRefreshTokens adds the "refresh_tokens" edges to the RefreshToken entity.
-func (uu *UserUpdate) AddRefreshTokens(r ...*RefreshToken) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableRefreshToken(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetRefreshToken(*s)
 	}
-	return uu.AddRefreshTokenIDs(ids...)
+	return uu
+}
+
+// ClearRefreshToken clears the value of the "refresh_token" field.
+func (uu *UserUpdate) ClearRefreshToken() *UserUpdate {
+	uu.mutation.ClearRefreshToken()
+	return uu
+}
+
+// SetAccessToken sets the "access_token" field.
+func (uu *UserUpdate) SetAccessToken(s string) *UserUpdate {
+	uu.mutation.SetAccessToken(s)
+	return uu
+}
+
+// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAccessToken(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAccessToken(*s)
+	}
+	return uu
+}
+
+// ClearAccessToken clears the value of the "access_token" field.
+func (uu *UserUpdate) ClearAccessToken() *UserUpdate {
+	uu.mutation.ClearAccessToken()
+	return uu
+}
+
+// SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
+func (uu *UserUpdate) SetAccessTokenExpiresAt(t time.Time) *UserUpdate {
+	uu.mutation.SetAccessTokenExpiresAt(t)
+	return uu
+}
+
+// SetNillableAccessTokenExpiresAt sets the "access_token_expires_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAccessTokenExpiresAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetAccessTokenExpiresAt(*t)
+	}
+	return uu
+}
+
+// ClearAccessTokenExpiresAt clears the value of the "access_token_expires_at" field.
+func (uu *UserUpdate) ClearAccessTokenExpiresAt() *UserUpdate {
+	uu.mutation.ClearAccessTokenExpiresAt()
+	return uu
+}
+
+// SetRefreshTokenExpiresAt sets the "refresh_token_expires_at" field.
+func (uu *UserUpdate) SetRefreshTokenExpiresAt(t time.Time) *UserUpdate {
+	uu.mutation.SetRefreshTokenExpiresAt(t)
+	return uu
+}
+
+// SetNillableRefreshTokenExpiresAt sets the "refresh_token_expires_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableRefreshTokenExpiresAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetRefreshTokenExpiresAt(*t)
+	}
+	return uu
+}
+
+// ClearRefreshTokenExpiresAt clears the value of the "refresh_token_expires_at" field.
+func (uu *UserUpdate) ClearRefreshTokenExpiresAt() *UserUpdate {
+	uu.mutation.ClearRefreshTokenExpiresAt()
+	return uu
 }
 
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
-}
-
-// ClearRefreshTokens clears all "refresh_tokens" edges to the RefreshToken entity.
-func (uu *UserUpdate) ClearRefreshTokens() *UserUpdate {
-	uu.mutation.ClearRefreshTokens()
-	return uu
-}
-
-// RemoveRefreshTokenIDs removes the "refresh_tokens" edge to RefreshToken entities by IDs.
-func (uu *UserUpdate) RemoveRefreshTokenIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.RemoveRefreshTokenIDs(ids...)
-	return uu
-}
-
-// RemoveRefreshTokens removes "refresh_tokens" edges to RefreshToken entities.
-func (uu *UserUpdate) RemoveRefreshTokens(r ...*RefreshToken) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return uu.RemoveRefreshTokenIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -188,50 +230,29 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if uu.mutation.LastLoggedInCleared() {
 		_spec.ClearField(user.FieldLastLoggedIn, field.TypeTime)
 	}
-	if uu.mutation.RefreshTokensCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	if value, ok := uu.mutation.RefreshToken(); ok {
+		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
 	}
-	if nodes := uu.mutation.RemovedRefreshTokensIDs(); len(nodes) > 0 && !uu.mutation.RefreshTokensCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	if uu.mutation.RefreshTokenCleared() {
+		_spec.ClearField(user.FieldRefreshToken, field.TypeString)
 	}
-	if nodes := uu.mutation.RefreshTokensIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if value, ok := uu.mutation.AccessToken(); ok {
+		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
+	}
+	if uu.mutation.AccessTokenCleared() {
+		_spec.ClearField(user.FieldAccessToken, field.TypeString)
+	}
+	if value, ok := uu.mutation.AccessTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)
+	}
+	if uu.mutation.AccessTokenExpiresAtCleared() {
+		_spec.ClearField(user.FieldAccessTokenExpiresAt, field.TypeTime)
+	}
+	if value, ok := uu.mutation.RefreshTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldRefreshTokenExpiresAt, field.TypeTime, value)
+	}
+	if uu.mutation.RefreshTokenExpiresAtCleared() {
+		_spec.ClearField(user.FieldRefreshTokenExpiresAt, field.TypeTime)
 	}
 	_spec.AddModifiers(uu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
@@ -295,45 +316,89 @@ func (uuo *UserUpdateOne) ClearLastLoggedIn() *UserUpdateOne {
 	return uuo
 }
 
-// AddRefreshTokenIDs adds the "refresh_tokens" edge to the RefreshToken entity by IDs.
-func (uuo *UserUpdateOne) AddRefreshTokenIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.AddRefreshTokenIDs(ids...)
+// SetRefreshToken sets the "refresh_token" field.
+func (uuo *UserUpdateOne) SetRefreshToken(s string) *UserUpdateOne {
+	uuo.mutation.SetRefreshToken(s)
 	return uuo
 }
 
-// AddRefreshTokens adds the "refresh_tokens" edges to the RefreshToken entity.
-func (uuo *UserUpdateOne) AddRefreshTokens(r ...*RefreshToken) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableRefreshToken(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetRefreshToken(*s)
 	}
-	return uuo.AddRefreshTokenIDs(ids...)
+	return uuo
+}
+
+// ClearRefreshToken clears the value of the "refresh_token" field.
+func (uuo *UserUpdateOne) ClearRefreshToken() *UserUpdateOne {
+	uuo.mutation.ClearRefreshToken()
+	return uuo
+}
+
+// SetAccessToken sets the "access_token" field.
+func (uuo *UserUpdateOne) SetAccessToken(s string) *UserUpdateOne {
+	uuo.mutation.SetAccessToken(s)
+	return uuo
+}
+
+// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAccessToken(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAccessToken(*s)
+	}
+	return uuo
+}
+
+// ClearAccessToken clears the value of the "access_token" field.
+func (uuo *UserUpdateOne) ClearAccessToken() *UserUpdateOne {
+	uuo.mutation.ClearAccessToken()
+	return uuo
+}
+
+// SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
+func (uuo *UserUpdateOne) SetAccessTokenExpiresAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetAccessTokenExpiresAt(t)
+	return uuo
+}
+
+// SetNillableAccessTokenExpiresAt sets the "access_token_expires_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAccessTokenExpiresAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetAccessTokenExpiresAt(*t)
+	}
+	return uuo
+}
+
+// ClearAccessTokenExpiresAt clears the value of the "access_token_expires_at" field.
+func (uuo *UserUpdateOne) ClearAccessTokenExpiresAt() *UserUpdateOne {
+	uuo.mutation.ClearAccessTokenExpiresAt()
+	return uuo
+}
+
+// SetRefreshTokenExpiresAt sets the "refresh_token_expires_at" field.
+func (uuo *UserUpdateOne) SetRefreshTokenExpiresAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetRefreshTokenExpiresAt(t)
+	return uuo
+}
+
+// SetNillableRefreshTokenExpiresAt sets the "refresh_token_expires_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableRefreshTokenExpiresAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetRefreshTokenExpiresAt(*t)
+	}
+	return uuo
+}
+
+// ClearRefreshTokenExpiresAt clears the value of the "refresh_token_expires_at" field.
+func (uuo *UserUpdateOne) ClearRefreshTokenExpiresAt() *UserUpdateOne {
+	uuo.mutation.ClearRefreshTokenExpiresAt()
+	return uuo
 }
 
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
-}
-
-// ClearRefreshTokens clears all "refresh_tokens" edges to the RefreshToken entity.
-func (uuo *UserUpdateOne) ClearRefreshTokens() *UserUpdateOne {
-	uuo.mutation.ClearRefreshTokens()
-	return uuo
-}
-
-// RemoveRefreshTokenIDs removes the "refresh_tokens" edge to RefreshToken entities by IDs.
-func (uuo *UserUpdateOne) RemoveRefreshTokenIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.RemoveRefreshTokenIDs(ids...)
-	return uuo
-}
-
-// RemoveRefreshTokens removes "refresh_tokens" edges to RefreshToken entities.
-func (uuo *UserUpdateOne) RemoveRefreshTokens(r ...*RefreshToken) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return uuo.RemoveRefreshTokenIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -442,50 +507,29 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if uuo.mutation.LastLoggedInCleared() {
 		_spec.ClearField(user.FieldLastLoggedIn, field.TypeTime)
 	}
-	if uuo.mutation.RefreshTokensCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	if value, ok := uuo.mutation.RefreshToken(); ok {
+		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
 	}
-	if nodes := uuo.mutation.RemovedRefreshTokensIDs(); len(nodes) > 0 && !uuo.mutation.RefreshTokensCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	if uuo.mutation.RefreshTokenCleared() {
+		_spec.ClearField(user.FieldRefreshToken, field.TypeString)
 	}
-	if nodes := uuo.mutation.RefreshTokensIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.RefreshTokensTable,
-			Columns: []string{user.RefreshTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if value, ok := uuo.mutation.AccessToken(); ok {
+		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
+	}
+	if uuo.mutation.AccessTokenCleared() {
+		_spec.ClearField(user.FieldAccessToken, field.TypeString)
+	}
+	if value, ok := uuo.mutation.AccessTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)
+	}
+	if uuo.mutation.AccessTokenExpiresAtCleared() {
+		_spec.ClearField(user.FieldAccessTokenExpiresAt, field.TypeTime)
+	}
+	if value, ok := uuo.mutation.RefreshTokenExpiresAt(); ok {
+		_spec.SetField(user.FieldRefreshTokenExpiresAt, field.TypeTime, value)
+	}
+	if uuo.mutation.RefreshTokenExpiresAtCleared() {
+		_spec.ClearField(user.FieldRefreshTokenExpiresAt, field.TypeTime)
 	}
 	_spec.AddModifiers(uuo.modifiers...)
 	_node = &User{config: uuo.config}

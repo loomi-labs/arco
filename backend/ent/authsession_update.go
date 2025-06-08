@@ -35,20 +35,6 @@ func (asu *AuthSessionUpdate) SetUpdatedAt(t time.Time) *AuthSessionUpdate {
 	return asu
 }
 
-// SetUserEmail sets the "user_email" field.
-func (asu *AuthSessionUpdate) SetUserEmail(s string) *AuthSessionUpdate {
-	asu.mutation.SetUserEmail(s)
-	return asu
-}
-
-// SetNillableUserEmail sets the "user_email" field if the given value is not nil.
-func (asu *AuthSessionUpdate) SetNillableUserEmail(s *string) *AuthSessionUpdate {
-	if s != nil {
-		asu.SetUserEmail(*s)
-	}
-	return asu
-}
-
 // SetStatus sets the "status" field.
 func (asu *AuthSessionUpdate) SetStatus(a authsession.Status) *AuthSessionUpdate {
 	asu.mutation.SetStatus(a)
@@ -120,11 +106,6 @@ func (asu *AuthSessionUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (asu *AuthSessionUpdate) check() error {
-	if v, ok := asu.mutation.UserEmail(); ok {
-		if err := authsession.UserEmailValidator(v); err != nil {
-			return &ValidationError{Name: "user_email", err: fmt.Errorf(`ent: validator failed for field "AuthSession.user_email": %w`, err)}
-		}
-	}
 	if v, ok := asu.mutation.Status(); ok {
 		if err := authsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AuthSession.status": %w`, err)}
@@ -153,9 +134,6 @@ func (asu *AuthSessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := asu.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := asu.mutation.UserEmail(); ok {
-		_spec.SetField(authsession.FieldUserEmail, field.TypeString, value)
 	}
 	if value, ok := asu.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)
@@ -188,20 +166,6 @@ type AuthSessionUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (asuo *AuthSessionUpdateOne) SetUpdatedAt(t time.Time) *AuthSessionUpdateOne {
 	asuo.mutation.SetUpdatedAt(t)
-	return asuo
-}
-
-// SetUserEmail sets the "user_email" field.
-func (asuo *AuthSessionUpdateOne) SetUserEmail(s string) *AuthSessionUpdateOne {
-	asuo.mutation.SetUserEmail(s)
-	return asuo
-}
-
-// SetNillableUserEmail sets the "user_email" field if the given value is not nil.
-func (asuo *AuthSessionUpdateOne) SetNillableUserEmail(s *string) *AuthSessionUpdateOne {
-	if s != nil {
-		asuo.SetUserEmail(*s)
-	}
 	return asuo
 }
 
@@ -289,11 +253,6 @@ func (asuo *AuthSessionUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (asuo *AuthSessionUpdateOne) check() error {
-	if v, ok := asuo.mutation.UserEmail(); ok {
-		if err := authsession.UserEmailValidator(v); err != nil {
-			return &ValidationError{Name: "user_email", err: fmt.Errorf(`ent: validator failed for field "AuthSession.user_email": %w`, err)}
-		}
-	}
 	if v, ok := asuo.mutation.Status(); ok {
 		if err := authsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AuthSession.status": %w`, err)}
@@ -339,9 +298,6 @@ func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSessi
 	}
 	if value, ok := asuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := asuo.mutation.UserEmail(); ok {
-		_spec.SetField(authsession.FieldUserEmail, field.TypeString, value)
 	}
 	if value, ok := asuo.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)

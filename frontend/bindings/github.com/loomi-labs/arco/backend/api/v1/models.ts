@@ -49,40 +49,6 @@ export class LoginResponse {
 }
 
 /**
- * RefreshTokenResponse contains new authentication tokens.
- */
-export class RefreshTokenResponse {
-    /**
-     * New JWT access token for API authentication.
-     */
-    "access_token"?: string;
-
-    /**
-     * New long-lived refresh token (rotated for security).
-     */
-    "refresh_token"?: string;
-
-    /**
-     * New access token lifetime in seconds.
-     */
-    "expires_in"?: number;
-
-    /** Creates a new RefreshTokenResponse instance. */
-    constructor($$source: Partial<RefreshTokenResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RefreshTokenResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RefreshTokenResponse {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RefreshTokenResponse($$parsedSource as Partial<RefreshTokenResponse>);
-    }
-}
-
-/**
  * RegisterResponse contains the result of a registration initiation.
  */
 export class RegisterResponse {

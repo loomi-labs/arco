@@ -26,28 +26,15 @@ type User struct {
 	Email string `json:"email"`
 	// LastLoggedIn holds the value of the "last_logged_in" field.
 	LastLoggedIn *time.Time `json:"lastLoggedIn"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the UserQuery when eager-loading is set.
-	Edges        UserEdges `json:"edges"`
-	selectValues sql.SelectValues
-}
-
-// UserEdges holds the relations/edges for other nodes in the graph.
-type UserEdges struct {
-	// RefreshTokens holds the value of the refresh_tokens edge.
-	RefreshTokens []*RefreshToken `json:"refreshTokens,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// RefreshTokensOrErr returns the RefreshTokens value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) RefreshTokensOrErr() ([]*RefreshToken, error) {
-	if e.loadedTypes[0] {
-		return e.RefreshTokens, nil
-	}
-	return nil, &NotLoadedError{edge: "refresh_tokens"}
+	// RefreshToken holds the value of the "refresh_token" field.
+	RefreshToken *string `json:"-"`
+	// AccessToken holds the value of the "access_token" field.
+	AccessToken *string `json:"-"`
+	// AccessTokenExpiresAt holds the value of the "access_token_expires_at" field.
+	AccessTokenExpiresAt *time.Time `json:"access_token_expires_at,omitempty"`
+	// RefreshTokenExpiresAt holds the value of the "refresh_token_expires_at" field.
+	RefreshTokenExpiresAt *time.Time `json:"refresh_token_expires_at,omitempty"`
+	selectValues          sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -55,9 +42,9 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldEmail:
+		case user.FieldEmail, user.FieldRefreshToken, user.FieldAccessToken:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldLastLoggedIn:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldLastLoggedIn, user.FieldAccessTokenExpiresAt, user.FieldRefreshTokenExpiresAt:
 			values[i] = new(sql.NullTime)
 		case user.FieldID:
 			values[i] = new(uuid.UUID)
@@ -107,6 +94,34 @@ func (u *User) assignValues(columns []string, values []any) error {
 				u.LastLoggedIn = new(time.Time)
 				*u.LastLoggedIn = value.Time
 			}
+		case user.FieldRefreshToken:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token", values[i])
+			} else if value.Valid {
+				u.RefreshToken = new(string)
+				*u.RefreshToken = value.String
+			}
+		case user.FieldAccessToken:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field access_token", values[i])
+			} else if value.Valid {
+				u.AccessToken = new(string)
+				*u.AccessToken = value.String
+			}
+		case user.FieldAccessTokenExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field access_token_expires_at", values[i])
+			} else if value.Valid {
+				u.AccessTokenExpiresAt = new(time.Time)
+				*u.AccessTokenExpiresAt = value.Time
+			}
+		case user.FieldRefreshTokenExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_expires_at", values[i])
+			} else if value.Valid {
+				u.RefreshTokenExpiresAt = new(time.Time)
+				*u.RefreshTokenExpiresAt = value.Time
+			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
 		}
@@ -118,11 +133,6 @@ func (u *User) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (u *User) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
-}
-
-// QueryRefreshTokens queries the "refresh_tokens" edge of the User entity.
-func (u *User) QueryRefreshTokens() *RefreshTokenQuery {
-	return NewUserClient(u.config).QueryRefreshTokens(u)
 }
 
 // Update returns a builder for updating this User.
@@ -159,6 +169,20 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	if v := u.LastLoggedIn; v != nil {
 		builder.WriteString("last_logged_in=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("refresh_token=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("access_token=<sensitive>")
+	builder.WriteString(", ")
+	if v := u.AccessTokenExpiresAt; v != nil {
+		builder.WriteString("access_token_expires_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := u.RefreshTokenExpiresAt; v != nil {
+		builder.WriteString("refresh_token_expires_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteByte(')')

@@ -18,8 +18,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldUserEmail holds the string denoting the user_email field in the database.
-	FieldUserEmail = "user_email"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
@@ -33,7 +31,6 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldUserEmail,
 	FieldStatus,
 	FieldExpiresAt,
 }
@@ -55,8 +52,6 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// UserEmailValidator is a validator for the "user_email" field. It is called by the builders before save.
-	UserEmailValidator func(string) error
 )
 
 // Status defines the type for the "status" enum field.
@@ -103,11 +98,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByUserEmail orders the results by the user_email field.
-func ByUserEmail(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUserEmail, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

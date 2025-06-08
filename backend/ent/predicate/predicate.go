@@ -24,9 +24,6 @@ type Notification func(*sql.Selector)
 // PruningRule is the predicate function for pruningrule builders.
 type PruningRule func(*sql.Selector)
 
-// RefreshToken is the predicate function for refreshtoken builders.
-type RefreshToken func(*sql.Selector)
-
 // Repository is the predicate function for repository builders.
 type Repository func(*sql.Selector)
 

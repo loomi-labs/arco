@@ -24,8 +24,6 @@ type Tx struct {
 	Notification *NotificationClient
 	// PruningRule is the client for interacting with the PruningRule builders.
 	PruningRule *PruningRuleClient
-	// RefreshToken is the client for interacting with the RefreshToken builders.
-	RefreshToken *RefreshTokenClient
 	// Repository is the client for interacting with the Repository builders.
 	Repository *RepositoryClient
 	// Settings is the client for interacting with the Settings builders.
@@ -169,7 +167,6 @@ func (tx *Tx) init() {
 	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
 	tx.Notification = NewNotificationClient(tx.config)
 	tx.PruningRule = NewPruningRuleClient(tx.config)
-	tx.RefreshToken = NewRefreshTokenClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)
 	tx.Settings = NewSettingsClient(tx.config)
 	tx.User = NewUserClient(tx.config)

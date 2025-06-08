@@ -12,7 +12,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
-	"github.com/loomi-labs/arco/backend/ent/refreshtoken"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/ent/settings"
@@ -57,10 +56,6 @@ func init() {
 	authsession.DefaultUpdatedAt = authsessionDescUpdatedAt.Default.(func() time.Time)
 	// authsession.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	authsession.UpdateDefaultUpdatedAt = authsessionDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// authsessionDescUserEmail is the schema descriptor for user_email field.
-	authsessionDescUserEmail := authsessionFields[1].Descriptor()
-	// authsession.UserEmailValidator is a validator for the "user_email" field. It is called by the builders before save.
-	authsession.UserEmailValidator = authsessionDescUserEmail.Validators[0].(func(string) error)
 	backupprofileMixin := schema.BackupProfile{}.Mixin()
 	backupprofileMixinFields0 := backupprofileMixin[0].Fields()
 	_ = backupprofileMixinFields0
@@ -167,16 +162,6 @@ func init() {
 	pruningrule.DefaultUpdatedAt = pruningruleDescUpdatedAt.Default.(func() time.Time)
 	// pruningrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	pruningrule.UpdateDefaultUpdatedAt = pruningruleDescUpdatedAt.UpdateDefault.(func() time.Time)
-	refreshtokenFields := schema.RefreshToken{}.Fields()
-	_ = refreshtokenFields
-	// refreshtokenDescCreatedAt is the schema descriptor for created_at field.
-	refreshtokenDescCreatedAt := refreshtokenFields[4].Descriptor()
-	// refreshtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
-	refreshtoken.DefaultCreatedAt = refreshtokenDescCreatedAt.Default.(func() time.Time)
-	// refreshtokenDescID is the schema descriptor for id field.
-	refreshtokenDescID := refreshtokenFields[0].Descriptor()
-	// refreshtoken.DefaultID holds the default value on creation for the id field.
-	refreshtoken.DefaultID = refreshtokenDescID.Default.(func() uuid.UUID)
 	repositoryMixin := schema.Repository{}.Mixin()
 	repositoryMixinFields0 := repositoryMixin[0].Fields()
 	_ = repositoryMixinFields0

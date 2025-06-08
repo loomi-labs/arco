@@ -4,7 +4,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
-	"regexp"
 )
 
 type AuthSession struct {
@@ -17,18 +16,11 @@ func (AuthSession) Mixin() []ent.Mixin {
 	}
 }
 
-var (
-	sessionEmailPattern = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-)
-
 func (AuthSession) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
 			StructTag(`json:"id"`).
 			Unique(),
-		field.String("user_email").
-			StructTag(`json:"userEmail"`).
-			Match(sessionEmailPattern),
 		field.Enum("status").
 			StructTag(`json:"status"`).
 			Values("PENDING", "AUTHENTICATED", "EXPIRED", "CANCELLED").

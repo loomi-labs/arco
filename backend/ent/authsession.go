@@ -21,8 +21,6 @@ type AuthSession struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
-	// UserEmail holds the value of the "user_email" field.
-	UserEmail string `json:"userEmail"`
 	// Status holds the value of the "status" field.
 	Status authsession.Status `json:"status"`
 	// ExpiresAt holds the value of the "expires_at" field.
@@ -35,7 +33,7 @@ func (*AuthSession) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case authsession.FieldID, authsession.FieldUserEmail, authsession.FieldStatus:
+		case authsession.FieldID, authsession.FieldStatus:
 			values[i] = new(sql.NullString)
 		case authsession.FieldCreatedAt, authsession.FieldUpdatedAt, authsession.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -71,12 +69,6 @@ func (as *AuthSession) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				as.UpdatedAt = value.Time
-			}
-		case authsession.FieldUserEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field user_email", values[i])
-			} else if value.Valid {
-				as.UserEmail = value.String
 			}
 		case authsession.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -131,9 +123,6 @@ func (as *AuthSession) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(as.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("user_email=")
-	builder.WriteString(as.UserEmail)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", as.Status))

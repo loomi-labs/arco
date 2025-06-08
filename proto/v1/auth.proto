@@ -111,11 +111,11 @@ message AuthStatusResponse {
   // Access token lifetime in seconds (only set when status = AUTHENTICATED).
   int64 access_token_expires_in = 4;
   
-  // User information (only set when status = AUTHENTICATED).
-  User user = 5;
-  
   // Refresh token lifetime in seconds (only set when status = AUTHENTICATED).
-  int64 refresh_token_expires_in = 6;
+  int64 refresh_token_expires_in = 5;
+
+  // User information (only set when status = AUTHENTICATED).
+  User user = 6;
 }
 
 
@@ -149,7 +149,10 @@ message RefreshTokenResponse {
   string refresh_token = 2;
   
   // New access token lifetime in seconds.
-  int64 expires_in = 3;
+  int64 access_token_expires_in = 3;
+  
+  // New refresh token lifetime in seconds.
+  int64 refresh_token_expires_in = 4;
 }
 
 // User represents a user account in the system.
