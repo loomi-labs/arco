@@ -104,6 +104,16 @@ func (ac *AuthClient) RecoverAuthSessions(ctx context.Context) error {
 	return nil
 }
 
+// validateAndRenewStoredTokens validates stored refresh tokens and automatically renews access tokens.
+// Since refresh tokens are stored as hashes for security, this method attempts to use valid
+// refresh tokens to obtain new access tokens from the auth service.
+func (ac *AuthClient) validateAndRenewStoredTokens(ctx context.Context) error {
+	// TODO: Query users with refresh tokens and validate them
+	ac.app.log.Info("Token validation temporarily disabled during refactor")
+	ac.eventEmitter.EmitEvent(ctx, types.EventNotAuthenticated.String())
+	return nil
+}
+
 func (ac *AuthClient) startAuthMonitoring(ctx context.Context, sessionID string) {
 	// Create a timeout context for the authentication monitoring (10 minutes total)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)

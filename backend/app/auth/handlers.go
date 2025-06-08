@@ -11,10 +11,8 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
-	"github.com/loomi-labs/arco/backend/ent/refreshtoken"
 	"github.com/loomi-labs/arco/backend/ent/user"
 )
-
 
 type AuthServiceHandler struct {
 	db         *ent.Client
@@ -142,33 +140,8 @@ func (h *AuthServiceHandler) RefreshToken(ctx context.Context, req *connect.Requ
 		return nil, err
 	}
 
-	// Update local token storage
-	refreshTokenString := req.Msg.RefreshToken
-	tokenHash := h.jwtService.HashRefreshToken(refreshTokenString)
-
-	storedToken, err := h.db.RefreshToken.Query().
-		Where(refreshtoken.TokenHashEQ(tokenHash)).
-		WithUser().
-		First(ctx)
-	if err == nil && storedToken != nil {
-		newTokenHash := h.jwtService.HashRefreshToken(resp.Msg.RefreshToken)
-
-		// Calculate expiration with 10% buffer for refresh token
-		expiresIn := time.Duration(resp.Msg.ExpiresIn) * time.Second
-		buffer := expiresIn / 10
-		expiresAt := time.Now().Add(expiresIn - buffer)
-
-		err = h.db.RefreshToken.Update().
-			Where(refreshtoken.IDEQ(storedToken.ID)).
-			SetTokenHash(newTokenHash).
-			SetLastUsedAt(time.Now()).
-			SetExpiresAt(expiresAt).
-			Exec(ctx)
-		if err != nil {
-			// Log error but don't fail the request since external service succeeded
-			fmt.Printf("Warning: failed to update local refresh token: %v\n", err)
-		}
-	}
+	// TODO: Update local token storage using User.refresh_token field
+	_ = req.Msg.RefreshToken // Placeholder to avoid unused variable
 
 	return resp, nil
 }
@@ -207,19 +180,11 @@ func (h *AuthServiceHandler) syncAuthenticatedSession(ctx context.Context, sessi
 		}
 	}
 
-	// Store refresh token locally
+	// Store refresh token locally on user
 	if authResp.RefreshToken != "" {
-		refreshTokenHash := h.jwtService.HashRefreshToken(authResp.RefreshToken)
-
-		// Calculate expiration with 10% buffer from server-provided refresh token expiration
-		expiresIn := time.Duration(authResp.RefreshTokenExpiresIn) * time.Second
-		buffer := expiresIn / 10
-		expiresAt := time.Now().Add(expiresIn - buffer)
-
-		_, err = h.db.RefreshToken.Create().
-			SetUserID(userEntity.ID).
-			SetTokenHash(refreshTokenHash).
-			SetExpiresAt(expiresAt).
+		_, err = h.db.User.Update().
+			Where(user.IDEQ(userEntity.ID)).
+			SetRefreshToken(authResp.RefreshToken).
 			Save(ctx)
 		if err != nil {
 			fmt.Printf("Error saving refresh token: %v\n", err)
