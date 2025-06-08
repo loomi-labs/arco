@@ -9,16 +9,6 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as arcov1$0 from "../api/v1/models.js";
 
-export function RecoverAuthSessions(): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1439759582) as any;
-    return $resultPromise;
-}
-
-export function RefreshToken(refreshToken: string): Promise<boolean> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(459351207, refreshToken) as any;
-    return $resultPromise;
-}
-
 export function StartLogin(email: string): Promise<arcov1$0.LoginResponse | null> & { cancel(): void } {
     let $resultPromise = $Call.ByID(668674002, email) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
@@ -35,14 +25,6 @@ export function StartRegister(email: string): Promise<arcov1$0.RegisterResponse 
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
-}
-
-/**
- * WaitForAuthentication handles authentication status streaming with a channel-based approach
- */
-export function WaitForAuthentication(sessionID: string, responseChan: any): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2740086057, sessionID, responseChan) as any;
-    return $resultPromise;
 }
 
 // Private type creation functions

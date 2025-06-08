@@ -2,6 +2,8 @@ version: v2
 modules:
   - path: .
     name: buf.build/arco/arco-cloud
+deps:
+  - buf.build/bufbuild/protovalidate
 lint:
   use:
     - STANDARD

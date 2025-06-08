@@ -4,10 +4,11 @@ import (
 	"connectrpc.com/connect"
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"net/http"
 	"time"
 
 	v1 "github.com/loomi-labs/arco/backend/api/v1"
-	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
@@ -17,37 +18,26 @@ import (
 type AuthClient struct {
 	app          *App
 	eventEmitter types.EventEmitter
+	rpcClient    arcov1connect.AuthServiceClient
 }
 
-var (
-	// Shared instance to maintain session state
-	globalAuthHandler *auth.AuthServiceHandler
-)
+func (a *App) NewAuthClient(cloudRPCURL string) *AuthClient {
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
-func (a *App) AuthClient() *AuthClient {
 	return &AuthClient{
 		app:          a,
 		eventEmitter: &types.RuntimeEventEmitter{},
+		rpcClient:    arcov1connect.NewAuthServiceClient(httpClient, cloudRPCURL),
 	}
-}
-
-func (ac *AuthClient) getAuthHandler() *auth.AuthServiceHandler {
-	if globalAuthHandler == nil {
-		if ac.app.db == nil {
-			panic("database not initialized - this is a programming error")
-		}
-		globalAuthHandler = auth.NewAuthServiceHandler(ac.app.log, ac.app.config.CloudRPCURL)
-	}
-	return globalAuthHandler
 }
 
 func (ac *AuthClient) StartRegister(ctx context.Context, email string) (*v1.RegisterResponse, error) {
-	authHandler := ac.getAuthHandler()
-
 	req := connect.NewRequest(&v1.RegisterRequest{Email: email})
 
 	// Make request to external auth service
-	resp, err := authHandler.RpcClient.Register(ctx, req)
+	resp, err := ac.rpcClient.Register(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register with external auth service: %w", err)
 	}
@@ -71,12 +61,10 @@ func (ac *AuthClient) StartRegister(ctx context.Context, email string) (*v1.Regi
 }
 
 func (ac *AuthClient) StartLogin(ctx context.Context, email string) (*v1.LoginResponse, error) {
-	authHandler := ac.getAuthHandler()
-
 	req := connect.NewRequest(&v1.LoginRequest{Email: email})
 
 	// Make request to external auth service
-	resp, err := authHandler.RpcClient.Login(ctx, req)
+	resp, err := ac.rpcClient.Login(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to login with external auth service: %w", err)
 	}
@@ -99,9 +87,7 @@ func (ac *AuthClient) StartLogin(ctx context.Context, email string) (*v1.LoginRe
 	return resp.Msg, nil
 }
 
-func (ac *AuthClient) RefreshToken(ctx context.Context, refreshToken string) bool {
-	authHandler := ac.getAuthHandler()
-
+func (ac *AuthClient) refreshToken(ctx context.Context, refreshToken string) bool {
 	// Update local token storage - get the first user since we only store one user
 	userEntity, err := ac.app.db.User.Query().First(ctx)
 	if err != nil {
@@ -111,75 +97,18 @@ func (ac *AuthClient) RefreshToken(ctx context.Context, refreshToken string) boo
 
 	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: refreshToken})
 
-	resp, err := authHandler.RefreshToken(ctx, req)
+	resp, err := ac.rpcClient.RefreshToken(ctx, req)
 	if err != nil {
 		ac.app.log.Errorf("Failed to refresh token: %v", err)
 		return false
 	}
 
-	err = userEntity.Update().
-		SetAccessToken(resp.Msg.AccessToken).
-		SetAccessTokenExpiresAt(time.Now().Add(time.Duration(resp.Msg.AccessTokenExpiresIn) * time.Second)).
-		SetRefreshToken(resp.Msg.RefreshToken).
-		SetRefreshTokenExpiresAt(time.Now().Add(time.Duration(resp.Msg.RefreshTokenExpiresIn) * time.Second)).
-		Exec(ctx)
+	err = ac.updateUserTokens(ctx, userEntity, resp.Msg.AccessToken, resp.Msg.RefreshToken, resp.Msg.AccessTokenExpiresIn, resp.Msg.RefreshTokenExpiresIn)
 	if err != nil {
 		ac.app.log.Errorf("Failed to update local tokens for user %s: %v", userEntity.Email, err)
 		return false
 	}
 	return true
-}
-
-// WaitForAuthentication handles authentication status streaming with a channel-based approach
-func (ac *AuthClient) WaitForAuthentication(ctx context.Context, sessionID string, responseChan chan<- *v1.AuthStatusResponse) error {
-	if sessionID == "" {
-		return fmt.Errorf("session_id is required")
-	}
-
-	authHandler := ac.getAuthHandler()
-	req := connect.NewRequest(&v1.WaitForAuthRequest{SessionId: sessionID})
-
-	// Open stream to external service
-	externalStream, err := authHandler.RpcClient.WaitForAuthentication(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer externalStream.Close()
-
-	// Forward stream updates from external service to local client
-	for externalStream.Receive() {
-		resp := externalStream.Msg()
-
-		// Send response to channel
-		select {
-		case responseChan <- resp:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-
-		// If authenticated, sync tokens locally and end stream
-		if resp.Status == v1.AuthStatus_AUTHENTICATED {
-			ac.syncAuthenticatedSession(ctx, sessionID, resp)
-			return nil
-		} else if resp.Status != v1.AuthStatus_PENDING {
-			// Session expired or cancelled, update local session
-			err = ac.app.db.AuthSession.Update().
-				Where(authsession.IDEQ(sessionID)).
-				SetStatus(authsession.Status(resp.Status.String())).
-				Exec(ctx)
-			if err != nil {
-				ac.app.log.Errorf("Failed to update local session status: %v", err)
-			}
-			return nil
-		}
-	}
-
-	// Handle stream error
-	if err := externalStream.Err(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // syncAuthenticatedSession syncs tokens from external service to local db
@@ -220,25 +149,7 @@ func (ac *AuthClient) syncAuthenticatedSession(ctx context.Context, sessionID st
 	}
 
 	// Store tokens locally on user
-	updateQuery := ac.app.db.User.Update().Where(user.IDEQ(userEntity.ID))
-
-	if authResp.RefreshToken != "" {
-		updateQuery = updateQuery.SetRefreshToken(authResp.RefreshToken)
-		if authResp.RefreshTokenExpiresIn > 0 {
-			refreshExpiresAt := time.Now().Add(time.Duration(authResp.RefreshTokenExpiresIn) * time.Second)
-			updateQuery = updateQuery.SetRefreshTokenExpiresAt(refreshExpiresAt)
-		}
-	}
-
-	if authResp.AccessToken != "" {
-		updateQuery = updateQuery.SetAccessToken(authResp.AccessToken)
-		if authResp.AccessTokenExpiresIn > 0 {
-			accessExpiresAt := time.Now().Add(time.Duration(authResp.AccessTokenExpiresIn) * time.Second)
-			updateQuery = updateQuery.SetAccessTokenExpiresAt(accessExpiresAt)
-		}
-	}
-
-	_, err = updateQuery.Save(ctx)
+	err = ac.updateUserTokens(ctx, userEntity, authResp.AccessToken, authResp.RefreshToken, authResp.AccessTokenExpiresIn, authResp.RefreshTokenExpiresIn)
 	if err != nil {
 		ac.app.log.Errorf("Error saving tokens: %v", err)
 	}
@@ -253,7 +164,7 @@ func (ac *AuthClient) syncAuthenticatedSession(ctx context.Context, sessionID st
 	}
 }
 
-func (ac *AuthClient) RecoverAuthSessions(ctx context.Context) error {
+func (ac *AuthClient) recoverAuthSessions(ctx context.Context) error {
 	// Query for pending sessions that haven't expired
 	pendingSessions, err := ac.app.db.AuthSession.Query().
 		Where(authsession.StatusEQ(authsession.StatusPENDING)).
@@ -298,6 +209,7 @@ func (ac *AuthClient) validateAndRenewStoredTokens(ctx context.Context) error {
 			ac.eventEmitter.EmitEvent(ctx, types.EventNotAuthenticated.String())
 			return nil
 		}
+		ac.eventEmitter.EmitEvent(ctx, types.EventNotAuthenticated.String())
 		return fmt.Errorf("failed to query user with refresh token: %w", err)
 	}
 
@@ -312,8 +224,8 @@ func (ac *AuthClient) validateAndRenewStoredTokens(ctx context.Context) error {
 	// TODO: Move to keyring for better security
 	refreshToken := *userEntity.RefreshToken
 
-	// Attempt to refresh the token - RefreshToken returns success status
-	success := ac.RefreshToken(ctx, refreshToken)
+	// Attempt to refresh the token - refreshToken returns success status
+	success := ac.refreshToken(ctx, refreshToken)
 
 	if success {
 		ac.app.log.Debugf("Successfully validated tokens for user %s", userEntity.Email)
@@ -326,12 +238,35 @@ func (ac *AuthClient) validateAndRenewStoredTokens(ctx context.Context) error {
 	return nil
 }
 
+// updateUserTokens updates a user entity with the provided token information
+func (ac *AuthClient) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
+	updateQuery := userEntity.Update()
+
+	// Set access token and expiration if provided
+	if accessToken != "" {
+		updateQuery = updateQuery.SetAccessToken(accessToken)
+		if accessTokenExpiresIn > 0 {
+			accessExpiresAt := time.Now().Add(time.Duration(accessTokenExpiresIn) * time.Second)
+			updateQuery = updateQuery.SetAccessTokenExpiresAt(accessExpiresAt)
+		}
+	}
+
+	// Set refresh token and expiration if provided
+	if refreshToken != "" {
+		updateQuery = updateQuery.SetRefreshToken(refreshToken)
+		if refreshTokenExpiresIn > 0 {
+			refreshExpiresAt := time.Now().Add(time.Duration(refreshTokenExpiresIn) * time.Second)
+			updateQuery = updateQuery.SetRefreshTokenExpiresAt(refreshExpiresAt)
+		}
+	}
+
+	return updateQuery.Exec(ctx)
+}
+
 func (ac *AuthClient) startAuthMonitoring(ctx context.Context, sessionID string) {
 	// Create a timeout context for the authentication monitoring (10 minutes total)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
-
-	authHandler := ac.getAuthHandler()
 
 	// Retry configuration
 	const maxRetries = 20 // Max 20 retries over 10 minutes
@@ -351,7 +286,7 @@ func (ac *AuthClient) startAuthMonitoring(ctx context.Context, sessionID string)
 		// Use WaitForAuthentication streaming approach
 		req := connect.NewRequest(&v1.WaitForAuthRequest{SessionId: sessionID})
 
-		stream, err := authHandler.RpcClient.WaitForAuthentication(timeoutCtx, req)
+		stream, err := ac.rpcClient.WaitForAuthentication(timeoutCtx, req)
 		if err != nil {
 			retryCount++
 			if retryCount > maxRetries {
@@ -378,7 +313,8 @@ func (ac *AuthClient) startAuthMonitoring(ctx context.Context, sessionID string)
 
 			switch authStatus.Status {
 			case v1.AuthStatus_AUTHENTICATED:
-				// Authentication successful - emit global authenticated event
+				// Authentication successful - store tokens and emit global authenticated event
+				ac.syncAuthenticatedSession(context.Background(), sessionID, authStatus)
 				ac.eventEmitter.EmitEvent(context.Background(), types.EventAuthenticated.String())
 				return
 			case v1.AuthStatus_EXPIRED, v1.AuthStatus_CANCELLED:

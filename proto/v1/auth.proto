@@ -3,6 +3,7 @@ syntax = "proto3";
 package arco.v1;
 
 import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 
@@ -55,7 +56,7 @@ service AuthService {
 message RegisterRequest {
   // The email address for the new user account.
   // Must be a valid email format.
-  string email = 1;
+  string email = 1 [(buf.validate.field).string.email = true];
 }
 
 // RegisterResponse contains the result of a registration initiation.
@@ -75,7 +76,7 @@ message RegisterResponse {
 message LoginRequest {
   // The email address of the existing user account.
   // Must be a valid email format and correspond to an existing user.
-  string email = 1;
+  string email = 1 [(buf.validate.field).string.email = true];
 }
 
 // LoginResponse contains the result of a login initiation.
@@ -94,7 +95,7 @@ message LoginResponse {
 // WaitForAuthRequest initiates streaming authentication status monitoring.
 message WaitForAuthRequest {
   // The session ID returned from Register or Login calls.
-  string session_id = 1;
+  string session_id = 1 [(buf.validate.field).string.uuid = true];
 }
 
 // AuthStatusResponse provides real-time authentication status updates.
@@ -137,7 +138,7 @@ enum AuthStatus {
 // RefreshTokenRequest exchanges a refresh token for new tokens.
 message RefreshTokenRequest {
   // The long-lived refresh token obtained from authentication.
-  string refresh_token = 1;
+  string refresh_token = 1 [(buf.validate.field).string.pattern = "^[a-zA-Z0-9]{1,}$"];
 }
 
 // RefreshTokenResponse contains new authentication tokens.

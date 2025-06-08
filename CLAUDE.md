@@ -1,7 +1,7 @@
 # Arco Development Commands
 
 ## Build & Run
-- Build: `task build`
+- Build: `NO_COLOR=1 task build`
 - Dev mode: `NO_COLOR=1 task dev`
 - Run tests: `task test`
 - Run single test: `go test -v -run TestName ./path/to/package`

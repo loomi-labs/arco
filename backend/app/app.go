@@ -184,13 +184,13 @@ func (a *App) Startup(ctx context.Context) {
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
 
 	// Recover any pending authentication sessions
-	if err := a.AuthClient().RecoverAuthSessions(a.ctx); err != nil {
+	if err := a.NewAuthClient(a.config.CloudRPCURL).recoverAuthSessions(a.ctx); err != nil {
 		a.log.Errorf("Failed to recover authentication sessions: %v", err)
 		// Don't fail startup for session recovery errors, just log them
 	}
 
-	// Validate and clean up stored refresh tokens
-	if err := a.AuthClient().validateAndRenewStoredTokens(a.ctx); err != nil {
+	// Validate and clean up stored JWT
+	if err := a.NewAuthClient(a.config.CloudRPCURL).validateAndRenewStoredTokens(a.ctx); err != nil {
 		a.log.Errorf("Failed to validate stored tokens: %v", err)
 		// Don't fail startup for token validation errors, just log them
 	}
