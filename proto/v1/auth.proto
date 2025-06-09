@@ -68,8 +68,8 @@ message RegisterResponse {
   // Use this with WaitForAuthentication.
   string session_id = 2;
   
-  // When the authentication session expires.
-  google.protobuf.Timestamp expires_at = 3;
+  // Authentication session lifetime in seconds.
+  int64 expires_in = 3;
 }
 
 // LoginRequest initiates authentication for existing users.
@@ -88,8 +88,8 @@ message LoginResponse {
   // Use this with WaitForAuthentication.
   string session_id = 2;
   
-  // When the authentication session expires.
-  google.protobuf.Timestamp expires_at = 3;
+  // Authentication session lifetime in seconds.
+  int64 expires_in = 3;
 }
 
 // WaitForAuthRequest initiates streaming authentication status monitoring.
