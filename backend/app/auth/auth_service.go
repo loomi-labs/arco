@@ -172,7 +172,7 @@ func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.Us
 
 // syncAuthenticatedSession syncs tokens from external service to local db
 // We only ever store one user, so get the first user or create one and update the email
-func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.AuthStatusResponse) {
+func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
 	asi.mustHaveDB()
 
 	if authResp.User == nil {
@@ -335,7 +335,7 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		// Use WaitForAuthentication streaming approach
-		req := connect.NewRequest(&v1.WaitForAuthRequest{SessionId: session.SessionID})
+		req := connect.NewRequest(&v1.WaitForAuthenticationRequest{SessionId: session.SessionID})
 
 		asi.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
 		stream, err := asi.rpcClient.WaitForAuthentication(context.Background(), req)
@@ -362,17 +362,17 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 			authStatus := stream.Msg()
 
 			switch authStatus.Status {
-			case v1.AuthStatus_AUTHENTICATED:
+			case v1.AuthStatus_AUTH_STATUS_AUTHENTICATED:
 				// Authentication successful
 				asi.log.Debugf("Session %s: authentication successful", session.SessionID)
 				asi.syncAuthenticatedSession(context.Background(), session.SessionID, authStatus)
 				asi.state.SetAuthenticated(context.Background())
 				return
-			case v1.AuthStatus_EXPIRED, v1.AuthStatus_CANCELLED:
+			case v1.AuthStatus_AUTH_STATUS_EXPIRED, v1.AuthStatus_AUTH_STATUS_CANCELLED:
 				// Authentication failed
 				asi.log.Debugf("Session %s: authentication failed with status %v", session.SessionID, authStatus.Status)
 				return
-			case v1.AuthStatus_PENDING:
+			case v1.AuthStatus_AUTH_STATUS_PENDING:
 				// Still pending - continue waiting
 				asi.log.Debugf("Session %s: pending authentication", session.SessionID)
 				continue

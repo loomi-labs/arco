@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   PROTO_ROOT: .
-  PROTO_OUT: ../backend/api
+  PROTO_OUT: ../backend
 
 tasks:
   generate:
@@ -39,5 +39,4 @@ tasks:
   clean:
     desc: Clean generated protobuf files
     cmds:
-      - rm -rf {{.PROTO_OUT}}/arco/v1/*.pb.go
-      - rm -rf {{.PROTO_OUT}}/arco/v1/arcov1connect/
+      - rm -rf {{.PROTO_OUT}}/api
