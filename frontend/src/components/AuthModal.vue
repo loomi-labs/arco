@@ -1,39 +1,40 @@
 <script setup lang='ts'>
-import { computed, ref, watch, nextTick } from 'vue'
-import { CheckCircleIcon, EnvelopeIcon, ClockIcon } from '@heroicons/vue/24/outline'
-import FormField from './common/FormField.vue'
-import { formInputClass } from '../common/form'
-import { useAuth } from '../common/auth'
+import { computed, ref, watch } from "vue";
+import { CheckCircleIcon, EnvelopeIcon } from "@heroicons/vue/24/outline";
+import FormField from "./common/FormField.vue";
+import { formInputClass } from "../common/form";
+import { useAuth } from "../common/auth";
 
 /************
  * Types
  ************/
 
 interface Emits {
-  (event: 'authenticated'): void
-  (event: 'close'): void
+  (event: "authenticated"): void;
+
+  (event: "close"): void;
 }
 
 /************
  * Variables
  ************/
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 defineExpose({
   showModal
-})
+});
 
-const { startRegister, startLogin, isAuthenticated } = useAuth()
+const { startRegister, startLogin, isAuthenticated } = useAuth();
 
-const dialog = ref<HTMLDialogElement>()
-const activeTab = ref<'login' | 'register'>('login')
-const email = ref('')
-const emailError = ref<string | undefined>(undefined)
-const currentEmail = ref('')
-const isRegistration = ref(false)
-const isWaitingForAuth = ref(false)
-const isLoading = ref(false)
+const dialog = ref<HTMLDialogElement>();
+const activeTab = ref<"login" | "register">("login");
+const email = ref("");
+const emailError = ref<string | undefined>(undefined);
+const currentEmail = ref("");
+const isRegistration = ref(false);
+const isWaitingForAuth = ref(false);
+const isLoading = ref(false);
 
 
 /************
@@ -41,123 +42,123 @@ const isLoading = ref(false)
  ************/
 
 const isEmailValid = computed(() => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email.value)
-})
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.value);
+});
 
-const isValid = computed(() => 
-  email.value.length > 0 && 
-  isEmailValid.value && 
+const isValid = computed(() =>
+  email.value.length > 0 &&
+  isEmailValid.value &&
   !emailError.value
-)
+);
 
-const modalTitle = computed(() => 
-  activeTab.value === 'login' ? 'Login to Arco Cloud' : 'Register for Arco Cloud'
-)
+const modalTitle = computed(() =>
+  activeTab.value === "login" ? "Login to Arco Cloud" : "Register for Arco Cloud"
+);
 
-const modalDescription = computed(() => 
-  activeTab.value === 'login' 
-    ? 'Enter your email address and we\'ll send you a magic link.'
-    : 'Enter your email address to create your Arco Cloud account.'
-)
+const modalDescription = computed(() =>
+  activeTab.value === "login"
+    ? "Enter your email address and we'll send you a magic link."
+    : "Enter your email address to create your Arco Cloud account."
+);
 
 const submitButtonText = computed(() =>
-  activeTab.value === 'login' ? 'Login' : 'Register'
-)
+  activeTab.value === "login" ? "Login" : "Register"
+);
 
-const waitingModalTitle = computed(() => 
-  isRegistration.value ? 'Complete Registration' : 'Complete Login'
-)
+const waitingModalTitle = computed(() =>
+  isRegistration.value ? "Complete Registration" : "Complete Login"
+);
 
 /************
  * Functions
  ************/
 
 function showModal() {
-  dialog.value?.showModal()
+  dialog.value?.showModal();
 }
 
 function resetAll() {
-  email.value = ''
-  emailError.value = undefined
-  activeTab.value = 'login'
-  currentEmail.value = ''
-  isRegistration.value = false
-  isWaitingForAuth.value = false
+  email.value = "";
+  emailError.value = undefined;
+  activeTab.value = "login";
+  currentEmail.value = "";
+  isRegistration.value = false;
+  isWaitingForAuth.value = false;
 }
 
-function switchTab(tab: 'login' | 'register') {
-  activeTab.value = tab
-  emailError.value = undefined
+function switchTab(tab: "login" | "register") {
+  activeTab.value = tab;
+  emailError.value = undefined;
 }
 
 async function sendMagicLink() {
   if (!isValid.value) {
-    return
+    return;
   }
 
-  isLoading.value = true
-  
+  isLoading.value = true;
+
   try {
-    const isRegister = activeTab.value === 'register'
-    
+    const isRegister = activeTab.value === "register";
+
     if (isRegister) {
-      await startRegister(email.value)
+      await startRegister(email.value);
     } else {
-      await startLogin(email.value)
+      await startLogin(email.value);
     }
-    
+
     // Store email info and switch to waiting state
-    currentEmail.value = email.value
-    isRegistration.value = isRegister
-    
+    currentEmail.value = email.value;
+    isRegistration.value = isRegister;
+
     // Switch to waiting for authentication state
-    isWaitingForAuth.value = true
-    
+    isWaitingForAuth.value = true;
+
   } catch (error: any) {
-    if (error.message?.includes('not found') || error.message?.includes('No account')) {
-      emailError.value = 'No account found with this email. Please register first.'
-    } else if (error.message?.includes('rate limit')) {
-      emailError.value = 'Too many requests. Please try again later.'
+    if (error.message?.includes("not found") || error.message?.includes("No account")) {
+      emailError.value = "No account found with this email. Please register first.";
+    } else if (error.message?.includes("rate limit")) {
+      emailError.value = "Too many requests. Please try again later.";
     } else {
-      emailError.value = 'Failed to send magic link. Please try again.'
+      emailError.value = "Failed to send magic link. Please try again.";
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function validateEmail() {
   if (!email.value) {
-    emailError.value = undefined
-    return
+    emailError.value = undefined;
+    return;
   }
 
   if (!isEmailValid.value) {
-    emailError.value = 'Please enter a valid email address'
+    emailError.value = "Please enter a valid email address";
   } else {
-    emailError.value = undefined
+    emailError.value = undefined;
   }
 }
 
 function closeModal() {
-  dialog.value?.close()
-  emit('close')
+  dialog.value?.close();
+  emit("close");
 }
 
 
 function goBackToEmail() {
-  isWaitingForAuth.value = false
+  isWaitingForAuth.value = false;
 }
 
 async function resendMagicLink() {
-  if (!currentEmail.value) return
-  
+  if (!currentEmail.value) return;
+
   try {
     if (isRegistration.value) {
-      await startRegister(currentEmail.value)
+      await startRegister(currentEmail.value);
     } else {
-      await startLogin(currentEmail.value)
+      await startLogin(currentEmail.value);
     }
   } catch (error) {
     // Error is handled by the auth composable
@@ -170,17 +171,17 @@ async function resendMagicLink() {
 
 // Validate email on input
 function onEmailInput() {
-  validateEmail()
+  validateEmail();
 }
 
 // Watch for authentication success
 watch(isAuthenticated, (authenticated) => {
   if (authenticated && isWaitingForAuth.value) {
     // User authenticated via magic link
-    emit('authenticated')
-    closeModal()
+    emit("authenticated");
+    closeModal();
   }
-})
+});
 
 
 </script>
@@ -192,19 +193,19 @@ watch(isAuthenticated, (authenticated) => {
     @close='resetAll()'
   >
     <!-- Email Entry State -->
-    <div v-if="!isWaitingForAuth" class='modal-box flex flex-col text-left'>
+    <div v-if='!isWaitingForAuth' class='modal-box flex flex-col text-left'>
       <!-- Tab Navigation -->
       <div class='tabs tabs-boxed mb-4'>
-        <button 
-          class='tab' 
+        <button
+          class='tab'
           :class='{ "tab-active": activeTab === "login" }'
           @click='switchTab("login")'
           :disabled='isLoading'
         >
           Login
         </button>
-        <button 
-          class='tab' 
+        <button
+          class='tab'
           :class='{ "tab-active": activeTab === "register" }'
           @click='switchTab("register")'
           :disabled='isLoading'
@@ -215,12 +216,12 @@ watch(isAuthenticated, (authenticated) => {
 
       <h2 class='text-2xl pb-2'>{{ modalTitle }}</h2>
       <p class='pb-4'>{{ modalDescription }}</p>
-      
+
       <div class='flex flex-col gap-4'>
         <FormField label='Email' :error='emailError'>
-          <input 
-            :class='formInputClass' 
-            type='email' 
+          <input
+            :class='formInputClass'
+            type='email'
             v-model='email'
             @input='onEmailInput'
             placeholder='your.email@example.com'
@@ -231,15 +232,15 @@ watch(isAuthenticated, (authenticated) => {
         </FormField>
 
         <div class='modal-action'>
-          <button 
-            class='btn btn-outline' 
+          <button
+            class='btn btn-outline'
             @click.prevent='closeModal()'
             :disabled='isLoading'
           >
             Cancel
           </button>
-          <button 
-            class='btn btn-secondary' 
+          <button
+            class='btn btn-secondary'
             :disabled='!isValid || isLoading'
             @click='sendMagicLink()'
           >
@@ -257,7 +258,7 @@ watch(isAuthenticated, (authenticated) => {
         Magic link sent to
         <span class='font-semibold'>{{ currentEmail }}</span>
       </p>
-      
+
       <!-- Magic Link Instructions -->
       <div class='bg-base-200 rounded-lg p-6 mb-6'>
         <EnvelopeIcon class='size-12 mx-auto mb-4 text-secondary' />
