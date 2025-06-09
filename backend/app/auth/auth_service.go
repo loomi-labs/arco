@@ -338,7 +338,7 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 		req := connect.NewRequest(&v1.WaitForAuthenticationRequest{SessionId: session.SessionID})
 
 		asi.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
-		stream, err := asi.rpcClient.WaitForAuthentication(context.Background(), req)
+		stream, err := asi.rpcClient.WaitForAuthentication(ctx, req)
 		if err != nil {
 			asi.log.Debugf("Session %s: stream connection failed: %v", session.SessionID, err)
 			if attempt == maxRetries-1 {
@@ -365,8 +365,8 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 			case v1.AuthStatus_AUTH_STATUS_AUTHENTICATED:
 				// Authentication successful
 				asi.log.Debugf("Session %s: authentication successful", session.SessionID)
-				asi.syncAuthenticatedSession(context.Background(), session.SessionID, authStatus)
-				asi.state.SetAuthenticated(context.Background())
+				asi.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
+				asi.state.SetAuthenticated(ctx)
 				return
 			case v1.AuthStatus_AUTH_STATUS_EXPIRED, v1.AuthStatus_AUTH_STATUS_CANCELLED:
 				// Authentication failed
