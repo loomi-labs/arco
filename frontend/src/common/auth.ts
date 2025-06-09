@@ -46,7 +46,8 @@ export function useAuth() {
       authState.value.isAuthenticated = result.isAuthenticated
     } catch (error) {
       authState.value.isAuthenticated = false
-      toast.error(`Failed to get auth state:  ${error}`)
+      console.error('Failed to get authentication state:', error)
+      toast.error('Failed to get authentication state.')
     }
   }
 
