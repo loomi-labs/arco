@@ -53,7 +53,7 @@ tasks:
   show:migrations:
     summary: Shows status of Ent migrations
     deps:
-      - task: go:mod:tidy
+      - task: common:go:mod:tidy
     cmds:
       - go tool goose sqlite "$HOME/.config/arco/arco.db?_fk=1" status -dir "backend/ent/migrate/migrations"
 
@@ -85,12 +85,10 @@ tasks:
 
   set:migration:version:
     summary: Sets migration version
-    deps:
-      - task: ensure:atlas
     vars:
       VERSION: '{{.CLI_ARGS | default ""}}'
     preconditions:
       - sh: test -n "{{.VERSION}}"
         msg: "Version is required. Usage: task set:migration:version -- 20241202145510"
     cmds:
-      - atlas migrate set {{.VERSION}} --dir="file://backend/ent/migrate/migrations" --url "sqlite://$HOME/.config/arco/arco.db?_fk=1"
+      - go tool goose -dir backend/ent/migrate/migrations sqlite3 "$HOME/.config/arco/arco.db?_fk=1" down-to {{.VERSION}}
