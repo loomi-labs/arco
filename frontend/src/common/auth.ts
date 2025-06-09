@@ -40,6 +40,16 @@ export function useAuth() {
    * Functions
    ************/
 
+  async function getAuthState() {
+    try {
+      const result = await authService.GetAuthState()
+      authState.value.isAuthenticated = result.isAuthenticated
+    } catch (error) {
+      authState.value.isAuthenticated = false
+      toast.error(`Failed to get auth state:  ${error}`)
+    }
+  }
+
   // Setup global auth event listeners (called once on app initialization)
   function setupGlobalAuthListeners(): void {
     // Clean up existing listeners first
@@ -47,20 +57,7 @@ export function useAuth() {
 
     // Listen for auth state changes and fetch the current state
     const onAuthStateChanged = Events.On('authStateChanged', async () => {
-      try {
-        const authStateResponse = await authService.GetAuthState()
-        const wasAuthenticated = authState.value.isAuthenticated
-        
-        authState.value.isAuthenticated = authStateResponse.is_authenticated
-        
-        // Show toast notification only when transitioning to authenticated
-        if (authStateResponse.is_authenticated && !wasAuthenticated) {
-          toast.success('Authentication successful!')
-        }
-      } catch (error) {
-        console.error('Failed to fetch auth state:', error)
-        authState.value.isAuthenticated = false
-      }
+      await getAuthState()
     })
     authEventListeners.push(onAuthStateChanged)
   }
@@ -69,6 +66,7 @@ export function useAuth() {
     authEventListeners.forEach(cleanup => cleanup())
     authEventListeners = []
   }
+
 
   async function startRegister(email: string): Promise<void> {
     try {
@@ -92,8 +90,7 @@ export function useAuth() {
 
   async function logout(): Promise<void> {
     try {
-      authState.value.isAuthenticated = false
-      toast.success('Logged out successfully')
+      await authService.Logout()
     } catch (error) {
       await showAndLogError('Failed to logout', error)
       throw error
@@ -102,6 +99,7 @@ export function useAuth() {
 
   // Initialize global listeners when composable is first used
   if (authEventListeners.length === 0) {
+    getAuthState()
     setupGlobalAuthListeners()
   }
 
