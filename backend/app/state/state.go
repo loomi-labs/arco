@@ -62,7 +62,7 @@ type StartupState struct {
 }
 
 type AuthState struct {
-	IsAuthenticated bool `json:"is_authenticated"`
+	IsAuthenticated bool `json:"isAuthenticated"`
 }
 
 type cancelCtx struct {
