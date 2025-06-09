@@ -42,7 +42,7 @@ service AuthService {
   //
   // The stream automatically times out after 10 minutes and provides instant
   // notifications when authentication is completed or expired.
-  rpc WaitForAuthentication(WaitForAuthRequest) returns (stream AuthStatusResponse);
+  rpc WaitForAuthentication(WaitForAuthenticationRequest) returns (stream WaitForAuthenticationResponse);
 
   // RefreshToken exchanges a refresh token for new access and refresh tokens.
   //
@@ -92,14 +92,14 @@ message LoginResponse {
   int64 expires_in = 3;
 }
 
-// WaitForAuthRequest initiates streaming authentication status monitoring.
-message WaitForAuthRequest {
+// WaitForAuthenticationRequest initiates streaming authentication status monitoring.
+message WaitForAuthenticationRequest {
   // The session ID returned from Register or Login calls.
   string session_id = 1 [(buf.validate.field).string.uuid = true];
 }
 
-// AuthStatusResponse provides real-time authentication status updates.
-message AuthStatusResponse {
+// WaitForAuthenticationResponse provides real-time authentication status updates.
+message WaitForAuthenticationResponse {
   // Current authentication status.
   AuthStatus status = 1;
 
@@ -121,17 +121,20 @@ message AuthStatusResponse {
 
 // AuthStatus represents the current state of an authentication session.
 enum AuthStatus {
+  // Default unspecified status.
+  AUTH_STATUS_UNSPECIFIED = 0;
+
   // Authentication is in progress, waiting for user action.
-  PENDING = 0;
+  AUTH_STATUS_PENDING = 1;
 
   // User has successfully authenticated via magic link.
-  AUTHENTICATED = 1;
+  AUTH_STATUS_AUTHENTICATED = 2;
 
   // Authentication session has expired (10 minutes timeout).
-  EXPIRED = 2;
+  AUTH_STATUS_EXPIRED = 3;
 
   // Authentication was cancelled by the user or system.
-  CANCELLED = 3;
+  AUTH_STATUS_CANCELLED = 4;
 }
 
 // RefreshTokenRequest exchanges a refresh token for new tokens.

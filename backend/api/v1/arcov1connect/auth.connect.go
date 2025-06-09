@@ -74,7 +74,7 @@ type AuthServiceClient interface {
 	//
 	// The stream automatically times out after 10 minutes and provides instant
 	// notifications when authentication is completed or expired.
-	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest]) (*connect.ServerStreamForClient[v1.AuthStatusResponse], error)
+	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthenticationRequest]) (*connect.ServerStreamForClient[v1.WaitForAuthenticationResponse], error)
 	// RefreshToken exchanges a refresh token for new access and refresh tokens.
 	//
 	// Access tokens expire after a short duration (typically 15 minutes).
@@ -106,7 +106,7 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("Login")),
 			connect.WithClientOptions(opts...),
 		),
-		waitForAuthentication: connect.NewClient[v1.WaitForAuthRequest, v1.AuthStatusResponse](
+		waitForAuthentication: connect.NewClient[v1.WaitForAuthenticationRequest, v1.WaitForAuthenticationResponse](
 			httpClient,
 			baseURL+AuthServiceWaitForAuthenticationProcedure,
 			connect.WithSchema(authServiceMethods.ByName("WaitForAuthentication")),
@@ -125,7 +125,7 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 type authServiceClient struct {
 	register              *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	waitForAuthentication *connect.Client[v1.WaitForAuthRequest, v1.AuthStatusResponse]
+	waitForAuthentication *connect.Client[v1.WaitForAuthenticationRequest, v1.WaitForAuthenticationResponse]
 	refreshToken          *connect.Client[v1.RefreshTokenRequest, v1.RefreshTokenResponse]
 }
 
@@ -140,7 +140,7 @@ func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.L
 }
 
 // WaitForAuthentication calls api.v1.AuthService.WaitForAuthentication.
-func (c *authServiceClient) WaitForAuthentication(ctx context.Context, req *connect.Request[v1.WaitForAuthRequest]) (*connect.ServerStreamForClient[v1.AuthStatusResponse], error) {
+func (c *authServiceClient) WaitForAuthentication(ctx context.Context, req *connect.Request[v1.WaitForAuthenticationRequest]) (*connect.ServerStreamForClient[v1.WaitForAuthenticationResponse], error) {
 	return c.waitForAuthentication.CallServerStream(ctx, req)
 }
 
@@ -178,7 +178,7 @@ type AuthServiceHandler interface {
 	//
 	// The stream automatically times out after 10 minutes and provides instant
 	// notifications when authentication is completed or expired.
-	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error
+	WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthenticationRequest], *connect.ServerStream[v1.WaitForAuthenticationResponse]) error
 	// RefreshToken exchanges a refresh token for new access and refresh tokens.
 	//
 	// Access tokens expire after a short duration (typically 15 minutes).
@@ -245,7 +245,7 @@ func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AuthService.Login is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthRequest], *connect.ServerStream[v1.AuthStatusResponse]) error {
+func (UnimplementedAuthServiceHandler) WaitForAuthentication(context.Context, *connect.Request[v1.WaitForAuthenticationRequest], *connect.ServerStream[v1.WaitForAuthenticationResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AuthService.WaitForAuthentication is not implemented"))
 }
 
