@@ -3,7 +3,6 @@ package schema
 import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 	"regexp"
 )
@@ -24,8 +23,7 @@ var (
 
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.Int("id").
 			StructTag(`json:"id"`),
 		field.String("email").
 			StructTag(`json:"email"`).

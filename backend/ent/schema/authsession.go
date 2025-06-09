@@ -18,8 +18,10 @@ func (AuthSession) Mixin() []ent.Mixin {
 
 func (AuthSession) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").
-			StructTag(`json:"id"`).
+		field.Int("id").
+			StructTag(`json:"id"`),
+		field.String("session_id").
+			StructTag(`json:"session_id"`).
 			Unique(),
 		field.Enum("status").
 			StructTag(`json:"status"`).
