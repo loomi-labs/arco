@@ -16,11 +16,13 @@ import (
 type AuthSession struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id"`
+	ID int `json:"id"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
+	// SessionID holds the value of the "session_id" field.
+	SessionID string `json:"session_id"`
 	// Status holds the value of the "status" field.
 	Status authsession.Status `json:"status"`
 	// ExpiresAt holds the value of the "expires_at" field.
@@ -33,7 +35,9 @@ func (*AuthSession) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case authsession.FieldID, authsession.FieldStatus:
+		case authsession.FieldID:
+			values[i] = new(sql.NullInt64)
+		case authsession.FieldSessionID, authsession.FieldStatus:
 			values[i] = new(sql.NullString)
 		case authsession.FieldCreatedAt, authsession.FieldUpdatedAt, authsession.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -53,11 +57,11 @@ func (as *AuthSession) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case authsession.FieldID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value.Valid {
-				as.ID = value.String
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
 			}
+			as.ID = int(value.Int64)
 		case authsession.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -69,6 +73,12 @@ func (as *AuthSession) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				as.UpdatedAt = value.Time
+			}
+		case authsession.FieldSessionID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field session_id", values[i])
+			} else if value.Valid {
+				as.SessionID = value.String
 			}
 		case authsession.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -123,6 +133,9 @@ func (as *AuthSession) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(as.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("session_id=")
+	builder.WriteString(as.SessionID)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", as.Status))

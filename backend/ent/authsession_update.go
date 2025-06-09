@@ -35,6 +35,20 @@ func (asu *AuthSessionUpdate) SetUpdatedAt(t time.Time) *AuthSessionUpdate {
 	return asu
 }
 
+// SetSessionID sets the "session_id" field.
+func (asu *AuthSessionUpdate) SetSessionID(s string) *AuthSessionUpdate {
+	asu.mutation.SetSessionID(s)
+	return asu
+}
+
+// SetNillableSessionID sets the "session_id" field if the given value is not nil.
+func (asu *AuthSessionUpdate) SetNillableSessionID(s *string) *AuthSessionUpdate {
+	if s != nil {
+		asu.SetSessionID(*s)
+	}
+	return asu
+}
+
 // SetStatus sets the "status" field.
 func (asu *AuthSessionUpdate) SetStatus(a authsession.Status) *AuthSessionUpdate {
 	asu.mutation.SetStatus(a)
@@ -124,7 +138,7 @@ func (asu *AuthSessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := asu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeString))
+	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
 	if ps := asu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -134,6 +148,9 @@ func (asu *AuthSessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := asu.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := asu.mutation.SessionID(); ok {
+		_spec.SetField(authsession.FieldSessionID, field.TypeString, value)
 	}
 	if value, ok := asu.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)
@@ -166,6 +183,20 @@ type AuthSessionUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (asuo *AuthSessionUpdateOne) SetUpdatedAt(t time.Time) *AuthSessionUpdateOne {
 	asuo.mutation.SetUpdatedAt(t)
+	return asuo
+}
+
+// SetSessionID sets the "session_id" field.
+func (asuo *AuthSessionUpdateOne) SetSessionID(s string) *AuthSessionUpdateOne {
+	asuo.mutation.SetSessionID(s)
+	return asuo
+}
+
+// SetNillableSessionID sets the "session_id" field if the given value is not nil.
+func (asuo *AuthSessionUpdateOne) SetNillableSessionID(s *string) *AuthSessionUpdateOne {
+	if s != nil {
+		asuo.SetSessionID(*s)
+	}
 	return asuo
 }
 
@@ -271,7 +302,7 @@ func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSessi
 	if err := asuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeString))
+	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
 	id, ok := asuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AuthSession.id" for update`)}
@@ -298,6 +329,9 @@ func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSessi
 	}
 	if value, ok := asuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := asuo.mutation.SessionID(); ok {
+		_spec.SetField(authsession.FieldSessionID, field.TypeString, value)
 	}
 	if value, ok := asuo.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)

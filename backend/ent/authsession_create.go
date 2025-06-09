@@ -48,6 +48,12 @@ func (asc *AuthSessionCreate) SetNillableUpdatedAt(t *time.Time) *AuthSessionCre
 	return asc
 }
 
+// SetSessionID sets the "session_id" field.
+func (asc *AuthSessionCreate) SetSessionID(s string) *AuthSessionCreate {
+	asc.mutation.SetSessionID(s)
+	return asc
+}
+
 // SetStatus sets the "status" field.
 func (asc *AuthSessionCreate) SetStatus(a authsession.Status) *AuthSessionCreate {
 	asc.mutation.SetStatus(a)
@@ -69,8 +75,8 @@ func (asc *AuthSessionCreate) SetExpiresAt(t time.Time) *AuthSessionCreate {
 }
 
 // SetID sets the "id" field.
-func (asc *AuthSessionCreate) SetID(s string) *AuthSessionCreate {
-	asc.mutation.SetID(s)
+func (asc *AuthSessionCreate) SetID(i int) *AuthSessionCreate {
+	asc.mutation.SetID(i)
 	return asc
 }
 
@@ -131,6 +137,9 @@ func (asc *AuthSessionCreate) check() error {
 	if _, ok := asc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "AuthSession.updated_at"`)}
 	}
+	if _, ok := asc.mutation.SessionID(); !ok {
+		return &ValidationError{Name: "session_id", err: errors.New(`ent: missing required field "AuthSession.session_id"`)}
+	}
 	if _, ok := asc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "AuthSession.status"`)}
 	}
@@ -156,12 +165,9 @@ func (asc *AuthSessionCreate) sqlSave(ctx context.Context) (*AuthSession, error)
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(string); ok {
-			_node.ID = id
-		} else {
-			return nil, fmt.Errorf("unexpected AuthSession.ID type: %T", _spec.ID.Value)
-		}
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int(id)
 	}
 	asc.mutation.id = &_node.ID
 	asc.mutation.done = true
@@ -171,7 +177,7 @@ func (asc *AuthSessionCreate) sqlSave(ctx context.Context) (*AuthSession, error)
 func (asc *AuthSessionCreate) createSpec() (*AuthSession, *sqlgraph.CreateSpec) {
 	var (
 		_node = &AuthSession{config: asc.config}
-		_spec = sqlgraph.NewCreateSpec(authsession.Table, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeString))
+		_spec = sqlgraph.NewCreateSpec(authsession.Table, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
 	)
 	if id, ok := asc.mutation.ID(); ok {
 		_node.ID = id
@@ -184,6 +190,10 @@ func (asc *AuthSessionCreate) createSpec() (*AuthSession, *sqlgraph.CreateSpec) 
 	if value, ok := asc.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := asc.mutation.SessionID(); ok {
+		_spec.SetField(authsession.FieldSessionID, field.TypeString, value)
+		_node.SessionID = value
 	}
 	if value, ok := asc.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)
@@ -241,6 +251,10 @@ func (ascb *AuthSessionCreateBulk) Save(ctx context.Context) ([]*AuthSession, er
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				mutation.done = true
 				return nodes[i], nil
 			})

@@ -83,8 +83,8 @@ func (asq *AuthSessionQuery) FirstX(ctx context.Context) *AuthSession {
 
 // FirstID returns the first AuthSession ID from the query.
 // Returns a *NotFoundError when no AuthSession ID was found.
-func (asq *AuthSessionQuery) FirstID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (asq *AuthSessionQuery) FirstID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = asq.Limit(1).IDs(setContextOp(ctx, asq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -96,7 +96,7 @@ func (asq *AuthSessionQuery) FirstID(ctx context.Context) (id string, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (asq *AuthSessionQuery) FirstIDX(ctx context.Context) string {
+func (asq *AuthSessionQuery) FirstIDX(ctx context.Context) int {
 	id, err := asq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +134,8 @@ func (asq *AuthSessionQuery) OnlyX(ctx context.Context) *AuthSession {
 // OnlyID is like Only, but returns the only AuthSession ID in the query.
 // Returns a *NotSingularError when more than one AuthSession ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (asq *AuthSessionQuery) OnlyID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (asq *AuthSessionQuery) OnlyID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = asq.Limit(2).IDs(setContextOp(ctx, asq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -151,7 +151,7 @@ func (asq *AuthSessionQuery) OnlyID(ctx context.Context) (id string, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (asq *AuthSessionQuery) OnlyIDX(ctx context.Context) string {
+func (asq *AuthSessionQuery) OnlyIDX(ctx context.Context) int {
 	id, err := asq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -179,7 +179,7 @@ func (asq *AuthSessionQuery) AllX(ctx context.Context) []*AuthSession {
 }
 
 // IDs executes the query and returns a list of AuthSession IDs.
-func (asq *AuthSessionQuery) IDs(ctx context.Context) (ids []string, err error) {
+func (asq *AuthSessionQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if asq.ctx.Unique == nil && asq.path != nil {
 		asq.Unique(true)
 	}
@@ -191,7 +191,7 @@ func (asq *AuthSessionQuery) IDs(ctx context.Context) (ids []string, err error) 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (asq *AuthSessionQuery) IDsX(ctx context.Context) []string {
+func (asq *AuthSessionQuery) IDsX(ctx context.Context) []int {
 	ids, err := asq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -373,7 +373,7 @@ func (asq *AuthSessionQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (asq *AuthSessionQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeString))
+	_spec := sqlgraph.NewQuerySpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
 	_spec.From = asq.sql
 	if unique := asq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

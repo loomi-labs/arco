@@ -11,7 +11,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -813,9 +812,10 @@ type AuthSessionMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *string
+	id            *int
 	created_at    *time.Time
 	updated_at    *time.Time
+	session_id    *string
 	status        *authsession.Status
 	expires_at    *time.Time
 	clearedFields map[string]struct{}
@@ -844,7 +844,7 @@ func newAuthSessionMutation(c config, op Op, opts ...authsessionOption) *AuthSes
 }
 
 // withAuthSessionID sets the ID field of the mutation.
-func withAuthSessionID(id string) authsessionOption {
+func withAuthSessionID(id int) authsessionOption {
 	return func(m *AuthSessionMutation) {
 		var (
 			err   error
@@ -896,13 +896,13 @@ func (m AuthSessionMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of AuthSession entities.
-func (m *AuthSessionMutation) SetID(id string) {
+func (m *AuthSessionMutation) SetID(id int) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *AuthSessionMutation) ID() (id string, exists bool) {
+func (m *AuthSessionMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -913,12 +913,12 @@ func (m *AuthSessionMutation) ID() (id string, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *AuthSessionMutation) IDs(ctx context.Context) ([]string, error) {
+func (m *AuthSessionMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []string{id}, nil
+			return []int{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -998,6 +998,42 @@ func (m *AuthSessionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *AuthSessionMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *AuthSessionMutation) SetSessionID(s string) {
+	m.session_id = &s
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *AuthSessionMutation) SessionID() (r string, exists bool) {
+	v := m.session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the AuthSession entity.
+// If the AuthSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuthSessionMutation) OldSessionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *AuthSessionMutation) ResetSessionID() {
+	m.session_id = nil
 }
 
 // SetStatus sets the "status" field.
@@ -1106,12 +1142,15 @@ func (m *AuthSessionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AuthSessionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, authsession.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, authsession.FieldUpdatedAt)
+	}
+	if m.session_id != nil {
+		fields = append(fields, authsession.FieldSessionID)
 	}
 	if m.status != nil {
 		fields = append(fields, authsession.FieldStatus)
@@ -1131,6 +1170,8 @@ func (m *AuthSessionMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case authsession.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case authsession.FieldSessionID:
+		return m.SessionID()
 	case authsession.FieldStatus:
 		return m.Status()
 	case authsession.FieldExpiresAt:
@@ -1148,6 +1189,8 @@ func (m *AuthSessionMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldCreatedAt(ctx)
 	case authsession.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case authsession.FieldSessionID:
+		return m.OldSessionID(ctx)
 	case authsession.FieldStatus:
 		return m.OldStatus(ctx)
 	case authsession.FieldExpiresAt:
@@ -1174,6 +1217,13 @@ func (m *AuthSessionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case authsession.FieldSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
 		return nil
 	case authsession.FieldStatus:
 		v, ok := value.(authsession.Status)
@@ -1243,6 +1293,9 @@ func (m *AuthSessionMutation) ResetField(name string) error {
 		return nil
 	case authsession.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case authsession.FieldSessionID:
+		m.ResetSessionID()
 		return nil
 	case authsession.FieldStatus:
 		m.ResetStatus()
@@ -7384,7 +7437,7 @@ type UserMutation struct {
 	config
 	op                       Op
 	typ                      string
-	id                       *uuid.UUID
+	id                       *int
 	created_at               *time.Time
 	updated_at               *time.Time
 	email                    *string
@@ -7419,7 +7472,7 @@ func newUserMutation(c config, op Op, opts ...userOption) *UserMutation {
 }
 
 // withUserID sets the ID field of the mutation.
-func withUserID(id uuid.UUID) userOption {
+func withUserID(id int) userOption {
 	return func(m *UserMutation) {
 		var (
 			err   error
@@ -7471,13 +7524,13 @@ func (m UserMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of User entities.
-func (m *UserMutation) SetID(id uuid.UUID) {
+func (m *UserMutation) SetID(id int) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *UserMutation) ID() (id uuid.UUID, exists bool) {
+func (m *UserMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -7488,12 +7541,12 @@ func (m *UserMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *UserMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []int{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
