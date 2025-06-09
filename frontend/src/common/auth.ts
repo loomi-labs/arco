@@ -1,8 +1,7 @@
 import { computed, ref } from "vue";
 import { useToast } from "vue-toastification";
 import { showAndLogError } from "./error";
-import * as authClient from "../../bindings/github.com/loomi-labs/arco/backend/app/authclient";
-import { LoginResponse, RegisterResponse } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1/models";
+import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/authservice";
 import { Events } from "@wailsio/runtime";
 
 /************
@@ -11,8 +10,6 @@ import { Events } from "@wailsio/runtime";
 
 interface AuthState {
   isAuthenticated: boolean
-  isLoading: boolean
-  currentSessionId: string | null
 }
 
 /************
@@ -20,9 +17,7 @@ interface AuthState {
  ************/
 
 const authState = ref<AuthState>({
-  isAuthenticated: false,
-  isLoading: false,
-  currentSessionId: null
+  isAuthenticated: false
 })
 
 // Global event listeners for auth state changes
@@ -40,8 +35,6 @@ export function useAuth() {
    ************/
 
   const isAuthenticated = computed(() => authState.value.isAuthenticated)
-  const isLoading = computed(() => authState.value.isLoading)
-  const currentSessionId = computed(() => authState.value.currentSessionId)
 
   /************
    * Functions
@@ -52,22 +45,24 @@ export function useAuth() {
     // Clean up existing listeners first
     cleanupGlobalAuthListeners()
 
-    // Listen for global authenticated event
-    const onAuthenticated = Events.On('authenticated', () => {
-      authState.value.isAuthenticated = true
-      authState.value.currentSessionId = null
-      authState.value.isLoading = false
-      toast.success('Authentication successful!')
+    // Listen for auth state changes and fetch the current state
+    const onAuthStateChanged = Events.On('authStateChanged', async () => {
+      try {
+        const authStateResponse = await authService.GetAuthState()
+        const wasAuthenticated = authState.value.isAuthenticated
+        
+        authState.value.isAuthenticated = authStateResponse.is_authenticated
+        
+        // Show toast notification only when transitioning to authenticated
+        if (authStateResponse.is_authenticated && !wasAuthenticated) {
+          toast.success('Authentication successful!')
+        }
+      } catch (error) {
+        console.error('Failed to fetch auth state:', error)
+        authState.value.isAuthenticated = false
+      }
     })
-    authEventListeners.push(onAuthenticated)
-
-    // Listen for global not authenticated event
-    const onNotAuthenticated = Events.On('notAuthenticated', () => {
-      authState.value.isAuthenticated = false
-      authState.value.currentSessionId = null
-      authState.value.isLoading = false
-    })
-    authEventListeners.push(onNotAuthenticated)
+    authEventListeners.push(onAuthStateChanged)
   }
 
   function cleanupGlobalAuthListeners(): void {
@@ -75,61 +70,33 @@ export function useAuth() {
     authEventListeners = []
   }
 
-  async function startRegister(email: string): Promise<RegisterResponse> {
-    authState.value.isLoading = true
-    
+  async function startRegister(email: string): Promise<void> {
     try {
-      const response = await authClient.StartRegister(email)
-      if (!response) {
-        throw new Error('No response received from registration service')
-      }
-      
-      authState.value.currentSessionId = response.session_id || null
-      
+      await authService.StartRegister(email)
       toast.success('Registration email sent! Check your email for the magic link.')
-      return response
     } catch (error) {
       await showAndLogError('Failed to start registration', error)
       throw error
-    } finally {
-      authState.value.isLoading = false
     }
   }
 
-  async function startLogin(email: string): Promise<LoginResponse> {
-    authState.value.isLoading = true
-    
+  async function startLogin(email: string): Promise<void> {
     try {
-      const response = await authClient.StartLogin(email)
-      if (!response) {
-        throw new Error('No response received from login service')
-      }
-      
-      authState.value.currentSessionId = response.session_id || null
-      
+      await authService.StartLogin(email)
       toast.success('Login email sent! Check your email for the magic link.')
-      return response
     } catch (error) {
       await showAndLogError('Failed to start login', error)
       throw error
-    } finally {
-      authState.value.isLoading = false
     }
   }
 
   async function logout(): Promise<void> {
-    authState.value.isLoading = true
-    
     try {
       authState.value.isAuthenticated = false
-      authState.value.currentSessionId = null
-      
       toast.success('Logged out successfully')
     } catch (error) {
       await showAndLogError('Failed to logout', error)
       throw error
-    } finally {
-      authState.value.isLoading = false
     }
   }
 
@@ -141,8 +108,6 @@ export function useAuth() {
   return {
     // State
     isAuthenticated,
-    isLoading,
-    currentSessionId,
     
     // Actions
     startRegister,

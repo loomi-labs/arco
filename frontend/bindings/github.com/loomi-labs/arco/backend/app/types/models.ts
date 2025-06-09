@@ -43,8 +43,7 @@ export enum Event {
     EventRepoStateChanged = "repoStateChanged",
     EventArchivesChanged = "archivesChanged",
     EventBackupProfileDeleted = "backupProfileDeleted",
-    EventAuthenticated = "authenticated",
-    EventNotAuthenticated = "notAuthenticated",
+    EventAuthStateChanged = "authStateChanged",
 };
 
 /**

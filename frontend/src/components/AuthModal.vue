@@ -24,16 +24,16 @@ defineExpose({
   showModal
 })
 
-const { startRegister, startLogin, isLoading, isAuthenticated } = useAuth()
+const { startRegister, startLogin, isAuthenticated } = useAuth()
 
 const dialog = ref<HTMLDialogElement>()
 const activeTab = ref<'login' | 'register'>('login')
 const email = ref('')
 const emailError = ref<string | undefined>(undefined)
-const currentSessionId = ref<string | null>(null)
 const currentEmail = ref('')
 const isRegistration = ref(false)
 const isWaitingForAuth = ref(false)
+const isLoading = ref(false)
 
 
 /************
@@ -81,7 +81,6 @@ function resetAll() {
   email.value = ''
   emailError.value = undefined
   activeTab.value = 'login'
-  currentSessionId.value = null
   currentEmail.value = ''
   isRegistration.value = false
   isWaitingForAuth.value = false
@@ -97,18 +96,18 @@ async function sendMagicLink() {
     return
   }
 
+  isLoading.value = true
+  
   try {
-    let response
     const isRegister = activeTab.value === 'register'
     
     if (isRegister) {
-      response = await startRegister(email.value)
+      await startRegister(email.value)
     } else {
-      response = await startLogin(email.value)
+      await startLogin(email.value)
     }
     
-    // Store session info and switch to waiting state
-    currentSessionId.value = response.session_id || null
+    // Store email info and switch to waiting state
     currentEmail.value = email.value
     isRegistration.value = isRegister
     
@@ -123,6 +122,8 @@ async function sendMagicLink() {
     } else {
       emailError.value = 'Failed to send magic link. Please try again.'
     }
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -153,15 +154,11 @@ async function resendMagicLink() {
   if (!currentEmail.value) return
   
   try {
-    let response
     if (isRegistration.value) {
-      response = await startRegister(currentEmail.value)
+      await startRegister(currentEmail.value)
     } else {
-      response = await startLogin(currentEmail.value)
+      await startLogin(currentEmail.value)
     }
-    
-    // Update session ID
-    currentSessionId.value = response.session_id || null
   } catch (error) {
     // Error is handled by the auth composable
   }

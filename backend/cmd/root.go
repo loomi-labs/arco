@@ -180,7 +180,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			application.NewService(arco.BackupClient()),
 			application.NewService(arco.RepoClient()),
 			application.NewService(arco.ValidationClient()),
-			application.NewService(arco.NewAuthClient(config.CloudRPCURL)),
+			application.NewService(arco.AuthService()),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: uniqueRunId,

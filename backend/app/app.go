@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
+	"github.com/loomi-labs/arco/backend/app/auth"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -68,9 +69,10 @@ type App struct {
 	shouldQuit               bool
 
 	// Startup
-	ctx    context.Context
-	cancel context.CancelFunc
-	db     *ent.Client
+	ctx         context.Context
+	cancel      context.CancelFunc
+	db          *ent.Client
+	authService *auth.AuthServiceInternal
 }
 
 func NewApp(
@@ -89,6 +91,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		authService:              auth.NewAuthService(log, nil, state, config.CloudRPCURL),
 	}
 }
 
@@ -123,8 +126,8 @@ func (a *App) ValidationClient() *ValidationClient {
 	return (*ValidationClient)(a)
 }
 
-func (a *App) GetDB() *ent.Client {
-	return a.db
+func (a *App) AuthService() *auth.AuthService {
+	return a.authService.AuthService
 }
 
 func (r *RepositoryClient) backupClient() *BackupClient {
@@ -173,6 +176,8 @@ func (a *App) Startup(ctx context.Context) {
 	a.db = db
 	a.config.Migrations = nil // Free up memory
 
+	a.authService.SetDb(a.db)
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
@@ -184,13 +189,13 @@ func (a *App) Startup(ctx context.Context) {
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
 
 	// Recover any pending authentication sessions
-	if err := a.NewAuthClient(a.config.CloudRPCURL).recoverAuthSessions(a.ctx); err != nil {
+	if err := a.authService.RecoverAuthSessions(a.ctx); err != nil {
 		a.log.Errorf("Failed to recover authentication sessions: %v", err)
 		// Don't fail startup for session recovery errors, just log them
 	}
 
 	// Validate and clean up stored JWT
-	if err := a.NewAuthClient(a.config.CloudRPCURL).validateAndRenewStoredTokens(a.ctx); err != nil {
+	if err := a.authService.ValidateAndRenewStoredTokens(a.ctx); err != nil {
 		a.log.Errorf("Failed to validate stored tokens: %v", err)
 		// Don't fail startup for token validation errors, just log them
 	}

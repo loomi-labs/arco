@@ -77,8 +77,7 @@ const (
 	EventRepoStateChanged      Event = "repoStateChanged"
 	EventArchivesChanged       Event = "archivesChanged"
 	EventBackupProfileDeleted  Event = "backupProfileDeleted"
-	EventAuthenticated         Event = "authenticated"
-	EventNotAuthenticated      Event = "notAuthenticated"
+	EventAuthStateChanged      Event = "authStateChanged"
 )
 
 var AllEvents = []Event{
@@ -89,8 +88,7 @@ var AllEvents = []Event{
 	EventRepoStateChanged,
 	EventArchivesChanged,
 	EventBackupProfileDeleted,
-	EventAuthenticated,
-	EventNotAuthenticated,
+	EventAuthStateChanged,
 }
 
 func (e Event) String() string {
