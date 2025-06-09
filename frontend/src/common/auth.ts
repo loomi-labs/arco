@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
 import { useToast } from "vue-toastification";
 import { showAndLogError } from "./error";
-import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/authservice";
+import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/service";
 import { Events } from "@wailsio/runtime";
 
 /************

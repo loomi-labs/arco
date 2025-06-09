@@ -16,25 +16,25 @@ import (
 	"go.uber.org/zap"
 )
 
-type AuthService struct {
+type Service struct {
 	log       *zap.SugaredLogger
 	db        *ent.Client
 	state     *state.State
 	rpcClient arcov1connect.AuthServiceClient
 }
 
-// AuthServiceInternal provides backend-only methods that should not be exposed to frontend
-type AuthServiceInternal struct {
-	*AuthService
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
+	*Service
 }
 
-func NewAuthService(log *zap.SugaredLogger, db *ent.Client, state *state.State, cloudRPCURL string) *AuthServiceInternal {
+func NewService(log *zap.SugaredLogger, db *ent.Client, state *state.State, cloudRPCURL string) *ServiceInternal {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	return &AuthServiceInternal{
-		AuthService: &AuthService{
+	return &ServiceInternal{
+		Service: &Service{
 			log:       log,
 			db:        db,
 			state:     state,
@@ -43,11 +43,24 @@ func NewAuthService(log *zap.SugaredLogger, db *ent.Client, state *state.State, 
 	}
 }
 
-func (as *AuthService) GetAuthState() state.AuthState {
+func (as *Service) SetDb(db *ent.Client) {
+	as.db = db
+}
+
+// mustHaveDB panics if db is nil. This is a programming error guard.
+func (as *Service) mustHaveDB() {
+	if as.db == nil {
+		panic("AuthService: database client is nil")
+	}
+}
+
+func (as *Service) GetAuthState() state.AuthState {
 	return as.state.GetAuthState()
 }
 
-func (as *AuthService) StartRegister(ctx context.Context, email string) error {
+func (as *Service) StartRegister(ctx context.Context, email string) error {
+	as.mustHaveDB()
+
 	req := connect.NewRequest(&v1.RegisterRequest{Email: email})
 
 	// Make request to external auth service
@@ -59,7 +72,7 @@ func (as *AuthService) StartRegister(ctx context.Context, email string) error {
 	// Store session locally for real-time updates
 	sessionID := resp.Msg.SessionId
 	expiresAt := resp.Msg.ExpiresAt.AsTime()
-	_, err = as.db.AuthSession.Create().
+	session, err := as.db.AuthSession.Create().
 		SetID(sessionID).
 		SetStatus(authsession.StatusPENDING).
 		SetExpiresAt(expiresAt).
@@ -69,13 +82,15 @@ func (as *AuthService) StartRegister(ctx context.Context, email string) error {
 	}
 
 	// Start monitoring authentication in the background
-	internal := &AuthServiceInternal{AuthService: as}
-	go internal.startAuthMonitoring(context.Background(), resp.Msg.SessionId)
+	internal := &ServiceInternal{Service: as}
+	go internal.startAuthMonitoring(ctx, session)
 
 	return nil
 }
 
-func (as *AuthService) StartLogin(ctx context.Context, email string) error {
+func (as *Service) StartLogin(ctx context.Context, email string) error {
+	as.mustHaveDB()
+
 	req := connect.NewRequest(&v1.LoginRequest{Email: email})
 
 	// Make request to external auth service
@@ -87,7 +102,7 @@ func (as *AuthService) StartLogin(ctx context.Context, email string) error {
 	// Store session locally for real-time updates
 	sessionID := resp.Msg.SessionId
 	expiresAt := resp.Msg.ExpiresAt.AsTime()
-	_, err = as.db.AuthSession.Create().
+	session, err := as.db.AuthSession.Create().
 		SetID(sessionID).
 		SetStatus(authsession.StatusPENDING).
 		SetExpiresAt(expiresAt).
@@ -97,13 +112,15 @@ func (as *AuthService) StartLogin(ctx context.Context, email string) error {
 	}
 
 	// Start monitoring authentication in the background
-	internal := &AuthServiceInternal{AuthService: as}
-	go internal.startAuthMonitoring(context.Background(), resp.Msg.SessionId)
+	internal := &ServiceInternal{Service: as}
+	go internal.startAuthMonitoring(ctx, session)
 
 	return nil
 }
 
-func (asi *AuthServiceInternal) refreshToken(ctx context.Context, refreshToken string) bool {
+func (asi *ServiceInternal) refreshToken(ctx context.Context, refreshToken string) bool {
+	asi.mustHaveDB()
+
 	// Update local token storage - get the first user since we only store one user
 	userEntity, err := asi.db.User.Query().First(ctx)
 	if err != nil {
@@ -129,7 +146,9 @@ func (asi *AuthServiceInternal) refreshToken(ctx context.Context, refreshToken s
 
 // syncAuthenticatedSession syncs tokens from external service to local db
 // We only ever store one user, so get the first user or create one and update the email
-func (asi *AuthServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.AuthStatusResponse) {
+func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.AuthStatusResponse) {
+	asi.mustHaveDB()
+
 	if authResp.User == nil {
 		return
 	}
@@ -180,7 +199,9 @@ func (asi *AuthServiceInternal) syncAuthenticatedSession(ctx context.Context, se
 	}
 }
 
-func (asi *AuthServiceInternal) RecoverAuthSessions(ctx context.Context) error {
+func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
+	asi.mustHaveDB()
+
 	// Query for pending sessions that haven't expired
 	pendingSessions, err := asi.db.AuthSession.Query().
 		Where(authsession.StatusEQ(authsession.StatusPENDING)).
@@ -193,7 +214,7 @@ func (asi *AuthServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 
 	// Start monitoring for each pending session
 	for _, session := range pendingSessions {
-		go asi.startAuthMonitoring(context.Background(), session.ID)
+		go asi.startAuthMonitoring(ctx, session)
 	}
 
 	return nil
@@ -201,7 +222,9 @@ func (asi *AuthServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 
 // ValidateAndRenewStoredTokens validates stored refresh tokens and automatically renews access tokens.
 // Since we only store one user, this method gets the first user and attempts to refresh their tokens.
-func (asi *AuthServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
+func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
+	asi.mustHaveDB()
+
 	// Delete expired refresh tokens
 	err := asi.db.User.Update().
 		Where(user.RefreshTokenExpiresAtLT(time.Now())).
@@ -255,14 +278,16 @@ func (asi *AuthServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context
 }
 
 // updateUserTokens updates a user entity with the provided token information
-func (asi *AuthServiceInternal) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
+func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
 	updateQuery := userEntity.Update()
 
 	// Set access token and expiration if provided
 	if accessToken != "" {
 		updateQuery = updateQuery.SetAccessToken(accessToken)
 		if accessTokenExpiresIn > 0 {
-			accessExpiresAt := time.Now().Add(time.Duration(accessTokenExpiresIn) * time.Second)
+			// Apply 10% buffer to token expiration
+			bufferedExpiration := time.Duration(float64(accessTokenExpiresIn) * 0.9)
+			accessExpiresAt := time.Now().Add(bufferedExpiration * time.Second)
 			updateQuery = updateQuery.SetAccessTokenExpiresAt(accessExpiresAt)
 		}
 	}
@@ -271,7 +296,9 @@ func (asi *AuthServiceInternal) updateUserTokens(ctx context.Context, userEntity
 	if refreshToken != "" {
 		updateQuery = updateQuery.SetRefreshToken(refreshToken)
 		if refreshTokenExpiresIn > 0 {
-			refreshExpiresAt := time.Now().Add(time.Duration(refreshTokenExpiresIn) * time.Second)
+			// Apply 10% buffer to token expiration
+			bufferedExpiration := time.Duration(float64(refreshTokenExpiresIn) * 0.9)
+			refreshExpiresAt := time.Now().Add(bufferedExpiration * time.Second)
 			updateQuery = updateQuery.SetRefreshTokenExpiresAt(refreshExpiresAt)
 		}
 	}
@@ -279,9 +306,15 @@ func (asi *AuthServiceInternal) updateUserTokens(ctx context.Context, userEntity
 	return updateQuery.Exec(ctx)
 }
 
-func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, sessionID string) {
-	// Create a timeout context for the authentication monitoring (10 minutes total)
-	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+func (asi *ServiceInternal) startAuthMonitoring(oCtx context.Context, session *ent.AuthSession) {
+	// Create a timeout context based on session expiration
+	timeout := time.Until(session.ExpiresAt)
+	if timeout <= 0 {
+		// Session already expired
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(oCtx, timeout)
 	defer cancel()
 
 	// Retry configuration
@@ -291,30 +324,27 @@ func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, session
 
 	for retryCount <= maxRetries {
 		select {
-		case <-timeoutCtx.Done():
+		case <-ctx.Done():
 			// Overall timeout reached - emit not authenticated
-			asi.state.SetNotAuthenticated(context.Background())
 			return
 		default:
 			// Continue with connection attempt
 		}
 
 		// Use WaitForAuthentication streaming approach
-		req := connect.NewRequest(&v1.WaitForAuthRequest{SessionId: sessionID})
+		req := connect.NewRequest(&v1.WaitForAuthRequest{SessionId: session.ID})
 
-		stream, err := asi.rpcClient.WaitForAuthentication(timeoutCtx, req)
+		stream, err := asi.rpcClient.WaitForAuthentication(ctx, req)
 		if err != nil {
 			retryCount++
 			if retryCount > maxRetries {
 				// Max retries exceeded - emit not authenticated event
-				asi.state.SetNotAuthenticated(context.Background())
 				return
 			}
 
 			// Wait before retry
 			select {
-			case <-timeoutCtx.Done():
-				asi.state.SetNotAuthenticated(context.Background())
+			case <-ctx.Done():
 				return
 			case <-time.After(retryInterval):
 				continue
@@ -330,19 +360,17 @@ func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, session
 			switch authStatus.Status {
 			case v1.AuthStatus_AUTHENTICATED:
 				// Authentication successful - store tokens and emit global authenticated event
-				asi.syncAuthenticatedSession(context.Background(), sessionID, authStatus)
-				asi.state.SetAuthenticated(context.Background())
+				asi.syncAuthenticatedSession(ctx, session.ID, authStatus)
+				asi.state.SetAuthenticated(ctx)
 				return
 			case v1.AuthStatus_EXPIRED, v1.AuthStatus_CANCELLED:
 				// Authentication failed - emit global not authenticated event
-				asi.state.SetNotAuthenticated(context.Background())
 				return
 			case v1.AuthStatus_PENDING:
 				// Still pending - continue receiving
 				continue
 			default:
 				// Unknown status - treat as not authenticated
-				asi.state.SetNotAuthenticated(context.Background())
 				return
 			}
 		}
@@ -352,14 +380,12 @@ func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, session
 			retryCount++
 			if retryCount > maxRetries {
 				// Max retries exceeded - emit not authenticated event
-				asi.state.SetNotAuthenticated(context.Background())
 				return
 			}
 
 			// Wait before retry
 			select {
-			case <-timeoutCtx.Done():
-				asi.state.SetNotAuthenticated(context.Background())
+			case <-ctx.Done():
 				return
 			case <-time.After(retryInterval):
 				continue
@@ -370,13 +396,11 @@ func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, session
 		// Wait and retry
 		retryCount++
 		if retryCount > maxRetries {
-			asi.state.SetNotAuthenticated(context.Background())
 			return
 		}
 
 		select {
-		case <-timeoutCtx.Done():
-			asi.state.SetNotAuthenticated(context.Background())
+		case <-ctx.Done():
 			return
 		case <-time.After(retryInterval):
 			continue
@@ -384,9 +408,4 @@ func (asi *AuthServiceInternal) startAuthMonitoring(ctx context.Context, session
 	}
 
 	// All retries exhausted
-	asi.state.SetNotAuthenticated(context.Background())
-}
-
-func (as *AuthService) SetDb(db *ent.Client) {
-	as.db = db
 }

@@ -72,7 +72,7 @@ type App struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	db          *ent.Client
-	authService *auth.AuthServiceInternal
+	authService *auth.ServiceInternal
 }
 
 func NewApp(
@@ -91,7 +91,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
-		authService:              auth.NewAuthService(log, nil, state, config.CloudRPCURL),
+		authService:              auth.NewService(log, nil, state, config.CloudRPCURL),
 	}
 }
 
@@ -126,8 +126,8 @@ func (a *App) ValidationClient() *ValidationClient {
 	return (*ValidationClient)(a)
 }
 
-func (a *App) AuthService() *auth.AuthService {
-	return a.authService.AuthService
+func (a *App) AuthService() *auth.Service {
+	return a.authService.Service
 }
 
 func (r *RepositoryClient) backupClient() *BackupClient {

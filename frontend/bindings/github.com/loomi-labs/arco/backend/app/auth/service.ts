@@ -13,7 +13,7 @@ import * as state$0 from "../state/models.js";
 import * as ent$0 from "../../ent/models.js";
 
 export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2728303745) as any;
+    let $resultPromise = $Call.ByID(216707387) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType0($result);
     }) as any;
@@ -22,17 +22,17 @@ export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } 
 }
 
 export function SetDb(db: ent$0.Client | null): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(395856168, db) as any;
+    let $resultPromise = $Call.ByID(2557859926, db) as any;
     return $resultPromise;
 }
 
 export function StartLogin(email: string): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1935137863, email) as any;
+    let $resultPromise = $Call.ByID(4267423869, email) as any;
     return $resultPromise;
 }
 
 export function StartRegister(email: string): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(931919035, email) as any;
+    let $resultPromise = $Call.ByID(3870237273, email) as any;
     return $resultPromise;
 }
 
