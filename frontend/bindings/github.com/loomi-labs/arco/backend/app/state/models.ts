@@ -10,12 +10,12 @@ import {Create as $Create} from "@wailsio/runtime";
 import * as types$0 from "../../borg/types/models.js";
 
 export class AuthState {
-    "is_authenticated": boolean;
+    "isAuthenticated": boolean;
 
     /** Creates a new AuthState instance. */
     constructor($$source: Partial<AuthState> = {}) {
-        if (!("is_authenticated" in $$source)) {
-            this["is_authenticated"] = false;
+        if (!("isAuthenticated" in $$source)) {
+            this["isAuthenticated"] = false;
         }
 
         Object.assign(this, $$source);

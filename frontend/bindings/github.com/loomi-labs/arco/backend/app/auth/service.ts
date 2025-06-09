@@ -21,6 +21,11 @@ export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } 
     return $typingPromise;
 }
 
+export function Logout(): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2333485090) as any;
+    return $resultPromise;
+}
+
 export function SetDb(db: ent$0.Client | null): Promise<void> & { cancel(): void } {
     let $resultPromise = $Call.ByID(2557859926, db) as any;
     return $resultPromise;
