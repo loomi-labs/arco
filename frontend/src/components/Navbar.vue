@@ -3,7 +3,7 @@
 import { Page } from "../router";
 import { useRouter } from "vue-router";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
-import { UserCircleIcon } from "@heroicons/vue/24/outline";
+import { UserCircleIcon, UserIcon } from "@heroicons/vue/24/outline";
 import { ref, useId, useTemplateRef } from "vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import AuthModal from "./AuthModal.vue";
@@ -20,7 +20,7 @@ import { useFeatureFlags } from "../common/featureFlags";
  ************/
 
 const router = useRouter();
-const { isAuthenticated, logout } = useAuth();
+const { isAuthenticated, logout, userEmail } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
 const subroute = ref<string | undefined>(undefined);
@@ -94,9 +94,19 @@ router.afterEach(() => {
         </ul>
       </div>
       <div class='flex gap-6 items-center'>
+        <!-- Arco Logo -->
         <a class='flex items-center gap-2' @click='router.replace(Page.Dashboard)'>
           <ArcoLogo svgClass='size-8' />Arco
         </a>
+
+        <!-- Theme toggle -->
+        <label class='swap swap-rotate'>
+          <!-- this hidden checkbox controls the state -->
+          <input type="checkbox" :value='isDark'/>
+
+          <SunIcon class='swap-off size-8' @click='toggleDark()' />
+          <MoonIcon class='swap-on size-8' @click='toggleDark()' />
+        </label>
 
         <!-- Auth Status (only show if login beta is enabled) -->
         <template v-if='featureFlags.loginBetaEnabled'>
@@ -107,27 +117,18 @@ router.afterEach(() => {
               </div>
               <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
                 <li class='menu-title'>
-                  <span>Authenticated</span>
+                  <span>{{ userEmail }}</span>
                 </li>
                 <li><a @click='handleLogout'>Logout</a></li>
               </ul>
             </div>
           </div>
-          
           <div v-else class='flex items-center gap-2'>
-            <button class='btn btn-sm btn-outline btn-primary' @click='showAuthModal'>
-              Login
+            <button class='btn btn-ghost btn-circle' @click='showAuthModal'>
+              <UserIcon class='size-8' />
             </button>
           </div>
         </template>
-
-        <label class='swap swap-rotate'>
-          <!-- this hidden checkbox controls the state -->
-          <input type="checkbox" :value='isDark'/>
-
-          <SunIcon class='swap-off size-10' @click='toggleDark()' />
-          <MoonIcon class='swap-on size-10' @click='toggleDark()' />
-        </label>
       </div>
     </div>
   </div>

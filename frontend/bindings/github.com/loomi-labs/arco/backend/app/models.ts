@@ -407,6 +407,27 @@ export class TestRepoConnectionResult {
     }
 }
 
+export class User {
+    "email": string;
+
+    /** Creates a new User instance. */
+    constructor($$source: Partial<User> = {}) {
+        if (!("email" in $$source)) {
+            this["email"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new User instance from a string or object.
+     */
+    static createFrom($$source: any = {}): User {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new User($$parsedSource as Partial<User>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = types$0.BackupId.createFrom;
 const $$createType1 = PruningOption.createFrom;

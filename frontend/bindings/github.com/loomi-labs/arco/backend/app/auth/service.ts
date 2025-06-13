@@ -12,6 +12,10 @@ import * as state$0 from "../state/models.js";
 // @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } {
     let $resultPromise = $Call.ByID(216707387) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
@@ -31,12 +35,12 @@ export function SetDb(db: ent$0.Client | null): Promise<void> & { cancel(): void
     return $resultPromise;
 }
 
-export function StartLogin(email: string): Promise<void> & { cancel(): void } {
+export function StartLogin(email: string): Promise<$models.AuthStatus> & { cancel(): void } {
     let $resultPromise = $Call.ByID(4267423869, email) as any;
     return $resultPromise;
 }
 
-export function StartRegister(email: string): Promise<void> & { cancel(): void } {
+export function StartRegister(email: string): Promise<$models.AuthStatus> & { cancel(): void } {
     let $resultPromise = $Call.ByID(3870237273, email) as any;
     return $resultPromise;
 }

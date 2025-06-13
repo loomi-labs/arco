@@ -76,3 +76,18 @@ func (a *AppClient) GetAppInfo() AppInfo {
 func (a *AppClient) GetAllEvents() []types.Event {
 	return types.AllEvents
 }
+
+type User struct {
+	Email string `json:"email"`
+}
+
+func (a *AppClient) GetUser() (*User, error) {
+	entUser, err := a.db.User.Query().First(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &User{
+		Email: entUser.Email,
+	}, nil
+}
