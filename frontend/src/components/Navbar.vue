@@ -3,7 +3,7 @@
 import { Page } from "../router";
 import { useRouter } from "vue-router";
 import { MoonIcon, SunIcon } from "@heroicons/vue/24/solid";
-import { UserCircleIcon, UserIcon } from "@heroicons/vue/24/outline";
+import { UserCircleIcon } from "@heroicons/vue/24/outline";
 import { ref, useId, useTemplateRef } from "vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import AuthModal from "./AuthModal.vue";
@@ -112,8 +112,11 @@ router.afterEach(() => {
         <template v-if='featureFlags.loginBetaEnabled'>
           <div v-if='isAuthenticated' class='flex items-center gap-2'>
             <div class='dropdown dropdown-end'>
-              <div tabindex='0' role='button' class='btn btn-ghost btn-circle avatar'>
-                <UserCircleIcon class='size-8' />
+              <div tabindex='0' role='button' class='btn btn-ghost btn-circle'>
+                <div class='indicator'>
+                  <span class='indicator-item indicator-end status status-success' style='transform: translate(-3px, 3px)'></span>
+                  <UserCircleIcon class='size-8' />
+                </div>
               </div>
               <ul tabindex='0' class='menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow'>
                 <li class='menu-title'>
@@ -125,7 +128,7 @@ router.afterEach(() => {
           </div>
           <div v-else class='flex items-center gap-2'>
             <button class='btn btn-ghost btn-circle' @click='showAuthModal'>
-              <UserIcon class='size-8' />
+              <UserCircleIcon class='size-8' />
             </button>
           </div>
         </template>
