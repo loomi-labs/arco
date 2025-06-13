@@ -88,17 +88,7 @@ export function useAuth() {
 
   async function startRegister(email: string): Promise<AuthStatus> {
     try {
-      const status = await authService.StartRegister(email);
-      if (status === AuthStatus.AuthStatusSuccess) {
-        toast.success(
-          "Registration email sent! Check your email for the registration link.",
-        );
-      } else if (status === AuthStatus.AuthStatusRateLimitError) {
-        toast.error("Rate limit exceeded. Please try again later.");
-      } else {
-        toast.error("Registration failed. Please try again.");
-      }
-      return status;
+      return await authService.StartRegister(email);
     } catch (error) {
       await showAndLogError("Failed to start registration", error);
       throw error;
@@ -107,15 +97,7 @@ export function useAuth() {
 
   async function startLogin(email: string): Promise<AuthStatus> {
     try {
-      const status = await authService.StartLogin(email);
-      if (status === AuthStatus.AuthStatusSuccess) {
-        toast.success("Login email sent! Check your email for the login link.");
-      } else if (status === AuthStatus.AuthStatusRateLimitError) {
-        toast.error("Rate limit exceeded. Please try again later.");
-      } else {
-        toast.error("Login failed. Please try again.");
-      }
-      return status;
+      return await authService.StartLogin(email);
     } catch (error) {
       await showAndLogError("Failed to start login", error);
       throw error;
