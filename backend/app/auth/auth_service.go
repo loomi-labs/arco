@@ -1,12 +1,14 @@
 package auth
 
 import (
-	"connectrpc.com/connect"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"net/http"
 	"time"
+
+	"connectrpc.com/connect"
+	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 
 	v1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/state"
@@ -14,6 +16,14 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/user"
 	"go.uber.org/zap"
+)
+
+type AuthStatus string
+
+const (
+	AuthStatusSuccess        AuthStatus = "success"
+	AuthStatusRateLimitError AuthStatus = "rateLimitError"
+	AuthStatusError          AuthStatus = "error"
 )
 
 type Service struct {
@@ -58,7 +68,7 @@ func (as *Service) GetAuthState() state.AuthState {
 	return as.state.GetAuthState()
 }
 
-func (as *Service) StartRegister(ctx context.Context, email string) error {
+func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus, error) {
 	as.mustHaveDB()
 
 	req := connect.NewRequest(&v1.RegisterRequest{Email: email})
@@ -66,7 +76,23 @@ func (as *Service) StartRegister(ctx context.Context, email string) error {
 	// Make request to external auth service
 	resp, err := as.rpcClient.Register(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to register with external auth service: %w", err)
+		// Map gRPC error codes to user-friendly errors
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			switch connectErr.Code() {
+			case connect.CodeResourceExhausted:
+				as.log.Errorf("Rate limit exceeded for registration: %v", err)
+				return AuthStatusRateLimitError, nil
+			case connect.CodeNotFound:
+				as.log.Errorf("Service unavailable during registration: %v", err)
+				return AuthStatusError, nil
+			default:
+				as.log.Errorf("Registration failed: %v", err)
+				return AuthStatusError, fmt.Errorf("failed to register")
+			}
+		}
+		as.log.Errorf("Failed to register with external auth service: %v", err)
+		return AuthStatusError, fmt.Errorf("failed to register")
 	}
 
 	// Store session locally for real-time updates
@@ -78,17 +104,18 @@ func (as *Service) StartRegister(ctx context.Context, email string) error {
 		SetExpiresAt(expiresAt).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create local auth session: %w", err)
+		as.log.Errorf("Failed to create local auth session: %v", err)
+		return AuthStatusError, fmt.Errorf("failed to register")
 	}
 
 	// Start monitoring authentication in the background
 	internal := &ServiceInternal{Service: as}
 	go internal.startAuthMonitoring(session)
 
-	return nil
+	return AuthStatusSuccess, nil
 }
 
-func (as *Service) StartLogin(ctx context.Context, email string) error {
+func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, error) {
 	as.mustHaveDB()
 
 	req := connect.NewRequest(&v1.LoginRequest{Email: email})
@@ -96,7 +123,23 @@ func (as *Service) StartLogin(ctx context.Context, email string) error {
 	// Make request to external auth service
 	resp, err := as.rpcClient.Login(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to login: %w", err)
+		// Map gRPC error codes to user-friendly errors
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			switch connectErr.Code() {
+			case connect.CodeResourceExhausted:
+				as.log.Errorf("Rate limit exceeded for login: %v", err)
+				return AuthStatusRateLimitError, nil
+			case connect.CodeNotFound:
+				as.log.Errorf("No account found for email during login: %v", err)
+				return AuthStatusError, nil
+			default:
+				as.log.Errorf("Login failed: %v", err)
+				return AuthStatusError, fmt.Errorf("login failed")
+			}
+		}
+		as.log.Errorf("Failed to login: %v", err)
+		return AuthStatusError, fmt.Errorf("failed to login")
 	}
 
 	// Store session locally for real-time updates
@@ -108,14 +151,15 @@ func (as *Service) StartLogin(ctx context.Context, email string) error {
 		SetExpiresAt(expiresAt).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create auth session: %w", err)
+		as.log.Errorf("Failed to create auth session: %v", err)
+		return AuthStatusError, fmt.Errorf("failed to login")
 	}
 
 	// Start monitoring authentication in the background
 	internal := &ServiceInternal{Service: as}
 	go internal.startAuthMonitoring(session)
 
-	return nil
+	return AuthStatusSuccess, nil
 }
 
 func (as *Service) Logout(ctx context.Context) error {
