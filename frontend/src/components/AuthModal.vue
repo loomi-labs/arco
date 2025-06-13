@@ -148,6 +148,8 @@ async function sendMagicLink() {
       isWaitingForAuth.value = true;
     } else if (status === AuthStatus.AuthStatusRateLimitError) {
       emailError.value = "Too many requests. Please try again later.";
+    } else if (status === AuthStatus.AuthStatusConnectionError) {
+      emailError.value = "Connection error. Please check your internet connection and try again.";
     } else {
       emailError.value = isRegister ? "Registration failed. Please try again." : "Login failed. Please try again.";
     }

@@ -13,5 +13,6 @@ export enum AuthStatus {
 
     AuthStatusSuccess = "success",
     AuthStatusRateLimitError = "rateLimitError",
+    AuthStatusConnectionError = "connectionError",
     AuthStatusError = "error",
 };

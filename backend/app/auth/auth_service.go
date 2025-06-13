@@ -21,9 +21,10 @@ import (
 type AuthStatus string
 
 const (
-	AuthStatusSuccess        AuthStatus = "success"
-	AuthStatusRateLimitError AuthStatus = "rateLimitError"
-	AuthStatusError          AuthStatus = "error"
+	AuthStatusSuccess         AuthStatus = "success"
+	AuthStatusRateLimitError  AuthStatus = "rateLimitError"
+	AuthStatusConnectionError AuthStatus = "connectionError"
+	AuthStatusError           AuthStatus = "error"
 )
 
 type Service struct {
@@ -83,6 +84,9 @@ func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus,
 			case connect.CodeResourceExhausted:
 				as.log.Errorf("Rate limit exceeded for registration: %v", err)
 				return AuthStatusRateLimitError, nil
+			case connect.CodeUnavailable, connect.CodeDeadlineExceeded, connect.CodeAborted:
+				as.log.Errorf("Connection error during registration: %v", err)
+				return AuthStatusConnectionError, nil
 			case connect.CodeNotFound:
 				as.log.Errorf("Service unavailable during registration: %v", err)
 				return AuthStatusError, nil
@@ -130,6 +134,9 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 			case connect.CodeResourceExhausted:
 				as.log.Errorf("Rate limit exceeded for login: %v", err)
 				return AuthStatusRateLimitError, nil
+			case connect.CodeUnavailable, connect.CodeDeadlineExceeded, connect.CodeAborted:
+				as.log.Errorf("Connection error during login: %v", err)
+				return AuthStatusConnectionError, nil
 			case connect.CodeNotFound:
 				as.log.Errorf("No account found for email during login: %v", err)
 				return AuthStatusError, nil
