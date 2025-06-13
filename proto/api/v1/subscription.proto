@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+service SubscriptionService {
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {}
+  rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
+  rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
+  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
+}
+
+message ListPlansRequest {
+  bool active_only = 1;
+}
+
+message ListPlansResponse {
+  repeated Plan plans = 1;
+}
+
+message Plan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int64 price_cents = 4;
+  string currency = 5;
+  string interval = 6; // monthly, yearly
+  int32 interval_count = 7;
+  repeated string features = 8;
+  bool active = 9;
+  int64 storage_gb = 10;
+  int32 max_devices = 11;
+}
+
+message GetSubscriptionRequest {
+  string user_id = 1;
+}
+
+message GetSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+message Subscription {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string status = 4; // active, canceled, past_due, trialing
+  google.protobuf.Timestamp current_period_start = 5;
+  google.protobuf.Timestamp current_period_end = 6;
+  bool cancel_at_period_end = 7;
+  google.protobuf.Timestamp canceled_at = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  Plan plan = 11;
+}
+
+message CreateCheckoutSessionRequest {
+  string plan_id = 1;
+  string success_url = 2;
+  string cancel_url = 3;
+}
+
+message CreateCheckoutSessionResponse {
+  string session_id = 1;
+  string checkout_url = 2;
+}
+
+message CancelSubscriptionRequest {
+  string subscription_id = 1;
+  bool immediate = 2; // if false, cancels at end of billing period
+}
+
+message CancelSubscriptionResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp effective_date = 3;
+}

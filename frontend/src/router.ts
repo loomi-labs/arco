@@ -25,7 +25,8 @@ const routes: RouteRecordRaw[] = [
   { path: Page.BackupProfile, component: BackupProfilePage },
   { path: Page.AddBackupProfile, component: AddBackupProfilePage },
   { path: Page.Repository, component: RepositoryPage },
-  { path: Page.AddRepository, component: AddRepositoryPage }
+  { path: Page.AddRepository, component: AddRepositoryPage },
+  { path: "/", redirect: Page.Dashboard }
 ];
 
 export function withId(page: Page, id: string | number): string {

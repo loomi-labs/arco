@@ -266,7 +266,7 @@ watch([name, location, password, isEncrypted], async () => {
           </FormField>
         </div>
 
-        <div class='modal-action'>
+        <div class='modal-action justify-start'>
           <button class='btn btn-outline' type='reset'
                   @click.prevent='dialog?.close();'>
             Cancel

@@ -55,6 +55,7 @@ type Config struct {
 	GithubAssetName string
 	Version         *semver.Version
 	CheckForUpdates bool
+	CloudRPCURL     string
 }
 
 var AllIcons = []backupprofile.Icon{
@@ -76,6 +77,7 @@ const (
 	EventRepoStateChanged      Event = "repoStateChanged"
 	EventArchivesChanged       Event = "archivesChanged"
 	EventBackupProfileDeleted  Event = "backupProfileDeleted"
+	EventAuthStateChanged      Event = "authStateChanged"
 )
 
 var AllEvents = []Event{
@@ -86,6 +88,7 @@ var AllEvents = []Event{
 	EventRepoStateChanged,
 	EventArchivesChanged,
 	EventBackupProfileDeleted,
+	EventAuthStateChanged,
 }
 
 func (e Event) String() string {

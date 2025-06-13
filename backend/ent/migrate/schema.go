@@ -47,6 +47,21 @@ var (
 			},
 		},
 	}
+	// AuthSessionsColumns holds the columns for the "auth_sessions" table.
+	AuthSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "session_id", Type: field.TypeString, Unique: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "AUTHENTICATED", "EXPIRED", "CANCELLED"}, Default: "PENDING"},
+		{Name: "expires_at", Type: field.TypeTime},
+	}
+	// AuthSessionsTable holds the schema information for the "auth_sessions" table.
+	AuthSessionsTable = &schema.Table{
+		Name:       "auth_sessions",
+		Columns:    AuthSessionsColumns,
+		PrimaryKey: []*schema.Column{AuthSessionsColumns[0]},
+	}
 	// BackupProfilesColumns holds the columns for the "backup_profiles" table.
 	BackupProfilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -201,6 +216,24 @@ var (
 		Columns:    SettingsColumns,
 		PrimaryKey: []*schema.Column{SettingsColumns[0]},
 	}
+	// UsersColumns holds the columns for the "users" table.
+	UsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "last_logged_in", Type: field.TypeTime, Nullable: true},
+		{Name: "refresh_token", Type: field.TypeString, Nullable: true},
+		{Name: "access_token", Type: field.TypeString, Nullable: true},
+		{Name: "access_token_expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "refresh_token_expires_at", Type: field.TypeTime, Nullable: true},
+	}
+	// UsersTable holds the schema information for the "users" table.
+	UsersTable = &schema.Table{
+		Name:       "users",
+		Columns:    UsersColumns,
+		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
 	// BackupProfileRepositoriesColumns holds the columns for the "backup_profile_repositories" table.
 	BackupProfileRepositoriesColumns = []*schema.Column{
 		{Name: "backup_profile_id", Type: field.TypeInt},
@@ -229,12 +262,14 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ArchivesTable,
+		AuthSessionsTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
 		NotificationsTable,
 		PruningRulesTable,
 		RepositoriesTable,
 		SettingsTable,
+		UsersTable,
 		BackupProfileRepositoriesTable,
 	}
 )

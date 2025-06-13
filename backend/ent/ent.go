@@ -13,12 +13,14 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/settings"
+	"github.com/loomi-labs/arco/backend/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -80,12 +82,14 @@ func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			archive.Table:        archive.ValidColumn,
+			authsession.Table:    authsession.ValidColumn,
 			backupprofile.Table:  backupprofile.ValidColumn,
 			backupschedule.Table: backupschedule.ValidColumn,
 			notification.Table:   notification.ValidColumn,
 			pruningrule.Table:    pruningrule.ValidColumn,
 			repository.Table:     repository.ValidColumn,
 			settings.Table:       settings.ValidColumn,
+			user.Table:           user.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)
