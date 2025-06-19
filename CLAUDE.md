@@ -1,30 +1,51 @@
-# Arco Development Commands
+# Arco - Project Context for Claude
 
-## Build & Run
-- Build: `NO_COLOR=1 task build`
-- Dev mode: `NO_COLOR=1 task dev`
-- Run tests: `task test`
-- Run single test: `go test -v -run TestName ./path/to/package`
-- Format Go code: `task dev:go:format`
-- Lint Go code: `task dev:go:lint`
-- Update Go dependencies: `task dev:go:update`
-- Generate mocks: `task dev:mockgen`
+## Overview
+Arco is a desktop backup management application built with Go backend and Vue frontend using Wails3 framework. It uses SQLite for local data storage and integrates with Borg backup.
 
-## Database Operations
-- Generate Ent models: `task db:generate:models`
-- Create new Ent model: `task db:create:ent:model -- ModelName`
-- Generate migrations: `task db:generate:migrations`
-- Apply migrations: `task db:apply:migrations`
-- Show migration status: `task db:show:migrations`
-- Create new migration: `task db:create:migration -- MigrationName`
-- Lint migrations: `task db:lint:migrations`
-- Hash migrations: `task db:hash:migrations`
-- Set migration version: `task db:set:migration:version -- VERSION`
+## Tech Stack
+- **Language**: Go 1.24, TypeScript/Vue 3
+- **Framework**: Wails3 (desktop app framework)
+- **Database**: SQLite (local file-based)
+- **ORM**: Ent (type-safe entity framework)
+- **Migrations**: Atlas with Goose
+- **Frontend**: Vue 3 with TypeScript, Vite, Tailwind CSS, DaisyUI
+- **Task Runner**: Task (https://taskfile.dev)
+- **Backup**: Borg backup integration
 
-## Frontend
-- Install dependencies: `task common:install:frontend:deps`
-- Build frontend: `task common:build:frontend`
-- Generate bindings: `task common:generate:bindings`
+## Key Commands
+
+### Development
+- `task dev` - Run application in development mode with hot reload
+- `task build` - Build the application for current platform
+- `task package` - Package application for distribution
+- `task run` - Run the built application
+- `task dev:test` - Run tests
+- `task dev:format` - Format Go code
+- `task dev:lint` - Lint Go code
+- `task dev:gen:mocks` - Generate mock implementations
+- `task dev:clean` - Clean build artifacts
+- `task dev:go:update` - Update Go dependencies
+
+### Database Operations
+- `task db:ent:generate` - Generate Ent models from schemas
+- `task db:ent:new -- ModelName` - Create new Ent model
+- `task db:migrate:new` - Generate migrations from schema changes
+- `task db:migrate` - Apply pending migrations
+- `task db:migrate:status` - Show migration status
+- `task db:migrate:create:blank -- MigrationName` - Create blank migration
+- `task db:ent:lint` - Lint migrations
+- `task db:ent:hash` - Hash migrations
+- `task db:migrate:set-version -- VERSION` - Set migration version
+- `task db:install:atlas` - Install Atlas migration tool
+
+### Frontend
+This tasks do usually not have to be called directly (they will be called by dev/build/package)
+- `task common:install:frontend:deps` - Install frontend dependencies
+- `task common:build:frontend` - Build frontend for production/development
+- `task common:generate:bindings` - Generate Go-TypeScript bindings
+- `task common:generate:icons` - Generate app icons from source image
+- `task common:update:build-assets` - Update build assets with app info
 
 ## Code Style Guide
 - Error handling: Check errors with proper context message
@@ -41,7 +62,7 @@
   - DaisyUI: Use the rules from https://daisyui.com/llms.txt
 - Icons: Use Heroicons with `vite-plugin-icons` if possible
 - Syntax: Use await over then for promises
-- Folder structure: frontend/bindings are generated with `task generate:bindings`
+- Folder structure: frontend/bindings are generated with `task common:generate:bindings`
 - Components: Use single file components with script setup and use the following convention:
     ```vue
     <script setup lang='ts'>
