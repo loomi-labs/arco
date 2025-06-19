@@ -34,17 +34,17 @@ type Service struct {
 	rpcClient arcov1connect.AuthServiceClient
 }
 
-// ServiceInternal provides backend-only methods that should not be exposed to frontend
-type ServiceInternal struct {
+// ServiceRPC provides backend-only methods that should not be exposed to frontend
+type ServiceRPC struct {
 	*Service
 }
 
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceInternal {
+func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	return &ServiceInternal{
+	return &ServiceRPC{
 		Service: &Service{
 			log:       log,
 			state:     state,
@@ -112,7 +112,7 @@ func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus,
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceInternal{Service: as}
+	internal := &ServiceRPC{Service: as}
 	go internal.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
@@ -162,7 +162,7 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceInternal{Service: as}
+	internal := &ServiceRPC{Service: as}
 	go internal.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
@@ -201,7 +201,7 @@ func (as *Service) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) {
+func (asi *ServiceRPC) refreshToken(ctx context.Context, userEntity *ent.User) {
 	asi.mustHaveDB()
 
 	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: *userEntity.RefreshToken})
@@ -222,7 +222,7 @@ func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.Us
 
 // syncAuthenticatedSession syncs tokens from external service to local db
 // We only ever store one user, so get the first user or create one and update the email
-func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
+func (asi *ServiceRPC) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
 	asi.mustHaveDB()
 
 	if authResp.User == nil {
@@ -275,7 +275,7 @@ func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessio
 	}
 }
 
-func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
+func (asi *ServiceRPC) RecoverAuthSessions(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Query for pending sessions that haven't expired
@@ -298,7 +298,7 @@ func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 
 // ValidateAndRenewStoredTokens validates stored refresh tokens and automatically renews access tokens.
 // Since we only store one user, this method gets the first user and attempts to refresh their tokens.
-func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
+func (asi *ServiceRPC) ValidateAndRenewStoredTokens(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Delete expired refresh tokens
@@ -343,7 +343,7 @@ func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) er
 }
 
 // updateUserTokens updates a user entity with the provided token information
-func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
+func (asi *ServiceRPC) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
 	asi.log.Debugf("Updating tokens for user %s (access expires in %d seconds, refresh expires in %d seconds)", userEntity.Email, accessTokenExpiresIn, refreshTokenExpiresIn)
 
 	if accessToken == "" || accessTokenExpiresIn <= 0 || refreshToken == "" || refreshTokenExpiresIn <= 0 {
@@ -367,7 +367,7 @@ func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *en
 	return err
 }
 
-func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
+func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
 	// Create a timeout context based on session expiration
 	timeout := time.Until(session.ExpiresAt)
 	if timeout <= 0 {

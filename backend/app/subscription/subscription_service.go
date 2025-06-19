@@ -21,19 +21,19 @@ type Service struct {
 	rpcClient arcov1connect.SubscriptionServiceClient
 }
 
-// ServiceInternal provides backend-only methods and implements Connect RPC handlers
-type ServiceInternal struct {
+// ServiceRPC implements Connect RPC handlers for the subscription service
+type ServiceRPC struct {
 	*Service
 	arcov1connect.UnimplementedSubscriptionServiceHandler
 }
 
 // NewService creates a new subscription service
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceInternal {
+func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	return &ServiceInternal{
+	return &ServiceRPC{
 		Service: &Service{
 			log:       log,
 			state:     state,
@@ -107,7 +107,7 @@ func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string,
 // Backend-only Connect RPC handler methods
 
 // GetSubscription handles the Connect RPC request for getting a subscription
-func (si *ServiceInternal) GetSubscription(ctx context.Context, req *connect.Request[arcov1.GetSubscriptionRequest]) (*connect.Response[arcov1.GetSubscriptionResponse], error) {
+func (si *ServiceRPC) GetSubscription(ctx context.Context, req *connect.Request[arcov1.GetSubscriptionRequest]) (*connect.Response[arcov1.GetSubscriptionResponse], error) {
 	resp, err := si.Service.GetSubscription(ctx, req.Msg.UserId)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (si *ServiceInternal) GetSubscription(ctx context.Context, req *connect.Req
 }
 
 // CreateCheckoutSession handles the Connect RPC request for creating a checkout session
-func (si *ServiceInternal) CreateCheckoutSession(ctx context.Context, req *connect.Request[arcov1.CreateCheckoutSessionRequest]) (*connect.Response[arcov1.CreateCheckoutSessionResponse], error) {
+func (si *ServiceRPC) CreateCheckoutSession(ctx context.Context, req *connect.Request[arcov1.CreateCheckoutSessionRequest]) (*connect.Response[arcov1.CreateCheckoutSessionResponse], error) {
 	resp, err := si.Service.CreateCheckoutSession(ctx, req.Msg.PlanId, req.Msg.SuccessUrl, req.Msg.CancelUrl)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (si *ServiceInternal) CreateCheckoutSession(ctx context.Context, req *conne
 }
 
 // CancelSubscription handles the Connect RPC request for canceling a subscription
-func (si *ServiceInternal) CancelSubscription(ctx context.Context, req *connect.Request[arcov1.CancelSubscriptionRequest]) (*connect.Response[arcov1.CancelSubscriptionResponse], error) {
+func (si *ServiceRPC) CancelSubscription(ctx context.Context, req *connect.Request[arcov1.CancelSubscriptionRequest]) (*connect.Response[arcov1.CancelSubscriptionResponse], error) {
 	resp, err := si.Service.CancelSubscription(ctx, req.Msg.SubscriptionId, req.Msg.Immediate)
 	if err != nil {
 		return nil, err

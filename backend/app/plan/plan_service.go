@@ -21,19 +21,19 @@ type Service struct {
 	rpcClient arcov1connect.PlanServiceClient
 }
 
-// ServiceInternal provides backend-only methods and implements Connect RPC handlers
-type ServiceInternal struct {
+// ServiceRPC implements Connect RPC handlers for the plan service
+type ServiceRPC struct {
 	*Service
 	arcov1connect.UnimplementedPlanServiceHandler
 }
 
 // NewService creates a new plan service
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceInternal {
+func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	return &ServiceInternal{
+	return &ServiceRPC{
 		Service: &Service{
 			log:       log,
 			state:     state,
@@ -71,7 +71,7 @@ func (s *Service) ListPlans(ctx context.Context) (*arcov1.ListPlansResponse, err
 // Backend-only Connect RPC handler methods
 
 // ListPlans handles the Connect RPC request for listing plans
-func (si *ServiceInternal) ListPlans(ctx context.Context, req *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
+func (si *ServiceRPC) ListPlans(ctx context.Context, req *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
 	resp, err := si.Service.ListPlans(ctx)
 	if err != nil {
 		return nil, err

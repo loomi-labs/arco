@@ -74,9 +74,9 @@ type App struct {
 	ctx                 context.Context
 	cancel              context.CancelFunc
 	db                  *ent.Client
-	authService         *auth.ServiceInternal
-	planService         *plan.ServiceInternal
-	subscriptionService *subscription.ServiceInternal
+	authService         *auth.ServiceRPC
+	planService         *plan.ServiceRPC
+	subscriptionService *subscription.ServiceRPC
 }
 
 func NewApp(

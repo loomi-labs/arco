@@ -13,6 +13,53 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 - **Task Runner**: Task (https://taskfile.dev)
 - **Backup**: Borg backup integration
 
+## Project Structure
+```
+/
+├── backend/
+│   ├── app/              # Application services
+│   │   ├── auth/         # Authentication service
+│   │   ├── backup/       # Backup management service
+│   │   ├── plan/         # Plan service
+│   │   ├── subscription/ # Subscription service
+│   │   └── user/         # User management service
+│   ├── cmd/              # Command line entry points
+│   │   └── root.go       # Main application entrypoint
+│   ├── ent/              # Database models and ORM
+│   │   ├── schema/       # Entity definitions
+│   │   └── migrate/      # Database migrations
+│   ├── internal/         # Internal packages
+│   │   ├── logger/       # Logging utilities
+│   │   ├── state/        # Application state management
+│   │   └── utils/        # Utility functions
+│   └── api/              # Generated API code
+│       └── v1/           # Proto-generated Go code
+├── frontend/
+│   ├── bindings/         # Generated Go-TypeScript bindings
+│   ├── src/
+│   │   ├── components/   # Vue components
+│   │   ├── views/        # Vue views/pages
+│   │   ├── stores/       # Pinia stores
+│   │   ├── utils/        # Frontend utilities
+│   │   └── assets/       # Static assets
+│   ├── index.html        # Entry HTML
+│   └── vite.config.ts    # Vite configuration
+├── proto/                # Protocol Buffer definitions (shared with cloud)
+│   ├── Taskfile.proto.yml # Proto-specific tasks
+│   ├── buf.yaml          # Buf configuration
+│   └── api/v1/           # Proto source files
+│       ├── auth.proto    # Authentication service
+│       ├── user.proto    # User management service
+│       ├── plan.proto    # Plan service
+│       └── subscription.proto # Subscription service
+├── build/                # Build assets and icons
+├── db/                   # Database related files
+│   └── migrations/       # Goose migrations
+├── .github/              # GitHub Actions workflows
+├── sync-proto.fish       # 2-way proto sync with cloud repo
+└── Taskfile*.yml         # Task automation files
+```
+
 ## Key Commands
 
 ### Development
@@ -102,9 +149,9 @@ This tasks do usually not have to be called directly (they will be called by dev
 ## Service Architecture Patterns
 
 ### Backend Services
-- **Service Structure**: Use Service/ServiceInternal pattern for cloud-integrated services
-  - `Service` struct: Contains business logic methods exposed to frontend
-  - `ServiceInternal` struct: Implements Connect RPC handlers for internal communication
+- **Service Structure**: Use Service/ServiceRPC pattern for cloud-integrated services
+  - `Service` struct: Contains business logic methods exposed to frontend and makes outgoing RPC calls to external cloud services
+  - `ServiceRPC` struct: Implements incoming Connect RPC server handlers for the service
   - Services use Connect RPC framework (not gRPC) for external cloud communication
 - **Initialization**: Services are initialized with logger, state, and cloud RPC URL
   - Database dependency is set later via `SetDb()` method
