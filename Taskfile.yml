@@ -18,16 +18,16 @@ vars:
 
 tasks:
   build:
-    summary: Builds the application
+    desc: Builds the application
     cmds:
       - task: "{{OS}}:build"
 
   package:
-    summary: Packages a production build of the application
+    desc: Packages a production build of the application
     cmds:
       - task: "{{OS}}:package"
 
   run:
-    summary: Runs the application
+    desc: Runs the application
     cmds:
       - task: "{{OS}}:run"

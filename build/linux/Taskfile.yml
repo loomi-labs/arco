@@ -5,7 +5,7 @@ includes:
 
 tasks:
   build:
-    summary: Builds the application for Linux
+    desc: Builds the application for Linux
     deps:
       - task: common:go:mod:tidy
       - task: common:build:frontend
@@ -24,7 +24,7 @@ tasks:
       PRODUCTION: '{{.PRODUCTION | default "false"}}'
 
   package:
-    summary: Packages a production build of the application for Linux
+    desc: Packages a production build of the application for Linux
     deps:
       - task: build
         vars:
@@ -36,7 +36,7 @@ tasks:
       - task: create:aur
 
   create:appimage:
-    summary: Creates an AppImage
+    desc: Creates an AppImage
     dir: build/linux/appimage
     deps:
       - task: build
@@ -55,7 +55,7 @@ tasks:
       OUTPUT_DIR: '../../../bin'
 
   create:deb:
-    summary: Creates a deb package
+    desc: Creates a deb package
     deps:
       - task: build
         vars:
@@ -65,7 +65,7 @@ tasks:
       - task: generate:deb
 
   create:rpm:
-    summary: Creates a rpm package
+    desc: Creates a rpm package
     deps:
       - task: build
         vars:
@@ -75,7 +75,7 @@ tasks:
       - task: generate:rpm
 
   create:aur:
-    summary: Creates a arch linux packager package
+    desc: Creates a arch linux packager package
     deps:
       - task: build
         vars:
@@ -85,22 +85,22 @@ tasks:
       - task: generate:aur
 
   generate:deb:
-    summary: Creates a deb package
+    desc: Creates a deb package
     cmds: 
       - go tool wails3 tool package -name {{.APP_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
   generate:rpm:
-    summary: Creates a rpm package
+    desc: Creates a rpm package
     cmds: 
       - go tool wails3 tool package -name {{.APP_NAME}} -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
   generate:aur:
-    summary: Creates a arch linux packager package
+    desc: Creates a arch linux packager package
     cmds: 
       - go tool wails3 tool package -name {{.APP_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
   generate:dotdesktop:
-    summary: Generates a `.desktop` file
+    desc: Generates a `.desktop` file
     dir: build
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
