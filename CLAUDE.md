@@ -20,7 +20,7 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 - `task build` - Build the application for current platform
 - `task package` - Package application for distribution
 - `task run` - Run the built application
-- `task dev:test` - Run tests
+- `task test` - Run tests
 - `task dev:format` - Format Go code
 - `task dev:lint` - Lint Go code
 - `task dev:gen:mocks` - Generate mock implementations

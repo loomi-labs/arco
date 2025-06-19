@@ -42,15 +42,6 @@ tasks:
       - go tool mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
       - go tool mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
 
-  test:
-    desc: Runs tests
-    deps:
-      - task: gen:mocks
-    preconditions:
-      - mkdir -p frontend/dist
-      - touch frontend/dist/index.html
-    cmds:
-      - go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)
 
   clean:
     desc: Clean build artifacts
