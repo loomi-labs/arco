@@ -99,6 +99,34 @@ This tasks do usually not have to be called directly (they will be called by dev
     </template>
     ```
 
+## Service Architecture Patterns
+
+### Backend Services
+- **Service Structure**: Use Service/ServiceInternal pattern for cloud-integrated services
+  - `Service` struct: Contains business logic methods exposed to frontend
+  - `ServiceInternal` struct: Implements Connect RPC handlers for internal communication
+  - Services use Connect RPC framework (not gRPC) for external cloud communication
+- **Initialization**: Services are initialized with logger, state, and cloud RPC URL
+  - Database dependency is set later via `SetDb()` method
+  - Services registered in `app.go` and `cmd/root.go`
+- **Error Handling**: Always wrap errors with context and log appropriately
+
+### Protocol Buffers and Bindings
+- **Proto Changes**: After modifying `.proto` files, always run `task proto:generate`
+- **Binding Updates**: Generated TypeScript bindings are auto-created in `frontend/bindings/`
+- **Response Handling**: Use direct response properties (no `.data` or `.Msg` wrapper)
+
+### Frontend Integration
+- **Loading States**: Add loading indicators for all external service calls
+- **Error Handling**: Implement comprehensive error states with user-friendly messages
+- **Service Calls**: Import services from generated bindings and handle nullable responses
+- **State Management**: Use reactive refs for loading and error states
+
+### Cloud Integration
+- **RPC Clients**: Services communicate with cloud via Connect RPC clients
+- **Request/Response**: Wrap requests with `connect.NewRequest()` and handle response messages
+- **Service Separation**: Separate concerns into distinct services (auth, subscription, plan, etc.)
+
 ## Linear
 - Assignee: use "dev@uupi.cloud" for new issues
 - Fix/Bugs: use "Bug" label

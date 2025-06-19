@@ -10,6 +10,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
 	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/plan"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -74,6 +75,7 @@ type App struct {
 	cancel              context.CancelFunc
 	db                  *ent.Client
 	authService         *auth.ServiceInternal
+	planService         *plan.ServiceInternal
 	subscriptionService *subscription.ServiceInternal
 }
 
@@ -94,6 +96,7 @@ func NewApp(
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
 		authService:              auth.NewService(log, state, config.CloudRPCURL),
+		planService:              plan.NewService(log, state, config.CloudRPCURL),
 		subscriptionService:      subscription.NewService(log, state, config.CloudRPCURL),
 	}
 }
@@ -131,6 +134,10 @@ func (a *App) ValidationClient() *ValidationClient {
 
 func (a *App) AuthService() *auth.Service {
 	return a.authService.Service
+}
+
+func (a *App) PlanService() *plan.Service {
+	return a.planService.Service
 }
 
 func (a *App) SubscriptionService() *subscription.Service {
@@ -184,6 +191,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.config.Migrations = nil // Free up memory
 
 	a.authService.SetDb(a.db)
+	a.planService.SetDb(a.db)
 	a.subscriptionService.SetDb(a.db)
 
 	// Ensure Borg binary is installed

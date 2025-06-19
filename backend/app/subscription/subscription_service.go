@@ -55,74 +55,56 @@ func (s *Service) mustHaveDB() {
 
 // Frontend-exposed business logic methods
 
-// ListPlans returns available subscription plans and regions
-func (s *Service) ListPlans(ctx context.Context) (*arcov1.ListPlansResponse, error) {
-	// Mock data for now - will be replaced with real payment provider integration
-	plans := []*arcov1.Plan{
-		{
-			Name:              "Basic",
-			FeatureSet:        arcov1.FeatureSet_BASIC,
-			PriceMonthlyCents: 500,  // $5.00
-			PriceYearlyCents:  5000, // $50.00
-			Currency:          "USD",
-			StorageGb:         250,
-			HasFreeTrial:      true,
-		},
-		{
-			Name:              "Pro",
-			FeatureSet:        arcov1.FeatureSet_PRO,
-			PriceMonthlyCents: 1200,  // $12.00
-			PriceYearlyCents:  12000, // $120.00
-			Currency:          "USD",
-			StorageGb:         1000, // 1TB
-			HasFreeTrial:      true,
-		},
-	}
-
-	regions := []string{"Europe", "US"}
-
-	return &arcov1.ListPlansResponse{
-		Plans:   plans,
-		Regions: regions,
-	}, nil
-}
 
 // GetSubscription returns the user's current subscription
 func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.GetSubscriptionResponse, error) {
-	// Mock response - will be replaced with real database lookup
-	return &arcov1.GetSubscriptionResponse{
-		Subscription: nil, // No active subscription for now
-	}, nil
+	req := connect.NewRequest(&arcov1.GetSubscriptionRequest{
+		UserId: userID,
+	})
+	
+	resp, err := s.rpcClient.GetSubscription(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to get subscription from cloud service: %v", err)
+		return nil, err
+	}
+	
+	return resp.Msg, nil
 }
 
 // CreateCheckoutSession creates a payment checkout session
 func (s *Service) CreateCheckoutSession(ctx context.Context, planID, successURL, cancelURL string) (*arcov1.CreateCheckoutSessionResponse, error) {
-	// Mock response - will be replaced with real payment provider integration
-	return &arcov1.CreateCheckoutSessionResponse{
-		SessionId:   "mock_session_id",
-		CheckoutUrl: "https://mock-checkout-url.com",
-	}, nil
+	req := connect.NewRequest(&arcov1.CreateCheckoutSessionRequest{
+		PlanId:     planID,
+		SuccessUrl: successURL,
+		CancelUrl:  cancelURL,
+	})
+	
+	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to create checkout session from cloud service: %v", err)
+		return nil, err
+	}
+	
+	return resp.Msg, nil
 }
 
 // CancelSubscription cancels the user's subscription
 func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string, immediate bool) (*arcov1.CancelSubscriptionResponse, error) {
-	// Mock response - will be replaced with real payment provider integration
-	return &arcov1.CancelSubscriptionResponse{
-		Success: true,
-		Message: "Subscription will be canceled at the end of the billing period",
-	}, nil
+	req := connect.NewRequest(&arcov1.CancelSubscriptionRequest{
+		SubscriptionId: subscriptionID,
+		Immediate:      immediate,
+	})
+	
+	resp, err := s.rpcClient.CancelSubscription(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to cancel subscription from cloud service: %v", err)
+		return nil, err
+	}
+	
+	return resp.Msg, nil
 }
 
 // Backend-only Connect RPC handler methods
-
-// ListPlans handles the Connect RPC request for listing plans
-func (si *ServiceInternal) ListPlans(ctx context.Context, req *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
-	resp, err := si.Service.ListPlans(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(resp), nil
-}
 
 // GetSubscription handles the Connect RPC request for getting a subscription
 func (si *ServiceInternal) GetSubscription(ctx context.Context, req *connect.Request[arcov1.GetSubscriptionRequest]) (*connect.Response[arcov1.GetSubscriptionResponse], error) {

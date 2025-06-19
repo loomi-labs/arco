@@ -33,9 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// SubscriptionServiceListPlansProcedure is the fully-qualified name of the SubscriptionService's
-	// ListPlans RPC.
-	SubscriptionServiceListPlansProcedure = "/api.v1.SubscriptionService/ListPlans"
 	// SubscriptionServiceGetSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's GetSubscription RPC.
 	SubscriptionServiceGetSubscriptionProcedure = "/api.v1.SubscriptionService/GetSubscription"
@@ -49,7 +46,6 @@ const (
 
 // SubscriptionServiceClient is a client for the api.v1.SubscriptionService service.
 type SubscriptionServiceClient interface {
-	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
@@ -66,12 +62,6 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 	baseURL = strings.TrimRight(baseURL, "/")
 	subscriptionServiceMethods := v1.File_api_v1_subscription_proto.Services().ByName("SubscriptionService").Methods()
 	return &subscriptionServiceClient{
-		listPlans: connect.NewClient[v1.ListPlansRequest, v1.ListPlansResponse](
-			httpClient,
-			baseURL+SubscriptionServiceListPlansProcedure,
-			connect.WithSchema(subscriptionServiceMethods.ByName("ListPlans")),
-			connect.WithClientOptions(opts...),
-		),
 		getSubscription: connect.NewClient[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse](
 			httpClient,
 			baseURL+SubscriptionServiceGetSubscriptionProcedure,
@@ -95,15 +85,9 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	listPlans             *connect.Client[v1.ListPlansRequest, v1.ListPlansResponse]
 	getSubscription       *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
 	createCheckoutSession *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
 	cancelSubscription    *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
-}
-
-// ListPlans calls api.v1.SubscriptionService.ListPlans.
-func (c *subscriptionServiceClient) ListPlans(ctx context.Context, req *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error) {
-	return c.listPlans.CallUnary(ctx, req)
 }
 
 // GetSubscription calls api.v1.SubscriptionService.GetSubscription.
@@ -123,7 +107,6 @@ func (c *subscriptionServiceClient) CancelSubscription(ctx context.Context, req 
 
 // SubscriptionServiceHandler is an implementation of the api.v1.SubscriptionService service.
 type SubscriptionServiceHandler interface {
-	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
@@ -136,12 +119,6 @@ type SubscriptionServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	subscriptionServiceMethods := v1.File_api_v1_subscription_proto.Services().ByName("SubscriptionService").Methods()
-	subscriptionServiceListPlansHandler := connect.NewUnaryHandler(
-		SubscriptionServiceListPlansProcedure,
-		svc.ListPlans,
-		connect.WithSchema(subscriptionServiceMethods.ByName("ListPlans")),
-		connect.WithHandlerOptions(opts...),
-	)
 	subscriptionServiceGetSubscriptionHandler := connect.NewUnaryHandler(
 		SubscriptionServiceGetSubscriptionProcedure,
 		svc.GetSubscription,
@@ -162,8 +139,6 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 	)
 	return "/api.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case SubscriptionServiceListPlansProcedure:
-			subscriptionServiceListPlansHandler.ServeHTTP(w, r)
 		case SubscriptionServiceGetSubscriptionProcedure:
 			subscriptionServiceGetSubscriptionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCreateCheckoutSessionProcedure:
@@ -178,10 +153,6 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 
 // UnimplementedSubscriptionServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSubscriptionServiceHandler struct{}
-
-func (UnimplementedSubscriptionServiceHandler) ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.ListPlans is not implemented"))
-}
 
 func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.GetSubscription is not implemented"))
