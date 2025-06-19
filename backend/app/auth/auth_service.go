@@ -53,7 +53,7 @@ func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) 
 	}
 }
 
-func (as *Service) SetDb(db *ent.Client) {
+func (as *Service) Init(db *ent.Client) {
 	as.db = db
 }
 

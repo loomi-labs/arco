@@ -3,12 +3,14 @@ package app
 import (
 	"archive/zip"
 	"bytes"
+	"connectrpc.com/connect"
 	"context"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
+	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/plan"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
@@ -16,6 +18,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
+	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
@@ -96,8 +99,8 @@ func NewApp(
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
 		authService:              auth.NewService(log, state, config.CloudRPCURL),
-		planService:              plan.NewService(log, state, config.CloudRPCURL),
-		subscriptionService:      subscription.NewService(log, state, config.CloudRPCURL),
+		planService:              plan.NewService(log, state),
+		subscriptionService:      subscription.NewService(log, state),
 	}
 }
 
@@ -190,9 +193,29 @@ func (a *App) Startup(ctx context.Context) {
 	a.db = db
 	a.config.Migrations = nil // Free up memory
 
-	a.authService.SetDb(a.db)
-	a.planService.SetDb(a.db)
-	a.subscriptionService.SetDb(a.db)
+	// Create JWT interceptor and HTTP client for cloud services
+	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db)
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create authenticated RPC clients
+	planRPCClient := arcov1connect.NewPlanServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
+	subscriptionRPCClient := arcov1connect.NewSubscriptionServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
+	// Initialize services with database and authenticated RPC clients
+	a.authService.Init(a.db)
+	a.planService.Init(a.db, planRPCClient)
+	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {

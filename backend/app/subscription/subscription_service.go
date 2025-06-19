@@ -1,11 +1,8 @@
 package subscription
 
 import (
-	"context"
-	"net/http"
-	"time"
-
 	"connectrpc.com/connect"
+	"context"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/state"
@@ -28,22 +25,19 @@ type ServiceRPC struct {
 }
 
 // NewService creates a new subscription service
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 	return &ServiceRPC{
 		Service: &Service{
-			log:       log,
-			state:     state,
-			rpcClient: arcov1connect.NewSubscriptionServiceClient(httpClient, cloudRPCURL),
+			log:   log,
+			state: state,
 		},
 	}
 }
 
-func (s *Service) SetDb(db *ent.Client) {
+// Init initializes the service with database and RPC client
+func (s *Service) Init(db *ent.Client, rpcClient arcov1connect.SubscriptionServiceClient) {
 	s.db = db
+	s.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -55,19 +49,18 @@ func (s *Service) mustHaveDB() {
 
 // Frontend-exposed business logic methods
 
-
 // GetSubscription returns the user's current subscription
 func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.GetSubscriptionResponse, error) {
 	req := connect.NewRequest(&arcov1.GetSubscriptionRequest{
 		UserId: userID,
 	})
-	
+
 	resp, err := s.rpcClient.GetSubscription(ctx, req)
 	if err != nil {
 		s.log.Errorf("Failed to get subscription from cloud service: %v", err)
 		return nil, err
 	}
-	
+
 	return resp.Msg, nil
 }
 
@@ -78,13 +71,13 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, planID, successURL,
 		SuccessUrl: successURL,
 		CancelUrl:  cancelURL,
 	})
-	
+
 	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
 	if err != nil {
 		s.log.Errorf("Failed to create checkout session from cloud service: %v", err)
 		return nil, err
 	}
-	
+
 	return resp.Msg, nil
 }
 
@@ -94,13 +87,13 @@ func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string,
 		SubscriptionId: subscriptionID,
 		Immediate:      immediate,
 	})
-	
+
 	resp, err := s.rpcClient.CancelSubscription(ctx, req)
 	if err != nil {
 		s.log.Errorf("Failed to cancel subscription from cloud service: %v", err)
 		return nil, err
 	}
-	
+
 	return resp.Msg, nil
 }
 

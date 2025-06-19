@@ -2,8 +2,6 @@ package plan
 
 import (
 	"context"
-	"net/http"
-	"time"
 
 	"connectrpc.com/connect"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
@@ -28,22 +26,19 @@ type ServiceRPC struct {
 }
 
 // NewService creates a new plan service
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 	return &ServiceRPC{
 		Service: &Service{
-			log:       log,
-			state:     state,
-			rpcClient: arcov1connect.NewPlanServiceClient(httpClient, cloudRPCURL),
+			log:   log,
+			state: state,
 		},
 	}
 }
 
-func (s *Service) SetDb(db *ent.Client) {
+// Init initializes the service with database and RPC client
+func (s *Service) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceClient) {
 	s.db = db
+	s.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -58,13 +53,13 @@ func (s *Service) mustHaveDB() {
 // ListPlans returns available subscription plans
 func (s *Service) ListPlans(ctx context.Context) (*arcov1.ListPlansResponse, error) {
 	req := connect.NewRequest(&arcov1.ListPlansRequest{})
-	
+
 	resp, err := s.rpcClient.ListPlans(ctx, req)
 	if err != nil {
 		s.log.Errorf("Failed to list plans from cloud service: %v", err)
 		return nil, err
 	}
-	
+
 	return resp.Msg, nil
 }
 
