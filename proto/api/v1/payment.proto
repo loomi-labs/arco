@@ -21,9 +21,7 @@ message AddPaymentMethodResponse {
   PaymentMethod payment_method = 1;
 }
 
-message ListPaymentMethodsRequest {
-  string user_id = 1;
-}
+message ListPaymentMethodsRequest {}
 
 message ListPaymentMethodsResponse {
   repeated PaymentMethod payment_methods = 1;
@@ -42,9 +40,8 @@ message PaymentMethod {
 }
 
 message GetPaymentHistoryRequest {
-  string user_id = 1;
-  int32 limit = 2;
-  string starting_after = 3; // cursor for pagination
+  int32 limit = 1;
+  string starting_after = 2; // cursor for pagination
 }
 
 message GetPaymentHistoryResponse {

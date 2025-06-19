@@ -16,10 +16,10 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 ## Key Commands
 
 ### Development
-- `task dev` - Run application in development mode with hot reload
-- `task build` - Build the application for current platform
-- `task package` - Package application for distribution
-- `task run` - Run the built application
+- `NO_COLOR=1 task dev` - Run application in development mode with hot reload
+- `NO_COLOR=1 task build` - Build the application for current platform
+- `NO_COLOR=1 task package` - Package application for distribution
+- `NO_COLOR=1 task run` - Run the built application
 - `task test` - Run tests
 - `task dev:format` - Format Go code
 - `task dev:lint` - Lint Go code
@@ -41,11 +41,11 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 
 ### Frontend
 This tasks do usually not have to be called directly (they will be called by dev/build/package)
-- `task common:install:frontend:deps` - Install frontend dependencies
-- `task common:build:frontend` - Build frontend for production/development
-- `task common:generate:bindings` - Generate Go-TypeScript bindings
-- `task common:generate:icons` - Generate app icons from source image
-- `task common:update:build-assets` - Update build assets with app info
+- `NO_COLOR=1 task common:install:frontend:deps` - Install frontend dependencies
+- `NO_COLOR=1 task common:build:frontend` - Build frontend for production/development
+- `NO_COLOR=1 task common:generate:bindings` - Generate Go-TypeScript bindings
+- `NO_COLOR=1 task common:generate:icons` - Generate app icons from source image
+- `NO_COLOR=1 task common:update:build-assets` - Update build assets with app info
 
 ## Code Style Guide
 - Error handling: Check errors with proper context message

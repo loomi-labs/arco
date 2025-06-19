@@ -3,7 +3,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import AuthModal from "./AuthModal.vue";
+import ArcoCloudModal from "./ArcoCloudModal.vue";
 import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import { useAuth } from "../common/auth";
@@ -64,8 +64,8 @@ const createLocalRepoModalKey = useId();
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
 const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
-const authModalKey = useId();
-const authModal = useTemplateRef<InstanceType<typeof AuthModal>>(authModalKey);
+const arcoCloudModalKey = useId();
+const arcoCloudModal = useTemplateRef<InstanceType<typeof ArcoCloudModal>>(arcoCloudModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
 // noinspection JSUnusedGlobalSymbols
@@ -87,24 +87,10 @@ function selectRemoteRepo() {
 
 async function selectArcoCloud() {
   selectedRepoType.value = SelectedRepoType.ArcoCloud;
-  
-  if (isAuthenticated.value) {
-    // TODO: Open cloud repository creation modal when available
-    console.log('User is authenticated, proceed to cloud repo creation');
-  } else {
-    // Show auth modal
-    authModal.value?.showModal();
-  }
+  arcoCloudModal.value?.showModal();
 }
 
-function onAuthenticated() {
-  // User has successfully authenticated
-  selectedRepoType.value = SelectedRepoType.None;
-  // TODO: Open cloud repository creation modal when available
-  console.log('User authenticated, proceed to cloud repo creation');
-}
-
-function onAuthModalClose() {
+function onArcoCloudModalClose() {
   selectedRepoType.value = SelectedRepoType.None;
 }
 
@@ -186,9 +172,9 @@ watch(() => props.existingRepos, (newRepos) => {
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
 
-    <AuthModal v-if='featureFlags.loginBetaEnabled' :ref='authModalKey'
-               @close='onAuthModalClose'
-               @authenticated='onAuthenticated' />
+    <ArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
+                    @close='onArcoCloudModalClose'
+                    @repo-created='(repo) => addRepo(repo)' />
   </div>
 </template>
 

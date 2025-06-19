@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-github/v66/github"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -69,10 +70,11 @@ type App struct {
 	shouldQuit               bool
 
 	// Startup
-	ctx         context.Context
-	cancel      context.CancelFunc
-	db          *ent.Client
-	authService *auth.ServiceInternal
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	db                  *ent.Client
+	authService         *auth.ServiceInternal
+	subscriptionService *subscription.ServiceInternal
 }
 
 func NewApp(
@@ -91,7 +93,8 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
-		authService:              auth.NewService(log, nil, state, config.CloudRPCURL),
+		authService:              auth.NewService(log, state, config.CloudRPCURL),
+		subscriptionService:      subscription.NewService(log, state, config.CloudRPCURL),
 	}
 }
 
@@ -128,6 +131,10 @@ func (a *App) ValidationClient() *ValidationClient {
 
 func (a *App) AuthService() *auth.Service {
 	return a.authService.Service
+}
+
+func (a *App) SubscriptionService() *subscription.Service {
+	return a.subscriptionService.Service
 }
 
 func (r *RepositoryClient) backupClient() *BackupClient {
@@ -177,6 +184,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.config.Migrations = nil // Free up memory
 
 	a.authService.SetDb(a.db)
+	a.subscriptionService.SetDb(a.db)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {

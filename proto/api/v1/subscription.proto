@@ -14,25 +14,26 @@ service SubscriptionService {
 }
 
 message ListPlansRequest {
-  bool active_only = 1;
 }
 
 message ListPlansResponse {
   repeated Plan plans = 1;
+  repeated string regions = 2;
+}
+
+enum FeatureSet {
+  BASIC = 0;
+  PRO = 1;
 }
 
 message Plan {
-  string id = 1;
-  string name = 2;
-  string description = 3;
-  int64 price_cents = 4;
+  string name = 1;
+  FeatureSet feature_set = 2;
+  int64 price_monthly_cents = 3;
+  int64 price_yearly_cents = 4;
   string currency = 5;
-  string interval = 6; // monthly, yearly
-  int32 interval_count = 7;
-  repeated string features = 8;
-  bool active = 9;
-  int64 storage_gb = 10;
-  int32 max_devices = 11;
+  int64 storage_gb = 6;
+  bool has_free_trial = 7;
 }
 
 message GetSubscriptionRequest {

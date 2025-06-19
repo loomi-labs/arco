@@ -39,7 +39,7 @@ type ServiceInternal struct {
 	*Service
 }
 
-func NewService(log *zap.SugaredLogger, db *ent.Client, state *state.State, cloudRPCURL string) *ServiceInternal {
+func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceInternal {
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -47,7 +47,6 @@ func NewService(log *zap.SugaredLogger, db *ent.Client, state *state.State, clou
 	return &ServiceInternal{
 		Service: &Service{
 			log:       log,
-			db:        db,
 			state:     state,
 			rpcClient: arcov1connect.NewAuthServiceClient(httpClient, cloudRPCURL),
 		},
