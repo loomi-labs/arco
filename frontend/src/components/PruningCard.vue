@@ -3,7 +3,7 @@ import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
 import { useToast } from "vue-toastification";

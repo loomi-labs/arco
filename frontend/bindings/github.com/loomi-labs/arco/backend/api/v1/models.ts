@@ -84,33 +84,6 @@ export class GetSubscriptionResponse {
     }
 }
 
-export class ListPlansResponse {
-    "plans"?: (Plan | null)[];
-    "regions"?: string[];
-
-    /** Creates a new ListPlansResponse instance. */
-    constructor($$source: Partial<ListPlansResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ListPlansResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ListPlansResponse {
-        const $$createField0_0 = $$createType6;
-        const $$createField1_0 = $$createType7;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("plans" in $$parsedSource) {
-            $$parsedSource["plans"] = $$createField0_0($$parsedSource["plans"]);
-        }
-        if ("regions" in $$parsedSource) {
-            $$parsedSource["regions"] = $$createField1_0($$parsedSource["regions"]);
-        }
-        return new ListPlansResponse($$parsedSource as Partial<ListPlansResponse>);
-    }
-}
-
 export class Plan {
     "name"?: string;
     "feature_set"?: FeatureSet;
@@ -118,7 +91,6 @@ export class Plan {
     "price_yearly_cents"?: number;
     "currency"?: string;
     "storage_gb"?: number;
-    "has_free_trial"?: boolean;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
@@ -198,5 +170,3 @@ const $$createType2 = Subscription.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = Plan.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = $Create.Array($Create.Any);

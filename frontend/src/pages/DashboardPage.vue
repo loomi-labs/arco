@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { useRouter } from "vue-router";
 import { computed, onUnmounted, ref } from "vue";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
 import { InformationCircleIcon } from "@heroicons/vue/24/outline";

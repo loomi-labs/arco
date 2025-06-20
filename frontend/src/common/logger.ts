@@ -42,3 +42,15 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
     await appClient.HandleError(message, fe);
   }
 }
+
+/**
+ * logDebug logs a debug message to the backend.
+ * @param message The debug message to log.
+ * @returns A promise that resolves when the message is logged.
+ */
+export async function logDebug(message: string): Promise<void> {
+  try {
+    await appClient.LogDebug(message);
+  } catch (error) {
+  }
+}

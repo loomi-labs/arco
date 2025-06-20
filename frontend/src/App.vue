@@ -1,7 +1,7 @@
 <script lang='ts' setup>
 
 import { useToast } from "vue-toastification";
-import { showAndLogError } from "./common/error";
+import { showAndLogError } from "./common/logger";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Navbar from "./components/Navbar.vue";

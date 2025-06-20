@@ -92,6 +92,11 @@ export function HandleError(msg: string, fErr: types$0.FrontendError | null): Pr
     return $resultPromise;
 }
 
+export function LogDebug(message: string): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(722122653, message) as any;
+    return $resultPromise;
+}
+
 export function SaveSettings(settings: ent$0.Settings | null): Promise<void> & { cancel(): void } {
     let $resultPromise = $Call.ByID(2023083000, settings) as any;
     return $resultPromise;

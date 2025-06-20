@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import FormField from "./common/FormField.vue";

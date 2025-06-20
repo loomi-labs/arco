@@ -86,8 +86,12 @@ func (a *AppClient) GetUser() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &User{
 		Email: entUser.Email,
 	}, nil
+}
+
+func (a *AppClient) LogDebug(message string) {
+	a.log.Debug(message)
 }

@@ -46,7 +46,7 @@ func (j *JWTAuthInterceptor) UnaryInterceptor() connect.UnaryInterceptorFunc {
 
 			// Add Authorization header with Bearer token
 			req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			
+
 			return next(ctx, req)
 		}
 	}
@@ -75,7 +75,7 @@ func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string,
 	// Check if token is expired and refresh if needed
 	if user.AccessTokenExpiresAt != nil && user.AccessTokenExpiresAt.Before(time.Now()) {
 		j.log.Debug("Access token expired, attempting refresh")
-		
+
 		// Validate and refresh tokens - this will update the user in the database
 		err = j.authServiceRPC.ValidateAndRenewStoredTokens(ctx)
 		if err != nil {
