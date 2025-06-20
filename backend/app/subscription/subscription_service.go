@@ -65,11 +65,9 @@ func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.G
 }
 
 // CreateCheckoutSession creates a payment checkout session
-func (s *Service) CreateCheckoutSession(ctx context.Context, planID, successURL, cancelURL string) (*arcov1.CreateCheckoutSessionResponse, error) {
+func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*arcov1.CreateCheckoutSessionResponse, error) {
 	req := connect.NewRequest(&arcov1.CreateCheckoutSessionRequest{
-		PlanId:     planID,
-		SuccessUrl: successURL,
-		CancelUrl:  cancelURL,
+		Name: planName,
 	})
 
 	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
@@ -110,7 +108,7 @@ func (si *ServiceRPC) GetSubscription(ctx context.Context, req *connect.Request[
 
 // CreateCheckoutSession handles the Connect RPC request for creating a checkout session
 func (si *ServiceRPC) CreateCheckoutSession(ctx context.Context, req *connect.Request[arcov1.CreateCheckoutSessionRequest]) (*connect.Response[arcov1.CreateCheckoutSessionResponse], error) {
-	resp, err := si.Service.CreateCheckoutSession(ctx, req.Msg.PlanId, req.Msg.SuccessUrl, req.Msg.CancelUrl)
+	resp, err := si.Service.CreateCheckoutSession(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}

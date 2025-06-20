@@ -29,8 +29,8 @@ export function CancelSubscription(subscriptionID: string, immediate: boolean): 
 /**
  * CreateCheckoutSession creates a payment checkout session
  */
-export function CreateCheckoutSession(planID: string, successURL: string, cancelURL: string): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(54709411, planID, successURL, cancelURL) as any;
+export function CreateCheckoutSession(planName: string): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(54709411, planName) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType3($result);
     }) as any;

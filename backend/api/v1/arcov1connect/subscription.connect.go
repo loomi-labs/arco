@@ -42,6 +42,9 @@ const (
 	// SubscriptionServiceCancelSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's CancelSubscription RPC.
 	SubscriptionServiceCancelSubscriptionProcedure = "/api.v1.SubscriptionService/CancelSubscription"
+	// SubscriptionServiceWaitForCheckoutCompletionProcedure is the fully-qualified name of the
+	// SubscriptionService's WaitForCheckoutCompletion RPC.
+	SubscriptionServiceWaitForCheckoutCompletionProcedure = "/api.v1.SubscriptionService/WaitForCheckoutCompletion"
 )
 
 // SubscriptionServiceClient is a client for the api.v1.SubscriptionService service.
@@ -49,6 +52,7 @@ type SubscriptionServiceClient interface {
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
+	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest]) (*connect.ServerStreamForClient[v1.WaitForCheckoutCompletionResponse], error)
 }
 
 // NewSubscriptionServiceClient constructs a client for the api.v1.SubscriptionService service. By
@@ -80,14 +84,21 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("CancelSubscription")),
 			connect.WithClientOptions(opts...),
 		),
+		waitForCheckoutCompletion: connect.NewClient[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse](
+			httpClient,
+			baseURL+SubscriptionServiceWaitForCheckoutCompletionProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("WaitForCheckoutCompletion")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription       *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
-	createCheckoutSession *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
-	cancelSubscription    *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
+	getSubscription           *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
+	createCheckoutSession     *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
+	cancelSubscription        *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
+	waitForCheckoutCompletion *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
 }
 
 // GetSubscription calls api.v1.SubscriptionService.GetSubscription.
@@ -105,11 +116,17 @@ func (c *subscriptionServiceClient) CancelSubscription(ctx context.Context, req 
 	return c.cancelSubscription.CallUnary(ctx, req)
 }
 
+// WaitForCheckoutCompletion calls api.v1.SubscriptionService.WaitForCheckoutCompletion.
+func (c *subscriptionServiceClient) WaitForCheckoutCompletion(ctx context.Context, req *connect.Request[v1.WaitForCheckoutCompletionRequest]) (*connect.ServerStreamForClient[v1.WaitForCheckoutCompletionResponse], error) {
+	return c.waitForCheckoutCompletion.CallServerStream(ctx, req)
+}
+
 // SubscriptionServiceHandler is an implementation of the api.v1.SubscriptionService service.
 type SubscriptionServiceHandler interface {
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
+	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest], *connect.ServerStream[v1.WaitForCheckoutCompletionResponse]) error
 }
 
 // NewSubscriptionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -137,6 +154,12 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("CancelSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	subscriptionServiceWaitForCheckoutCompletionHandler := connect.NewServerStreamHandler(
+		SubscriptionServiceWaitForCheckoutCompletionProcedure,
+		svc.WaitForCheckoutCompletion,
+		connect.WithSchema(subscriptionServiceMethods.ByName("WaitForCheckoutCompletion")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SubscriptionServiceGetSubscriptionProcedure:
@@ -145,6 +168,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceCreateCheckoutSessionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCancelSubscriptionProcedure:
 			subscriptionServiceCancelSubscriptionHandler.ServeHTTP(w, r)
+		case SubscriptionServiceWaitForCheckoutCompletionProcedure:
+			subscriptionServiceWaitForCheckoutCompletionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -164,4 +189,8 @@ func (UnimplementedSubscriptionServiceHandler) CreateCheckoutSession(context.Con
 
 func (UnimplementedSubscriptionServiceHandler) CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.CancelSubscription is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest], *connect.ServerStream[v1.WaitForCheckoutCompletionResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.WaitForCheckoutCompletion is not implemented"))
 }
