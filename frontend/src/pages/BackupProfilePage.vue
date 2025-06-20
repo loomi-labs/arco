@@ -11,7 +11,7 @@ import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backe
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { RepoStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import { Anchor, Page } from "../router";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
 import { CircleStackIcon, EllipsisVerticalIcon, PencilIcon, PlusCircleIcon, TrashIcon } from "@heroicons/vue/24/solid";
 import { useToast } from "vue-toastification";

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+service PlanService {
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {}
+}
+
+message ListPlansRequest {
+}
+
+message ListPlansResponse {
+  repeated Plan plans = 1;
+}
+
+enum FeatureSet {
+  FEATURE_SET_UNSPECIFIED = 0;
+  FEATURE_SET_BASIC = 1;
+  FEATURE_SET_PRO = 2;
+}
+
+message Plan {
+  string name = 1;
+  FeatureSet feature_set = 2;
+  int64 price_monthly_cents = 3;
+  int64 price_yearly_cents = 4;
+  string currency = 5;
+  int64 storage_gb = 6;
+}

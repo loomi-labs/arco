@@ -1,32 +1,98 @@
-# Arco Development Commands
+# Arco - Project Context for Claude
 
-## Build & Run
-- Build: `task build`
-- Dev mode: `task dev`
-- Run tests: `task test`
-- Run single test: `go test -v -run TestName ./path/to/package`
-- Format Go code: `task dev:go:format`
-- Lint Go code: `task dev:go:lint`
-- Update Go dependencies: `task dev:go:update`
-- Generate mocks: `task dev:mockgen`
+## Overview
+Arco is a desktop backup management application built with Go backend and Vue frontend using Wails3 framework. It uses SQLite for local data storage and integrates with Borg backup.
 
-## Database Operations
-- Generate Ent models: `task db:generate:models`
-- Create new Ent model: `task db:create:ent:model -- ModelName`
-- Generate migrations: `task db:generate:migrations`
-- Apply migrations: `task db:apply:migrations`
-- Show migration status: `task db:show:migrations`
-- Create new migration: `task db:create:migration -- MigrationName`
-- Lint migrations: `task db:lint:migrations`
-- Hash migrations: `task db:hash:migrations`
-- Set migration version: `task db:set:migration:version -- VERSION`
+## Tech Stack
+- **Language**: Go 1.24, TypeScript/Vue 3
+- **Framework**: Wails3 (desktop app framework)
+- **Database**: SQLite (local file-based)
+- **ORM**: Ent (type-safe entity framework)
+- **Migrations**: Atlas with Goose
+- **Frontend**: Vue 3 with TypeScript, Vite, Tailwind CSS, DaisyUI
+- **Task Runner**: Task (https://taskfile.dev)
+- **Backup**: Borg backup integration
 
-## Frontend
-- Install dependencies: `task install:frontend:deps`
-- Build frontend: `task build:frontend`
-- Run frontend dev server: `task dev:frontend`
-- Generate bindings: `task generate:bindings`
-- Generate icons: `task generate:icons`
+## Project Structure
+```
+/
+├── backend/
+│   ├── app/              # Application services
+│   │   ├── auth/         # Authentication service
+│   │   ├── backup/       # Backup management service
+│   │   ├── plan/         # Plan service
+│   │   ├── subscription/ # Subscription service
+│   │   └── user/         # User management service
+│   ├── cmd/              # Command line entry points
+│   │   └── root.go       # Main application entrypoint
+│   ├── ent/              # Database models and ORM
+│   │   ├── schema/       # Entity definitions
+│   │   └── migrate/      # Database migrations
+│   ├── internal/         # Internal packages
+│   │   ├── logger/       # Logging utilities
+│   │   ├── state/        # Application state management
+│   │   └── utils/        # Utility functions
+│   └── api/              # Generated API code
+│       └── v1/           # Proto-generated Go code
+├── frontend/
+│   ├── bindings/         # Generated Go-TypeScript bindings
+│   ├── src/
+│   │   ├── components/   # Vue components
+│   │   ├── views/        # Vue views/pages
+│   │   ├── stores/       # Pinia stores
+│   │   ├── utils/        # Frontend utilities
+│   │   └── assets/       # Static assets
+│   ├── index.html        # Entry HTML
+│   └── vite.config.ts    # Vite configuration
+├── proto/                # Protocol Buffer definitions (shared with cloud)
+│   ├── Taskfile.proto.yml # Proto-specific tasks
+│   ├── buf.yaml          # Buf configuration
+│   └── api/v1/           # Proto source files
+│       ├── auth.proto    # Authentication service
+│       ├── user.proto    # User management service
+│       ├── plan.proto    # Plan service
+│       └── subscription.proto # Subscription service
+├── build/                # Build assets and icons
+├── db/                   # Database related files
+│   └── migrations/       # Goose migrations
+├── .github/              # GitHub Actions workflows
+├── sync-proto.fish       # 2-way proto sync with cloud repo
+└── Taskfile*.yml         # Task automation files
+```
+
+## Key Commands
+
+### Development
+- `NO_COLOR=1 task dev` - Run application in development mode with hot reload
+- `NO_COLOR=1 task build` - Build the application for current platform
+- `NO_COLOR=1 task package` - Package application for distribution
+- `NO_COLOR=1 task run` - Run the built application
+- `task test` - Run tests
+- `task dev:format` - Format Go code
+- `task dev:lint` - Lint Go code
+- `task dev:gen:mocks` - Generate mock implementations
+- `task dev:clean` - Clean build artifacts
+- `task dev:go:update` - Update Go dependencies
+
+### Database Operations
+- `task db:ent:generate` - Generate Ent models from schemas
+- `task db:ent:new -- ModelName` - Create new Ent model
+- `task db:migrate:new` - Generate migrations from schema changes
+- `task db:migrate` - Apply pending migrations
+- `task db:migrate:status` - Show migration status
+- `task db:migrate:create:blank -- MigrationName` - Create blank migration
+- `task db:ent:lint` - Lint migrations
+- `task db:ent:hash` - Hash migrations
+- `task db:migrate:set-version -- VERSION` - Set migration version
+- `task db:install:atlas` - Install Atlas migration tool
+
+### Frontend
+This tasks do usually not have to be called directly (they will be called by dev/build/package)
+- `NO_COLOR=1 task common:install:frontend:deps` - Install frontend dependencies
+- `NO_COLOR=1 task common:build:frontend` - Build frontend for production/development
+- `NO_COLOR=1 task common:generate:bindings` - Generate Go-TypeScript bindings
+- `NO_COLOR=1 task common:generate:icons` - Generate app icons from source image
+- `NO_COLOR=1 task common:update:build-assets` - Update build assets with app info
 
 ## Code Style Guide
 - Error handling: Check errors with proper context message
@@ -43,7 +109,7 @@
   - DaisyUI: Use the rules from https://daisyui.com/llms.txt
 - Icons: Use Heroicons with `vite-plugin-icons` if possible
 - Syntax: Use await over then for promises
-- Folder structure: frontend/bindings are generated with `task generate:bindings`
+- Folder structure: frontend/bindings are generated with `task common:generate:bindings`
 - Components: Use single file components with script setup and use the following convention:
     ```vue
     <script setup lang='ts'>
@@ -79,6 +145,34 @@
       # ... add template here
     </template>
     ```
+
+## Service Architecture Patterns
+
+### Backend Services
+- **Service Structure**: Use Service/ServiceRPC pattern for cloud-integrated services
+  - `Service` struct: Contains business logic methods exposed to frontend and makes outgoing RPC calls to external cloud services
+  - `ServiceRPC` struct: Implements incoming Connect RPC server handlers for the service
+  - Services use Connect RPC framework (not gRPC) for external cloud communication
+- **Initialization**: Services are initialized with logger, state, and cloud RPC URL
+  - Database dependency is set later via `SetDb()` method
+  - Services registered in `app.go` and `cmd/root.go`
+- **Error Handling**: Always wrap errors with context and log appropriately
+
+### Protocol Buffers and Bindings
+- **Proto Changes**: After modifying `.proto` files, always run `task proto:generate`
+- **Binding Updates**: Generated TypeScript bindings are auto-created in `frontend/bindings/`
+- **Response Handling**: Use direct response properties (no `.data` or `.Msg` wrapper)
+
+### Frontend Integration
+- **Loading States**: Add loading indicators for all external service calls
+- **Error Handling**: Implement comprehensive error states with user-friendly messages
+- **Service Calls**: Import services from generated bindings and handle nullable responses
+- **State Management**: Use reactive refs for loading and error states
+
+### Cloud Integration
+- **RPC Clients**: Services communicate with cloud via Connect RPC clients
+- **Request/Response**: Wrap requests with `connect.NewRequest()` and handle response messages
+- **Service Separation**: Separate concerns into distinct services (auth, subscription, plan, etc.)
 
 ## Linear
 - Assignee: use "dev@uupi.cloud" for new issues

@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import {
   ArrowPathIcon,
   ChevronDoubleLeftIcon,

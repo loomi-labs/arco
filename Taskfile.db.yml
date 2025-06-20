@@ -5,92 +5,88 @@ includes:
 
 tasks:
   ensure:atlas:
-    summary: Ensures atlas is installed
+    desc: Ensures atlas is installed
     internal: true
     cmds:
       - sh -c "atlas version > /dev/null || task db:install:atlas"
 
   install:atlas:
-    summary: Install atlas
+    desc: Install atlas
     cmds:
       - curl -sSf https://atlasgo.sh | sh -s -- -y
 
-  create:ent:model:
-    summary: Creates a new Ent model
+  ent:new:
+    desc: Creates a new Ent model
     dir: backend
-    deps:
-      - task: common:go:mod:tidy
     vars:
       MODEL: '{{.CLI_ARGS | default ""}}'
     preconditions:
       - sh: test -n "{{.MODEL}}"
-        msg: "Model name is required. Usage: task create:ent:model -- MyModel"
+        msg: "Model name is required. Usage: task db:ent:new -- MyModel"
     cmds:
       - go run -mod=mod entgo.io/ent/cmd/ent new {{.MODEL}}
 
-  generate:models:
-    summary: Generates Ent models
+  ent:generate:
+    desc: Generates Ent models
     dir: backend
     deps:
       - task: common:go:mod:tidy
     cmds:
       - go generate ./ent
 
-  generate:migrations:
-    summary: Creates Ent migration
-    deps:
-      - task: ensure:atlas
-    cmds:
-      - atlas migrate diff gen --dir "file://backend/ent/migrate/migrations" --to "ent://backend/ent/schema" --dev-url "sqlite://file?mode=memory&_fk=1"
-
-  apply:migrations:
-    summary: Applies Ent migrations
-    deps:
-      - task: common:go:mod:tidy
-    cmds:
-      - go tool goose sqlite "$HOME/.config/arco/arco.db?_fk=1" up -dir "backend/ent/migrate/migrations"
-
-  show:migrations:
-    summary: Shows status of Ent migrations
-    deps:
-      - task: go:mod:tidy
-    cmds:
-      - go tool goose sqlite "$HOME/.config/arco/arco.db?_fk=1" status -dir "backend/ent/migrate/migrations"
-
-  lint:migrations:
-    summary: Lints Ent migrations
+  ent:lint:
+    desc: Lints Ent migrations
     deps:
       - task: ensure:atlas
     cmds:
       - atlas migrate lint --dev-url="sqlite://file?mode=memory" --dir="file://backend/ent/migrate/migrations" --latest=1
 
-  create:migration:
-    summary: Creates a new Ent migration
+  migrate:create:blank:
+    desc: Creates a new blank migration file
     deps:
       - task: ensure:atlas
     vars:
       NAME: '{{.CLI_ARGS | default ""}}'
     preconditions:
       - sh: test -n "{{.NAME}}"
-        msg: "Migration name is required. Usage: task create:migration -- MyMigration"
+        msg: "Migration name is required. Usage: task db:migrate:create:blank -- MyMigration"
     cmds:
       - atlas migrate new {{.NAME}} --dir "file://backend/ent/migrate/migrations"
 
-  hash:migrations:
-    summary: Hashes Ent migrations
+  ent:hash:
+    desc: Hashes Ent migrations
     deps:
       - task: ensure:atlas
     cmds:
       - atlas migrate hash --dir="file://backend/ent/migrate/migrations"
 
-  set:migration:version:
-    summary: Sets migration version
+  migrate:
+    desc: Applies Ent migrations
+    deps:
+      - task: common:go:mod:tidy
+    cmds:
+      - go tool goose sqlite "$HOME/.config/arco/arco.db?_fk=1" up -dir "backend/ent/migrate/migrations"
+
+  migrate:status:
+    desc: Shows status of Ent migrations
+    deps:
+      - task: common:go:mod:tidy
+    cmds:
+      - go tool goose sqlite "$HOME/.config/arco/arco.db?_fk=1" status -dir "backend/ent/migrate/migrations"
+
+  migrate:new:
+    desc: Generate migration from Ent schemas
     deps:
       - task: ensure:atlas
+    cmds:
+      - atlas migrate diff gen --dir "file://backend/ent/migrate/migrations" --to "ent://backend/ent/schema" --dev-url "sqlite://file?mode=memory&_fk=1"
+
+  migrate:set-version:
+    desc: Sets migration version
     vars:
       VERSION: '{{.CLI_ARGS | default ""}}'
     preconditions:
       - sh: test -n "{{.VERSION}}"
         msg: "Version is required. Usage: task set:migration:version -- 20241202145510"
     cmds:
-      - atlas migrate set {{.VERSION}} --dir="file://backend/ent/migrate/migrations" --url "sqlite://$HOME/.config/arco/arco.db?_fk=1"
+      - go tool goose -dir backend/ent/migrate/migrations sqlite3 "$HOME/.config/arco/arco.db?_fk=1" down-to {{.VERSION}}

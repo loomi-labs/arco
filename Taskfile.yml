@@ -7,6 +7,7 @@ includes:
   linux: ./build/linux/Taskfile.yml
   db: ./Taskfile.db.yml
   dev: ./Taskfile.dev.yml
+  proto: ./proto/Taskfile.proto.yml
 
 vars:
   APP_NAME: "arco"
@@ -17,16 +18,26 @@ vars:
 
 tasks:
   build:
-    summary: Builds the application
+    desc: Builds the application
     cmds:
       - task: "{{OS}}:build"
 
   package:
-    summary: Packages a production build of the application
+    desc: Packages a production build of the application
     cmds:
       - task: "{{OS}}:package"
 
   run:
-    summary: Runs the application
+    desc: Runs the application
     cmds:
       - task: "{{OS}}:run"
+
+  test:
+    desc: Runs tests
+    deps:
+      - task: dev:gen:mocks
+    preconditions:
+      - mkdir -p frontend/dist
+      - touch frontend/dist/index.html
+    cmds:
+      - go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/notification"
@@ -13,6 +14,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/ent/settings"
+	"github.com/loomi-labs/arco/backend/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -38,6 +40,21 @@ func init() {
 	archiveDescWillBePruned := archiveFields[4].Descriptor()
 	// archive.DefaultWillBePruned holds the default value on creation for the will_be_pruned field.
 	archive.DefaultWillBePruned = archiveDescWillBePruned.Default.(bool)
+	authsessionMixin := schema.AuthSession{}.Mixin()
+	authsessionMixinFields0 := authsessionMixin[0].Fields()
+	_ = authsessionMixinFields0
+	authsessionFields := schema.AuthSession{}.Fields()
+	_ = authsessionFields
+	// authsessionDescCreatedAt is the schema descriptor for created_at field.
+	authsessionDescCreatedAt := authsessionMixinFields0[0].Descriptor()
+	// authsession.DefaultCreatedAt holds the default value on creation for the created_at field.
+	authsession.DefaultCreatedAt = authsessionDescCreatedAt.Default.(func() time.Time)
+	// authsessionDescUpdatedAt is the schema descriptor for updated_at field.
+	authsessionDescUpdatedAt := authsessionMixinFields0[1].Descriptor()
+	// authsession.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	authsession.DefaultUpdatedAt = authsessionDescUpdatedAt.Default.(func() time.Time)
+	// authsession.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	authsession.UpdateDefaultUpdatedAt = authsessionDescUpdatedAt.UpdateDefault.(func() time.Time)
 	backupprofileMixin := schema.BackupProfile{}.Mixin()
 	backupprofileMixinFields0 := backupprofileMixin[0].Fields()
 	_ = backupprofileMixinFields0
@@ -221,4 +238,23 @@ func init() {
 	settingsDescShowWelcome := settingsFields[0].Descriptor()
 	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
 	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
+	userMixin := schema.User{}.Mixin()
+	userMixinFields0 := userMixin[0].Fields()
+	_ = userMixinFields0
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userMixinFields0[0].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescUpdatedAt is the schema descriptor for updated_at field.
+	userDescUpdatedAt := userMixinFields0[1].Descriptor()
+	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
+	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userDescEmail is the schema descriptor for email field.
+	userDescEmail := userFields[1].Descriptor()
+	// user.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	user.EmailValidator = userDescEmail.Validators[0].(func(string) error)
 }

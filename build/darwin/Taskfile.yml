@@ -5,7 +5,7 @@ includes:
 
 tasks:
   build:
-    summary: Creates a production build of the application
+    desc: Creates a production build of the application
     deps:
       - task: common:go:mod:tidy
       - task: common:build:frontend
@@ -27,7 +27,7 @@ tasks:
       PRODUCTION: '{{.PRODUCTION | default "false"}}'
 
   build:universal:
-    summary: Builds darwin universal binary (arm64 + amd64)
+    desc: Builds darwin universal binary (arm64 + amd64)
     deps:
       - task: build
         vars:
@@ -42,7 +42,7 @@ tasks:
       - rm "{{.BIN_DIR}}/{{.APP_NAME}}-amd64" "{{.BIN_DIR}}/{{.APP_NAME}}-arm64"
 
   package:
-    summary: Packages a production build of the application into a `.app` bundle
+    desc: Packages a production build of the application into a `.app` bundle
     deps:
       - task: build
         vars:
@@ -51,7 +51,7 @@ tasks:
       - task: create:app:bundle
 
   package:universal:
-    summary: Packages darwin universal binary (arm64 + amd64)
+    desc: Packages darwin universal binary (arm64 + amd64)
     deps:
       - task: build:universal
     cmds:
@@ -59,7 +59,7 @@ tasks:
 
 
   create:app:bundle:
-    summary: Creates an `.app` bundle
+    desc: Creates an `.app` bundle
     cmds:
       - mkdir -p {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/{MacOS,Resources}
       - cp build/darwin/icons.icns {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources

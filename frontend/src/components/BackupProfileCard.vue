@@ -2,7 +2,7 @@
 import { useI18n } from "vue-i18n";
 import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
 import { isAfter } from "@formkit/tempo";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref } from "vue";
 import { Page, withId } from "../router";
 import { useRouter } from "vue-router";

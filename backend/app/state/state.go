@@ -17,6 +17,7 @@ type State struct {
 	notifications []types.Notification
 
 	startupState *StartupState
+	authState    *AuthState
 	repoStates   map[int]*RepoState
 	backupStates map[types.BackupId]*BackupState
 	pruneStates  map[types.BackupId]*PruneState
@@ -58,6 +59,10 @@ func (ss StartupStatus) String() string {
 type StartupState struct {
 	Error  string        `json:"error"`
 	Status StartupStatus `json:"status"`
+}
+
+type AuthState struct {
+	IsAuthenticated bool `json:"isAuthenticated"`
 }
 
 type cancelCtx struct {
@@ -227,6 +232,9 @@ func NewState(log *zap.SugaredLogger, eventEmitter types.EventEmitter) *State {
 
 		startupState: &StartupState{
 			Status: StartupStatusUnknown,
+		},
+		authState: &AuthState{
+			IsAuthenticated: false,
 		},
 		repoStates:   make(map[int]*RepoState),
 		backupStates: map[types.BackupId]*BackupState{},
@@ -874,4 +882,35 @@ func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButto
 	// Being here means all backups are idle, completed, cancelled or failed
 	// and all repositories are idle
 	return BackupButtonStatusRunBackup
+}
+
+/***********************************/
+/********** Auth State *************/
+/***********************************/
+
+func (s *State) SetAuthenticated(ctx context.Context) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.authState.IsAuthenticated {
+		defer s.eventEmitter.EmitEvent(ctx, types.EventAuthStateChanged.String())
+		s.authState.IsAuthenticated = true
+	}
+}
+
+func (s *State) SetNotAuthenticated(ctx context.Context) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.authState.IsAuthenticated {
+		defer s.eventEmitter.EmitEvent(ctx, types.EventAuthStateChanged.String())
+		s.authState.IsAuthenticated = false
+	}
+}
+
+func (s *State) GetAuthState() AuthState {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return *s.authState
 }

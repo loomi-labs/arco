@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { showAndLogError } from "../../common/error";
+import { showAndLogError } from "../../common/logger";
 import { useToast } from "vue-toastification";
 
 import * as appClient from "../../../bindings/github.com/loomi-labs/arco/backend/app/appclient";

@@ -81,6 +81,7 @@ export class BackupProfileFilter {
 export class Env {
     "debug": boolean;
     "startPage": string;
+    "loginBetaEnabled": boolean;
 
     /** Creates a new Env instance. */
     constructor($$source: Partial<Env> = {}) {
@@ -89,6 +90,9 @@ export class Env {
         }
         if (!("startPage" in $$source)) {
             this["startPage"] = "";
+        }
+        if (!("loginBetaEnabled" in $$source)) {
+            this["loginBetaEnabled"] = false;
         }
 
         Object.assign(this, $$source);
@@ -400,6 +404,27 @@ export class TestRepoConnectionResult {
     static createFrom($$source: any = {}): TestRepoConnectionResult {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new TestRepoConnectionResult($$parsedSource as Partial<TestRepoConnectionResult>);
+    }
+}
+
+export class User {
+    "email": string;
+
+    /** Creates a new User instance. */
+    constructor($$source: Partial<User> = {}) {
+        if (!("email" in $$source)) {
+            this["email"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new User instance from a string or object.
+     */
+    static createFrom($$source: any = {}): User {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new User($$parsedSource as Partial<User>);
     }
 }
 

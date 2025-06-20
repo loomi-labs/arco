@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import FormField from "./common/FormField.vue";
@@ -266,7 +266,7 @@ watch([name, location, password, isEncrypted], async () => {
           </FormField>
         </div>
 
-        <div class='modal-action'>
+        <div class='modal-action justify-start'>
           <button class='btn btn-outline' type='reset'
                   @click.prevent='dialog?.close();'>
             Cancel

@@ -28,4 +28,4 @@ jobs:
         shell: bash
       # Test & coverage report creation
       - name: Test & coverage report creation
-        run: task dev:test
+        run: task test

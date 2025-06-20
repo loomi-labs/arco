@@ -114,6 +114,15 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		return nil, fmt.Errorf("failed to parse version: %w", err)
 	}
 
+	cloudRPCURL := app.EnvVarCloudRPCURL.String()
+	if cloudRPCURL == "" {
+		if app.EnvVarDevelopment.Bool() {
+			cloudRPCURL = "http://localhost:8080"
+		} else {
+			cloudRPCURL = "https://rpc.arco-backup.com"
+		}
+	}
+
 	return &types.Config{
 		Dir:             configDir,
 		BorgBinaries:    binaries,
@@ -124,6 +133,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		GithubAssetName: util.GithubAssetName(),
 		Version:         version,
 		CheckForUpdates: autoUpdate,
+		CloudRPCURL:     cloudRPCURL,
 	}, nil
 }
 
@@ -170,6 +180,9 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			application.NewService(arco.BackupClient()),
 			application.NewService(arco.RepoClient()),
 			application.NewService(arco.ValidationClient()),
+			application.NewService(arco.AuthService()),
+			application.NewService(arco.PlanService()),
+			application.NewService(arco.SubscriptionService()),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: uniqueRunId,

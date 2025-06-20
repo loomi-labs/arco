@@ -2,7 +2,7 @@
 
 import { useI18n } from "vue-i18n";
 import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";

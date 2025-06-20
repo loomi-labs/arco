@@ -3,16 +3,22 @@ package app
 import (
 	"archive/zip"
 	"bytes"
+	"connectrpc.com/connect"
 	"context"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
+	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/plan"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
+	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
@@ -37,9 +43,11 @@ var (
 type EnvVar string
 
 const (
-	EnvVarDebug       EnvVar = "DEBUG"
-	EnvVarDevelopment EnvVar = "DEVELOPMENT"
-	EnvVarStartPage   EnvVar = "START_PAGE"
+	EnvVarDebug           EnvVar = "ARCO_DEBUG"
+	EnvVarDevelopment     EnvVar = "ARCO_DEVELOPMENT"
+	EnvVarStartPage       EnvVar = "ARCO_START_PAGE"
+	EnvVarCloudRPCURL     EnvVar = "ARCO_CLOUD_RPC_URL"
+	EnvVarEnableLoginBeta EnvVar = "ARCO_ENABLE_LOGIN_BETA"
 )
 
 func (e EnvVar) Name() string {
@@ -66,9 +74,12 @@ type App struct {
 	shouldQuit               bool
 
 	// Startup
-	ctx    context.Context
-	cancel context.CancelFunc
-	db     *ent.Client
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	db                  *ent.Client
+	authService         *auth.ServiceRPC
+	planService         *plan.ServiceRPC
+	subscriptionService *subscription.ServiceRPC
 }
 
 func NewApp(
@@ -87,6 +98,9 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		authService:              auth.NewService(log, state, config.CloudRPCURL),
+		planService:              plan.NewService(log, state),
+		subscriptionService:      subscription.NewService(log, state),
 	}
 }
 
@@ -119,6 +133,18 @@ func (a *App) BackupClient() *BackupClient {
 
 func (a *App) ValidationClient() *ValidationClient {
 	return (*ValidationClient)(a)
+}
+
+func (a *App) AuthService() *auth.Service {
+	return a.authService.Service
+}
+
+func (a *App) PlanService() *plan.Service {
+	return a.planService.Service
+}
+
+func (a *App) SubscriptionService() *subscription.Service {
+	return a.subscriptionService.Service
 }
 
 func (r *RepositoryClient) backupClient() *BackupClient {
@@ -167,6 +193,30 @@ func (a *App) Startup(ctx context.Context) {
 	a.db = db
 	a.config.Migrations = nil // Free up memory
 
+	// Create JWT interceptor and HTTP client for cloud services
+	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db)
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create authenticated RPC clients
+	planRPCClient := arcov1connect.NewPlanServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
+	subscriptionRPCClient := arcov1connect.NewSubscriptionServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
+	// Initialize services with database and authenticated RPC clients
+	a.authService.Init(a.db)
+	a.planService.Init(a.db, planRPCClient)
+	a.subscriptionService.Init(a.db, subscriptionRPCClient)
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
@@ -176,6 +226,18 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Set a general status for the rest of the startup process
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusInitializingApp, nil)
+
+	// Recover any pending authentication sessions
+	if err := a.authService.RecoverAuthSessions(a.ctx); err != nil {
+		a.log.Errorf("Failed to recover authentication sessions: %v", err)
+		// Don't fail startup for session recovery errors, just log them
+	}
+
+	// Validate and clean up stored JWT
+	if err := a.authService.ValidateAndRenewStoredTokens(a.ctx); err != nil {
+		a.log.Errorf("Failed to validate stored tokens: %v", err)
+		// Don't fail startup for token validation errors, just log them
+	}
 
 	// Save mount states
 	a.RepoClient().setMountStates()

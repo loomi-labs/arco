@@ -78,8 +78,22 @@ export function GetStartupState(): Promise<state$0.StartupState> & { cancel(): v
     return $typingPromise;
 }
 
+export function GetUser(): Promise<$models.User | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2302117383) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType9($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
 export function HandleError(msg: string, fErr: types$0.FrontendError | null): Promise<void> & { cancel(): void } {
     let $resultPromise = $Call.ByID(4280892152, msg, fErr) as any;
+    return $resultPromise;
+}
+
+export function LogDebug(message: string): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(722122653, message) as any;
     return $resultPromise;
 }
 
@@ -97,3 +111,5 @@ const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = ent$0.Settings.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
 const $$createType7 = state$0.StartupState.createFrom;
+const $$createType8 = $models.User.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);

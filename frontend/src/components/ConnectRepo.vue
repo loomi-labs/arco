@@ -3,8 +3,11 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
+import ArcoCloudModal from "./ArcoCloudModal.vue";
 import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
+import { useAuth } from "../common/auth";
+import { useFeatureFlags } from "../common/featureFlags";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
@@ -50,6 +53,9 @@ const emitUpdateConnectedRepos = "update:connected-repos";
 const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
+const { isAuthenticated } = useAuth();
+const { featureFlags } = useFeatureFlags();
+
 const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);
 
 const connectedRepos = ref<ent.Repository[]>([]);
@@ -58,6 +64,8 @@ const createLocalRepoModalKey = useId();
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
 const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
+const arcoCloudModalKey = useId();
+const arcoCloudModal = useTemplateRef<InstanceType<typeof ArcoCloudModal>>(arcoCloudModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
 // noinspection JSUnusedGlobalSymbols
@@ -75,6 +83,15 @@ function selectLocalRepo() {
 function selectRemoteRepo() {
   selectedRepoType.value = SelectedRepoType.Remote;
   createRemoteRepoModal.value?.showModal();
+}
+
+async function selectArcoCloud() {
+  selectedRepoType.value = SelectedRepoType.ArcoCloud;
+  arcoCloudModal.value?.showModal();
+}
+
+function onArcoCloudModalClose() {
+  selectedRepoType.value = SelectedRepoType.None;
 }
 
 function addRepo(repo: ent.Repository) {
@@ -144,7 +161,7 @@ watch(() => props.existingRepos, (newRepos) => {
     <div class='flex gap-6 pt-4'>
       <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
       <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
-      <ConnectRepoCard :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' />
+      <ConnectRepoCard v-if='featureFlags.loginBetaEnabled' :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
     </div>
 
     <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'
@@ -154,6 +171,10 @@ watch(() => props.existingRepos, (newRepos) => {
     <CreateRemoteRepositoryModal :ref='createRemoteRepoModalKey'
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
+
+    <ArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
+                    @close='onArcoCloudModalClose'
+                    @repo-created='(repo) => addRepo(repo)' />
   </div>
 </template>
 

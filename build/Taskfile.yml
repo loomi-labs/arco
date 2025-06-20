@@ -2,13 +2,13 @@ version: '3'
 
 tasks:
   go:mod:tidy:
-    summary: Runs `go mod tidy`
+    desc: Runs `go mod tidy`
     internal: true
     cmds:
       - go mod tidy
 
   install:frontend:deps:
-    summary: Install frontend dependencies
+    desc: Install frontend dependencies
     dir: frontend
     sources:
       - package.json
@@ -22,7 +22,7 @@ tasks:
       - pnpm install
 
   build:frontend:
-    summary: Build the frontend project
+    desc: Build the frontend project
     dir: frontend
     sources:
       - "**/*"
@@ -39,7 +39,7 @@ tasks:
       BUILD_COMMAND: '{{if eq .PRODUCTION "true"}}build{{else}}build:dev{{end}}'
 
   generate:bindings:
-    summary: Generates bindings for the frontend
+    desc: Generates bindings for the frontend
     deps:
       - task: go:mod:tidy
     sources:
@@ -52,7 +52,7 @@ tasks:
       - go tool wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true -ts
 
   generate:icons:
-    summary: Generates Windows `.ico` and Mac `.icns` files from an image
+    desc: Generates Windows `.ico` and Mac `.icns` files from an image
     dir: build
     sources:
       - "appicon-light.png"
@@ -63,7 +63,7 @@ tasks:
       - go tool wails3 generate icons -input appicon-light.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico
 
   dev:frontend:
-    summary: Runs the frontend in development mode
+    desc: Runs the frontend in development mode
     dir: frontend
     deps:
       - task: install:frontend:deps
@@ -71,7 +71,7 @@ tasks:
       - pnpm run dev --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
-    summary: Updates the build assets
+    desc: Updates the build assets
     dir: build
     cmds:
       - go tool wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -productversion "{{.VERSION}}" -config config.yml -dir .

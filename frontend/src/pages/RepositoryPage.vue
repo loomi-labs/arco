@@ -12,7 +12,7 @@ import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/a
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType, toHumanReadableSize } from "../common/repository";
 import { toLongDateString, toRelativeTimeString } from "../common/time";

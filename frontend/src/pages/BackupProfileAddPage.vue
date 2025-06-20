@@ -2,7 +2,7 @@
 import { computed, ref, useId, useTemplateRef } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
 import ScheduleSelection from "../components/ScheduleSelection.vue";
 import { formInputClass } from "../common/form";

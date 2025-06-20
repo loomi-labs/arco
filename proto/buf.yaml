@@ -1,0 +1,15 @@
+version: v2
+modules:
+  - path: .
+    name: buf.build/arco/arco-cloud
+deps:
+  - buf.build/bufbuild/protovalidate
+lint:
+  use:
+    - STANDARD
+  rpc_allow_same_request_response: false
+  rpc_allow_google_protobuf_empty_requests: false
+  rpc_allow_google_protobuf_empty_responses: false
+breaking:
+  use:
+    - FILE

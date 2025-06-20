@@ -1,0 +1,14 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  # Generate Go protobuf types
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: ../backend
+    opt:
+      - paths=source_relative
+  # Generate Connect-RPC Go code
+  - remote: buf.build/connectrpc/go:v1.18.1
+    out: ../backend
+    opt:
+      - paths=source_relative

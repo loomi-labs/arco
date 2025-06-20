@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "google/protobuf/timestamp.proto";
+import "api/v1/plan.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+service SubscriptionService {
+  rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
+  rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
+  rpc WaitForCheckoutCompletion(WaitForCheckoutCompletionRequest) returns (stream WaitForCheckoutCompletionResponse) {}
+  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
+}
+
+message GetSubscriptionRequest {
+  string user_id = 1;
+}
+
+message GetSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+enum SubscriptionStatus {
+  SUBSCRIPTION_STATUS_UNSPECIFIED = 0;
+  SUBSCRIPTION_STATUS_INCOMPLETE = 1;
+  SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED = 2;
+  SUBSCRIPTION_STATUS_TRIALING = 3;
+  SUBSCRIPTION_STATUS_ACTIVE = 4;
+  SUBSCRIPTION_STATUS_PAST_DUE = 5;
+  SUBSCRIPTION_STATUS_CANCELED = 6;
+  SUBSCRIPTION_STATUS_UNPAID = 7;
+}
+
+message Subscription {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  SubscriptionStatus status = 4;
+  google.protobuf.Timestamp current_period_start = 5;
+  google.protobuf.Timestamp current_period_end = 6;
+  bool cancel_at_period_end = 7;
+  google.protobuf.Timestamp canceled_at = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  Plan plan = 11;
+}
+
+message CreateCheckoutSessionRequest {
+  string name = 1;
+}
+
+message CreateCheckoutSessionResponse {
+  string session_id = 1;
+  string checkout_url = 2;
+}
+
+message CancelSubscriptionRequest {
+  string subscription_id = 1;
+  bool immediate = 2; // if false, cancels at end of billing period
+}
+
+message CancelSubscriptionResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp effective_date = 3;
+}
+
+message WaitForCheckoutCompletionRequest {
+  string session_id = 1; // Stripe checkout session ID
+}
+
+message WaitForCheckoutCompletionResponse {
+  CheckoutStatus status = 1;
+  string subscription_id = 2; // Only set when successful
+  string error_message = 3;   // Only set when failed
+}
+
+enum CheckoutStatus {
+  CHECKOUT_STATUS_UNSPECIFIED = 0;
+  CHECKOUT_STATUS_PENDING = 1;
+  CHECKOUT_STATUS_COMPLETED = 2;
+  CHECKOUT_STATUS_FAILED = 3;
+  CHECKOUT_STATUS_EXPIRED = 4;
+}

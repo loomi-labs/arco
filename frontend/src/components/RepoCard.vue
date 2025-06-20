@@ -2,7 +2,7 @@
 
 import { useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";

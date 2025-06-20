@@ -2,7 +2,7 @@
 
 import { useRouter } from "vue-router";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
-import { showAndLogError } from "../common/error";
+import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, watch } from "vue";
 import { Page, withId } from "../router";
 import { repoStateChangedEvent } from "../common/events";

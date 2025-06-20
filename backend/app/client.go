@@ -32,14 +32,16 @@ func (a *AppClient) GetNotifications() []types.Notification {
 }
 
 type Env struct {
-	Debug     bool   `json:"debug"`
-	StartPage string `json:"startPage"`
+	Debug            bool   `json:"debug"`
+	StartPage        string `json:"startPage"`
+	LoginBetaEnabled bool   `json:"loginBetaEnabled"`
 }
 
 func (a *AppClient) GetEnvVars() Env {
 	return Env{
-		Debug:     EnvVarDebug.Bool(),
-		StartPage: EnvVarStartPage.String(),
+		Debug:            EnvVarDebug.Bool(),
+		StartPage:        EnvVarStartPage.String(),
+		LoginBetaEnabled: EnvVarEnableLoginBeta.Bool(),
 	}
 }
 
@@ -73,4 +75,23 @@ func (a *AppClient) GetAppInfo() AppInfo {
 
 func (a *AppClient) GetAllEvents() []types.Event {
 	return types.AllEvents
+}
+
+type User struct {
+	Email string `json:"email"`
+}
+
+func (a *AppClient) GetUser() (*User, error) {
+	entUser, err := a.db.User.Query().First(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &User{
+		Email: entUser.Email,
+	}, nil
+}
+
+func (a *AppClient) LogDebug(message string) {
+	a.log.Debug(message)
 }

@@ -9,6 +9,27 @@ import {Create as $Create} from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as types$0 from "../../borg/types/models.js";
 
+export class AuthState {
+    "isAuthenticated": boolean;
+
+    /** Creates a new AuthState instance. */
+    constructor($$source: Partial<AuthState> = {}) {
+        if (!("isAuthenticated" in $$source)) {
+            this["isAuthenticated"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthState {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AuthState($$parsedSource as Partial<AuthState>);
+    }
+}
+
 export enum BackupButtonStatus {
     /**
      * The Go zero value for the underlying type of the enum.
