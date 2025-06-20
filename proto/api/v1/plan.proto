@@ -16,8 +16,9 @@ message ListPlansResponse {
 }
 
 enum FeatureSet {
-  BASIC = 0;
-  PRO = 1;
+  FEATURE_SET_UNSPECIFIED = 0;
+  FEATURE_SET_BASIC = 1;
+  FEATURE_SET_PRO = 2;
 }
 
 message Plan {

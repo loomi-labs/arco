@@ -41,12 +41,6 @@ func (si *ServiceRPC) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceCl
 	si.rpcClient = rpcClient
 }
 
-// mustHaveDB panics if db is nil. This is a programming error guard.
-func (s *Service) mustHaveDB() {
-	if s.db == nil {
-		panic("PlanService: database client is nil")
-	}
-}
 
 // Frontend-exposed business logic methods
 

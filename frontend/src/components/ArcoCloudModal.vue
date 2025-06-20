@@ -61,6 +61,7 @@ const isYearlyBilling = ref(false);
 const subscriptionPlans = ref<SubscriptionPlan[]>([]);
 const hasActiveSubscription = ref(false);
 const userSubscriptionPlan = ref<string | undefined>(undefined);
+const userSubscription = ref<any>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
 
@@ -155,6 +156,21 @@ const activePlanName = computed(() => {
   return plan?.name || "";
 });
 
+const subscriptionEndDate = computed(() => {
+  if (!userSubscription.value?.current_period_end) return "Active";
+  
+  try {
+    // Parse the timestamp and format as readable date
+    const endDate = new Date(userSubscription.value.current_period_end);
+    return `Active until ${endDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      year: 'numeric' 
+    })}`;
+  } catch (error) {
+    return "Active";
+  }
+});
+
 /************
  * State Transitions
  ************/
@@ -198,7 +214,7 @@ async function loadSubscriptionPlans() {
         .filter((plan): plan is Plan => plan !== null)
         .map(plan => ({
           ...plan,
-          recommended: plan.feature_set === FeatureSet.FeatureSet_PRO
+          recommended: plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO
         } as SubscriptionPlan));
     }
 
@@ -218,15 +234,18 @@ async function loadUserSubscription() {
     if (response?.subscription) {
       hasActiveSubscription.value = true;
       userSubscriptionPlan.value = response.subscription.plan?.name;
+      userSubscription.value = response.subscription;
       transitionTo(ComponentState.REPOSITORY_CREATION);
     } else {
       hasActiveSubscription.value = false;
       userSubscriptionPlan.value = undefined;
+      userSubscription.value = undefined;
       transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
     }
   } catch (error) {
     hasActiveSubscription.value = false;
     userSubscriptionPlan.value = undefined;
+    userSubscription.value = undefined;
     transitionTo(ComponentState.ERROR_SUBSCRIPTION, "Failed to load subscription status. Please refresh to try again.");
   }
 }
@@ -414,7 +433,7 @@ watch(isAuthenticated, async (authenticated) => {
             <CloudIcon class='size-4 text-success' />
             <span class='text-sm font-medium text-success'>{{ activePlanName }} Plan</span>
           </div>
-          <p class='text-xs text-base-content/60'>Active until Dec 2025</p>
+          <p class='text-xs text-base-content/60'>{{ subscriptionEndDate }}</p>
         </div>
       </div>
       <div class='pb-4'></div>
@@ -512,7 +531,7 @@ watch(isAuthenticated, async (authenticated) => {
               <li class='flex items-center gap-2'>
                 <CheckIcon class='size-4 text-success flex-shrink-0' />
                 <span class='text-sm'>{{
-                    plan.feature_set === FeatureSet.FeatureSet_BASIC ? "Basic" : "Pro"
+                    plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC ? "Basic" : "Pro"
                   }} features</span>
               </li>
               <li class='flex items-center gap-2'>

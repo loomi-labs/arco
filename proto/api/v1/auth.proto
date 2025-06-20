@@ -140,7 +140,7 @@ enum AuthStatus {
 // RefreshTokenRequest exchanges a refresh token for new tokens.
 message RefreshTokenRequest {
   // The long-lived refresh token obtained from authentication.
-  string refresh_token = 1 [(buf.validate.field).string.pattern = "^[a-zA-Z0-9]{1,}$"];
+  string refresh_token = 1 [(buf.validate.field).string.pattern = "^[a-zA-Z0-9\\-_.]+$"];
 }
 
 // RefreshTokenResponse contains new authentication tokens.

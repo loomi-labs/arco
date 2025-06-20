@@ -58,8 +58,9 @@ export enum FeatureSet {
      */
     $zero = 0,
 
-    FeatureSet_BASIC = 0,
-    FeatureSet_PRO = 1,
+    FeatureSet_FEATURE_SET_UNSPECIFIED = 0,
+    FeatureSet_FEATURE_SET_BASIC = 1,
+    FeatureSet_FEATURE_SET_PRO = 2,
 };
 
 export class GetSubscriptionResponse {
