@@ -8,25 +8,14 @@ import { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/ap
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { logDebug } from "../common/logger";
 
 /************
  * Types
  ************/
 
-interface SubscriptionPlan {
-  name: string;
-  feature_set: FeatureSet;
-  price_monthly_cents: number;
-  price_yearly_cents: number;
-  currency: string;
-  storage_gb: number;
-  recommended?: boolean;
-}
+type SubscriptionPlan = Plan & { recommended?: boolean };
 
 interface Emits {
-  (event: "authenticated"): void;
-
   (event: "close"): void;
 
   (event: "repo-created", repo: any): void;
@@ -184,7 +173,7 @@ const selectedPlanData = computed(() =>
 
 
 const yearlyDiscount = computed(() => {
-  if (!selectedPlanData.value) return 0;
+  if (!selectedPlanData.value || !selectedPlanData.value.price_monthly_cents || !selectedPlanData.value.price_yearly_cents) return 0;
   const monthlyTotal = (selectedPlanData.value.price_monthly_cents / 100) * 12;
   const yearlyPrice = selectedPlanData.value.price_yearly_cents / 100;
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
@@ -204,8 +193,7 @@ const activePlanName = computed(() => {
  * State Transitions
  ************/
 
-async function transitionTo(newState: ComponentState, error?: string) {
-  await logDebug(`[ArcoCloudModal] State transition: ${ComponentState[currentState.value]} -> ${ComponentState[newState]}`);
+function transitionTo(newState: ComponentState, error?: string) {
   currentState.value = newState;
   if (error) {
     errorMessage.value = error;
@@ -216,27 +204,19 @@ async function transitionTo(newState: ComponentState, error?: string) {
 
 async function checkInitialState() {
   if (isAuthenticated.value) {
-    await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+    transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
     await loadUserSubscription();
   } else {
-    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
+    transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
   }
 }
 
-async function goToLogin() {
-  await transitionTo(ComponentState.LOGIN_EMAIL);
-}
-
-async function goToSubscriptionSelection() {
+function goToSubscriptionSelection() {
   if (isAuthenticated.value) {
-    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
+    transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
   } else {
-    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
+    transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
   }
-}
-
-async function goToRepository() {
-  await transitionTo(ComponentState.REPOSITORY_CREATION);
 }
 
 /************
@@ -259,49 +239,40 @@ async function loadSubscriptionPlans() {
     // After loading plans, check initial state
     await checkInitialState();
   } catch (error) {
-    console.error("Failed to load subscription plans:", error);
-    await transitionTo(ComponentState.ERROR_PLANS, "Failed to load subscription plans. Please try again.");
+    transitionTo(ComponentState.ERROR_PLANS, "Failed to load subscription plans. Please try again.");
   }
 }
 
 async function loadUserSubscription() {
-  await logDebug(`[ArcoCloudModal] loadUserSubscription called, isAuthenticated: ${isAuthenticated.value}, userEmail: ${userEmail.value}`);
   if (!isAuthenticated.value) return;
 
   try {
     const response = await SubscriptionService.GetSubscription(userEmail.value);
-    await logDebug(`[ArcoCloudModal] GetSubscription response: ${JSON.stringify(response)}`);
 
     if (response?.subscription) {
       hasActiveSubscription.value = true;
       userSubscriptionPlan.value = response.subscription.plan?.name;
-      await logDebug(`[ArcoCloudModal] User has active subscription: ${userSubscriptionPlan.value}`);
-      await transitionTo(ComponentState.REPOSITORY_CREATION);
+      transitionTo(ComponentState.REPOSITORY_CREATION);
     } else {
       hasActiveSubscription.value = false;
       userSubscriptionPlan.value = undefined;
-      await logDebug(`[ArcoCloudModal] User has no active subscription`);
-      await transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
+      transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
     }
   } catch (error) {
-    console.error("Failed to load user subscription:", error);
-    await logDebug(`[ArcoCloudModal] Error loading subscription: ${error}`);
     hasActiveSubscription.value = false;
     userSubscriptionPlan.value = undefined;
-    await transitionTo(ComponentState.ERROR_SUBSCRIPTION, "Failed to load subscription status. Please refresh to try again.");
+    transitionTo(ComponentState.ERROR_SUBSCRIPTION, "Failed to load subscription status. Please refresh to try again.");
   }
 }
 
 async function showModal() {
-  await logDebug(`[ArcoCloudModal] showModal called, isAuthenticated: ${isAuthenticated.value}`);
   dialog.value?.showModal();
 
   // Reset to initial loading state
-  await transitionTo(ComponentState.LOADING_INITIAL);
+  transitionTo(ComponentState.LOADING_INITIAL);
 
   // Load plans when modal is shown
   if (subscriptionPlans.value.length === 0) {
-    await logDebug(`[ArcoCloudModal] Loading subscription plans...`);
     await loadSubscriptionPlans();
   } else {
     // Plans already loaded, check initial state
@@ -309,7 +280,7 @@ async function showModal() {
   }
 }
 
-async function resetAll() {
+function resetAll() {
   email.value = "";
   emailError.value = undefined;
   activeTab.value = "login";
@@ -319,7 +290,7 @@ async function resetAll() {
   repoName.value = "";
   repoNameError.value = undefined;
   errorMessage.value = undefined;
-  await transitionTo(ComponentState.LOADING_INITIAL);
+  transitionTo(ComponentState.LOADING_INITIAL);
 }
 
 function switchTab(tab: "login" | "register") {
@@ -352,7 +323,7 @@ async function sendMagicLink() {
 
     // Check the auth status result
     if (result === AuthStatus.AuthStatusSuccess) {
-      await transitionTo(ComponentState.LOGIN_WAITING);
+      transitionTo(ComponentState.LOGIN_WAITING);
     } else if (result === AuthStatus.AuthStatusRateLimitError) {
       emailError.value = "Too many requests. Please try again later.";
     } else if (result === AuthStatus.AuthStatusConnectionError) {
@@ -362,7 +333,6 @@ async function sendMagicLink() {
     }
 
   } catch (error: any) {
-    console.error("Auth error:", error);
     emailError.value = error.message || "Failed to send login link. Please try again.";
   }
 }
@@ -392,22 +362,22 @@ function selectPlan(planName: string) {
 }
 
 async function retryLoadPlans() {
-  await transitionTo(ComponentState.LOADING_INITIAL);
+  transitionTo(ComponentState.LOADING_INITIAL);
   await loadSubscriptionPlans();
 }
 
 async function retryLoadSubscription() {
-  await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+  transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
   await loadUserSubscription();
 }
 
-async function showLoginForSubscription() {
+function showLoginForSubscription() {
   if (!isAuthenticated.value) {
     // Reset login state and show login
     activeTab.value = "login";
     email.value = "";
     emailError.value = undefined;
-    await transitionTo(ComponentState.LOGIN_EMAIL);
+    transitionTo(ComponentState.LOGIN_EMAIL);
   }
 }
 
@@ -420,7 +390,7 @@ async function subscribeToPlan() {
     return;
   }
 
-  await transitionTo(ComponentState.CHECKOUT_PROCESSING);
+  transitionTo(ComponentState.CHECKOUT_PROCESSING);
 
   try {
     // Create checkout session with real service
@@ -434,13 +404,12 @@ async function subscribeToPlan() {
       // Redirect to checkout URL
       window.open(response.checkout_url, "_blank");
       // Go back to subscription selection to let user know checkout opened
-      await goToSubscriptionSelection();
+      goToSubscriptionSelection();
     } else {
-      await transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+      transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
     }
   } catch (error) {
-    console.error("Failed to create checkout session:", error);
-    await transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+    transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
   }
 }
 
@@ -479,7 +448,6 @@ function createRepository() {
  ************/
 
 onMounted(async () => {
-  await logDebug(`[ArcoCloudModal] Component mounted, isAuthenticated: ${isAuthenticated.value}`);
   // Load subscription plans on mount
   await loadSubscriptionPlans();
 });
@@ -495,12 +463,9 @@ function onRepoNameInput() {
 
 // Watch for authentication success
 watch(isAuthenticated, async (authenticated, wasAuthenticated) => {
-  await logDebug(`[ArcoCloudModal] isAuthenticated changed: ${wasAuthenticated} -> ${authenticated}`);
-
   if (authenticated && currentState.value === ComponentState.LOGIN_WAITING) {
-    emit("authenticated");
     // Load user subscription when authenticated
-    await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+    transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
     await loadUserSubscription();
 
     // If user was trying to subscribe, complete the subscription after loading subscription
@@ -510,17 +475,6 @@ watch(isAuthenticated, async (authenticated, wasAuthenticated) => {
   }
 });
 
-// Debug watchers for state changes
-watch(currentState, async (newState, oldState) => {
-  const oldStateName = oldState !== undefined ? ComponentState[oldState] : "undefined";
-  const newStateName = ComponentState[newState];
-  await logDebug(`[ArcoCloudModal] State transition: ${oldStateName} -> ${newStateName}`);
-}, { immediate: true });
-
-watch(hasActiveSubscription, async (newVal, oldVal) => {
-  await logDebug(`[ArcoCloudModal] hasActiveSubscription changed: ${oldVal} -> ${newVal}`);
-  await logDebug(`[ArcoCloudModal] userSubscriptionPlan: ${userSubscriptionPlan.value}`);
-}, { immediate: true });
 
 </script>
 
@@ -606,14 +560,14 @@ watch(hasActiveSubscription, async (newVal, oldVal) => {
 
         <!-- Plan Cards -->
         <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-          <div v-for='plan in subscriptionPlans' :key='plan.name'
+          <div v-for='plan in subscriptionPlans' :key='plan.name ?? ""'
                :class='[
                  "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
                  userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
                  selectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
                  hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : ""
                ]'
-               @click='hasActiveSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name)'>
+               @click='hasActiveSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name ?? "")'>
 
             <!-- Active subscription badge -->
             <div v-if='userSubscriptionPlan === plan.name'
@@ -625,15 +579,18 @@ watch(hasActiveSubscription, async (newVal, oldVal) => {
               <div class='flex-1'>
                 <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
                 <p class='text-3xl font-bold mt-2'>
-                  ${{ isYearlyBilling ? (plan.price_yearly_cents / 100) : (plan.price_monthly_cents / 100) }}
+                  ${{
+                    isYearlyBilling ? ((plan.price_yearly_cents ?? 0) / 100) : ((plan.price_monthly_cents ?? 0) / 100)
+                  }}
                   <span class='text-sm font-normal text-base-content/70'>
                     /{{ isYearlyBilling ? "year" : "month" }}
                   </span>
                 </p>
                 <!-- Always render savings text with fixed height to prevent layout jumping -->
                 <div class='h-5 mt-1'>
-                  <p v-if='isYearlyBilling && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
-                     class='text-sm text-success'>
+                  <p
+                    v-if='isYearlyBilling && plan.price_monthly_cents && plan.price_yearly_cents && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
+                    class='text-sm text-success'>
                     Save ${{ ((plan.price_monthly_cents / 100) * 12) - (plan.price_yearly_cents / 100) }} annually
                   </p>
                 </div>
@@ -641,7 +598,7 @@ watch(hasActiveSubscription, async (newVal, oldVal) => {
               <StarIcon v-if='plan.recommended' class='size-6 text-warning flex-shrink-0' />
             </div>
 
-            <p class='text-lg font-medium mb-4'>{{ plan.storage_gb }}GB storage</p>
+            <p class='text-lg font-medium mb-4'>{{ plan.storage_gb ?? 0 }}GB storage</p>
 
             <!-- Features list with flex-grow to push icon to bottom -->
             <ul class='space-y-2 flex-grow'>
