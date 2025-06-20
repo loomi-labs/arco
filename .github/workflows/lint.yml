@@ -23,4 +23,4 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Lint go files
       - name: Lint go files
-        run: task dev:go:lint
+        run: task dev:lint
