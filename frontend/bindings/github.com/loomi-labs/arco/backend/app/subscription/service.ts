@@ -13,9 +13,6 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as arcov1$0 from "../../api/v1/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as ent$0 from "../../ent/models.js";
 
 /**
  * CancelSubscription cancels the user's subscription
@@ -53,23 +50,6 @@ export function GetSubscription(userID: string): Promise<arcov1$0.GetSubscriptio
     return $typingPromise;
 }
 
-/**
- * ListPlans returns available subscription plans and regions
- */
-export function ListPlans(): Promise<arcov1$0.ListPlansResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3778771399) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType7($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
-}
-
-export function SetDb(db: ent$0.Client | null): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(154798501, db) as any;
-    return $resultPromise;
-}
-
 // Private type creation functions
 const $$createType0 = arcov1$0.CancelSubscriptionResponse.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
@@ -77,5 +57,3 @@ const $$createType2 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = arcov1$0.GetSubscriptionResponse.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = arcov1$0.ListPlansResponse.createFrom;
-const $$createType7 = $Create.Nullable($$createType6);

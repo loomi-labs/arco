@@ -8,9 +8,6 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as state$0 from "../state/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as ent$0 from "../../ent/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -27,11 +24,6 @@ export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } 
 
 export function Logout(): Promise<void> & { cancel(): void } {
     let $resultPromise = $Call.ByID(2333485090) as any;
-    return $resultPromise;
-}
-
-export function SetDb(db: ent$0.Client | null): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2557859926, db) as any;
     return $resultPromise;
 }
 

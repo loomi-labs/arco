@@ -1,12 +1,14 @@
 <script setup lang='ts'>
-import { computed, ref, watch, onMounted } from "vue";
-import { CheckCircleIcon, EnvelopeIcon, CloudIcon, StarIcon, CheckIcon } from "@heroicons/vue/24/outline";
+import { computed, onMounted, ref, watch } from "vue";
+import { CheckCircleIcon, CheckIcon, CloudIcon, EnvelopeIcon, StarIcon } from "@heroicons/vue/24/outline";
 import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
 import { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
-import { Plan, FeatureSet } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1/models";
+import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
+import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { logDebug } from "../common/logger";
 
 /************
  * Types
@@ -19,20 +21,29 @@ interface SubscriptionPlan {
   price_yearly_cents: number;
   currency: string;
   storage_gb: number;
-  has_free_trial: boolean;
   recommended?: boolean;
 }
 
 interface Emits {
   (event: "authenticated"): void;
+
   (event: "close"): void;
+
   (event: "repo-created", repo: any): void;
 }
 
-enum ModalState {
-  SubscriptionSelection,
-  Login,
-  CreateRepository
+enum ComponentState {
+  LOADING_INITIAL,           // Loading plans on mount
+  SUBSCRIPTION_SELECTION,    // Unauthenticated user selecting plan
+  LOGIN_EMAIL,              // Entering email for authentication  
+  LOGIN_WAITING,            // Waiting for email auth completion
+  SUBSCRIPTION_AUTHENTICATED, // Authenticated user, loading subscription status
+  SUBSCRIPTION_SELECTION_AUTH, // Authenticated user selecting plan
+  CHECKOUT_PROCESSING,      // Processing subscription checkout
+  REPOSITORY_CREATION,      // User has subscription, creating repo
+  ERROR_PLANS,             // Failed to load plans
+  ERROR_SUBSCRIPTION,      // Failed to load user subscription
+  ERROR_CHECKOUT          // Failed checkout process
 }
 
 /************
@@ -45,51 +56,42 @@ defineExpose({
   showModal
 });
 
-const { startRegister, startLogin, isAuthenticated } = useAuth();
+const { startRegister, startLogin, isAuthenticated, userEmail } = useAuth();
 
 const dialog = ref<HTMLDialogElement>();
+// State machine
+const currentState = ref<ComponentState>(ComponentState.LOADING_INITIAL);
+
+// Form and UI state
 const activeTab = ref<"login" | "register">("login");
 const email = ref("");
 const emailError = ref<string | undefined>(undefined);
 const currentEmail = ref("");
 const isRegistration = ref(false);
-const isWaitingForAuth = ref(false);
-const isLoading = ref(false);
-const resendTimer = ref(0);
 const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
 
-// Real subscription data from backend
+// Subscription data
 const subscriptionPlans = ref<SubscriptionPlan[]>([]);
-const regions = ref<string[]>([]);
-const isLoadingPlans = ref(false);
 const hasActiveSubscription = ref(false);
 const userSubscriptionPlan = ref<string | undefined>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
 
-// TEST CONTROLS - Remove later
-const testIsAuthenticated = ref(false);
-const testHasSubscription = ref(false);
+// Error messages
+const errorMessage = ref<string | undefined>(undefined);
 
 
 /************
  * Computed
  ************/
 
-// Use test controls for now - will be replaced with real auth
-const effectiveIsAuthenticated = computed(() => testIsAuthenticated.value);
-const effectiveHasSubscription = computed(() => testHasSubscription.value && effectiveIsAuthenticated.value);
-
-const modalState = computed(() => {
-  if (isWaitingForAuth.value) {
-    return ModalState.Login;
-  }
-  if (effectiveHasSubscription.value) {
-    return ModalState.CreateRepository;
-  }
-  return ModalState.SubscriptionSelection;
-});
+// Loading state helpers
+const isLoading = computed(() =>
+  currentState.value === ComponentState.LOADING_INITIAL ||
+  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED ||
+  currentState.value === ComponentState.CHECKOUT_PROCESSING
+);
 
 const isEmailValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -103,36 +105,59 @@ const isValid = computed(() =>
 );
 
 const modalTitle = computed(() => {
-  switch (modalState.value) {
-    case ModalState.Login:
-      if (isWaitingForAuth.value) {
-        return isRegistration.value ? "Complete Registration" : "Complete Login";
-      }
+  switch (currentState.value) {
+    case ComponentState.LOADING_INITIAL:
+      return "Loading Arco Cloud";
+    case ComponentState.LOGIN_EMAIL:
       return activeTab.value === "login" ? "Login to Arco Cloud" : "Register for Arco Cloud";
-    case ModalState.SubscriptionSelection:
+    case ComponentState.LOGIN_WAITING:
+      return isRegistration.value ? "Complete Registration" : "Complete Login";
+    case ComponentState.SUBSCRIPTION_SELECTION:
+    case ComponentState.SUBSCRIPTION_SELECTION_AUTH:
       return "Choose Your Plan";
-    case ModalState.CreateRepository:
+    case ComponentState.SUBSCRIPTION_AUTHENTICATED:
+      return "Loading Your Subscription";
+    case ComponentState.CHECKOUT_PROCESSING:
+      return "Processing Subscription";
+    case ComponentState.REPOSITORY_CREATION:
       return "Create Cloud Repository";
+    case ComponentState.ERROR_PLANS:
+      return "Unable to Load Plans";
+    case ComponentState.ERROR_SUBSCRIPTION:
+      return "Subscription Error";
+    case ComponentState.ERROR_CHECKOUT:
+      return "Checkout Error";
+    default:
+      return "Arco Cloud";
   }
 });
 
 const modalDescription = computed(() => {
-  switch (modalState.value) {
-    case ModalState.Login:
-      if (isWaitingForAuth.value) return "";
+  switch (currentState.value) {
+    case ComponentState.LOADING_INITIAL:
+      return "Loading subscription plans and checking authentication...";
+    case ComponentState.LOGIN_EMAIL:
       return activeTab.value === "login"
         ? "Enter your email address and we'll send you a login link."
         : "Enter your email address and we'll send you a link to create your account.";
-    case ModalState.SubscriptionSelection:
-      if (effectiveHasSubscription.value) {
-        return "Your current subscription is active. You can create cloud repositories.";
-      } else if (effectiveIsAuthenticated.value) {
-        return "Select a subscription plan to start using Arco Cloud for your repositories.";
-      } else {
-        return "Select a subscription plan to start using Arco Cloud. You'll need to login after selecting your plan.";
-      }
-    case ModalState.CreateRepository:
+    case ComponentState.LOGIN_WAITING:
+      return "";
+    case ComponentState.SUBSCRIPTION_SELECTION:
+      return "Select a subscription plan to start using Arco Cloud. You'll need to login after selecting your plan.";
+    case ComponentState.SUBSCRIPTION_SELECTION_AUTH:
+      return "Select a subscription plan to start using Arco Cloud for your repositories.";
+    case ComponentState.SUBSCRIPTION_AUTHENTICATED:
+      return "Checking your subscription status...";
+    case ComponentState.CHECKOUT_PROCESSING:
+      return "Processing your subscription request...";
+    case ComponentState.REPOSITORY_CREATION:
       return "Create a new repository in Arco Cloud.";
+    case ComponentState.ERROR_PLANS:
+    case ComponentState.ERROR_SUBSCRIPTION:
+    case ComponentState.ERROR_CHECKOUT:
+      return errorMessage.value || "An error occurred. Please try again.";
+    default:
+      return "";
   }
 });
 
@@ -152,22 +177,11 @@ const submitButtonText = computed(() =>
   activeTab.value === "login" ? "Login" : "Register"
 );
 
-const waitingModalTitle = computed(() =>
-  isRegistration.value ? "Complete Registration" : "Complete Login"
-);
 
-const isResendDisabled = computed(() => resendTimer.value > 0);
-
-const selectedPlanData = computed(() => 
+const selectedPlanData = computed(() =>
   subscriptionPlans.value.find(plan => plan.name === selectedPlan.value)
 );
 
-const planPrice = computed(() => {
-  if (!selectedPlanData.value) return 0;
-  return isYearlyBilling.value 
-    ? selectedPlanData.value.price_yearly_cents / 100
-    : selectedPlanData.value.price_monthly_cents / 100;
-});
 
 const yearlyDiscount = computed(() => {
   if (!selectedPlanData.value) return 0;
@@ -176,65 +190,136 @@ const yearlyDiscount = computed(() => {
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
 });
 
-const isRepoValid = computed(() => 
+const isRepoValid = computed(() =>
   repoName.value.length > 0 && !repoNameError.value
 );
 
 const activePlanName = computed(() => {
-  if (!userSubscriptionPlan.value) return '';
+  if (!userSubscriptionPlan.value) return "";
   const plan = subscriptionPlans.value.find(p => p.name === userSubscriptionPlan.value);
-  return plan?.name || '';
+  return plan?.name || "";
 });
+
+/************
+ * State Transitions
+ ************/
+
+async function transitionTo(newState: ComponentState, error?: string) {
+  await logDebug(`[ArcoCloudModal] State transition: ${ComponentState[currentState.value]} -> ${ComponentState[newState]}`);
+  currentState.value = newState;
+  if (error) {
+    errorMessage.value = error;
+  } else {
+    errorMessage.value = undefined;
+  }
+}
+
+async function checkInitialState() {
+  if (isAuthenticated.value) {
+    await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+    await loadUserSubscription();
+  } else {
+    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
+  }
+}
+
+async function goToLogin() {
+  await transitionTo(ComponentState.LOGIN_EMAIL);
+}
+
+async function goToSubscriptionSelection() {
+  if (isAuthenticated.value) {
+    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
+  } else {
+    await transitionTo(ComponentState.SUBSCRIPTION_SELECTION);
+  }
+}
+
+async function goToRepository() {
+  await transitionTo(ComponentState.REPOSITORY_CREATION);
+}
 
 /************
  * Functions
  ************/
 
 async function loadSubscriptionPlans() {
-  if (isLoadingPlans.value) return;
-  
   try {
-    isLoadingPlans.value = true;
-    const response = await SubscriptionService.ListPlans();
-    
-    if (response?.plans) {
-      subscriptionPlans.value = response.plans
+    const response = await PlanService.ListPlans();
+
+    if (response) {
+      subscriptionPlans.value = response
         .filter((plan): plan is Plan => plan !== null)
         .map(plan => ({
           ...plan,
           recommended: plan.feature_set === FeatureSet.FeatureSet_PRO
         } as SubscriptionPlan));
     }
-    
-    if (response?.regions) {
-      regions.value = response.regions;
+
+    // After loading plans, check initial state
+    await checkInitialState();
+  } catch (error) {
+    console.error("Failed to load subscription plans:", error);
+    await transitionTo(ComponentState.ERROR_PLANS, "Failed to load subscription plans. Please try again.");
+  }
+}
+
+async function loadUserSubscription() {
+  await logDebug(`[ArcoCloudModal] loadUserSubscription called, isAuthenticated: ${isAuthenticated.value}, userEmail: ${userEmail.value}`);
+  if (!isAuthenticated.value) return;
+
+  try {
+    const response = await SubscriptionService.GetSubscription(userEmail.value);
+    await logDebug(`[ArcoCloudModal] GetSubscription response: ${JSON.stringify(response)}`);
+
+    if (response?.subscription) {
+      hasActiveSubscription.value = true;
+      userSubscriptionPlan.value = response.subscription.plan?.name;
+      await logDebug(`[ArcoCloudModal] User has active subscription: ${userSubscriptionPlan.value}`);
+      await transitionTo(ComponentState.REPOSITORY_CREATION);
+    } else {
+      hasActiveSubscription.value = false;
+      userSubscriptionPlan.value = undefined;
+      await logDebug(`[ArcoCloudModal] User has no active subscription`);
+      await transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
     }
   } catch (error) {
-    console.error('Failed to load subscription plans:', error);
-  } finally {
-    isLoadingPlans.value = false;
+    console.error("Failed to load user subscription:", error);
+    await logDebug(`[ArcoCloudModal] Error loading subscription: ${error}`);
+    hasActiveSubscription.value = false;
+    userSubscriptionPlan.value = undefined;
+    await transitionTo(ComponentState.ERROR_SUBSCRIPTION, "Failed to load subscription status. Please refresh to try again.");
   }
 }
 
-function showModal() {
+async function showModal() {
+  await logDebug(`[ArcoCloudModal] showModal called, isAuthenticated: ${isAuthenticated.value}`);
   dialog.value?.showModal();
+
+  // Reset to initial loading state
+  await transitionTo(ComponentState.LOADING_INITIAL);
+
   // Load plans when modal is shown
   if (subscriptionPlans.value.length === 0) {
-    loadSubscriptionPlans();
+    await logDebug(`[ArcoCloudModal] Loading subscription plans...`);
+    await loadSubscriptionPlans();
+  } else {
+    // Plans already loaded, check initial state
+    await checkInitialState();
   }
 }
 
-function resetAll() {
+async function resetAll() {
   email.value = "";
   emailError.value = undefined;
   activeTab.value = "login";
   currentEmail.value = "";
   isRegistration.value = false;
-  isWaitingForAuth.value = false;
   selectedPlan.value = undefined;
   repoName.value = "";
   repoNameError.value = undefined;
-  // Don't reset test state on modal close
+  errorMessage.value = undefined;
+  await transitionTo(ComponentState.LOADING_INITIAL);
 }
 
 function switchTab(tab: "login" | "register") {
@@ -246,47 +331,39 @@ function toggleMode() {
   switchTab(activeTab.value === "login" ? "register" : "login");
 }
 
-function startResendTimer() {
-  resendTimer.value = 30;
-  const interval = setInterval(() => {
-    resendTimer.value--;
-    if (resendTimer.value <= 0) {
-      clearInterval(interval);
-    }
-  }, 1000);
-}
 
 async function sendMagicLink() {
   if (!isValid.value) {
     return;
   }
 
-  isLoading.value = true;
+  const isRegister = activeTab.value === "register";
+  currentEmail.value = email.value;
+  isRegistration.value = isRegister;
 
   try {
-    const isRegister = activeTab.value === "register";
-    
-    // Simulate sending email
-    currentEmail.value = email.value;
-    isRegistration.value = isRegister;
-    isWaitingForAuth.value = true;
-    
-    // Simulate 5-second authentication process
-    setTimeout(() => {
-      // Simulate successful authentication
-      testIsAuthenticated.value = true;
-      isWaitingForAuth.value = false;
-      
-      // If user was trying to subscribe, complete the subscription
-      if (selectedPlan.value) {
-        subscribeToPlan();
-      }
-    }, 5000);
+    // Use real auth service and handle return values
+    let result;
+    if (isRegister) {
+      result = await startRegister(email.value);
+    } else {
+      result = await startLogin(email.value);
+    }
+
+    // Check the auth status result
+    if (result === AuthStatus.AuthStatusSuccess) {
+      await transitionTo(ComponentState.LOGIN_WAITING);
+    } else if (result === AuthStatus.AuthStatusRateLimitError) {
+      emailError.value = "Too many requests. Please try again later.";
+    } else if (result === AuthStatus.AuthStatusConnectionError) {
+      emailError.value = "Connection error. Please check your internet connection.";
+    } else {
+      emailError.value = "Failed to send login link. Please try again.";
+    }
 
   } catch (error: any) {
-    emailError.value = "Failed to send login link. Please try again.";
-  } finally {
-    isLoading.value = false;
+    console.error("Auth error:", error);
+    emailError.value = error.message || "Failed to send login link. Please try again.";
   }
 }
 
@@ -308,45 +385,63 @@ function closeModal() {
   emit("close");
 }
 
-function goBackToEmail() {
-  isWaitingForAuth.value = false;
-}
-
-async function resendMagicLink() {
-  if (!currentEmail.value || isResendDisabled.value) return;
-
-  try {
-    // Simulate resending - in real implementation this would call the auth service
-    startResendTimer();
-  } catch (error) {
-    // Error handling would be here
-  }
-}
 
 function selectPlan(planName: string) {
   selectedPlan.value = planName;
+  errorMessage.value = undefined;
 }
 
-function showLoginForSubscription() {
-  if (!effectiveIsAuthenticated.value) {
-    isWaitingForAuth.value = true;
-    // In real implementation, this would trigger auth flow
+async function retryLoadPlans() {
+  await transitionTo(ComponentState.LOADING_INITIAL);
+  await loadSubscriptionPlans();
+}
+
+async function retryLoadSubscription() {
+  await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+  await loadUserSubscription();
+}
+
+async function showLoginForSubscription() {
+  if (!isAuthenticated.value) {
+    // Reset login state and show login
+    activeTab.value = "login";
+    email.value = "";
+    emailError.value = undefined;
+    await transitionTo(ComponentState.LOGIN_EMAIL);
   }
 }
 
-function subscribeToPlan() {
+async function subscribeToPlan() {
   if (!selectedPlan.value) return;
-  
-  if (!effectiveIsAuthenticated.value) {
-    // User needs to login first
-    isWaitingForAuth.value = true;
+
+  if (!isAuthenticated.value) {
+    // User needs to login first - show login state
+    showLoginForSubscription();
     return;
   }
-  
-  // Mock subscription success
-  testHasSubscription.value = true;
-  userSubscriptionPlan.value = selectedPlan.value;
-  console.log(`Subscribed to ${selectedPlan.value} plan`);
+
+  await transitionTo(ComponentState.CHECKOUT_PROCESSING);
+
+  try {
+    // Create checkout session with real service
+    const response = await SubscriptionService.CreateCheckoutSession(
+      selectedPlan.value,
+      window.location.href, // success URL
+      window.location.href  // cancel URL
+    );
+
+    if (response?.checkout_url) {
+      // Redirect to checkout URL
+      window.open(response.checkout_url, "_blank");
+      // Go back to subscription selection to let user know checkout opened
+      await goToSubscriptionSelection();
+    } else {
+      await transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+    }
+  } catch (error) {
+    console.error("Failed to create checkout session:", error);
+    await transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+  }
 }
 
 function validateRepoName() {
@@ -366,7 +461,7 @@ function validateRepoName() {
 
 function createRepository() {
   if (!isRepoValid.value) return;
-  
+
   // Mock repository creation
   const mockRepo = {
     id: Date.now(),
@@ -374,7 +469,7 @@ function createRepository() {
     location: `arco-cloud://${repoName.value}`,
     isCloud: true
   };
-  
+
   emit("repo-created", mockRepo);
   closeModal();
 }
@@ -383,8 +478,10 @@ function createRepository() {
  * Lifecycle
  ************/
 
-onMounted(() => {
-  loadSubscriptionPlans();
+onMounted(async () => {
+  await logDebug(`[ArcoCloudModal] Component mounted, isAuthenticated: ${isAuthenticated.value}`);
+  // Load subscription plans on mount
+  await loadSubscriptionPlans();
 });
 
 function onEmailInput() {
@@ -395,44 +492,35 @@ function onRepoNameInput() {
   validateRepoName();
 }
 
-// Test functions - Remove later
-function toggleTestAuth() {
-  testIsAuthenticated.value = !testIsAuthenticated.value;
-  if (!testIsAuthenticated.value) {
-    testHasSubscription.value = false;
-    userSubscriptionPlan.value = undefined;
-  }
-}
-
-function toggleTestSubscription() {
-  if (testIsAuthenticated.value) {
-    testHasSubscription.value = !testHasSubscription.value;
-    if (testHasSubscription.value && selectedPlan.value) {
-      userSubscriptionPlan.value = selectedPlan.value;
-    } else {
-      userSubscriptionPlan.value = undefined;
-    }
-  }
-}
-
-function resetTestState() {
-  testIsAuthenticated.value = false;
-  testHasSubscription.value = false;
-  userSubscriptionPlan.value = undefined;
-  selectedPlan.value = undefined;
-}
 
 // Watch for authentication success
-watch(isAuthenticated, (authenticated) => {
-  if (authenticated && isWaitingForAuth.value) {
+watch(isAuthenticated, async (authenticated, wasAuthenticated) => {
+  await logDebug(`[ArcoCloudModal] isAuthenticated changed: ${wasAuthenticated} -> ${authenticated}`);
+
+  if (authenticated && currentState.value === ComponentState.LOGIN_WAITING) {
     emit("authenticated");
-    isWaitingForAuth.value = false;
-    // If user was trying to subscribe, complete the subscription
-    if (selectedPlan.value) {
-      subscribeToPlan();
+    // Load user subscription when authenticated
+    await transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
+    await loadUserSubscription();
+
+    // If user was trying to subscribe, complete the subscription after loading subscription
+    if (selectedPlan.value && !hasActiveSubscription.value) {
+      await subscribeToPlan();
     }
   }
 });
+
+// Debug watchers for state changes
+watch(currentState, async (newState, oldState) => {
+  const oldStateName = oldState !== undefined ? ComponentState[oldState] : "undefined";
+  const newStateName = ComponentState[newState];
+  await logDebug(`[ArcoCloudModal] State transition: ${oldStateName} -> ${newStateName}`);
+}, { immediate: true });
+
+watch(hasActiveSubscription, async (newVal, oldVal) => {
+  await logDebug(`[ArcoCloudModal] hasActiveSubscription changed: ${oldVal} -> ${newVal}`);
+  await logDebug(`[ArcoCloudModal] userSubscriptionPlan: ${userSubscriptionPlan.value}`);
+}, { immediate: true });
 
 </script>
 
@@ -440,35 +528,26 @@ watch(isAuthenticated, (authenticated) => {
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetAll()'
+    @close='resetAll'
   >
     <div class='modal-box max-w-2xl'>
-      <!-- TEST CONTROLS - Remove later -->
-      <div class='bg-warning/10 border border-warning rounded p-3 mb-4'>
-        <p class='text-xs font-bold text-warning mb-2'>🧪 TEST CONTROLS (Remove later)</p>
-        <div class='flex gap-2 text-xs'>
-          <button class='btn btn-xs' @click='toggleTestAuth()'>
-            {{ testIsAuthenticated ? 'Logout' : 'Login' }}
-          </button>
-          <button class='btn btn-xs' @click='toggleTestSubscription()' :disabled='!testIsAuthenticated'>
-            {{ testHasSubscription ? 'Remove Sub' : 'Add Sub' }}
-          </button>
-          <button class='btn btn-xs btn-outline' @click='resetTestState()'>Reset</button>
-        </div>
-        <p class='text-xs mt-1 text-base-content/60'>
-          Auth: {{ testIsAuthenticated ? '✅' : '❌' }} | 
-          Sub: {{ testHasSubscription ? '✅' : '❌' }} |
-          Plan: {{ userSubscriptionPlan || 'None' }}
-        </p>
-      </div>
 
       <div class='flex items-start justify-between gap-4 pb-2'>
         <div class='flex-1'>
           <h2 class='text-2xl font-semibold'>{{ modalTitle }}</h2>
           <p v-if='modalDescription' class='pt-2 text-base-content/70'>{{ modalDescription }}</p>
         </div>
+        <!-- Loading subscription status -->
+        <div v-if='currentState === ComponentState.SUBSCRIPTION_AUTHENTICATED'
+             class='bg-base-200 border border-base-300 rounded-lg px-3 py-2 flex-shrink-0'>
+          <div class='flex items-center gap-2'>
+            <div class='loading loading-spinner loading-sm'></div>
+            <span class='text-sm'>Checking subscription...</span>
+          </div>
+        </div>
+
         <!-- Active subscription badge for Create Repository state -->
-        <div v-if='modalState === ModalState.CreateRepository && effectiveHasSubscription' 
+        <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
              class='bg-success/10 border border-success/20 rounded-lg px-3 py-2 flex-shrink-0'>
           <div class='flex items-center gap-2 mb-1'>
             <CloudIcon class='size-4 text-success' />
@@ -479,10 +558,27 @@ watch(isAuthenticated, (authenticated) => {
       </div>
       <div class='pb-4'></div>
 
-      <!-- Subscription Selection State (Main state) -->
-      <div v-if='modalState === ModalState.SubscriptionSelection'>
+      <!-- Loading Initial State -->
+      <div v-if='currentState === ComponentState.LOADING_INITIAL'>
+        <div class='text-center py-8'>
+          <div class='loading loading-spinner loading-lg'></div>
+          <p class='mt-2 text-base-content/70'>Loading Arco Cloud...</p>
+        </div>
+      </div>
+
+      <!-- Checkout Processing State -->
+      <div v-else-if='currentState === ComponentState.CHECKOUT_PROCESSING'>
+        <div class='text-center py-8'>
+          <div class='loading loading-spinner loading-lg'></div>
+          <p class='mt-2 text-base-content/70'>Processing subscription...</p>
+        </div>
+      </div>
+
+      <!-- Subscription Selection States -->
+      <div
+        v-else-if='currentState === ComponentState.SUBSCRIPTION_SELECTION || currentState === ComponentState.SUBSCRIPTION_SELECTION_AUTH'>
         <!-- Login link for existing subscribers (only if not authenticated) -->
-        <div v-if='!effectiveIsAuthenticated' class='text-center mb-4'>
+        <div v-if='currentState === ComponentState.SUBSCRIPTION_SELECTION' class='text-center mb-4'>
           <a class='link link-sm text-base-content/70' @click='showLoginForSubscription()'>
             Already have a subscription? Login here
           </a>
@@ -491,41 +587,37 @@ watch(isAuthenticated, (authenticated) => {
         <!-- Billing Toggle -->
         <div class='flex justify-center mb-6'>
           <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
-            <button 
+            <button
               :class='["btn btn-sm", !isYearlyBilling ? "btn-primary" : "btn-ghost"]'
               @click='isYearlyBilling = false'
             >
               Monthly
             </button>
-            <button 
+            <button
               :class='["btn btn-sm", isYearlyBilling ? "btn-primary" : "btn-ghost"]'
               @click='isYearlyBilling = true'
             >
               Yearly
-              <span v-if='yearlyDiscount && selectedPlanData' class='badge badge-success badge-sm'>Save {{ yearlyDiscount }}%</span>
+              <span v-if='yearlyDiscount && selectedPlanData'
+                    class='badge badge-success badge-sm'>Save {{ yearlyDiscount }}%</span>
             </button>
           </div>
         </div>
 
-        <!-- Loading state -->
-        <div v-if='isLoadingPlans' class='text-center py-8'>
-          <div class='loading loading-spinner loading-lg'></div>
-          <p class='mt-2 text-base-content/70'>Loading subscription plans...</p>
-        </div>
-
         <!-- Plan Cards -->
-        <div v-else class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
           <div v-for='plan in subscriptionPlans' :key='plan.name'
                :class='[
                  "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
                  userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
                  selectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
-                 effectiveHasSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : ""
+                 hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : ""
                ]'
-               @click='effectiveHasSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name)'>
-            
+               @click='hasActiveSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name)'>
+
             <!-- Active subscription badge -->
-            <div v-if='userSubscriptionPlan === plan.name' class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
+            <div v-if='userSubscriptionPlan === plan.name'
+                 class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
               Active
             </div>
 
@@ -535,12 +627,13 @@ watch(isAuthenticated, (authenticated) => {
                 <p class='text-3xl font-bold mt-2'>
                   ${{ isYearlyBilling ? (plan.price_yearly_cents / 100) : (plan.price_monthly_cents / 100) }}
                   <span class='text-sm font-normal text-base-content/70'>
-                    /{{ isYearlyBilling ? 'year' : 'month' }}
+                    /{{ isYearlyBilling ? "year" : "month" }}
                   </span>
                 </p>
                 <!-- Always render savings text with fixed height to prevent layout jumping -->
                 <div class='h-5 mt-1'>
-                  <p v-if='isYearlyBilling && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)' class='text-sm text-success'>
+                  <p v-if='isYearlyBilling && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
+                     class='text-sm text-success'>
                     Save ${{ ((plan.price_monthly_cents / 100) * 12) - (plan.price_yearly_cents / 100) }} annually
                   </p>
                 </div>
@@ -552,13 +645,11 @@ watch(isAuthenticated, (authenticated) => {
 
             <!-- Features list with flex-grow to push icon to bottom -->
             <ul class='space-y-2 flex-grow'>
-              <li v-if='plan.has_free_trial' class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Free trial available</span>
-              </li>
               <li class='flex items-center gap-2'>
                 <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>{{ plan.feature_set === FeatureSet.FeatureSet_BASIC ? 'Basic' : 'Pro' }} features</span>
+                <span class='text-sm'>{{
+                    plan.feature_set === FeatureSet.FeatureSet_BASIC ? "Basic" : "Pro"
+                  }} features</span>
               </li>
               <li class='flex items-center gap-2'>
                 <CheckIcon class='size-4 text-success flex-shrink-0' />
@@ -566,14 +657,19 @@ watch(isAuthenticated, (authenticated) => {
               </li>
               <li class='flex items-center gap-2'>
                 <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Multiple region support</span>
+                <span class='text-sm'>Secure encrypted backups</span>
+              </li>
+              <li class='flex items-center gap-2'>
+                <CheckIcon class='size-4 text-success flex-shrink-0' />
+                <span class='text-sm'>24/7 support</span>
               </li>
             </ul>
 
             <!-- Fixed height container for selection icon -->
             <div class='mt-4 flex justify-center h-8 items-center'>
               <CheckCircleIcon v-if='userSubscriptionPlan === plan.name' class='size-8 text-success' />
-              <CheckCircleIcon v-else-if='selectedPlan === plan.name && !effectiveHasSubscription' class='size-8 text-secondary' />
+              <CheckCircleIcon v-else-if='selectedPlan === plan.name && !hasActiveSubscription'
+                               class='size-8 text-secondary' />
             </div>
           </div>
         </div>
@@ -582,8 +678,8 @@ watch(isAuthenticated, (authenticated) => {
           <button class='btn btn-outline' @click='closeModal()'>
             Cancel
           </button>
-          <button 
-            v-if='!effectiveHasSubscription'
+          <button
+            v-if='!hasActiveSubscription'
             class='btn btn-secondary'
             :disabled='!selectedPlan'
             @click='subscribeToPlan()'
@@ -593,12 +689,12 @@ watch(isAuthenticated, (authenticated) => {
         </div>
       </div>
 
-      <!-- Login State -->
-      <div v-else-if='modalState === ModalState.Login'>
+      <!-- Login States -->
+      <div v-else-if='currentState === ComponentState.LOGIN_EMAIL || currentState === ComponentState.LOGIN_WAITING'>
         <!-- TODO: Refactor to avoid code duplication with AuthModal.vue -->
-        
+
         <!-- Email Entry State -->
-        <div v-if='!isWaitingForAuth' class='flex flex-col text-left'>
+        <div v-if='currentState === ComponentState.LOGIN_EMAIL' class='flex flex-col text-left'>
           <!-- Switch mode link -->
           <p class='pb-4 text-sm text-base-content/70'>
             {{ switchText }}
@@ -623,24 +719,22 @@ watch(isAuthenticated, (authenticated) => {
               <button
                 class='btn btn-outline'
                 @click.prevent='closeModal()'
-                :disabled='isLoading'
               >
                 Cancel
               </button>
               <button
                 class='btn btn-secondary'
-                :disabled='!isValid || isLoading'
+                :disabled='!isValid'
                 @click='sendMagicLink()'
               >
                 {{ submitButtonText }}
-                <span v-if='isLoading' class='loading loading-spinner'></span>
               </button>
             </div>
           </div>
         </div>
 
         <!-- Waiting for Authentication State -->
-        <div v-else class='flex flex-col text-left max-w-md mx-auto'>
+        <div v-else-if='currentState === ComponentState.LOGIN_WAITING' class='flex flex-col text-left max-w-md mx-auto'>
           <div class='text-center mb-8'>
             <div class='loading loading-spinner loading-lg text-secondary mb-4'></div>
             <h3 class='text-lg font-medium mb-2'>Authenticating...</h3>
@@ -660,8 +754,24 @@ watch(isAuthenticated, (authenticated) => {
         </div>
       </div>
 
+      <!-- Error States -->
+      <div
+        v-else-if='currentState === ComponentState.ERROR_PLANS || currentState === ComponentState.ERROR_SUBSCRIPTION || currentState === ComponentState.ERROR_CHECKOUT'>
+        <div class='alert alert-error mb-6'>
+          <div class='flex items-center justify-between w-full'>
+            <div>
+              <span>{{ errorMessage }}</span>
+            </div>
+            <button class='btn btn-sm btn-outline'
+                    @click='currentState === ComponentState.ERROR_PLANS ? retryLoadPlans() : currentState === ComponentState.ERROR_SUBSCRIPTION ? retryLoadSubscription() : goToSubscriptionSelection()'>
+              {{ currentState === ComponentState.ERROR_CHECKOUT ? "Back" : "Retry" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Create Repository State -->
-      <div v-else-if='modalState === ModalState.CreateRepository'>
+      <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION'>
         <div class='flex flex-col gap-4'>
           <FormField label='Repository Name' :error='repoNameError'>
             <input
@@ -678,17 +788,15 @@ watch(isAuthenticated, (authenticated) => {
             <button
               class='btn btn-outline'
               @click.prevent='closeModal()'
-              :disabled='isLoading'
             >
               Cancel
             </button>
             <button
               class='btn btn-secondary'
-              :disabled='!isRepoValid || isLoading'
+              :disabled='!isRepoValid'
               @click='createRepository()'
             >
               Create Repository
-              <span v-if='isLoading' class='loading loading-spinner'></span>
             </button>
           </div>
         </div>
