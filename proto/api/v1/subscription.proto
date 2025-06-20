@@ -10,8 +10,8 @@ option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 service SubscriptionService {
   rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
   rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
-  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
   rpc WaitForCheckoutCompletion(WaitForCheckoutCompletionRequest) returns (stream WaitForCheckoutCompletionResponse) {}
+  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
 }
 
 message GetSubscriptionRequest {

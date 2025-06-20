@@ -62,6 +62,10 @@ function resetAll() {
 
 function closeModal() {
   dialog.value?.close();
+  // Delay reset to allow modal fade animation to complete
+  setTimeout(() => {
+    resetAll();
+  }, 200);
   emit("close");
 }
 
@@ -76,7 +80,6 @@ function onAuthenticated() {
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetAll()'
   >
     <div class='modal-box'>
       <div class='flex items-start justify-between gap-4 pb-2'>

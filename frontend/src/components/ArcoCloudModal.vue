@@ -257,6 +257,10 @@ function resetAll() {
 
 function closeModal() {
   dialog.value?.close();
+  // Delay reset to allow modal fade animation to complete
+  setTimeout(() => {
+    resetAll();
+  }, 200);
   emit("close");
 }
 
@@ -386,7 +390,6 @@ watch(isAuthenticated, async (authenticated) => {
   <dialog
     ref='dialog'
     class='modal'
-    @close='resetAll'
   >
     <div class='modal-box max-w-2xl'>
 
