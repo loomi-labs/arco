@@ -1,11 +1,12 @@
 import { computed, ref } from "vue";
 import { useToast } from "vue-toastification";
-import { showAndLogError } from "./error";
+import { showAndLogError } from "./logger";
 import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/service";
-import { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/models";
+import { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth";
 import { Events } from "@wailsio/runtime";
 import { GetUser } from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import { User } from "../../bindings/github.com/loomi-labs/arco/backend/app/models";
+import { User } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 /************
  * Types
@@ -22,7 +23,7 @@ interface AuthState {
 
 const authState = ref<AuthState>({
   isAuthenticated: false,
-  user: null,
+  user: null
 });
 
 // Global event listeners for auth state changes
@@ -50,15 +51,11 @@ export function useAuth() {
     try {
       const result = await authService.GetAuthState();
       authState.value.isAuthenticated = result.isAuthenticated;
-      
+
       // If authenticated, fetch user data
       if (result.isAuthenticated) {
-        try {
-          const user = await GetUser();
-          authState.value.user = user;
-        } catch (error) {
-          console.error("Failed to get user data:", error);
-        }
+        const user = await GetUser();
+        authState.value.user = user;
       } else {
         authState.value.user = null;
       }
@@ -75,7 +72,7 @@ export function useAuth() {
     cleanupGlobalAuthListeners();
 
     // Listen for auth state changes and fetch the current state
-    const onAuthStateChanged = Events.On("authStateChanged", async () => {
+    const onAuthStateChanged = Events.On(types.Event.EventAuthStateChanged, async () => {
       await getAuthState();
     });
     authEventListeners.push(onAuthStateChanged);
@@ -127,6 +124,6 @@ export function useAuth() {
     // Actions
     startRegister,
     startLogin,
-    logout,
+    logout
   };
 }

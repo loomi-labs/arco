@@ -35,9 +35,9 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 }
 
 // Init initializes the service with database and RPC client
-func (s *Service) Init(db *ent.Client, rpcClient arcov1connect.SubscriptionServiceClient) {
-	s.db = db
-	s.rpcClient = rpcClient
+func (si *ServiceRPC) Init(db *ent.Client, rpcClient arcov1connect.SubscriptionServiceClient) {
+	si.db = db
+	si.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.

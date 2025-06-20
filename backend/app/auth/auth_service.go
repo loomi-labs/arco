@@ -53,8 +53,8 @@ func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) 
 	}
 }
 
-func (as *Service) Init(db *ent.Client) {
-	as.db = db
+func (asi *ServiceRPC) Init(db *ent.Client) {
+	asi.db = db
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.

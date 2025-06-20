@@ -36,9 +36,9 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 }
 
 // Init initializes the service with database and RPC client
-func (s *Service) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceClient) {
-	s.db = db
-	s.rpcClient = rpcClient
+func (si *ServiceRPC) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceClient) {
+	si.db = db
+	si.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -51,7 +51,7 @@ func (s *Service) mustHaveDB() {
 // Frontend-exposed business logic methods
 
 // ListPlans returns available subscription plans
-func (s *Service) ListPlans(ctx context.Context) (*arcov1.ListPlansResponse, error) {
+func (s *Service) ListPlans(ctx context.Context) ([]*arcov1.Plan, error) {
 	req := connect.NewRequest(&arcov1.ListPlansRequest{})
 
 	resp, err := s.rpcClient.ListPlans(ctx, req)
@@ -60,16 +60,21 @@ func (s *Service) ListPlans(ctx context.Context) (*arcov1.ListPlansResponse, err
 		return nil, err
 	}
 
-	return resp.Msg, nil
+	return resp.Msg.Plans, nil
 }
 
 // Backend-only Connect RPC handler methods
 
 // ListPlans handles the Connect RPC request for listing plans
-func (si *ServiceRPC) ListPlans(ctx context.Context, req *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
-	resp, err := si.Service.ListPlans(ctx)
+func (si *ServiceRPC) ListPlans(ctx context.Context, _ *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
+	plans, err := si.Service.ListPlans(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(resp), nil
+
+	protoResp := &arcov1.ListPlansResponse{
+		Plans: plans,
+	}
+
+	return connect.NewResponse(protoResp), nil
 }

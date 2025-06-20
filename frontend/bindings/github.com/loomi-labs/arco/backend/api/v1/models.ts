@@ -111,11 +111,7 @@ export class Subscription {
     "id"?: string;
     "user_id"?: string;
     "plan_id"?: string;
-
-    /**
-     * active, canceled, past_due, trialing
-     */
-    "status"?: string;
+    "status"?: SubscriptionStatus;
     "current_period_start"?: timestamppb$0.Timestamp | null;
     "current_period_end"?: timestamppb$0.Timestamp | null;
     "cancel_at_period_end"?: boolean;
@@ -162,6 +158,22 @@ export class Subscription {
         return new Subscription($$parsedSource as Partial<Subscription>);
     }
 }
+
+export enum SubscriptionStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    SubscriptionStatus_SUBSCRIPTION_STATUS_UNSPECIFIED = 0,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE = 1,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED = 2,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_TRIALING = 3,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE = 4,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_PAST_DUE = 5,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_CANCELED = 6,
+    SubscriptionStatus_SUBSCRIPTION_STATUS_UNPAID = 7,
+};
 
 // Private type creation functions
 const $$createType0 = timestamppb$0.Timestamp.createFrom;

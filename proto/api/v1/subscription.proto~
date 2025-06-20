@@ -3,14 +3,37 @@ syntax = "proto3";
 package api.v1;
 
 import "google/protobuf/timestamp.proto";
-import "api/v1/plan.proto";
 
 option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 
 service SubscriptionService {
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {}
   rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
   rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
   rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
+}
+
+message ListPlansRequest {
+}
+
+message ListPlansResponse {
+  repeated Plan plans = 1;
+  repeated string regions = 2;
+}
+
+enum FeatureSet {
+  BASIC = 0;
+  PRO = 1;
+}
+
+message Plan {
+  string name = 1;
+  FeatureSet feature_set = 2;
+  int64 price_monthly_cents = 3;
+  int64 price_yearly_cents = 4;
+  string currency = 5;
+  int64 storage_gb = 6;
+  bool has_free_trial = 7;
 }
 
 message GetSubscriptionRequest {
@@ -21,22 +44,11 @@ message GetSubscriptionResponse {
   Subscription subscription = 1;
 }
 
-enum SubscriptionStatus {
-  SUBSCRIPTION_STATUS_UNSPECIFIED = 0;
-  SUBSCRIPTION_STATUS_INCOMPLETE = 1;
-  SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED = 2;
-  SUBSCRIPTION_STATUS_TRIALING = 3;
-  SUBSCRIPTION_STATUS_ACTIVE = 4;
-  SUBSCRIPTION_STATUS_PAST_DUE = 5;
-  SUBSCRIPTION_STATUS_CANCELED = 6;
-  SUBSCRIPTION_STATUS_UNPAID = 7;
-}
-
 message Subscription {
   string id = 1;
   string user_id = 2;
   string plan_id = 3;
-  SubscriptionStatus status = 4;
+  string status = 4; // active, canceled, past_due, trialing
   google.protobuf.Timestamp current_period_start = 5;
   google.protobuf.Timestamp current_period_end = 6;
   bool cancel_at_period_end = 7;
