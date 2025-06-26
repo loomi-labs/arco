@@ -110,6 +110,37 @@ func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string)
 	return resp.Msg, nil
 }
 
+// ChangeBillingCycle changes the billing cycle of the user's subscription
+func (s *Service) ChangeBillingCycle(ctx context.Context, subscriptionID string, isYearly bool) (*arcov1.ChangeBillingCycleResponse, error) {
+	req := connect.NewRequest(&arcov1.ChangeBillingCycleRequest{
+		SubscriptionId: subscriptionID,
+		IsYearly:       isYearly,
+	})
+
+	resp, err := s.rpcClient.ChangeBillingCycle(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to change billing cycle from cloud service: %v", err)
+		return nil, err
+	}
+
+	return resp.Msg, nil
+}
+
+// ReactivateSubscription reactivates a cancelled subscription
+func (s *Service) ReactivateSubscription(ctx context.Context, subscriptionID string) (*arcov1.ReactivateSubscriptionResponse, error) {
+	req := connect.NewRequest(&arcov1.ReactivateSubscriptionRequest{
+		SubscriptionId: subscriptionID,
+	})
+
+	resp, err := s.rpcClient.ReactivateSubscription(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to reactivate subscription from cloud service: %v", err)
+		return nil, err
+	}
+
+	return resp.Msg, nil
+}
+
 // GetCheckoutSession returns the current checkout session
 func (s *Service) GetCheckoutSession() *arcov1.CreateCheckoutSessionResponse {
 	return s.state.GetCheckoutSession()

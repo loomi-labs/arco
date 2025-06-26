@@ -1,19 +1,18 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { CheckCircleIcon, CheckIcon, CloudIcon, StarIcon } from "@heroicons/vue/24/outline";
+import { CloudIcon } from "@heroicons/vue/24/outline";
 import FormField from "./common/FormField.vue";
 import AuthForm from "./common/AuthForm.vue";
+import PlanSelection from "./subscription/PlanSelection.vue";
 import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { Events } from "@wailsio/runtime";
+import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
-import { getFeaturesByPlan } from "../common/features";
-import {Browser} from "@wailsio/runtime";
 
 /************
  * Types
@@ -308,6 +307,19 @@ function selectPlan(planName: string) {
   errorMessage.value = undefined;
 }
 
+function onPlanSelected(planName: string) {
+  selectPlan(planName);
+}
+
+function onBillingCycleChanged(isYearly: boolean) {
+  isYearlyBilling.value = isYearly;
+}
+
+function onSubscribeClicked(planName: string) {
+  selectedPlan.value = planName;
+  subscribeToPlan();
+}
+
 async function retryLoadPlans() {
   transitionTo(ComponentState.LOADING_INITIAL);
   await loadSubscriptionPlans();
@@ -537,86 +549,20 @@ watch(isAuthenticated, async (authenticated) => {
           </a>
         </div>
 
-        <!-- Billing Toggle -->
-        <div class='flex justify-center mb-6'>
-          <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
-            <button
-              :class='["btn btn-sm", !isYearlyBilling ? "btn-primary" : "btn-ghost"]'
-              @click='isYearlyBilling = false'
-            >
-              Monthly
-            </button>
-            <button
-              :class='["btn btn-sm", isYearlyBilling ? "btn-primary" : "btn-ghost"]'
-              @click='isYearlyBilling = true'
-            >
-              Yearly
-              <span v-if='yearlyDiscount && selectedPlanData'
-                    class='badge badge-success badge-sm'>Save {{ yearlyDiscount }}%</span>
-            </button>
-          </div>
-        </div>
+        <!-- Plan Selection Component -->
+        <PlanSelection
+          :plans='subscriptionPlans'
+          :selected-plan='selectedPlan'
+          :is-yearly-billing='isYearlyBilling'
+          :has-active-subscription='hasActiveSubscription'
+          :user-subscription-plan='userSubscriptionPlan'
+          :hide-subscribe-button='true'
+          @plan-selected='onPlanSelected'
+          @billing-cycle-changed='onBillingCycleChanged'
+          @subscribe-clicked='onSubscribeClicked'
+        />
 
-        <!-- Plan Cards -->
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-          <div v-for='plan in subscriptionPlans' :key='plan.name ?? ""'
-               :class='[
-                 "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
-                 userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
-                 selectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
-                 hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : ""
-               ]'
-               @click='hasActiveSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name ?? "")'>
-
-            <!-- Active subscription badge -->
-            <div v-if='userSubscriptionPlan === plan.name'
-                 class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
-              Active
-            </div>
-
-            <div class='flex items-start justify-between mb-4'>
-              <div class='flex-1'>
-                <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
-                <p class='text-3xl font-bold mt-2'>
-                  ${{
-                    isYearlyBilling ? ((plan.price_yearly_cents ?? 0) / 100) : ((plan.price_monthly_cents ?? 0) / 100)
-                  }}
-                  <span class='text-sm font-normal text-base-content/70'>
-                    /{{ isYearlyBilling ? "year" : "month" }}
-                  </span>
-                </p>
-                <!-- Always render savings text with fixed height to prevent layout jumping -->
-                <div class='h-5 mt-1'>
-                  <p
-                    v-if='isYearlyBilling && plan.price_monthly_cents && plan.price_yearly_cents && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
-                    class='text-sm text-success'>
-                    Save ${{ ((plan.price_monthly_cents / 100) * 12) - (plan.price_yearly_cents / 100) }} annually
-                  </p>
-                </div>
-              </div>
-              <StarIcon v-if='plan.recommended' class='size-6 text-warning flex-shrink-0' />
-            </div>
-
-            <p class='text-lg font-medium mb-4'>{{ plan.storage_gb ?? 0 }}GB storage</p>
-
-            <!-- Features list with flex-grow to push icon to bottom -->
-            <ul class='space-y-2 flex-grow'>
-              <li v-for='feature in getFeaturesByPlan(plan.feature_set)' :key='feature.text' class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span :class='["text-sm", feature.highlight ? "font-semibold text-primary" : ""]'>{{ feature.text }}</span>
-              </li>
-            </ul>
-
-            <!-- Fixed height container for selection icon -->
-            <div class='mt-4 flex justify-center h-8 items-center'>
-              <CheckCircleIcon v-if='userSubscriptionPlan === plan.name' class='size-8 text-success' />
-              <CheckCircleIcon v-else-if='selectedPlan === plan.name && !hasActiveSubscription'
-                               class='size-8 text-secondary' />
-            </div>
-          </div>
-        </div>
-
-        <div class='modal-action justify-between'>
+        <div class='modal-action justify-between mt-6'>
           <button class='btn btn-outline' @click='closeModal()'>
             Cancel
           </button>

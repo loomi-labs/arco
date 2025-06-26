@@ -8,20 +8,24 @@ import { showAndLogError } from "../common/logger";
 import { getFeaturesByPlan, getRetentionDays } from "../common/features";
 import { addDay, format } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
-import { Subscription, SubscriptionStatus, FeatureSet } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
+import { Subscription, SubscriptionStatus, FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
+import PlanSelection from "../components/subscription/PlanSelection.vue";
+import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
 
 /************
  * Types
  ************/
 
-interface CancelConfirmationModal {
-  show: () => void;
-  close: () => void;
-}
+type SubscriptionPlan = Plan & { recommended?: boolean };
 
-interface CloudModal {
-  showModal: () => void;
+enum PageState {
+  LOADING,
+  HAS_SUBSCRIPTION,
+  NO_SUBSCRIPTION_PLANS,
+  NO_SUBSCRIPTION_CHECKOUT,
+  ERROR
 }
 
 /************
@@ -32,11 +36,17 @@ const router = useRouter();
 const { isAuthenticated, userEmail } = useAuth();
 
 const subscription = ref<Subscription | null>(null);
-const isLoading = ref(true);
+const subscriptionPlans = ref<SubscriptionPlan[]>([]);
+const currentPageState = ref<PageState>(PageState.LOADING);
 const isCanceling = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 const cancelConfirmModal = ref<HTMLDialogElement>();
 const cloudModal = ref<InstanceType<typeof ArcoCloudModal>>();
+
+// Plan selection state
+const selectedPlan = ref<string | undefined>(undefined);
+const isYearlyBilling = ref(false);
+const selectedCheckoutPlan = ref<string | undefined>(undefined);
 
 const cleanupFunctions: Array<() => void> = [];
 
@@ -209,32 +219,53 @@ const dataDeletionDate = computed(() => {
  * Functions
  ************/
 
+async function loadSubscriptionPlans() {
+  try {
+    const response = await PlanService.ListPlans();
+    if (response) {
+      subscriptionPlans.value = response
+        .filter((plan): plan is Plan => plan !== null)
+        .map(plan => ({
+          ...plan,
+          recommended: plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO
+        } as SubscriptionPlan));
+    }
+  } catch (error) {
+    await showAndLogError("Failed to load subscription plans", error);
+    throw error;
+  }
+}
+
 async function loadSubscription() {
   if (!isAuthenticated.value) {
     router.push(Page.Dashboard);
     return;
   }
 
-  isLoading.value = true;
+  currentPageState.value = PageState.LOADING;
   errorMessage.value = undefined;
 
   try {
-    const response = await SubscriptionService.GetSubscription(userEmail.value);
+    // Load both subscription and plans
+    const [subscriptionResponse] = await Promise.all([
+      SubscriptionService.GetSubscription(userEmail.value),
+      subscriptionPlans.value.length === 0 ? loadSubscriptionPlans() : Promise.resolve()
+    ]);
     
-    if (response?.subscription) {
-      subscription.value = response.subscription;
+    if (subscriptionResponse?.subscription) {
+      subscription.value = subscriptionResponse.subscription;
       // Initialize billing cycle toggle with current subscription setting
-      selectedBillingCycle.value = response.subscription.is_yearly_billing || false;
+      selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing || false;
+      currentPageState.value = PageState.HAS_SUBSCRIPTION;
     } else {
       subscription.value = null;
-      errorMessage.value = "No active subscription found.";
+      currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
     }
   } catch (error) {
     subscription.value = null;
     errorMessage.value = "Failed to load subscription details.";
     await showAndLogError("Failed to load subscription", error);
-  } finally {
-    isLoading.value = false;
+    currentPageState.value = PageState.ERROR;
   }
 }
 
@@ -277,6 +308,34 @@ function showSubscriptionModal() {
   cloudModal.value?.showModal();
 }
 
+function onPlanSelected(planName: string) {
+  selectedPlan.value = planName;
+}
+
+function onBillingCycleChanged(isYearly: boolean) {
+  isYearlyBilling.value = isYearly;
+}
+
+function onSubscribeClicked(planName: string) {
+  selectedCheckoutPlan.value = planName;
+  currentPageState.value = PageState.NO_SUBSCRIPTION_CHECKOUT;
+}
+
+function onCheckoutCompleted() {
+  // Reload subscription to get updated status
+  loadSubscription();
+}
+
+function onCheckoutFailed(error: string) {
+  errorMessage.value = error;
+  currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+}
+
+function onCheckoutCancelled() {
+  selectedCheckoutPlan.value = undefined;
+  currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+}
+
 function onRepoCreated(repo: any) {
   // Handle repo creation if needed
   console.log('Repo created:', repo);
@@ -288,15 +347,10 @@ async function changeBillingCycle() {
   isChangingBilling.value = true;
   
   try {
-    // Check if the method exists (backend implementation available)
-    if (typeof (SubscriptionService as any).ChangeBillingCycle !== 'function') {
-      throw new Error('Billing cycle change feature not yet implemented');
-    }
-    
-    const response = await (SubscriptionService as any).ChangeBillingCycle({
-      subscription_id: subscription.value.id,
-      is_yearly: selectedBillingCycle.value
-    });
+    const response = await SubscriptionService.ChangeBillingCycle(
+      subscription.value.id,
+      selectedBillingCycle.value
+    );
     
     if (response?.success) {
       // Reload subscription to get updated billing info
@@ -309,7 +363,7 @@ async function changeBillingCycle() {
       selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
     }
   } catch (error) {
-    errorMessage.value = "Billing cycle change feature is not yet available.";
+    errorMessage.value = "Failed to change billing cycle.";
     await showAndLogError("Failed to change billing cycle", error);
     // Reset toggle to current state
     selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
@@ -324,14 +378,7 @@ async function reactivateSubscription() {
   isReactivating.value = true;
   
   try {
-    // Check if the method exists (backend implementation available)
-    if (typeof (SubscriptionService as any).ReactivateSubscription !== 'function') {
-      throw new Error('Subscription reactivation feature not yet implemented');
-    }
-    
-    const response = await (SubscriptionService as any).ReactivateSubscription({
-      subscription_id: subscription.value.id
-    });
+    const response = await SubscriptionService.ReactivateSubscription(subscription.value.id);
     
     if (response?.success) {
       // Reload subscription to get updated status
@@ -340,7 +387,7 @@ async function reactivateSubscription() {
       errorMessage.value = response?.message || "Failed to reactivate subscription.";
     }
   } catch (error) {
-    errorMessage.value = "Subscription reactivation feature is not yet available.";
+    errorMessage.value = "Failed to reactivate subscription.";
     await showAndLogError("Failed to reactivate subscription", error);
   } finally {
     isReactivating.value = false;
@@ -377,13 +424,13 @@ onUnmounted(() => {
     </div>
 
     <!-- Loading State -->
-    <div v-if='isLoading' class='text-center py-12'>
+    <div v-if='currentPageState === PageState.LOADING' class='text-center py-12'>
       <div class='loading loading-spinner loading-lg'></div>
       <p class='mt-4 text-base-content/70'>Loading subscription details...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if='errorMessage && !subscription' class='space-y-6'>
+    <div v-else-if='currentPageState === PageState.ERROR' class='space-y-6'>
       <div role="alert" class="alert alert-error alert-vertical sm:alert-horizontal">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -395,18 +442,42 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
+    </div>
 
-      <div class='text-center py-8'>
-        <p class='text-base-content/70 mb-4'>You don't have an active subscription.</p>
-        <p class='text-base-content/60 text-sm mb-6'>Subscribe to Arco Cloud to get secure cloud backup storage with automatic encryption.</p>
-        <button class='btn btn-secondary' @click='showSubscriptionModal'>
-          Subscribe to Plan
-        </button>
+    <!-- No Subscription - Plan Selection -->
+    <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_PLANS' class='space-y-8'>
+      <div class='text-left mb-8'>
+        <h2 class='text-2xl font-bold mb-4'>Subscribe to Arco Cloud</h2>
+        <p class='text-base-content/70 mb-6'>Get secure cloud backup storage with automatic encryption and choose the plan that fits your needs.</p>
       </div>
+      
+      <PlanSelection
+        :plans='subscriptionPlans'
+        :selected-plan='selectedPlan'
+        :is-yearly-billing='isYearlyBilling'
+        :has-active-subscription='false'
+        @plan-selected='onPlanSelected'
+        @billing-cycle-changed='onBillingCycleChanged'
+        @subscribe-clicked='onSubscribeClicked'
+      />
+    </div>
+
+    <!-- No Subscription - Checkout Processing -->
+    <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_CHECKOUT' class='space-y-8'>
+      <div class='text-left mb-8'>
+        <h2 class='text-2xl font-bold mb-4'>Complete Your Subscription</h2>
+      </div>
+      
+      <CheckoutProcessing
+        :plan-name='selectedCheckoutPlan || ""'
+        @checkout-completed='onCheckoutCompleted'
+        @checkout-failed='onCheckoutFailed'
+        @checkout-cancelled='onCheckoutCancelled'
+      />
     </div>
 
     <!-- Subscription Details -->
-    <div v-else-if='subscription' class='space-y-8'>
+    <div v-else-if='currentPageState === PageState.HAS_SUBSCRIPTION && subscription' class='space-y-8'>
       <!-- Cancelation Warning -->
       <div v-if='showCancelationWarning' role="alert" class="alert alert-warning alert-vertical sm:alert-horizontal">
         <ExclamationTriangleIcon class="h-6 w-6 shrink-0" />

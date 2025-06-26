@@ -33,6 +33,30 @@ export class CancelSubscriptionResponse {
     }
 }
 
+export class ChangeBillingCycleResponse {
+    "success"?: boolean;
+    "message"?: string;
+    "effective_date"?: timestamppb$0.Timestamp | null;
+
+    /** Creates a new ChangeBillingCycleResponse instance. */
+    constructor($$source: Partial<ChangeBillingCycleResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ChangeBillingCycleResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ChangeBillingCycleResponse {
+        const $$createField2_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("effective_date" in $$parsedSource) {
+            $$parsedSource["effective_date"] = $$createField2_0($$parsedSource["effective_date"]);
+        }
+        return new ChangeBillingCycleResponse($$parsedSource as Partial<ChangeBillingCycleResponse>);
+    }
+}
+
 export class CreateCheckoutSessionResponse {
     "session_id"?: string;
     "checkout_url"?: string;
@@ -105,6 +129,25 @@ export class Plan {
     static createFrom($$source: any = {}): Plan {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new Plan($$parsedSource as Partial<Plan>);
+    }
+}
+
+export class ReactivateSubscriptionResponse {
+    "success"?: boolean;
+    "message"?: string;
+
+    /** Creates a new ReactivateSubscriptionResponse instance. */
+    constructor($$source: Partial<ReactivateSubscriptionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ReactivateSubscriptionResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ReactivateSubscriptionResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ReactivateSubscriptionResponse($$parsedSource as Partial<ReactivateSubscriptionResponse>);
     }
 }
 
