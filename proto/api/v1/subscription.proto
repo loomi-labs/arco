@@ -58,7 +58,6 @@ message CreateCheckoutSessionResponse {
 
 message CancelSubscriptionRequest {
   string subscription_id = 1;
-  bool immediate = 2; // if false, cancels at end of billing period
 }
 
 message CancelSubscriptionResponse {
