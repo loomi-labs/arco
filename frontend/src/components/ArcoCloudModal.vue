@@ -12,6 +12,7 @@ import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/back
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
+import { getFeaturesByPlan } from "../common/features";
 import {Browser} from "@wailsio/runtime";
 
 /************
@@ -600,23 +601,9 @@ watch(isAuthenticated, async (authenticated) => {
 
             <!-- Features list with flex-grow to push icon to bottom -->
             <ul class='space-y-2 flex-grow'>
-              <li class='flex items-center gap-2'>
+              <li v-for='feature in getFeaturesByPlan(plan.feature_set)' :key='feature.text' class='flex items-center gap-2'>
                 <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>{{
-                    plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC ? "Basic" : "Pro"
-                  }} features</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Cloud backup storage</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Secure encrypted backups</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>24/7 support</span>
+                <span :class='["text-sm", feature.highlight ? "font-semibold text-primary" : ""]'>{{ feature.text }}</span>
               </li>
             </ul>
 

@@ -48,6 +48,7 @@ Direct frontend commands (if needed):
 - `pnpm install` - Install dependencies
 - `pnpm dev` - Start Vite dev server
 - `pnpm build` - Build for production
+- `pnpm check` - Run TypeScript type checking and linting
 
 ## Code Style Guide
 
@@ -95,6 +96,7 @@ Use this standardized structure for all Vue components:
 - Prefer explicit typing with interfaces over `any`
 - Use camelCase for variables, PascalCase for types/interfaces
 - Handle nullable responses from services properly
+- **Date Operations**: Use `@formkit/tempo` for all date manipulation, formatting, and parsing instead of native Date methods
 
 ### Styling Guidelines
 - **Primary Framework**: Tailwind CSS for utilities
@@ -102,6 +104,7 @@ Use this standardized structure for all Vue components:
 - **Icons**: Heroicons (`@heroicons/vue/24/outline` and `/24/solid`)
 - **Responsive**: Desktop-first approach with responsive design using Tailwind breakpoints
 - **Theme**: Support for light/dark themes via DaisyUI
+- **Alignment**: All UI elements should be left-aligned by default (avoid center-aligned content)
 
 ### DaisyUI Component Usage
 Follow DaisyUI conventions from https://daisyui.com/llms.txt:

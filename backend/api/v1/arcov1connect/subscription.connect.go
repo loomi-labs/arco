@@ -45,6 +45,12 @@ const (
 	// SubscriptionServiceCancelSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's CancelSubscription RPC.
 	SubscriptionServiceCancelSubscriptionProcedure = "/api.v1.SubscriptionService/CancelSubscription"
+	// SubscriptionServiceChangeBillingCycleProcedure is the fully-qualified name of the
+	// SubscriptionService's ChangeBillingCycle RPC.
+	SubscriptionServiceChangeBillingCycleProcedure = "/api.v1.SubscriptionService/ChangeBillingCycle"
+	// SubscriptionServiceReactivateSubscriptionProcedure is the fully-qualified name of the
+	// SubscriptionService's ReactivateSubscription RPC.
+	SubscriptionServiceReactivateSubscriptionProcedure = "/api.v1.SubscriptionService/ReactivateSubscription"
 )
 
 // SubscriptionServiceClient is a client for the api.v1.SubscriptionService service.
@@ -53,6 +59,8 @@ type SubscriptionServiceClient interface {
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest]) (*connect.ServerStreamForClient[v1.WaitForCheckoutCompletionResponse], error)
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
+	ChangeBillingCycle(context.Context, *connect.Request[v1.ChangeBillingCycleRequest]) (*connect.Response[v1.ChangeBillingCycleResponse], error)
+	ReactivateSubscription(context.Context, *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error)
 }
 
 // NewSubscriptionServiceClient constructs a client for the api.v1.SubscriptionService service. By
@@ -90,6 +98,18 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("CancelSubscription")),
 			connect.WithClientOptions(opts...),
 		),
+		changeBillingCycle: connect.NewClient[v1.ChangeBillingCycleRequest, v1.ChangeBillingCycleResponse](
+			httpClient,
+			baseURL+SubscriptionServiceChangeBillingCycleProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("ChangeBillingCycle")),
+			connect.WithClientOptions(opts...),
+		),
+		reactivateSubscription: connect.NewClient[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse](
+			httpClient,
+			baseURL+SubscriptionServiceReactivateSubscriptionProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("ReactivateSubscription")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -99,6 +119,8 @@ type subscriptionServiceClient struct {
 	createCheckoutSession     *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
 	waitForCheckoutCompletion *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
 	cancelSubscription        *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
+	changeBillingCycle        *connect.Client[v1.ChangeBillingCycleRequest, v1.ChangeBillingCycleResponse]
+	reactivateSubscription    *connect.Client[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse]
 }
 
 // GetSubscription calls api.v1.SubscriptionService.GetSubscription.
@@ -121,12 +143,24 @@ func (c *subscriptionServiceClient) CancelSubscription(ctx context.Context, req 
 	return c.cancelSubscription.CallUnary(ctx, req)
 }
 
+// ChangeBillingCycle calls api.v1.SubscriptionService.ChangeBillingCycle.
+func (c *subscriptionServiceClient) ChangeBillingCycle(ctx context.Context, req *connect.Request[v1.ChangeBillingCycleRequest]) (*connect.Response[v1.ChangeBillingCycleResponse], error) {
+	return c.changeBillingCycle.CallUnary(ctx, req)
+}
+
+// ReactivateSubscription calls api.v1.SubscriptionService.ReactivateSubscription.
+func (c *subscriptionServiceClient) ReactivateSubscription(ctx context.Context, req *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error) {
+	return c.reactivateSubscription.CallUnary(ctx, req)
+}
+
 // SubscriptionServiceHandler is an implementation of the api.v1.SubscriptionService service.
 type SubscriptionServiceHandler interface {
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
 	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest], *connect.ServerStream[v1.WaitForCheckoutCompletionResponse]) error
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
+	ChangeBillingCycle(context.Context, *connect.Request[v1.ChangeBillingCycleRequest]) (*connect.Response[v1.ChangeBillingCycleResponse], error)
+	ReactivateSubscription(context.Context, *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error)
 }
 
 // NewSubscriptionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -160,6 +194,18 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("CancelSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	subscriptionServiceChangeBillingCycleHandler := connect.NewUnaryHandler(
+		SubscriptionServiceChangeBillingCycleProcedure,
+		svc.ChangeBillingCycle,
+		connect.WithSchema(subscriptionServiceMethods.ByName("ChangeBillingCycle")),
+		connect.WithHandlerOptions(opts...),
+	)
+	subscriptionServiceReactivateSubscriptionHandler := connect.NewUnaryHandler(
+		SubscriptionServiceReactivateSubscriptionProcedure,
+		svc.ReactivateSubscription,
+		connect.WithSchema(subscriptionServiceMethods.ByName("ReactivateSubscription")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SubscriptionServiceGetSubscriptionProcedure:
@@ -170,6 +216,10 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceWaitForCheckoutCompletionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCancelSubscriptionProcedure:
 			subscriptionServiceCancelSubscriptionHandler.ServeHTTP(w, r)
+		case SubscriptionServiceChangeBillingCycleProcedure:
+			subscriptionServiceChangeBillingCycleHandler.ServeHTTP(w, r)
+		case SubscriptionServiceReactivateSubscriptionProcedure:
+			subscriptionServiceReactivateSubscriptionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -193,4 +243,12 @@ func (UnimplementedSubscriptionServiceHandler) WaitForCheckoutCompletion(context
 
 func (UnimplementedSubscriptionServiceHandler) CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.CancelSubscription is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) ChangeBillingCycle(context.Context, *connect.Request[v1.ChangeBillingCycleRequest]) (*connect.Response[v1.ChangeBillingCycleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.ChangeBillingCycle is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) ReactivateSubscription(context.Context, *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.ReactivateSubscription is not implemented"))
 }

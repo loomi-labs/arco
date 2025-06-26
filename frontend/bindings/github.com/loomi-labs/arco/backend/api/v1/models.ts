@@ -120,6 +120,8 @@ export class Subscription {
     "created_at"?: timestamppb$0.Timestamp | null;
     "updated_at"?: timestamppb$0.Timestamp | null;
     "plan"?: Plan | null;
+    "storage_used_gb"?: number;
+    "is_yearly_billing"?: boolean;
 
     /** Creates a new Subscription instance. */
     constructor($$source: Partial<Subscription> = {}) {

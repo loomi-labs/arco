@@ -74,6 +74,9 @@ router.afterEach(() => {
     case Page.AddRepository:
       subroute.value = "New Repository";
       break;
+    case Page.Subscription:
+      subroute.value = "Subscription";
+      break;
     default:
       subroute.value = undefined;
   }
@@ -122,6 +125,7 @@ router.afterEach(() => {
                 <li class='menu-title'>
                   <span>{{ userEmail }}</span>
                 </li>
+                <li><a @click='router.push(Page.Subscription)'>Subscription</a></li>
                 <li><a @click='handleLogout'>Logout</a></li>
               </ul>
             </div>

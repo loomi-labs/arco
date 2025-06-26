@@ -12,6 +12,8 @@ service SubscriptionService {
   rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
   rpc WaitForCheckoutCompletion(WaitForCheckoutCompletionRequest) returns (stream WaitForCheckoutCompletionResponse) {}
   rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
+  rpc ChangeBillingCycle(ChangeBillingCycleRequest) returns (ChangeBillingCycleResponse) {}
+  rpc ReactivateSubscription(ReactivateSubscriptionRequest) returns (ReactivateSubscriptionResponse) {}
 }
 
 message GetSubscriptionRequest {
@@ -45,6 +47,8 @@ message Subscription {
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
   Plan plan = 11;
+  int64 storage_used_gb = 12;
+  bool is_yearly_billing = 13;
 }
 
 message CreateCheckoutSessionRequest {
@@ -82,4 +86,24 @@ enum CheckoutStatus {
   CHECKOUT_STATUS_COMPLETED = 2;
   CHECKOUT_STATUS_FAILED = 3;
   CHECKOUT_STATUS_EXPIRED = 4;
+}
+
+message ChangeBillingCycleRequest {
+  string subscription_id = 1;
+  bool is_yearly = 2; // true for yearly, false for monthly
+}
+
+message ChangeBillingCycleResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp effective_date = 3;
+}
+
+message ReactivateSubscriptionRequest {
+  string subscription_id = 1;
+}
+
+message ReactivateSubscriptionResponse {
+  bool success = 1;
+  string message = 2;
 }
