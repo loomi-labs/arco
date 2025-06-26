@@ -172,10 +172,13 @@ import type { Plan } from "../../bindings/.../models";
 - Provide clear loading and error states
 
 ### Error Handling
-- Show user-friendly error messages
+- **Two Patterns Available**:
+  - **`showAndLogError()`**: Shows toast notification + logs error (for immediate feedback)
+  - **`logError()`**: Logs error without toast (for UI error display)
+- Never use `console.error` - always use one of the above logging methods
+- Choose pattern based on UX needs: toast for immediate feedback, UI display for persistent errors
 - Implement retry mechanisms for failed operations
-- Use alert components for prominent error display
-- Log detailed errors while showing simple messages to users
+- Always await logging calls for proper error handling
 
 ## Wails3 Integration
 
@@ -227,6 +230,8 @@ onUnmounted(() => {
 - `EventArchivesChanged`
 - `EventBackupProfileDeleted`
 - `EventNotificationAvailable`
+- `EventCheckoutStateChanged`
+- `EventSubscriptionStateChanged`
 
 Helper functions in `common/events.ts` format event names with relevant IDs.
 
@@ -269,18 +274,39 @@ async function performAction() {
 ```
 
 ### Error Handling
+
+**Pattern A - Toast Notification (Immediate Feedback):**
 ```typescript
+import { showAndLogError } from "../common/logger";
+
+try {
+  const response = await SomeService.GetData();
+  if (response) {
+    // handle success
+  }
+} catch (error: any) {
+  // Shows toast notification and logs error
+  await showAndLogError("Failed to load data", error);
+}
+```
+
+**Pattern B - UI Error Display + Logging:**
+```typescript
+import { logError } from "../common/logger";
+
 const errorMessage = ref<string | undefined>(undefined);
 
 try {
   const response = await SomeService.GetData();
   if (response) {
     // handle success
+    errorMessage.value = undefined; // clear any previous errors
   } else {
     errorMessage.value = "Failed to load data";
   }
-} catch (error) {
+} catch (error: any) {
   errorMessage.value = "Connection error occurred";
+  await logError("Failed to load data", error); // logs error without toast
 }
 ```
 
@@ -299,4 +325,22 @@ function closeModal() {
     resetState();
   }, 200);
 }
+```
+
+### Event Listener Management
+```typescript
+// Event cleanup pattern for background operations
+const cleanupFunctions: Array<() => void> = [];
+
+function setupEventListeners() {
+  const cleanup = Events.On(EventHelpers.someEvent(), async () => {
+    await handleEvent();
+  });
+  cleanupFunctions.push(cleanup);
+}
+
+onUnmounted(() => {
+  // Always clean up event listeners
+  cleanupFunctions.forEach(cleanup => cleanup());
+});
 ```

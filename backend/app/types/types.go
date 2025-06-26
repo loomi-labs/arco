@@ -70,14 +70,16 @@ var AllIcons = []backupprofile.Icon{
 type Event string
 
 const (
-	EventStartupStateChanged   Event = "startupStateChanged"
-	EventNotificationAvailable Event = "notificationAvailable"
-	EventBackupStateChanged    Event = "backupStateChanged"
-	EventPruneStateChanged     Event = "pruneStateChanged"
-	EventRepoStateChanged      Event = "repoStateChanged"
-	EventArchivesChanged       Event = "archivesChanged"
-	EventBackupProfileDeleted  Event = "backupProfileDeleted"
-	EventAuthStateChanged      Event = "authStateChanged"
+	EventStartupStateChanged      Event = "startupStateChanged"
+	EventNotificationAvailable    Event = "notificationAvailable"
+	EventBackupStateChanged       Event = "backupStateChanged"
+	EventPruneStateChanged        Event = "pruneStateChanged"
+	EventRepoStateChanged         Event = "repoStateChanged"
+	EventArchivesChanged          Event = "archivesChanged"
+	EventBackupProfileDeleted     Event = "backupProfileDeleted"
+	EventAuthStateChanged         Event = "authStateChanged"
+	EventCheckoutStateChanged     Event = "checkoutStateChanged"
+	EventSubscriptionStateChanged Event = "subscriptionStateChanged"
 )
 
 var AllEvents = []Event{
@@ -89,6 +91,8 @@ var AllEvents = []Event{
 	EventArchivesChanged,
 	EventBackupProfileDeleted,
 	EventAuthStateChanged,
+	EventCheckoutStateChanged,
+	EventSubscriptionStateChanged,
 }
 
 func (e Event) String() string {
@@ -109,6 +113,14 @@ func EventRepoStateChangedString(repoId int) string {
 
 func EventArchivesChangedString(repoId int) string {
 	return fmt.Sprintf("%s:%d", EventArchivesChanged.String(), repoId)
+}
+
+func EventCheckoutStateChangedString() string {
+	return fmt.Sprintf("%s", EventCheckoutStateChanged.String())
+}
+
+func EventSubscriptionStateChangedString() string {
+	return fmt.Sprintf("%s", EventSubscriptionStateChanged.String())
 }
 
 type EventEmitter interface {

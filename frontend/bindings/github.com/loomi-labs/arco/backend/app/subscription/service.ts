@@ -39,6 +39,18 @@ export function CreateCheckoutSession(planName: string): Promise<arcov1$0.Create
 }
 
 /**
+ * GetCheckoutSession returns the current checkout session
+ */
+export function GetCheckoutSession(): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3805689501) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType3($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
  * GetSubscription returns the user's current subscription
  */
 export function GetSubscription(userID: string): Promise<arcov1$0.GetSubscriptionResponse | null> & { cancel(): void } {

@@ -16,3 +16,8 @@ export function archivesChanged(repositoryId: number): string {
 export function backupProfileDeletedEvent(): string {
   return `${types.Event.EventBackupProfileDeleted}`;
 }
+
+export function checkoutStateChangedEvent(): string {
+  return `${types.Event.EventCheckoutStateChanged}`;
+}
+

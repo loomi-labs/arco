@@ -77,9 +77,9 @@ type App struct {
 	ctx                 context.Context
 	cancel              context.CancelFunc
 	db                  *ent.Client
-	authService         *auth.ServiceRPC
-	planService         *plan.ServiceRPC
-	subscriptionService *subscription.ServiceRPC
+	authService         *auth.ServiceInternal
+	planService         *plan.ServiceInternal
+	subscriptionService *subscription.ServiceInternal
 }
 
 func NewApp(
@@ -98,7 +98,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
-		authService:              auth.NewService(log, state, config.CloudRPCURL),
+		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
 	}
@@ -196,8 +196,14 @@ func (a *App) Startup(ctx context.Context) {
 	// Create JWT interceptor and HTTP client for cloud services
 	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db)
 	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 60 * time.Second,
 	}
+
+	// Create unauthenticated RPC clients
+	authRPCClient := arcov1connect.NewAuthServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+	)
 
 	// Create authenticated RPC clients
 	planRPCClient := arcov1connect.NewPlanServiceClient(
@@ -213,7 +219,7 @@ func (a *App) Startup(ctx context.Context) {
 	)
 
 	// Initialize services with database and authenticated RPC clients
-	a.authService.Init(a.db)
+	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 

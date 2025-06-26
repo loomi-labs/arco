@@ -157,6 +157,10 @@ This tasks do usually not have to be called directly (they will be called by dev
   - Database dependency is set later via `SetDb()` method
   - Services registered in `app.go` and `cmd/root.go`
 - **Error Handling**: Always wrap errors with context and log appropriately
+- **Background Monitoring**: Use streaming RPC with timeout contexts and retry logic for long-running operations
+  - Implement configurable timeouts (e.g., 30 minutes) and retry intervals (e.g., 30 seconds)
+  - Use goroutines for background operations that survive UI state changes
+  - Clean up resources when operations complete or timeout
 
 ### Protocol Buffers and Bindings
 - **Proto Changes**: After modifying `.proto` files, always run `task proto:generate`
@@ -168,6 +172,9 @@ This tasks do usually not have to be called directly (they will be called by dev
 - **Error Handling**: Implement comprehensive error states with user-friendly messages
 - **Service Calls**: Import services from generated bindings and handle nullable responses
 - **State Management**: Use reactive refs for loading and error states
+- **Event Management**: Use global event emission pattern without user/session parameters for state changes
+  - Store temporary session data in backend state with automatic cleanup
+  - Implement event listener cleanup arrays for proper resource management
 
 ### Cloud Integration
 - **RPC Clients**: Services communicate with cloud via Connect RPC clients

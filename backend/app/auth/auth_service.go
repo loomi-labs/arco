@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
@@ -34,27 +33,23 @@ type Service struct {
 	rpcClient arcov1connect.AuthServiceClient
 }
 
-// ServiceRPC provides backend-only methods that should not be exposed to frontend
-type ServiceRPC struct {
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
 	*Service
 }
 
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	return &ServiceRPC{
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
+	return &ServiceInternal{
 		Service: &Service{
-			log:       log,
-			state:     state,
-			rpcClient: arcov1connect.NewAuthServiceClient(httpClient, cloudRPCURL),
+			log:   log,
+			state: state,
 		},
 	}
 }
 
-func (asi *ServiceRPC) Init(db *ent.Client) {
+func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient) {
 	asi.db = db
+	asi.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -112,7 +107,7 @@ func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus,
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceRPC{Service: as}
+	internal := &ServiceInternal{Service: as}
 	go internal.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
@@ -162,7 +157,7 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceRPC{Service: as}
+	internal := &ServiceInternal{Service: as}
 	go internal.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
@@ -201,7 +196,7 @@ func (as *Service) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (asi *ServiceRPC) refreshToken(ctx context.Context, userEntity *ent.User) {
+func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) {
 	asi.mustHaveDB()
 
 	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: *userEntity.RefreshToken})
@@ -222,7 +217,7 @@ func (asi *ServiceRPC) refreshToken(ctx context.Context, userEntity *ent.User) {
 
 // syncAuthenticatedSession syncs tokens from external service to local db
 // We only ever store one user, so get the first user or create one and update the email
-func (asi *ServiceRPC) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
+func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
 	asi.mustHaveDB()
 
 	if authResp.User == nil {
@@ -275,7 +270,7 @@ func (asi *ServiceRPC) syncAuthenticatedSession(ctx context.Context, sessionID s
 	}
 }
 
-func (asi *ServiceRPC) RecoverAuthSessions(ctx context.Context) error {
+func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Query for pending sessions that haven't expired
@@ -298,7 +293,7 @@ func (asi *ServiceRPC) RecoverAuthSessions(ctx context.Context) error {
 
 // ValidateAndRenewStoredTokens validates stored refresh tokens and automatically renews access tokens.
 // Since we only store one user, this method gets the first user and attempts to refresh their tokens.
-func (asi *ServiceRPC) ValidateAndRenewStoredTokens(ctx context.Context) error {
+func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Delete expired refresh tokens
@@ -343,7 +338,7 @@ func (asi *ServiceRPC) ValidateAndRenewStoredTokens(ctx context.Context) error {
 }
 
 // updateUserTokens updates a user entity with the provided token information
-func (asi *ServiceRPC) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
+func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
 	asi.log.Debugf("Updating tokens for user %s (access expires in %d seconds, refresh expires in %d seconds)", userEntity.Email, accessTokenExpiresIn, refreshTokenExpiresIn)
 
 	if accessToken == "" || accessTokenExpiresIn <= 0 || refreshToken == "" || refreshTokenExpiresIn <= 0 {
@@ -367,7 +362,7 @@ func (asi *ServiceRPC) updateUserTokens(ctx context.Context, userEntity *ent.Use
 	return err
 }
 
-func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
+func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 	// Create a timeout context based on session expiration
 	timeout := time.Until(session.ExpiresAt)
 	if timeout <= 0 {

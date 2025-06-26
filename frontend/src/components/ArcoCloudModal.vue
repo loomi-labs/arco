@@ -7,9 +7,10 @@ import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { FeatureSet, Plan, CreateCheckoutSessionResponse } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
+import { logError } from "../common/logger";
 
 /************
  * Types
@@ -66,10 +67,12 @@ const userSubscriptionPlan = ref<string | undefined>(undefined);
 const userSubscription = ref<any>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
-const checkoutSession = ref<CreateCheckoutSessionResponse | undefined>(undefined);
 
 // Error messages
 const errorMessage = ref<string | undefined>(undefined);
+
+// Checkout session data
+const checkoutSession = ref<any>(undefined);
 
 // Event cleanup
 const cleanupFunctions: Array<() => void> = [];
@@ -334,9 +337,12 @@ async function subscribeToPlan() {
     setupCheckoutEventListener();
     
     // Create checkout session
-    const response = await SubscriptionService.CreateCheckoutSession(selectedPlan.value);
-    if (response) {
-      checkoutSession.value = response;
+    await SubscriptionService.CreateCheckoutSession(selectedPlan.value);
+    
+    // Get checkout session data from backend
+    const sessionData = await SubscriptionService.GetCheckoutSession();
+    if (sessionData) {
+      checkoutSession.value = sessionData;
     }
   } catch (error) {
     transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
@@ -383,6 +389,19 @@ function setupCheckoutEventListener() {
   cleanupFunctions.push(checkoutCleanup);
 }
 
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error: any) {
+    errorMessage.value = "Failed to copy to clipboard";
+    await logError("Failed to copy to clipboard", error);
+  }
+}
+
+function openCheckoutUrl(url: string) {
+  window.open(url, '_blank');
+}
+
 function createRepository() {
   if (!isRepoValid.value) return;
 
@@ -409,24 +428,6 @@ function onAuthenticated() {
   }
 }
 
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    // Could add a toast notification here if needed
-  } catch (error) {
-    console.error('Failed to copy to clipboard:', error);
-    // Fallback: select the text for manual copying
-    const input = document.querySelector('input[readonly]') as HTMLInputElement;
-    if (input) {
-      input.select();
-      input.setSelectionRange(0, 99999);
-    }
-  }
-}
-
-function openCheckoutUrl(url: string) {
-  window.open(url, '_blank');
-}
 
 /************
  * Lifecycle

@@ -78,6 +78,9 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*
 		return nil, err
 	}
 
+	// Store checkout session in state
+	s.state.SetCheckoutSession(ctx, resp.Msg, false)
+
 	// Start monitoring checkout completion in the background
 	internal := &ServiceInternal{Service: s}
 	go internal.startCheckoutMonitoring(resp.Msg.SessionId)
@@ -106,6 +109,11 @@ func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string,
 	}
 
 	return resp.Msg, nil
+}
+
+// GetCheckoutSession returns the current checkout session
+func (s *Service) GetCheckoutSession() *arcov1.CreateCheckoutSessionResponse {
+	return s.state.GetCheckoutSession()
 }
 
 // Backend-only Connect RPC handler methods
@@ -154,16 +162,14 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_COMPLETED:
 				// Checkout successful
 				si.log.Debugf("Checkout session %s: checkout completed successfully", sessionId)
-				// Emit checkout completion event
-				si.state.EmitCheckoutStateChanged(ctx)
-				// Emit subscription state change
-				si.state.EmitSubscriptionStateChanged(ctx)
+				// Clear checkout session from state and emit both checkout and subscription events
+				si.state.ClearCheckoutSession(ctx, true)
 				return
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_FAILED, arcov1.CheckoutStatus_CHECKOUT_STATUS_EXPIRED:
 				// Checkout failed
 				si.log.Debugf("Checkout session %s: checkout failed with status %v", sessionId, checkoutStatus.Status)
-				// Emit checkout failure event
-				si.state.EmitCheckoutStateChanged(ctx)
+				// Clear checkout session from state (automatically emits checkout event only)
+				si.state.ClearCheckoutSession(ctx, false)
 				return
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_PENDING:
 				// Still pending - continue waiting

@@ -44,6 +44,8 @@ export enum Event {
     EventArchivesChanged = "archivesChanged",
     EventBackupProfileDeleted = "backupProfileDeleted",
     EventAuthStateChanged = "authStateChanged",
+    EventCheckoutStateChanged = "checkoutStateChanged",
+    EventSubscriptionStateChanged = "subscriptionStateChanged",
 };
 
 /**

@@ -44,6 +44,32 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
 }
 
 /**
+ * logError logs an error to the backend without showing a toast notification.
+ * Use this when you want to display the error in the UI and log it for debugging.
+ * @param message The error context message.
+ * @param error The error to log.
+ * @returns A promise that resolves when the error is logged.
+ */
+export async function logError(message: string, error?: any): Promise<void> {
+  const fe = types.FrontendError.createFrom();
+
+  // check type of error and log it in the backend
+  if (error instanceof Error) {
+    fe.message = error.message;
+    if (error.stack) {
+      fe.stack = error.stack;
+    }
+    await appClient.HandleError(message, fe);
+  } else if (typeof error === "string") {
+    fe.message = error.toString();
+    await appClient.HandleError(message, fe);
+  } else {
+    fe.message = "Unknown error";
+    await appClient.HandleError(message, fe);
+  }
+}
+
+/**
  * logDebug logs a debug message to the backend.
  * @param message The debug message to log.
  * @returns A promise that resolves when the message is logged.
