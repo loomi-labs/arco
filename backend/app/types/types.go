@@ -70,16 +70,17 @@ var AllIcons = []backupprofile.Icon{
 type Event string
 
 const (
-	EventStartupStateChanged      Event = "startupStateChanged"
-	EventNotificationAvailable    Event = "notificationAvailable"
-	EventBackupStateChanged       Event = "backupStateChanged"
-	EventPruneStateChanged        Event = "pruneStateChanged"
-	EventRepoStateChanged         Event = "repoStateChanged"
-	EventArchivesChanged          Event = "archivesChanged"
-	EventBackupProfileDeleted     Event = "backupProfileDeleted"
-	EventAuthStateChanged         Event = "authStateChanged"
-	EventCheckoutStateChanged     Event = "checkoutStateChanged"
-	EventSubscriptionStateChanged Event = "subscriptionStateChanged"
+	EventStartupStateChanged   Event = "startupStateChanged"
+	EventNotificationAvailable Event = "notificationAvailable"
+	EventBackupStateChanged    Event = "backupStateChanged"
+	EventPruneStateChanged     Event = "pruneStateChanged"
+	EventRepoStateChanged      Event = "repoStateChanged"
+	EventArchivesChanged       Event = "archivesChanged"
+	EventBackupProfileDeleted  Event = "backupProfileDeleted"
+	EventAuthStateChanged      Event = "authStateChanged"
+	EventCheckoutStateChanged  Event = "checkoutStateChanged"
+	EventSubscriptionAdded     Event = "subscriptionAdded"
+	EventSubscriptionCancelled Event = "subscriptionCancelled"
 )
 
 var AllEvents = []Event{
@@ -92,7 +93,8 @@ var AllEvents = []Event{
 	EventBackupProfileDeleted,
 	EventAuthStateChanged,
 	EventCheckoutStateChanged,
-	EventSubscriptionStateChanged,
+	EventSubscriptionAdded,
+	EventSubscriptionCancelled,
 }
 
 func (e Event) String() string {
@@ -119,8 +121,12 @@ func EventCheckoutStateChangedString() string {
 	return fmt.Sprintf("%s", EventCheckoutStateChanged.String())
 }
 
-func EventSubscriptionStateChangedString() string {
-	return fmt.Sprintf("%s", EventSubscriptionStateChanged.String())
+func EventSubscriptionAddedString() string {
+	return fmt.Sprintf("%s", EventSubscriptionAdded.String())
+}
+
+func EventSubscriptionCancelledString() string {
+	return fmt.Sprintf("%s", EventSubscriptionCancelled.String())
 }
 
 type EventEmitter interface {

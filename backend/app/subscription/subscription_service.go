@@ -79,7 +79,7 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*
 	}
 
 	// Store checkout session in state
-	s.state.SetCheckoutSession(ctx, resp.Msg, false)
+	s.state.SetCheckoutSession(ctx, resp.Msg)
 
 	// Start monitoring checkout completion in the background
 	internal := &ServiceInternal{Service: s}
@@ -96,10 +96,9 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*
 }
 
 // CancelSubscription cancels the user's subscription
-func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string, immediate bool) (*arcov1.CancelSubscriptionResponse, error) {
+func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string) (*arcov1.CancelSubscriptionResponse, error) {
 	req := connect.NewRequest(&arcov1.CancelSubscriptionRequest{
 		SubscriptionId: subscriptionID,
-		Immediate:      immediate,
 	})
 
 	resp, err := s.rpcClient.CancelSubscription(ctx, req)
@@ -116,6 +115,16 @@ func (s *Service) GetCheckoutSession() *arcov1.CreateCheckoutSessionResponse {
 	return s.state.GetCheckoutSession()
 }
 
+// GetCheckoutResult returns the current checkout result
+func (s *Service) GetCheckoutResult() *state.CheckoutResult {
+	return s.state.GetCheckoutResult()
+}
+
+// ClearCheckoutResult clears the current checkout result
+func (s *Service) ClearCheckoutResult() {
+	s.state.ClearCheckoutResult()
+}
+
 // Backend-only Connect RPC handler methods
 
 // startCheckoutMonitoring starts monitoring a checkout session for completion
@@ -130,6 +139,14 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 	const maxRetries = 120 // Max 120 retries over 10 minutes
 	const retryInterval = 5 * time.Second
 
+	// Helper function to create checkout result
+	createResult := func(status state.CheckoutResultStatus, errorMessage string) *state.CheckoutResult {
+		return &state.CheckoutResult{
+			Status:       status,
+			ErrorMessage: errorMessage,
+		}
+	}
+
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		// Use WaitForCheckoutCompletion streaming approach
 		req := connect.NewRequest(&arcov1.WaitForCheckoutCompletionRequest{SessionId: sessionId})
@@ -140,12 +157,14 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 			si.log.Debugf("Checkout session %s: stream connection failed: %v", sessionId, err)
 			if attempt == maxRetries-1 {
 				si.log.Debugf("Checkout session %s: max retries reached, stopping monitoring", sessionId)
+				si.state.ClearCheckoutSession(ctx, createResult(state.CheckoutStatusTimeout, "Checkout monitoring timed out"), false)
 				return
 			}
 
 			// Wait before retry
 			select {
 			case <-ctx.Done():
+				si.state.ClearCheckoutSession(ctx, createResult(state.CheckoutStatusTimeout, "Checkout monitoring timed out"), false)
 				return
 			case <-time.After(retryInterval):
 				continue
@@ -162,14 +181,17 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_COMPLETED:
 				// Checkout successful
 				si.log.Debugf("Checkout session %s: checkout completed successfully", sessionId)
+				result := createResult(state.CheckoutStatusCompleted, "")
+				result.SubscriptionID = checkoutStatus.SubscriptionId
 				// Clear checkout session from state and emit both checkout and subscription events
-				si.state.ClearCheckoutSession(ctx, true)
+				si.state.ClearCheckoutSession(ctx, result, true)
 				return
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_FAILED, arcov1.CheckoutStatus_CHECKOUT_STATUS_EXPIRED:
 				// Checkout failed
 				si.log.Debugf("Checkout session %s: checkout failed with status %v", sessionId, checkoutStatus.Status)
+				result := createResult(state.CheckoutStatusFailed, "Checkout failed or expired")
 				// Clear checkout session from state (automatically emits checkout event only)
-				si.state.ClearCheckoutSession(ctx, false)
+				si.state.ClearCheckoutSession(ctx, result, false)
 				return
 			case arcov1.CheckoutStatus_CHECKOUT_STATUS_PENDING:
 				// Still pending - continue waiting
@@ -178,6 +200,9 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 			default:
 				// Unknown status
 				si.log.Debugf("Checkout session %s: unknown checkout status %v", sessionId, checkoutStatus.Status)
+				result := createResult(state.CheckoutStatusFailed, "Unknown checkout status")
+				// Clear checkout session from state (automatically emits checkout event only)
+				si.state.ClearCheckoutSession(ctx, result, false)
 				return
 			}
 		}
@@ -187,12 +212,14 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 			si.log.Debugf("Checkout session %s: stream error: %v", sessionId, err)
 			if attempt == maxRetries-1 {
 				si.log.Debugf("Checkout session %s: max retries reached after error", sessionId)
+				si.state.ClearCheckoutSession(ctx, createResult(state.CheckoutStatusTimeout, "Checkout monitoring timed out"), false)
 				return
 			}
 
 			// Wait before retry
 			select {
 			case <-ctx.Done():
+				si.state.ClearCheckoutSession(ctx, createResult(state.CheckoutStatusTimeout, "Checkout monitoring timed out"), false)
 				return
 			case <-time.After(retryInterval):
 				continue
@@ -203,5 +230,7 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 		si.log.Debugf("Checkout session %s: stream ended, retrying", sessionId)
 	}
 
-	si.log.Debugf("Checkout session %s: monitoring completed", sessionId)
+	// If we reach here, max retries were exhausted
+	si.log.Debugf("Checkout session %s: monitoring timed out after %d attempts", sessionId, maxRetries)
+	si.state.ClearCheckoutSession(ctx, createResult(state.CheckoutStatusTimeout, "Checkout monitoring timed out"), false)
 }

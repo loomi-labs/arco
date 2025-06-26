@@ -13,17 +13,28 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as arcov1$0 from "../../api/v1/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as state$0 from "../state/models.js";
 
 /**
  * CancelSubscription cancels the user's subscription
  */
-export function CancelSubscription(subscriptionID: string, immediate: boolean): Promise<arcov1$0.CancelSubscriptionResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2256032254, subscriptionID, immediate) as any;
+export function CancelSubscription(subscriptionID: string): Promise<arcov1$0.CancelSubscriptionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2256032254, subscriptionID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType1($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
+}
+
+/**
+ * ClearCheckoutResult clears the current checkout result
+ */
+export function ClearCheckoutResult(): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(1431767263) as any;
+    return $resultPromise;
 }
 
 /**
@@ -33,6 +44,18 @@ export function CreateCheckoutSession(planName: string): Promise<arcov1$0.Create
     let $resultPromise = $Call.ByID(54709411, planName) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType3($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * GetCheckoutResult returns the current checkout result
+ */
+export function GetCheckoutResult(): Promise<state$0.CheckoutResult | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3825337690) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
@@ -56,7 +79,7 @@ export function GetCheckoutSession(): Promise<arcov1$0.CreateCheckoutSessionResp
 export function GetSubscription(userID: string): Promise<arcov1$0.GetSubscriptionResponse | null> & { cancel(): void } {
     let $resultPromise = $Call.ByID(3325132602, userID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType5($result);
+        return $$createType7($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
@@ -67,5 +90,7 @@ const $$createType0 = arcov1$0.CancelSubscriptionResponse.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = arcov1$0.GetSubscriptionResponse.createFrom;
+const $$createType4 = state$0.CheckoutResult.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = arcov1$0.GetSubscriptionResponse.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);

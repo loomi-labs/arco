@@ -85,6 +85,41 @@ export enum BackupStatus {
     BackupStatusFailed = "failed",
 };
 
+export class CheckoutResult {
+    "status": CheckoutResultStatus;
+    "errorMessage"?: string;
+    "subscriptionId"?: string;
+
+    /** Creates a new CheckoutResult instance. */
+    constructor($$source: Partial<CheckoutResult> = {}) {
+        if (!("status" in $$source)) {
+            this["status"] = ("" as CheckoutResultStatus);
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CheckoutResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CheckoutResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CheckoutResult($$parsedSource as Partial<CheckoutResult>);
+    }
+}
+
+export enum CheckoutResultStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    CheckoutStatusPending = "pending",
+    CheckoutStatusCompleted = "completed",
+    CheckoutStatusFailed = "failed",
+    CheckoutStatusTimeout = "timeout",
+};
+
 export class RepoState {
     "status": RepoStatus;
 
