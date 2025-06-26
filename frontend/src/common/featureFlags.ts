@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import * as appClient from '../../bindings/github.com/loomi-labs/arco/backend/app/appclient'
+import { showAndLogError } from "./logger";
 
 interface FeatureFlags {
   loginBetaEnabled: boolean
@@ -23,7 +24,7 @@ export async function initializeFeatureFlags(): Promise<void> {
     }
     isInitialized = true
   } catch (error) {
-    console.error('Failed to initialize feature flags:', error)
+    await showAndLogError('Failed to initialize feature flags:', error)
     // Keep default values (all false) if initialization fails
   }
 }

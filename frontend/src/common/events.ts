@@ -21,3 +21,7 @@ export function checkoutStateChangedEvent(): string {
   return `${types.Event.EventCheckoutStateChanged}`;
 }
 
+export function subscriptionStateChangedEvent(): string {
+  return `${types.Event.EventSubscriptionStateChanged}`;
+}
+

@@ -10,7 +10,7 @@ import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/
 import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
-import { logError } from "../common/logger";
+import { logError, showAndLogError } from "../common/logger";
 
 /************
  * Types
@@ -365,8 +365,8 @@ function validateRepoName() {
 }
 
 function setupCheckoutEventListener() {
-  // Listen for checkout completion events
-  const checkoutCleanup = Events.On(EventHelpers.checkoutStateChangedEvent(), async () => {
+  // Listen for subscription completion events
+  const checkoutCleanup = Events.On(EventHelpers.subscriptionStateChangedEvent(), async () => {
     try {
       // Refresh subscription status when checkout completes
       await loadUserSubscription();
@@ -379,7 +379,7 @@ function setupCheckoutEventListener() {
         goToSubscriptionSelection();
       }
     } catch (error) {
-      console.error("Error handling checkout completion:", error);
+      await showAndLogError("Error handling checkout completion:", error);
       // Go back to subscription selection on error
       goToSubscriptionSelection();
     }

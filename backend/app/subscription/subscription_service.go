@@ -127,8 +127,8 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 	defer cancel()
 
 	// Retry configuration
-	const maxRetries = 20 // Max 20 retries over 10 minutes
-	const retryInterval = 30 * time.Second
+	const maxRetries = 120 // Max 120 retries over 10 minutes
+	const retryInterval = 5 * time.Second
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		// Use WaitForCheckoutCompletion streaming approach
