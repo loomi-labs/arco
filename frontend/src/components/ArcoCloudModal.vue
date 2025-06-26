@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { CheckCircleIcon, CheckIcon, CloudIcon, StarIcon } from "@heroicons/vue/24/outline";
 import FormField from "./common/FormField.vue";
 import AuthForm from "./common/AuthForm.vue";
@@ -7,7 +7,9 @@ import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan, CreateCheckoutSessionResponse } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { Events } from "@wailsio/runtime";
+import * as EventHelpers from "../common/events";
 
 /************
  * Types
@@ -64,9 +66,13 @@ const userSubscriptionPlan = ref<string | undefined>(undefined);
 const userSubscription = ref<any>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
+const checkoutSession = ref<CreateCheckoutSessionResponse | undefined>(undefined);
 
 // Error messages
 const errorMessage = ref<string | undefined>(undefined);
+
+// Event cleanup
+const cleanupFunctions: Array<() => void> = [];
 
 
 /************
@@ -76,8 +82,7 @@ const errorMessage = ref<string | undefined>(undefined);
 // Loading state helpers
 const isLoading = computed(() =>
   currentState.value === ComponentState.LOADING_INITIAL ||
-  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED ||
-  currentState.value === ComponentState.CHECKOUT_PROCESSING
+  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED
 );
 
 const modalTitle = computed(() => {
@@ -121,7 +126,7 @@ const modalDescription = computed(() => {
     case ComponentState.SUBSCRIPTION_AUTHENTICATED:
       return "Checking your subscription status...";
     case ComponentState.CHECKOUT_PROCESSING:
-      return "Processing your subscription request...";
+      return "Complete your subscription checkout in the browser. You can close this modal and the checkout will continue in the background.";
     case ComponentState.REPOSITORY_CREATION:
       return "Create a new repository in Arco Cloud.";
     case ComponentState.ERROR_PLANS:
@@ -271,11 +276,17 @@ function resetAll() {
   repoName.value = "";
   repoNameError.value = undefined;
   errorMessage.value = undefined;
+  checkoutSession.value = undefined;
   transitionTo(ComponentState.LOADING_INITIAL);
 }
 
 function closeModal() {
   dialog.value?.close();
+  
+  // Clean up any active checkout event listeners
+  cleanupFunctions.forEach(cleanup => cleanup());
+  cleanupFunctions.length = 0;
+  
   // Delay reset to allow modal fade animation to complete
   setTimeout(() => {
     resetAll();
@@ -319,18 +330,13 @@ async function subscribeToPlan() {
   transitionTo(ComponentState.CHECKOUT_PROCESSING);
 
   try {
-    // Create checkout session with real service
-    const response = await SubscriptionService.CreateCheckoutSession(
-      selectedPlan.value
-    );
-
-    if (response?.checkout_url) {
-      // Redirect to checkout URL
-      window.open(response.checkout_url, "_blank");
-      // Go back to subscription selection to let user know checkout opened
-      goToSubscriptionSelection();
-    } else {
-      transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+    // Set up event listener before creating checkout session
+    setupCheckoutEventListener();
+    
+    // Create checkout session
+    const response = await SubscriptionService.CreateCheckoutSession(selectedPlan.value);
+    if (response) {
+      checkoutSession.value = response;
     }
   } catch (error) {
     transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
@@ -350,6 +356,31 @@ function validateRepoName() {
   } else {
     repoNameError.value = undefined;
   }
+}
+
+function setupCheckoutEventListener() {
+  // Listen for checkout completion events
+  const checkoutCleanup = Events.On(EventHelpers.checkoutStateChangedEvent(), async () => {
+    try {
+      // Refresh subscription status when checkout completes
+      await loadUserSubscription();
+      
+      // If user now has a subscription, transition to appropriate state
+      if (hasActiveSubscription.value) {
+        transitionTo(ComponentState.REPOSITORY_CREATION);
+      } else {
+        // Checkout might have failed, go back to subscription selection
+        goToSubscriptionSelection();
+      }
+    } catch (error) {
+      console.error("Error handling checkout completion:", error);
+      // Go back to subscription selection on error
+      goToSubscriptionSelection();
+    }
+  });
+  
+  // Store cleanup function
+  cleanupFunctions.push(checkoutCleanup);
 }
 
 function createRepository() {
@@ -378,6 +409,25 @@ function onAuthenticated() {
   }
 }
 
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    // Could add a toast notification here if needed
+  } catch (error) {
+    console.error('Failed to copy to clipboard:', error);
+    // Fallback: select the text for manual copying
+    const input = document.querySelector('input[readonly]') as HTMLInputElement;
+    if (input) {
+      input.select();
+      input.setSelectionRange(0, 99999);
+    }
+  }
+}
+
+function openCheckoutUrl(url: string) {
+  window.open(url, '_blank');
+}
+
 /************
  * Lifecycle
  ************/
@@ -385,6 +435,11 @@ function onAuthenticated() {
 onMounted(async () => {
   // Load subscription plans on mount
   await loadSubscriptionPlans();
+});
+
+onUnmounted(() => {
+  // Clean up event listeners
+  cleanupFunctions.forEach(cleanup => cleanup());
 });
 
 
@@ -448,9 +503,62 @@ watch(isAuthenticated, async (authenticated) => {
 
       <!-- Checkout Processing State -->
       <div v-else-if='currentState === ComponentState.CHECKOUT_PROCESSING'>
-        <div class='text-center py-8'>
-          <div class='loading loading-spinner loading-lg'></div>
-          <p class='mt-2 text-base-content/70'>Processing subscription...</p>
+        <div class='space-y-6'>
+          <!-- Status indicator -->
+          <div class='text-center'>
+            <div class='loading loading-spinner loading-lg mb-4'></div>
+            <h3 class='text-lg font-semibold mb-2'>Checkout in Progress</h3>
+            <p class='text-base-content/70'>
+              Your checkout session has been opened in your default browser. Complete the payment to activate your subscription.
+            </p>
+          </div>
+
+          <!-- Checkout URL display -->
+          <div v-if='checkoutSession?.checkout_url' class='bg-base-200 rounded-lg p-4'>
+            <div class='flex items-start gap-3'>
+              <div class='flex-1'>
+                <label class='text-sm font-semibold text-base-content/80 block mb-2'>
+                  Checkout Link
+                </label>
+                <div class='flex items-center gap-2'>
+                  <input
+                    class='input input-sm bg-base-100 flex-1 text-sm font-mono'
+                    type='text'
+                    :value='checkoutSession.checkout_url'
+                    readonly
+                  />
+                  <button
+                    class='btn btn-sm btn-outline'
+                    @click='copyToClipboard(checkoutSession.checkout_url)'
+                    title='Copy to clipboard'
+                  >
+                    Copy
+                  </button>
+                  <button
+                    class='btn btn-sm btn-secondary'
+                    @click='openCheckoutUrl(checkoutSession.checkout_url)'
+                    title='Open in browser'
+                  >
+                    Open
+                  </button>
+                </div>
+                <p class='text-xs text-base-content/60 mt-2'>
+                  If the checkout page didn't open automatically, you can use this link to complete your subscription.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class='modal-action justify-between'>
+            <div class='text-sm text-base-content/60'>
+              <p>The checkout will continue in the background.</p>
+              <p>You'll be notified when it's complete.</p>
+            </div>
+            <button class='btn btn-outline' @click='closeModal()'>
+              Close
+            </button>
+          </div>
         </div>
       </div>
 

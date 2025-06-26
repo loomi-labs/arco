@@ -7,7 +7,9 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/pkg/browser"
 	"go.uber.org/zap"
+	"time"
 )
 
 // Service contains the business logic and provides methods exposed to the frontend
@@ -18,15 +20,15 @@ type Service struct {
 	rpcClient arcov1connect.SubscriptionServiceClient
 }
 
-// ServiceRPC implements Connect RPC handlers for the subscription service
-type ServiceRPC struct {
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
 	*Service
 	arcov1connect.UnimplementedSubscriptionServiceHandler
 }
 
 // NewService creates a new subscription service
-func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
-	return &ServiceRPC{
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
+	return &ServiceInternal{
 		Service: &Service{
 			log:   log,
 			state: state,
@@ -35,7 +37,7 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 }
 
 // Init initializes the service with database and RPC client
-func (si *ServiceRPC) Init(db *ent.Client, rpcClient arcov1connect.SubscriptionServiceClient) {
+func (si *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.SubscriptionServiceClient) {
 	si.db = db
 	si.rpcClient = rpcClient
 }
@@ -76,6 +78,17 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*
 		return nil, err
 	}
 
+	// Start monitoring checkout completion in the background
+	internal := &ServiceInternal{Service: s}
+	go internal.startCheckoutMonitoring(resp.Msg.SessionId)
+
+	// Open URL to complete the checkout
+	err = browser.OpenURL(resp.Msg.CheckoutUrl)
+	if err != nil {
+		s.log.Errorf("Failed to open browser url: %v", err)
+		return nil, err
+	}
+
 	return resp.Msg, nil
 }
 
@@ -97,29 +110,92 @@ func (s *Service) CancelSubscription(ctx context.Context, subscriptionID string,
 
 // Backend-only Connect RPC handler methods
 
-// GetSubscription handles the Connect RPC request for getting a subscription
-func (si *ServiceRPC) GetSubscription(ctx context.Context, req *connect.Request[arcov1.GetSubscriptionRequest]) (*connect.Response[arcov1.GetSubscriptionResponse], error) {
-	resp, err := si.Service.GetSubscription(ctx, req.Msg.UserId)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(resp), nil
-}
+// startCheckoutMonitoring starts monitoring a checkout session for completion
+func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
+	// Create a timeout context with reasonable timeout for checkout completion
+	// Most payment flows should complete within 30 minutes
+	const checkoutTimeout = 30 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), checkoutTimeout)
+	defer cancel()
 
-// CreateCheckoutSession handles the Connect RPC request for creating a checkout session
-func (si *ServiceRPC) CreateCheckoutSession(ctx context.Context, req *connect.Request[arcov1.CreateCheckoutSessionRequest]) (*connect.Response[arcov1.CreateCheckoutSessionResponse], error) {
-	resp, err := si.Service.CreateCheckoutSession(ctx, req.Msg.Name)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(resp), nil
-}
+	// Retry configuration
+	const maxRetries = 20 // Max 20 retries over 10 minutes
+	const retryInterval = 30 * time.Second
 
-// CancelSubscription handles the Connect RPC request for canceling a subscription
-func (si *ServiceRPC) CancelSubscription(ctx context.Context, req *connect.Request[arcov1.CancelSubscriptionRequest]) (*connect.Response[arcov1.CancelSubscriptionResponse], error) {
-	resp, err := si.Service.CancelSubscription(ctx, req.Msg.SubscriptionId, req.Msg.Immediate)
-	if err != nil {
-		return nil, err
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Use WaitForCheckoutCompletion streaming approach
+		req := connect.NewRequest(&arcov1.WaitForCheckoutCompletionRequest{SessionId: sessionId})
+
+		si.log.Debugf("Checkout session %s: attempting checkout stream (attempt %d/%d)", sessionId, attempt+1, maxRetries)
+		stream, err := si.rpcClient.WaitForCheckoutCompletion(ctx, req)
+		if err != nil {
+			si.log.Debugf("Checkout session %s: stream connection failed: %v", sessionId, err)
+			if attempt == maxRetries-1 {
+				si.log.Debugf("Checkout session %s: max retries reached, stopping monitoring", sessionId)
+				return
+			}
+
+			// Wait before retry
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(retryInterval):
+				continue
+			}
+		}
+
+		// Stream established successfully
+		si.log.Debugf("Checkout session %s: checkout stream established", sessionId)
+
+		for stream.Receive() {
+			checkoutStatus := stream.Msg()
+
+			switch checkoutStatus.Status {
+			case arcov1.CheckoutStatus_CHECKOUT_STATUS_COMPLETED:
+				// Checkout successful
+				si.log.Debugf("Checkout session %s: checkout completed successfully", sessionId)
+				// Emit checkout completion event
+				si.state.EmitCheckoutStateChanged(ctx)
+				// Emit subscription state change
+				si.state.EmitSubscriptionStateChanged(ctx)
+				return
+			case arcov1.CheckoutStatus_CHECKOUT_STATUS_FAILED, arcov1.CheckoutStatus_CHECKOUT_STATUS_EXPIRED:
+				// Checkout failed
+				si.log.Debugf("Checkout session %s: checkout failed with status %v", sessionId, checkoutStatus.Status)
+				// Emit checkout failure event
+				si.state.EmitCheckoutStateChanged(ctx)
+				return
+			case arcov1.CheckoutStatus_CHECKOUT_STATUS_PENDING:
+				// Still pending - continue waiting
+				si.log.Debugf("Checkout session %s: pending checkout", sessionId)
+				continue
+			default:
+				// Unknown status
+				si.log.Debugf("Checkout session %s: unknown checkout status %v", sessionId, checkoutStatus.Status)
+				return
+			}
+		}
+
+		// Stream ended - check for errors and retry if not max attempts
+		if err := stream.Err(); err != nil {
+			si.log.Debugf("Checkout session %s: stream error: %v", sessionId, err)
+			if attempt == maxRetries-1 {
+				si.log.Debugf("Checkout session %s: max retries reached after error", sessionId)
+				return
+			}
+
+			// Wait before retry
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(retryInterval):
+				continue
+			}
+		}
+
+		// Stream ended without error - retry
+		si.log.Debugf("Checkout session %s: stream ended, retrying", sessionId)
 	}
-	return connect.NewResponse(resp), nil
+
+	si.log.Debugf("Checkout session %s: monitoring completed", sessionId)
 }
