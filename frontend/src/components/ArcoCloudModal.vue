@@ -656,11 +656,12 @@ watch(isAuthenticated, async (authenticated) => {
       <!-- Error States -->
       <div
         v-else-if='currentState === ComponentState.ERROR_PLANS || currentState === ComponentState.ERROR_SUBSCRIPTION || currentState === ComponentState.ERROR_CHECKOUT'>
-        <div class='alert alert-error mb-6'>
-          <div class='flex items-center justify-between w-full'>
-            <div>
-              <span>{{ errorMessage }}</span>
-            </div>
+        <div role="alert" class="alert alert-error alert-vertical sm:alert-horizontal mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errorMessage }}</span>
+          <div>
             <button class='btn btn-sm btn-outline'
                     @click='currentState === ComponentState.ERROR_PLANS ? retryLoadPlans() : currentState === ComponentState.ERROR_SUBSCRIPTION ? retryLoadSubscription() : goToSubscriptionSelection()'>
               {{ currentState === ComponentState.ERROR_CHECKOUT ? "Back" : "Retry" }}
