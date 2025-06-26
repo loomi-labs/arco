@@ -48,7 +48,7 @@ const emitClick = "click";
   </div>
   <!-- Remote Repository Card -->
   <div v-if='repoType === RepoType.Remote'
-       class='group flex flex-col ac-card border border-secondary p-10 w-full min-h-[300px]'
+       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
        :class='{ "ac-card-selected ": isSelected, "border-transparent": !isSelected }'
        @click='emit(emitClick)'>
     <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
@@ -59,10 +59,12 @@ const emitClick = "click";
   </div>
   <!-- Arco Cloud Card -->
   <div v-if='repoType === RepoType.ArcoCloud'
-       class='group flex flex-col ac-card bg-neutral-300 p-10 w-full min-h-[300px] cursor-pointer hover:bg-neutral-200'
-       :class='{ "ac-card-selected": isSelected}'
+       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
+       :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected }'
        @click='emit(emitClick)'>
-    <ArcoLogo :svgClass='"size-24 self-center mb-4" + (isSelected ? " text-secondary" : "")' />
+    <ArcoLogo class='size-24 self-center group-hover:text-secondary mb-4'
+              :class='{"text-secondary": isSelected}'
+              svgClass='' />
     <p class='text-lg font-semibold mb-2'>Arco Cloud</p>
     <div class='divider'></div>
     <p class='text-sm text-base-content/70'>Store your backups in Arco Cloud.</p>
