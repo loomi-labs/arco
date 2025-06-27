@@ -107,8 +107,7 @@ func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus,
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceInternal{Service: as}
-	go internal.startAuthMonitoring(session)
+	go as.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
 }
@@ -157,8 +156,7 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceInternal{Service: as}
-	go internal.startAuthMonitoring(session)
+	go as.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
 }
@@ -362,12 +360,12 @@ func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *en
 	return err
 }
 
-func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
+func (as *Service) startAuthMonitoring(session *ent.AuthSession) {
 	// Create a timeout context based on session expiration
 	timeout := time.Until(session.ExpiresAt)
 	if timeout <= 0 {
 		// Session already expired
-		asi.log.Debugf("Session %s: already expired", session.SessionID)
+		as.log.Debugf("Session %s: already expired", session.SessionID)
 		return
 	}
 
@@ -382,12 +380,12 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 		// Use WaitForAuthentication streaming approach
 		req := connect.NewRequest(&v1.WaitForAuthenticationRequest{SessionId: session.SessionID})
 
-		asi.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
-		stream, err := asi.rpcClient.WaitForAuthentication(ctx, req)
+		as.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
+		stream, err := as.rpcClient.WaitForAuthentication(ctx, req)
 		if err != nil {
-			asi.log.Debugf("Session %s: stream connection failed: %v", session.SessionID, err)
+			as.log.Debugf("Session %s: stream connection failed: %v", session.SessionID, err)
 			if attempt == maxRetries-1 {
-				asi.log.Debugf("Session %s: max retries reached, stopping monitoring", session.SessionID)
+				as.log.Debugf("Session %s: max retries reached, stopping monitoring", session.SessionID)
 				return
 			}
 
@@ -401,7 +399,7 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 		}
 
 		// Stream established successfully
-		asi.log.Debugf("Session %s: auth stream established", session.SessionID)
+		as.log.Debugf("Session %s: auth stream established", session.SessionID)
 
 		for stream.Receive() {
 			authStatus := stream.Msg()
@@ -409,30 +407,31 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 			switch authStatus.Status {
 			case v1.AuthStatus_AUTH_STATUS_AUTHENTICATED:
 				// Authentication successful
-				asi.log.Debugf("Session %s: authentication successful", session.SessionID)
-				asi.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
-				asi.state.SetAuthenticated(ctx)
+				as.log.Debugf("Session %s: authentication successful", session.SessionID)
+				internal := &ServiceInternal{Service: as}
+				internal.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
+				as.state.SetAuthenticated(ctx)
 				return
 			case v1.AuthStatus_AUTH_STATUS_EXPIRED, v1.AuthStatus_AUTH_STATUS_CANCELLED:
 				// Authentication failed
-				asi.log.Debugf("Session %s: authentication failed with status %v", session.SessionID, authStatus.Status)
+				as.log.Debugf("Session %s: authentication failed with status %v", session.SessionID, authStatus.Status)
 				return
 			case v1.AuthStatus_AUTH_STATUS_PENDING:
 				// Still pending - continue waiting
-				asi.log.Debugf("Session %s: pending authentication", session.SessionID)
+				as.log.Debugf("Session %s: pending authentication", session.SessionID)
 				continue
 			default:
 				// Unknown status
-				asi.log.Debugf("Session %s: unknown auth status %v", session.SessionID, authStatus.Status)
+				as.log.Debugf("Session %s: unknown auth status %v", session.SessionID, authStatus.Status)
 				return
 			}
 		}
 
 		// Stream ended - check for errors and retry if not max attempts
 		if err := stream.Err(); err != nil {
-			asi.log.Debugf("Session %s: stream error: %v", session.SessionID, err)
+			as.log.Debugf("Session %s: stream error: %v", session.SessionID, err)
 			if attempt == maxRetries-1 {
-				asi.log.Debugf("Session %s: max retries reached after error", session.SessionID)
+				as.log.Debugf("Session %s: max retries reached after error", session.SessionID)
 				return
 			}
 
@@ -446,8 +445,8 @@ func (asi *ServiceInternal) startAuthMonitoring(session *ent.AuthSession) {
 		}
 
 		// Stream ended without error - retry
-		asi.log.Debugf("Session %s: stream ended, retrying", session.SessionID)
+		as.log.Debugf("Session %s: stream ended, retrying", session.SessionID)
 	}
 
-	asi.log.Debugf("Session %s: monitoring completed", session.SessionID)
+	as.log.Debugf("Session %s: monitoring completed", session.SessionID)
 }
