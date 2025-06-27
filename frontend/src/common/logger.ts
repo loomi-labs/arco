@@ -8,6 +8,26 @@ import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/ty
 const development = process.env.NODE_ENV === "development";
 
 /**
+ * createFrontendError creates a FrontendError from various error types
+ */
+function createFrontendError(error?: any): types.FrontendError {
+  const fe = types.FrontendError.createFrom();
+  
+  if (error instanceof Error) {
+    fe.message = error.message;
+    if (error.stack) {
+      fe.stack = error.stack;
+    }
+  } else if (typeof error === "string") {
+    fe.message = error.toString();
+  } else {
+    fe.message = "Unknown error";
+  }
+  
+  return fe;
+}
+
+/**
  * showAndLogError shows an error message to the user and logs the error in the backend.
  * If the error is an instance of Error, it logs the error message and the stack trace.
  * If the error is a string, it logs the error message.
@@ -25,22 +45,8 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
     toast.error(message);
   }
 
-  const fe = types.FrontendError.createFrom();
-
-  // check type of error and log it in the backend
-  if (error instanceof Error) {
-    fe.message = error.message;
-    if (error.stack) {
-      fe.stack = error.stack;
-    }
-    await appClient.HandleError(message, fe);
-  } else if (typeof error === "string") {
-    fe.message = error.toString();
-    await appClient.HandleError(message, fe);
-  } else {
-    fe.message = "Unknown error";
-    await appClient.HandleError(message, fe);
-  }
+  const fe = createFrontendError(error);
+  await appClient.HandleError(message, fe);
 }
 
 /**
@@ -51,22 +57,8 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
  * @returns A promise that resolves when the error is logged.
  */
 export async function logError(message: string, error?: any): Promise<void> {
-  const fe = types.FrontendError.createFrom();
-
-  // check type of error and log it in the backend
-  if (error instanceof Error) {
-    fe.message = error.message;
-    if (error.stack) {
-      fe.stack = error.stack;
-    }
-    await appClient.HandleError(message, fe);
-  } else if (typeof error === "string") {
-    fe.message = error.toString();
-    await appClient.HandleError(message, fe);
-  } else {
-    fe.message = "Unknown error";
-    await appClient.HandleError(message, fe);
-  }
+  const fe = createFrontendError(error);
+  await appClient.HandleError(message, fe);
 }
 
 /**
