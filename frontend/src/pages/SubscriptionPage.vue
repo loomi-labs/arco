@@ -6,7 +6,7 @@ import { Page } from "../router";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
 import { getFeaturesByPlan, getRetentionDays } from "../common/features";
-import { addDay, format } from "@formkit/tempo";
+import { addDay, format, date } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import { Subscription, SubscriptionStatus, FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
@@ -94,27 +94,21 @@ const billingPeriodText = computed(() => {
   if (!subscription.value?.current_period_end) return "No billing period";
   
   try {
-    const endDate = new Date((subscription.value.current_period_end.seconds || 0) * 1000);
+    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    if (endSeconds <= 0) return "Invalid billing period";
+    const endDate = date(new Date(endSeconds * 1000));
+    
     const startDate = subscription.value.current_period_start 
-      ? new Date((subscription.value.current_period_start.seconds || 0) * 1000)
+      ? (() => {
+          const startSeconds = subscription.value.current_period_start.seconds || 0;
+          return startSeconds > 0 ? date(new Date(startSeconds * 1000)) : null;
+        })()
       : null;
     
     if (startDate) {
-      return `${startDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      })} - ${endDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      })}`;
+      return `${format(startDate, "MMM D, YYYY")} - ${format(endDate, "MMM D, YYYY")}`;
     } else {
-      return `Until ${endDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      })}`;
+      return `Until ${format(endDate, "MMM D, YYYY")}`;
     }
   } catch (error) {
     return "Invalid date";
@@ -125,12 +119,10 @@ const nextBillingDate = computed(() => {
   if (!subscription.value?.current_period_end) return "No billing date";
   
   try {
-    const endDate = new Date((subscription.value.current_period_end.seconds || 0) * 1000);
-    return endDate.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    if (endSeconds <= 0) return "Invalid billing date";
+    const endDate = date(new Date(endSeconds * 1000));
+    return format(endDate, "MMMM D, YYYY");
   } catch (error) {
     return "Invalid date";
   }
@@ -205,7 +197,9 @@ const dataDeletionDate = computed(() => {
   if (!subscription.value?.current_period_end) return "your subscription end date";
   
   try {
-    const endDate = new Date((subscription.value.current_period_end.seconds || 0) * 1000);
+    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    if (endSeconds <= 0) return "your subscription end date";
+    const endDate = date(new Date(endSeconds * 1000));
     const retentionDays = getRetentionDays(subscription.value?.plan?.feature_set);
     const deletionDate = addDay(endDate, retentionDays);
     
@@ -338,7 +332,6 @@ function onCheckoutCancelled() {
 
 function onRepoCreated(repo: any) {
   // Handle repo creation if needed
-  console.log('Repo created:', repo);
 }
 
 async function changeBillingCycle() {
