@@ -48,8 +48,6 @@ const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
 const selectedCheckoutPlan = ref<string | undefined>(undefined);
 
-const cleanupFunctions: Array<() => void> = [];
-
 /************
  * Computed
  ************/
@@ -402,10 +400,6 @@ onMounted(async () => {
   if (isAuthenticated.value) {
     await loadSubscription();
   }
-});
-
-onUnmounted(() => {
-  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>
