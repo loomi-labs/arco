@@ -111,6 +111,9 @@ function subscribeToPlan() {
     <!-- Plan Cards -->
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
       <div v-for='plan in plans' :key='plan.name ?? ""'
+           role="button"
+           :tabindex="disabled || (hasActiveSubscription && userSubscriptionPlan !== plan.name) ? -1 : 0"
+           @keydown.enter.space="disabled ? null : selectPlan(plan.name ?? '')"
            :class='[
              "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
              userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
