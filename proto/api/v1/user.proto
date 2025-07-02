@@ -6,44 +6,166 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 
+// UserService manages user profiles and account settings.
+//
+// This service handles user profile operations including retrieving and updating
+// user information such as display name, timezone, language preferences, and
+// notification settings. All endpoints require user authentication via JWT tokens.
+//
+// Key features:
+// - Profile retrieval with usage statistics and device counts
+// - Profile updates with optional field validation
+// - Storage usage tracking and limits enforcement
+// - Device count monitoring and limits
+// - Email verification status tracking
+// - Timezone and language preference management
+// - Email notification preferences
+//
+// Users can only access and modify their own profiles. The service automatically
+// calculates storage usage from backup data and device counts from registered clients.
 service UserService {
+  // GetProfile retrieves the current user's complete profile information.
+  //
+  // Returns comprehensive profile data including personal information,
+  // preferences, usage statistics, and account status. Includes real-time
+  // storage usage calculated from backup data and device counts.
+  //
+  // Requires authentication. Users can only access their own profile.
   rpc GetProfile(GetProfileRequest) returns (GetProfileResponse) {}
+
+  // UpdateProfile modifies user profile settings and preferences.
+  //
+  // Allows updating display name, timezone, language preferences, and
+  // notification settings. All fields are optional - only provided fields
+  // are updated. Changes are immediately effective.
+  //
+  // Requires authentication. Users can only update their own profile.
+  // Email address cannot be changed via this endpoint.
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
 }
 
+// GetProfileRequest initiates retrieval of user profile information.
+//
+// The user_id is extracted from the authentication context and used for
+// profile lookup and ownership validation.
 message GetProfileRequest {
+  // The user ID for profile lookup.
+  // This field is populated automatically from the authentication context
+  // and should match the authenticated user's ID.
   string user_id = 1;
 }
 
+// GetProfileResponse contains the user's complete profile information.
+//
+// Includes personal details, preferences, usage statistics, and account status
+// with real-time data calculated from the user's backup and device data.
 message GetProfileResponse {
+  // The user's complete profile information.
   UserProfile profile = 1;
 }
 
+// UpdateProfileRequest modifies user profile settings.
+//
+// All fields are optional - only provided fields will be updated.
+// Unchanged fields retain their current values.
 message UpdateProfileRequest {
+  // The user ID for profile update.
+  // This field is populated automatically from the authentication context
+  // and should match the authenticated user's ID.
   string user_id = 1;
+
+  // Updated display name for the user.
+  // Optional field - if not provided, current name is unchanged.
+  // Must be 1-100 characters if provided.
   optional string name = 2;
+
+  // Updated timezone preference (e.g., "America/New_York", "Europe/London").
+  // Optional field - if not provided, current timezone is unchanged.
+  // Must be a valid IANA timezone identifier.
   optional string timezone = 3;
+
+  // Updated language preference (e.g., "en", "de", "fr").
+  // Optional field - if not provided, current language is unchanged.
+  // Must be a valid ISO 639-1 language code.
   optional string language = 4;
+
+  // Updated email notification preference.
+  // Optional field - if not provided, current setting is unchanged.
+  // Controls whether user receives email notifications for account events.
   optional bool email_notifications = 5;
 }
 
+// UpdateProfileResponse contains the updated user profile.
+//
+// Returns the complete updated profile after applying changes,
+// including any computed fields like usage statistics.
 message UpdateProfileResponse {
+  // The user's updated profile information.
   UserProfile profile = 1;
 }
 
+// UserProfile represents complete user account information and statistics.
+//
+// Contains personal information, preferences, usage statistics, and account
+// status. Usage data is calculated in real-time from backup and device data.
 message UserProfile {
+  // Unique user identifier.
   string id = 1;
+
+  // User's email address (verified via magic link authentication).
+  // Cannot be changed via profile updates - managed through authentication flow.
   string email = 2;
+
+  // User's display name.
+  // Defaults to email local part if not set. Can be updated via UpdateProfile.
   string name = 3;
+
+  // Whether the user's email address has been verified.
+  // Set to true after successful magic link authentication.
   bool email_verified = 4;
+
+  // User's timezone preference (IANA timezone identifier).
+  // Used for displaying times in the user's local timezone.
+  // Defaults to UTC if not set.
   string timezone = 5;
+
+  // User's language preference (ISO 639-1 language code).
+  // Used for localization of UI and notifications.
+  // Defaults to "en" if not set.
   string language = 6;
+
+  // Whether user wants to receive email notifications.
+  // Controls notifications for account events, billing, and backup status.
+  // Defaults to true for new accounts.
   bool email_notifications = 7;
+
+  // Current storage usage in bytes.
+  // Calculated in real-time from all backup data across all user devices.
+  // Updated periodically as backups are created or deleted.
   int64 storage_used_bytes = 8;
+
+  // Maximum storage allowed in bytes.
+  // Determined by the user's subscription plan (Basic: 250GB, Pro: 1TB base).
+  // Pro plans allow overage beyond this limit with additional charges.
   int64 storage_limit_bytes = 9;
+
+  // Number of devices currently registered for backup.
+  // Includes active and inactive devices that have performed at least one backup.
   int32 devices_count = 10;
+
+  // Maximum number of devices allowed.
+  // Determined by subscription plan. Both Basic and Pro plans currently allow unlimited devices.
   int32 devices_limit = 11;
+
+  // When the user account was originally created.
   google.protobuf.Timestamp created_at = 12;
+
+  // When the user profile was last updated.
+  // Updated whenever profile settings change or usage statistics are recalculated.
   google.protobuf.Timestamp updated_at = 13;
+
+  // When the user last successfully authenticated.
+  // Updated on each successful magic link authentication.
+  // Null for users who have registered but never logged in.
   google.protobuf.Timestamp last_login_at = 14;
 }

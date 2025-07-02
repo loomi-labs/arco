@@ -21,7 +21,7 @@ tasks:
     cmds:
       - go tool buf lint
     sources:
-      - 'arco/**/*.proto'
+      - '**/*.proto'
       - 'buf.yaml'
 
   breaking:
