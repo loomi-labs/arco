@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { CheckIcon, CloudIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+import { Browser } from "@wailsio/runtime";
 import { Page } from "../router";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
@@ -245,6 +246,11 @@ const billingCycleChanged = computed(() => {
 
 const showCancelationWarning = computed(() => {
   return subscription.value?.cancel_at_period_end;
+});
+
+const isSubscriptionActive = computed(() => {
+  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE ||
+         subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_TRIALING;
 });
 
 const dataDeletionDate = computed(() => {
@@ -588,7 +594,7 @@ onMounted(async () => {
       />
     </div>
 
-    <!-- Subscription Details -->
+    <!-- Card-based Subscription Dashboard -->
     <div v-else-if='currentPageState === PageState.HAS_SUBSCRIPTION && subscription' class='space-y-8'>
       <!-- Cancelation Warning -->
       <div v-if='showCancelationWarning' role="alert" class="alert alert-warning alert-vertical sm:alert-horizontal">
@@ -599,17 +605,19 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Current Plan Card -->
+      <!-- Plan Overview Card (Storage as Hero) -->
       <div class='card bg-base-100 border border-base-300 shadow-sm'>
         <div class='card-body'>
-          <div class='flex items-start justify-between'>
+          <div class='flex items-start justify-between mb-6'>
             <div class='flex-1'>
-              <div class='flex items-center gap-3 mb-3'>
-                <CloudIcon class='size-8 text-base-content' />
+              <div class='flex items-center gap-4'>
+                <div class='p-3 bg-secondary/20 rounded-full'>
+                  <CloudIcon class='size-8 text-secondary' />
+                </div>
                 <div>
-                  <h2 class='text-2xl font-bold'>{{ subscription.plan?.name || 'Unknown Plan' }}</h2>
-                  <div class='flex items-center gap-2'>
-                    <div :class='["badge", subscriptionStatusColor]'>
+                  <h2 class='text-3xl font-bold'>{{ subscription.plan?.name || 'Unknown Plan' }}</h2>
+                  <div class='flex items-center gap-3 mt-2'>
+                    <div :class='["badge badge-lg", subscriptionStatusColor]'>
                       {{ subscriptionStatusText }}
                     </div>
                   </div>
@@ -618,107 +626,175 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6'>
-            <!-- Storage Usage -->
-            <div class='stat'>
-              <div class='stat-title'>Storage Usage</div>
-              <div class='stat-value text-2xl'>{{ storageUsageText }}</div>
-              <div class='stat-desc'>
-                <div class='w-full bg-base-300 rounded-full h-2 mt-2'>
-                  <div class='bg-primary h-2 rounded-full transition-all duration-300' :style='{ width: `${storageUsagePercentage}%` }'></div>
+          <!-- Storage Usage as Primary Metric -->
+          <div :class='["grid gap-8", isSubscriptionActive ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"]'>
+            <div class='space-y-4'>
+              <div class='flex justify-between items-center'>
+                <h3 class='text-xl font-bold'>Storage Usage</h3>
+                <span class='text-lg font-semibold'>{{ Math.round(storageUsagePercentage) }}% used</span>
+              </div>
+              
+              <div class='text-3xl font-bold'>{{ storageUsageText }}</div>
+              
+              <div class='w-full bg-base-300 rounded-full h-4'>
+                <div class='bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all duration-500' :style='{ width: `${storageUsagePercentage}%` }'></div>
+              </div>
+              
+              <div class='grid grid-cols-2 gap-4 text-sm'>
+                <div>
+                  <div class='font-semibold'>Used</div>
+                  <div class='text-base-content/70'>{{ subscription.storage_used_gb || 0 }} GB</div>
                 </div>
-                <span class='text-xs mt-1 block'>{{ Math.round(storageUsagePercentage) }}% used</span>
+                <div>
+                  <div class='font-semibold'>Available</div>
+                  <div class='text-base-content/70'>{{ (subscription.plan?.storage_gb || 0) - (subscription.storage_used_gb || 0) }} GB</div>
+                </div>
               </div>
             </div>
 
-            <!-- Current Price -->
-            <div class='stat'>
-              <div class='stat-title'>Current Price</div>
-              <div class='stat-value text-2xl'>{{ currentPrice }}</div>
-              <div class='stat-desc'>per {{ currentBillingCycle.toLowerCase() }}</div>
-            </div>
-
-            <!-- Billing Cycle -->
-            <div class='stat'>
-              <div class='stat-title'>Billing Cycle</div>
-              <div class='stat-value text-lg'>{{ currentBillingCycle }}</div>
-              <div class='stat-desc'>
-                <div class='flex items-center gap-2 mt-2'>
-                  <span class='text-xs'>Monthly</span>
-                  <input 
-                    type='checkbox' 
-                    class='toggle toggle-secondary toggle-sm' 
-                    v-model='selectedBillingCycle'
-                    :disabled='subscription?.cancel_at_period_end || isChangingBilling'
-                  />
-                  <span class='text-xs'>Yearly</span>
-                  <span v-if='selectedBillingCycle && yearlySavings > 0' class='text-xs text-success font-semibold'>
-                    Save ${{ yearlySavings }}
-                  </span>
+            <!-- Plan Features (only show if subscription is not active) -->
+            <div v-if='!isSubscriptionActive' class='space-y-4'>
+              <h3 class='text-xl font-bold'>Plan Features</h3>
+              <div class='grid grid-cols-1 gap-3'>
+                <div v-for='feature in planFeatures' :key='feature.text' class='flex items-center gap-3 p-3 bg-base-100/50 rounded-lg'>
+                  <CheckIcon class='size-5 text-success flex-shrink-0' />
+                  <span :class='["text-sm font-medium", feature.highlight ? "text-secondary" : ""]'>{{ feature.text }}</span>
                 </div>
-                <button 
-                  v-if='billingCycleChanged && !subscription?.cancel_at_period_end'
-                  class='btn btn-xs btn-secondary mt-2'
-                  @click='changeBillingCycle'
-                  :disabled='isChangingBilling'
-                >
-                  <span v-if='isChangingBilling' class='loading loading-spinner loading-xs'></span>
-                  Schedule Change
-                </button>
-                <div v-if='billingCycleChanged' class='text-xs text-info mt-1'>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Cards Grid -->
+      <div class='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <!-- Billing Information Card -->
+        <div class='card bg-base-100 border border-base-300 shadow-sm'>
+          <div class='card-body'>
+            <div class='flex items-center gap-3 mb-4'>
+              <div class='p-2 bg-success/20 rounded-lg'>
+                <svg class='size-6 text-success' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'></path>
+                </svg>
+              </div>
+              <h3 class='text-xl font-bold'>Billing Information</h3>
+            </div>
+            
+            <div class='space-y-4'>
+              <div class='grid grid-cols-2 gap-4'>
+                <div>
+                  <div class='font-semibold text-sm'>Current Price</div>
+                  <div class='text-2xl font-bold'>{{ currentPrice }}</div>
+                  <div class='text-sm text-base-content/70'>per {{ currentBillingCycle.toLowerCase() }}</div>
+                </div>
+                <div>
+                  <div class='font-semibold text-sm'>{{ subscription.cancel_at_period_end ? 'Ends On' : 'Next Billing' }}</div>
+                  <div class='text-lg font-bold'>{{ nextBillingDate }}</div>
+                  <div class='text-sm text-base-content/70'>{{ billingPeriodText }}</div>
+                </div>
+              </div>
+              
+              <div class='divider my-2'></div>
+              
+              <div class='space-y-3'>
+                <div class='flex items-center justify-between gap-4'>
+                  <div class='flex items-center gap-2'>
+                    <span class='text-sm'>Monthly</span>
+                    <input 
+                      type='checkbox' 
+                      class='toggle toggle-secondary toggle-sm' 
+                      v-model='selectedBillingCycle'
+                      :disabled='subscription?.cancel_at_period_end || isChangingBilling'
+                    />
+                    <span class='text-sm'>Yearly</span>
+                  </div>
+                  
+                  <div class='flex items-center gap-2'>
+                    <span v-if='selectedBillingCycle && yearlySavings > 0' class='text-sm text-success font-semibold'>
+                      Save ${{ yearlySavings }}
+                    </span>
+                    <button 
+                      class='btn btn-secondary btn-sm'
+                      @click='changeBillingCycle'
+                      :disabled='!billingCycleChanged || subscription?.cancel_at_period_end || isChangingBilling'
+                    >
+                      <span v-if='isChangingBilling' class='loading loading-spinner loading-xs'></span>
+                      Change
+                    </button>
+                  </div>
+                </div>
+                
+                <div v-if='billingCycleChanged' class='text-xs text-info text-center'>
                   Change will take effect at next billing cycle
                 </div>
               </div>
             </div>
-
-            <!-- Billing Period -->
-            <div class='stat'>
-              <div class='stat-title'>{{ subscription.cancel_at_period_end ? 'Ends On' : 'Next Billing' }}</div>
-              <div class='stat-value text-lg'>{{ nextBillingDate }}</div>
-              <div class='stat-desc'>{{ billingPeriodText }}</div>
-            </div>
           </div>
+        </div>
 
-          <!-- Features -->
-          <div class='mt-6'>
-            <h3 class='text-lg font-semibold mb-3'>Features</h3>
-            <div class='grid grid-cols-1 gap-2'>
-              <div v-for='feature in planFeatures' :key='feature.text' class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success' />
-                <span :class='["text-sm", feature.highlight ? "font-semibold text-secondary" : ""]'>{{ feature.text }}</span>
+        <!-- Subscription Actions Card -->
+        <div class='card bg-base-100 border border-base-300 shadow-sm'>
+          <div class='card-body'>
+            <div class='flex items-center gap-3 mb-4'>
+              <div class='p-2 bg-warning/20 rounded-lg'>
+                <svg class='size-6 text-warning' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'></path>
+                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'></path>
+                </svg>
+              </div>
+              <h3 class='text-xl font-bold'>Subscription Actions</h3>
+            </div>
+            
+            <div class='space-y-4'>
+              <div class='p-4 bg-base-200/50 rounded-lg'>
+                <div class='font-semibold text-sm mb-2'>Manage Subscription</div>
+                <div class='text-sm text-base-content/70 mb-4'>
+                  Control your subscription settings and billing preferences.
+                </div>
+                
+                <div class='flex flex-col gap-2'>
+                  <button 
+                    v-if='canUpgrade'
+                    class='btn btn-primary'
+                    @click='upgradeSubscription'
+                    :disabled='isUpgrading'
+                  >
+                    <span v-if='isUpgrading' class='loading loading-spinner loading-sm'></span>
+                    Upgrade to Pro
+                  </button>
+                  
+                  <button 
+                    v-if='canReactivate'
+                    class='btn btn-success btn-outline'
+                    @click='reactivateSubscription'
+                    :disabled='isReactivating'
+                  >
+                    <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
+                    Keep Subscription
+                  </button>
+                  
+                  <button 
+                    v-if='canCancel'
+                    class='btn btn-error btn-outline'
+                    @click='showCancelConfirmation'
+                    :disabled='isCanceling'
+                  >
+                    <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
+                    Cancel Subscription
+                  </button>
+                </div>
+              </div>
+              
+              <div class='p-4 bg-info/10 rounded-lg border border-info/20'>
+                <div class='font-semibold text-sm mb-2'>Need Help?</div>
+                <div class='text-sm text-base-content/70 mb-3'>
+                  Contact our support team for assistance with your subscription.
+                </div>
+                <button class='btn btn-info btn-outline btn-sm' @click="Browser.OpenURL('mailto:mail@arco-backup.com')">
+                  Contact Support
+                </button>
               </div>
             </div>
-          </div>
-
-          <!-- Actions -->
-          <div class='card-actions justify-end mt-6'>
-            <button 
-              v-if='canUpgrade'
-              class='btn btn-primary'
-              @click='upgradeSubscription'
-              :disabled='isUpgrading'
-            >
-              <span v-if='isUpgrading' class='loading loading-spinner loading-sm'></span>
-              Upgrade to Pro
-            </button>
-            <button 
-              v-if='canReactivate'
-              class='btn btn-success btn-outline'
-              @click='reactivateSubscription'
-              :disabled='isReactivating'
-            >
-              <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
-              Keep Subscription
-            </button>
-            <button 
-              v-if='canCancel'
-              class='btn btn-error btn-outline'
-              @click='showCancelConfirmation'
-              :disabled='isCanceling'
-            >
-              <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
-              Cancel Subscription
-            </button>
           </div>
         </div>
       </div>
