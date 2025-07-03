@@ -9,7 +9,7 @@ import { getFeaturesByPlan, getRetentionDays } from "../common/features";
 import { addDay, format, date } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { Subscription, SubscriptionStatus, FeatureSet, Plan, PendingChange, ChangeType, PendingChangeStatus } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { Subscription, SubscriptionStatus, FeatureSet, Plan, PendingChange, ChangeType, PendingChangeStatus, Currency } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
@@ -46,6 +46,7 @@ const cloudModal = ref<InstanceType<typeof ArcoCloudModal>>();
 // Plan selection state
 const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
+const selectedCurrency = ref<Currency>(Currency.Currency_CURRENCY_USD);
 const selectedCheckoutPlan = ref<string | undefined>(undefined);
 
 /************
@@ -366,6 +367,10 @@ function onBillingCycleChanged(isYearly: boolean) {
   isYearlyBilling.value = isYearly;
 }
 
+function onCurrencyChanged(currency: Currency) {
+  selectedCurrency.value = currency;
+}
+
 function onSubscribeClicked(planName: string) {
   selectedCheckoutPlan.value = planName;
   currentPageState.value = PageState.NO_SUBSCRIPTION_CHECKOUT;
@@ -559,9 +564,11 @@ onMounted(async () => {
         :plans='subscriptionPlans'
         :selected-plan='selectedPlan'
         :is-yearly-billing='isYearlyBilling'
+        :selected-currency='selectedCurrency'
         :has-active-subscription='false'
         @plan-selected='onPlanSelected'
         @billing-cycle-changed='onBillingCycleChanged'
+        @currency-changed='onCurrencyChanged'
         @subscribe-clicked='onSubscribeClicked'
       />
     </div>
@@ -574,6 +581,7 @@ onMounted(async () => {
       
       <CheckoutProcessing
         :plan-name='selectedCheckoutPlan || ""'
+        :currency='selectedCurrency'
         @checkout-completed='onCheckoutCompleted'
         @checkout-failed='onCheckoutFailed'
         @checkout-cancelled='onCheckoutCancelled'

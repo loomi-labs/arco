@@ -65,8 +65,8 @@ export function ClearCheckoutResult(): Promise<void> & { cancel(): void } {
 /**
  * CreateCheckoutSession creates a payment checkout session
  */
-export function CreateCheckoutSession(planName: string): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(54709411, planName) as any;
+export function CreateCheckoutSession(planName: string, currency: arcov1$0.Currency): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(54709411, planName, currency) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType7($result);
     }) as any;

@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
 import { CheckCircleIcon, CheckIcon, StarIcon } from "@heroicons/vue/24/outline";
-import { FeatureSet, Plan } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan, Currency } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { getFeaturesByPlan } from "../../common/features";
 
 /************
@@ -14,6 +14,7 @@ interface Props {
   plans: SubscriptionPlan[];
   selectedPlan?: string;
   isYearlyBilling?: boolean;
+  selectedCurrency?: Currency;
   hasActiveSubscription?: boolean;
   userSubscriptionPlan?: string;
   disabled?: boolean;
@@ -23,6 +24,7 @@ interface Props {
 interface Emits {
   (event: "plan-selected", planName: string): void;
   (event: "billing-cycle-changed", isYearly: boolean): void;
+  (event: "currency-changed", currency: Currency): void;
   (event: "subscribe-clicked", planName: string): void;
 }
 
@@ -33,6 +35,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   selectedPlan: undefined,
   isYearlyBilling: false,
+  selectedCurrency: Currency.Currency_CURRENCY_USD,
   hasActiveSubscription: false,
   userSubscriptionPlan: undefined,
   disabled: false,
@@ -43,6 +46,7 @@ const emit = defineEmits<Emits>();
 
 const internalIsYearlyBilling = ref(props.isYearlyBilling);
 const internalSelectedPlan = ref(props.selectedPlan);
+const internalSelectedCurrency = ref(props.selectedCurrency);
 
 /************
  * Computed
@@ -52,9 +56,27 @@ const selectedPlanData = computed(() =>
   props.plans.find(plan => plan.name === internalSelectedPlan.value)
 );
 
+const selectedPlanPrice = computed(() => {
+  const plan = selectedPlanData.value;
+  if (!plan?.prices) return null;
+  const foundPrice = plan.prices.find(price => price && price.currency === internalSelectedCurrency.value);
+  return foundPrice || null;
+});
+
+const currencyOptions = computed(() => [
+  { value: Currency.Currency_CURRENCY_USD, label: '🇺🇸 USD', symbol: '$', flag: 'us' },
+  { value: Currency.Currency_CURRENCY_EUR, label: '🇪🇺 EUR', symbol: '€', flag: 'eu' },
+  { value: Currency.Currency_CURRENCY_CHF, label: '🇨🇭 CHF', symbol: 'CHF', flag: 'ch' }
+]);
+
+const currentCurrencySymbol = computed(() => {
+  const option = currencyOptions.value.find(opt => opt.value === internalSelectedCurrency.value);
+  return option?.symbol || '$';
+});
+
 const yearlyDiscount = computed(() => {
-  const price = selectedPlanData.value?.prices?.[0];
-  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
+  const price = selectedPlanPrice.value;
+  if (!price || !price.monthly_cents || !price.yearly_cents) return 0;
   const monthlyTotal = (price.monthly_cents / 100) * 12;
   const yearlyPrice = price.yearly_cents / 100;
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
@@ -78,6 +100,17 @@ function toggleBillingCycle(isYearly: boolean) {
   emit("billing-cycle-changed", isYearly);
 }
 
+function selectCurrency(currency: Currency) {
+  internalSelectedCurrency.value = currency;
+  emit("currency-changed", currency);
+}
+
+function getPlanPrice(plan: SubscriptionPlan) {
+  if (!plan.prices) return null;
+  const foundPrice = plan.prices.find(price => price && price.currency === internalSelectedCurrency.value);
+  return foundPrice || null;
+}
+
 function subscribeToPlan() {
   if (!internalSelectedPlan.value) return;
   emit("subscribe-clicked", internalSelectedPlan.value);
@@ -87,8 +120,24 @@ function subscribeToPlan() {
 
 <template>
   <div class="space-y-6">
-    <!-- Billing Toggle -->
-    <div class='flex justify-center'>
+    <!-- Currency and Billing Controls -->
+    <div class='flex flex-col sm:flex-row gap-4 justify-center items-center'>
+      <!-- Currency Selector -->
+      <div class='flex items-center gap-2'>
+        <label class='text-sm font-medium text-base-content/70'>Currency:</label>
+        <select 
+          class='select select-bordered select-sm'
+          :disabled="disabled"
+          v-model='internalSelectedCurrency'
+          @change='selectCurrency(internalSelectedCurrency)'
+        >
+          <option v-for='option in currencyOptions' :key='option.value' :value='option.value'>
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+      
+      <!-- Billing Toggle -->
       <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
         <button
           :class='["btn btn-sm", !internalIsYearlyBilling ? "btn-primary" : "btn-ghost"]'
@@ -134,8 +183,13 @@ function subscribeToPlan() {
           <div class='flex-1'>
             <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
             <p class='text-3xl font-bold mt-2'>
-              ${{
-                internalIsYearlyBilling ? ((plan.prices?.[0]?.yearly_cents ?? 0) / 100) : ((plan.prices?.[0]?.monthly_cents ?? 0) / 100)
+              {{ currentCurrencySymbol }}{{
+                (() => {
+                  const price = getPlanPrice(plan);
+                  if (!price) return '0';
+                  const amount = internalIsYearlyBilling ? (price.yearly_cents ?? 0) : (price.monthly_cents ?? 0);
+                  return (amount / 100).toFixed(2);
+                })()
               }}
               <span class='text-sm font-normal text-base-content/70'>
                 /{{ internalIsYearlyBilling ? "year" : "month" }}
@@ -144,9 +198,19 @@ function subscribeToPlan() {
             <!-- Always render savings text with fixed height to prevent layout jumping -->
             <div class='h-5 mt-1'>
               <p
-                v-if='internalIsYearlyBilling && plan.prices?.[0]?.monthly_cents && plan.prices?.[0]?.yearly_cents && ((plan.prices[0].monthly_cents / 100) * 12) > (plan.prices[0].yearly_cents / 100)'
+                v-if='(() => {
+                  const price = getPlanPrice(plan);
+                  if (!internalIsYearlyBilling || !price || !price.monthly_cents || !price.yearly_cents) return false;
+                  return ((price.monthly_cents / 100) * 12) > (price.yearly_cents / 100);
+                })()'
                 class='text-sm text-success'>
-                Save ${{ ((plan.prices?.[0]?.monthly_cents || 0) / 100) * 12 - ((plan.prices?.[0]?.yearly_cents || 0) / 100) }} annually
+                Save {{ currentCurrencySymbol }}{{ (() => {
+                  const price = getPlanPrice(plan);
+                  if (!price) return '0';
+                  const monthlyTotal = (price.monthly_cents || 0) / 100 * 12;
+                  const yearlyTotal = (price.yearly_cents || 0) / 100;
+                  return (monthlyTotal - yearlyTotal).toFixed(2);
+                })() }} annually
               </p>
             </div>
           </div>
@@ -184,3 +248,4 @@ function subscribeToPlan() {
     </div>
   </div>
 </template>
+

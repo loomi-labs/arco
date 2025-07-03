@@ -67,10 +67,10 @@ func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.G
 }
 
 // CreateCheckoutSession creates a payment checkout session
-func (s *Service) CreateCheckoutSession(ctx context.Context, planName string) (*arcov1.CreateCheckoutSessionResponse, error) {
+func (s *Service) CreateCheckoutSession(ctx context.Context, planName string, currency arcov1.Currency) (*arcov1.CreateCheckoutSessionResponse, error) {
 	req := connect.NewRequest(&arcov1.CreateCheckoutSessionRequest{
 		Name:     planName,
-		Currency: arcov1.Currency_CURRENCY_CHF,
+		Currency: currency,
 	})
 
 	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
