@@ -53,9 +53,10 @@ const selectedPlanData = computed(() =>
 );
 
 const yearlyDiscount = computed(() => {
-  if (!selectedPlanData.value || !selectedPlanData.value.price_monthly_cents || !selectedPlanData.value.price_yearly_cents) return 0;
-  const monthlyTotal = (selectedPlanData.value.price_monthly_cents / 100) * 12;
-  const yearlyPrice = selectedPlanData.value.price_yearly_cents / 100;
+  const price = selectedPlanData.value?.prices?.[0];
+  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
+  const monthlyTotal = (price.monthly_cents / 100) * 12;
+  const yearlyPrice = price.yearly_cents / 100;
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
 });
 
@@ -134,7 +135,7 @@ function subscribeToPlan() {
             <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
             <p class='text-3xl font-bold mt-2'>
               ${{
-                internalIsYearlyBilling ? ((plan.price_yearly_cents ?? 0) / 100) : ((plan.price_monthly_cents ?? 0) / 100)
+                internalIsYearlyBilling ? ((plan.prices?.[0]?.yearly_cents ?? 0) / 100) : ((plan.prices?.[0]?.monthly_cents ?? 0) / 100)
               }}
               <span class='text-sm font-normal text-base-content/70'>
                 /{{ internalIsYearlyBilling ? "year" : "month" }}
@@ -143,9 +144,9 @@ function subscribeToPlan() {
             <!-- Always render savings text with fixed height to prevent layout jumping -->
             <div class='h-5 mt-1'>
               <p
-                v-if='internalIsYearlyBilling && plan.price_monthly_cents && plan.price_yearly_cents && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
+                v-if='internalIsYearlyBilling && plan.prices?.[0]?.monthly_cents && plan.prices?.[0]?.yearly_cents && ((plan.prices[0].monthly_cents / 100) * 12) > (plan.prices[0].yearly_cents / 100)'
                 class='text-sm text-success'>
-                Save ${{ ((plan.price_monthly_cents / 100) * 12) - (plan.price_yearly_cents / 100) }} annually
+                Save ${{ ((plan.prices?.[0]?.monthly_cents || 0) / 100) * 12 - ((plan.prices?.[0]?.yearly_cents || 0) / 100) }} annually
               </p>
             </div>
           </div>

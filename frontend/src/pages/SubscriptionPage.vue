@@ -9,7 +9,7 @@ import { getFeaturesByPlan, getRetentionDays } from "../common/features";
 import { addDay, format, date } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { Subscription, SubscriptionStatus, FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { Subscription, SubscriptionStatus, FeatureSet, Plan, PendingChange, ChangeType, PendingChangeStatus } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
@@ -127,13 +127,13 @@ const nextBillingDate = computed(() => {
 });
 
 const monthlyPrice = computed(() => {
-  if (!subscription.value?.plan?.price_monthly_cents) return "$0";
-  return `$${(subscription.value.plan.price_monthly_cents / 100).toFixed(2)}`;
+  if (!subscription.value?.plan?.prices?.[0]?.monthly_cents) return "$0";
+  return `$${(subscription.value.plan.prices[0].monthly_cents / 100).toFixed(2)}`;
 });
 
 const yearlyPrice = computed(() => {
-  if (!subscription.value?.plan?.price_yearly_cents) return "$0";
-  return `$${(subscription.value.plan.price_yearly_cents / 100).toFixed(2)}`;
+  if (!subscription.value?.plan?.prices?.[0]?.yearly_cents) return "$0";
+  return `$${(subscription.value.plan.prices[0].yearly_cents / 100).toFixed(2)}`;
 });
 
 const currentPrice = computed(() => {
@@ -148,6 +148,9 @@ const currentBillingCycle = computed(() => {
 const selectedBillingCycle = ref<boolean>(false); // false = monthly, true = yearly
 const isChangingBilling = ref(false);
 const isReactivating = ref(false);
+const isUpgrading = ref(false);
+const pendingChanges = ref<PendingChange[]>([]);
+const isLoadingPendingChanges = ref(false);
 
 const storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
@@ -176,11 +179,63 @@ const canReactivate = computed(() => {
   return subscription.value?.cancel_at_period_end === true;
 });
 
+const canUpgrade = computed(() => {
+  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
+         !subscription.value?.cancel_at_period_end &&
+         subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC;
+});
+
+const hasPendingChanges = computed(() => {
+  return pendingChanges.value.length > 0;
+});
+
+const formatChangeType = (changeType: ChangeType): string => {
+  switch (changeType) {
+    case ChangeType.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
+      return 'Plan Change';
+    case ChangeType.ChangeType_CHANGE_TYPE_CURRENCY_CHANGE:
+      return 'Currency Change';
+    case ChangeType.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
+      return 'Billing Cycle Change';
+    default:
+      return 'Unknown Change';
+  }
+};
+
+const getOldValue = (change: PendingChange): string => {
+  // Handle oneof OldValue field
+  const oldValue = change.OldValue as any;
+  if (oldValue?.old_plan_id) return oldValue.old_plan_id;
+  if (oldValue?.old_currency !== undefined) return oldValue.old_currency.toString();
+  if (oldValue?.old_is_yearly_billing !== undefined) return oldValue.old_is_yearly_billing ? 'Yearly' : 'Monthly';
+  return 'Unknown';
+};
+
+const getNewValue = (change: PendingChange): string => {
+  // Handle oneof NewValue field
+  const newValue = change.NewValue as any;
+  if (newValue?.new_plan_id) return newValue.new_plan_id;
+  if (newValue?.new_currency !== undefined) return newValue.new_currency.toString();
+  if (newValue?.new_is_yearly_billing !== undefined) return newValue.new_is_yearly_billing ? 'Yearly' : 'Monthly';
+  return 'Unknown';
+};
+
+const formatEffectiveDate = (timestamp: any): string => {
+  if (!timestamp?.seconds) return 'Unknown';
+  try {
+    const date = new Date(timestamp.seconds * 1000);
+    return format(date, 'MMMM D, YYYY');
+  } catch (error) {
+    return 'Unknown';
+  }
+};
+
 const yearlySavings = computed(() => {
-  if (!subscription.value?.plan?.price_monthly_cents || !subscription.value?.plan?.price_yearly_cents) return 0;
-  const monthlyTotal = (subscription.value.plan.price_monthly_cents / 100) * 12;
-  const yearlyPrice = subscription.value.plan.price_yearly_cents / 100;
-  return Math.round(monthlyTotal - yearlyPrice);
+  const price = subscription.value?.plan?.prices?.[0];
+  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
+  const monthlyTotal = (price.monthly_cents / 100) * 12;
+  const yearlyTotal = price.yearly_cents / 100;
+  return Math.round(monthlyTotal - yearlyTotal);
 });
 
 const billingCycleChanged = computed(() => {
@@ -238,7 +293,7 @@ async function loadSubscription() {
   errorMessage.value = undefined;
 
   try {
-    // Load both subscription and plans
+    // Load subscription, plans, and pending changes
     const [subscriptionResponse] = await Promise.all([
       SubscriptionService.GetSubscription(userEmail.value),
       subscriptionPlans.value.length === 0 ? loadSubscriptionPlans() : Promise.resolve()
@@ -248,9 +303,12 @@ async function loadSubscription() {
       subscription.value = subscriptionResponse.subscription;
       // Initialize billing cycle toggle with current subscription setting
       selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing || false;
+      // Load pending changes for the subscription
+      await loadPendingChanges();
       currentPageState.value = PageState.HAS_SUBSCRIPTION;
     } else {
       subscription.value = null;
+      pendingChanges.value = [];
       currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
     }
   } catch (error) {
@@ -282,7 +340,7 @@ async function confirmCancellation() {
       await loadSubscription();
       closeCancelConfirmation();
     } else {
-      errorMessage.value = response?.message || "Failed to cancel subscription.";
+      errorMessage.value = "Failed to cancel subscription.";
     }
   } catch (error) {
     errorMessage.value = "Failed to cancel subscription.";
@@ -344,18 +402,18 @@ async function changeBillingCycle() {
     );
     
     if (response?.success) {
-      // Reload subscription to get updated billing info
-      await loadSubscription();
+      // Reload subscription and pending changes to get updated info
+      await Promise.all([loadSubscription(), loadPendingChanges()]);
       // Reset selected cycle to match current subscription
       selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
     } else {
-      errorMessage.value = response?.message || "Failed to change billing cycle.";
+      errorMessage.value = "Failed to schedule billing cycle change.";
       // Reset toggle to current state
       selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
     }
   } catch (error) {
-    errorMessage.value = "Failed to change billing cycle.";
-    await showAndLogError("Failed to change billing cycle", error);
+    errorMessage.value = "Failed to schedule billing cycle change.";
+    await showAndLogError("Failed to schedule billing cycle change", error);
     // Reset toggle to current state
     selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
   } finally {
@@ -375,13 +433,72 @@ async function reactivateSubscription() {
       // Reload subscription to get updated status
       await loadSubscription();
     } else {
-      errorMessage.value = response?.message || "Failed to reactivate subscription.";
+      errorMessage.value = "Failed to reactivate subscription.";
     }
   } catch (error) {
     errorMessage.value = "Failed to reactivate subscription.";
     await showAndLogError("Failed to reactivate subscription", error);
   } finally {
     isReactivating.value = false;
+  }
+}
+
+async function upgradeSubscription() {
+  if (!subscription.value?.id) return;
+
+  isUpgrading.value = true;
+  
+  try {
+    const response = await SubscriptionService.UpgradeSubscription(subscription.value.id, "PRO");
+    
+    if (response?.success) {
+      // Reload subscription to get updated plan info
+      await loadSubscription();
+    } else {
+      errorMessage.value = "Failed to upgrade subscription.";
+    }
+  } catch (error) {
+    errorMessage.value = "Failed to upgrade subscription.";
+    await showAndLogError("Failed to upgrade subscription", error);
+  } finally {
+    isUpgrading.value = false;
+  }
+}
+
+async function loadPendingChanges() {
+  if (!subscription.value?.id) return;
+
+  isLoadingPendingChanges.value = true;
+  
+  try {
+    const response = await SubscriptionService.GetPendingChanges(subscription.value.id);
+    pendingChanges.value = response?.pending_changes?.filter((change): change is PendingChange => change !== null) || [];
+  } catch (error) {
+    await showAndLogError("Failed to load pending changes", error);
+    pendingChanges.value = [];
+  } finally {
+    isLoadingPendingChanges.value = false;
+  }
+}
+
+async function cancelPendingChange(changeId: number) {
+  if (!subscription.value?.id) return;
+
+  try {
+    const response = await SubscriptionService.CancelPendingChange(
+      subscription.value.id,
+      changeId
+    );
+    
+    if (response?.success) {
+      // Reload pending changes to get updated list
+      await loadPendingChanges();
+    } else {
+      errorMessage.value = "Failed to cancel pending change.";
+    }
+  } catch (error) {
+    errorMessage.value = "Failed to cancel pending change.";
+    await showAndLogError("Failed to cancel pending change", error);
   }
 }
 
@@ -538,8 +655,11 @@ onMounted(async () => {
                   :disabled='isChangingBilling'
                 >
                   <span v-if='isChangingBilling' class='loading loading-spinner loading-xs'></span>
-                  Update Billing
+                  Schedule Change
                 </button>
+                <div v-if='billingCycleChanged' class='text-xs text-info mt-1'>
+                  Change will take effect at next billing cycle
+                </div>
               </div>
             </div>
 
@@ -565,6 +685,15 @@ onMounted(async () => {
           <!-- Actions -->
           <div class='card-actions justify-end mt-6'>
             <button 
+              v-if='canUpgrade'
+              class='btn btn-primary'
+              @click='upgradeSubscription'
+              :disabled='isUpgrading'
+            >
+              <span v-if='isUpgrading' class='loading loading-spinner loading-sm'></span>
+              Upgrade to Pro
+            </button>
+            <button 
               v-if='canReactivate'
               class='btn btn-success btn-outline'
               @click='reactivateSubscription'
@@ -582,6 +711,39 @@ onMounted(async () => {
               <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
               Cancel Subscription
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Changes Card -->
+      <div v-if='hasPendingChanges' class='card bg-base-100 border border-base-300 shadow-sm'>
+        <div class='card-body'>
+          <h2 class='text-xl font-bold mb-4'>Scheduled Changes</h2>
+          <p class='text-base-content/70 mb-4'>The following changes are scheduled to take effect at your next billing cycle:</p>
+          
+          <div class='space-y-3'>
+            <div v-for='change in pendingChanges' :key='change.id' class='flex items-center justify-between p-3 bg-base-200 rounded-lg'>
+              <div class='flex-1'>
+                <div class='font-semibold'>{{ formatChangeType(change.change_type || ChangeType.ChangeType_CHANGE_TYPE_UNSPECIFIED) }}</div>
+                <div class='text-sm text-base-content/70'>
+                  {{ getOldValue(change) }} → {{ getNewValue(change) }}
+                </div>
+                <div class='text-xs text-base-content/60 mt-1'>
+                  Effective: {{ formatEffectiveDate(change.effective_date) }}
+                </div>
+              </div>
+              <button 
+                class='btn btn-error btn-sm btn-outline'
+                @click="cancelPendingChange(change.id || 0)"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <div v-if='isLoadingPendingChanges' class='text-center py-4'>
+            <div class='loading loading-spinner loading-md'></div>
+            <p class='mt-2 text-sm text-base-content/70'>Loading changes...</p>
           </div>
         </div>
       </div>
@@ -616,7 +778,7 @@ onMounted(async () => {
             <div class='flex items-start gap-3'>
               <div class='badge badge-error badge-sm mt-0.5'>3</div>
               <div>
-                <strong>After {{ getRetentionDays(subscription?.plan?.feature_set) }} days of read-only access:</strong> All your data and backups will be permanently deleted.
+                <strong>After {{ getRetentionDays(subscription?.plan?.feature_set || FeatureSet.FeatureSet_FEATURE_SET_BASIC) }} days of read-only access ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
               </div>
             </div>
           </div>

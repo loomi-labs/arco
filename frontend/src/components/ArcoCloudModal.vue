@@ -151,9 +151,10 @@ const selectedPlanData = computed(() =>
 
 
 const yearlyDiscount = computed(() => {
-  if (!selectedPlanData.value || !selectedPlanData.value.price_monthly_cents || !selectedPlanData.value.price_yearly_cents) return 0;
-  const monthlyTotal = (selectedPlanData.value.price_monthly_cents / 100) * 12;
-  const yearlyPrice = selectedPlanData.value.price_yearly_cents / 100;
+  const price = selectedPlanData.value?.prices?.[0];
+  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
+  const monthlyTotal = (price.monthly_cents / 100) * 12;
+  const yearlyPrice = price.yearly_cents / 100;
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
 });
 
