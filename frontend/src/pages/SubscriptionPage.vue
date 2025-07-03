@@ -151,6 +151,7 @@ const selectedBillingCycle = ref<boolean>(false); // false = monthly, true = yea
 const isChangingBilling = ref(false);
 const isReactivating = ref(false);
 const isUpgrading = ref(false);
+const isDowngrading = ref(false);
 const pendingChanges = ref<PendingChange[]>([]);
 const isLoadingPendingChanges = ref(false);
 
@@ -185,6 +186,12 @@ const canUpgrade = computed(() => {
   return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
          !subscription.value?.cancel_at_period_end &&
          subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC;
+});
+
+const canDowngrade = computed(() => {
+  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
+         !subscription.value?.cancel_at_period_end &&
+         subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO;
 });
 
 const hasPendingChanges = computed(() => {
@@ -407,7 +414,7 @@ async function changeBillingCycle() {
   isChangingBilling.value = true;
   
   try {
-    const response = await SubscriptionService.ScheduleBillingCycleUpdate(
+    const response = await SubscriptionService.UpdateBillingCycle(
       subscription.value.id,
       selectedBillingCycle.value
     );
@@ -460,7 +467,7 @@ async function upgradeSubscription() {
   isUpgrading.value = true;
   
   try {
-    const response = await SubscriptionService.SchedulePlanUpdate(subscription.value.id, "PRO");
+    const response = await SubscriptionService.UpgradeSubscription(subscription.value.id, "PRO");
     
     if (response?.success) {
       // Reload subscription to get updated plan info
@@ -473,6 +480,28 @@ async function upgradeSubscription() {
     await showAndLogError("Failed to upgrade subscription", error);
   } finally {
     isUpgrading.value = false;
+  }
+}
+
+async function downgradeSubscription() {
+  if (!subscription.value?.id) return;
+
+  isDowngrading.value = true;
+  
+  try {
+    const response = await SubscriptionService.DowngradePlan(subscription.value.id, "BASIC");
+    
+    if (response?.success) {
+      // Reload subscription and pending changes to get updated info
+      await Promise.all([loadSubscription(), loadPendingChanges()]);
+    } else {
+      errorMessage.value = "Failed to schedule downgrade.";
+    }
+  } catch (error) {
+    errorMessage.value = "Failed to schedule downgrade.";
+    await showAndLogError("Failed to schedule downgrade", error);
+  } finally {
+    isDowngrading.value = false;
   }
 }
 
@@ -761,6 +790,16 @@ onMounted(async () => {
                   >
                     <span v-if='isUpgrading' class='loading loading-spinner loading-sm'></span>
                     Upgrade to Pro
+                  </button>
+                  
+                  <button 
+                    v-if='canDowngrade'
+                    class='btn btn-warning btn-outline'
+                    @click='downgradeSubscription'
+                    :disabled='isDowngrading'
+                  >
+                    <span v-if='isDowngrading' class='loading loading-spinner loading-sm'></span>
+                    Downgrade to Basic
                   </button>
                   
                   <button 

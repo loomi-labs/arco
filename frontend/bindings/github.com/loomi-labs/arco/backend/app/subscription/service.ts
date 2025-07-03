@@ -75,6 +75,18 @@ export function CreateCheckoutSession(planName: string, currency: arcov1$0.Curre
 }
 
 /**
+ * DowngradePlan schedules a plan downgrade for a subscription
+ */
+export function DowngradePlan(subscriptionID: string, planID: string): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(946749783, subscriptionID, planID) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
  * GetCheckoutResult returns the current checkout result
  */
 export function GetCheckoutResult(): Promise<state$0.CheckoutResult | null> & { cancel(): void } {
@@ -135,10 +147,10 @@ export function ReactivateSubscription(subscriptionID: string): Promise<arcov1$0
 }
 
 /**
- * ScheduleBillingCycleUpdate schedules a billing cycle change for a subscription
+ * UpdateBillingCycle schedules a billing cycle change for a subscription
  */
-export function ScheduleBillingCycleUpdate(subscriptionID: string, isYearly: boolean): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(388012950, subscriptionID, isYearly) as any;
+export function UpdateBillingCycle(subscriptionID: string, isYearly: boolean): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(450493983, subscriptionID, isYearly) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType5($result);
     }) as any;
@@ -147,22 +159,10 @@ export function ScheduleBillingCycleUpdate(subscriptionID: string, isYearly: boo
 }
 
 /**
- * ScheduleCurrencyUpdate schedules a currency change for a subscription
+ * UpdateCurrency schedules a currency change for a subscription
  */
-export function ScheduleCurrencyUpdate(subscriptionID: string, currency: arcov1$0.Currency): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2650087102, subscriptionID, currency) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
-        return $$createType5($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
-}
-
-/**
- * SchedulePlanUpdate schedules a plan change for a subscription
- */
-export function SchedulePlanUpdate(subscriptionID: string, planID: string): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3594955182, subscriptionID, planID) as any;
+export function UpdateCurrency(subscriptionID: string, currency: arcov1$0.Currency): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2320044535, subscriptionID, currency) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType5($result);
     }) as any;
