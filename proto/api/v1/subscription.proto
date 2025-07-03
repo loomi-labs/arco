@@ -343,6 +343,48 @@ enum CheckoutStatus {
   CHECKOUT_STATUS_EXPIRED = 4;
 }
 
+// ChangeType represents the type of pending subscription change.
+//
+// These types correspond to the different kinds of modifications that can be
+// scheduled for a subscription to take effect at the next billing cycle.
+enum ChangeType {
+  // Default unspecified change type.
+  CHANGE_TYPE_UNSPECIFIED = 0;
+  
+  // Plan change for downgrades or lateral moves.
+  // Changes the subscription plan (e.g., Pro to Basic).
+  CHANGE_TYPE_PLAN_CHANGE = 1;
+  
+  // Currency change for billing.
+  // Changes the currency used for billing (USD, EUR, CHF).
+  CHANGE_TYPE_CURRENCY_CHANGE = 2;
+  
+  // Billing cycle change.
+  // Changes between monthly and yearly billing cycles.
+  CHANGE_TYPE_BILLING_CYCLE_CHANGE = 3;
+}
+
+// PendingChangeStatus represents the current state of a pending subscription change.
+//
+// These statuses track the lifecycle of scheduled changes from creation
+// through application or cancellation.
+enum PendingChangeStatus {
+  // Default unspecified status.
+  PENDING_CHANGE_STATUS_UNSPECIFIED = 0;
+  
+  // Change is scheduled and waiting to be applied.
+  // Will take effect at the scheduled effective date.
+  PENDING_CHANGE_STATUS_PENDING = 1;
+  
+  // Change has been successfully applied.
+  // The subscription has been updated with the new values.
+  PENDING_CHANGE_STATUS_APPLIED = 2;
+  
+  // Change has been canceled before taking effect.
+  // The subscription will not be modified.
+  PENDING_CHANGE_STATUS_CANCELED = 3;
+}
+
 // ReactivateSubscriptionRequest removes scheduled cancellation.
 //
 // Prevents a subscription from canceling at the end of the current period.
@@ -428,7 +470,7 @@ message ScheduleSubscriptionUpdateResponse {
   
   // Unique ID for tracking this pending change.
   // Use with GetPendingChanges or CancelPendingChange.
-  string change_id = 3;
+  int64 change_id = 3;
 }
 
 // GetPendingChangesRequest retrieves all scheduled changes for a subscription.
@@ -457,30 +499,44 @@ message GetPendingChangesResponse {
 message PendingChange {
   // Unique identifier for this pending change.
   // Use with CancelPendingChange to cancel before it takes effect.
-  string id = 1;
+  int64 id = 1;
   
   // Type of change being made.
-  // Valid values: "PLAN_CHANGE", "CURRENCY_CHANGE", "BILLING_CYCLE_CHANGE"
-  string change_type = 2;
+  // Specifies what aspect of the subscription is being changed.
+  ChangeType change_type = 2;
   
   // Current value that will be changed.
-  // Format depends on change_type (plan ID, currency enum, boolean string).
-  string old_value = 3;
+  // The specific field set depends on the change_type.
+  oneof old_value {
+    // Current plan ID (for plan changes).
+    string old_plan_id = 3;
+    // Current currency (for currency changes).
+    Currency old_currency = 4;
+    // Current yearly billing setting (for billing cycle changes).
+    bool old_is_yearly_billing = 5;
+  }
   
   // New value that will be applied.
-  // Format depends on change_type (plan ID, currency enum, boolean string).
-  string new_value = 4;
+  // The specific field set depends on the change_type.
+  oneof new_value {
+    // New plan ID (for plan changes).
+    string new_plan_id = 6;
+    // New currency (for currency changes).
+    Currency new_currency = 7;
+    // New yearly billing setting (for billing cycle changes).
+    bool new_is_yearly_billing = 8;
+  }
   
   // When this change will take effect.
   // Typically the start of the next billing period.
-  google.protobuf.Timestamp effective_date = 5;
+  google.protobuf.Timestamp effective_date = 9;
   
   // Current status of this change.
-  // Valid values: "PENDING", "APPLIED", "CANCELED"
-  string status = 6;
+  // Tracks the lifecycle state of the pending change.
+  PendingChangeStatus status = 10;
   
   // When this change was originally scheduled.
-  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp created_at = 11;
 }
 
 // CancelPendingChangeRequest cancels a scheduled change before it takes effect.
@@ -494,11 +550,7 @@ message CancelPendingChangeRequest {
   
   // ID of the pending change to cancel.
   // Must be a valid pending change for the specified subscription.
-  string change_id = 2;
-  
-  // Optional reason for canceling the change.
-  // Stored for audit purposes and customer service.
-  string reason = 3;
+  int64 change_id = 2;
 }
 
 // CancelPendingChangeResponse confirms change cancellation.
