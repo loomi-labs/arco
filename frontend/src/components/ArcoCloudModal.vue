@@ -150,15 +150,6 @@ const selectedPlanData = computed(() =>
   subscriptionPlans.value.find(plan => plan.name === selectedPlan.value)
 );
 
-
-const yearlyDiscount = computed(() => {
-  const price = selectedPlanData.value?.prices?.[0];
-  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
-  const monthlyTotal = (price.monthly_cents / 100) * 12;
-  const yearlyPrice = price.yearly_cents / 100;
-  return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
-});
-
 const isRepoValid = computed(() =>
   repoName.value.length > 0 && !repoNameError.value
 );

@@ -135,10 +135,34 @@ export function ReactivateSubscription(subscriptionID: string): Promise<arcov1$0
 }
 
 /**
- * ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle
+ * ScheduleBillingCycleUpdate schedules a billing cycle change for a subscription
  */
-export function ScheduleSubscriptionUpdate(subscriptionID: string, planID: string | null, currency: arcov1$0.Currency | null, isYearlyBilling: boolean | null): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3283423172, subscriptionID, planID, currency, isYearlyBilling) as any;
+export function ScheduleBillingCycleUpdate(subscriptionID: string, isYearly: boolean): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(388012950, subscriptionID, isYearly) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * ScheduleCurrencyUpdate schedules a currency change for a subscription
+ */
+export function ScheduleCurrencyUpdate(subscriptionID: string, currency: arcov1$0.Currency): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2650087102, subscriptionID, currency) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * SchedulePlanUpdate schedules a plan change for a subscription
+ */
+export function SchedulePlanUpdate(subscriptionID: string, planID: string): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3594955182, subscriptionID, planID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType5($result);
     }) as any;

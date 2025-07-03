@@ -407,7 +407,7 @@ async function changeBillingCycle() {
   isChangingBilling.value = true;
   
   try {
-    const response = await SubscriptionService.ChangeBillingCycle(
+    const response = await SubscriptionService.ScheduleBillingCycleUpdate(
       subscription.value.id,
       selectedBillingCycle.value
     );
@@ -460,7 +460,7 @@ async function upgradeSubscription() {
   isUpgrading.value = true;
   
   try {
-    const response = await SubscriptionService.UpgradeSubscription(subscription.value.id, "PRO");
+    const response = await SubscriptionService.SchedulePlanUpdate(subscription.value.id, "PRO");
     
     if (response?.success) {
       // Reload subscription to get updated plan info

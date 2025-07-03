@@ -176,30 +176,54 @@ func (s *Service) UpgradeSubscription(ctx context.Context, subscriptionID string
 	return resp.Msg, nil
 }
 
-// ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle
-func (s *Service) ScheduleSubscriptionUpdate(ctx context.Context, subscriptionID string, planID *string, currency *arcov1.Currency, isYearlyBilling *bool) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
+// SchedulePlanUpdate schedules a plan change for a subscription
+func (s *Service) SchedulePlanUpdate(ctx context.Context, subscriptionID string, planID string) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
 	req := &arcov1.ScheduleSubscriptionUpdateRequest{
 		SubscriptionId: subscriptionID,
-	}
-
-	// Set the appropriate change type based on what's provided
-	if planID != nil {
-		req.Change = &arcov1.ScheduleSubscriptionUpdateRequest_PlanId{
-			PlanId: *planID,
-		}
-	} else if currency != nil {
-		req.Change = &arcov1.ScheduleSubscriptionUpdateRequest_Currency{
-			Currency: *currency,
-		}
-	} else if isYearlyBilling != nil {
-		req.Change = &arcov1.ScheduleSubscriptionUpdateRequest_IsYearlyBilling{
-			IsYearlyBilling: *isYearlyBilling,
-		}
+		Change: &arcov1.ScheduleSubscriptionUpdateRequest_PlanId{
+			PlanId: planID,
+		},
 	}
 
 	resp, err := s.rpcClient.ScheduleSubscriptionUpdate(ctx, connect.NewRequest(req))
 	if err != nil {
-		s.log.Errorf("Failed to schedule subscription update from cloud service: %v", err)
+		s.log.Errorf("Failed to schedule plan update from cloud service: %v", err)
+		return nil, err
+	}
+
+	return resp.Msg, nil
+}
+
+// ScheduleCurrencyUpdate schedules a currency change for a subscription
+func (s *Service) ScheduleCurrencyUpdate(ctx context.Context, subscriptionID string, currency arcov1.Currency) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
+	req := &arcov1.ScheduleSubscriptionUpdateRequest{
+		SubscriptionId: subscriptionID,
+		Change: &arcov1.ScheduleSubscriptionUpdateRequest_Currency{
+			Currency: currency,
+		},
+	}
+
+	resp, err := s.rpcClient.ScheduleSubscriptionUpdate(ctx, connect.NewRequest(req))
+	if err != nil {
+		s.log.Errorf("Failed to schedule currency update from cloud service: %v", err)
+		return nil, err
+	}
+
+	return resp.Msg, nil
+}
+
+// ScheduleBillingCycleUpdate schedules a billing cycle change for a subscription
+func (s *Service) ScheduleBillingCycleUpdate(ctx context.Context, subscriptionID string, isYearly bool) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
+	req := &arcov1.ScheduleSubscriptionUpdateRequest{
+		SubscriptionId: subscriptionID,
+		Change: &arcov1.ScheduleSubscriptionUpdateRequest_IsYearlyBilling{
+			IsYearlyBilling: isYearly,
+		},
+	}
+
+	resp, err := s.rpcClient.ScheduleSubscriptionUpdate(ctx, connect.NewRequest(req))
+	if err != nil {
+		s.log.Errorf("Failed to schedule billing cycle update from cloud service: %v", err)
 		return nil, err
 	}
 
