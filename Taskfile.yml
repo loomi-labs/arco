@@ -20,12 +20,12 @@ tasks:
   build:
     desc: Builds the application
     cmds:
-      - task: "{{OS}}:build"
+      - task: '{{if eq .PLATFORM "darwin/universal"}}darwin:build:universal{{else}}{{OS}}:build{{end}}'
 
   package:
     desc: Packages a production build of the application
     cmds:
-      - task: "{{OS}}:package"
+      - task: '{{if eq .PLATFORM "darwin/universal"}}darwin:package:universal{{else}}{{OS}}:package{{end}}'
 
   run:
     desc: Runs the application
