@@ -20,3 +20,6 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 *~
 
 tickets*
+
+# Git worktrees
+worktrees/

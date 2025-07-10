@@ -21,13 +21,22 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// AddPaymentMethodRequest attaches a payment method to the user's account.
+//
+// The payment method must be created client-side using Stripe.js or mobile SDKs
+// before calling this endpoint. This ensures sensitive card data never touches our servers.
 type AddPaymentMethodRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Stripe payment method ID from client-side creation.
+	// Must be a valid payment method created using Stripe.js or mobile SDKs.
+	// The payment method will be attached to the user's Stripe customer.
 	PaymentMethodId string `protobuf:"bytes,1,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
-	SetAsDefault    bool   `protobuf:"varint,2,opt,name=set_as_default,json=setAsDefault,proto3" json:"set_as_default,omitempty"`
+	// Whether to set this payment method as the default for future charges.
+	// If true, this becomes the default payment method for subscriptions and invoices.
+	SetAsDefault bool `protobuf:"varint,2,opt,name=set_as_default,json=setAsDefault,proto3" json:"set_as_default,omitempty"`
 }
 
 func (x *AddPaymentMethodRequest) Reset() {
@@ -74,11 +83,16 @@ func (x *AddPaymentMethodRequest) GetSetAsDefault() bool {
 	return false
 }
 
+// AddPaymentMethodResponse contains the newly added payment method details.
+//
+// Returns the payment method with security-safe information after successful
+// attachment to the user's Stripe customer account.
 type AddPaymentMethodResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The newly added payment method with security-safe details.
 	PaymentMethod *PaymentMethod `protobuf:"bytes,1,opt,name=payment_method,json=paymentMethod,proto3" json:"payment_method,omitempty"`
 }
 
@@ -119,6 +133,9 @@ func (x *AddPaymentMethodResponse) GetPaymentMethod() *PaymentMethod {
 	return nil
 }
 
+// ListPaymentMethodsRequest retrieves all payment methods for the user.
+//
+// No parameters required - returns all payment methods for the authenticated user.
 type ListPaymentMethodsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -155,13 +172,19 @@ func (*ListPaymentMethodsRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_payment_proto_rawDescGZIP(), []int{2}
 }
 
+// ListPaymentMethodsResponse contains all user payment methods.
+//
+// Returns payment methods with security-safe details and default method indication.
 type ListPaymentMethodsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PaymentMethods         []*PaymentMethod `protobuf:"bytes,1,rep,name=payment_methods,json=paymentMethods,proto3" json:"payment_methods,omitempty"`
-	DefaultPaymentMethodId string           `protobuf:"bytes,2,opt,name=default_payment_method_id,json=defaultPaymentMethodId,proto3" json:"default_payment_method_id,omitempty"`
+	// All payment methods attached to the user's account.
+	PaymentMethods []*PaymentMethod `protobuf:"bytes,1,rep,name=payment_methods,json=paymentMethods,proto3" json:"payment_methods,omitempty"`
+	// ID of the default payment method for charges.
+	// Empty string if no default is set.
+	DefaultPaymentMethodId string `protobuf:"bytes,2,opt,name=default_payment_method_id,json=defaultPaymentMethodId,proto3" json:"default_payment_method_id,omitempty"`
 }
 
 func (x *ListPaymentMethodsResponse) Reset() {
@@ -208,18 +231,35 @@ func (x *ListPaymentMethodsResponse) GetDefaultPaymentMethodId() string {
 	return ""
 }
 
+// PaymentMethod represents a stored payment method with security-safe details.
+//
+// Contains only non-sensitive information about payment methods.
+// Full card details are stored securely in Stripe and never exposed.
 type PaymentMethod struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type      string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`   // card, bank_account
-	Brand     string                 `protobuf:"bytes,3,opt,name=brand,proto3" json:"brand,omitempty"` // visa, mastercard, etc.
-	Last4     string                 `protobuf:"bytes,4,opt,name=last4,proto3" json:"last4,omitempty"`
-	ExpMonth  int32                  `protobuf:"varint,5,opt,name=exp_month,json=expMonth,proto3" json:"exp_month,omitempty"`
-	ExpYear   int32                  `protobuf:"varint,6,opt,name=exp_year,json=expYear,proto3" json:"exp_year,omitempty"`
-	IsDefault bool                   `protobuf:"varint,7,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	// Unique Stripe payment method identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Payment method type (e.g., "card", "bank_account").
+	// Currently only "card" type is supported.
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// Card brand (e.g., "visa", "mastercard", "amex").
+	// Only populated for card payment methods.
+	Brand string `protobuf:"bytes,3,opt,name=brand,proto3" json:"brand,omitempty"`
+	// Last 4 digits of the card number.
+	// Only populated for card payment methods.
+	Last4 string `protobuf:"bytes,4,opt,name=last4,proto3" json:"last4,omitempty"`
+	// Card expiration month (1-12).
+	// Only populated for card payment methods.
+	ExpMonth int32 `protobuf:"varint,5,opt,name=exp_month,json=expMonth,proto3" json:"exp_month,omitempty"`
+	// Card expiration year (4 digits).
+	// Only populated for card payment methods.
+	ExpYear int32 `protobuf:"varint,6,opt,name=exp_year,json=expYear,proto3" json:"exp_year,omitempty"`
+	// Whether this is the default payment method for charges.
+	IsDefault bool `protobuf:"varint,7,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	// When this payment method was added to the account.
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 }
 
@@ -309,13 +349,22 @@ func (x *PaymentMethod) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// GetPaymentHistoryRequest retrieves paginated payment history.
+//
+// Supports cursor-based pagination for efficient browsing of large payment histories.
+// Returns payments in reverse chronological order (newest first).
 type GetPaymentHistoryRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Limit         int32  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
-	StartingAfter string `protobuf:"bytes,2,opt,name=starting_after,json=startingAfter,proto3" json:"starting_after,omitempty"` // cursor for pagination
+	// Maximum number of payments to return (1-100).
+	// Defaults to 20 if not specified. Higher limits may impact performance.
+	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Cursor for pagination - returns payments after this cursor.
+	// Use the next_cursor from previous response to fetch the next page.
+	// Omit for the first page of results.
+	StartingAfter string `protobuf:"bytes,2,opt,name=starting_after,json=startingAfter,proto3" json:"starting_after,omitempty"`
 }
 
 func (x *GetPaymentHistoryRequest) Reset() {
@@ -362,14 +411,24 @@ func (x *GetPaymentHistoryRequest) GetStartingAfter() string {
 	return ""
 }
 
+// GetPaymentHistoryResponse contains paginated payment history.
+//
+// Returns payments with complete details including associated invoices
+// and payment method information used for each transaction.
 type GetPaymentHistoryResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Payments   []*Payment `protobuf:"bytes,1,rep,name=payments,proto3" json:"payments,omitempty"`
-	HasMore    bool       `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
-	NextCursor string     `protobuf:"bytes,3,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	// List of payments in reverse chronological order.
+	Payments []*Payment `protobuf:"bytes,1,rep,name=payments,proto3" json:"payments,omitempty"`
+	// Whether there are more payments available after this page.
+	// If true, use next_cursor to fetch additional results.
+	HasMore bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	// Cursor for the next page of results.
+	// Use this value as starting_after in the next request.
+	// Empty if has_more is false.
+	NextCursor string `protobuf:"bytes,3,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
 }
 
 func (x *GetPaymentHistoryResponse) Reset() {
@@ -423,21 +482,43 @@ func (x *GetPaymentHistoryResponse) GetNextCursor() string {
 	return ""
 }
 
+// Payment represents a billing transaction with complete details.
+//
+// Contains payment information including amount, status, associated invoice,
+// and payment method used. Integrates with Stripe for payment processing.
 type Payment struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	AmountCents     int64                  `protobuf:"varint,2,opt,name=amount_cents,json=amountCents,proto3" json:"amount_cents,omitempty"`
-	Currency        string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
-	Status          string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"` // succeeded, pending, failed
-	Description     string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	InvoiceId       string                 `protobuf:"bytes,7,opt,name=invoice_id,json=invoiceId,proto3" json:"invoice_id,omitempty"`
-	InvoiceUrl      string                 `protobuf:"bytes,8,opt,name=invoice_url,json=invoiceUrl,proto3" json:"invoice_url,omitempty"`
-	PaymentMethodId string                 `protobuf:"bytes,9,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
-	PaymentMethod   *PaymentMethod         `protobuf:"bytes,10,opt,name=payment_method,json=paymentMethod,proto3" json:"payment_method,omitempty"`
+	// Unique payment identifier from Stripe.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Payment amount in cents (e.g., 1500 = $15.00).
+	// Always positive for charges, negative for refunds.
+	AmountCents int64 `protobuf:"varint,2,opt,name=amount_cents,json=amountCents,proto3" json:"amount_cents,omitempty"`
+	// Payment currency (e.g., "usd", "eur", "chf").
+	// Corresponds to the subscription currency at time of payment.
+	Currency string `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
+	// Payment status indicating current state.
+	// Valid values: "succeeded", "pending", "failed", "canceled", "refunded"
+	Status string `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	// Human-readable description of the payment.
+	// Typically includes subscription period and plan information.
+	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// When the payment was created/attempted.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Associated Stripe invoice ID for this payment.
+	// Can be used to retrieve detailed invoice information from Stripe.
+	InvoiceId string `protobuf:"bytes,7,opt,name=invoice_id,json=invoiceId,proto3" json:"invoice_id,omitempty"`
+	// Direct URL to the Stripe-hosted invoice PDF.
+	// Users can view and download official invoices for accounting purposes.
+	InvoiceUrl string `protobuf:"bytes,8,opt,name=invoice_url,json=invoiceUrl,proto3" json:"invoice_url,omitempty"`
+	// ID of the payment method used for this payment.
+	// References the PaymentMethod that was charged.
+	PaymentMethodId string `protobuf:"bytes,9,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
+	// Complete payment method details used for this payment.
+	// Includes security-safe information about the card or payment method.
+	PaymentMethod *PaymentMethod `protobuf:"bytes,10,opt,name=payment_method,json=paymentMethod,proto3" json:"payment_method,omitempty"`
 }
 
 func (x *Payment) Reset() {

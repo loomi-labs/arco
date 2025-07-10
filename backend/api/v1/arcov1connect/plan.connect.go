@@ -39,6 +39,14 @@ const (
 
 // PlanServiceClient is a client for the api.v1.PlanService service.
 type PlanServiceClient interface {
+	// ListPlans returns all available subscription plans with multi-currency pricing.
+	//
+	// This endpoint is publicly accessible and returns both Basic and Pro plans
+	// with their respective storage limits, feature sets, and pricing in all
+	// supported currencies (USD, EUR, CHF).
+	//
+	// Pro plans include overage pricing for storage beyond the base limit,
+	// charged in 10GB increments.
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 }
 
@@ -74,6 +82,14 @@ func (c *planServiceClient) ListPlans(ctx context.Context, req *connect.Request[
 
 // PlanServiceHandler is an implementation of the api.v1.PlanService service.
 type PlanServiceHandler interface {
+	// ListPlans returns all available subscription plans with multi-currency pricing.
+	//
+	// This endpoint is publicly accessible and returns both Basic and Pro plans
+	// with their respective storage limits, feature sets, and pricing in all
+	// supported currencies (USD, EUR, CHF).
+	//
+	// Pro plans include overage pricing for storage beyond the base limit,
+	// charged in 10GB increments.
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 }
 

@@ -42,7 +42,22 @@ const (
 
 // UserServiceClient is a client for the api.v1.UserService service.
 type UserServiceClient interface {
+	// GetProfile retrieves the current user's complete profile information.
+	//
+	// Returns comprehensive profile data including personal information,
+	// preferences, usage statistics, and account status. Includes real-time
+	// storage usage calculated from backup data and device counts.
+	//
+	// Requires authentication. Users can only access their own profile.
 	GetProfile(context.Context, *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error)
+	// UpdateProfile modifies user profile settings and preferences.
+	//
+	// Allows updating display name, timezone, language preferences, and
+	// notification settings. All fields are optional - only provided fields
+	// are updated. Changes are immediately effective.
+	//
+	// Requires authentication. Users can only update their own profile.
+	// Email address cannot be changed via this endpoint.
 	UpdateProfile(context.Context, *connect.Request[v1.UpdateProfileRequest]) (*connect.Response[v1.UpdateProfileResponse], error)
 }
 
@@ -90,7 +105,22 @@ func (c *userServiceClient) UpdateProfile(ctx context.Context, req *connect.Requ
 
 // UserServiceHandler is an implementation of the api.v1.UserService service.
 type UserServiceHandler interface {
+	// GetProfile retrieves the current user's complete profile information.
+	//
+	// Returns comprehensive profile data including personal information,
+	// preferences, usage statistics, and account status. Includes real-time
+	// storage usage calculated from backup data and device counts.
+	//
+	// Requires authentication. Users can only access their own profile.
 	GetProfile(context.Context, *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error)
+	// UpdateProfile modifies user profile settings and preferences.
+	//
+	// Allows updating display name, timezone, language preferences, and
+	// notification settings. All fields are optional - only provided fields
+	// are updated. Changes are immediately effective.
+	//
+	// Requires authentication. Users can only update their own profile.
+	// Email address cannot be changed via this endpoint.
 	UpdateProfile(context.Context, *connect.Request[v1.UpdateProfileRequest]) (*connect.Response[v1.UpdateProfileResponse], error)
 }
 
