@@ -21,6 +21,18 @@ import (
 
 var binaries = []types.BorgBinary{
 	{
+		Name:    "borg_1.4.1",
+		Version: "1.4.1",
+		Os:      util.Linux,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
+	},
+	{
+		Name:    "borg_1.4.1",
+		Version: "1.4.1",
+		Os:      util.Darwin,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012",
+	},
+	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
 		Os:      util.Linux,
