@@ -207,6 +207,12 @@ type Status struct {
 	HasBeenCanceled bool
 }
 
+func NewStatusWithError(err error) *Status {
+	return &Status{
+		Error: createRuntimeError(err),
+	}
+}
+
 // IsCompletedWithSuccess returns true if there's no error and it has not been canceled
 func (s *Status) IsCompletedWithSuccess() bool {
 	return s.Error == nil && !s.HasBeenCanceled

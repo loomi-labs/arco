@@ -62,12 +62,12 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	result := gocmdToStatus(status)
 	if !isDryRun && result.IsCompletedWithSuccess() {
 		// Run compact to free up space
-		err := b.Compact(ctx, repository, password)
-		if err != nil {
-			b.log.Errorf("Failed to compact after prune: %v", err)
+		compactResult := b.Compact(ctx, repository, password)
+		if compactResult.HasError() {
+			b.log.Errorf("Failed to compact after prune: %v", compactResult.GetError())
 		}
 	}
-	return b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime))
+	return b.log.LogCmdResult(result, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.

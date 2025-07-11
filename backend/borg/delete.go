@@ -8,17 +8,15 @@ import (
 )
 
 // DeleteArchive deletes a single archive from the repository
-func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) error {
+func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) *Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 }
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
@@ -40,17 +38,17 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 
 	if result.IsCompletedWithSuccess() {
 		// Run compact to free up space
-		compactErr := b.Compact(ctx, repository, password)
-		if compactErr != nil {
-			b.log.Errorf("Failed to compact after delete: %v", compactErr)
+		compactResult := b.Compact(ctx, repository, password)
+		if compactResult.HasError() {
+			b.log.Errorf("Failed to compact after delete: %v", compactResult.GetError())
 		}
 	}
 
-	return b.log.LogCmdResultD(result, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdResult(result, cmd.String(), time.Since(startTime))
 }
 
 // DeleteRepository deletes the repository and all its archives
-func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) error {
+func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) *Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).
 		WithPassword(password).
@@ -59,9 +57,7 @@ func (b *borg) DeleteRepository(ctx context.Context, repository string, password
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 }

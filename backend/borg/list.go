@@ -6,25 +6,29 @@ import (
 	"fmt"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
+	"time"
 )
 
-func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, error) {
+func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, *Status) {
 	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Get the list from the borg repository
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
+
+	// Convert command output and error to Status
+	status := combinedOutputToStatus(out, err)
+	if status.HasError() {
+		return nil, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 	}
 
 	var listResponse types.ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
-		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg list output: %w", err))
+		parseStatus := NewStatusWithError(fmt.Errorf("failed to parse borg list output: %v", err))
+		return nil, b.log.LogCmdResult(parseStatus, cmd.String(), time.Since(startTime))
 	}
 
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return &listResponse, nil
+	return &listResponse, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 }

@@ -66,7 +66,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
 	result = gocmdToStatus(status)
-	return archiveName, b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime))
+	return archiveName, b.log.LogCmdResult(result, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
@@ -148,10 +148,10 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 	status := cmd.Status()
 	result := gocmdToStatus(status)
 	if result.HasError() || result.HasBeenCanceled {
-		return 0, b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime)), nil
+		return 0, b.log.LogCmdResult(result, cmdLog, time.Duration(status.Runtime)), nil
 	}
 
-	b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime))
+	b.log.LogCmdResult(result, cmdLog, time.Duration(status.Runtime))
 
 	select {
 	case totalFiles := <-fileCountChan:

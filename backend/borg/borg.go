@@ -12,20 +12,20 @@ import (
 )
 
 type Borg interface {
-	Info(ctx context.Context, repository, password string) (*types.InfoResponse, error)
-	Init(ctx context.Context, repository, password string, noPassword bool) error
-	List(ctx context.Context, repository string, password string) (*types.ListResponse, error)
-	Compact(ctx context.Context, repository string, password string) error
+	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *Status)
+	Init(ctx context.Context, repository, password string, noPassword bool) *Status
+	List(ctx context.Context, repository string, password string) (*types.ListResponse, *Status)
+	Compact(ctx context.Context, repository string, password string) *Status
 	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *Status)
-	Rename(ctx context.Context, repository, archive, password, newName string) error
-	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
+	Rename(ctx context.Context, repository, archive, password, newName string) *Status
+	DeleteArchive(ctx context.Context, repository string, archive string, password string) *Status
 	DeleteArchives(ctx context.Context, repository, password, prefix string) *Status
-	DeleteRepository(ctx context.Context, repository string, password string) error
-	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
-	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
-	Umount(ctx context.Context, path string) error
+	DeleteRepository(ctx context.Context, repository string, password string) *Status
+	MountRepository(ctx context.Context, repository string, password string, mountPath string) *Status
+	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) *Status
+	Umount(ctx context.Context, path string) *Status
 	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *Status
-	BreakLock(ctx context.Context, repository string, password string) error
+	BreakLock(ctx context.Context, repository string, password string) *Status
 }
 
 type borg struct {
@@ -76,31 +76,15 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 	return time.Now()
 }
 
-func (z *CmdLogger) LogCmdEnd(cmd string, startTime time.Time) {
-	z.LogCmdEndD(cmd, time.Since(startTime))
-}
-
-func (z *CmdLogger) LogCmdEndD(cmd string, duration time.Duration) {
-	z.Infof("Finished command: `%s` in %s", cmd, duration)
-}
-
-func (z *CmdLogger) LogCmdError(ctx context.Context, cmd string, startTime time.Time, err error) error {
-	return z.LogCmdErrorD(ctx, cmd, time.Since(startTime), err)
-}
-
-func (z *CmdLogger) LogCmdErrorD(ctx context.Context, cmd string, duration time.Duration, err error) error {
-	//err = exitErrorToBorgResult(err)
-	if ctx.Value(noErrorCtxKey) == nil {
-		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, err)
-	} else {
-		z.Infof("Command `%s` failed after %s: %s", cmd, duration, err)
-	}
-	return err
-}
-
-func (z *CmdLogger) LogCmdResultD(result *Status, cmd string, duration time.Duration) *Status {
+func (z *CmdLogger) LogCmdResult(result *Status, cmd string, duration time.Duration) *Status {
 	if result.HasError() {
-		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
+		// TODO: pass cxt to this method
+		ctx := context.TODO()
+		if ctx.Value(noErrorCtxKey) == nil {
+			z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
+		} else {
+			z.Infof("Command `%s` failed after %s: %s", cmd, duration, result.Error)
+		}
 	} else if result.HasWarning() {
 		z.Infof("Command `%s` finished with warning after %s: %s", cmd, duration, result.Warning)
 	} else if result.HasBeenCanceled {
@@ -109,14 +93,6 @@ func (z *CmdLogger) LogCmdResultD(result *Status, cmd string, duration time.Dura
 		z.Infof("Command `%s` finished after %s", cmd, duration)
 	}
 	return result
-}
-
-func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {
-	z.LogCmdCancelledD(cmd, time.Since(startTime))
-}
-
-func (z *CmdLogger) LogCmdCancelledD(cmd string, duration time.Duration) {
-	z.Infof("Command `%s` cancelled after %s", cmd, duration)
 }
 
 type Env struct {

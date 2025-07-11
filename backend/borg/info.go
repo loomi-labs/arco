@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
+	"time"
 )
 
 func (cr *commandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
@@ -32,23 +33,26 @@ func sanitizeOutput(out []byte) []byte {
 	return out
 }
 
-func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, error) {
+func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *Status) {
 	cmd := exec.CommandContext(ctx, b.path, "info", "--json", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Check if we can connect to the repository
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := b.commandRunner.Info(cmd)
-	if err != nil {
-		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, err)
+
+	// Convert command output and error to Status
+	status := combinedOutputToStatus(out, err)
+	if status.HasError() {
+		return nil, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 	}
 
 	var info types.InfoResponse
 	err = json.Unmarshal(sanitizeOutput(out), &info)
 	if err != nil {
-		return nil, b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("failed to parse borg info output: %w", err))
+		parseStatus := NewStatusWithError(fmt.Errorf("failed to parse borg info output: %v", err))
+		return nil, b.log.LogCmdResult(parseStatus, cmd.String(), time.Since(startTime))
 	}
 
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return &info, nil
+	return &info, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
 }
