@@ -681,12 +681,12 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
-	archiveName, err := b.borg.Create(ctx, repo.Location, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
-	if err != nil {
-		if errors.As(err, &borg.CancelErr{}) {
+	archiveName, status := b.borg.Create(ctx, repo.Location, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
 			b.state.SetBackupCancelled(b.ctx, bId, true)
 			return BackupResultCancelled, nil
-		} else if errors.Is(err, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -696,7 +696,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
 			return BackupResultError, err
 		} else {
-			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
+			saveErr := b.saveDbNotification(bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
 			if saveErr != nil {
 				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
@@ -755,25 +755,25 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 	// Wait to acquire the lock and then set the repo as locked
 	b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusDeleting)
 
-	err := b.borg.DeleteArchives(b.ctx, location, password, prefix)
-	if err != nil {
-		if errors.As(err, &borg.CancelErr{}) {
+	status := b.borg.DeleteArchives(b.ctx, location, password, prefix)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 			return DeleteResultCancelled, nil
-		} else if errors.Is(err, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
 			b.state.AddNotification(b.ctx, "Delete job failed: repository is locked", types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
-			return DeleteResultError, err
+			return DeleteResultError, status.Error
 		} else {
-			b.state.AddNotification(b.ctx, fmt.Sprintf("Delete job failed: %s", err), types.LevelError)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Delete job failed: %s", status.Error), types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return DeleteResultError, err
+			return DeleteResultError, status.Error
 		}
 	} else {
 		// Delete completed successfully
 		defer b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 
-		err = b.refreshRepoInfo(bId.RepositoryId, location, password)
+		err := b.refreshRepoInfo(bId.RepositoryId, location, password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 		}

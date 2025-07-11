@@ -16,15 +16,15 @@ type Borg interface {
 	Init(ctx context.Context, repository, password string, noPassword bool) error
 	List(ctx context.Context, repository string, password string) (*types.ListResponse, error)
 	Compact(ctx context.Context, repository string, password string) error
-	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, error)
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *BorgResult)
 	Rename(ctx context.Context, repository, archive, password, newName string) error
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
-	DeleteArchives(ctx context.Context, repository, password, prefix string) error
+	DeleteArchives(ctx context.Context, repository, password, prefix string) *BorgResult
 	DeleteRepository(ctx context.Context, repository string, password string) error
 	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
 	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
 	Umount(ctx context.Context, path string) error
-	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *BorgResult
 	BreakLock(ctx context.Context, repository string, password string) error
 }
 
@@ -89,13 +89,26 @@ func (z *CmdLogger) LogCmdError(ctx context.Context, cmd string, startTime time.
 }
 
 func (z *CmdLogger) LogCmdErrorD(ctx context.Context, cmd string, duration time.Duration, err error) error {
-	err = exitCodesToError(err)
+	//err = exitErrorToBorgResult(err)
 	if ctx.Value(noErrorCtxKey) == nil {
 		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, err)
 	} else {
 		z.Infof("Command `%s` failed after %s: %s", cmd, duration, err)
 	}
 	return err
+}
+
+func (z *CmdLogger) LogCmdResultD(result *BorgResult, cmd string, duration time.Duration) *BorgResult {
+	if result.HasError() {
+		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
+	} else if result.HasWarning() {
+		z.Infof("Command `%s` finished with warning after %s: %s", cmd, duration, result.Warning)
+	} else if result.HasBeenCanceled {
+		z.Infof("Command `%s` cancelled after %s", cmd, duration)
+	} else {
+		z.Infof("Command `%s` finished after %s", cmd, duration)
+	}
+	return result
 }
 
 func (z *CmdLogger) LogCmdCancelled(cmd string, startTime time.Time) {

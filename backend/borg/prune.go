@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error {
+func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *BorgResult {
 	if len(pruneOptions) == 0 {
-		return fmt.Errorf("pruneOptions must not be empty")
+		return &BorgResult{Error: createRuntimeError(fmt.Errorf("pruneOptions must not be empty"))}
 	}
 
 	// Prepare prune command
@@ -37,6 +37,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Run command
+	b.log.LogCmdStart(cmdLog)
 	statusChan := cmd.Start()
 
 	go decodePruneOutput(cmd, isDryRun, ch)
@@ -57,23 +58,16 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 	}
 
 	// If we are here the command has completed or the context has been cancelled
-	b.log.LogCmdStart(cmdLog)
 	status := cmd.Status()
-	if status.Error != nil {
-		return b.log.LogCmdErrorD(ctx, cmdLog, time.Duration(status.Runtime), status.Error)
+	result := statusToBorgResult(status)
+	if !isDryRun && result.IsCompletedWithSuccess() {
+		// Run compact to free up space
+		err := b.Compact(ctx, repository, password)
+		if err != nil {
+			b.log.Errorf("Failed to compact after prune: %v", err)
+		}
 	}
-	if !status.Complete {
-		b.log.LogCmdCancelledD(cmdLog, time.Duration(status.Runtime))
-		return CancelErr{}
-	}
-	b.log.LogCmdEndD(cmdLog, time.Duration(status.Runtime))
-
-	if isDryRun {
-		return nil
-	}
-
-	// Run compact to free up space
-	return b.Compact(ctx, repository, password)
+	return b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.
