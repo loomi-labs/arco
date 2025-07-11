@@ -17,12 +17,12 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	archiveName := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
-	totalFiles, result, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)
+	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)
 	if err != nil {
 		return "", newStatusWithError(err)
 	}
-	if !result.IsCompletedWithSuccess() {
-		return "", result
+	if !borgStatus.IsCompletedWithSuccess() {
+		return "", borgStatus
 	}
 
 	// Prepare backup command
@@ -65,8 +65,8 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
-	result = gocmdToStatus(status)
-	return archiveName, b.log.LogCmdResult(ctx, result, cmdLog, time.Duration(status.Runtime))
+	borgStatus = gocmdToStatus(status)
+	return archiveName, b.log.LogCmdResult(ctx, borgStatus, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
