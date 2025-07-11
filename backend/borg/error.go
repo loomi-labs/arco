@@ -94,8 +94,8 @@ func (e *BorgError) IsLockError() bool {
 	return e.Category == CategoryLock
 }
 
-// BorgWarning represents a warning that can occur during a Borg operation
-type BorgWarning struct {
+// Warning represents a warning that can occur during a Borg operation
+type Warning struct {
 	// Core warning information
 	ExitCode int    // Borg exit code (1, 100-107)
 	Message  string // Human-readable warning message
@@ -108,20 +108,20 @@ type BorgWarning struct {
 }
 
 // Error implements the error interface
-func (w *BorgWarning) Error() string {
+func (w *Warning) Error() string {
 	return w.Message
 }
 
 // Is implements error matching for errors.Is
-func (w *BorgWarning) Is(target error) bool {
-	if borgWarning, ok := target.(*BorgWarning); ok {
+func (w *Warning) Is(target error) bool {
+	if borgWarning, ok := target.(*Warning); ok {
 		return w.ExitCode == borgWarning.ExitCode
 	}
 	return false
 }
 
 // Unwrap returns the underlying error for errors.Unwrap
-func (w *BorgWarning) Unwrap() error {
+func (w *Warning) Unwrap() error {
 	return w.Underlying
 }
 
@@ -200,40 +200,40 @@ var (
 /********** Borg Result ************/
 /***********************************/
 
-// BorgResult represents the result of a Borg operation
-type BorgResult struct {
-	Error           *BorgError   // nil if no error occurred
-	Warning         *BorgWarning // nil if no warning occurred
+// Status represents the result of a Borg operation
+type Status struct {
+	Error           *BorgError // nil if no error occurred
+	Warning         *Warning   // nil if no warning occurred
 	HasBeenCanceled bool
 }
 
 // IsCompletedWithSuccess returns true if there's no error and it has not been canceled
-func (r *BorgResult) IsCompletedWithSuccess() bool {
-	return r.Error == nil && !r.HasBeenCanceled
+func (s *Status) IsCompletedWithSuccess() bool {
+	return s.Error == nil && !s.HasBeenCanceled
 }
 
 // HasError returns true if there's an error
-func (r *BorgResult) HasError() bool {
-	return r.Error != nil
+func (s *Status) HasError() bool {
+	return s.Error != nil
 }
 
 // HasWarning returns true if there's a warning
-func (r *BorgResult) HasWarning() bool {
-	return r.Warning != nil
+func (s *Status) HasWarning() bool {
+	return s.Warning != nil
 }
 
 // GetError returns the error message if there's an error, empty string otherwise
-func (r *BorgResult) GetError() string {
-	if r.Error != nil {
-		return r.Error.Error()
+func (s *Status) GetError() string {
+	if s.Error != nil {
+		return s.Error.Error()
 	}
 	return ""
 }
 
 // GetWarning returns the warning message if there's a warning, empty string otherwise
-func (r *BorgResult) GetWarning() string {
-	if r.Warning != nil {
-		return r.Warning.Error()
+func (s *Status) GetWarning() string {
+	if s.Warning != nil {
+		return s.Warning.Error()
 	}
 	return ""
 }
@@ -242,21 +242,21 @@ func (r *BorgResult) GetWarning() string {
 /********* Borg Warnings ***********/
 /***********************************/
 
-// Predefined BorgWarning instances for each warning exit code
+// Predefined Warning instances for each warning exit code
 var (
 	// Generic warnings (exit code 1)
-	WarningGeneric = &BorgWarning{ExitCode: 1, Message: "warning", Category: CategoryGeneral}
-	WarningBackup  = &BorgWarning{ExitCode: 1, Message: "backup warning", Category: CategoryBackup}
+	WarningGeneric = &Warning{ExitCode: 1, Message: "warning", Category: CategoryGeneral}
+	WarningBackup  = &Warning{ExitCode: 1, Message: "backup warning", Category: CategoryBackup}
 
 	// Specific warnings (exit codes 100-107)
-	WarningFileChanged                = &BorgWarning{ExitCode: 100, Message: "file changed during backup", Category: CategoryBackup}
-	WarningIncludePatternNeverMatched = &BorgWarning{ExitCode: 101, Message: "include pattern never matched", Category: CategoryBackup}
-	WarningBackupError                = &BorgWarning{ExitCode: 102, Message: "backup error", Category: CategoryBackup}
-	WarningBackupRaceCondition        = &BorgWarning{ExitCode: 103, Message: "file type or inode changed during backup", Category: CategoryBackup}
-	WarningBackupOS                   = &BorgWarning{ExitCode: 104, Message: "backup OS error", Category: CategoryBackup}
-	WarningBackupPermission           = &BorgWarning{ExitCode: 105, Message: "backup permission error", Category: CategoryBackup}
-	WarningBackupIO                   = &BorgWarning{ExitCode: 106, Message: "backup IO error", Category: CategoryBackup}
-	WarningBackupFileNotFound         = &BorgWarning{ExitCode: 107, Message: "backup file not found", Category: CategoryBackup}
+	WarningFileChanged                = &Warning{ExitCode: 100, Message: "file changed during backup", Category: CategoryBackup}
+	WarningIncludePatternNeverMatched = &Warning{ExitCode: 101, Message: "include pattern never matched", Category: CategoryBackup}
+	WarningBackupError                = &Warning{ExitCode: 102, Message: "backup error", Category: CategoryBackup}
+	WarningBackupRaceCondition        = &Warning{ExitCode: 103, Message: "file type or inode changed during backup", Category: CategoryBackup}
+	WarningBackupOS                   = &Warning{ExitCode: 104, Message: "backup OS error", Category: CategoryBackup}
+	WarningBackupPermission           = &Warning{ExitCode: 105, Message: "backup permission error", Category: CategoryBackup}
+	WarningBackupIO                   = &Warning{ExitCode: 106, Message: "backup IO error", Category: CategoryBackup}
+	WarningBackupFileNotFound         = &Warning{ExitCode: 107, Message: "backup file not found", Category: CategoryBackup}
 )
 
 // allBorgErrors contains all predefined BorgError instances for lookup
@@ -326,8 +326,8 @@ var allBorgErrors = []*BorgError{
 	ErrorTAMUnsupportedSuiteError,
 }
 
-// allBorgWarnings contains all predefined BorgWarning instances for lookup
-var allBorgWarnings = []*BorgWarning{
+// allBorgWarnings contains all predefined Warning instances for lookup
+var allBorgWarnings = []*Warning{
 	WarningGeneric,
 	WarningBackup,
 	WarningFileChanged,
@@ -349,29 +349,29 @@ func createRuntimeError(err error) *BorgError {
 	}
 }
 
-func toBorgResult(exitCode int) *BorgResult {
+func toBorgResult(exitCode int) *Status {
 	if exitCode == 0 {
-		return &BorgResult{}
+		return &Status{}
 	}
 	if exitCode == 143 {
-		return &BorgResult{
+		return &Status{
 			HasBeenCanceled: true,
 		}
 	}
 
 	for _, warning := range allBorgWarnings {
 		if warning.ExitCode == exitCode {
-			return &BorgResult{Warning: warning}
+			return &Status{Warning: warning}
 		}
 	}
 
 	for _, err := range allBorgErrors {
 		if err.ExitCode == exitCode {
-			return &BorgResult{Error: err}
+			return &Status{Error: err}
 		}
 	}
 
-	return &BorgResult{
+	return &Status{
 		Error: &BorgError{
 			ExitCode: exitCode,
 			Message:  fmt.Sprintf("unknown borg error with exit code %d", exitCode),
@@ -380,8 +380,8 @@ func toBorgResult(exitCode int) *BorgResult {
 	}
 }
 
-// combinedOutputToBorgResult converts command output and error to a BorgResult
-func combinedOutputToBorgResult(out []byte, err error) *BorgResult {
+// combinedOutputToStatus converts command output and error to a Status
+func combinedOutputToStatus(out []byte, err error) *Status {
 	if err == nil {
 		return toBorgResult(0)
 	}
@@ -391,11 +391,11 @@ func combinedOutputToBorgResult(out []byte, err error) *BorgResult {
 	if !errors.As(err, &exitError) {
 		// Include command output in the error message
 		if len(out) > 0 {
-			return &BorgResult{
+			return &Status{
 				Error: createRuntimeError(fmt.Errorf("%s: %s", string(out), err)),
 			}
 		}
-		return &BorgResult{
+		return &Status{
 			Error: createRuntimeError(err),
 		}
 	}
@@ -403,11 +403,11 @@ func combinedOutputToBorgResult(out []byte, err error) *BorgResult {
 	return toBorgResult(exitError.ExitCode())
 }
 
-// statusToBorgResult converts go-cmd status to a BorgResult
-func statusToBorgResult(status gocmd.Status) *BorgResult {
+// gocmdToStatus converts go-cmd status to a Status
+func gocmdToStatus(status gocmd.Status) *Status {
 	if status.Error != nil && status.Exit == 0 {
 		// Execution error (command didn't run)
-		return &BorgResult{
+		return &Status{
 			Error: createRuntimeError(status.Error),
 		}
 	}

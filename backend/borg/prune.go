@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *BorgResult {
+func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *Status {
 	if len(pruneOptions) == 0 {
-		return &BorgResult{Error: createRuntimeError(fmt.Errorf("pruneOptions must not be empty"))}
+		return &Status{Error: createRuntimeError(fmt.Errorf("pruneOptions must not be empty"))}
 	}
 
 	// Prepare prune command
@@ -59,7 +59,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
-	result := statusToBorgResult(status)
+	result := gocmdToStatus(status)
 	if !isDryRun && result.IsCompletedWithSuccess() {
 		// Run compact to free up space
 		err := b.Compact(ctx, repository, password)

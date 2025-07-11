@@ -365,7 +365,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 				})
 			}
 			if tt.deleteArchives {
-				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.BorgResult{})
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
 				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
 					Cache:       borgtypes.Cache{},
@@ -499,7 +499,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 					wg.Done()
 				})
 
-				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.BorgResult{})
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
 				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
 					Cache:       borgtypes.Cache{},

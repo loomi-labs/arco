@@ -14,6 +14,7 @@ import (
 	exec "os/exec"
 	reflect "reflect"
 
+	borg "github.com/loomi-labs/arco/backend/borg"
 	types "github.com/loomi-labs/arco/backend/borg/types"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -71,11 +72,11 @@ func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.C
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, error) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *borg.Status) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, ch)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(*borg.Status)
 	return ret0, ret1
 }
 
@@ -100,10 +101,10 @@ func (mr *MockBorgMockRecorder) DeleteArchive(ctx, repository, archive, password
 }
 
 // DeleteArchives mocks base method.
-func (m *MockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) error {
+func (m *MockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) *borg.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteArchives", ctx, repository, password, prefix)
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(*borg.Status)
 	return ret0
 }
 
@@ -200,10 +201,10 @@ func (mr *MockBorgMockRecorder) MountRepository(ctx, repository, password, mount
 }
 
 // Prune mocks base method.
-func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) error {
+func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *borg.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Prune", ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(*borg.Status)
 	return ret0
 }
 

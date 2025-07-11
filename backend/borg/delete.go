@@ -23,7 +23,7 @@ func (b *borg) DeleteArchive(ctx context.Context, repository string, archive str
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) *BorgResult {
+func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) *Status {
 	// Prepare delete command
 	cmd := exec.CommandContext(ctx, b.path,
 		"delete",
@@ -36,8 +36,8 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 	// Run delete command
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	result := combinedOutputToBorgResult(out, err)
-	
+	result := combinedOutputToStatus(out, err)
+
 	if result.IsCompletedWithSuccess() {
 		// Run compact to free up space
 		compactErr := b.Compact(ctx, repository, password)
@@ -45,7 +45,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 			b.log.Errorf("Failed to compact after delete: %v", compactErr)
 		}
 	}
-	
+
 	return b.log.LogCmdResultD(result, cmd.String(), time.Since(startTime))
 }
 

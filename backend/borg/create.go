@@ -13,13 +13,13 @@ import (
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *BorgResult) {
+func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *Status) {
 	archiveName := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
 	totalFiles, result, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)
 	if err != nil {
-		return "", &BorgResult{Error: createRuntimeError(err)}
+		return "", &Status{Error: createRuntimeError(err)}
 	}
 	if !result.IsCompletedWithSuccess() {
 		return "", result
@@ -65,7 +65,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
-	result = statusToBorgResult(status)
+	result = gocmdToStatus(status)
 	return archiveName, b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime))
 }
 
@@ -104,7 +104,7 @@ func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.Backup
 
 // countBackupFiles counts the number of files that will be backed up.
 // We use the --dry-run flag to simulate the backup and count the files.
-func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string) (int, *BorgResult, error) {
+func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string) (int, *Status, error) {
 	cmdStr := append([]string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--dry-run",  // Simulate the backup
@@ -146,7 +146,7 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
-	result := statusToBorgResult(status)
+	result := gocmdToStatus(status)
 	if result.HasError() || result.HasBeenCanceled {
 		return 0, b.log.LogCmdResultD(result, cmdLog, time.Duration(status.Runtime)), nil
 	}

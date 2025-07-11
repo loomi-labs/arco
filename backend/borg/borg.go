@@ -16,15 +16,15 @@ type Borg interface {
 	Init(ctx context.Context, repository, password string, noPassword bool) error
 	List(ctx context.Context, repository string, password string) (*types.ListResponse, error)
 	Compact(ctx context.Context, repository string, password string) error
-	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *BorgResult)
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *Status)
 	Rename(ctx context.Context, repository, archive, password, newName string) error
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) error
-	DeleteArchives(ctx context.Context, repository, password, prefix string) *BorgResult
+	DeleteArchives(ctx context.Context, repository, password, prefix string) *Status
 	DeleteRepository(ctx context.Context, repository string, password string) error
 	MountRepository(ctx context.Context, repository string, password string, mountPath string) error
 	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) error
 	Umount(ctx context.Context, path string) error
-	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *BorgResult
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *Status
 	BreakLock(ctx context.Context, repository string, password string) error
 }
 
@@ -98,7 +98,7 @@ func (z *CmdLogger) LogCmdErrorD(ctx context.Context, cmd string, duration time.
 	return err
 }
 
-func (z *CmdLogger) LogCmdResultD(result *BorgResult, cmd string, duration time.Duration) *BorgResult {
+func (z *CmdLogger) LogCmdResultD(result *Status, cmd string, duration time.Duration) *Status {
 	if result.HasError() {
 		z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
 	} else if result.HasWarning() {
