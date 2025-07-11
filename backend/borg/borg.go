@@ -6,6 +6,7 @@ import (
 	"fmt"
 	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/negrel/assert"
 	"go.uber.org/zap"
 	"os"
 	"os/exec"
@@ -79,6 +80,7 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 }
 
 func (z *CmdLogger) LogCmdResult(ctx context.Context, result *types.Status, cmd string, duration time.Duration) *types.Status {
+	assert.NotNil(result, "LogCmdResult received nil status")
 	if result.HasError() {
 		if ctx.Value(noErrorCtxKey) == nil {
 			z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
