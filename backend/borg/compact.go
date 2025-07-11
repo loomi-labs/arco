@@ -2,13 +2,14 @@ package borg
 
 import (
 	"context"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 	"syscall"
 	"time"
 )
 
 // Compact runs the borg compact command to free up space in the repository
-func (b *borg) Compact(ctx context.Context, repository string, password string) *Status {
+func (b *borg) Compact(ctx context.Context, repository string, password string) *types.Status {
 	// Prepare compact command
 	cmd := exec.CommandContext(ctx, b.path, "compact", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()

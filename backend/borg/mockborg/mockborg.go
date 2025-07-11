@@ -14,7 +14,6 @@ import (
 	exec "os/exec"
 	reflect "reflect"
 
-	borg "github.com/loomi-labs/arco/backend/borg"
 	types "github.com/loomi-labs/arco/backend/borg/types"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -44,10 +43,10 @@ func (m *MockBorg) EXPECT() *MockBorgMockRecorder {
 }
 
 // BreakLock mocks base method.
-func (m *MockBorg) BreakLock(ctx context.Context, repository, password string) *borg.Status {
+func (m *MockBorg) BreakLock(ctx context.Context, repository, password string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BreakLock", ctx, repository, password)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -58,10 +57,10 @@ func (mr *MockBorgMockRecorder) BreakLock(ctx, repository, password any) *gomock
 }
 
 // Compact mocks base method.
-func (m *MockBorg) Compact(ctx context.Context, repository, password string) *borg.Status {
+func (m *MockBorg) Compact(ctx context.Context, repository, password string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Compact", ctx, repository, password)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -72,11 +71,11 @@ func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.C
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *borg.Status) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, ch)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(*borg.Status)
+	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
@@ -87,10 +86,10 @@ func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backup
 }
 
 // DeleteArchive mocks base method.
-func (m *MockBorg) DeleteArchive(ctx context.Context, repository, archive, password string) *borg.Status {
+func (m *MockBorg) DeleteArchive(ctx context.Context, repository, archive, password string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteArchive", ctx, repository, archive, password)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -101,10 +100,10 @@ func (mr *MockBorgMockRecorder) DeleteArchive(ctx, repository, archive, password
 }
 
 // DeleteArchives mocks base method.
-func (m *MockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) *borg.Status {
+func (m *MockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteArchives", ctx, repository, password, prefix)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -115,10 +114,10 @@ func (mr *MockBorgMockRecorder) DeleteArchives(ctx, repository, password, prefix
 }
 
 // DeleteRepository mocks base method.
-func (m *MockBorg) DeleteRepository(ctx context.Context, repository, password string) *borg.Status {
+func (m *MockBorg) DeleteRepository(ctx context.Context, repository, password string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repository, password)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -129,11 +128,11 @@ func (mr *MockBorgMockRecorder) DeleteRepository(ctx, repository, password any) 
 }
 
 // Info mocks base method.
-func (m *MockBorg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *borg.Status) {
+func (m *MockBorg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Info", ctx, repository, password)
 	ret0, _ := ret[0].(*types.InfoResponse)
-	ret1, _ := ret[1].(*borg.Status)
+	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
@@ -144,10 +143,10 @@ func (mr *MockBorgMockRecorder) Info(ctx, repository, password any) *gomock.Call
 }
 
 // Init mocks base method.
-func (m *MockBorg) Init(ctx context.Context, repository, password string, noPassword bool) *borg.Status {
+func (m *MockBorg) Init(ctx context.Context, repository, password string, noPassword bool) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", ctx, repository, password, noPassword)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -158,11 +157,11 @@ func (mr *MockBorgMockRecorder) Init(ctx, repository, password, noPassword any) 
 }
 
 // List mocks base method.
-func (m *MockBorg) List(ctx context.Context, repository, password string) (*types.ListResponse, *borg.Status) {
+func (m *MockBorg) List(ctx context.Context, repository, password string) (*types.ListResponse, *types.Status) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, repository, password)
 	ret0, _ := ret[0].(*types.ListResponse)
-	ret1, _ := ret[1].(*borg.Status)
+	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
@@ -173,10 +172,10 @@ func (mr *MockBorgMockRecorder) List(ctx, repository, password any) *gomock.Call
 }
 
 // MountArchive mocks base method.
-func (m *MockBorg) MountArchive(ctx context.Context, repository, archive, password, mountPath string) *borg.Status {
+func (m *MockBorg) MountArchive(ctx context.Context, repository, archive, password, mountPath string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MountArchive", ctx, repository, archive, password, mountPath)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -187,10 +186,10 @@ func (mr *MockBorgMockRecorder) MountArchive(ctx, repository, archive, password,
 }
 
 // MountRepository mocks base method.
-func (m *MockBorg) MountRepository(ctx context.Context, repository, password, mountPath string) *borg.Status {
+func (m *MockBorg) MountRepository(ctx context.Context, repository, password, mountPath string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MountRepository", ctx, repository, password, mountPath)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -201,10 +200,10 @@ func (mr *MockBorgMockRecorder) MountRepository(ctx, repository, password, mount
 }
 
 // Prune mocks base method.
-func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *borg.Status {
+func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Prune", ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -215,10 +214,10 @@ func (mr *MockBorgMockRecorder) Prune(ctx, repository, password, prefix, pruneOp
 }
 
 // Rename mocks base method.
-func (m *MockBorg) Rename(ctx context.Context, repository, archive, password, newName string) *borg.Status {
+func (m *MockBorg) Rename(ctx context.Context, repository, archive, password, newName string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Rename", ctx, repository, archive, password, newName)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 
@@ -229,10 +228,10 @@ func (mr *MockBorgMockRecorder) Rename(ctx, repository, archive, password, newNa
 }
 
 // Umount mocks base method.
-func (m *MockBorg) Umount(ctx context.Context, path string) *borg.Status {
+func (m *MockBorg) Umount(ctx context.Context, path string) *types.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Umount", ctx, path)
-	ret0, _ := ret[0].(*borg.Status)
+	ret0, _ := ret[0].(*types.Status)
 	return ret0
 }
 

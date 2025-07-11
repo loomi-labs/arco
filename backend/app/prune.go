@@ -6,7 +6,6 @@ import (
 	"github.com/eminarican/safetypes"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
@@ -237,7 +236,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 		if status.HasBeenCanceled {
 			b.state.SetPruneCancelled(b.ctx, bId)
 			return PruneResultCanceled, nil
-		} else if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -408,7 +407,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	status := b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if !status.IsCompletedWithSuccess() {
-		if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
+		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return 0, fmt.Errorf("repository %s is locked", repo.Name)
 		} else {

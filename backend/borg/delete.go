@@ -3,12 +3,13 @@ package borg
 import (
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 	"time"
 )
 
 // DeleteArchive deletes a single archive from the repository
-func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) *Status {
+func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) *types.Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
@@ -21,7 +22,7 @@ func (b *borg) DeleteArchive(ctx context.Context, repository string, archive str
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) *Status {
+func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) *types.Status {
 	// Prepare delete command
 	cmd := exec.CommandContext(ctx, b.path,
 		"delete",
@@ -48,7 +49,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 }
 
 // DeleteRepository deletes the repository and all its archives
-func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) *Status {
+func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) *types.Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).
 		WithPassword(password).

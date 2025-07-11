@@ -2,11 +2,12 @@ package borg
 
 import (
 	"context"
+	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os/exec"
 	"testing"
 )
 
@@ -292,27 +293,18 @@ var withJsonError = testBorgInfo{
 	wantErr:   true,
 }
 
-// Simple mock CommandRunner for testing
-type mockCommandRunner struct {
-	output []byte
-	err    error
-}
-
-func (m *mockCommandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
-	return m.output, m.err
-}
-
 func TestBorgInfo(t *testing.T) {
 	var b Borg
-	var cr *mockCommandRunner
+	var cr *mockborg.MockCommandRunner
 
 	var setup = func(t *testing.T, output []byte, err error) {
 		logConfig := zap.NewDevelopmentConfig()
 		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		log, err := logConfig.Build()
-		assert.NoError(t, err, "Failed to create logger")
+		log, logErr := logConfig.Build()
+		assert.NoError(t, logErr, "Failed to create logger")
 
-		cr = &mockCommandRunner{output: output, err: err}
+		cr = mockborg.NewMockCommandRunner(gomock.NewController(t))
+		cr.EXPECT().Info(gomock.Any()).Return(output, err)
 		b = NewBorg("borg", log.Sugar(), []string{}, cr)
 	}
 

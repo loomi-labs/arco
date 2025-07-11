@@ -7,7 +7,6 @@ import (
 	"github.com/eminarican/safetypes"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
@@ -706,7 +705,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		if status.HasBeenCanceled {
 			b.state.SetBackupCancelled(b.ctx, bId, true)
 			return BackupResultCancelled, nil
-		} else if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -780,7 +779,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 		if status.HasBeenCanceled {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
 			return DeleteResultCancelled, nil
-		} else if status.HasError() && errors.Is(status.Error, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			b.state.AddNotification(b.ctx, "Delete job failed: repository is locked", types.LevelError)
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return DeleteResultError, status.Error

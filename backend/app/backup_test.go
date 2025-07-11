@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -71,8 +70,8 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 		p.Prefix = "test-"
 		bs = p.Edges.BackupSchedule
 
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borg.Status{Error: borg.ErrorRepositoryDoesNotExist})
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 		r, err := a.RepoClient().Create("TestRepo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
@@ -218,8 +217,8 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 		p.Name = "Test profile"
 		p.Prefix = "test-"
 
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borg.Status{Error: borg.ErrorRepositoryDoesNotExist})
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 		r, err := a.RepoClient().Create("Test-repo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
@@ -283,8 +282,8 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 	setup := func(t *testing.T) {
 		a, mockBorg, mockEventEmitter = NewTestApp(t)
 
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borg.Status{Error: borg.ErrorRepositoryDoesNotExist})
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 		r, err := a.RepoClient().Create("TestRepo", "/tmp", "pw", true)
 		assert.NoError(t, err, "Failed to create new repository")
 		repo = r
@@ -365,7 +364,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 				})
 			}
 			if tt.deleteArchives {
-				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
 					Cache:       borgtypes.Cache{},
@@ -373,7 +372,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 					Repository:  borgtypes.Repository{},
 					SecurityDir: "",
 				}
-				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, &borg.Status{})
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, &borgtypes.Status{})
 				listResponse := &borgtypes.ListResponse{
 					Archives:   nil,
 					Encryption: borgtypes.Encryption{},
@@ -381,7 +380,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borg.Status{}).Do(func(_, _, _ any) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borgtypes.Status{}).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}
@@ -421,8 +420,8 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 		var err error
 		a, mockBorg, mockEventEmitter = NewTestApp(t)
 
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borg.Status{Error: borg.ErrorRepositoryDoesNotExist}).Times(2)
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{}).Times(2)
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist}).Times(2)
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{}).Times(2)
 		repo1, err = a.RepoClient().Create("Test-repo-1", "/tmp1", "", true)
 		assert.NoError(t, err, "Failed to create new repository")
 		repo2, err = a.RepoClient().Create("Test-repo-2", "/tmp2", "", true)
@@ -499,7 +498,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 					wg.Done()
 				})
 
-				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borg.Status{})
+				mockBorg.EXPECT().DeleteArchives(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 				infoResponse := &borgtypes.InfoResponse{
 					Archives:    nil,
 					Cache:       borgtypes.Cache{},
@@ -507,7 +506,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 					Repository:  borgtypes.Repository{},
 					SecurityDir: "",
 				}
-				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, &borg.Status{})
+				mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(infoResponse, &borgtypes.Status{})
 				listResponse := &borgtypes.ListResponse{
 					Archives:   nil,
 					Encryption: borgtypes.Encryption{},
@@ -515,7 +514,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borg.Status{}).Do(func(_, _, _ any) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borgtypes.Status{}).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}

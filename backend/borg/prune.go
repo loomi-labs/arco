@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *Status {
+func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status {
 	if len(pruneOptions) == 0 {
-		return &Status{Error: createRuntimeError(fmt.Errorf("pruneOptions must not be empty"))}
+		return newStatusWithError(fmt.Errorf("pruneOptions must not be empty"))
 	}
 
 	// Prepare prune command

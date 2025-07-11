@@ -1,11 +1,4 @@
-package borg
-
-import (
-	"errors"
-	"fmt"
-	gocmd "github.com/go-cmd/cmd"
-	"os/exec"
-)
+package types
 
 // ErrorCategory represents the category of a Borg error
 type ErrorCategory int
@@ -197,20 +190,14 @@ var (
 )
 
 /***********************************/
-/********** Borg Result ************/
+/********** Borg Status ************/
 /***********************************/
 
-// Status represents the result of a Borg operation
+// Status represents the status of a Borg operation
 type Status struct {
 	Error           *BorgError // nil if no error occurred
 	Warning         *Warning   // nil if no warning occurred
 	HasBeenCanceled bool
-}
-
-func NewStatusWithError(err error) *Status {
-	return &Status{
-		Error: createRuntimeError(err),
-	}
 }
 
 // IsCompletedWithSuccess returns true if there's no error and it has not been canceled
@@ -265,8 +252,8 @@ var (
 	WarningBackupFileNotFound         = &Warning{ExitCode: 107, Message: "backup file not found", Category: CategoryBackup}
 )
 
-// allBorgErrors contains all predefined BorgError instances for lookup
-var allBorgErrors = []*BorgError{
+// AllBorgErrors contains all predefined BorgError instances for lookup
+var AllBorgErrors = []*BorgError{
 	ErrDefault,
 	ErrorCancelledByUser,
 	ErrorCommandError,
@@ -332,8 +319,8 @@ var allBorgErrors = []*BorgError{
 	ErrorTAMUnsupportedSuiteError,
 }
 
-// allBorgWarnings contains all predefined Warning instances for lookup
-var allBorgWarnings = []*Warning{
+// AllBorgWarnings contains all predefined Warning instances for lookup
+var AllBorgWarnings = []*Warning{
 	WarningGeneric,
 	WarningBackup,
 	WarningFileChanged,
@@ -344,79 +331,4 @@ var allBorgWarnings = []*Warning{
 	WarningBackupPermission,
 	WarningBackupIO,
 	WarningBackupFileNotFound,
-}
-
-func createRuntimeError(err error) *BorgError {
-	return &BorgError{
-		ExitCode:   -1,
-		Message:    err.Error(),
-		Underlying: err,
-		Category:   CategoryRuntime,
-	}
-}
-
-func toBorgResult(exitCode int) *Status {
-	if exitCode == 0 {
-		return &Status{}
-	}
-	if exitCode == 143 {
-		return &Status{
-			HasBeenCanceled: true,
-		}
-	}
-
-	for _, warning := range allBorgWarnings {
-		if warning.ExitCode == exitCode {
-			return &Status{Warning: warning}
-		}
-	}
-
-	for _, err := range allBorgErrors {
-		if err.ExitCode == exitCode {
-			return &Status{Error: err}
-		}
-	}
-
-	return &Status{
-		Error: &BorgError{
-			ExitCode: exitCode,
-			Message:  fmt.Sprintf("unknown borg error with exit code %d", exitCode),
-			Category: CategoryUnknown,
-		},
-	}
-}
-
-// combinedOutputToStatus converts command output and error to a Status
-func combinedOutputToStatus(out []byte, err error) *Status {
-	if err == nil {
-		return toBorgResult(0)
-	}
-
-	// Return the error if it is not an ExitError
-	var exitError *exec.ExitError
-	if !errors.As(err, &exitError) {
-		// Include command output in the error message
-		if len(out) > 0 {
-			return &Status{
-				Error: createRuntimeError(fmt.Errorf("%s: %s", string(out), err)),
-			}
-		}
-		return &Status{
-			Error: createRuntimeError(err),
-		}
-	}
-
-	return toBorgResult(exitError.ExitCode())
-}
-
-// gocmdToStatus converts go-cmd status to a Status
-func gocmdToStatus(status gocmd.Status) *Status {
-	if status.Error != nil && status.Exit == 0 {
-		// Execution error (command didn't run)
-		return &Status{
-			Error: createRuntimeError(status.Error),
-		}
-	}
-
-	return toBorgResult(status.Exit)
 }

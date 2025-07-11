@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, *Status) {
+func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, *types.Status) {
 	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
@@ -26,7 +26,7 @@ func (b *borg) List(ctx context.Context, repository string, password string) (*t
 	var listResponse types.ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
-		parseStatus := NewStatusWithError(fmt.Errorf("failed to parse borg list output: %v", err))
+		parseStatus := newStatusWithError(fmt.Errorf("failed to parse borg list output: %v", err))
 		return nil, b.log.LogCmdResult(ctx, parseStatus, cmd.String(), time.Since(startTime))
 	}
 

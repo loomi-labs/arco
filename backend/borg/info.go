@@ -33,7 +33,7 @@ func sanitizeOutput(out []byte) []byte {
 	return out
 }
 
-func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *Status) {
+func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status) {
 	cmd := exec.CommandContext(ctx, b.path, "info", "--json", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
@@ -50,7 +50,7 @@ func (b *borg) Info(ctx context.Context, repository, password string) (*types.In
 	var info types.InfoResponse
 	err = json.Unmarshal(sanitizeOutput(out), &info)
 	if err != nil {
-		parseStatus := NewStatusWithError(fmt.Errorf("failed to parse borg info output: %v", err))
+		parseStatus := newStatusWithError(fmt.Errorf("failed to parse borg info output: %v", err))
 		return nil, b.log.LogCmdResult(ctx, parseStatus, cmd.String(), time.Since(startTime))
 	}
 

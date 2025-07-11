@@ -2,7 +2,9 @@ package borg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"go.uber.org/zap"
 	"os"
@@ -12,20 +14,20 @@ import (
 )
 
 type Borg interface {
-	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *Status)
-	Init(ctx context.Context, repository, password string, noPassword bool) *Status
-	List(ctx context.Context, repository string, password string) (*types.ListResponse, *Status)
-	Compact(ctx context.Context, repository string, password string) *Status
-	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *Status)
-	Rename(ctx context.Context, repository, archive, password, newName string) *Status
-	DeleteArchive(ctx context.Context, repository string, archive string, password string) *Status
-	DeleteArchives(ctx context.Context, repository, password, prefix string) *Status
-	DeleteRepository(ctx context.Context, repository string, password string) *Status
-	MountRepository(ctx context.Context, repository string, password string, mountPath string) *Status
-	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) *Status
-	Umount(ctx context.Context, path string) *Status
-	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *Status
-	BreakLock(ctx context.Context, repository string, password string) *Status
+	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status)
+	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
+	List(ctx context.Context, repository string, password string) (*types.ListResponse, *types.Status)
+	Compact(ctx context.Context, repository string, password string) *types.Status
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status)
+	Rename(ctx context.Context, repository, archive, password, newName string) *types.Status
+	DeleteArchive(ctx context.Context, repository string, archive string, password string) *types.Status
+	DeleteArchives(ctx context.Context, repository, password, prefix string) *types.Status
+	DeleteRepository(ctx context.Context, repository string, password string) *types.Status
+	MountRepository(ctx context.Context, repository string, password string, mountPath string) *types.Status
+	MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) *types.Status
+	Umount(ctx context.Context, path string) *types.Status
+	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status
+	BreakLock(ctx context.Context, repository string, password string) *types.Status
 }
 
 type borg struct {
@@ -76,7 +78,7 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 	return time.Now()
 }
 
-func (z *CmdLogger) LogCmdResult(ctx context.Context, result *Status, cmd string, duration time.Duration) *Status {
+func (z *CmdLogger) LogCmdResult(ctx context.Context, result *types.Status, cmd string, duration time.Duration) *types.Status {
 	if result.HasError() {
 		if ctx.Value(noErrorCtxKey) == nil {
 			z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
@@ -137,4 +139,81 @@ func (e Env) AsList() []string {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
 	}
 	return env
+}
+
+func createRuntimeError(err error) *types.BorgError {
+	return &types.BorgError{
+		ExitCode:   -1,
+		Message:    err.Error(),
+		Underlying: err,
+		Category:   types.CategoryRuntime,
+	}
+}
+
+func newStatusWithError(err error) *types.Status {
+	return &types.Status{
+		Error: createRuntimeError(err),
+	}
+}
+
+func toBorgResult(exitCode int) *types.Status {
+	if exitCode == 0 {
+		return &types.Status{}
+	}
+	if exitCode == 143 {
+		return &types.Status{
+			HasBeenCanceled: true,
+		}
+	}
+
+	for _, warning := range types.AllBorgWarnings {
+		if warning.ExitCode == exitCode {
+			return &types.Status{Warning: warning}
+		}
+	}
+
+	for _, err := range types.AllBorgErrors {
+		if err.ExitCode == exitCode {
+			return &types.Status{Error: err}
+		}
+	}
+
+	return &types.Status{
+		Error: &types.BorgError{
+			ExitCode: exitCode,
+			Message:  fmt.Sprintf("unknown borg error with exit code %d", exitCode),
+			Category: types.CategoryUnknown,
+		},
+	}
+}
+
+// combinedOutputToStatus converts command output and error to a Status
+func combinedOutputToStatus(out []byte, err error) *types.Status {
+	if err == nil {
+		return toBorgResult(0)
+	}
+
+	// Return the error if it is not an ExitError
+	var exitError *exec.ExitError
+	if !errors.As(err, &exitError) {
+		// Include command output in the error message
+		if len(out) > 0 {
+			return newStatusWithError(fmt.Errorf("%s: %s", string(out), err))
+		}
+		return newStatusWithError(err)
+	}
+
+	return toBorgResult(exitError.ExitCode())
+}
+
+// gocmdToStatus converts go-cmd status to a Status
+func gocmdToStatus(status gocmd.Status) *types.Status {
+	if status.Error != nil && status.Exit == 0 {
+		// Execution error (command didn't run)
+		return &types.Status{
+			Error: createRuntimeError(status.Error),
+		}
+	}
+
+	return toBorgResult(status.Exit)
 }

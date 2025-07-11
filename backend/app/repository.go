@@ -8,6 +8,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
+	types2 "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -239,7 +240,7 @@ func (r *RepositoryClient) Delete(id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	status := r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, borg.ErrorRepositoryDoesNotExist) {
+	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, types2.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
 		if status.HasBeenCanceled {
 			return fmt.Errorf("repository deletion was cancelled")
@@ -388,14 +389,14 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoCo
 		if status.HasBeenCanceled {
 			return result, fmt.Errorf("repository info retrieval was cancelled")
 		}
-		if errors.Is(status.Error, borg.ErrorPassphraseWrong) {
+		if errors.Is(status.Error, types2.ErrorPassphraseWrong) {
 			result.IsBorgRepo = true
 			return result, nil
 		}
-		if errors.Is(status.Error, borg.ErrorRepositoryDoesNotExist) {
+		if errors.Is(status.Error, types2.ErrorRepositoryDoesNotExist) {
 			return result, nil
 		}
-		if errors.Is(status.Error, borg.ErrorRepositoryInvalidRepository) {
+		if errors.Is(status.Error, types2.ErrorRepositoryInvalidRepository) {
 			return result, nil
 		}
 		return result, fmt.Errorf("info command failed: %s", status.GetError())
