@@ -2,20 +2,19 @@ package borg
 
 import (
 	"context"
-	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
+	"time"
 )
 
 // BreakLock deletes the lock for the given repository.
-func (b *borg) BreakLock(ctx context.Context, repository string, password string) error {
+func (b *borg) BreakLock(ctx context.Context, repository string, password string) *types.Status {
 	cmd := exec.CommandContext(ctx, b.path, "break-lock", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

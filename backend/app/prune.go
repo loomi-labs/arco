@@ -6,7 +6,6 @@ import (
 	"github.com/eminarican/safetypes"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
@@ -232,12 +231,12 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
-	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
-	if err != nil {
-		if errors.As(err, &borg.CancelErr{}) {
+	status := b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
 			b.state.SetPruneCancelled(b.ctx, bId)
 			return PruneResultCanceled, nil
-		} else if errors.Is(err, borg.ErrorLockTimeout) {
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			err = fmt.Errorf("repository %s is locked", repo.Name)
 			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
@@ -247,13 +246,13 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
 			return PruneResultError, err
 		} else {
-			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
+			saveErr := b.saveDbNotification(bId, status.Error.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
 			if saveErr != nil {
 				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
-			b.state.SetPruneError(b.ctx, bId, err, true, false)
-			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
-			return PruneResultError, err
+			b.state.SetPruneError(b.ctx, bId, status.Error, true, false)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Failed to prune repository: %s", status.Error), types.LevelError)
+			return PruneResultError, status.Error
 		}
 	} else {
 		select {
@@ -406,14 +405,14 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
-	err = b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
-	if err != nil {
-		if errors.Is(err, borg.ErrorLockTimeout) {
+	status := b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return 0, fmt.Errorf("repository %s is locked", repo.Name)
 		} else {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return 0, fmt.Errorf("failed to examine prune: %w", err)
+			return 0, fmt.Errorf("failed to examine prune: %w", status.Error)
 		}
 	} else {
 		select {

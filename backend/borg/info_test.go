@@ -297,13 +297,14 @@ func TestBorgInfo(t *testing.T) {
 	var b Borg
 	var cr *mockborg.MockCommandRunner
 
-	var setup = func(t *testing.T) {
+	var setup = func(t *testing.T, output []byte, err error) {
 		logConfig := zap.NewDevelopmentConfig()
 		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		log, err := logConfig.Build()
-		assert.NoError(t, err, "Failed to create logger")
+		log, logErr := logConfig.Build()
+		assert.NoError(t, logErr, "Failed to create logger")
 
 		cr = mockborg.NewMockCommandRunner(gomock.NewController(t))
+		cr.EXPECT().Info(gomock.Any()).Return(output, err)
 		b = NewBorg("borg", log.Sugar(), []string{}, cr)
 	}
 
@@ -319,17 +320,16 @@ func TestBorgInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// ARRANGE
-			setup(t)
-			cr.EXPECT().Info(gomock.Any()).Return(tt.cmdResult, nil)
+			setup(t, tt.cmdResult, nil)
 
 			// ACT
-			result, err := b.Info(context.Background(), "test-repo", "test-password")
+			result, status := b.Info(context.Background(), "test-repo", "test-password")
 
 			// ASSERT
 			if tt.wantErr {
-				assert.Error(t, err, "Expected error, got nil")
+				assert.True(t, status.HasError(), "Expected error, got nil")
 			} else {
-				assert.NoError(t, err, "Expected no error, got %v", err)
+				assert.True(t, status.IsCompletedWithSuccess(), "Expected success, got error: %v", status.GetError())
 				assert.Equal(t, tt.result, result, "Info() = %v, want %v", result, tt.result)
 			}
 		})

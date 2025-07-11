@@ -119,7 +119,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		if app.EnvVarDevelopment.Bool() {
 			cloudRPCURL = "http://localhost:8080"
 		} else {
-			cloudRPCURL = "https://rpc.arco-backup.com"
+			cloudRPCURL = "https://api.arco-backup.com"
 		}
 	}
 

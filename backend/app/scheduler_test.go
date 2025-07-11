@@ -3,8 +3,8 @@ package app
 import (
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
@@ -85,8 +85,8 @@ func TestScheduler(t *testing.T) {
 		p.Prefix = "test-"
 		bs = p.Edges.BackupSchedule
 
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, borg.ErrorRepositoryDoesNotExist)
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
+		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
 		r, err := a.RepoClient().Create("TestRepo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 

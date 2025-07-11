@@ -2,11 +2,12 @@ package borg
 
 import (
 	"context"
-	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
+	"time"
 )
 
-func (b *borg) Init(ctx context.Context, repository, password string, noPassword bool) error {
+func (b *borg) Init(ctx context.Context, repository, password string, noPassword bool) *types.Status {
 	cmdList := []string{"init"}
 	if noPassword {
 		cmdList = append(cmdList, "--encryption=none")
@@ -20,9 +21,7 @@ func (b *borg) Init(ctx context.Context, repository, password string, noPassword
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

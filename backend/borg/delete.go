@@ -3,26 +3,26 @@ package borg
 import (
 	"context"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
+	"time"
 )
 
 // DeleteArchive deletes a single archive from the repository
-func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) error {
+func (b *borg) DeleteArchive(ctx context.Context, repository string, archive string, password string) *types.Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", fmt.Sprintf("%s::%s", repository, archive))
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) error {
+func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix string) *types.Status {
 	// Prepare delete command
 	cmd := exec.CommandContext(ctx, b.path,
 		"delete",
@@ -35,18 +35,21 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 	// Run delete command
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	} else {
-		b.log.LogCmdEnd(cmd.String(), startTime)
+	result := combinedOutputToStatus(out, err)
 
+	if result.IsCompletedWithSuccess() {
 		// Run compact to free up space
-		return b.Compact(ctx, repository, password)
+		compactResult := b.Compact(ctx, repository, password)
+		if compactResult.HasError() {
+			b.log.Errorf("Failed to compact after delete: %v", compactResult.GetError())
+		}
 	}
+
+	return b.log.LogCmdResult(ctx, result, cmd.String(), time.Since(startTime))
 }
 
 // DeleteRepository deletes the repository and all its archives
-func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) error {
+func (b *borg) DeleteRepository(ctx context.Context, repository string, password string) *types.Status {
 	cmd := exec.CommandContext(ctx, b.path, "delete", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).
 		WithPassword(password).
@@ -55,9 +58,7 @@ func (b *borg) DeleteRepository(ctx context.Context, repository string, password
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	}
-	b.log.LogCmdEnd(cmd.String(), startTime)
-	return nil
+	status := combinedOutputToStatus(out, err)
+
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

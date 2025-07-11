@@ -2,36 +2,27 @@ package borg
 
 import (
 	"context"
-	"fmt"
+	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 // Compact runs the borg compact command to free up space in the repository
-func (b *borg) Compact(ctx context.Context, repository string, password string) error {
+func (b *borg) Compact(ctx context.Context, repository string, password string) *types.Status {
 	// Prepare compact command
 	cmd := exec.CommandContext(ctx, b.path, "compact", repository)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Add cancel functionality
-	hasBeenCanceled := false
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
-		hasBeenCanceled = true
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 	}
 
 	// Run compact command
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if hasBeenCanceled {
-			b.log.LogCmdCancelled(cmd.String(), startTime)
-			return CancelErr{}
-		}
-		return b.log.LogCmdError(ctx, cmd.String(), startTime, fmt.Errorf("%s: %s", out, err))
-	} else {
-		b.log.LogCmdEnd(cmd.String(), startTime)
-	}
-	return nil
+	status := combinedOutputToStatus(out, err)
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }
