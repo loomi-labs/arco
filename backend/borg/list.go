@@ -20,15 +20,15 @@ func (b *borg) List(ctx context.Context, repository string, password string) (*t
 	// Convert command output and error to Status
 	status := combinedOutputToStatus(out, err)
 	if status.HasError() {
-		return nil, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
+		return nil, b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 	}
 
 	var listResponse types.ListResponse
 	err = json.Unmarshal(out, &listResponse)
 	if err != nil {
 		parseStatus := NewStatusWithError(fmt.Errorf("failed to parse borg list output: %v", err))
-		return nil, b.log.LogCmdResult(parseStatus, cmd.String(), time.Since(startTime))
+		return nil, b.log.LogCmdResult(ctx, parseStatus, cmd.String(), time.Since(startTime))
 	}
 
-	return &listResponse, b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
+	return &listResponse, b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

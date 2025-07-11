@@ -132,8 +132,16 @@ func (r *RepositoryClient) Create(name, location, password string, noPassword bo
 	}
 	if !result.Success && !result.IsBorgRepo {
 		// Create the repository if it does not exist
-		if err := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword); err != nil {
-			return nil, err
+		status := r.borg.Init(r.ctx, util.ExpandPath(location), password, noPassword)
+		if !status.IsCompletedWithSuccess() {
+			if status.HasBeenCanceled {
+				return nil, fmt.Errorf("repository initialization was cancelled")
+			}
+			return nil, fmt.Errorf("failed to initialize repository: %s", status.GetError())
+		}
+		if status.HasWarning() {
+			// TODO(log-warning): log warning to user
+			r.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
 		}
 	} else if !result.Success {
 		return nil, fmt.Errorf("could not connect to repository")
@@ -230,10 +238,17 @@ func (r *RepositoryClient) Delete(id int) error {
 	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
-	err = r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
-	if err != nil && !errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+	status := r.borg.DeleteRepository(r.ctx, repo.Location, repo.Password)
+	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, borg.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
-		return err
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository deletion was cancelled")
+		}
+		return fmt.Errorf("failed to delete repository: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Repository deletion completed with warning: %s", status.GetWarning())
 	}
 	return r.Remove(id)
 }
@@ -270,9 +285,16 @@ func (r *RepositoryClient) BreakLock(id int) error {
 		return err
 	}
 
-	err = r.borg.BreakLock(r.ctx, repo.Location, repo.Password)
-	if err != nil {
-		return err
+	status := r.borg.BreakLock(r.ctx, repo.Location, repo.Password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("lock breaking was cancelled")
+		}
+		return fmt.Errorf("failed to break lock: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Lock breaking completed with warning: %s", status.GetWarning())
 	}
 	r.state.SetRepoStatus(r.ctx, id, state.RepoStatusIdle)
 	return nil
@@ -361,19 +383,26 @@ func (r *RepositoryClient) testRepoConnection(path, password string) (testRepoCo
 		IsPasswordValid: false,
 		IsBorgRepo:      false,
 	}
-	_, err := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
-	if err != nil {
-		if errors.Is(err, borg.ErrorPassphraseWrong) {
+	_, status := r.borg.Info(borg.NoErrorCtx(r.ctx), path, password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return result, fmt.Errorf("repository info retrieval was cancelled")
+		}
+		if errors.Is(status.Error, borg.ErrorPassphraseWrong) {
 			result.IsBorgRepo = true
 			return result, nil
 		}
-		if errors.Is(err, borg.ErrorRepositoryDoesNotExist) {
+		if errors.Is(status.Error, borg.ErrorRepositoryDoesNotExist) {
 			return result, nil
 		}
-		if errors.Is(err, borg.ErrorRepositoryInvalidRepository) {
+		if errors.Is(status.Error, borg.ErrorRepositoryInvalidRepository) {
 			return result, nil
 		}
-		return result, err
+		return result, fmt.Errorf("info command failed: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
 	}
 	result.Success = true
 	result.IsPasswordValid = true

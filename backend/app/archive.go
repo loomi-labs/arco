@@ -43,9 +43,16 @@ func (r *RepositoryClient) refreshArchives(repoId int) ([]*ent.Archive, error) {
 	r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(r.ctx, repoId, state.RepoStatusIdle)
 
-	listResponse, err := r.borg.List(r.ctx, repo.Location, repo.Password)
-	if err != nil {
-		return nil, err
+	listResponse, status := r.borg.List(r.ctx, repo.Location, repo.Password)
+	if status != nil && !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return nil, fmt.Errorf("archive listing was cancelled")
+		}
+		return nil, fmt.Errorf("failed to get archives: %s", status.GetError())
+	}
+	if status != nil && status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Archive listing completed with warning: %s", status.GetWarning())
 	}
 
 	// Get all the borg ids
@@ -145,9 +152,16 @@ func (r *RepositoryClient) DeleteArchive(id int) error {
 	r.state.SetRepoStatus(r.ctx, arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)
 	defer r.state.SetRepoStatus(r.ctx, arch.Edges.Repository.ID, state.RepoStatusIdle)
 
-	err = r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password)
-	if err != nil {
-		return err
+	status := r.borg.DeleteArchive(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("archive deletion was cancelled")
+		}
+		return fmt.Errorf("failed to delete archive: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Archive deletion completed with warning: %s", status.GetWarning())
 	}
 	err = r.db.Archive.DeleteOneID(id).Exec(r.ctx)
 	if err != nil {
@@ -350,9 +364,16 @@ func (r *RepositoryClient) RenameArchive(id int, prefix, name string) error {
 	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
-	err = r.borg.Rename(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, newName)
-	if err != nil {
-		return fmt.Errorf("failed to rename archive: %w", err)
+	status := r.borg.Rename(r.ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, newName)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("archive renaming was cancelled")
+		}
+		return fmt.Errorf("failed to rename archive: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Archive renaming completed with warning: %s", status.GetWarning())
 	}
 
 	return r.db.Archive.

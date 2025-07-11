@@ -27,8 +27,16 @@ func (r *RepositoryClient) MountRepository(repoId int) (state types.MountState, 
 		return
 	}
 
-	if err = r.borg.MountRepository(r.ctx, repo.Location, repo.Password, path); err != nil {
+	if status := r.borg.MountRepository(r.ctx, repo.Location, repo.Password, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("repository mounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to mount repository: %s", status.GetError())
 		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Repository mounting completed with warning: %s", status.GetWarning())
 	}
 
 	// Update the mount state
@@ -74,8 +82,16 @@ func (r *RepositoryClient) MountArchive(archiveId int) (state types.MountState, 
 	}
 	if !state.IsMounted {
 		// If not mounted, mount it
-		if err = r.borg.MountArchive(r.ctx, archive.Edges.Repository.Location, archive.Name, archive.Edges.Repository.Password, path); err != nil {
+		if status := r.borg.MountArchive(r.ctx, archive.Edges.Repository.Location, archive.Name, archive.Edges.Repository.Password, path); !status.IsCompletedWithSuccess() {
+			if status.HasBeenCanceled {
+				err = fmt.Errorf("archive mounting was cancelled")
+				return
+			}
+			err = fmt.Errorf("failed to mount archive: %s", status.GetError())
 			return
+		} else if status.HasWarning() {
+			// TODO(log-warning): log warning to user
+			r.log.Warnf("Archive mounting completed with warning: %s", status.GetWarning())
 		}
 
 		// Update the mount state
@@ -129,8 +145,16 @@ func (r *RepositoryClient) UnmountRepository(repoId int) (state types.MountState
 		return
 	}
 
-	if err = r.borg.Umount(r.ctx, path); err != nil {
+	if status := r.borg.Umount(r.ctx, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("repository unmounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to unmount repository: %s", status.GetError())
 		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Repository unmounting completed with warning: %s", status.GetWarning())
 	}
 
 	// Update the mount state
@@ -153,8 +177,16 @@ func (r *RepositoryClient) UnmountArchive(archiveId int) (state types.MountState
 		return
 	}
 
-	if err = r.borg.Umount(r.ctx, path); err != nil {
+	if status := r.borg.Umount(r.ctx, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("archive unmounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to unmount archive: %s", status.GetError())
 		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		r.log.Warnf("Archive unmounting completed with warning: %s", status.GetWarning())
 	}
 
 	// Update the mount state

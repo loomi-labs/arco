@@ -592,9 +592,19 @@ func (b *BackupClient) sendBackupScheduleChanged() {
 /***********************************/
 
 func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
-	info, err := b.borg.Info(b.ctx, url, password)
-	if err != nil {
-		return err
+	info, status := b.borg.Info(b.ctx, url, password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository info retrieval was cancelled")
+		}
+		return fmt.Errorf("failed to get repository info: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		b.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+	}
+	if info == nil {
+		return fmt.Errorf("failed to get repository info: response is nil")
 	}
 	return b.db.Repository.
 		UpdateOneID(repoId).
@@ -608,16 +618,26 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 }
 
 func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
-	info, err := b.borg.Info(b.ctx, archiveName, password)
-	if err != nil {
-		return err
+	info, status := b.borg.Info(b.ctx, archiveName, password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository info retrieval was cancelled")
+		}
+		return fmt.Errorf("failed to get archive info: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		b.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+	}
+	if info == nil {
+		return fmt.Errorf("failed to get archive info: response is nil")
 	}
 	if len(info.Archives) == 0 {
 		return fmt.Errorf("no archives found")
 	}
 	createdAt := time.Time(info.Archives[0].Start)
 	duration := time.Time(info.Archives[0].End).Sub(createdAt)
-	_, err = b.db.Archive.
+	_, err := b.db.Archive.
 		Create().
 		SetRepositoryID(bId.RepositoryId).
 		SetBackupProfileID(bId.BackupProfileId).

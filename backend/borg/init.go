@@ -22,5 +22,5 @@ func (b *borg) Init(ctx context.Context, repository, password string, noPassword
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

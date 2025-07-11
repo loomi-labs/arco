@@ -28,7 +28,7 @@ func (b *borg) mount(ctx context.Context, repository string, archive *string, pa
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }
 
 func (b *borg) Umount(ctx context.Context, path string) *Status {
@@ -38,5 +38,5 @@ func (b *borg) Umount(ctx context.Context, path string) *Status {
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
 }

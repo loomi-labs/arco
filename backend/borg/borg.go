@@ -76,10 +76,8 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 	return time.Now()
 }
 
-func (z *CmdLogger) LogCmdResult(result *Status, cmd string, duration time.Duration) *Status {
+func (z *CmdLogger) LogCmdResult(ctx context.Context, result *Status, cmd string, duration time.Duration) *Status {
 	if result.HasError() {
-		// TODO: pass cxt to this method
-		ctx := context.TODO()
 		if ctx.Value(noErrorCtxKey) == nil {
 			z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
 		} else {
