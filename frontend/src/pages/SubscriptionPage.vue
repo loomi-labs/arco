@@ -213,7 +213,7 @@ const formatChangeType = (changeType: ChangeType): string => {
 
 const getOldValue = (change: PendingChange): string => {
   // Handle oneof OldValue field
-  const oldValue = change.OldValue as any;
+  const oldValue = change.OldValue;
   if (oldValue?.old_plan_id) return oldValue.old_plan_id;
   if (oldValue?.old_currency !== undefined) return oldValue.old_currency.toString();
   if (oldValue?.old_is_yearly_billing !== undefined) return oldValue.old_is_yearly_billing ? 'Yearly' : 'Monthly';
@@ -222,7 +222,7 @@ const getOldValue = (change: PendingChange): string => {
 
 const getNewValue = (change: PendingChange): string => {
   // Handle oneof NewValue field
-  const newValue = change.NewValue as any;
+  const newValue = change.NewValue;
   if (newValue?.new_plan_id) return newValue.new_plan_id;
   if (newValue?.new_currency !== undefined) return newValue.new_currency.toString();
   if (newValue?.new_is_yearly_billing !== undefined) return newValue.new_is_yearly_billing ? 'Yearly' : 'Monthly';
