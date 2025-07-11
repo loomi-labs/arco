@@ -13,12 +13,15 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as arcov1$0 from "../../api/v1/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as state$0 from "../state/models.js";
 
 /**
- * CancelSubscription cancels the user's subscription
+ * CancelPendingChange cancels a specific scheduled change before it takes effect
  */
-export function CancelSubscription(subscriptionID: string, immediate: boolean): Promise<arcov1$0.CancelSubscriptionResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2256032254, subscriptionID, immediate) as any;
+export function CancelPendingChange(subscriptionID: string, changeID: number): Promise<arcov1$0.CancelPendingChangeResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(889159534, subscriptionID, changeID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType1($result);
     }) as any;
@@ -27,12 +30,93 @@ export function CancelSubscription(subscriptionID: string, immediate: boolean): 
 }
 
 /**
- * CreateCheckoutSession creates a payment checkout session
+ * CancelSubscription cancels the user's subscription
  */
-export function CreateCheckoutSession(planName: string): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(54709411, planName) as any;
+export function CancelSubscription(subscriptionID: string): Promise<arcov1$0.CancelSubscriptionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2256032254, subscriptionID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType3($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * ChangeBillingCycle schedules a billing cycle change for the next billing period
+ * This method now uses ScheduleSubscriptionUpdate instead of the deprecated ChangeBillingCycle RPC
+ */
+export function ChangeBillingCycle(subscriptionID: string, isYearly: boolean): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3281029962, subscriptionID, isYearly) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * ClearCheckoutResult clears the current checkout result
+ */
+export function ClearCheckoutResult(): Promise<void> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(1431767263) as any;
+    return $resultPromise;
+}
+
+/**
+ * CreateCheckoutSession creates a payment checkout session
+ */
+export function CreateCheckoutSession(planName: string, currency: arcov1$0.Currency): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(54709411, planName, currency) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType7($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * DowngradePlan schedules a plan downgrade for a subscription
+ */
+export function DowngradePlan(subscriptionID: string, planID: string): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(946749783, subscriptionID, planID) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * GetCheckoutResult returns the current checkout result
+ */
+export function GetCheckoutResult(): Promise<state$0.CheckoutResult | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3825337690) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType9($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * GetCheckoutSession returns the current checkout session
+ */
+export function GetCheckoutSession(): Promise<arcov1$0.CreateCheckoutSessionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3805689501) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType7($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * GetPendingChanges retrieves all scheduled changes for a subscription
+ */
+export function GetPendingChanges(subscriptionID: string): Promise<arcov1$0.GetPendingChangesResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(4217259715, subscriptionID) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType11($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
@@ -44,16 +128,76 @@ export function CreateCheckoutSession(planName: string): Promise<arcov1$0.Create
 export function GetSubscription(userID: string): Promise<arcov1$0.GetSubscriptionResponse | null> & { cancel(): void } {
     let $resultPromise = $Call.ByID(3325132602, userID) as any;
     let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType13($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * ReactivateSubscription reactivates a cancelled subscription
+ */
+export function ReactivateSubscription(subscriptionID: string): Promise<arcov1$0.ReactivateSubscriptionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(1542251936, subscriptionID) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType15($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * UpdateBillingCycle schedules a billing cycle change for a subscription
+ */
+export function UpdateBillingCycle(subscriptionID: string, isYearly: boolean): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(450493983, subscriptionID, isYearly) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
         return $$createType5($result);
     }) as any;
     $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
     return $typingPromise;
 }
 
+/**
+ * UpdateCurrency schedules a currency change for a subscription
+ */
+export function UpdateCurrency(subscriptionID: string, currency: arcov1$0.Currency): Promise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(2320044535, subscriptionID, currency) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType5($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
+/**
+ * UpgradeSubscription performs immediate Basic→Pro plan upgrade with proration
+ */
+export function UpgradeSubscription(subscriptionID: string, planID: string): Promise<arcov1$0.UpgradeSubscriptionResponse | null> & { cancel(): void } {
+    let $resultPromise = $Call.ByID(3859866138, subscriptionID, planID) as any;
+    let $typingPromise = $resultPromise.then(($result: any) => {
+        return $$createType17($result);
+    }) as any;
+    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
+    return $typingPromise;
+}
+
 // Private type creation functions
-const $$createType0 = arcov1$0.CancelSubscriptionResponse.createFrom;
+const $$createType0 = arcov1$0.CancelPendingChangeResponse.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
+const $$createType2 = arcov1$0.CancelSubscriptionResponse.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = arcov1$0.GetSubscriptionResponse.createFrom;
+const $$createType4 = arcov1$0.ScheduleSubscriptionUpdateResponse.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = state$0.CheckoutResult.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = arcov1$0.GetPendingChangesResponse.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = arcov1$0.GetSubscriptionResponse.createFrom;
+const $$createType13 = $Create.Nullable($$createType12);
+const $$createType14 = arcov1$0.ReactivateSubscriptionResponse.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = arcov1$0.UpgradeSubscriptionResponse.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);

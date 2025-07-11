@@ -16,4 +16,10 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 # Environment variables
 .env*
 
+# Backup files
+*~
+
 tickets*
+
+# Git worktrees
+worktrees/

@@ -4,6 +4,7 @@ import "./style.css";
 import router from "./router";
 import Toast, { PluginOptions } from "vue-toastification";
 import "vue-toastification/dist/index.css";
+import "flag-icons/css/flag-icons.min.css";
 import { createI18n } from "vue-i18n";
 import en from "./i18n/en.json";
 import Vue3Lottie from 'vue3-lottie'

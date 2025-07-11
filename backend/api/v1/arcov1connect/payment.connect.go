@@ -46,8 +46,31 @@ const (
 
 // PaymentServiceClient is a client for the api.v1.PaymentService service.
 type PaymentServiceClient interface {
+	// AddPaymentMethod adds a new payment method to the user's account.
+	//
+	// Attaches a Stripe payment method to the user's Stripe customer account.
+	// Creates a Stripe customer automatically if one doesn't exist.
+	// Optionally sets the new payment method as the default for future charges.
+	//
+	// Requires authentication. The payment method must be created client-side
+	// using Stripe.js or mobile SDKs before calling this endpoint.
 	AddPaymentMethod(context.Context, *connect.Request[v1.AddPaymentMethodRequest]) (*connect.Response[v1.AddPaymentMethodResponse], error)
+	// ListPaymentMethods retrieves all saved payment methods for the user.
+	//
+	// Returns a list of payment methods with security-safe details (last 4 digits,
+	// expiry date, brand) and indicates which is set as the default.
+	// Only includes payment methods attached to the user's Stripe customer.
+	//
+	// Requires authentication. Returns empty list if user has no payment methods.
 	ListPaymentMethods(context.Context, *connect.Request[v1.ListPaymentMethodsRequest]) (*connect.Response[v1.ListPaymentMethodsResponse], error)
+	// GetPaymentHistory retrieves the user's payment and billing history.
+	//
+	// Returns paginated payment history including successful payments, failed attempts,
+	// refunds, and associated invoice details. Includes payment method information
+	// and links to Stripe-hosted invoice PDFs.
+	//
+	// Requires authentication. Supports cursor-based pagination for large histories.
+	// Currently returns unimplemented status - implementation in progress.
 	GetPaymentHistory(context.Context, *connect.Request[v1.GetPaymentHistoryRequest]) (*connect.Response[v1.GetPaymentHistoryResponse], error)
 }
 
@@ -107,8 +130,31 @@ func (c *paymentServiceClient) GetPaymentHistory(ctx context.Context, req *conne
 
 // PaymentServiceHandler is an implementation of the api.v1.PaymentService service.
 type PaymentServiceHandler interface {
+	// AddPaymentMethod adds a new payment method to the user's account.
+	//
+	// Attaches a Stripe payment method to the user's Stripe customer account.
+	// Creates a Stripe customer automatically if one doesn't exist.
+	// Optionally sets the new payment method as the default for future charges.
+	//
+	// Requires authentication. The payment method must be created client-side
+	// using Stripe.js or mobile SDKs before calling this endpoint.
 	AddPaymentMethod(context.Context, *connect.Request[v1.AddPaymentMethodRequest]) (*connect.Response[v1.AddPaymentMethodResponse], error)
+	// ListPaymentMethods retrieves all saved payment methods for the user.
+	//
+	// Returns a list of payment methods with security-safe details (last 4 digits,
+	// expiry date, brand) and indicates which is set as the default.
+	// Only includes payment methods attached to the user's Stripe customer.
+	//
+	// Requires authentication. Returns empty list if user has no payment methods.
 	ListPaymentMethods(context.Context, *connect.Request[v1.ListPaymentMethodsRequest]) (*connect.Response[v1.ListPaymentMethodsResponse], error)
+	// GetPaymentHistory retrieves the user's payment and billing history.
+	//
+	// Returns paginated payment history including successful payments, failed attempts,
+	// refunds, and associated invoice details. Includes payment method information
+	// and links to Stripe-hosted invoice PDFs.
+	//
+	// Requires authentication. Supports cursor-based pagination for large histories.
+	// Currently returns unimplemented status - implementation in progress.
 	GetPaymentHistory(context.Context, *connect.Request[v1.GetPaymentHistoryRequest]) (*connect.Response[v1.GetPaymentHistoryResponse], error)
 }
 

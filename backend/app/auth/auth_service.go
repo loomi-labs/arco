@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
@@ -34,27 +33,23 @@ type Service struct {
 	rpcClient arcov1connect.AuthServiceClient
 }
 
-// ServiceRPC provides backend-only methods that should not be exposed to frontend
-type ServiceRPC struct {
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
 	*Service
 }
 
-func NewService(log *zap.SugaredLogger, state *state.State, cloudRPCURL string) *ServiceRPC {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	return &ServiceRPC{
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
+	return &ServiceInternal{
 		Service: &Service{
-			log:       log,
-			state:     state,
-			rpcClient: arcov1connect.NewAuthServiceClient(httpClient, cloudRPCURL),
+			log:   log,
+			state: state,
 		},
 	}
 }
 
-func (asi *ServiceRPC) Init(db *ent.Client) {
+func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient) {
 	asi.db = db
+	asi.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -112,8 +107,7 @@ func (as *Service) StartRegister(ctx context.Context, email string) (AuthStatus,
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceRPC{Service: as}
-	go internal.startAuthMonitoring(session)
+	go as.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
 }
@@ -162,8 +156,7 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 	}
 
 	// Start monitoring authentication in the background
-	internal := &ServiceRPC{Service: as}
-	go internal.startAuthMonitoring(session)
+	go as.startAuthMonitoring(session)
 
 	return AuthStatusSuccess, nil
 }
@@ -201,7 +194,7 @@ func (as *Service) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (asi *ServiceRPC) refreshToken(ctx context.Context, userEntity *ent.User) {
+func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) {
 	asi.mustHaveDB()
 
 	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: *userEntity.RefreshToken})
@@ -222,7 +215,7 @@ func (asi *ServiceRPC) refreshToken(ctx context.Context, userEntity *ent.User) {
 
 // syncAuthenticatedSession syncs tokens from external service to local db
 // We only ever store one user, so get the first user or create one and update the email
-func (asi *ServiceRPC) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
+func (asi *ServiceInternal) syncAuthenticatedSession(ctx context.Context, sessionID string, authResp *v1.WaitForAuthenticationResponse) {
 	asi.mustHaveDB()
 
 	if authResp.User == nil {
@@ -275,7 +268,7 @@ func (asi *ServiceRPC) syncAuthenticatedSession(ctx context.Context, sessionID s
 	}
 }
 
-func (asi *ServiceRPC) RecoverAuthSessions(ctx context.Context) error {
+func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Query for pending sessions that haven't expired
@@ -298,7 +291,7 @@ func (asi *ServiceRPC) RecoverAuthSessions(ctx context.Context) error {
 
 // ValidateAndRenewStoredTokens validates stored refresh tokens and automatically renews access tokens.
 // Since we only store one user, this method gets the first user and attempts to refresh their tokens.
-func (asi *ServiceRPC) ValidateAndRenewStoredTokens(ctx context.Context) error {
+func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
 	asi.mustHaveDB()
 
 	// Delete expired refresh tokens
@@ -343,7 +336,7 @@ func (asi *ServiceRPC) ValidateAndRenewStoredTokens(ctx context.Context) error {
 }
 
 // updateUserTokens updates a user entity with the provided token information
-func (asi *ServiceRPC) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
+func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *ent.User, accessToken, refreshToken string, accessTokenExpiresIn, refreshTokenExpiresIn int64) error {
 	asi.log.Debugf("Updating tokens for user %s (access expires in %d seconds, refresh expires in %d seconds)", userEntity.Email, accessTokenExpiresIn, refreshTokenExpiresIn)
 
 	if accessToken == "" || accessTokenExpiresIn <= 0 || refreshToken == "" || refreshTokenExpiresIn <= 0 {
@@ -367,12 +360,12 @@ func (asi *ServiceRPC) updateUserTokens(ctx context.Context, userEntity *ent.Use
 	return err
 }
 
-func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
+func (as *Service) startAuthMonitoring(session *ent.AuthSession) {
 	// Create a timeout context based on session expiration
 	timeout := time.Until(session.ExpiresAt)
 	if timeout <= 0 {
 		// Session already expired
-		asi.log.Debugf("Session %s: already expired", session.SessionID)
+		as.log.Debugf("Session %s: already expired", session.SessionID)
 		return
 	}
 
@@ -380,19 +373,19 @@ func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
 	defer cancel()
 
 	// Retry configuration
-	const maxRetries = 20 // Max 20 retries over 10 minutes
-	const retryInterval = 30 * time.Second
+	const maxRetries = 120 // Max 120 retries over 10 minutes
+	const retryInterval = 5 * time.Second
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		// Use WaitForAuthentication streaming approach
 		req := connect.NewRequest(&v1.WaitForAuthenticationRequest{SessionId: session.SessionID})
 
-		asi.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
-		stream, err := asi.rpcClient.WaitForAuthentication(ctx, req)
+		as.log.Debugf("Session %s: attempting auth stream (attempt %d/%d)", session.SessionID, attempt+1, maxRetries)
+		stream, err := as.rpcClient.WaitForAuthentication(ctx, req)
 		if err != nil {
-			asi.log.Debugf("Session %s: stream connection failed: %v", session.SessionID, err)
+			as.log.Debugf("Session %s: stream connection failed: %v", session.SessionID, err)
 			if attempt == maxRetries-1 {
-				asi.log.Debugf("Session %s: max retries reached, stopping monitoring", session.SessionID)
+				as.log.Debugf("Session %s: max retries reached, stopping monitoring", session.SessionID)
 				return
 			}
 
@@ -406,7 +399,7 @@ func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
 		}
 
 		// Stream established successfully
-		asi.log.Debugf("Session %s: auth stream established", session.SessionID)
+		as.log.Debugf("Session %s: auth stream established", session.SessionID)
 
 		for stream.Receive() {
 			authStatus := stream.Msg()
@@ -414,30 +407,31 @@ func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
 			switch authStatus.Status {
 			case v1.AuthStatus_AUTH_STATUS_AUTHENTICATED:
 				// Authentication successful
-				asi.log.Debugf("Session %s: authentication successful", session.SessionID)
-				asi.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
-				asi.state.SetAuthenticated(ctx)
+				as.log.Debugf("Session %s: authentication successful", session.SessionID)
+				internal := &ServiceInternal{Service: as}
+				internal.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
+				as.state.SetAuthenticated(ctx)
 				return
 			case v1.AuthStatus_AUTH_STATUS_EXPIRED, v1.AuthStatus_AUTH_STATUS_CANCELLED:
 				// Authentication failed
-				asi.log.Debugf("Session %s: authentication failed with status %v", session.SessionID, authStatus.Status)
+				as.log.Debugf("Session %s: authentication failed with status %v", session.SessionID, authStatus.Status)
 				return
 			case v1.AuthStatus_AUTH_STATUS_PENDING:
 				// Still pending - continue waiting
-				asi.log.Debugf("Session %s: pending authentication", session.SessionID)
+				as.log.Debugf("Session %s: pending authentication", session.SessionID)
 				continue
 			default:
 				// Unknown status
-				asi.log.Debugf("Session %s: unknown auth status %v", session.SessionID, authStatus.Status)
+				as.log.Debugf("Session %s: unknown auth status %v", session.SessionID, authStatus.Status)
 				return
 			}
 		}
 
 		// Stream ended - check for errors and retry if not max attempts
 		if err := stream.Err(); err != nil {
-			asi.log.Debugf("Session %s: stream error: %v", session.SessionID, err)
+			as.log.Debugf("Session %s: stream error: %v", session.SessionID, err)
 			if attempt == maxRetries-1 {
-				asi.log.Debugf("Session %s: max retries reached after error", session.SessionID)
+				as.log.Debugf("Session %s: max retries reached after error", session.SessionID)
 				return
 			}
 
@@ -451,8 +445,8 @@ func (asi *ServiceRPC) startAuthMonitoring(session *ent.AuthSession) {
 		}
 
 		// Stream ended without error - retry
-		asi.log.Debugf("Session %s: stream ended, retrying", session.SessionID)
+		as.log.Debugf("Session %s: stream ended, retrying", session.SessionID)
 	}
 
-	asi.log.Debugf("Session %s: monitoring completed", session.SessionID)
+	as.log.Debugf("Session %s: monitoring completed", session.SessionID)
 }

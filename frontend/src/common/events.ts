@@ -16,3 +16,16 @@ export function archivesChanged(repositoryId: number): string {
 export function backupProfileDeletedEvent(): string {
   return `${types.Event.EventBackupProfileDeleted}`;
 }
+
+export function checkoutStateChangedEvent(): string {
+  return `${types.Event.EventCheckoutStateChanged}`;
+}
+
+export function subscriptionAddedEvent(): string {
+  return `${types.Event.EventSubscriptionAdded}`;
+}
+
+export function subscriptionCancelledEvent(): string {
+  return `${types.Event.EventSubscriptionCancelled}`;
+}
+

@@ -9,9 +9,52 @@ import {Create as $Create} from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as timestamppb$0 from "../../../../../../google.golang.org/protobuf/types/known/timestamppb/models.js";
 
-export class CancelSubscriptionResponse {
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $internal from "./internal.js";
+
+/**
+ * CancelPendingChangeResponse confirms change cancellation.
+ * 
+ * Indicates successful cancellation of a pending subscription change.
+ */
+export class CancelPendingChangeResponse {
+    /**
+     * Whether the change was successfully canceled.
+     */
     "success"?: boolean;
-    "message"?: string;
+
+    /** Creates a new CancelPendingChangeResponse instance. */
+    constructor($$source: Partial<CancelPendingChangeResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CancelPendingChangeResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CancelPendingChangeResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CancelPendingChangeResponse($$parsedSource as Partial<CancelPendingChangeResponse>);
+    }
+}
+
+/**
+ * CancelSubscriptionResponse confirms cancellation scheduling.
+ * 
+ * Indicates successful cancellation scheduling and when access will end.
+ * Users can still reactivate before the effective date.
+ */
+export class CancelSubscriptionResponse {
+    /**
+     * Whether the cancellation was successfully scheduled.
+     */
+    "success"?: boolean;
+
+    /**
+     * When the subscription will actually end.
+     * Users retain access until this time.
+     */
     "effective_date"?: timestamppb$0.Timestamp | null;
 
     /** Creates a new CancelSubscriptionResponse instance. */
@@ -24,17 +67,68 @@ export class CancelSubscriptionResponse {
      * Creates a new CancelSubscriptionResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): CancelSubscriptionResponse {
-        const $$createField2_0 = $$createType1;
+        const $$createField1_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("effective_date" in $$parsedSource) {
-            $$parsedSource["effective_date"] = $$createField2_0($$parsedSource["effective_date"]);
+            $$parsedSource["effective_date"] = $$createField1_0($$parsedSource["effective_date"]);
         }
         return new CancelSubscriptionResponse($$parsedSource as Partial<CancelSubscriptionResponse>);
     }
 }
 
+/**
+ * ChangeType represents the type of pending subscription change.
+ * 
+ * These types correspond to the different kinds of modifications that can be
+ * scheduled for a subscription to take effect at the next billing cycle.
+ */
+export enum ChangeType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Default unspecified change type.
+     */
+    ChangeType_CHANGE_TYPE_UNSPECIFIED = 0,
+
+    /**
+     * Plan change for downgrades or lateral moves.
+     * Changes the subscription plan (e.g., Pro to Basic).
+     */
+    ChangeType_CHANGE_TYPE_PLAN_CHANGE = 1,
+
+    /**
+     * Currency change for billing.
+     * Changes the currency used for billing (USD, EUR, CHF).
+     */
+    ChangeType_CHANGE_TYPE_CURRENCY_CHANGE = 2,
+
+    /**
+     * Billing cycle change.
+     * Changes between monthly and yearly billing cycles.
+     */
+    ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE = 3,
+};
+
+/**
+ * CreateCheckoutSessionResponse contains Stripe checkout session details.
+ * 
+ * Provides the checkout URL for payment completion and session ID
+ * for tracking payment status via WaitForCheckoutCompletion.
+ */
 export class CreateCheckoutSessionResponse {
+    /**
+     * Stripe checkout session ID for tracking.
+     * Use this with WaitForCheckoutCompletion for real-time updates.
+     */
     "session_id"?: string;
+
+    /**
+     * Stripe checkout URL for payment completion.
+     * Users should be redirected to this URL to complete payment.
+     */
     "checkout_url"?: string;
 
     /** Creates a new CreateCheckoutSessionResponse instance. */
@@ -52,18 +146,111 @@ export class CreateCheckoutSessionResponse {
     }
 }
 
+/**
+ * Currency represents the supported payment currencies.
+ * 
+ * All plans are available in these three currencies with region-appropriate
+ * pricing. Currency affects both base subscription pricing and overage rates.
+ */
+export enum Currency {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Default unspecified currency.
+     */
+    Currency_CURRENCY_UNSPECIFIED = 0,
+
+    /**
+     * United States Dollar - primary currency for North American customers.
+     */
+    Currency_CURRENCY_USD = 1,
+
+    /**
+     * Euro - primary currency for European Union customers.
+     */
+    Currency_CURRENCY_EUR = 2,
+
+    /**
+     * Swiss Franc - available for Swiss customers.
+     */
+    Currency_CURRENCY_CHF = 3,
+};
+
+/**
+ * FeatureSet represents the tier of features available in a subscription plan.
+ * 
+ * Each feature set defines the capabilities and storage limits available
+ * to subscribers of that plan tier.
+ */
 export enum FeatureSet {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = 0,
 
+    /**
+     * Default unspecified feature set.
+     */
     FeatureSet_FEATURE_SET_UNSPECIFIED = 0,
+
+    /**
+     * Basic feature set with 250GB storage limit.
+     * No overage billing - users cannot exceed storage limit.
+     */
     FeatureSet_FEATURE_SET_BASIC = 1,
+
+    /**
+     * Pro feature set with 1TB base storage and overage billing.
+     * Includes advanced features and unlimited storage with usage-based pricing.
+     */
     FeatureSet_FEATURE_SET_PRO = 2,
 };
 
+/**
+ * GetPendingChangesResponse contains all scheduled subscription changes.
+ * 
+ * Lists pending changes in chronological order with complete details
+ * about what will change and when.
+ */
+export class GetPendingChangesResponse {
+    /**
+     * All pending changes for the subscription, ordered by effective date.
+     */
+    "pending_changes"?: (PendingChange | null)[];
+
+    /** Creates a new GetPendingChangesResponse instance. */
+    constructor($$source: Partial<GetPendingChangesResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetPendingChangesResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetPendingChangesResponse {
+        const $$createField0_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("pending_changes" in $$parsedSource) {
+            $$parsedSource["pending_changes"] = $$createField0_0($$parsedSource["pending_changes"]);
+        }
+        return new GetPendingChangesResponse($$parsedSource as Partial<GetPendingChangesResponse>);
+    }
+}
+
+/**
+ * GetSubscriptionResponse contains the user's subscription details.
+ * 
+ * Returns null subscription field if the user has no active subscription.
+ * Otherwise includes complete subscription information with plan details.
+ */
 export class GetSubscriptionResponse {
+    /**
+     * The user's current subscription.
+     * Null if the user has no active subscription.
+     */
     "subscription"?: Subscription | null;
 
     /** Creates a new GetSubscriptionResponse instance. */
@@ -76,7 +263,7 @@ export class GetSubscriptionResponse {
      * Creates a new GetSubscriptionResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetSubscriptionResponse {
-        const $$createField0_0 = $$createType3;
+        const $$createField0_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("subscription" in $$parsedSource) {
             $$parsedSource["subscription"] = $$createField0_0($$parsedSource["subscription"]);
@@ -85,13 +272,199 @@ export class GetSubscriptionResponse {
     }
 }
 
+/**
+ * OveragePrice represents additional storage pricing for Pro plans.
+ * 
+ * Pro plans include overage billing for storage usage beyond the base 1TB limit.
+ * Overage is charged in 10GB increments and billed monthly based on peak usage.
+ */
+export class OveragePrice {
+    /**
+     * The currency for this overage pricing.
+     */
+    "currency"?: Currency;
+
+    /**
+     * Price per 10GB block in cents (e.g., 10 = $0.10 per 10GB).
+     * Charged monthly based on peak storage usage above the base limit.
+     */
+    "per_10gb_cents"?: number;
+
+    /** Creates a new OveragePrice instance. */
+    constructor($$source: Partial<OveragePrice> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OveragePrice instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OveragePrice {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new OveragePrice($$parsedSource as Partial<OveragePrice>);
+    }
+}
+
+/**
+ * PendingChange represents a scheduled subscription modification.
+ * 
+ * Contains complete details about a change that will take effect in the future,
+ * including the type of change, old and new values, and timing.
+ */
+export class PendingChange {
+    /**
+     * Unique identifier for this pending change.
+     * Use with CancelPendingChange to cancel before it takes effect.
+     */
+    "id"?: number;
+
+    /**
+     * Type of change being made.
+     * Specifies what aspect of the subscription is being changed.
+     */
+    "change_type"?: ChangeType;
+
+    /**
+     * Current value that will be changed.
+     * The specific field set depends on the change_type.
+     * 
+     * Types that are assignable to OldValue:
+     * 
+     * 	*PendingChange_OldPlanId
+     * 	*PendingChange_OldCurrency
+     * 	*PendingChange_OldIsYearlyBilling
+     */
+    "OldValue": $internal.isPendingChange_OldValue;
+
+    /**
+     * New value that will be applied.
+     * The specific field set depends on the change_type.
+     * 
+     * Types that are assignable to NewValue:
+     * 
+     * 	*PendingChange_NewPlanId
+     * 	*PendingChange_NewCurrency
+     * 	*PendingChange_NewIsYearlyBilling
+     */
+    "NewValue": $internal.isPendingChange_NewValue;
+
+    /**
+     * When this change will take effect.
+     * Typically the start of the next billing period.
+     */
+    "effective_date"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * Current status of this change.
+     * Tracks the lifecycle state of the pending change.
+     */
+    "status"?: PendingChangeStatus;
+
+    /**
+     * When this change was originally scheduled.
+     */
+    "created_at"?: timestamppb$0.Timestamp | null;
+
+    /** Creates a new PendingChange instance. */
+    constructor($$source: Partial<PendingChange> = {}) {
+        if (!("OldValue" in $$source)) {
+            this["OldValue"] = null;
+        }
+        if (!("NewValue" in $$source)) {
+            this["NewValue"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PendingChange instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PendingChange {
+        const $$createField4_0 = $$createType1;
+        const $$createField6_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("effective_date" in $$parsedSource) {
+            $$parsedSource["effective_date"] = $$createField4_0($$parsedSource["effective_date"]);
+        }
+        if ("created_at" in $$parsedSource) {
+            $$parsedSource["created_at"] = $$createField6_0($$parsedSource["created_at"]);
+        }
+        return new PendingChange($$parsedSource as Partial<PendingChange>);
+    }
+}
+
+/**
+ * PendingChangeStatus represents the current state of a pending subscription change.
+ * 
+ * These statuses track the lifecycle of scheduled changes from creation
+ * through application or cancellation.
+ */
+export enum PendingChangeStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Default unspecified status.
+     */
+    PendingChangeStatus_PENDING_CHANGE_STATUS_UNSPECIFIED = 0,
+
+    /**
+     * Change is scheduled and waiting to be applied.
+     * Will take effect at the scheduled effective date.
+     */
+    PendingChangeStatus_PENDING_CHANGE_STATUS_PENDING = 1,
+
+    /**
+     * Change has been successfully applied.
+     * The subscription has been updated with the new values.
+     */
+    PendingChangeStatus_PENDING_CHANGE_STATUS_APPLIED = 2,
+
+    /**
+     * Change has been canceled before taking effect.
+     * The subscription will not be modified.
+     */
+    PendingChangeStatus_PENDING_CHANGE_STATUS_CANCELED = 3,
+};
+
+/**
+ * Plan represents a complete subscription plan with pricing and features.
+ * 
+ * Each plan defines storage limits, feature availability, and pricing
+ * across all supported currencies and billing cycles.
+ */
 export class Plan {
+    /**
+     * Human-readable plan name (e.g., "Basic", "Pro").
+     */
     "name"?: string;
+
+    /**
+     * Feature set tier determining available capabilities.
+     */
     "feature_set"?: FeatureSet;
-    "price_monthly_cents"?: number;
-    "price_yearly_cents"?: number;
-    "currency"?: string;
+
+    /**
+     * Base storage limit in GB (250 for Basic, 1000 for Pro).
+     * Pro plans allow overage beyond this limit with additional charges.
+     */
     "storage_gb"?: number;
+
+    /**
+     * Pricing information for all supported currencies and billing cycles.
+     * Each plan includes pricing for USD, EUR, and CHF.
+     */
+    "prices"?: (PlanPrice | null)[];
+
+    /**
+     * Overage pricing for usage beyond base storage limit.
+     * Empty for Basic plans (no overage allowed).
+     * Populated for Pro plans with per-10GB pricing.
+     */
+    "overage_prices"?: (OveragePrice | null)[];
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
@@ -103,23 +476,219 @@ export class Plan {
      * Creates a new Plan instance from a string or object.
      */
     static createFrom($$source: any = {}): Plan {
+        const $$createField3_0 = $$createType9;
+        const $$createField4_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("prices" in $$parsedSource) {
+            $$parsedSource["prices"] = $$createField3_0($$parsedSource["prices"]);
+        }
+        if ("overage_prices" in $$parsedSource) {
+            $$parsedSource["overage_prices"] = $$createField4_0($$parsedSource["overage_prices"]);
+        }
         return new Plan($$parsedSource as Partial<Plan>);
     }
 }
 
+/**
+ * PlanPrice represents pricing information for a plan in a specific currency.
+ * 
+ * Contains both monthly and yearly pricing with yearly billing offering
+ * significant discounts. Stripe price IDs are used for payment processing.
+ */
+export class PlanPrice {
+    /**
+     * The currency for this pricing tier.
+     */
+    "currency"?: Currency;
+
+    /**
+     * Monthly subscription price in cents (e.g., 500 = $5.00).
+     */
+    "monthly_cents"?: number;
+
+    /**
+     * Yearly subscription price in cents with discount (e.g., 4800 = $48.00).
+     * Yearly billing typically offers 15-20% savings compared to monthly.
+     */
+    "yearly_cents"?: number;
+
+    /** Creates a new PlanPrice instance. */
+    constructor($$source: Partial<PlanPrice> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PlanPrice instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PlanPrice {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PlanPrice($$parsedSource as Partial<PlanPrice>);
+    }
+}
+
+/**
+ * ReactivateSubscriptionResponse confirms cancellation removal.
+ * 
+ * Indicates successful reactivation of a previously canceled subscription.
+ */
+export class ReactivateSubscriptionResponse {
+    /**
+     * Whether the reactivation was successful.
+     */
+    "success"?: boolean;
+
+    /** Creates a new ReactivateSubscriptionResponse instance. */
+    constructor($$source: Partial<ReactivateSubscriptionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ReactivateSubscriptionResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ReactivateSubscriptionResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ReactivateSubscriptionResponse($$parsedSource as Partial<ReactivateSubscriptionResponse>);
+    }
+}
+
+/**
+ * ScheduleSubscriptionUpdateResponse confirms change scheduling.
+ * 
+ * Provides details about when the change will take effect and how to track it.
+ */
+export class ScheduleSubscriptionUpdateResponse {
+    /**
+     * Whether the change was successfully scheduled.
+     */
+    "success"?: boolean;
+
+    /**
+     * When the change will take effect.
+     * Always the start of the next billing period.
+     */
+    "effective_date"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * Unique ID for tracking this pending change.
+     * Use with GetPendingChanges or CancelPendingChange.
+     */
+    "change_id"?: number;
+
+    /** Creates a new ScheduleSubscriptionUpdateResponse instance. */
+    constructor($$source: Partial<ScheduleSubscriptionUpdateResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ScheduleSubscriptionUpdateResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ScheduleSubscriptionUpdateResponse {
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("effective_date" in $$parsedSource) {
+            $$parsedSource["effective_date"] = $$createField1_0($$parsedSource["effective_date"]);
+        }
+        return new ScheduleSubscriptionUpdateResponse($$parsedSource as Partial<ScheduleSubscriptionUpdateResponse>);
+    }
+}
+
+/**
+ * Subscription represents a user's active subscription with complete details.
+ * 
+ * Contains subscription metadata, billing information, usage tracking,
+ * and plan details. Integrates with Stripe for payment processing.
+ */
 export class Subscription {
+    /**
+     * Unique subscription identifier (Stripe subscription ID).
+     */
     "id"?: string;
+
+    /**
+     * ID of the user who owns this subscription.
+     */
     "user_id"?: string;
+
+    /**
+     * Plan identifier (e.g., "BASIC", "PRO").
+     */
     "plan_id"?: string;
+
+    /**
+     * Current subscription status from Stripe.
+     */
     "status"?: SubscriptionStatus;
+
+    /**
+     * Start of the current billing period.
+     */
     "current_period_start"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * End of the current billing period.
+     * New billing cycles begin immediately after this time.
+     */
     "current_period_end"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * Whether the subscription will cancel at the end of the current period.
+     * If true, subscription ends at current_period_end without renewal.
+     */
     "cancel_at_period_end"?: boolean;
+
+    /**
+     * When the subscription was canceled (if applicable).
+     * Set when cancel_at_period_end is enabled.
+     */
     "canceled_at"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * When the subscription was originally created.
+     */
     "created_at"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * When the subscription was last updated.
+     */
     "updated_at"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * Complete plan details including pricing and features.
+     */
     "plan"?: Plan | null;
+
+    /**
+     * Current storage usage in GB.
+     * Updated periodically from backup client usage reports.
+     */
+    "storage_used_gb"?: number;
+
+    /**
+     * Whether the subscription uses yearly billing.
+     * false = monthly billing, true = yearly billing.
+     */
+    "is_yearly_billing"?: boolean;
+
+    /**
+     * Subscription currency (USD, EUR, CHF).
+     */
+    "currency"?: Currency;
+
+    /**
+     * Maximum storage allowed before overage charges apply.
+     * For Pro plans, overage is charged beyond this limit.
+     */
+    "storage_limit_gb"?: number;
+
+    /**
+     * Overage rate per 10GB block in cents.
+     * 0 for Basic plans (no overage allowed).
+     * >0 for Pro plans with usage-based billing.
+     */
+    "overage_rate_per_10gb_cents"?: number;
 
     /** Creates a new Subscription instance. */
     constructor($$source: Partial<Subscription> = {}) {
@@ -136,7 +705,7 @@ export class Subscription {
         const $$createField7_0 = $$createType1;
         const $$createField8_0 = $$createType1;
         const $$createField9_0 = $$createType1;
-        const $$createField10_0 = $$createType5;
+        const $$createField10_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current_period_start" in $$parsedSource) {
             $$parsedSource["current_period_start"] = $$createField4_0($$parsedSource["current_period_start"]);
@@ -160,26 +729,115 @@ export class Subscription {
     }
 }
 
+/**
+ * SubscriptionStatus represents the current state of a Stripe subscription.
+ * 
+ * These statuses correspond directly to Stripe's subscription status values
+ * and determine subscription behavior and access permissions.
+ */
 export enum SubscriptionStatus {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = 0,
 
+    /**
+     * Default unspecified status.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_UNSPECIFIED = 0,
+
+    /**
+     * Subscription created but payment not completed.
+     * User has limited or no access until payment succeeds.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE = 1,
+
+    /**
+     * Incomplete subscription has expired.
+     * Payment was never completed within the allowed timeframe.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED = 2,
+
+    /**
+     * Subscription is in trial period.
+     * User has full access without payment required yet.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_TRIALING = 3,
+
+    /**
+     * Subscription is active and paid.
+     * User has full access to plan features.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE = 4,
+
+    /**
+     * Payment failed but subscription is still active.
+     * User retains access while payment issues are resolved.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_PAST_DUE = 5,
+
+    /**
+     * Subscription has been canceled.
+     * User loses access at the end of the billing period.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_CANCELED = 6,
+
+    /**
+     * Subscription is unpaid and access is revoked.
+     * Similar to past_due but with access restrictions.
+     */
     SubscriptionStatus_SUBSCRIPTION_STATUS_UNPAID = 7,
 };
+
+/**
+ * UpgradeSubscriptionResponse confirms immediate upgrade completion.
+ * 
+ * Indicates successful upgrade with immediate effect and proration.
+ */
+export class UpgradeSubscriptionResponse {
+    /**
+     * Whether the upgrade was successful.
+     */
+    "success"?: boolean;
+
+    /**
+     * When the upgrade took effect.
+     * Always immediate for upgrades (no delay).
+     */
+    "effective_date"?: timestamppb$0.Timestamp | null;
+
+    /** Creates a new UpgradeSubscriptionResponse instance. */
+    constructor($$source: Partial<UpgradeSubscriptionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpgradeSubscriptionResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UpgradeSubscriptionResponse {
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("effective_date" in $$parsedSource) {
+            $$parsedSource["effective_date"] = $$createField1_0($$parsedSource["effective_date"]);
+        }
+        return new UpgradeSubscriptionResponse($$parsedSource as Partial<UpgradeSubscriptionResponse>);
+    }
+}
 
 // Private type creation functions
 const $$createType0 = timestamppb$0.Timestamp.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = Subscription.createFrom;
+const $$createType2 = PendingChange.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = Plan.createFrom;
-const $$createType5 = $Create.Nullable($$createType4);
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = Subscription.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = PlanPrice.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = OveragePrice.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = Plan.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);

@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/negrel/assert"
@@ -16,11 +17,13 @@ type State struct {
 	eventEmitter  types.EventEmitter
 	notifications []types.Notification
 
-	startupState *StartupState
-	authState    *AuthState
-	repoStates   map[int]*RepoState
-	backupStates map[types.BackupId]*BackupState
-	pruneStates  map[types.BackupId]*PruneState
+	startupState    *StartupState
+	authState       *AuthState
+	checkoutSession *arcov1.CreateCheckoutSessionResponse
+	checkoutResult  *CheckoutResult
+	repoStates      map[int]*RepoState
+	backupStates    map[types.BackupId]*BackupState
+	pruneStates     map[types.BackupId]*PruneState
 
 	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
 	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
@@ -63,6 +66,21 @@ type StartupState struct {
 
 type AuthState struct {
 	IsAuthenticated bool `json:"isAuthenticated"`
+}
+
+type CheckoutResultStatus string
+
+const (
+	CheckoutStatusPending   CheckoutResultStatus = "pending"
+	CheckoutStatusCompleted CheckoutResultStatus = "completed"
+	CheckoutStatusFailed    CheckoutResultStatus = "failed"
+	CheckoutStatusTimeout   CheckoutResultStatus = "timeout"
+)
+
+type CheckoutResult struct {
+	Status         CheckoutResultStatus `json:"status"`
+	ErrorMessage   string               `json:"errorMessage,omitempty"`
+	SubscriptionID string               `json:"subscriptionId,omitempty"`
 }
 
 type cancelCtx struct {
@@ -913,4 +931,54 @@ func (s *State) GetAuthState() AuthState {
 	defer s.mu.RUnlock()
 
 	return *s.authState
+}
+
+/***********************************/
+/******* Checkout & Subscription ***/
+/***********************************/
+
+// SetCheckoutSession stores the current checkout session and emits events
+func (s *State) SetCheckoutSession(ctx context.Context, session *arcov1.CreateCheckoutSessionResponse) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventCheckoutStateChangedString())
+	s.checkoutSession = session
+}
+
+// GetCheckoutSession returns the current checkout session
+func (s *State) GetCheckoutSession() *arcov1.CreateCheckoutSessionResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.checkoutSession
+}
+
+// ClearCheckoutSession clears the current checkout session and emits events
+func (s *State) ClearCheckoutSession(ctx context.Context, result *CheckoutResult, emitSubscriptionEvent bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventCheckoutStateChangedString())
+	if emitSubscriptionEvent {
+		defer s.eventEmitter.EmitEvent(ctx, types.EventSubscriptionAddedString())
+	}
+	s.checkoutSession = nil
+	s.checkoutResult = result
+}
+
+// GetCheckoutResult returns the current checkout result
+func (s *State) GetCheckoutResult() *CheckoutResult {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.checkoutResult
+}
+
+// ClearCheckoutResult clears the current checkout result
+func (s *State) ClearCheckoutResult() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.checkoutResult = nil
+}
+
+// EmitSubscriptionCancelled emits a subscription cancelled event
+func (s *State) EmitSubscriptionCancelled(ctx context.Context) {
+	s.eventEmitter.EmitEvent(ctx, types.EventSubscriptionCancelledString())
 }

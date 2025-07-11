@@ -21,11 +21,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GetProfileRequest initiates retrieval of user profile information.
+//
+// The user_id is extracted from the authentication context and used for
+// profile lookup and ownership validation.
 type GetProfileRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The user ID for profile lookup.
+	// This field is populated automatically from the authentication context
+	// and should match the authenticated user's ID.
 	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 }
 
@@ -66,11 +73,16 @@ func (x *GetProfileRequest) GetUserId() string {
 	return ""
 }
 
+// GetProfileResponse contains the user's complete profile information.
+//
+// Includes personal details, preferences, usage statistics, and account status
+// with real-time data calculated from the user's backup and device data.
 type GetProfileResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The user's complete profile information.
 	Profile *UserProfile `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
 }
 
@@ -111,16 +123,35 @@ func (x *GetProfileResponse) GetProfile() *UserProfile {
 	return nil
 }
 
+// UpdateProfileRequest modifies user profile settings.
+//
+// All fields are optional - only provided fields will be updated.
+// Unchanged fields retain their current values.
 type UpdateProfileRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId             string  `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Name               *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Timezone           *string `protobuf:"bytes,3,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
-	Language           *string `protobuf:"bytes,4,opt,name=language,proto3,oneof" json:"language,omitempty"`
-	EmailNotifications *bool   `protobuf:"varint,5,opt,name=email_notifications,json=emailNotifications,proto3,oneof" json:"email_notifications,omitempty"`
+	// The user ID for profile update.
+	// This field is populated automatically from the authentication context
+	// and should match the authenticated user's ID.
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Updated display name for the user.
+	// Optional field - if not provided, current name is unchanged.
+	// Must be 1-100 characters if provided.
+	Name *string `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	// Updated timezone preference (e.g., "America/New_York", "Europe/London").
+	// Optional field - if not provided, current timezone is unchanged.
+	// Must be a valid IANA timezone identifier.
+	Timezone *string `protobuf:"bytes,3,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
+	// Updated language preference (e.g., "en", "de", "fr").
+	// Optional field - if not provided, current language is unchanged.
+	// Must be a valid ISO 639-1 language code.
+	Language *string `protobuf:"bytes,4,opt,name=language,proto3,oneof" json:"language,omitempty"`
+	// Updated email notification preference.
+	// Optional field - if not provided, current setting is unchanged.
+	// Controls whether user receives email notifications for account events.
+	EmailNotifications *bool `protobuf:"varint,5,opt,name=email_notifications,json=emailNotifications,proto3,oneof" json:"email_notifications,omitempty"`
 }
 
 func (x *UpdateProfileRequest) Reset() {
@@ -188,11 +219,16 @@ func (x *UpdateProfileRequest) GetEmailNotifications() bool {
 	return false
 }
 
+// UpdateProfileResponse contains the updated user profile.
+//
+// Returns the complete updated profile after applying changes,
+// including any computed fields like usage statistics.
 type UpdateProfileResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The user's updated profile information.
 	Profile *UserProfile `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
 }
 
@@ -233,25 +269,61 @@ func (x *UpdateProfileResponse) GetProfile() *UserProfile {
 	return nil
 }
 
+// UserProfile represents complete user account information and statistics.
+//
+// Contains personal information, preferences, usage statistics, and account
+// status. Usage data is calculated in real-time from backup and device data.
 type UserProfile struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email              string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Name               string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	EmailVerified      bool                   `protobuf:"varint,4,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
-	Timezone           string                 `protobuf:"bytes,5,opt,name=timezone,proto3" json:"timezone,omitempty"`
-	Language           string                 `protobuf:"bytes,6,opt,name=language,proto3" json:"language,omitempty"`
-	EmailNotifications bool                   `protobuf:"varint,7,opt,name=email_notifications,json=emailNotifications,proto3" json:"email_notifications,omitempty"`
-	StorageUsedBytes   int64                  `protobuf:"varint,8,opt,name=storage_used_bytes,json=storageUsedBytes,proto3" json:"storage_used_bytes,omitempty"`
-	StorageLimitBytes  int64                  `protobuf:"varint,9,opt,name=storage_limit_bytes,json=storageLimitBytes,proto3" json:"storage_limit_bytes,omitempty"`
-	DevicesCount       int32                  `protobuf:"varint,10,opt,name=devices_count,json=devicesCount,proto3" json:"devices_count,omitempty"`
-	DevicesLimit       int32                  `protobuf:"varint,11,opt,name=devices_limit,json=devicesLimit,proto3" json:"devices_limit,omitempty"`
-	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	LastLoginAt        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
+	// Unique user identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// User's email address (verified via magic link authentication).
+	// Cannot be changed via profile updates - managed through authentication flow.
+	Email string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	// User's display name.
+	// Defaults to email local part if not set. Can be updated via UpdateProfile.
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	// Whether the user's email address has been verified.
+	// Set to true after successful magic link authentication.
+	EmailVerified bool `protobuf:"varint,4,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
+	// User's timezone preference (IANA timezone identifier).
+	// Used for displaying times in the user's local timezone.
+	// Defaults to UTC if not set.
+	Timezone string `protobuf:"bytes,5,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	// User's language preference (ISO 639-1 language code).
+	// Used for localization of UI and notifications.
+	// Defaults to "en" if not set.
+	Language string `protobuf:"bytes,6,opt,name=language,proto3" json:"language,omitempty"`
+	// Whether user wants to receive email notifications.
+	// Controls notifications for account events, billing, and backup status.
+	// Defaults to true for new accounts.
+	EmailNotifications bool `protobuf:"varint,7,opt,name=email_notifications,json=emailNotifications,proto3" json:"email_notifications,omitempty"`
+	// Current storage usage in bytes.
+	// Calculated in real-time from all backup data across all user devices.
+	// Updated periodically as backups are created or deleted.
+	StorageUsedBytes int64 `protobuf:"varint,8,opt,name=storage_used_bytes,json=storageUsedBytes,proto3" json:"storage_used_bytes,omitempty"`
+	// Maximum storage allowed in bytes.
+	// Determined by the user's subscription plan (Basic: 250GB, Pro: 1TB base).
+	// Pro plans allow overage beyond this limit with additional charges.
+	StorageLimitBytes int64 `protobuf:"varint,9,opt,name=storage_limit_bytes,json=storageLimitBytes,proto3" json:"storage_limit_bytes,omitempty"`
+	// Number of devices currently registered for backup.
+	// Includes active and inactive devices that have performed at least one backup.
+	DevicesCount int32 `protobuf:"varint,10,opt,name=devices_count,json=devicesCount,proto3" json:"devices_count,omitempty"`
+	// Maximum number of devices allowed.
+	// Determined by subscription plan. Both Basic and Pro plans currently allow unlimited devices.
+	DevicesLimit int32 `protobuf:"varint,11,opt,name=devices_limit,json=devicesLimit,proto3" json:"devices_limit,omitempty"`
+	// When the user account was originally created.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// When the user profile was last updated.
+	// Updated whenever profile settings change or usage statistics are recalculated.
+	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// When the user last successfully authenticated.
+	// Updated on each successful magic link authentication.
+	// Null for users who have registered but never logged in.
+	LastLoginAt *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
 }
 
 func (x *UserProfile) Reset() {

@@ -14,12 +14,12 @@ import (
 // JWTAuthInterceptor provides JWT authentication for Connect RPC clients
 type JWTAuthInterceptor struct {
 	log            *zap.SugaredLogger
-	authServiceRPC *auth.ServiceRPC
+	authServiceRPC *auth.ServiceInternal
 	db             *ent.Client
 }
 
 // NewJWTAuthInterceptor creates a new JWT authentication interceptor
-func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceRPC, db *ent.Client) *JWTAuthInterceptor {
+func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client) *JWTAuthInterceptor {
 	return &JWTAuthInterceptor{
 		log:            log,
 		authServiceRPC: authServiceRPC,

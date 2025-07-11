@@ -78,6 +78,9 @@ const (
 	EventArchivesChanged       Event = "archivesChanged"
 	EventBackupProfileDeleted  Event = "backupProfileDeleted"
 	EventAuthStateChanged      Event = "authStateChanged"
+	EventCheckoutStateChanged  Event = "checkoutStateChanged"
+	EventSubscriptionAdded     Event = "subscriptionAdded"
+	EventSubscriptionCancelled Event = "subscriptionCancelled"
 )
 
 var AllEvents = []Event{
@@ -89,6 +92,9 @@ var AllEvents = []Event{
 	EventArchivesChanged,
 	EventBackupProfileDeleted,
 	EventAuthStateChanged,
+	EventCheckoutStateChanged,
+	EventSubscriptionAdded,
+	EventSubscriptionCancelled,
 }
 
 func (e Event) String() string {
@@ -109,6 +115,18 @@ func EventRepoStateChangedString(repoId int) string {
 
 func EventArchivesChangedString(repoId int) string {
 	return fmt.Sprintf("%s:%d", EventArchivesChanged.String(), repoId)
+}
+
+func EventCheckoutStateChangedString() string {
+	return fmt.Sprintf("%s", EventCheckoutStateChanged.String())
+}
+
+func EventSubscriptionAddedString() string {
+	return fmt.Sprintf("%s", EventSubscriptionAdded.String())
+}
+
+func EventSubscriptionCancelledString() string {
+	return fmt.Sprintf("%s", EventSubscriptionCancelled.String())
 }
 
 type EventEmitter interface {

@@ -1,13 +1,18 @@
 <script setup lang='ts'>
-import { computed, onMounted, ref, watch } from "vue";
-import { CheckCircleIcon, CheckIcon, CloudIcon, StarIcon } from "@heroicons/vue/24/outline";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { CloudIcon } from "@heroicons/vue/24/outline";
 import FormField from "./common/FormField.vue";
 import AuthForm from "./common/AuthForm.vue";
+import PlanSelection from "./subscription/PlanSelection.vue";
 import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
+import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan, Currency } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { Browser, Events } from "@wailsio/runtime";
+import * as EventHelpers from "../common/events";
+import { logError, showAndLogError } from "../common/logger";
 
 /************
  * Types
@@ -46,6 +51,7 @@ defineExpose({
 });
 
 const { isAuthenticated, userEmail } = useAuth();
+useSubscriptionNotifications(); // Initialize global subscription notifications
 
 const dialog = ref<HTMLDialogElement>();
 const authForm = ref<InstanceType<typeof AuthForm>>();
@@ -56,6 +62,7 @@ const currentState = ref<ComponentState>(ComponentState.LOADING_INITIAL);
 // Form and UI state
 const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
+const selectedCurrency = ref<Currency>(Currency.Currency_CURRENCY_USD);
 
 // Subscription data
 const subscriptionPlans = ref<SubscriptionPlan[]>([]);
@@ -68,6 +75,12 @@ const repoNameError = ref<string | undefined>(undefined);
 // Error messages
 const errorMessage = ref<string | undefined>(undefined);
 
+// Checkout session data
+const checkoutSession = ref<any>(undefined);
+
+// Event cleanup
+const cleanupFunctions: Array<() => void> = [];
+
 
 /************
  * Computed
@@ -76,8 +89,7 @@ const errorMessage = ref<string | undefined>(undefined);
 // Loading state helpers
 const isLoading = computed(() =>
   currentState.value === ComponentState.LOADING_INITIAL ||
-  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED ||
-  currentState.value === ComponentState.CHECKOUT_PROCESSING
+  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED
 );
 
 const modalTitle = computed(() => {
@@ -121,7 +133,7 @@ const modalDescription = computed(() => {
     case ComponentState.SUBSCRIPTION_AUTHENTICATED:
       return "Checking your subscription status...";
     case ComponentState.CHECKOUT_PROCESSING:
-      return "Processing your subscription request...";
+      return "Complete your subscription checkout in the browser.";
     case ComponentState.REPOSITORY_CREATION:
       return "Create a new repository in Arco Cloud.";
     case ComponentState.ERROR_PLANS:
@@ -137,14 +149,6 @@ const modalDescription = computed(() => {
 const selectedPlanData = computed(() =>
   subscriptionPlans.value.find(plan => plan.name === selectedPlan.value)
 );
-
-
-const yearlyDiscount = computed(() => {
-  if (!selectedPlanData.value || !selectedPlanData.value.price_monthly_cents || !selectedPlanData.value.price_yearly_cents) return 0;
-  const monthlyTotal = (selectedPlanData.value.price_monthly_cents / 100) * 12;
-  const yearlyPrice = selectedPlanData.value.price_yearly_cents / 100;
-  return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
-});
 
 const isRepoValid = computed(() =>
   repoName.value.length > 0 && !repoNameError.value
@@ -179,6 +183,7 @@ function transitionTo(newState: ComponentState, error?: string) {
   currentState.value = newState;
   if (error) {
     errorMessage.value = error;
+    logError(error);
   } else {
     errorMessage.value = undefined;
   }
@@ -268,14 +273,21 @@ async function showModal() {
 function resetAll() {
   authForm.value?.reset();
   selectedPlan.value = undefined;
+  selectedCurrency.value = Currency.Currency_CURRENCY_USD;
   repoName.value = "";
   repoNameError.value = undefined;
   errorMessage.value = undefined;
+  checkoutSession.value = undefined;
   transitionTo(ComponentState.LOADING_INITIAL);
 }
 
 function closeModal() {
   dialog.value?.close();
+  
+  // Clean up any active checkout event listeners
+  cleanupFunctions.forEach(cleanup => cleanup());
+  cleanupFunctions.length = 0;
+  
   // Delay reset to allow modal fade animation to complete
   setTimeout(() => {
     resetAll();
@@ -287,6 +299,23 @@ function closeModal() {
 function selectPlan(planName: string) {
   selectedPlan.value = planName;
   errorMessage.value = undefined;
+}
+
+function onPlanSelected(planName: string) {
+  selectPlan(planName);
+}
+
+function onBillingCycleChanged(isYearly: boolean) {
+  isYearlyBilling.value = isYearly;
+}
+
+function onCurrencyChanged(currency: Currency) {
+  selectedCurrency.value = currency;
+}
+
+function onSubscribeClicked(planName: string) {
+  selectedPlan.value = planName;
+  subscribeToPlan();
 }
 
 async function retryLoadPlans() {
@@ -319,18 +348,16 @@ async function subscribeToPlan() {
   transitionTo(ComponentState.CHECKOUT_PROCESSING);
 
   try {
-    // Create checkout session with real service
-    const response = await SubscriptionService.CreateCheckoutSession(
-      selectedPlan.value
-    );
-
-    if (response?.checkout_url) {
-      // Redirect to checkout URL
-      window.open(response.checkout_url, "_blank");
-      // Go back to subscription selection to let user know checkout opened
-      goToSubscriptionSelection();
-    } else {
-      transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
+    // Set up event listener before creating checkout session
+    setupCheckoutEventListener();
+    
+    // Create checkout session
+    await SubscriptionService.CreateCheckoutSession(selectedPlan.value, selectedCurrency.value);
+    
+    // Get checkout session data from backend
+    const sessionData = await SubscriptionService.GetCheckoutSession();
+    if (sessionData) {
+      checkoutSession.value = sessionData;
     }
   } catch (error) {
     transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
@@ -350,6 +377,35 @@ function validateRepoName() {
   } else {
     repoNameError.value = undefined;
   }
+}
+
+function setupCheckoutEventListener() {
+  // Listen for subscription completion events
+  const checkoutCleanup = Events.On(EventHelpers.subscriptionAddedEvent(), async () => {
+    try {
+      // Refresh subscription status when subscription is added
+      await loadUserSubscription();
+      
+      // If user now has a subscription, transition to appropriate state
+      if (hasActiveSubscription.value) {
+        transitionTo(ComponentState.REPOSITORY_CREATION);
+      } else {
+        // Subscription might not have been loaded yet, go back to subscription selection
+        goToSubscriptionSelection();
+      }
+    } catch (error) {
+      await showAndLogError("Error handling subscription completion:", error);
+      // Go back to subscription selection on error
+      goToSubscriptionSelection();
+    }
+  });
+  
+  // Store cleanup function
+  cleanupFunctions.push(checkoutCleanup);
+}
+
+function openCheckoutUrl(url: string) {
+  Browser.OpenURL(url)
 }
 
 function createRepository() {
@@ -378,6 +434,7 @@ function onAuthenticated() {
   }
 }
 
+
 /************
  * Lifecycle
  ************/
@@ -385,6 +442,11 @@ function onAuthenticated() {
 onMounted(async () => {
   // Load subscription plans on mount
   await loadSubscriptionPlans();
+});
+
+onUnmounted(() => {
+  // Clean up event listeners
+  cleanupFunctions.forEach(cleanup => cleanup());
 });
 
 
@@ -448,9 +510,30 @@ watch(isAuthenticated, async (authenticated) => {
 
       <!-- Checkout Processing State -->
       <div v-else-if='currentState === ComponentState.CHECKOUT_PROCESSING'>
-        <div class='text-center py-8'>
-          <div class='loading loading-spinner loading-lg'></div>
-          <p class='mt-2 text-base-content/70'>Processing subscription...</p>
+        <div class='space-y-6'>
+          <!-- Status indicator -->
+          <div class='text-left'>
+            <div class='loading loading-spinner loading-lg mb-4'></div>
+            <h3 class='text-lg font-semibold mb-2'>Checkout in Progress</h3>
+          </div>
+
+          <!-- Open in Browser button -->
+          <div class='flex justify-start'>
+            <button
+              class='btn btn-secondary'
+              :disabled='!checkoutSession?.checkout_url'
+              @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
+            >
+              Open in Browser
+            </button>
+          </div>
+
+          <!-- Actions -->
+          <div class='modal-action justify-end'>
+            <button class='btn btn-outline' @click='closeModal()'>
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
@@ -464,100 +547,22 @@ watch(isAuthenticated, async (authenticated) => {
           </a>
         </div>
 
-        <!-- Billing Toggle -->
-        <div class='flex justify-center mb-6'>
-          <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
-            <button
-              :class='["btn btn-sm", !isYearlyBilling ? "btn-primary" : "btn-ghost"]'
-              @click='isYearlyBilling = false'
-            >
-              Monthly
-            </button>
-            <button
-              :class='["btn btn-sm", isYearlyBilling ? "btn-primary" : "btn-ghost"]'
-              @click='isYearlyBilling = true'
-            >
-              Yearly
-              <span v-if='yearlyDiscount && selectedPlanData'
-                    class='badge badge-success badge-sm'>Save {{ yearlyDiscount }}%</span>
-            </button>
-          </div>
-        </div>
+        <!-- Plan Selection Component -->
+        <PlanSelection
+          :plans='subscriptionPlans'
+          :selected-plan='selectedPlan'
+          :is-yearly-billing='isYearlyBilling'
+          :selected-currency='selectedCurrency'
+          :has-active-subscription='hasActiveSubscription'
+          :user-subscription-plan='userSubscriptionPlan'
+          :hide-subscribe-button='true'
+          @plan-selected='onPlanSelected'
+          @billing-cycle-changed='onBillingCycleChanged'
+          @currency-changed='onCurrencyChanged'
+          @subscribe-clicked='onSubscribeClicked'
+        />
 
-        <!-- Plan Cards -->
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
-          <div v-for='plan in subscriptionPlans' :key='plan.name ?? ""'
-               :class='[
-                 "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
-                 userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
-                 selectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
-                 hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : ""
-               ]'
-               @click='hasActiveSubscription && userSubscriptionPlan !== plan.name ? null : selectPlan(plan.name ?? "")'>
-
-            <!-- Active subscription badge -->
-            <div v-if='userSubscriptionPlan === plan.name'
-                 class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
-              Active
-            </div>
-
-            <div class='flex items-start justify-between mb-4'>
-              <div class='flex-1'>
-                <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
-                <p class='text-3xl font-bold mt-2'>
-                  ${{
-                    isYearlyBilling ? ((plan.price_yearly_cents ?? 0) / 100) : ((plan.price_monthly_cents ?? 0) / 100)
-                  }}
-                  <span class='text-sm font-normal text-base-content/70'>
-                    /{{ isYearlyBilling ? "year" : "month" }}
-                  </span>
-                </p>
-                <!-- Always render savings text with fixed height to prevent layout jumping -->
-                <div class='h-5 mt-1'>
-                  <p
-                    v-if='isYearlyBilling && plan.price_monthly_cents && plan.price_yearly_cents && ((plan.price_monthly_cents / 100) * 12) > (plan.price_yearly_cents / 100)'
-                    class='text-sm text-success'>
-                    Save ${{ ((plan.price_monthly_cents / 100) * 12) - (plan.price_yearly_cents / 100) }} annually
-                  </p>
-                </div>
-              </div>
-              <StarIcon v-if='plan.recommended' class='size-6 text-warning flex-shrink-0' />
-            </div>
-
-            <p class='text-lg font-medium mb-4'>{{ plan.storage_gb ?? 0 }}GB storage</p>
-
-            <!-- Features list with flex-grow to push icon to bottom -->
-            <ul class='space-y-2 flex-grow'>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>{{
-                    plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC ? "Basic" : "Pro"
-                  }} features</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Cloud backup storage</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>Secure encrypted backups</span>
-              </li>
-              <li class='flex items-center gap-2'>
-                <CheckIcon class='size-4 text-success flex-shrink-0' />
-                <span class='text-sm'>24/7 support</span>
-              </li>
-            </ul>
-
-            <!-- Fixed height container for selection icon -->
-            <div class='mt-4 flex justify-center h-8 items-center'>
-              <CheckCircleIcon v-if='userSubscriptionPlan === plan.name' class='size-8 text-success' />
-              <CheckCircleIcon v-else-if='selectedPlan === plan.name && !hasActiveSubscription'
-                               class='size-8 text-secondary' />
-            </div>
-          </div>
-        </div>
-
-        <div class='modal-action justify-between'>
+        <div class='modal-action justify-between mt-6'>
           <button class='btn btn-outline' @click='closeModal()'>
             Cancel
           </button>
@@ -584,11 +589,12 @@ watch(isAuthenticated, async (authenticated) => {
       <!-- Error States -->
       <div
         v-else-if='currentState === ComponentState.ERROR_PLANS || currentState === ComponentState.ERROR_SUBSCRIPTION || currentState === ComponentState.ERROR_CHECKOUT'>
-        <div class='alert alert-error mb-6'>
-          <div class='flex items-center justify-between w-full'>
-            <div>
-              <span>{{ errorMessage }}</span>
-            </div>
+        <div role="alert" class="alert alert-error alert-vertical sm:alert-horizontal mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errorMessage }}</span>
+          <div>
             <button class='btn btn-sm btn-outline'
                     @click='currentState === ComponentState.ERROR_PLANS ? retryLoadPlans() : currentState === ComponentState.ERROR_SUBSCRIPTION ? retryLoadSubscription() : goToSubscriptionSelection()'>
               {{ currentState === ComponentState.ERROR_CHECKOUT ? "Back" : "Retry" }}

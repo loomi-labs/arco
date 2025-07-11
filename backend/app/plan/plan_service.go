@@ -19,15 +19,16 @@ type Service struct {
 	rpcClient arcov1connect.PlanServiceClient
 }
 
-// ServiceRPC implements Connect RPC handlers for the plan service
-type ServiceRPC struct {
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+
+type ServiceInternal struct {
 	*Service
 	arcov1connect.UnimplementedPlanServiceHandler
 }
 
 // NewService creates a new plan service
-func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
-	return &ServiceRPC{
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
+	return &ServiceInternal{
 		Service: &Service{
 			log:   log,
 			state: state,
@@ -36,11 +37,10 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceRPC {
 }
 
 // Init initializes the service with database and RPC client
-func (si *ServiceRPC) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceClient) {
+func (si *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.PlanServiceClient) {
 	si.db = db
 	si.rpcClient = rpcClient
 }
-
 
 // Frontend-exposed business logic methods
 
@@ -55,20 +55,4 @@ func (s *Service) ListPlans(ctx context.Context) ([]*arcov1.Plan, error) {
 	}
 
 	return resp.Msg.Plans, nil
-}
-
-// Backend-only Connect RPC handler methods
-
-// ListPlans handles the Connect RPC request for listing plans
-func (si *ServiceRPC) ListPlans(ctx context.Context, _ *connect.Request[arcov1.ListPlansRequest]) (*connect.Response[arcov1.ListPlansResponse], error) {
-	plans, err := si.Service.ListPlans(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	protoResp := &arcov1.ListPlansResponse{
-		Plans: plans,
-	}
-
-	return connect.NewResponse(protoResp), nil
 }

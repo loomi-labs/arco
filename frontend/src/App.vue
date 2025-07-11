@@ -12,6 +12,7 @@ import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
 import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
+import { useSubscriptionNotifications } from "./common/subscription";
 
 /************
  * Variables
@@ -77,6 +78,9 @@ function toTitleCase(str: string | undefined): string {
 /************
  * Lifecycle
  ************/
+
+// Initialize global subscription notifications
+useSubscriptionNotifications();
 
 getStartupState();
 
