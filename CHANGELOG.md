@@ -7,14 +7,14 @@
 
 * add arco-cloud integration (beta) ([#159](https://github.com/loomi-labs/arco/issues/159)) ([c5ae6d3](https://github.com/loomi-labs/arco/commit/c5ae6d332fb923ef75254b1965a1eddb866ca38a))
 * add auth service for cloud login ([#157](https://github.com/loomi-labs/arco/issues/157)) ([ed75de1](https://github.com/loomi-labs/arco/commit/ed75de1a33b606d46fac8432c25ec8c33963216d))
-* add Borg 1.4.1 binary support ([#168](https://github.com/loomi-labs/arco/issues/168)) ([4ec2b35](https://github.com/loomi-labs/arco/commit/4ec2b350973cc80382436c3f8052cd8cacee335b))
+* add Borg 1.4.1 support ([#168](https://github.com/loomi-labs/arco/issues/168)) ([4ec2b35](https://github.com/loomi-labs/arco/commit/4ec2b350973cc80382436c3f8052cd8cacee335b))
 
 
 ### Bug Fixes
 
 * borg locks ([#163](https://github.com/loomi-labs/arco/issues/163)) ([5ca25f4](https://github.com/loomi-labs/arco/commit/5ca25f46e111a9f0635a3ae33646ddc43dddff6a))
 * enable macOS universal build support in task system ([#162](https://github.com/loomi-labs/arco/issues/162)) ([64a3df0](https://github.com/loomi-labs/arco/commit/64a3df000cec9d0068b7819a9f2390b700db29ca))
-* improve error variable naming and handling in backup operations ([#167](https://github.com/loomi-labs/arco/issues/167)) ([3e9278b](https://github.com/loomi-labs/arco/commit/3e9278bd1f6bf640b2e46f6e8e9fd88f7e0baa3a))
+* cancel operations ([#167](https://github.com/loomi-labs/arco/issues/167)) ([3e9278b](https://github.com/loomi-labs/arco/commit/3e9278bd1f6bf640b2e46f6e8e9fd88f7e0baa3a))
 
 ## [0.13.1](https://github.com/loomi-labs/arco/compare/v0.13.0...v0.13.1) (2025-05-29)
 
