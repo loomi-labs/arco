@@ -265,7 +265,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 				b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 			}
 
-			_, err := b.repoClient().refreshArchives(bId.RepositoryId)
+			_, err = b.repoClient().refreshArchives(bId.RepositoryId)
 			if err != nil {
 				b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
 			}
