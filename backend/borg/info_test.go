@@ -2,12 +2,11 @@ package borg
 
 import (
 	"context"
-	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os/exec"
 	"testing"
 )
 
@@ -293,17 +292,27 @@ var withJsonError = testBorgInfo{
 	wantErr:   true,
 }
 
+// Simple mock CommandRunner for testing
+type mockCommandRunner struct {
+	output []byte
+	err    error
+}
+
+func (m *mockCommandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
+	return m.output, m.err
+}
+
 func TestBorgInfo(t *testing.T) {
 	var b Borg
-	var cr *mockborg.MockCommandRunner
+	var cr *mockCommandRunner
 
-	var setup = func(t *testing.T) {
+	var setup = func(t *testing.T, output []byte, err error) {
 		logConfig := zap.NewDevelopmentConfig()
 		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		log, err := logConfig.Build()
 		assert.NoError(t, err, "Failed to create logger")
 
-		cr = mockborg.NewMockCommandRunner(gomock.NewController(t))
+		cr = &mockCommandRunner{output: output, err: err}
 		b = NewBorg("borg", log.Sugar(), []string{}, cr)
 	}
 
@@ -319,17 +328,16 @@ func TestBorgInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// ARRANGE
-			setup(t)
-			cr.EXPECT().Info(gomock.Any()).Return(tt.cmdResult, nil)
+			setup(t, tt.cmdResult, nil)
 
 			// ACT
-			result, err := b.Info(context.Background(), "test-repo", "test-password")
+			result, status := b.Info(context.Background(), "test-repo", "test-password")
 
 			// ASSERT
 			if tt.wantErr {
-				assert.Error(t, err, "Expected error, got nil")
+				assert.True(t, status.HasError(), "Expected error, got nil")
 			} else {
-				assert.NoError(t, err, "Expected no error, got %v", err)
+				assert.True(t, status.IsCompletedWithSuccess(), "Expected success, got error: %v", status.GetError())
 				assert.Equal(t, tt.result, result, "Info() = %v, want %v", result, tt.result)
 			}
 		})

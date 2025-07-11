@@ -381,7 +381,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(_, _, _ any) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borg.Status{}).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}
@@ -515,7 +515,7 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 				}
 
 				wg.Add(1)
-				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, nil).Do(func(_, _, _ any) {
+				mockBorg.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(listResponse, &borg.Status{}).Do(func(_, _, _ any) {
 					wg.Done()
 				})
 			}
