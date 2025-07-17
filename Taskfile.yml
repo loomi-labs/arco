@@ -51,3 +51,35 @@ tasks:
         msg: "Docker is required for integration tests"
     cmds:
       - go test -tags=integration -cover -mod=readonly --timeout 5m ./backend/borg/...
+
+  test:integration:docker:
+    desc: Runs integration tests in containerized environment
+    preconditions:
+      - sh: command -v docker
+        msg: "Docker is required for containerized integration tests"
+    cmds:
+      - ./scripts/run-integration-tests-containerized.sh
+
+  test:integration:matrix:
+    desc: Runs integration tests with multiple borg version combinations
+    preconditions:
+      - sh: command -v docker
+        msg: "Docker is required for integration tests"
+    cmds:
+      - echo "Testing borg version matrix..."
+      - CLIENT_BORG_VERSION=1.2.8 SERVER_BORG_VERSION=1.2.8 ./scripts/run-integration-tests-containerized.sh
+      - CLIENT_BORG_VERSION=1.2.8 SERVER_BORG_VERSION=1.4.0 ./scripts/run-integration-tests-containerized.sh
+      - CLIENT_BORG_VERSION=1.4.0 SERVER_BORG_VERSION=1.2.8 ./scripts/run-integration-tests-containerized.sh
+      - CLIENT_BORG_VERSION=1.4.0 SERVER_BORG_VERSION=1.4.0 ./scripts/run-integration-tests-containerized.sh
+      - CLIENT_BORG_VERSION=1.4.1 SERVER_BORG_VERSION=1.4.1 ./scripts/run-integration-tests-containerized.sh
+      - echo "Matrix testing completed successfully!"
+
+  test:integration:client-version:
+    desc: Runs integration tests with specific client version
+    preconditions:
+      - sh: command -v docker
+        msg: "Docker is required for integration tests"
+      - sh: '[ -n "{{.CLIENT_VERSION}}" ]'
+        msg: "CLIENT_VERSION is required. Usage: task test:integration:client-version CLIENT_VERSION=1.4.0"
+    cmds:
+      - CLIENT_BORG_VERSION={{.CLIENT_VERSION}} ./scripts/run-integration-tests-containerized.sh

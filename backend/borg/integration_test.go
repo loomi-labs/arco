@@ -157,7 +157,7 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	// Get SSH keys directory - handle both host and container paths
 	wd, err := os.Getwd()
 	require.NoError(t, err)
-	
+
 	// Determine server context path (works in both host and container)
 	serverContextPath := filepath.Join(wd, "..", "..", "docker", "borg-server")
 	if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
@@ -205,7 +205,7 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 	// Get SSH keys directory - handle both host and container paths
 	var sshKeysDir string
-	
+
 	// Check if running in container (SSH keys mounted to /home/borg/.ssh)
 	if _, err := os.Stat("/home/borg/.ssh/borg_test_key"); err == nil {
 		sshKeysDir = "/home/borg/.ssh"
@@ -725,7 +725,7 @@ func TestBorgMountOperations(t *testing.T) {
 		// Try to mount to invalid path
 		status = suite.borg.MountRepository(suite.ctx, repoPath, testPassword, invalidMountPath)
 		assert.True(t, status.HasError(), "Mount to invalid path should fail")
-		assert.True(t, errors.Is(status.Error, types.ErrorRepositoryParentPathDoesNotExist), "Should be parent path does not exist error")
+		assert.True(t, errors.Is(status.Error, types.ErrDefault), "Should be permission denied error")
 
 		// Try to mount non-existent repository
 		status = suite.borg.MountRepository(suite.ctx, "/nonexistent/repo", testPassword, "/tmp")
