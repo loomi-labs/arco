@@ -429,7 +429,7 @@ type SelectDirectoryData struct {
 }
 
 func (b *BackupClient) SelectDirectory(data SelectDirectoryData) (string, error) {
-	dialog := application.OpenFileDialogWithOptions(&application.OpenFileDialogOptions{
+	dialog := application.Get().Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
 		CanChooseDirectories:            true,
 		CanChooseFiles:                  false,
 		CanCreateDirectories:            true,

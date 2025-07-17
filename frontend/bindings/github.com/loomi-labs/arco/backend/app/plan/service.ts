@@ -8,7 +8,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -17,13 +17,10 @@ import * as arcov1$0 from "../../api/v1/models.js";
 /**
  * ListPlans returns available subscription plans
  */
-export function ListPlans(): Promise<(arcov1$0.Plan | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(802962553) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function ListPlans(): $CancellablePromise<(arcov1$0.Plan | null)[]> {
+    return $Call.ByID(802962553).then(($result: any) => {
         return $$createType2($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 // Private type creation functions
