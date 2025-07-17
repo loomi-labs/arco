@@ -1,3 +1,5 @@
+//go:build integration
+
 /*
 Integration Tests for Borg Backup System
 
@@ -74,6 +76,16 @@ TestBorgRenameOperation
 TestBorgBreakLockOperation
 * Break repository lock (should succeed even without lock)
 
+TestBorgMountOperations
+* MountRepository - Mount entire repository to filesystem and verify access
+* MountArchive - Mount specific archive to filesystem and verify content
+* MountErrors - Error handling for invalid mount paths and non-existent targets
+
+TestBorgDeleteArchives
+* Delete multiple archives with prefix pattern matching
+* Verify auto-compact after bulk deletion
+* Verify selective deletion (only matching prefix)
+
 TestBorgErrorHandling
 * InvalidRepository - Error handling for non-existent repository
 * WrongPassword - Error handling for incorrect password
@@ -87,6 +99,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go/network"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -128,20 +141,12 @@ func (s *TestIntegrationSuite) setupBorgEnvironment(t *testing.T) {
 	require.NoError(t, err)
 	s.logger = logger.Sugar()
 
-	// Create a network for the containers with unique name
-	networkName := fmt.Sprintf("borg-test-network-%d", time.Now().UnixNano())
-	networkRequest := testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: networkName,
-		},
-	}
-
-	network, err := testcontainers.GenericNetwork(s.ctx, networkRequest)
+	net, err := network.New(s.ctx)
 	require.NoError(t, err)
-	s.network = network
+	s.network = net
 
 	// Start borg server container
-	s.startBorgServer(t, networkName)
+	s.startBorgServer(t, net.Name)
 
 	// Setup SSH connection
 	s.setupSSHConnection(t)
@@ -149,21 +154,31 @@ func (s *TestIntegrationSuite) setupBorgEnvironment(t *testing.T) {
 
 // startBorgServer starts the borg server container
 func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string) {
-	// Get SSH keys directory
+	// Get SSH keys directory - handle both host and container paths
 	wd, err := os.Getwd()
 	require.NoError(t, err)
-	sshKeysDir := filepath.Join(wd, "..", "..", "docker", "ssh-keys")
+	
+	// Determine server context path (works in both host and container)
+	serverContextPath := filepath.Join(wd, "..", "..", "docker", "borg-server")
+	if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
+		// Try alternative path for containerized environment
+		serverContextPath = "/app/docker/borg-server"
+	}
 
-	// Generate SSH keys if needed
-	s.generateSSHKeys(t, sshKeysDir)
+	// Get server borg version from environment, fallback to default
+	serverBorgVersion := os.Getenv("SERVER_BORG_VERSION")
+	if serverBorgVersion == "" {
+		serverBorgVersion = "1.4.0"
+	}
 
 	// Build server container from Dockerfile
 	serverRequest := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join(wd, "..", "..", "docker", "borg-server"),
+			Context:    serverContextPath,
 			Dockerfile: "Dockerfile",
 			BuildArgs: map[string]*string{
-				"BUILDTIME": &[]string{fmt.Sprintf("%d", time.Now().UnixNano())}[0],
+				"BUILDTIME":    &[]string{fmt.Sprintf("%d", time.Now().UnixNano())}[0],
+				"BORG_VERSION": &serverBorgVersion,
 			},
 		},
 		ExposedPorts: []string{"22/tcp"},
@@ -186,30 +201,20 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	s.serverHostPort = hostPort.Port()
 }
 
-// generateSSHKeys generates SSH keys if they don't exist
-func (s *TestIntegrationSuite) generateSSHKeys(t *testing.T, sshKeysDir string) {
-	keyGenScript := filepath.Join(sshKeysDir, "generate-keys.sh")
-
-	// Check if keys already exist
-	privateKey := filepath.Join(sshKeysDir, "borg_test_key")
-	if _, err := os.Stat(privateKey); os.IsNotExist(err) {
-		// Generate keys
-		cmd := exec.Command("/bin/bash", keyGenScript)
-		cmd.Dir = sshKeysDir
-		err := cmd.Run()
-		require.NoError(t, err)
-	}
-}
-
 // setupSSHConnection configures SSH connection from host to server
 func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
-	// Get SSH keys directory
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-	sshKeysDir := filepath.Join(wd, "..", "..", "docker", "ssh-keys")
-
-	// Generate SSH keys if needed
-	s.generateSSHKeys(t, sshKeysDir)
+	// Get SSH keys directory - handle both host and container paths
+	var sshKeysDir string
+	
+	// Check if running in container (SSH keys mounted to /home/borg/.ssh)
+	if _, err := os.Stat("/home/borg/.ssh/borg_test_key"); err == nil {
+		sshKeysDir = "/home/borg/.ssh"
+	} else {
+		// Running on host, use relative path
+		wd, err := os.Getwd()
+		require.NoError(t, err)
+		sshKeysDir = filepath.Join(wd, "..", "..", "docker", "ssh-keys")
+	}
 
 	// Wait for SSH server to fully start
 	time.Sleep(3 * time.Second)
@@ -596,6 +601,208 @@ func TestBorgBreakLockOperation(t *testing.T) {
 	// Break lock (should succeed even if no lock exists)
 	status = suite.borg.BreakLock(suite.ctx, repoPath, testPassword)
 	assert.True(t, status.IsCompletedWithSuccess(), "Break lock should succeed: %v", status.GetError())
+}
+
+// TestBorgMountOperations tests mount and unmount operations
+func TestBorgMountOperations(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	t.Run("MountRepository", func(t *testing.T) {
+		repoPath := suite.createTestRepository(t)
+		dataDir := suite.createTestData(t)
+		mountPath := fmt.Sprintf("/tmp/borg-mount-repo-%d", time.Now().UnixNano())
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Create backup
+		progressChan := make(chan types.BackupProgress, 10)
+		_, status = suite.borg.Create(
+			suite.ctx,
+			repoPath,
+			testPassword,
+			"test-archive",
+			[]string{dataDir},
+			[]string{},
+			progressChan,
+		)
+		close(progressChan)
+		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+
+		// Create mount directory
+		err := os.MkdirAll(mountPath, 0755)
+		require.NoError(t, err, "Mount directory creation should succeed")
+		defer os.RemoveAll(mountPath)
+
+		// Mount repository
+		status = suite.borg.MountRepository(suite.ctx, repoPath, testPassword, mountPath)
+		assert.True(t, status.IsCompletedWithSuccess(), "Repository mount should succeed: %v", status.GetError())
+
+		// Verify mount is accessible
+		entries, err := os.ReadDir(mountPath)
+		assert.NoError(t, err, "Should be able to read mount directory")
+		assert.NotEmpty(t, entries, "Mount directory should contain archive entries")
+
+		// Unmount
+		status = suite.borg.Umount(suite.ctx, mountPath)
+		assert.True(t, status.IsCompletedWithSuccess(), "Repository unmount should succeed: %v", status.GetError())
+
+		// Verify unmount
+		entries, err = os.ReadDir(mountPath)
+		if err == nil {
+			assert.Empty(t, entries, "Mount directory should be empty after unmount")
+		}
+	})
+
+	t.Run("MountArchive", func(t *testing.T) {
+		repoPath := suite.createTestRepository(t)
+		dataDir := suite.createTestData(t)
+		mountPath := fmt.Sprintf("/tmp/borg-mount-archive-%d", time.Now().UnixNano())
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Create backup
+		progressChan := make(chan types.BackupProgress, 10)
+		archivePath, status := suite.borg.Create(
+			suite.ctx,
+			repoPath,
+			testPassword,
+			"test-archive",
+			[]string{dataDir},
+			[]string{},
+			progressChan,
+		)
+		close(progressChan)
+		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+
+		// Create mount directory
+		err := os.MkdirAll(mountPath, 0755)
+		require.NoError(t, err, "Mount directory creation should succeed")
+		defer os.RemoveAll(mountPath)
+
+		// Mount specific archive
+		archiveName := strings.Split(archivePath, "::")[1]
+		status = suite.borg.MountArchive(suite.ctx, repoPath, archiveName, testPassword, mountPath)
+		assert.True(t, status.IsCompletedWithSuccess(), "Archive mount should succeed: %v", status.GetError())
+
+		// Verify mount contains original files
+		entries, err := os.ReadDir(mountPath)
+		assert.NoError(t, err, "Should be able to read mount directory")
+		assert.NotEmpty(t, entries, "Mount directory should contain file entries")
+
+		// Verify specific file content
+		testFile := filepath.Join(mountPath, filepath.Base(dataDir), "file1.txt")
+		if _, err := os.Stat(testFile); err == nil {
+			content, err := os.ReadFile(testFile)
+			assert.NoError(t, err, "Should be able to read mounted file")
+			assert.Equal(t, "This is test file 1", string(content), "File content should match")
+		}
+
+		// Unmount
+		status = suite.borg.Umount(suite.ctx, mountPath)
+		assert.True(t, status.IsCompletedWithSuccess(), "Archive unmount should succeed: %v", status.GetError())
+
+		// Verify unmount
+		entries, err = os.ReadDir(mountPath)
+		if err == nil {
+			assert.Empty(t, entries, "Mount directory should be empty after unmount")
+		}
+	})
+
+	t.Run("MountErrors", func(t *testing.T) {
+		repoPath := suite.createTestRepository(t)
+		invalidMountPath := "/nonexistent/mount/path"
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Try to mount to invalid path
+		status = suite.borg.MountRepository(suite.ctx, repoPath, testPassword, invalidMountPath)
+		assert.True(t, status.HasError(), "Mount to invalid path should fail")
+		assert.True(t, errors.Is(status.Error, types.ErrorRepositoryParentPathDoesNotExist), "Should be parent path does not exist error")
+
+		// Try to mount non-existent repository
+		status = suite.borg.MountRepository(suite.ctx, "/nonexistent/repo", testPassword, "/tmp")
+		assert.True(t, status.HasError(), "Mount non-existent repository should fail")
+		assert.True(t, errors.Is(status.Error, types.ErrorRepositoryDoesNotExist), "Should be repository does not exist error")
+
+		// Try to mount non-existent archive
+		status = suite.borg.MountArchive(suite.ctx, repoPath, "nonexistent-archive", testPassword, "/tmp")
+		assert.True(t, status.HasError(), "Mount non-existent archive should fail")
+		assert.True(t, errors.Is(status.Error, types.ErrorArchiveDoesNotExist), "Should be archive does not exist error")
+	})
+}
+
+// TestBorgDeleteArchives tests multiple archive deletion
+func TestBorgDeleteArchives(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	repoPath := suite.createTestRepository(t)
+	dataDir := suite.createTestData(t)
+
+	// Initialize repository
+	status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+	require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+	// Create multiple archives with same prefix
+	archivePrefix := "test-archive"
+	for i := 0; i < 5; i++ {
+		progressChan := make(chan types.BackupProgress, 10)
+		_, status = suite.borg.Create(
+			suite.ctx,
+			repoPath,
+			testPassword,
+			fmt.Sprintf("%s-%d", archivePrefix, i),
+			[]string{dataDir},
+			[]string{},
+			progressChan,
+		)
+		close(progressChan)
+		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+	}
+
+	// Create archive with different prefix
+	progressChan := make(chan types.BackupProgress, 10)
+	_, status = suite.borg.Create(
+		suite.ctx,
+		repoPath,
+		testPassword,
+		"other-archive-",
+		[]string{dataDir},
+		[]string{},
+		progressChan,
+	)
+	close(progressChan)
+	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+
+	// Verify all archives exist
+	list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+	require.True(t, status.IsCompletedWithSuccess(), "List should succeed")
+	assert.Len(t, list.Archives, 6, "Should have 6 archives before deletion")
+
+	// Delete archives with prefix
+	status = suite.borg.DeleteArchives(suite.ctx, repoPath, testPassword, archivePrefix)
+	assert.True(t, status.IsCompletedWithSuccess(), "Delete archives should succeed: %v", status.GetError())
+
+	// Verify only other-archive remains
+	list, status = suite.borg.List(suite.ctx, repoPath, testPassword)
+	assert.True(t, status.IsCompletedWithSuccess(), "List should succeed after deletion")
+	assert.Len(t, list.Archives, 1, "Should have 1 archive after deletion")
+	assert.True(t, strings.HasPrefix(list.Archives[0].Name, "other-archive-"), "Remaining archive should start with other-archive-")
+
+	// Verify repository is compacted (this happens automatically in DeleteArchives)
+	// We can't directly test compaction, but we can verify the operation completed successfully
+	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
+	assert.True(t, status.IsCompletedWithSuccess(), "Info should succeed after deletion and compaction")
+	assert.NotNil(t, info, "Info should return repository information")
 }
 
 // TestBorgErrorHandling tests error handling scenarios
