@@ -67,7 +67,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 			b.log.Errorf("Failed to compact after prune: %v", compactResult.GetError())
 		}
 	}
-	return b.log.LogCmdResult(ctx, result, cmdLog, time.Duration(status.Runtime))
+	return b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.

@@ -41,3 +41,13 @@ tasks:
       - touch frontend/dist/index.html
     cmds:
       - go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)
+
+  test:integration:
+    desc: Runs integration tests against real borg instances
+    deps:
+      - task: dev:gen:mocks
+    preconditions:
+      - sh: command -v docker
+        msg: "Docker is required for integration tests"
+    cmds:
+      - go test -tags=integration -cover -mod=readonly --timeout 5m ./backend/borg/...

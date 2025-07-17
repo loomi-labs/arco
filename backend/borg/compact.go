@@ -24,5 +24,5 @@ func (b *borg) Compact(ctx context.Context, repository string, password string) 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
-	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }

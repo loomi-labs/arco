@@ -17,7 +17,7 @@ func (b *borg) DeleteArchive(ctx context.Context, repository string, archive str
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }
 
 // DeleteArchives deletes all archives with the given prefix from the repository.
@@ -45,7 +45,7 @@ func (b *borg) DeleteArchives(ctx context.Context, repository, password, prefix 
 		}
 	}
 
-	return b.log.LogCmdResult(ctx, result, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, result, cmd.String(), time.Since(startTime))
 }
 
 // DeleteRepository deletes the repository and all its archives
@@ -60,5 +60,5 @@ func (b *borg) DeleteRepository(ctx context.Context, repository string, password
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }

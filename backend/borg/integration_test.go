@@ -351,7 +351,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 
 		// Create backup
 		progressChan := make(chan types.BackupProgress, 10)
-		archiveName, status := suite.borg.Create(
+		archivePath, status := suite.borg.Create(
 			suite.ctx,
 			repoPath,
 			testPassword,
@@ -361,6 +361,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 			progressChan,
 		)
 		close(progressChan)
+		archiveName := strings.Split(archivePath, "::")[1]
 
 		assert.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed: %v", status.GetError())
 		assert.NotEmpty(t, archiveName, "Archive name should not be empty")
@@ -377,7 +378,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 
 		// Create backup
 		progressChan := make(chan types.BackupProgress, 10)
-		archiveName, status := suite.borg.Create(
+		archivePath, status := suite.borg.Create(
 			suite.ctx,
 			repoPath,
 			testPassword,
@@ -394,6 +395,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository list should succeed: %v", status.GetError())
 		assert.NotNil(t, list, "List response should not be nil")
 		assert.Len(t, list.Archives, 1, "Repository should have one archive")
+		archiveName := strings.Split(archivePath, "::")[1]
 		assert.Equal(t, archiveName, list.Archives[0].Name, "Archive name should match")
 	})
 }
@@ -414,7 +416,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 
 		// Create backup
 		progressChan := make(chan types.BackupProgress, 10)
-		archiveName, status := suite.borg.Create(
+		archivePath, status := suite.borg.Create(
 			suite.ctx,
 			repoPath,
 			testPassword,
@@ -427,6 +429,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Delete archive
+		archiveName := strings.Split(archivePath, "::")[1]
 		status = suite.borg.DeleteArchive(suite.ctx, repoPath, archiveName, testPassword)
 		assert.True(t, status.IsCompletedWithSuccess(), "Archive deletion should succeed: %v", status.GetError())
 
@@ -541,11 +544,11 @@ func TestBorgRenameOperation(t *testing.T) {
 
 	// Create backup
 	progressChan := make(chan types.BackupProgress, 10)
-	archiveName, status := suite.borg.Create(
+	archivePath, status := suite.borg.Create(
 		suite.ctx,
 		repoPath,
 		testPassword,
-		"original-archive",
+		"prefix-",
 		[]string{dataDir},
 		[]string{},
 		progressChan,
@@ -554,7 +557,8 @@ func TestBorgRenameOperation(t *testing.T) {
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 	// Rename archive
-	newName := "renamed-archive"
+	newName := "prefix-and-a-new-name"
+	archiveName := strings.Split(archivePath, "::")[1]
 	status = suite.borg.Rename(suite.ctx, repoPath, archiveName, testPassword, newName)
 	assert.True(t, status.IsCompletedWithSuccess(), "Archive rename should succeed: %v", status.GetError())
 
@@ -618,39 +622,5 @@ func TestBorgErrorHandling(t *testing.T) {
 		// Try to delete non-existent archive
 		status = suite.borg.DeleteArchive(suite.ctx, repoPath, "nonexistent-archive", testPassword)
 		assert.True(t, status.HasError(), "Delete should fail for non-existent archive")
-	})
-}
-
-// BenchmarkBorgOperations provides benchmarks for borg operations
-func BenchmarkBorgOperations(b *testing.B) {
-	suite := &TestIntegrationSuite{}
-	suite.setupBorgEnvironment(&testing.T{})
-	defer suite.teardownBorgEnvironment(&testing.T{})
-
-	b.Run("Init", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			repoPath := suite.createTestRepository(&testing.T{})
-			status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
-			if !status.IsCompletedWithSuccess() {
-				b.Fatalf("Repository initialization failed: %v", status.GetError())
-			}
-		}
-	})
-
-	b.Run("Info", func(b *testing.B) {
-		repoPath := suite.createTestRepository(&testing.T{})
-		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
-		if !status.IsCompletedWithSuccess() {
-			b.Fatalf("Repository initialization failed: %v", status.GetError())
-		}
-
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
-			if !status.IsCompletedWithSuccess() {
-				b.Fatalf("Repository info failed: %v", status.GetError())
-			}
-		}
 	})
 }

@@ -14,10 +14,10 @@ import (
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
 func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status) {
-	archiveName := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
+	archivePath := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
-	totalFiles, result, err := b.countBackupFiles(ctx, archiveName, password, backupPaths, excludePaths)
+	totalFiles, result, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths)
 	if err != nil {
 		return "", newStatusWithError(err)
 	}
@@ -30,7 +30,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
 		"--log-json", // Outputs JSON log messages
-		archiveName,
+		archivePath,
 	}, backupPaths...,
 	)
 	for _, excludeDir := range excludePaths {
@@ -66,7 +66,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
 	result = gocmdToStatus(status)
-	return archiveName, b.log.LogCmdResult(ctx, result, cmdLog, time.Duration(status.Runtime))
+	return archivePath, b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
@@ -148,10 +148,10 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 	status := cmd.Status()
 	result := gocmdToStatus(status)
 	if result.HasError() || result.HasBeenCanceled {
-		return 0, b.log.LogCmdResult(ctx, result, cmdLog, time.Duration(status.Runtime)), nil
+		return 0, b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime)), nil
 	}
 
-	b.log.LogCmdResult(ctx, result, cmdLog, time.Duration(status.Runtime))
+	b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime))
 
 	select {
 	case totalFiles := <-fileCountChan:
