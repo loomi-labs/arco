@@ -1,5 +1,75 @@
 //go:build integration
 
+/*
+Integration Tests for Borg Backup System
+
+These tests provide comprehensive end-to-end testing of the borg backup interface using
+a real client-server architecture with Docker containers. This approach ensures that
+the actual production code paths are tested, including network communication, SSH
+authentication, and real borg binary execution.
+
+## Architecture Overview
+
+The tests use a two-container approach that mirrors real-world borg deployments:
+
+┌─────────────────────────────────┐        SSH         ┌───────────────────────────────┐
+│          Test Host              │ ◄────────────────► │    Borg Server Container      │
+│                                 │                    │                               │
+│ • Integration test code         │                    │ • Borg 1.4.1 server binary    │
+│ • Real borg binary execution    │                    │ • SSH server (sshd)           │
+│ • SSH client calls              │                    │ • Repository storage          │
+│ • Production interface methods  │                    │ • Embedded authentication     │
+└─────────────────────────────────┘                    └───────────────────────────────┘
+
+## How It Works
+
+1. **Setup Phase**:
+   - Testcontainers creates a Docker network
+   - Builds borg-server container from ../../docker/borg-server/Dockerfile
+   - Container includes SSH server with embedded authorized_keys
+   - Host generates SSH keys if needed and establishes connectivity
+
+2. **Test Execution**:
+   - Tests call real borg interface methods (e.g., borg.Create(), borg.List())
+   - Interface methods execute actual borg binary with SSH URLs
+   - Borg commands connect to containerized server over SSH
+   - Server processes borg operations and stores repositories
+   - Results flow back through SSH to test assertions
+
+3. **Cleanup Phase**:
+   - Containers are terminated and removed
+   - Networks are cleaned up
+   - Temporary files are removed
+
+## Key Components
+
+• **TestIntegrationSuite**: Manages the complete test environment lifecycle
+• **Docker Infrastructure**: Server container with borg binary and SSH daemon
+• **SSH Authentication**: Passwordless SSH using embedded RSA/ED25519 keys
+• **Real Network Communication**: Actual TCP/SSH between host and container
+• **Production Code Path**: Uses identical borg binary and interface methods as production
+
+## Benefits
+
+✅ Tests actual network protocols and error conditions
+✅ Validates SSH authentication and connectivity
+✅ Exercises real borg binary with container storage
+✅ Verifies complete request/response cycles
+✅ Catches integration issues that unit tests miss
+✅ Provides confidence in production deployment scenarios
+
+## Test Categories
+
+The test suite covers all major borg operations:
+- Repository operations (init, info, list)
+- Archive operations (create, delete, rename)
+- Maintenance operations (compact, prune, break-lock)
+- Error handling (invalid repos, wrong passwords, missing archives)
+- Performance benchmarks
+
+Run with: `task test:integration` or `go test -tags=integration -v ./backend/borg/...`
+*/
+
 package borg
 
 import (
