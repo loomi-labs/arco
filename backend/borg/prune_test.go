@@ -6,6 +6,32 @@ import (
 	"testing"
 )
 
+/*
+TEST CASES - prune.go
+
+TestParsePruneReason
+* Parse keeping archive with daily #1 rule
+* Parse would prune message (no rule)
+* Parse keeping archive with daily #2 rule
+* Parse keeping archive with daily[oldest] #3 rule
+* Parse terminating message (no rule)
+
+TestParsePruneName
+* Parse archive name from keeping archive message
+* Parse archive name from would prune message
+* Parse archive name from keeping archive with daily #2 rule
+* Parse archive name from keeping archive with daily[oldest] #3 rule
+* Parse terminating message (no name)
+
+TestParsePruneOutput
+* Parse keeping archive message to KeepArchive
+* Parse would prune message to PruneArchive
+* Parse keeping archive with daily #2 rule to KeepArchive
+* Parse keeping archive with daily[oldest] #3 rule to KeepArchive
+* Parse terminating message to nil results
+
+*/
+
 type inputOutput struct {
 	input  string
 	output string

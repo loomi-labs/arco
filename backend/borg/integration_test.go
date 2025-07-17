@@ -1,5 +1,3 @@
-//go:build integration
-
 /*
 Integration Tests for Borg Backup System
 
@@ -49,31 +47,45 @@ The tests use a two-container approach that mirrors real-world borg deployments:
 • **Real Network Communication**: Actual TCP/SSH between host and container
 • **Production Code Path**: Uses identical borg binary and interface methods as production
 
-## Benefits
-
-✅ Tests actual network protocols and error conditions
-✅ Validates SSH authentication and connectivity
-✅ Exercises real borg binary with container storage
-✅ Verifies complete request/response cycles
-✅ Catches integration issues that unit tests miss
-✅ Provides confidence in production deployment scenarios
-
-## Test Categories
-
-The test suite covers all major borg operations:
-- Repository operations (init, info, list)
-- Archive operations (create, delete, rename)
-- Maintenance operations (compact, prune, break-lock)
-- Error handling (invalid repos, wrong passwords, missing archives)
-- Performance benchmarks
-
 Run with: `task test:integration` or `go test -tags=integration -v ./backend/borg/...`
+
+TEST CASES - integration_test.go
+
+TestBorgRepositoryOperations
+* Init - Repository initialization with SSH
+* Info - Repository info retrieval after init
+* List - Repository archive listing (empty repo)
+
+TestBorgArchiveOperations
+* Create - Archive creation with test data
+* CreateAndList - Archive creation and verification via list
+
+TestBorgDeleteOperations
+* DeleteArchive - Archive deletion and verification
+* DeleteRepository - Repository deletion and verification
+
+TestBorgMaintenanceOperations
+* Compact - Repository compaction after archive creation
+* Prune - Repository pruning with keep-last rules (dry run)
+
+TestBorgRenameOperation
+* Rename archive and verify new name via list
+
+TestBorgBreakLockOperation
+* Break repository lock (should succeed even without lock)
+
+TestBorgErrorHandling
+* InvalidRepository - Error handling for non-existent repository
+* WrongPassword - Error handling for incorrect password
+* InvalidArchiveName - Error handling for non-existent archive deletion
+
 */
 
 package borg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -598,6 +610,7 @@ func TestBorgErrorHandling(t *testing.T) {
 		// Try to get info from non-existent repository
 		_, status := suite.borg.Info(suite.ctx, invalidRepoPath, testPassword)
 		assert.True(t, status.HasError(), "Info should fail for non-existent repository")
+		assert.True(t, errors.Is(status.Error, types.ErrorRepositoryDoesNotExist), "Should be repository does not exist error")
 	})
 
 	t.Run("WrongPassword", func(t *testing.T) {
@@ -610,6 +623,7 @@ func TestBorgErrorHandling(t *testing.T) {
 		// Try to access with wrong password
 		_, status = suite.borg.Info(suite.ctx, repoPath, "wrongpassword")
 		assert.True(t, status.HasError(), "Info should fail with wrong password")
+		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
 	})
 
 	t.Run("InvalidArchiveName", func(t *testing.T) {
@@ -621,6 +635,7 @@ func TestBorgErrorHandling(t *testing.T) {
 
 		// Try to delete non-existent archive
 		status = suite.borg.DeleteArchive(suite.ctx, repoPath, "nonexistent-archive", testPassword)
-		assert.True(t, status.HasError(), "Delete should fail for non-existent archive")
+		assert.True(t, status.HasWarning(), "Delete should fail or warn for non-existent archive")
+		assert.True(t, errors.Is(status.Warning, types.WarningGeneric), "Should be generic warning")
 	})
 }
