@@ -158,6 +158,12 @@ func newStatusWithError(err error) *types.Status {
 	}
 }
 
+func newStatusWithCanceled() *types.Status {
+	return &types.Status{
+		HasBeenCanceled: true,
+	}
+}
+
 func toBorgResult(exitCode int) *types.Status {
 	if exitCode == 0 {
 		return &types.Status{}
