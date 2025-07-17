@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Create as $Create} from "@wailsio/runtime";
+import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -52,7 +52,7 @@ export class BackupState {
     /** Creates a new BackupState instance. */
     constructor($$source: Partial<BackupState> = {}) {
         if (!("status" in $$source)) {
-            this["status"] = ("" as BackupStatus);
+            this["status"] = BackupStatus.$zero;
         }
 
         Object.assign(this, $$source);
@@ -93,7 +93,7 @@ export class CheckoutResult {
     /** Creates a new CheckoutResult instance. */
     constructor($$source: Partial<CheckoutResult> = {}) {
         if (!("status" in $$source)) {
-            this["status"] = ("" as CheckoutResultStatus);
+            this["status"] = CheckoutResultStatus.$zero;
         }
 
         Object.assign(this, $$source);
@@ -126,7 +126,7 @@ export class RepoState {
     /** Creates a new RepoState instance. */
     constructor($$source: Partial<RepoState> = {}) {
         if (!("status" in $$source)) {
-            this["status"] = ("" as RepoStatus);
+            this["status"] = RepoStatus.$zero;
         }
 
         Object.assign(this, $$source);
@@ -166,7 +166,7 @@ export class StartupState {
             this["error"] = "";
         }
         if (!("status" in $$source)) {
-            this["status"] = ("" as StartupStatus);
+            this["status"] = StartupStatus.$zero;
         }
 
         Object.assign(this, $$source);

@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -13,28 +13,22 @@ import * as state$0 from "../state/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function GetAuthState(): Promise<state$0.AuthState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(216707387) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetAuthState(): $CancellablePromise<state$0.AuthState> {
+    return $Call.ByID(216707387).then(($result: any) => {
         return $$createType0($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function Logout(): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2333485090) as any;
-    return $resultPromise;
+export function Logout(): $CancellablePromise<void> {
+    return $Call.ByID(2333485090);
 }
 
-export function StartLogin(email: string): Promise<$models.AuthStatus> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(4267423869, email) as any;
-    return $resultPromise;
+export function StartLogin(email: string): $CancellablePromise<$models.AuthStatus> {
+    return $Call.ByID(4267423869, email);
 }
 
-export function StartRegister(email: string): Promise<$models.AuthStatus> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3870237273, email) as any;
-    return $resultPromise;
+export function StartRegister(email: string): $CancellablePromise<$models.AuthStatus> {
+    return $Call.ByID(3870237273, email);
 }
 
 // Private type creation functions

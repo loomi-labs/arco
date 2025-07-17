@@ -3,15 +3,11 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Create as $Create} from "@wailsio/runtime";
+import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as timestamppb$0 from "../../../../../../google.golang.org/protobuf/types/known/timestamppb/models.js";
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as $internal from "./internal.js";
 
 /**
  * CancelPendingChangeResponse confirms change cancellation.
@@ -334,7 +330,7 @@ export class PendingChange {
      * 	*PendingChange_OldCurrency
      * 	*PendingChange_OldIsYearlyBilling
      */
-    "OldValue": $internal.isPendingChange_OldValue;
+    "OldValue": isPendingChange_OldValue;
 
     /**
      * New value that will be applied.
@@ -346,7 +342,7 @@ export class PendingChange {
      * 	*PendingChange_NewCurrency
      * 	*PendingChange_NewIsYearlyBilling
      */
-    "NewValue": $internal.isPendingChange_NewValue;
+    "NewValue": isPendingChange_NewValue;
 
     /**
      * When this change will take effect.
@@ -824,6 +820,10 @@ export class UpgradeSubscriptionResponse {
         return new UpgradeSubscriptionResponse($$parsedSource as Partial<UpgradeSubscriptionResponse>);
     }
 }
+
+export type isPendingChange_NewValue = any;
+
+export type isPendingChange_OldValue = any;
 
 // Private type creation functions
 const $$createType0 = timestamppb$0.Timestamp.createFrom;

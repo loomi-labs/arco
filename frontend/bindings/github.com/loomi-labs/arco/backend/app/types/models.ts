@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Create as $Create} from "@wailsio/runtime";
+import { Create as $Create } from "@wailsio/runtime";
 
 export class BackupId {
     "backupProfileId": number;
@@ -112,7 +112,7 @@ export class Notification {
             this["message"] = "";
         }
         if (!("level" in $$source)) {
-            this["level"] = ("" as NotificationLevel);
+            this["level"] = NotificationLevel.$zero;
         }
 
         Object.assign(this, $$source);

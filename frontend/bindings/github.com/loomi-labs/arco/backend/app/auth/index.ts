@@ -6,4 +6,6 @@ export {
     Service
 };
 
-export * from "./models.js";
+export {
+    AuthStatus
+} from "./models.js";

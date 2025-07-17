@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Create as $Create} from "@wailsio/runtime";
+import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -227,7 +227,7 @@ export class BackupProfile {
             this["excludePaths"] = [];
         }
         if (!("icon" in $$source)) {
-            this["icon"] = ("" as backupprofile$0.Icon);
+            this["icon"] = backupprofile$0.Icon.$zero;
         }
         if (!("dataSectionCollapsed" in $$source)) {
             this["dataSectionCollapsed"] = false;
@@ -409,13 +409,13 @@ export class BackupSchedule {
             this["updatedAt"] = null;
         }
         if (!("mode" in $$source)) {
-            this["mode"] = ("" as backupschedule$0.Mode);
+            this["mode"] = backupschedule$0.Mode.$zero;
         }
         if (!("dailyAt" in $$source)) {
             this["dailyAt"] = null;
         }
         if (!("weekday" in $$source)) {
-            this["weekday"] = ("" as backupschedule$0.Weekday);
+            this["weekday"] = backupschedule$0.Weekday.$zero;
         }
         if (!("weeklyAt" in $$source)) {
             this["weeklyAt"] = null;
@@ -543,13 +543,13 @@ export class Notification {
             this["message"] = "";
         }
         if (!("type" in $$source)) {
-            this["type"] = ("" as notification$0.Type);
+            this["type"] = notification$0.Type.$zero;
         }
         if (!("seen" in $$source)) {
             this["seen"] = false;
         }
         if (!("action" in $$source)) {
-            this["action"] = ("" as notification$0.Action);
+            this["action"] = notification$0.Action.$zero;
         }
         if (!("edges" in $$source)) {
             this["edges"] = (new NotificationEdges());
