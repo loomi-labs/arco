@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/loomi-labs/arco/compare/v0.14.0...v0.14.1) (2025-07-17)
+
+
+### Bug Fixes
+
+* handle backup cancel correctly ([#169](https://github.com/loomi-labs/arco/issues/169)) ([4840876](https://github.com/loomi-labs/arco/commit/48408765a72d347b20e1639091b9e3dda9c7f8c1))
+
 ## [0.14.0](https://github.com/loomi-labs/arco/compare/v0.13.1...v0.14.0) (2025-07-11)
 
 
