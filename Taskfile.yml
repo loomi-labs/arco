@@ -53,12 +53,12 @@ tasks:
       - go test -tags=integration -cover -mod=readonly --timeout 10m ./backend/borg/...
 
   test:integration:docker:
-    desc: Runs integration tests in containerized environment
+    desc: Runs integration tests in containerized environment (optional with custom client/server/image version)
     preconditions:
       - sh: command -v docker
-        msg: "Docker is required for containerized integration tests"
+        msg: "Docker is required for integration tests"
     cmds:
-      - ./scripts/run-integration-tests-containerized.sh
+      - ./scripts/run-matrix-integration-tests.sh --client-version {{.CLIENT_VERSION | default "1.4.1"}} --server-version {{.SERVER_VERSION | default "1.4.1"}} --os ubuntu --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}
 
   test:integration:matrix:
     desc: Runs integration tests with multiple borg version combinations
@@ -67,19 +67,7 @@ tasks:
         msg: "Docker is required for integration tests"
     cmds:
       - echo "Testing borg version matrix..."
-      - CLIENT_BORG_VERSION=1.2.8 SERVER_BORG_VERSION=1.2.8 ./scripts/run-integration-tests-containerized.sh
-      - CLIENT_BORG_VERSION=1.2.8 SERVER_BORG_VERSION=1.4.0 ./scripts/run-integration-tests-containerized.sh
-      - CLIENT_BORG_VERSION=1.4.0 SERVER_BORG_VERSION=1.2.8 ./scripts/run-integration-tests-containerized.sh
-      - CLIENT_BORG_VERSION=1.4.0 SERVER_BORG_VERSION=1.4.0 ./scripts/run-integration-tests-containerized.sh
-      - CLIENT_BORG_VERSION=1.4.1 SERVER_BORG_VERSION=1.4.1 ./scripts/run-integration-tests-containerized.sh
+      - ./scripts/run-matrix-integration-tests.sh --client-version 1.2.8 --server-version 1.2.8 --os ubuntu
+      - ./scripts/run-matrix-integration-tests.sh --client-version 1.4.0 --server-version 1.4.0 --os ubuntu
+      - ./scripts/run-matrix-integration-tests.sh --client-version 1.4.1 --server-version 1.4.1 --os ubuntu
       - echo "Matrix testing completed successfully!"
-
-  test:integration:client-version:
-    desc: Runs integration tests with specific client version
-    preconditions:
-      - sh: command -v docker
-        msg: "Docker is required for integration tests"
-      - sh: '[ -n "{{.CLIENT_VERSION}}" ]'
-        msg: "CLIENT_VERSION is required. Usage: task test:integration:client-version CLIENT_VERSION=1.4.0"
-    cmds:
-      - CLIENT_BORG_VERSION={{.CLIENT_VERSION}} ./scripts/run-integration-tests-containerized.sh
