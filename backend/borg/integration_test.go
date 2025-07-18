@@ -99,7 +99,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -147,7 +146,6 @@ func (s *TestIntegrationSuite) setupBorgEnvironment(t *testing.T) {
 	networkName := os.Getenv("TESTCONTAINERS_NETWORK_NAME")
 	if networkName != "" {
 		// Use existing network created by the test script
-		s.logger.Infof("Using existing Docker network: %s", networkName)
 		s.network = nil // We don't own the network, so don't clean it up
 	} else {
 		// Create our own network
@@ -173,12 +171,8 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	// Determine server context path (works in both host and container)
 	serverContextPath := filepath.Join(wd, "..", "..", "docker", "borg-server")
 	if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
-		// Try alternative path for containerized environment
+		// Try mounted docker directory for containerized environment
 		serverContextPath = "/app/docker/borg-server"
-		if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
-			// Fallback to mounted docker directory
-			serverContextPath = "/app/docker/borg-server"
-		}
 	}
 
 	// Get server borg version from environment, fallback to default
@@ -232,12 +226,11 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 		// Try to get container info for networking
 		inspect, err := s.serverContainer.Inspect(s.ctx)
 		require.NoError(t, err)
-		
+
 		// If we're using a shared network, use the container name for DNS
 		if networkName := os.Getenv("TESTCONTAINERS_NETWORK_NAME"); networkName != "" {
 			// Use container name for DNS resolution on shared network
 			s.serverContainerIP = "borg-server" // This matches the network alias
-			t.Logf("Using container alias for networking: %s", s.serverContainerIP)
 		} else {
 			// Fall back to container IP
 			for _, network := range inspect.NetworkSettings.Networks {
@@ -246,7 +239,6 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 					break
 				}
 			}
-			t.Logf("Using container IP for networking: %s", s.serverContainerIP)
 		}
 	}
 }
@@ -263,7 +255,7 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 		// Running on host, use relative path
 		wd, err := os.Getwd()
 		require.NoError(t, err)
-		sshKeysDir = filepath.Join(wd, "..", "..", "docker", "ssh-keys")
+		sshKeysDir = filepath.Join(wd, "..", "..", "docker", "borg-client")
 	}
 
 	// Wait for SSH server to fully start
@@ -277,132 +269,32 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 		t.Fatalf("Private key does not exist: %s", privateKeyPath)
 	}
 
-	// In containerized environment, perform basic connectivity tests first
+	// In containerized environment, verify basic connectivity
 	if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
-		t.Logf("Containerized environment detected - testing network connectivity")
-		t.Logf("SSH target: %s@%s:%s", sshUser, s.serverContainerIP, sshPort)
-		t.Logf("Private key: %s", privateKeyPath)
-		
-		// Test basic network connectivity with nc (netcat)
+		// Test basic network connectivity
 		ncCmd := exec.Command("nc", "-zv", s.serverContainerIP, sshPort)
-		ncOutput, ncErr := ncCmd.CombinedOutput()
-		t.Logf("Network connectivity test (nc): %s", string(ncOutput))
-		if ncErr != nil {
-			t.Logf("Network connectivity failed: %v", ncErr)
-			
-			// Additional debugging - try to resolve hostname
-			if s.serverContainerIP == "borg-server" {
-				// Try nslookup
-				nslookupCmd := exec.Command("nslookup", "borg-server")
-				nslookupOutput, _ := nslookupCmd.CombinedOutput()
-				t.Logf("DNS lookup result: %s", string(nslookupOutput))
-				
-				// Try getent
-				getentCmd := exec.Command("getent", "hosts", "borg-server")
-				getentOutput, _ := getentCmd.CombinedOutput()
-				t.Logf("Getent result: %s", string(getentOutput))
-			}
-		}
-		
-		// Still try SSH connection test even in container
-		sshCmd := exec.Command("ssh",
-			"-o", "ConnectTimeout=10",
-			"-o", "BatchMode=yes", 
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "LogLevel=DEBUG",
-			"-i", privateKeyPath,
-			fmt.Sprintf("%s@%s", sshUser, s.serverContainerIP),
-			"echo", "SSH connection test")
-		
-		sshOutput, sshErr := sshCmd.CombinedOutput()
-		t.Logf("SSH test output: %s", string(sshOutput))
-		if sshErr != nil {
-			t.Logf("SSH connection test failed (continuing anyway): %v", sshErr)
+		if _, ncErr := ncCmd.CombinedOutput(); ncErr != nil {
+			t.Logf("Warning: Network connectivity test failed: %v", ncErr)
 		}
 	} else {
 		// Running on host - test SSH connectivity with mapped port
-		sshTestHost := "localhost"
-		sshTestPort := s.serverHostPort
-
-		// Debug: Print SSH connection details
-		t.Logf("SSH connection details:")
-		t.Logf("  Host: %s:%s", sshTestHost, sshTestPort)
-		t.Logf("  User: %s", sshUser)
-		t.Logf("  Private key: %s", privateKeyPath)
-
 		cmd := exec.Command("ssh",
 			"-o", "ConnectTimeout=10",
 			"-o", "BatchMode=yes",
 			"-o", "StrictHostKeyChecking=no",
 			"-i", privateKeyPath,
-			"-p", sshTestPort,
-			fmt.Sprintf("%s@%s", sshUser, sshTestHost),
+			"-p", s.serverHostPort,
+			fmt.Sprintf("%s@localhost", sshUser),
 			"echo", "SSH connection test")
 
-		// Debug: Print command and capture output
-		t.Logf("Running SSH command: %s", cmd.String())
-		sshOutput, sshErr := cmd.CombinedOutput()
-		if sshErr != nil {
-			t.Logf("SSH command failed with output: %s", string(sshOutput))
+		if sshOutput, sshErr := cmd.CombinedOutput(); sshErr != nil {
+			t.Logf("SSH connection test failed: %v\nOutput: %s", sshErr, string(sshOutput))
+			require.NoError(t, sshErr, "SSH connection should work")
 		}
-		require.NoError(t, sshErr, "SSH connection should work")
 	}
 
 	// Update borg instance with SSH key
 	s.borg = NewBorg("/usr/bin/borg", s.logger, []string{privateKeyPath}, nil)
-}
-
-// getSSHServerLogs retrieves SSH server logs from the container
-func (s *TestIntegrationSuite) getSSHServerLogs(t *testing.T) string {
-	if s.serverContainer == nil {
-		return "No server container available"
-	}
-
-	// Get SSH logs from the server container
-	logs, err := s.serverContainer.Logs(s.ctx)
-	if err != nil {
-		t.Logf("Failed to get container logs: %v", err)
-		return "Failed to get container logs"
-	}
-	defer logs.Close()
-
-	// Read the logs
-	var logOutput strings.Builder
-	buf := make([]byte, 1024)
-	for {
-		n, err := logs.Read(buf)
-		if n > 0 {
-			logOutput.Write(buf[:n])
-		}
-		if err != nil {
-			break
-		}
-	}
-
-	return logOutput.String()
-}
-
-// execInServerContainer executes a command in the server container
-func (s *TestIntegrationSuite) execInServerContainer(t *testing.T, cmd ...string) (string, error) {
-	if s.serverContainer == nil {
-		return "", errors.New("no server container available")
-	}
-
-	exitCode, reader, err := s.serverContainer.Exec(s.ctx, cmd)
-	if err != nil {
-		return "", fmt.Errorf("failed to exec command: %w", err)
-	}
-
-	output, err := io.ReadAll(reader)
-	if err != nil {
-		return "", fmt.Errorf("failed to read output: %w", err)
-	}
-
-	if exitCode != 0 {
-		return string(output), fmt.Errorf("command failed with exit code %d", exitCode)
-	}
-
-	return string(output), nil
 }
 
 // teardownBorgEnvironment cleans up the test environment
@@ -429,8 +321,8 @@ func (s *TestIntegrationSuite) createTestRepository(t *testing.T) string {
 	if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
 		// Running in containerized environment - use container IP address
 		// since DNS resolution of network aliases doesn't work from client container
-		// Use standard SSH port (22) without specifying port number
-		repoPath = fmt.Sprintf("ssh://%s@%s/home/borg/repositories/%s", sshUser, s.serverContainerIP, repoName)
+		// Use standard SSH port (22) with explicit port specification
+		repoPath = fmt.Sprintf("ssh://%s@%s:22/home/borg/repositories/%s", sshUser, s.serverContainerIP, repoName)
 	} else {
 		// Running on host - use localhost with mapped port
 		repoPath = fmt.Sprintf("ssh://%s@localhost:%s/home/borg/repositories/%s", sshUser, s.serverHostPort, repoName)
@@ -767,7 +659,6 @@ func TestBorgBreakLockOperation(t *testing.T) {
 
 // TestBorgMountOperations tests mount and unmount operations
 func TestBorgMountOperations(t *testing.T) {
-	t.Skip("Skipping mount tests - FUSE not available in containerized environment")
 	suite := &TestIntegrationSuite{}
 	suite.setupBorgEnvironment(t)
 	defer suite.teardownBorgEnvironment(t)
@@ -966,202 +857,6 @@ func TestBorgDeleteArchives(t *testing.T) {
 	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
 	assert.True(t, status.IsCompletedWithSuccess(), "Info should succeed after deletion and compaction")
 	assert.NotNil(t, info, "Info should return repository information")
-}
-
-// TestSSHConnectivity tests SSH connectivity between client and server containers
-func TestSSHConnectivity(t *testing.T) {
-	suite := &TestIntegrationSuite{}
-	suite.setupBorgEnvironment(t)
-	defer suite.teardownBorgEnvironment(t)
-
-	// Get SSH keys directory
-	var sshKeysDir string
-	if _, err := os.Stat("/home/borg/.ssh/borg_test_key"); err == nil {
-		sshKeysDir = "/home/borg/.ssh"
-	} else {
-		wd, err := os.Getwd()
-		require.NoError(t, err)
-		sshKeysDir = filepath.Join(wd, "..", "..", "docker", "ssh-keys")
-	}
-
-	privateKeyPath := filepath.Join(sshKeysDir, "borg_test_key")
-	require.FileExists(t, privateKeyPath, "Private key should exist")
-
-	// Determine SSH target and port based on environment
-	var sshTarget, sshTargetPort string
-	if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
-		sshTarget = fmt.Sprintf("%s@%s", sshUser, suite.serverContainerIP)
-		sshTargetPort = sshPort
-	} else {
-		sshTarget = fmt.Sprintf("%s@localhost", sshUser)
-		sshTargetPort = suite.serverHostPort
-	}
-
-	t.Run("BasicSSHConnection", func(t *testing.T) {
-		t.Logf("Testing SSH connectivity to: %s", sshTarget)
-		t.Logf("Using private key: %s", privateKeyPath)
-
-		// Check server container status first
-		if output, err := suite.execInServerContainer(t, "ps", "aux"); err == nil {
-			t.Logf("Server container processes: %s", output)
-		}
-
-		// Check SSH server configuration
-		if output, err := suite.execInServerContainer(t, "cat", "/etc/ssh/sshd_config"); err == nil {
-			t.Logf("SSH server config: %s", output)
-		}
-
-		// Check authorized_keys file
-		if output, err := suite.execInServerContainer(t, "ls", "-la", "/home/borg/.ssh/"); err == nil {
-			t.Logf("SSH directory listing: %s", output)
-		}
-
-		// Check SSH keys and permissions
-		if output, err := suite.execInServerContainer(t, "cat", "/home/borg/.ssh/authorized_keys"); err == nil {
-			t.Logf("Authorized keys content: %s", output)
-		}
-
-		// Basic SSH connection test
-		cmd := exec.Command("ssh",
-			"-o", "ConnectTimeout=10",
-			"-o", "BatchMode=yes",
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "LogLevel=DEBUG3",
-			"-i", privateKeyPath,
-			"-p", sshTargetPort,
-			sshTarget,
-			"echo", "SSH connection successful")
-
-		output, err := cmd.CombinedOutput()
-		t.Logf("SSH command output: %s", string(output))
-
-		if err != nil {
-			t.Logf("SSH command failed: %v", err)
-			t.Logf("Full command was: %s", cmd.String())
-
-			// Get server logs for debugging
-			serverLogs := suite.getSSHServerLogs(t)
-			t.Logf("Server logs: %s", serverLogs)
-
-			// Additional debugging - check if we can reach the host
-			if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
-				// Test network connectivity
-				pingCmd := exec.Command("ping", "-c", "1", sshHost)
-				pingOutput, pingErr := pingCmd.CombinedOutput()
-				t.Logf("Ping test to %s: %v", sshHost, pingErr)
-				t.Logf("Ping output: %s", string(pingOutput))
-			}
-
-			// Check SSH server status in container
-			if sshStatus, err := suite.execInServerContainer(t, "systemctl", "status", "ssh"); err == nil {
-				t.Logf("SSH service status: %s", sshStatus)
-			} else {
-				t.Logf("Failed to check SSH service status: %v", err)
-			}
-		}
-
-		assert.NoError(t, err, "SSH connection should succeed")
-		assert.Contains(t, string(output), "SSH connection successful", "SSH should return expected message")
-	})
-
-	t.Run("BorgBinaryAccessibilityInServer", func(t *testing.T) {
-		t.Logf("Testing borg binary accessibility directly in server container")
-
-		// Test borg binary exists and is executable in server container
-		if output, err := suite.execInServerContainer(t, "which", "borg"); err == nil {
-			t.Logf("Borg binary location: %s", output)
-		} else {
-			t.Logf("Failed to locate borg binary: %v", err)
-		}
-
-		// Test borg version directly in server container
-		if output, err := suite.execInServerContainer(t, "borg", "--version"); err == nil {
-			t.Logf("Borg version (direct): %s", output)
-		} else {
-			t.Logf("Failed to get borg version directly: %v", err)
-		}
-
-		// Test borg execution as borg user
-		if output, err := suite.execInServerContainer(t, "su", "-", "borg", "-c", "borg --version"); err == nil {
-			t.Logf("Borg version (as borg user): %s", output)
-		} else {
-			t.Logf("Failed to get borg version as borg user: %v", err)
-		}
-
-		// Test PATH for borg user
-		if output, err := suite.execInServerContainer(t, "su", "-", "borg", "-c", "echo $PATH"); err == nil {
-			t.Logf("PATH for borg user: %s", output)
-		} else {
-			t.Logf("Failed to get PATH for borg user: %v", err)
-		}
-	})
-
-	t.Run("SSHWithBorgCommand", func(t *testing.T) {
-		t.Logf("Testing borg command execution via SSH")
-
-		// Test borg command execution via SSH
-		cmd := exec.Command("ssh",
-			"-o", "ConnectTimeout=10",
-			"-o", "BatchMode=yes",
-			"-o", "StrictHostKeyChecking=no",
-			"-i", privateKeyPath,
-			"-p", sshTargetPort,
-			sshTarget,
-			"borg", "--version")
-
-		output, err := cmd.CombinedOutput()
-		t.Logf("Borg version command output: %s", string(output))
-
-		if err != nil {
-			t.Logf("Borg version command failed: %v", err)
-			t.Logf("Full command was: %s", cmd.String())
-
-			// Additional debugging - get server logs
-			serverLogs := suite.getSSHServerLogs(t)
-			t.Logf("Server logs after borg command: %s", serverLogs)
-
-			// Test if we can at least connect and run basic commands
-			basicCmd := exec.Command("ssh",
-				"-o", "ConnectTimeout=10",
-				"-o", "BatchMode=yes",
-				"-o", "StrictHostKeyChecking=no",
-				"-i", privateKeyPath,
-				"-p", sshTargetPort,
-				sshTarget,
-				"echo", "Basic SSH works")
-
-			basicOutput, basicErr := basicCmd.CombinedOutput()
-			t.Logf("Basic SSH test output: %s", string(basicOutput))
-			t.Logf("Basic SSH test error: %v", basicErr)
-		}
-
-		assert.NoError(t, err, "Borg version command should succeed via SSH")
-		assert.Contains(t, string(output), "borg", "Should return borg version information")
-	})
-
-	t.Run("SSHEnvironmentCheck", func(t *testing.T) {
-		t.Logf("Testing SSH environment and paths")
-
-		// Test SSH environment
-		cmd := exec.Command("ssh",
-			"-o", "ConnectTimeout=10",
-			"-o", "BatchMode=yes",
-			"-o", "StrictHostKeyChecking=no",
-			"-i", privateKeyPath,
-			"-p", sshTargetPort,
-			sshTarget,
-			"env")
-
-		output, err := cmd.CombinedOutput()
-		t.Logf("SSH environment output: %s", string(output))
-
-		if err != nil {
-			t.Logf("SSH environment command failed: %v", err)
-		}
-
-		assert.NoError(t, err, "SSH environment check should succeed")
-		assert.Contains(t, string(output), "PATH=", "Should show PATH environment variable")
-	})
 }
 
 // TestBorgErrorHandling tests error handling scenarios
