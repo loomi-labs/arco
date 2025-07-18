@@ -1,0 +1,39 @@
+name: Simple Integration Test
+
+on:
+  push:
+    branches: [ "*" ]
+  workflow_dispatch:
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Setup Docker
+        run: |
+          sudo systemctl start docker || true
+          sudo chmod 666 /var/run/docker.sock
+
+      - name: Make script executable
+        run: chmod +x scripts/run-integration-tests-containerized.sh
+
+      - name: Run integration tests
+        run: ./scripts/run-integration-tests-containerized.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            *.log
+          retention-days: 7
