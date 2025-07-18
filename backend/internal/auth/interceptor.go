@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/loomi-labs/arco/backend/app/state"
 	"time"
 
 	"connectrpc.com/connect"
@@ -16,18 +18,28 @@ type JWTAuthInterceptor struct {
 	log            *zap.SugaredLogger
 	authServiceRPC *auth.ServiceInternal
 	db             *ent.Client
+	state          *state.State
 }
 
 // NewJWTAuthInterceptor creates a new JWT authentication interceptor
-func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client) *JWTAuthInterceptor {
+func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client, state *state.State) *JWTAuthInterceptor {
 	return &JWTAuthInterceptor{
 		log:            log,
 		authServiceRPC: authServiceRPC,
 		db:             db,
+		state:          state,
+	}
+}
+
+// mustHaveDB panics if db is nil. This is a programming error guard.
+func (j *JWTAuthInterceptor) mustHaveDB() {
+	if j.db == nil {
+		panic("JWTAuthInterceptor: database client is nil")
 	}
 }
 
 // UnaryInterceptor returns a Connect RPC interceptor that adds JWT authentication
+// and handles unauthenticated responses by clearing stored tokens
 func (j *JWTAuthInterceptor) UnaryInterceptor() connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
@@ -47,16 +59,28 @@ func (j *JWTAuthInterceptor) UnaryInterceptor() connect.UnaryInterceptorFunc {
 			// Add Authorization header with Bearer token
 			req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-			return next(ctx, req)
+			// Execute the request
+			resp, err := next(ctx, req)
+
+			// Check for unauthenticated errors and clear tokens if needed
+			if err != nil {
+				var connectErr *connect.Error
+				if errors.As(err, &connectErr) && connectErr.Code() == connect.CodeUnauthenticated {
+					j.log.Debug("Received unauthenticated error, clearing stored tokens")
+					if clearErr := j.clearTokens(ctx); clearErr != nil {
+						j.log.Errorf("Failed to clear tokens after unauthenticated error: %v", clearErr)
+					}
+				}
+			}
+
+			return resp, err
 		}
 	}
 }
 
 // getCurrentAccessToken retrieves a valid access token for the current user
 func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string, error) {
-	if j.db == nil {
-		return "", fmt.Errorf("database client not available")
-	}
+	j.mustHaveDB()
 
 	// Get the first user (since we only store one user)
 	user, err := j.db.User.Query().First(ctx)
@@ -73,7 +97,7 @@ func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string,
 	}
 
 	// Check if token is expired and refresh if needed
-	if user.AccessTokenExpiresAt != nil && user.AccessTokenExpiresAt.Before(time.Now()) {
+	if user.AccessTokenExpiresAt != nil && user.AccessTokenExpiresAt.Before(time.Now().Add(30*time.Second)) {
 		j.log.Debug("Access token expired, attempting refresh")
 
 		// Validate and refresh tokens - this will update the user in the database
@@ -94,4 +118,34 @@ func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string,
 	}
 
 	return *user.AccessToken, nil
+}
+
+// clearTokens clears all stored authentication tokens when receiving unauthenticated errors
+func (j *JWTAuthInterceptor) clearTokens(ctx context.Context) error {
+	j.mustHaveDB()
+
+	// Get the first user (since we only store one user)
+	user, err := j.db.User.Query().First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			j.log.Debug("No user found to clear tokens for")
+			return nil // No user means no tokens to clear
+		}
+		return fmt.Errorf("failed to query user: %w", err)
+	}
+
+	// Clear all token fields
+	err = user.Update().
+		ClearRefreshToken().
+		ClearAccessToken().
+		ClearRefreshTokenExpiresAt().
+		ClearAccessTokenExpiresAt().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to clear tokens: %w", err)
+	}
+	j.state.SetNotAuthenticated(ctx)
+
+	j.log.Info("Cleared authentication tokens due to unauthenticated response")
+	return nil
 }
