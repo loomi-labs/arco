@@ -1,6 +1,10 @@
 name: Borg Integration Tests Matrix
 
 on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
   workflow_dispatch:
 
 jobs:
@@ -12,36 +16,45 @@ jobs:
         include:
           # Version compatibility matrix (matching client/server versions)
           - os: ubuntu-latest
-            test-type: version-matrix
-            borg-version: 1.2.8
+            client-version: 1.2.8
+            server-version: 1.2.8
+            os-type: ubuntu
           - os: ubuntu-latest
-            test-type: version-matrix
-            borg-version: 1.4.0
+            client-version: 1.4.0
+            server-version: 1.4.0
+            os-type: ubuntu
           - os: ubuntu-latest
-            test-type: version-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
           
           # OS compatibility matrix (latest version)
           - os: ubuntu-20.04
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
           - os: ubuntu-22.04
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
           - os: ubuntu-24.04
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
           - os: macos-latest
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
           - os: macos-13
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
           - os: macos-14
-            test-type: os-matrix
-            borg-version: 1.4.1
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
 
-    name: ${{ matrix.test-type }} - ${{ matrix.os }} - Borg ${{ matrix.borg-version }}
+    name: ${{ matrix.os-type }} - ${{ matrix.os }} - Client ${{ matrix.client-version }} / Server ${{ matrix.server-version }}
     
     steps:
       - name: Checkout repository
@@ -53,130 +66,29 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Setup Docker (Ubuntu only)
-        if: runner.os == 'Linux'
+        if: matrix.os-type == 'ubuntu'
         run: |
-          # Ensure Docker is running
           sudo systemctl start docker || true
-          sudo usermod -aG docker $USER
-          # Check Docker socket permissions
           sudo chmod 666 /var/run/docker.sock
 
-      - name: Setup Borg on macOS
-        if: runner.os == 'macOS'
+      - name: Make scripts executable
         run: |
-          # Install Borg using homebrew
-          brew install borgbackup
-          # Verify installation
-          borg --version
+          chmod +x scripts/run-matrix-integration-tests.sh
+          chmod +x scripts/run-integration-tests-containerized.sh
 
-      - name: Setup SSH Server on macOS
-        if: runner.os == 'macOS'
+      - name: Run Matrix Integration Tests
         run: |
-          # Enable SSH server
-          sudo systemsetup -setremotelogin on
-          # Create borg user for testing
-          sudo dscl . -create /Users/borg
-          sudo dscl . -create /Users/borg UserShell /bin/bash
-          sudo dscl . -create /Users/borg RealName "Borg Test User"
-          sudo dscl . -create /Users/borg UniqueID 1000
-          sudo dscl . -create /Users/borg PrimaryGroupID 1000
-          sudo dscl . -create /Users/borg NFSHomeDirectory /Users/borg
-          sudo dscl . -passwd /Users/borg test123
-          # Create home directory
-          sudo mkdir -p /Users/borg/.ssh
-          sudo mkdir -p /Users/borg/repositories
-          # Copy SSH key
-          sudo cp docker/borg-client/borg_test_key.pub /Users/borg/.ssh/authorized_keys
-          sudo chown -R borg:staff /Users/borg
-          sudo chmod 700 /Users/borg/.ssh
-          sudo chmod 600 /Users/borg/.ssh/authorized_keys
-
-      - name: Build Docker Images (Ubuntu only)
-        if: runner.os == 'Linux'
-        run: |
-          # Build client container
-          docker build \
-            --build-arg CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
-            --build-arg SERVER_BORG_VERSION=${{ matrix.borg-version }} \
-            -t borg-client:${{ matrix.borg-version }} \
-            -f docker/borg-client/Dockerfile \
-            .
-          
-          # Build server container
-          docker build \
-            --build-arg BORG_VERSION=${{ matrix.borg-version }} \
-            -t borg-server:${{ matrix.borg-version }} \
-            -f docker/borg-server/Dockerfile \
-            docker/borg-server
-
-      - name: Run Integration Tests (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          # Create Docker network
-          docker network create borg-integration-test-network || true
-          
-          # Run integration tests in container
-          docker run \
-            --rm \
-            --name borg-client-test \
-            --network borg-integration-test-network \
-            --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v ${PWD}/docker:/app/docker:ro \
-            -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
-            -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
-            -e SERVER_IMAGE=borg-server:${{ matrix.borg-version }} \
-            -e TESTCONTAINERS_RYUK_DISABLED=true \
-            -e TESTCONTAINERS_CHECKS_DISABLE=true \
-            -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
-            -e TESTCONTAINERS_NETWORK_NAME=borg-integration-test-network \
-            -e DOCKER_HOST=unix:///var/run/docker.sock \
-            --group-add $(stat -c '%g' /var/run/docker.sock) \
-            borg-client:${{ matrix.borg-version }}
-
-      - name: Run Integration Tests (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # Build integration test binary
-          CGO_ENABLED=1 go test -c -o integration-tests ./backend/borg/integration
-          
-          # Set environment variables for macOS testing
-          export CLIENT_BORG_VERSION=${{ matrix.borg-version }}
-          export SERVER_BORG_VERSION=${{ matrix.borg-version }}
-          export BORG_SSH_HOST=localhost
-          export BORG_SSH_PORT=22
-          export BORG_SSH_USER=borg
-          export BORG_SSH_KEY_PATH=${PWD}/docker/borg-client/borg_test_key
-          
-          # Run integration tests
-          ./integration-tests -test.v
-
-      - name: Cleanup Docker Resources (Ubuntu only)
-        if: runner.os == 'Linux' && always()
-        run: |
-          # Remove containers
-          docker rm -f borg-client-test 2>/dev/null || true
-          # Remove network
-          docker network rm borg-integration-test-network 2>/dev/null || true
-          # Clean up unused images
-          docker image prune -f
-
-      - name: Cleanup macOS Resources
-        if: runner.os == 'macOS' && always()
-        run: |
-          # Remove test binary
-          rm -f integration-tests
-          # Disable SSH server
-          sudo systemsetup -setremotelogin off
-          # Remove borg user
-          sudo dscl . -delete /Users/borg || true
+          ./scripts/run-matrix-integration-tests.sh \
+            --client-version ${{ matrix.client-version }} \
+            --server-version ${{ matrix.server-version }} \
+            --os ${{ matrix.os-type }}
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.test-type }}-${{ matrix.os }}-${{ matrix.borg-version }}
+          name: test-results-${{ matrix.os-type }}-${{ matrix.os }}-client-${{ matrix.client-version }}-server-${{ matrix.server-version }}
           path: |
-            test-results.xml
             *.log
+            test-results.xml
           retention-days: 30
