@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { CheckIcon, CloudIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
 import { Browser } from "@wailsio/runtime";
@@ -7,10 +7,17 @@ import { Page } from "../router";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
 import { getFeaturesByPlan, getRetentionDays } from "../common/features";
-import { addDay, format, date } from "@formkit/tempo";
+import { addDay, date, format } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { Subscription, SubscriptionStatus, FeatureSet, Plan, PendingChange, ChangeType, PendingChangeStatus, Currency } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import {
+  ChangeType,
+  FeatureSet,
+  PendingChange,
+  Plan,
+  Subscription,
+  SubscriptionStatus
+} from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
@@ -47,7 +54,6 @@ const cloudModal = ref<InstanceType<typeof ArcoCloudModal>>();
 // Plan selection state
 const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
-const selectedCurrency = ref<Currency>(Currency.Currency_CURRENCY_USD);
 const selectedCheckoutPlan = ref<string | undefined>(undefined);
 
 /************
@@ -129,13 +135,13 @@ const nextBillingDate = computed(() => {
 });
 
 const monthlyPrice = computed(() => {
-  if (!subscription.value?.plan?.prices?.[0]?.monthly_cents) return "$0";
-  return `$${(subscription.value.plan.prices[0].monthly_cents / 100).toFixed(2)}`;
+  if (!subscription.value?.plan?.price?.monthly_cents) return "$0";
+  return `$${(subscription.value.plan.price.monthly_cents / 100).toFixed(2)}`;
 });
 
 const yearlyPrice = computed(() => {
-  if (!subscription.value?.plan?.prices?.[0]?.yearly_cents) return "$0";
-  return `$${(subscription.value.plan.prices[0].yearly_cents / 100).toFixed(2)}`;
+  if (!subscription.value?.plan?.price?.yearly_cents) return "$0";
+  return `$${(subscription.value.plan.price.yearly_cents / 100).toFixed(2)}`;
 });
 
 const currentPrice = computed(() => {
@@ -202,8 +208,6 @@ const formatChangeType = (changeType: ChangeType): string => {
   switch (changeType) {
     case ChangeType.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
       return 'Plan Change';
-    case ChangeType.ChangeType_CHANGE_TYPE_CURRENCY_CHANGE:
-      return 'Currency Change';
     case ChangeType.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
       return 'Billing Cycle Change';
     default:
@@ -215,7 +219,6 @@ const getOldValue = (change: PendingChange): string => {
   // Handle oneof OldValue field
   const oldValue = change.OldValue;
   if (oldValue?.old_plan_id) return oldValue.old_plan_id;
-  if (oldValue?.old_currency !== undefined) return oldValue.old_currency.toString();
   if (oldValue?.old_is_yearly_billing !== undefined) return oldValue.old_is_yearly_billing ? 'Yearly' : 'Monthly';
   return 'Unknown';
 };
@@ -224,7 +227,6 @@ const getNewValue = (change: PendingChange): string => {
   // Handle oneof NewValue field
   const newValue = change.NewValue;
   if (newValue?.new_plan_id) return newValue.new_plan_id;
-  if (newValue?.new_currency !== undefined) return newValue.new_currency.toString();
   if (newValue?.new_is_yearly_billing !== undefined) return newValue.new_is_yearly_billing ? 'Yearly' : 'Monthly';
   return 'Unknown';
 };
@@ -240,7 +242,7 @@ const formatEffectiveDate = (timestamp: any): string => {
 };
 
 const yearlySavings = computed(() => {
-  const price = subscription.value?.plan?.prices?.[0];
+  const price = subscription.value?.plan?.price;
   if (!price?.monthly_cents || !price?.yearly_cents) return 0;
   const monthlyTotal = (price.monthly_cents / 100) * 12;
   const yearlyTotal = price.yearly_cents / 100;
@@ -380,9 +382,6 @@ function onBillingCycleChanged(isYearly: boolean) {
   isYearlyBilling.value = isYearly;
 }
 
-function onCurrencyChanged(currency: Currency) {
-  selectedCurrency.value = currency;
-}
 
 function onSubscribeClicked(planName: string) {
   selectedCheckoutPlan.value = planName;
@@ -599,11 +598,9 @@ onMounted(async () => {
         :plans='subscriptionPlans'
         :selected-plan='selectedPlan'
         :is-yearly-billing='isYearlyBilling'
-        :selected-currency='selectedCurrency'
         :has-active-subscription='false'
         @plan-selected='onPlanSelected'
         @billing-cycle-changed='onBillingCycleChanged'
-        @currency-changed='onCurrencyChanged'
         @subscribe-clicked='onSubscribeClicked'
       />
     </div>
@@ -616,7 +613,7 @@ onMounted(async () => {
       
       <CheckoutProcessing
         :plan-name='selectedCheckoutPlan || ""'
-        :currency='selectedCurrency'
+        :is-yearly-billing='isYearlyBilling'
         @checkout-completed='onCheckoutCompleted'
         @checkout-failed='onCheckoutFailed'
         @checkout-cancelled='onCheckoutCancelled'
