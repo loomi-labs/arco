@@ -8,7 +8,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -24,82 +24,58 @@ import * as ent$0 from "../ent/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function GetAllEvents(): Promise<types$0.Event[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2291731178) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetAllEvents(): $CancellablePromise<types$0.Event[]> {
+    return $Call.ByID(2291731178).then(($result: any) => {
         return $$createType0($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetAppInfo(): Promise<$models.AppInfo> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3424893203) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetAppInfo(): $CancellablePromise<$models.AppInfo> {
+    return $Call.ByID(3424893203).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetEnvVars(): Promise<$models.Env> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(4207036961) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetEnvVars(): $CancellablePromise<$models.Env> {
+    return $Call.ByID(4207036961).then(($result: any) => {
         return $$createType2($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetNotifications(): Promise<types$0.Notification[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3763006584) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetNotifications(): $CancellablePromise<types$0.Notification[]> {
+    return $Call.ByID(3763006584).then(($result: any) => {
         return $$createType4($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetSettings(): Promise<ent$0.Settings | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(86417097) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetSettings(): $CancellablePromise<ent$0.Settings | null> {
+    return $Call.ByID(86417097).then(($result: any) => {
         return $$createType6($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetStartupState(): Promise<state$0.StartupState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1848985638) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetStartupState(): $CancellablePromise<state$0.StartupState> {
+    return $Call.ByID(1848985638).then(($result: any) => {
         return $$createType7($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetUser(): Promise<$models.User | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2302117383) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetUser(): $CancellablePromise<$models.User | null> {
+    return $Call.ByID(2302117383).then(($result: any) => {
         return $$createType9($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function HandleError(msg: string, fErr: types$0.FrontendError | null): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(4280892152, msg, fErr) as any;
-    return $resultPromise;
+export function HandleError(msg: string, fErr: types$0.FrontendError | null): $CancellablePromise<void> {
+    return $Call.ByID(4280892152, msg, fErr);
 }
 
-export function LogDebug(message: string): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(722122653, message) as any;
-    return $resultPromise;
+export function LogDebug(message: string): $CancellablePromise<void> {
+    return $Call.ByID(722122653, message);
 }
 
-export function SaveSettings(settings: ent$0.Settings | null): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2023083000, settings) as any;
-    return $resultPromise;
+export function SaveSettings(settings: ent$0.Settings | null): $CancellablePromise<void> {
+    return $Call.ByID(2023083000, settings);
 }
 
 // Private type creation functions

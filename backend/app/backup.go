@@ -429,7 +429,7 @@ type SelectDirectoryData struct {
 }
 
 func (b *BackupClient) SelectDirectory(data SelectDirectoryData) (string, error) {
-	dialog := application.OpenFileDialogWithOptions(&application.OpenFileDialogOptions{
+	dialog := application.Get().Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
 		CanChooseDirectories:            true,
 		CanChooseFiles:                  false,
 		CanCreateDirectories:            true,
@@ -706,22 +706,22 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			b.state.SetBackupCancelled(b.ctx, bId, true)
 			return BackupResultCancelled, nil
 		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
-			err = fmt.Errorf("repository %s is locked", repo.Name)
-			saveErr := b.saveDbNotification(bId, err.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
+			retErr := fmt.Errorf("repository %s is locked", repo.Name)
+			saveErr := b.saveDbNotification(bId, retErr.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
 			if saveErr != nil {
 				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
-			b.state.SetBackupError(b.ctx, bId, err, false, true)
+			b.state.SetBackupError(b.ctx, bId, retErr, false, true)
 			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
-			return BackupResultError, err
+			return BackupResultError, retErr
 		} else {
 			saveErr := b.saveDbNotification(bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
 			if saveErr != nil {
 				b.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 			}
-			b.state.SetBackupError(b.ctx, bId, err, true, false)
-			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: %s", err), types.LevelError)
-			return BackupResultError, err
+			b.state.SetBackupError(b.ctx, bId, status.Error, true, false)
+			b.state.AddNotification(b.ctx, fmt.Sprintf("Backup job failed: %s", status.Error), types.LevelError)
+			return BackupResultError, status.Error
 		}
 	} else {
 		// Backup completed successfully
@@ -737,18 +737,18 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 			b.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
 		}
 
-		pruningRule, err := b.db.PruningRule.
+		pruningRule, pErr := b.db.PruningRule.
 			Query().
 			Where(pruningrule.And(
 				pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
 				pruningrule.IsEnabled(true),
 			)).
 			Only(b.ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			b.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", err))
+		if pErr != nil && !ent.IsNotFound(pErr) {
+			b.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", pErr))
 		}
 		if pruningRule != nil && pruningRule.IsEnabled {
-			_, err := b.examinePrune(bId, safetypes.Some(pruningRule), true, true)
+			_, err = b.examinePrune(bId, safetypes.Some(pruningRule), true, true)
 			if err != nil {
 				b.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
 			}

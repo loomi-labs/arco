@@ -8,7 +8,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -24,267 +24,189 @@ import * as ent$0 from "../ent/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function All(): Promise<(ent$0.Repository | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2526434296) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function All(): $CancellablePromise<(ent$0.Repository | null)[]> {
+    return $Call.ByID(2526434296).then(($result: any) => {
         return $$createType2($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function BreakLock(id: number): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2942799755, id) as any;
-    return $resultPromise;
+export function BreakLock(id: number): $CancellablePromise<void> {
+    return $Call.ByID(2942799755, id);
 }
 
-export function Create(name: string, location: string, password: string, noPassword: boolean): Promise<ent$0.Repository | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(612708017, name, location, password, noPassword) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function Create(name: string, location: string, password: string, noPassword: boolean): $CancellablePromise<ent$0.Repository | null> {
+    return $Call.ByID(612708017, name, location, password, noPassword).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 /**
  * Delete deletes the repository with the given ID and all its backup profiles if they only have this repository
  * It also deletes the physical repository on disk
  */
-export function Delete(id: number): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2573780214, id) as any;
-    return $resultPromise;
+export function Delete(id: number): $CancellablePromise<void> {
+    return $Call.ByID(2573780214, id);
 }
 
-export function DeleteArchive(id: number): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1586226500, id) as any;
-    return $resultPromise;
+export function DeleteArchive(id: number): $CancellablePromise<void> {
+    return $Call.ByID(1586226500, id);
 }
 
-export function Get(repoId: number): Promise<ent$0.Repository | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(780877459, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function Get(repoId: number): $CancellablePromise<ent$0.Repository | null> {
+    return $Call.ByID(780877459, repoId).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetArchiveMountStates(repoId: number): Promise<{ [_: `${number}`]: types$0.MountState }> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1147463246, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetArchiveMountStates(repoId: number): $CancellablePromise<{ [_: `${number}`]: types$0.MountState }> {
+    return $Call.ByID(1147463246, repoId).then(($result: any) => {
         return $$createType4($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 /**
  * GetBackupProfilesThatHaveOnlyRepo returns all backup profiles that only have the given repository
  */
-export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): Promise<(ent$0.BackupProfile | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1663080506, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
+    return $Call.ByID(1663080506, repoId).then(($result: any) => {
         return $$createType7($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetByBackupId(bId: types$0.BackupId): Promise<ent$0.Repository | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1271764309, bId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetByBackupId(bId: types$0.BackupId): $CancellablePromise<ent$0.Repository | null> {
+    return $Call.ByID(1271764309, bId).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetConnectedRemoteHosts(): Promise<string[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2134730831) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
+    return $Call.ByID(2134730831).then(($result: any) => {
         return $$createType8($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetLastArchiveByBackupId(backupId: types$0.BackupId): Promise<ent$0.Archive | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3886225341, backupId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $CancellablePromise<ent$0.Archive | null> {
+    return $Call.ByID(3886225341, backupId).then(($result: any) => {
         return $$createType10($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetLastArchiveByRepoId(repoId: number): Promise<ent$0.Archive | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2588996103, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$0.Archive | null> {
+    return $Call.ByID(2588996103, repoId).then(($result: any) => {
         return $$createType10($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetLastBackupErrorMsg(repoId: number): Promise<string> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(664305602, repoId) as any;
-    return $resultPromise;
+export function GetLastBackupErrorMsg(repoId: number): $CancellablePromise<string> {
+    return $Call.ByID(664305602, repoId);
 }
 
-export function GetLocked(): Promise<(ent$0.Repository | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(4264571629) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetLocked(): $CancellablePromise<(ent$0.Repository | null)[]> {
+    return $Call.ByID(4264571629).then(($result: any) => {
         return $$createType2($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetNbrOfArchives(repoId: number): Promise<number> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3772611033, repoId) as any;
-    return $resultPromise;
+export function GetNbrOfArchives(repoId: number): $CancellablePromise<number> {
+    return $Call.ByID(3772611033, repoId);
 }
 
-export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): Promise<$models.PaginatedArchivesResponse | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1668417057, req) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<$models.PaginatedArchivesResponse | null> {
+    return $Call.ByID(1668417057, req).then(($result: any) => {
         return $$createType12($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetPruningDates(archiveIds: number[]): Promise<$models.PruningDates> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3765996199, archiveIds) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$models.PruningDates> {
+    return $Call.ByID(3765996199, archiveIds).then(($result: any) => {
         return $$createType13($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetRepoMountState(repoId: number): Promise<types$0.MountState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1501940089, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetRepoMountState(repoId: number): $CancellablePromise<types$0.MountState> {
+    return $Call.ByID(1501940089, repoId).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetState(id: number): Promise<state$0.RepoState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2378277252, id) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetState(id: number): $CancellablePromise<state$0.RepoState> {
+    return $Call.ByID(2378277252, id).then(($result: any) => {
         return $$createType14($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetWithActiveMounts(): Promise<(ent$0.Repository | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2168472827) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetWithActiveMounts(): $CancellablePromise<(ent$0.Repository | null)[]> {
+    return $Call.ByID(2168472827).then(($result: any) => {
         return $$createType2($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function IsBorgRepository(path: string): Promise<boolean> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(178334261, path) as any;
-    return $resultPromise;
+export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
+    return $Call.ByID(178334261, path);
 }
 
-export function MountArchive(archiveId: number): Promise<types$0.MountState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(201270564, archiveId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function MountArchive(archiveId: number): $CancellablePromise<types$0.MountState> {
+    return $Call.ByID(201270564, archiveId).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function MountRepository(repoId: number): Promise<types$0.MountState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3541128038, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function MountRepository(repoId: number): $CancellablePromise<types$0.MountState> {
+    return $Call.ByID(3541128038, repoId).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function RefreshArchives(repoId: number): Promise<(ent$0.Archive | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3797315543, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function RefreshArchives(repoId: number): $CancellablePromise<(ent$0.Archive | null)[]> {
+    return $Call.ByID(3797315543, repoId).then(($result: any) => {
         return $$createType15($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 /**
  * Remove deletes the repository with the given ID and all its backup profiles if they only have this repository
  * It does not delete the physical repository on disk
  */
-export function Remove(id: number): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3776962993, id) as any;
-    return $resultPromise;
+export function Remove(id: number): $CancellablePromise<void> {
+    return $Call.ByID(3776962993, id);
 }
 
-export function RenameArchive(id: number, prefix: string, name: string): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3353083215, id, prefix, name) as any;
-    return $resultPromise;
+export function RenameArchive(id: number, prefix: string, name: string): $CancellablePromise<void> {
+    return $Call.ByID(3353083215, id, prefix, name);
 }
 
-export function SaveIntegrityCheckSettings(repoId: number, enabled: boolean): Promise<ent$0.Repository | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2391017896, repoId, enabled) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function SaveIntegrityCheckSettings(repoId: number, enabled: boolean): $CancellablePromise<ent$0.Repository | null> {
+    return $Call.ByID(2391017896, repoId, enabled).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function TestRepoConnection(path: string, password: string): Promise<$models.TestRepoConnectionResult> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(727566925, path, password) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function TestRepoConnection(path: string, password: string): $CancellablePromise<$models.TestRepoConnectionResult> {
+    return $Call.ByID(727566925, path, password).then(($result: any) => {
         return $$createType16($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function UnmountAllForRepos(repoIds: number[]): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2439726606, repoIds) as any;
-    return $resultPromise;
+export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<void> {
+    return $Call.ByID(2439726606, repoIds);
 }
 
-export function UnmountArchive(archiveId: number): Promise<types$0.MountState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1173310935, archiveId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function UnmountArchive(archiveId: number): $CancellablePromise<types$0.MountState> {
+    return $Call.ByID(1173310935, archiveId).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function UnmountRepository(repoId: number): Promise<types$0.MountState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1515889019, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function UnmountRepository(repoId: number): $CancellablePromise<types$0.MountState> {
+    return $Call.ByID(1515889019, repoId).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function Update(repository: ent$0.Repository | null): Promise<ent$0.Repository | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2676062496, repository) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function Update(repository: ent$0.Repository | null): $CancellablePromise<ent$0.Repository | null> {
+    return $Call.ByID(2676062496, repository).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 // Private type creation functions

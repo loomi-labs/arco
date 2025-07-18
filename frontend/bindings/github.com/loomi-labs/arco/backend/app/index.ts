@@ -12,4 +12,19 @@ export {
     ValidationClient
 };
 
-export * from "./models.js";
+export {
+    AppInfo,
+    BackupProfileFilter,
+    Env,
+    ExaminePruningResult,
+    GetPruningOptionsResponse,
+    PaginatedArchivesRequest,
+    PaginatedArchivesResponse,
+    PruningDate,
+    PruningDates,
+    PruningOption,
+    PruningOptionName,
+    SelectDirectoryData,
+    TestRepoConnectionResult,
+    User
+} from "./models.js";

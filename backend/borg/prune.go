@@ -52,22 +52,26 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 		// We still have to wait for the command to finish
 		_ = <-statusChan
+
+		// We don't care about the real status of the borg operation because we canceled it
+		borgStatus := newStatusWithCanceled()
+		return b.log.LogCmdStatus(ctx, borgStatus, cmdLog, time.Duration(cmd.Status().Runtime))
 	case _ = <-statusChan:
 		// Break in case the command completes
 		break
 	}
 
-	// If we are here the command has completed or the context has been cancelled
+	// If we are here the command has completed
 	status := cmd.Status()
-	result := gocmdToStatus(status)
-	if !isDryRun && result.IsCompletedWithSuccess() {
+	borgStatus := gocmdToStatus(status)
+	if !isDryRun && borgStatus.IsCompletedWithSuccess() {
 		// Run compact to free up space
 		compactResult := b.Compact(ctx, repository, password)
 		if compactResult.HasError() {
 			b.log.Errorf("Failed to compact after prune: %v", compactResult.GetError())
 		}
 	}
-	return b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime))
+	return b.log.LogCmdStatus(ctx, borgStatus, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.

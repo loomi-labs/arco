@@ -55,7 +55,7 @@ const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: zod
-        .string({ required_error: "Enter a name for this repository" })
+        .string({ message: "Enter a name for this repository" })
         .min(3, { message: "Name must be at least 3 characters long" })
         .max(30, { message: "Name is too long" })
     })

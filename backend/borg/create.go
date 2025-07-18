@@ -17,12 +17,12 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	archivePath := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
-	totalFiles, result, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths)
+	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths)
 	if err != nil {
 		return "", newStatusWithError(err)
 	}
-	if !result.IsCompletedWithSuccess() {
-		return "", result
+	if !borgStatus.IsCompletedWithSuccess() {
+		return "", borgStatus
 	}
 
 	// Prepare backup command
@@ -58,15 +58,19 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 		// We still have to wait for the command to finish
 		_ = <-statusChan
+
+		// We don't care about the real status of the borg operation because we canceled it
+		borgStatus = newStatusWithCanceled()
+		return archivePath, b.log.LogCmdStatus(ctx, borgStatus, cmdLog, time.Duration(cmd.Status().Runtime))
 	case _ = <-statusChan:
 		// Break in case the command completes
 		break
 	}
 
-	// If we are here the command has completed or the context has been cancelled
+	// If we are here the command has completed
 	status := cmd.Status()
-	result = gocmdToStatus(status)
-	return archivePath, b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime))
+	borgStatus = gocmdToStatus(status)
+	return archivePath, b.log.LogCmdStatus(ctx, borgStatus, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.

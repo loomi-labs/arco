@@ -21,6 +21,18 @@ import (
 
 var binaries = []types.BorgBinary{
 	{
+		Name:    "borg_1.4.1",
+		Version: "1.4.1",
+		Os:      util.Linux,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
+	},
+	{
+		Name:    "borg_1.4.1",
+		Version: "1.4.1",
+		Os:      util.Darwin,
+		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012",
+	},
+	{
 		Name:    "borg_1.4.0",
 		Version: "1.4.0",
 		Os:      util.Linux,
@@ -139,14 +151,14 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 
 func showOrCreateMainWindow(config *types.Config) {
 	wailsApp := application.Get()
-	window := wailsApp.GetWindowByName(types.WindowTitle)
-	if window != nil {
+	window, ok := wailsApp.Window.GetByName(types.WindowTitle)
+	if ok {
 		window.Show()
 		window.Focus()
 		return
 	}
 
-	wailsApp.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  types.WindowTitle,
 		Title: types.WindowTitle,
 		Mac: application.MacWindow{
@@ -213,12 +225,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		showOrCreateMainWindow(config)
 	}
 
-	wailsApp.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
+	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
 		// TODO: what about the context?
 		arco.Startup(context.TODO())
 	})
 
-	systray := wailsApp.NewSystemTray()
+	systray := wailsApp.SystemTray.New()
 	systray.SetLabel(app.Name)
 	if util.IsMacOS() {
 		// Support for template icons on macOS

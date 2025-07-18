@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Create as $Create} from "@wailsio/runtime";
+import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -303,7 +303,7 @@ export class PruningOption {
     /** Creates a new PruningOption instance. */
     constructor($$source: Partial<PruningOption> = {}) {
         if (!("name" in $$source)) {
-            this["name"] = ("" as PruningOptionName);
+            this["name"] = PruningOptionName.$zero;
         }
         if (!("keepHourly" in $$source)) {
             this["keepHourly"] = 0;

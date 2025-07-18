@@ -136,7 +136,7 @@ type EventEmitter interface {
 type RuntimeEventEmitter struct{}
 
 func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string) {
-	application.Get().EmitEvent(event)
+	application.Get().Event.Emit(event)
 }
 
 type MountState struct {

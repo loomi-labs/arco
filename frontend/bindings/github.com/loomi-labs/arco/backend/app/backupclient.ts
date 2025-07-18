@@ -8,7 +8,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -27,187 +27,136 @@ import * as ent$0 from "../ent/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function AbortBackupJobs(bIds: types$0.BackupId[]): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(158665837, bIds) as any;
-    return $resultPromise;
+export function AbortBackupJobs(bIds: types$0.BackupId[]): $CancellablePromise<void> {
+    return $Call.ByID(158665837, bIds);
 }
 
-export function AddRepositoryToBackupProfile(backupProfileId: number, repositoryId: number): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2277303818, backupProfileId, repositoryId) as any;
-    return $resultPromise;
+export function AddRepositoryToBackupProfile(backupProfileId: number, repositoryId: number): $CancellablePromise<void> {
+    return $Call.ByID(2277303818, backupProfileId, repositoryId);
 }
 
-export function CreateBackupProfile(backup: ent$0.BackupProfile, repositoryIds: number[]): Promise<ent$0.BackupProfile | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1869117442, backup, repositoryIds) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function CreateBackupProfile(backup: ent$0.BackupProfile, repositoryIds: number[]): $CancellablePromise<ent$0.BackupProfile | null> {
+    return $Call.ByID(1869117442, backup, repositoryIds).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function CreateDirectory(path: string): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(384386562, path) as any;
-    return $resultPromise;
+export function CreateDirectory(path: string): $CancellablePromise<void> {
+    return $Call.ByID(384386562, path);
 }
 
-export function DeleteBackupProfile(backupProfileId: number, deleteArchives: boolean): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2748646819, backupProfileId, deleteArchives) as any;
-    return $resultPromise;
+export function DeleteBackupProfile(backupProfileId: number, deleteArchives: boolean): $CancellablePromise<void> {
+    return $Call.ByID(2748646819, backupProfileId, deleteArchives);
 }
 
-export function DoesPathExist(path: string): Promise<boolean> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2517090612, path) as any;
-    return $resultPromise;
+export function DoesPathExist(path: string): $CancellablePromise<boolean> {
+    return $Call.ByID(2517090612, path);
 }
 
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): Promise<$models.ExaminePruningResult[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3315475643, backupProfileId, pruningRule, saveResults) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+    return $Call.ByID(3315475643, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType3($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetBackupButtonStatus(bIds: types$0.BackupId[]): Promise<state$0.BackupButtonStatus> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1193421857, bIds) as any;
-    return $resultPromise;
+export function GetBackupButtonStatus(bIds: types$0.BackupId[]): $CancellablePromise<state$0.BackupButtonStatus> {
+    return $Call.ByID(1193421857, bIds);
 }
 
-export function GetBackupProfile(id: number): Promise<ent$0.BackupProfile | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(4228689432, id) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetBackupProfile(id: number): $CancellablePromise<ent$0.BackupProfile | null> {
+    return $Call.ByID(4228689432, id).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetBackupProfileFilterOptions(repoId: number): Promise<$models.BackupProfileFilter[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(169520516, repoId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetBackupProfileFilterOptions(repoId: number): $CancellablePromise<$models.BackupProfileFilter[]> {
+    return $Call.ByID(169520516, repoId).then(($result: any) => {
         return $$createType5($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetBackupProfiles(): Promise<(ent$0.BackupProfile | null)[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(855020145) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetBackupProfiles(): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
+    return $Call.ByID(855020145).then(($result: any) => {
         return $$createType6($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetCombinedBackupProgress(bIds: types$0.BackupId[]): Promise<types$1.BackupProgress | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2559126927, bIds) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetCombinedBackupProgress(bIds: types$0.BackupId[]): $CancellablePromise<types$1.BackupProgress | null> {
+    return $Call.ByID(2559126927, bIds).then(($result: any) => {
         return $$createType8($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetDirectorySuggestions(): Promise<string[]> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2682457829) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetDirectorySuggestions(): $CancellablePromise<string[]> {
+    return $Call.ByID(2682457829).then(($result: any) => {
         return $$createType9($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetLastBackupErrorMsg(bId: types$0.BackupId): Promise<string> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3222434012, bId) as any;
-    return $resultPromise;
+export function GetLastBackupErrorMsg(bId: types$0.BackupId): $CancellablePromise<string> {
+    return $Call.ByID(3222434012, bId);
 }
 
-export function GetPrefixSuggestion(name: string): Promise<string> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2653689665, name) as any;
-    return $resultPromise;
+export function GetPrefixSuggestion(name: string): $CancellablePromise<string> {
+    return $Call.ByID(2653689665, name);
 }
 
-export function GetPruningOptions(): Promise<$models.GetPruningOptionsResponse> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2377421126) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetPruningOptions(): $CancellablePromise<$models.GetPruningOptionsResponse> {
+    return $Call.ByID(2377421126).then(($result: any) => {
         return $$createType10($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function GetState(bId: types$0.BackupId): Promise<state$0.BackupState> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1185260030, bId) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function GetState(bId: types$0.BackupId): $CancellablePromise<state$0.BackupState> {
+    return $Call.ByID(1185260030, bId).then(($result: any) => {
         return $$createType11($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function IsDirectory(path: string): Promise<boolean> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2744183134, path) as any;
-    return $resultPromise;
+export function IsDirectory(path: string): $CancellablePromise<boolean> {
+    return $Call.ByID(2744183134, path);
 }
 
-export function IsDirectoryEmpty(path: string): Promise<boolean> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2479767251, path) as any;
-    return $resultPromise;
+export function IsDirectoryEmpty(path: string): $CancellablePromise<boolean> {
+    return $Call.ByID(2479767251, path);
 }
 
-export function NewBackupProfile(): Promise<ent$0.BackupProfile | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(3671076802) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function NewBackupProfile(): $CancellablePromise<ent$0.BackupProfile | null> {
+    return $Call.ByID(3671076802).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function RemoveRepositoryFromBackupProfile(backupProfileId: number, repositoryId: number, deleteArchives: boolean): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2324600110, backupProfileId, repositoryId, deleteArchives) as any;
-    return $resultPromise;
+export function RemoveRepositoryFromBackupProfile(backupProfileId: number, repositoryId: number, deleteArchives: boolean): $CancellablePromise<void> {
+    return $Call.ByID(2324600110, backupProfileId, repositoryId, deleteArchives);
 }
 
-export function SaveBackupSchedule(backupProfileId: number, schedule: ent$0.BackupSchedule): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1024354325, backupProfileId, schedule) as any;
-    return $resultPromise;
+export function SaveBackupSchedule(backupProfileId: number, schedule: ent$0.BackupSchedule): $CancellablePromise<void> {
+    return $Call.ByID(1024354325, backupProfileId, schedule);
 }
 
-export function SavePruningRule(backupId: number, rule: ent$0.PruningRule): Promise<ent$0.PruningRule | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(519732571, backupId, rule) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function SavePruningRule(backupId: number, rule: ent$0.PruningRule): $CancellablePromise<ent$0.PruningRule | null> {
+    return $Call.ByID(519732571, backupId, rule).then(($result: any) => {
         return $$createType13($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
-export function SelectDirectory(data: $models.SelectDirectoryData): Promise<string> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1473199266, data) as any;
-    return $resultPromise;
+export function SelectDirectory(data: $models.SelectDirectoryData): $CancellablePromise<string> {
+    return $Call.ByID(1473199266, data);
 }
 
-export function StartBackupJobs(bIds: types$0.BackupId[]): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1345090683, bIds) as any;
-    return $resultPromise;
+export function StartBackupJobs(bIds: types$0.BackupId[]): $CancellablePromise<void> {
+    return $Call.ByID(1345090683, bIds);
 }
 
-export function StartPruneJob(bId: types$0.BackupId): Promise<void> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(2502566490, bId) as any;
-    return $resultPromise;
+export function StartPruneJob(bId: types$0.BackupId): $CancellablePromise<void> {
+    return $Call.ByID(2502566490, bId);
 }
 
-export function UpdateBackupProfile(backup: ent$0.BackupProfile): Promise<ent$0.BackupProfile | null> & { cancel(): void } {
-    let $resultPromise = $Call.ByID(1168330145, backup) as any;
-    let $typingPromise = $resultPromise.then(($result: any) => {
+export function UpdateBackupProfile(backup: ent$0.BackupProfile): $CancellablePromise<ent$0.BackupProfile | null> {
+    return $Call.ByID(1168330145, backup).then(($result: any) => {
         return $$createType1($result);
-    }) as any;
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+    });
 }
 
 // Private type creation functions
