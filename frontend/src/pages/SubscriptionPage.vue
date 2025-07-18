@@ -11,13 +11,12 @@ import { addDay, date, format } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import {
-  ChangeType,
   FeatureSet,
-  PendingChange,
   Plan,
   Subscription,
   SubscriptionStatus
 } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { PendingChange } from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/models";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
@@ -194,47 +193,46 @@ const canUpgrade = computed(() => {
          subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_BASIC;
 });
 
+const hasPendingDowngrade = computed(() => {
+  return pendingChanges.value.some(change => 
+    change.change_type === "Plan Change" && 
+    change.new_value === "Basic"
+  );
+});
+
+const hasPendingBillingChange = computed(() => {
+  return pendingChanges.value.some(change => 
+    change.change_type === "Billing Cycle Change"
+  );
+});
+
 const canDowngrade = computed(() => {
   return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
          !subscription.value?.cancel_at_period_end &&
-         subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO;
+         subscription.value?.plan?.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO &&
+         !hasPendingDowngrade.value;
 });
 
 const hasPendingChanges = computed(() => {
   return pendingChanges.value.length > 0;
 });
 
-const formatChangeType = (changeType: ChangeType): string => {
-  switch (changeType) {
-    case ChangeType.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
-      return 'Plan Change';
-    case ChangeType.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
-      return 'Billing Cycle Change';
-    default:
-      return 'Unknown Change';
-  }
+const formatChangeType = (changeType: string): string => {
+  return changeType || 'Unknown Change';
 };
 
 const getOldValue = (change: PendingChange): string => {
-  // Handle oneof OldValue field
-  const oldValue = change.OldValue;
-  if (oldValue?.old_plan_id) return oldValue.old_plan_id;
-  if (oldValue?.old_is_yearly_billing !== undefined) return oldValue.old_is_yearly_billing ? 'Yearly' : 'Monthly';
-  return 'Unknown';
+  return change.old_value || 'Unknown';
 };
 
 const getNewValue = (change: PendingChange): string => {
-  // Handle oneof NewValue field
-  const newValue = change.NewValue;
-  if (newValue?.new_plan_id) return newValue.new_plan_id;
-  if (newValue?.new_is_yearly_billing !== undefined) return newValue.new_is_yearly_billing ? 'Yearly' : 'Monthly';
-  return 'Unknown';
+  return change.new_value || 'Unknown';
 };
 
-const formatEffectiveDate = (timestamp: any): string => {
-  if (!timestamp?.seconds) return 'Unknown';
+const formatEffectiveDate = (effectiveDate: any): string => {
+  if (!effectiveDate) return 'Unknown';
   try {
-    const date = new Date(timestamp.seconds * 1000);
+    const date = new Date(effectiveDate);
     return format(date, 'MMMM D, YYYY');
   } catch (error) {
     return 'Unknown';
@@ -250,6 +248,11 @@ const yearlySavings = computed(() => {
 });
 
 const billingCycleChanged = computed(() => {
+  // If there's already a pending billing cycle change, no further changes allowed
+  if (hasPendingBillingChange.value) {
+    return false;
+  }
+  
   return selectedBillingCycle.value !== subscription.value?.is_yearly_billing;
 });
 
@@ -317,10 +320,23 @@ async function loadSubscription() {
     
     if (subscriptionResponse?.subscription) {
       subscription.value = subscriptionResponse.subscription;
-      // Initialize billing cycle toggle with current subscription setting
-      selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing || false;
-      // Load pending changes for the subscription
+      // Load pending changes first
       await loadPendingChanges();
+      
+      // Initialize billing cycle toggle - if there's a pending billing change, 
+      // use the target state, otherwise use current subscription setting
+      const pendingBillingChange = pendingChanges.value.find(change => 
+        change.change_type === "Billing Cycle Change"
+      );
+      
+      if (pendingBillingChange) {
+        // Set toggle to the pending target state
+        selectedBillingCycle.value = pendingBillingChange.new_value === "Yearly";
+      } else {
+        // Set toggle to current subscription state
+        selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing || false;
+      }
+      
       currentPageState.value = PageState.HAS_SUBSCRIPTION;
     } else {
       subscription.value = null;
@@ -421,11 +437,10 @@ async function changeBillingCycle() {
     if (response?.success) {
       // Reload subscription and pending changes to get updated info
       await Promise.all([loadSubscription(), loadPendingChanges()]);
-      // Reset selected cycle to match current subscription
-      selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
+      // Don't reset selectedBillingCycle - it should remain as the pending target state
     } else {
       errorMessage.value = "Failed to schedule billing cycle change.";
-      // Reset toggle to current state
+      // Reset toggle to current state on failure
       selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
     }
   } catch (error) {
@@ -730,7 +745,7 @@ onMounted(async () => {
                       type='checkbox' 
                       class='toggle toggle-secondary toggle-sm' 
                       v-model='selectedBillingCycle'
-                      :disabled='subscription?.cancel_at_period_end || isChangingBilling'
+                      :disabled='subscription?.cancel_at_period_end || isChangingBilling || hasPendingBillingChange'
                     />
                     <span class='text-sm'>Yearly</span>
                   </div>
@@ -750,8 +765,12 @@ onMounted(async () => {
                   </div>
                 </div>
                 
-                <div v-if='billingCycleChanged' class='text-xs text-info text-center'>
+                <div v-if='billingCycleChanged' class='text-xs text-info'>
                   Change will take effect at next billing cycle
+                </div>
+                
+                <div v-if='hasPendingBillingChange' class='text-xs text-warning'>
+                  Billing cycle change scheduled for next billing cycle
                 </div>
               </div>
             </div>
@@ -844,7 +863,7 @@ onMounted(async () => {
           <div class='space-y-3'>
             <div v-for='change in pendingChanges' :key='change.id' class='flex items-center justify-between p-3 bg-base-200 rounded-lg'>
               <div class='flex-1'>
-                <div class='font-semibold'>{{ formatChangeType(change.change_type || ChangeType.ChangeType_CHANGE_TYPE_UNSPECIFIED) }}</div>
+                <div class='font-semibold'>{{ formatChangeType(change.change_type) }}</div>
                 <div class='text-sm text-base-content/70'>
                   {{ getOldValue(change) }} → {{ getNewValue(change) }}
                 </div>
