@@ -24,7 +24,7 @@ RUN go mod download
 COPY . .
 
 # Build integration test binary
-RUN CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg
+RUN CGO_ENABLED=1 GOOS=linux go test -c -o /integration-tests ./backend/borg/integration
 
 # Stage 2: Runtime environment
 FROM ubuntu:22.04
@@ -94,4 +94,4 @@ ENV TESTCONTAINERS_CHECKS_DISABLE=true
 ENV DOCKER_HOST=unix:///var/run/docker.sock
 
 # Default entrypoint with command
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh", "/usr/local/bin/integration-tests", "-test.v"]
+CMD ["/usr/local/bin/entrypoint.sh"]

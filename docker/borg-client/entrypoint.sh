@@ -29,4 +29,4 @@ echo "🚀 Running integration tests..."
 echo "   Client Borg: ${CLIENT_BORG_VERSION}"
 echo "   Server Borg: ${SERVER_BORG_VERSION}"
 
-exec "$@"
+exec /usr/local/bin/integration-tests -test.v

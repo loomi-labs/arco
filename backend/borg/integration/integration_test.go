@@ -1,5 +1,3 @@
-//go:build integration
-
 /*
 Integration Tests for Borg Backup System
 
@@ -49,7 +47,7 @@ The tests use a two-container approach that mirrors real-world borg deployments:
 • **Real Network Communication**: Actual TCP/SSH between host and container
 • **Production Code Path**: Uses identical borg binary and interface methods as production
 
-Run with: `task test:integration` or `go test -tags=integration -v ./backend/borg/...`
+Run with: `task test:integration` or `go test -v ./backend/borg/integration/...`
 
 TEST CASES - integration_test.go
 
@@ -93,7 +91,7 @@ TestBorgErrorHandling
 
 */
 
-package borg
+package integration
 
 import (
 	"context"
@@ -106,6 +104,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -127,7 +126,7 @@ type TestIntegrationSuite struct {
 	ctx               context.Context
 	network           testcontainers.Network
 	serverContainer   testcontainers.Container
-	borg              Borg
+	borg              borg.Borg
 	logger            *zap.SugaredLogger
 	serverHostPort    string
 	serverContainerIP string
@@ -169,7 +168,7 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	require.NoError(t, err)
 
 	// Determine server context path (works in both host and container)
-	serverContextPath := filepath.Join(wd, "..", "..", "docker", "borg-server")
+	serverContextPath := filepath.Join(wd, "..", "..", "..", "docker", "borg-server")
 	if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
 		// Try mounted docker directory for containerized environment
 		serverContextPath = "/app/docker/borg-server"
@@ -255,7 +254,7 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 		// Running on host, use relative path
 		wd, err := os.Getwd()
 		require.NoError(t, err)
-		sshKeysDir = filepath.Join(wd, "..", "..", "docker", "borg-client")
+		sshKeysDir = filepath.Join(wd, "..", "..", "..", "docker", "borg-client")
 	}
 
 	// Wait for SSH server to fully start
@@ -294,7 +293,7 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 	}
 
 	// Update borg instance with SSH key
-	s.borg = NewBorg("/usr/bin/borg", s.logger, []string{privateKeyPath}, nil)
+	s.borg = borg.NewBorg("/usr/bin/borg", s.logger, []string{privateKeyPath}, nil)
 }
 
 // teardownBorgEnvironment cleans up the test environment
