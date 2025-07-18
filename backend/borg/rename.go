@@ -15,7 +15,7 @@ func (b *borg) Rename(ctx context.Context, repository, archive, password, newNam
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()
-	result := combinedOutputToStatus(out, err)
+	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(ctx, result, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }

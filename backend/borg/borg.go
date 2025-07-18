@@ -79,8 +79,8 @@ func (z *CmdLogger) LogCmdStart(cmd string) time.Time {
 	return time.Now()
 }
 
-func (z *CmdLogger) LogCmdResult(ctx context.Context, result *types.Status, cmd string, duration time.Duration) *types.Status {
-	assert.NotNil(result, "LogCmdResult received nil status")
+func (z *CmdLogger) LogCmdStatus(ctx context.Context, result *types.Status, cmd string, duration time.Duration) *types.Status {
+	assert.NotNil(result, "LogCmdStatus received nil status")
 	if result.HasError() {
 		if ctx.Value(noErrorCtxKey) == nil {
 			z.Errorf("Command `%s` failed after %s: %s", cmd, duration, result.Error)
@@ -126,7 +126,7 @@ func (e Env) AsList() []string {
 		"-oConnectTimeout=10",
 	}
 	for _, key := range e.sshPrivateKeys {
-		sshOptions = append(sshOptions, fmt.Sprintf("-i %s", key))
+		sshOptions = append(sshOptions, fmt.Sprintf("-i%s", key))
 	}
 
 	env := append(

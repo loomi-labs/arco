@@ -16,5 +16,5 @@ func (b *borg) BreakLock(ctx context.Context, repository string, password string
 	out, err := cmd.CombinedOutput()
 	status := combinedOutputToStatus(out, err)
 
-	return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+	return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }

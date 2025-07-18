@@ -29,3 +29,6 @@ jobs:
       # Test & coverage report creation
       - name: Test & coverage report creation
         run: task test
+      # Integration test & coverage report creation
+      - name: Integration test & coverage report creation
+        run: task test:integration

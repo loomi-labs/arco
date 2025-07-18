@@ -1,0 +1,94 @@
+name: Borg Integration Tests Matrix
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Version compatibility matrix (matching client/server versions)
+          - os: ubuntu-latest
+            client-version: 1.2.8
+            server-version: 1.2.8
+            os-type: ubuntu
+          - os: ubuntu-latest
+            client-version: 1.4.0
+            server-version: 1.4.0
+            os-type: ubuntu
+          - os: ubuntu-latest
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
+          
+          # OS compatibility matrix (latest version)
+          - os: ubuntu-20.04
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
+          - os: ubuntu-22.04
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
+          - os: ubuntu-24.04
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: ubuntu
+          - os: macos-latest
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
+          - os: macos-13
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
+          - os: macos-14
+            client-version: 1.4.1
+            server-version: 1.4.1
+            os-type: macos
+
+    name: ${{ matrix.os-type }} - ${{ matrix.os }} - Client ${{ matrix.client-version }} / Server ${{ matrix.server-version }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Setup Docker (Ubuntu only)
+        if: matrix.os-type == 'ubuntu'
+        run: |
+          sudo systemctl start docker || true
+          sudo chmod 666 /var/run/docker.sock
+
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/run-matrix-integration-tests.sh
+          chmod +x scripts/run-integration-tests-containerized.sh
+
+      - name: Run Matrix Integration Tests
+        run: |
+          ./scripts/run-matrix-integration-tests.sh \
+            --client-version ${{ matrix.client-version }} \
+            --server-version ${{ matrix.server-version }} \
+            --os ${{ matrix.os-type }}
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os-type }}-${{ matrix.os }}-client-${{ matrix.client-version }}-server-${{ matrix.server-version }}
+          path: |
+            *.log
+            test-results.xml
+          retention-days: 30

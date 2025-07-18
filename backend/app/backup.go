@@ -616,8 +616,8 @@ func (b *BackupClient) refreshRepoInfo(repoId int, url, password string) error {
 		Exec(b.ctx)
 }
 
-func (b *BackupClient) addNewArchive(bId types.BackupId, archiveName, password string) error {
-	info, status := b.borg.Info(b.ctx, archiveName, password)
+func (b *BackupClient) addNewArchive(bId types.BackupId, archivePath, password string) error {
+	info, status := b.borg.Info(b.ctx, archivePath, password)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			return fmt.Errorf("repository info retrieval was cancelled")
