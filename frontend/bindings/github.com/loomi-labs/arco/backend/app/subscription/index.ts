@@ -5,3 +5,8 @@ import * as Service from "./service.js";
 export {
     Service
 };
+
+export {
+    PendingChange,
+    PendingChanges
+} from "./models.js";

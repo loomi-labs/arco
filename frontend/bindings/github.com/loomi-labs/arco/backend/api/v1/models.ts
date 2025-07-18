@@ -73,36 +73,6 @@ export class CancelSubscriptionResponse {
 }
 
 /**
- * ChangeType represents the type of pending subscription change.
- * 
- * These types correspond to the different kinds of modifications that can be
- * scheduled for a subscription to take effect at the next billing cycle.
- */
-export enum ChangeType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = 0,
-
-    /**
-     * Default unspecified change type.
-     */
-    ChangeType_CHANGE_TYPE_UNSPECIFIED = 0,
-
-    /**
-     * Plan change for downgrades or lateral moves.
-     * Changes the subscription plan (e.g., Pro to Basic).
-     */
-    ChangeType_CHANGE_TYPE_PLAN_CHANGE = 1,
-
-    /**
-     * Billing cycle change.
-     * Changes between monthly and yearly billing cycles.
-     */
-    ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE = 2,
-};
-
-/**
  * CreateCheckoutSessionResponse contains Stripe checkout session details.
  * 
  * Provides the checkout URL for payment completion and session ID
@@ -167,37 +137,6 @@ export enum FeatureSet {
 };
 
 /**
- * GetPendingChangesResponse contains all scheduled subscription changes.
- * 
- * Lists pending changes in chronological order with complete details
- * about what will change and when.
- */
-export class GetPendingChangesResponse {
-    /**
-     * All pending changes for the subscription, ordered by effective date.
-     */
-    "pending_changes"?: (PendingChange | null)[];
-
-    /** Creates a new GetPendingChangesResponse instance. */
-    constructor($$source: Partial<GetPendingChangesResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new GetPendingChangesResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): GetPendingChangesResponse {
-        const $$createField0_0 = $$createType4;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("pending_changes" in $$parsedSource) {
-            $$parsedSource["pending_changes"] = $$createField0_0($$parsedSource["pending_changes"]);
-        }
-        return new GetPendingChangesResponse($$parsedSource as Partial<GetPendingChangesResponse>);
-    }
-}
-
-/**
  * GetSubscriptionResponse contains the user's subscription details.
  * 
  * Returns null subscription field if the user has no active subscription.
@@ -220,7 +159,7 @@ export class GetSubscriptionResponse {
      * Creates a new GetSubscriptionResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetSubscriptionResponse {
-        const $$createField0_0 = $$createType6;
+        const $$createField0_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("subscription" in $$parsedSource) {
             $$parsedSource["subscription"] = $$createField0_0($$parsedSource["subscription"]);
@@ -256,129 +195,6 @@ export class OveragePrice {
         return new OveragePrice($$parsedSource as Partial<OveragePrice>);
     }
 }
-
-/**
- * PendingChange represents a scheduled subscription modification.
- * 
- * Contains complete details about a change that will take effect in the future,
- * including the type of change, old and new values, and timing.
- */
-export class PendingChange {
-    /**
-     * Unique identifier for this pending change.
-     * Use with CancelPendingChange to cancel before it takes effect.
-     */
-    "id"?: number;
-
-    /**
-     * Type of change being made.
-     * Specifies what aspect of the subscription is being changed.
-     */
-    "change_type"?: ChangeType;
-
-    /**
-     * Current value that will be changed.
-     * The specific field set depends on the change_type.
-     * 
-     * Types that are assignable to OldValue:
-     * 
-     * 	*PendingChange_OldPlanId
-     * 	*PendingChange_OldIsYearlyBilling
-     */
-    "OldValue": isPendingChange_OldValue;
-
-    /**
-     * New value that will be applied.
-     * The specific field set depends on the change_type.
-     * 
-     * Types that are assignable to NewValue:
-     * 
-     * 	*PendingChange_NewPlanId
-     * 	*PendingChange_NewIsYearlyBilling
-     */
-    "NewValue": isPendingChange_NewValue;
-
-    /**
-     * When this change will take effect.
-     * Typically the start of the next billing period.
-     */
-    "effective_date"?: timestamppb$0.Timestamp | null;
-
-    /**
-     * Current status of this change.
-     * Tracks the lifecycle state of the pending change.
-     */
-    "status"?: PendingChangeStatus;
-
-    /**
-     * When this change was originally scheduled.
-     */
-    "created_at"?: timestamppb$0.Timestamp | null;
-
-    /** Creates a new PendingChange instance. */
-    constructor($$source: Partial<PendingChange> = {}) {
-        if (!("OldValue" in $$source)) {
-            this["OldValue"] = null;
-        }
-        if (!("NewValue" in $$source)) {
-            this["NewValue"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PendingChange instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PendingChange {
-        const $$createField4_0 = $$createType1;
-        const $$createField6_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("effective_date" in $$parsedSource) {
-            $$parsedSource["effective_date"] = $$createField4_0($$parsedSource["effective_date"]);
-        }
-        if ("created_at" in $$parsedSource) {
-            $$parsedSource["created_at"] = $$createField6_0($$parsedSource["created_at"]);
-        }
-        return new PendingChange($$parsedSource as Partial<PendingChange>);
-    }
-}
-
-/**
- * PendingChangeStatus represents the current state of a pending subscription change.
- * 
- * These statuses track the lifecycle of scheduled changes from creation
- * through application or cancellation.
- */
-export enum PendingChangeStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = 0,
-
-    /**
-     * Default unspecified status.
-     */
-    PendingChangeStatus_PENDING_CHANGE_STATUS_UNSPECIFIED = 0,
-
-    /**
-     * Change is scheduled and waiting to be applied.
-     * Will take effect at the scheduled effective date.
-     */
-    PendingChangeStatus_PENDING_CHANGE_STATUS_PENDING = 1,
-
-    /**
-     * Change has been successfully applied.
-     * The subscription has been updated with the new values.
-     */
-    PendingChangeStatus_PENDING_CHANGE_STATUS_APPLIED = 2,
-
-    /**
-     * Change has been canceled before taking effect.
-     * The subscription will not be modified.
-     */
-    PendingChangeStatus_PENDING_CHANGE_STATUS_CANCELED = 3,
-};
 
 /**
  * Plan represents a complete subscription plan with pricing and features.
@@ -425,8 +241,8 @@ export class Plan {
      * Creates a new Plan instance from a string or object.
      */
     static createFrom($$source: any = {}): Plan {
-        const $$createField3_0 = $$createType8;
-        const $$createField4_0 = $$createType10;
+        const $$createField3_0 = $$createType5;
+        const $$createField4_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("price" in $$parsedSource) {
             $$parsedSource["price"] = $$createField3_0($$parsedSource["price"]);
@@ -644,7 +460,7 @@ export class Subscription {
         const $$createField7_0 = $$createType1;
         const $$createField8_0 = $$createType1;
         const $$createField9_0 = $$createType1;
-        const $$createField10_0 = $$createType12;
+        const $$createField10_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current_period_start" in $$parsedSource) {
             $$parsedSource["current_period_start"] = $$createField4_0($$parsedSource["current_period_start"]);
@@ -764,21 +580,14 @@ export class UpgradeSubscriptionResponse {
     }
 }
 
-export type isPendingChange_NewValue = any;
-
-export type isPendingChange_OldValue = any;
-
 // Private type creation functions
 const $$createType0 = timestamppb$0.Timestamp.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = PendingChange.createFrom;
+const $$createType2 = Subscription.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = Subscription.createFrom;
-const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = PlanPrice.createFrom;
-const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = OveragePrice.createFrom;
-const $$createType10 = $Create.Nullable($$createType9);
-const $$createType11 = Plan.createFrom;
-const $$createType12 = $Create.Nullable($$createType11);
+const $$createType4 = PlanPrice.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = OveragePrice.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = Plan.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);

@@ -17,6 +17,10 @@ import * as arcov1$0 from "../../api/v1/models.js";
 // @ts-ignore: Unused imports
 import * as state$0 from "../state/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * CancelPendingChange cancels a specific scheduled change before it takes effect
  */
@@ -91,7 +95,7 @@ export function GetCheckoutSession(): $CancellablePromise<arcov1$0.CreateCheckou
 /**
  * GetPendingChanges retrieves all scheduled changes for a subscription
  */
-export function GetPendingChanges(subscriptionID: string): $CancellablePromise<arcov1$0.GetPendingChangesResponse | null> {
+export function GetPendingChanges(subscriptionID: string): $CancellablePromise<$models.PendingChanges | null> {
     return $Call.ByID(4217259715, subscriptionID).then(($result: any) => {
         return $$createType11($result);
     });
@@ -144,7 +148,7 @@ const $$createType6 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
 const $$createType8 = state$0.CheckoutResult.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = arcov1$0.GetPendingChangesResponse.createFrom;
+const $$createType10 = $models.PendingChanges.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
 const $$createType12 = arcov1$0.GetSubscriptionResponse.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
