@@ -6,7 +6,6 @@ export {
     CancelSubscriptionResponse,
     ChangeType,
     CreateCheckoutSessionResponse,
-    Currency,
     FeatureSet,
     GetPendingChangesResponse,
     GetSubscriptionResponse,

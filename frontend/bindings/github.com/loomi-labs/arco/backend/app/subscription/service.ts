@@ -55,8 +55,8 @@ export function ClearCheckoutResult(): $CancellablePromise<void> {
 /**
  * CreateCheckoutSession creates a payment checkout session
  */
-export function CreateCheckoutSession(planName: string, currency: arcov1$0.Currency): $CancellablePromise<arcov1$0.CreateCheckoutSessionResponse | null> {
-    return $Call.ByID(54709411, planName, currency).then(($result: any) => {
+export function CreateCheckoutSession(planName: string, isYearlyBilling: boolean): $CancellablePromise<arcov1$0.CreateCheckoutSessionResponse | null> {
+    return $Call.ByID(54709411, planName, isYearlyBilling).then(($result: any) => {
         return $$createType7($result);
     });
 }
@@ -120,15 +120,6 @@ export function ReactivateSubscription(subscriptionID: string): $CancellableProm
  */
 export function UpdateBillingCycle(subscriptionID: string, isYearly: boolean): $CancellablePromise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> {
     return $Call.ByID(450493983, subscriptionID, isYearly).then(($result: any) => {
-        return $$createType5($result);
-    });
-}
-
-/**
- * UpdateCurrency schedules a currency change for a subscription
- */
-export function UpdateCurrency(subscriptionID: string, currency: arcov1$0.Currency): $CancellablePromise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> {
-    return $Call.ByID(2320044535, subscriptionID, currency).then(($result: any) => {
         return $$createType5($result);
     });
 }
