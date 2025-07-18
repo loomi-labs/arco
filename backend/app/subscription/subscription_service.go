@@ -67,10 +67,10 @@ func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.G
 }
 
 // CreateCheckoutSession creates a payment checkout session
-func (s *Service) CreateCheckoutSession(ctx context.Context, planName string, currency arcov1.Currency) (*arcov1.CreateCheckoutSessionResponse, error) {
+func (s *Service) CreateCheckoutSession(ctx context.Context, planName string, isYearlyBilling bool) (*arcov1.CreateCheckoutSessionResponse, error) {
 	req := connect.NewRequest(&arcov1.CreateCheckoutSessionRequest{
-		Name:     planName,
-		Currency: currency,
+		Name:            planName,
+		IsYearlyBilling: isYearlyBilling,
 	})
 
 	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
@@ -194,23 +194,6 @@ func (s *Service) DowngradePlan(ctx context.Context, subscriptionID string, plan
 	return resp.Msg, nil
 }
 
-// UpdateCurrency schedules a currency change for a subscription
-func (s *Service) UpdateCurrency(ctx context.Context, subscriptionID string, currency arcov1.Currency) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
-	req := &arcov1.ScheduleSubscriptionUpdateRequest{
-		SubscriptionId: subscriptionID,
-		Change: &arcov1.ScheduleSubscriptionUpdateRequest_Currency{
-			Currency: currency,
-		},
-	}
-
-	resp, err := s.rpcClient.ScheduleSubscriptionUpdate(ctx, connect.NewRequest(req))
-	if err != nil {
-		s.log.Errorf("Failed to update currency from cloud service: %v", err)
-		return nil, err
-	}
-
-	return resp.Msg, nil
-}
 
 // UpdateBillingCycle schedules a billing cycle change for a subscription
 func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string, isYearly bool) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
