@@ -29,7 +29,7 @@ func (b *borg) Compact(ctx context.Context, repository string, password string) 
 	if hasBeenCanceled {
 		// We don't care about the real status of the borg operation because we canceled it
 		status := newStatusWithCanceled()
-		return b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+		return b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 	}
 
 	status := combinedOutputToStatus(out, err)
