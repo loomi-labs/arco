@@ -9,6 +9,9 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/pkg/browser"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"strings"
 	"time"
 )
 
@@ -194,7 +197,6 @@ func (s *Service) DowngradePlan(ctx context.Context, subscriptionID string, plan
 	return resp.Msg, nil
 }
 
-
 // UpdateBillingCycle schedules a billing cycle change for a subscription
 func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string, isYearly bool) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
 	req := &arcov1.ScheduleSubscriptionUpdateRequest{
@@ -213,8 +215,63 @@ func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string,
 	return resp.Msg, nil
 }
 
+// PendingChange represents a simplified pending change with only frontend-needed fields
+type PendingChange struct {
+	ID            int64     `json:"id"`
+	ChangeType    string    `json:"change_type"` // "Plan Change" or "Billing Cycle Change"
+	OldValue      string    `json:"old_value"`   // e.g., "BASIC" or "Monthly"
+	NewValue      string    `json:"new_value"`   // e.g., "PRO" or "Yearly"
+	EffectiveDate time.Time `json:"effective_date"`
+}
+
+// PendingChanges represents a simplified response with only frontend-needed fields
+type PendingChanges struct {
+	PendingChanges []PendingChange `json:"pending_changes"`
+}
+
+// transformPendingChange converts a proto PendingChange to our simplified format
+func transformPendingChange(change *arcov1.PendingChange) PendingChange {
+	simplified := PendingChange{
+		ID: change.Id,
+	}
+
+	// Convert effective date from proto timestamp to time.Time
+	if change.EffectiveDate != nil && change.EffectiveDate.Seconds > 0 {
+		simplified.EffectiveDate = time.Unix(change.EffectiveDate.Seconds, 0)
+	} else {
+		simplified.EffectiveDate = time.Time{} // zero time
+	}
+
+	// Handle all transformation logic based on change type
+	switch change.ChangeType {
+	case arcov1.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
+		simplified.ChangeType = "Plan Change"
+		caser := cases.Title(language.English)
+		simplified.OldValue = caser.String(strings.ToLower(change.GetOldPlanId()))
+		simplified.NewValue = caser.String(strings.ToLower(change.GetNewPlanId()))
+	case arcov1.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
+		simplified.ChangeType = "Billing Cycle Change"
+		if change.GetOldIsYearlyBilling() {
+			simplified.OldValue = "Yearly"
+		} else {
+			simplified.OldValue = "Monthly"
+		}
+		if change.GetNewIsYearlyBilling() {
+			simplified.NewValue = "Yearly"
+		} else {
+			simplified.NewValue = "Monthly"
+		}
+	default:
+		simplified.ChangeType = "Unknown Change"
+		simplified.OldValue = "Unknown"
+		simplified.NewValue = "Unknown"
+	}
+
+	return simplified
+}
+
 // GetPendingChanges retrieves all scheduled changes for a subscription
-func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) (*arcov1.GetPendingChangesResponse, error) {
+func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) (*PendingChanges, error) {
 	req := connect.NewRequest(&arcov1.GetPendingChangesRequest{
 		SubscriptionId: subscriptionID,
 	})
@@ -225,7 +282,15 @@ func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) 
 		return nil, err
 	}
 
-	return resp.Msg, nil
+	// Transform the proto response to our simplified format
+	pendingChanges := make([]PendingChange, 0, len(resp.Msg.PendingChanges))
+	for _, change := range resp.Msg.GetPendingChanges() {
+		pendingChanges = append(pendingChanges, transformPendingChange(change))
+	}
+
+	return &PendingChanges{
+		PendingChanges: pendingChanges,
+	}, nil
 }
 
 // CancelPendingChange cancels a specific scheduled change before it takes effect
