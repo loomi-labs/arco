@@ -19,16 +19,9 @@ else
     exit 1
 fi
 
-# Test network connectivity if on shared network
+# Show network configuration if available
 if [ -n "${TESTCONTAINERS_NETWORK_NAME}" ]; then
     echo "🌐 Using Docker network: ${TESTCONTAINERS_NETWORK_NAME}"
-    
-    echo "🔍 Testing network connectivity to borg-server..."
-    if nc -zv borg-server 22 2>&1; then
-        echo "✅ Port 22 is open on borg-server"
-    else
-        echo "❌ Cannot connect to port 22 on borg-server"
-    fi
 fi
 
 # Run integration tests

@@ -233,9 +233,9 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 			s.serverContainerIP = "borg-server" // This matches the network alias
 		} else {
 			// Fall back to container IP
-			for _, network := range inspect.NetworkSettings.Networks {
-				if network.IPAddress != "" {
-					s.serverContainerIP = network.IPAddress
+			for _, net := range inspect.NetworkSettings.Networks {
+				if net.IPAddress != "" {
+					s.serverContainerIP = net.IPAddress
 					break
 				}
 			}
@@ -310,28 +310,18 @@ func (s *TestIntegrationSuite) teardownBorgEnvironment(t *testing.T) {
 	}
 }
 
-// createTestRepository creates a test repository for integration tests
-func (s *TestIntegrationSuite) createTestRepository(t *testing.T) string {
+// getTestRepositoryPath creates a test repository for integration tests
+func (s *TestIntegrationSuite) getTestRepositoryPath() string {
 	repoName := fmt.Sprintf("test-repo-%d", time.Now().UnixNano())
 
-	// Create SSH-based repository URL
-	// In containerized environment, use container IP address
-	// In host environment, use localhost with mapped port
-	var repoPath string
+	// Create SSH-based repository URL based on environment
 	if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
-		// Running in containerized environment - use container IP address
-		// since DNS resolution of network aliases doesn't work from client container
-		// Use standard SSH port (22) with explicit port specification
-		repoPath = fmt.Sprintf("ssh://%s@%s:22/home/borg/repositories/%s", sshUser, s.serverContainerIP, repoName)
+		// Running in containerized environment - use container network alias with port 22
+		return fmt.Sprintf("ssh://%s@%s:22/home/borg/repositories/%s", sshUser, s.serverContainerIP, repoName)
 	} else {
 		// Running on host - use localhost with mapped port
-		repoPath = fmt.Sprintf("ssh://%s@localhost:%s/home/borg/repositories/%s", sshUser, s.serverHostPort, repoName)
+		return fmt.Sprintf("ssh://%s@localhost:%s/home/borg/repositories/%s", sshUser, s.serverHostPort, repoName)
 	}
-
-	// Don't pre-create the repository directory - let borg init create it with proper permissions
-	// This prevents permission issues where manually created directories have incorrect ownership
-
-	return repoPath
 }
 
 // createTestData creates test files for backup operations on the host
@@ -369,7 +359,7 @@ func TestBorgRepositoryOperations(t *testing.T) {
 	defer suite.teardownBorgEnvironment(t)
 
 	t.Run("Init", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Test repository initialization
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -377,7 +367,7 @@ func TestBorgRepositoryOperations(t *testing.T) {
 	})
 
 	t.Run("Info", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Initialize repository first
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -392,7 +382,7 @@ func TestBorgRepositoryOperations(t *testing.T) {
 	})
 
 	t.Run("List", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Initialize repository
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -413,7 +403,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 	defer suite.teardownBorgEnvironment(t)
 
 	t.Run("Create", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 
 		// Initialize repository
@@ -440,7 +430,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 	})
 
 	t.Run("CreateAndList", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 
 		// Initialize repository
@@ -478,7 +468,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 	defer suite.teardownBorgEnvironment(t)
 
 	t.Run("DeleteArchive", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 
 		// Initialize repository
@@ -511,7 +501,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 	})
 
 	t.Run("DeleteRepository", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Initialize repository
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -534,7 +524,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 	defer suite.teardownBorgEnvironment(t)
 
 	t.Run("Compact", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 
 		// Initialize repository
@@ -561,7 +551,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 	})
 
 	t.Run("Prune", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 
 		// Initialize repository
@@ -606,7 +596,7 @@ func TestBorgRenameOperation(t *testing.T) {
 	suite.setupBorgEnvironment(t)
 	defer suite.teardownBorgEnvironment(t)
 
-	repoPath := suite.createTestRepository(t)
+	repoPath := suite.getTestRepositoryPath()
 	dataDir := suite.createTestData(t)
 
 	// Initialize repository
@@ -646,7 +636,7 @@ func TestBorgBreakLockOperation(t *testing.T) {
 	suite.setupBorgEnvironment(t)
 	defer suite.teardownBorgEnvironment(t)
 
-	repoPath := suite.createTestRepository(t)
+	repoPath := suite.getTestRepositoryPath()
 
 	// Initialize repository
 	status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -664,7 +654,7 @@ func TestBorgMountOperations(t *testing.T) {
 	defer suite.teardownBorgEnvironment(t)
 
 	t.Run("MountRepository", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 		mountPath := fmt.Sprintf("/tmp/borg-mount-repo-%d", time.Now().UnixNano())
 
@@ -712,7 +702,7 @@ func TestBorgMountOperations(t *testing.T) {
 	})
 
 	t.Run("MountArchive", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		dataDir := suite.createTestData(t)
 		mountPath := fmt.Sprintf("/tmp/borg-mount-archive-%d", time.Now().UnixNano())
 
@@ -769,7 +759,7 @@ func TestBorgMountOperations(t *testing.T) {
 	})
 
 	t.Run("MountErrors", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 		invalidMountPath := "/nonexistent/mount/path"
 
 		// Initialize repository
@@ -799,7 +789,7 @@ func TestBorgDeleteArchives(t *testing.T) {
 	suite.setupBorgEnvironment(t)
 	defer suite.teardownBorgEnvironment(t)
 
-	repoPath := suite.createTestRepository(t)
+	repoPath := suite.getTestRepositoryPath()
 	dataDir := suite.createTestData(t)
 
 	// Initialize repository
@@ -875,7 +865,7 @@ func TestBorgErrorHandling(t *testing.T) {
 	})
 
 	t.Run("WrongPassword", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Initialize repository
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
@@ -888,7 +878,7 @@ func TestBorgErrorHandling(t *testing.T) {
 	})
 
 	t.Run("InvalidArchiveName", func(t *testing.T) {
-		repoPath := suite.createTestRepository(t)
+		repoPath := suite.getTestRepositoryPath()
 
 		// Initialize repository
 		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)

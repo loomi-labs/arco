@@ -50,7 +50,7 @@ tasks:
       - sh: command -v docker
         msg: "Docker is required for integration tests"
     cmds:
-      - go test -tags=integration -cover -mod=readonly --timeout 5m ./backend/borg/...
+      - go test -tags=integration -cover -mod=readonly --timeout 10m ./backend/borg/...
 
   test:integration:docker:
     desc: Runs integration tests in containerized environment

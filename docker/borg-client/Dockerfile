@@ -33,7 +33,7 @@ FROM ubuntu:22.04
 ARG CLIENT_BORG_VERSION=1.4.0
 ARG SERVER_BORG_VERSION=1.4.0
 
-# Install required packages including Docker client
+# Install required packages including Docker client and FUSE for mount operations
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -42,6 +42,8 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     dnsutils \
     iputils-ping \
+    fuse \
+    libfuse2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories
@@ -55,7 +57,7 @@ RUN curl -L "https://github.com/borgbackup/borg/releases/download/${CLIENT_BORG_
     chown root:root /usr/local/bin/borg && \
     ln -s /usr/local/bin/borg /usr/bin/borg
 
-# Create SSH directory and copy keys
+# Create SSH directory
 RUN mkdir -p /home/borg/.ssh && \
     chown -R borg:borg /home/borg/.ssh && \
     chmod 700 /home/borg/.ssh
