@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { CheckIcon, CloudIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
 import { Browser } from "@wailsio/runtime";
+import { startCase } from "lodash";
 import { Page } from "../router";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
@@ -16,7 +17,11 @@ import {
   Subscription,
   SubscriptionStatus
 } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { PendingChange } from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/models";
+import {
+  ChangeType,
+  ChangeValueType,
+  PendingChange
+} from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/models";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
@@ -195,14 +200,14 @@ const canUpgrade = computed(() => {
 
 const hasPendingDowngrade = computed(() => {
   return pendingChanges.value.some(change => 
-    change.change_type === "Plan Change" && 
-    change.new_value === "Basic"
+    change.change_type === ChangeType.ChangeTypePlanChange &&
+    change.new_value === ChangeValueType.ChangeValueBasic
   );
 });
 
 const hasPendingBillingChange = computed(() => {
   return pendingChanges.value.some(change => 
-    change.change_type === "Billing Cycle Change"
+    change.change_type === ChangeType.ChangeTypeBillingCycleChange
   );
 });
 
@@ -216,18 +221,6 @@ const canDowngrade = computed(() => {
 const hasPendingChanges = computed(() => {
   return pendingChanges.value.length > 0;
 });
-
-const formatChangeType = (changeType: string): string => {
-  return changeType || 'Unknown Change';
-};
-
-const getOldValue = (change: PendingChange): string => {
-  return change.old_value || 'Unknown';
-};
-
-const getNewValue = (change: PendingChange): string => {
-  return change.new_value || 'Unknown';
-};
 
 const formatEffectiveDate = (effectiveDate: any): string => {
   if (!effectiveDate) return 'Unknown';
@@ -253,7 +246,30 @@ const billingCycleChanged = computed(() => {
     return false;
   }
   
-  return selectedBillingCycle.value !== subscription.value?.is_yearly_billing;
+  const currentBilling = subscription.value?.is_yearly_billing ?? false;
+  const selectedBilling = selectedBillingCycle.value;
+  return selectedBilling !== currentBilling;
+});
+
+const shouldDisableChangeButton = computed(() => {
+  // Button should be disabled when:
+  // 1. No subscription data loaded yet
+  // 2. Subscription is canceled (cancel_at_period_end)
+  // 3. Currently changing billing cycle (API call in progress)
+  // 4. There's already a pending billing cycle change
+  // 5. No actual change has been made to the toggle
+  
+  const hasSubscription = !!subscription.value;
+  const isCanceled = subscription.value?.cancel_at_period_end || false;
+  const isChanging = isChangingBilling.value;
+  const hasPendingChange = hasPendingBillingChange.value;
+  const hasChange = billingCycleChanged.value;
+
+  return !hasSubscription ||
+         isCanceled ||
+         isChanging ||
+         hasPendingChange ||
+         !hasChange;
 });
 
 const showCancelationWarning = computed(() => {
@@ -326,15 +342,15 @@ async function loadSubscription() {
       // Initialize billing cycle toggle - if there's a pending billing change, 
       // use the target state, otherwise use current subscription setting
       const pendingBillingChange = pendingChanges.value.find(change => 
-        change.change_type === "Billing Cycle Change"
+        change.change_type === ChangeType.ChangeTypeBillingCycleChange
       );
       
       if (pendingBillingChange) {
         // Set toggle to the pending target state
-        selectedBillingCycle.value = pendingBillingChange.new_value === "Yearly";
+        selectedBillingCycle.value = pendingBillingChange.new_value === ChangeValueType.ChangeValueYearly;
       } else {
         // Set toggle to current subscription state
-        selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing || false;
+        selectedBillingCycle.value = subscriptionResponse.subscription.is_yearly_billing ?? false;
       }
       
       currentPageState.value = PageState.HAS_SUBSCRIPTION;
@@ -538,6 +554,10 @@ async function loadPendingChanges() {
 async function cancelPendingChange(changeId: number) {
   if (!subscription.value?.id) return;
 
+  // Find the change we're about to cancel to check if it's a billing cycle change
+  const changeToCancel = pendingChanges.value.find(change => change.id === changeId);
+  const isBillingCycleChange = changeToCancel?.change_type === ChangeType.ChangeTypeBillingCycleChange;
+
   try {
     const response = await SubscriptionService.CancelPendingChange(
       subscription.value.id,
@@ -547,6 +567,11 @@ async function cancelPendingChange(changeId: number) {
     if (response?.success) {
       // Reload pending changes to get updated list
       await loadPendingChanges();
+      
+      // If we cancelled a billing cycle change, reset the toggle to current subscription state
+      if (isBillingCycleChange) {
+        selectedBillingCycle.value = subscription.value?.is_yearly_billing ?? false;
+      }
     } else {
       errorMessage.value = "Failed to cancel pending change.";
     }
@@ -757,7 +782,7 @@ onMounted(async () => {
                     <button 
                       class='btn btn-secondary btn-sm'
                       @click='changeBillingCycle'
-                      :disabled='!billingCycleChanged || subscription?.cancel_at_period_end || isChangingBilling'
+                      :disabled='shouldDisableChangeButton'
                     >
                       <span v-if='isChangingBilling' class='loading loading-spinner loading-xs'></span>
                       Change
@@ -863,9 +888,9 @@ onMounted(async () => {
           <div class='space-y-3'>
             <div v-for='change in pendingChanges' :key='change.id' class='flex items-center justify-between p-3 bg-base-200 rounded-lg'>
               <div class='flex-1'>
-                <div class='font-semibold'>{{ formatChangeType(change.change_type) }}</div>
+                <div class='font-semibold'>{{ startCase(change.change_type) }}</div>
                 <div class='text-sm text-base-content/70'>
-                  {{ getOldValue(change) }} → {{ getNewValue(change) }}
+                  {{ startCase(change.old_value) }} → {{ startCase(change.new_value) }}
                 </div>
                 <div class='text-xs text-base-content/60 mt-1'>
                   Effective: {{ formatEffectiveDate(change.effective_date) }}

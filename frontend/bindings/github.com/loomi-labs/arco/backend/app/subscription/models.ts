@@ -10,25 +10,73 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as time$0 from "../../../../../../time/models.js";
 
 /**
+ * ChangeType represents the type of pending change
+ */
+export enum ChangeType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * ChangeTypeUnknown Unknown change -> should not occur, probably a programming error
+     */
+    ChangeTypeUnknown = "unknown",
+
+    /**
+     * ChangeTypePlanChange Represents a change from one subscription plan to another
+     */
+    ChangeTypePlanChange = "planChange",
+
+    /**
+     * ChangeTypeBillingCycleChange Represents a change from monthly to yearly billing or vice versa
+     */
+    ChangeTypeBillingCycleChange = "billingCycleChange",
+};
+
+/**
+ * ChangeValueType represents possible values for change old/new values
+ */
+export enum ChangeValueType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * ChangeValueBasic Basic subscription plan
+     */
+    ChangeValueBasic = "basic",
+
+    /**
+     * ChangeValuePro Pro subscription plan
+     */
+    ChangeValuePro = "pro",
+
+    /**
+     * ChangeValueMonthly Monthly billing cycle
+     */
+    ChangeValueMonthly = "monthly",
+
+    /**
+     * ChangeValueYearly Yearly billing cycle
+     */
+    ChangeValueYearly = "yearly",
+
+    /**
+     * ChangeValueUnknown Unknown change value -> should not occur, probably a programming error
+     */
+    ChangeValueUnknown = "unknown",
+};
+
+/**
  * PendingChange represents a simplified pending change with only frontend-needed fields
  */
 export class PendingChange {
     "id": number;
-
-    /**
-     * "Plan Change" or "Billing Cycle Change"
-     */
-    "change_type": string;
-
-    /**
-     * e.g., "BASIC" or "Monthly"
-     */
-    "old_value": string;
-
-    /**
-     * e.g., "PRO" or "Yearly"
-     */
-    "new_value": string;
+    "change_type": ChangeType;
+    "old_value": ChangeValueType;
+    "new_value": ChangeValueType;
     "effective_date": time$0.Time;
 
     /** Creates a new PendingChange instance. */
@@ -37,13 +85,13 @@ export class PendingChange {
             this["id"] = 0;
         }
         if (!("change_type" in $$source)) {
-            this["change_type"] = "";
+            this["change_type"] = ChangeType.$zero;
         }
         if (!("old_value" in $$source)) {
-            this["old_value"] = "";
+            this["old_value"] = ChangeValueType.$zero;
         }
         if (!("new_value" in $$source)) {
-            this["new_value"] = "";
+            this["new_value"] = ChangeValueType.$zero;
         }
         if (!("effective_date" in $$source)) {
             this["effective_date"] = null;

@@ -9,8 +9,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/pkg/browser"
 	"go.uber.org/zap"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"strings"
 	"time"
 )
@@ -215,13 +213,55 @@ func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string,
 	return resp.Msg, nil
 }
 
+// ChangeType represents the type of pending change
+type ChangeType string
+
+const (
+	// ChangeTypeUnknown Unknown change -> should not occur, probably a programming error
+	ChangeTypeUnknown ChangeType = "unknown"
+	// ChangeTypePlanChange Represents a change from one subscription plan to another
+	ChangeTypePlanChange ChangeType = "planChange"
+	// ChangeTypeBillingCycleChange Represents a change from monthly to yearly billing or vice versa
+	ChangeTypeBillingCycleChange ChangeType = "billingCycleChange"
+)
+
+// planIDToChangeValue converts a plan ID string to ChangeValueType
+func planIDToChangeValue(planID string) ChangeValueType {
+	switch strings.ToLower(planID) {
+	case "basic":
+		return ChangeValueBasic
+	case "pro":
+		return ChangeValuePro
+	default:
+		return ChangeValueUnknown
+	}
+}
+
+// ChangeValueType represents possible values for change old/new values
+type ChangeValueType string
+
+const (
+	// ChangeValueBasic Basic subscription plan
+	ChangeValueBasic ChangeValueType = "basic"
+	// ChangeValuePro Pro subscription plan
+	ChangeValuePro ChangeValueType = "pro"
+
+	// ChangeValueMonthly Monthly billing cycle
+	ChangeValueMonthly ChangeValueType = "monthly"
+	// ChangeValueYearly Yearly billing cycle
+	ChangeValueYearly ChangeValueType = "yearly"
+
+	// ChangeValueUnknown Unknown change value -> should not occur, probably a programming error
+	ChangeValueUnknown ChangeValueType = "unknown"
+)
+
 // PendingChange represents a simplified pending change with only frontend-needed fields
 type PendingChange struct {
-	ID            int64     `json:"id"`
-	ChangeType    string    `json:"change_type"` // "Plan Change" or "Billing Cycle Change"
-	OldValue      string    `json:"old_value"`   // e.g., "BASIC" or "Monthly"
-	NewValue      string    `json:"new_value"`   // e.g., "PRO" or "Yearly"
-	EffectiveDate time.Time `json:"effective_date"`
+	ID            int64           `json:"id"`
+	ChangeType    ChangeType      `json:"change_type"`
+	OldValue      ChangeValueType `json:"old_value"`
+	NewValue      ChangeValueType `json:"new_value"`
+	EffectiveDate time.Time       `json:"effective_date"`
 }
 
 // PendingChanges represents a simplified response with only frontend-needed fields
@@ -231,43 +271,42 @@ type PendingChanges struct {
 
 // transformPendingChange converts a proto PendingChange to our simplified format
 func transformPendingChange(change *arcov1.PendingChange) PendingChange {
-	simplified := PendingChange{
+	transformed := PendingChange{
 		ID: change.Id,
 	}
 
 	// Convert effective date from proto timestamp to time.Time
 	if change.EffectiveDate != nil && change.EffectiveDate.Seconds > 0 {
-		simplified.EffectiveDate = time.Unix(change.EffectiveDate.Seconds, 0)
+		transformed.EffectiveDate = time.Unix(change.EffectiveDate.Seconds, 0)
 	} else {
-		simplified.EffectiveDate = time.Time{} // zero time
+		transformed.EffectiveDate = time.Time{} // zero time
 	}
 
 	// Handle all transformation logic based on change type
 	switch change.ChangeType {
 	case arcov1.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
-		simplified.ChangeType = "Plan Change"
-		caser := cases.Title(language.English)
-		simplified.OldValue = caser.String(strings.ToLower(change.GetOldPlanId()))
-		simplified.NewValue = caser.String(strings.ToLower(change.GetNewPlanId()))
+		transformed.ChangeType = ChangeTypePlanChange
+		transformed.OldValue = planIDToChangeValue(change.GetOldPlanId())
+		transformed.NewValue = planIDToChangeValue(change.GetNewPlanId())
 	case arcov1.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
-		simplified.ChangeType = "Billing Cycle Change"
+		transformed.ChangeType = ChangeTypeBillingCycleChange
 		if change.GetOldIsYearlyBilling() {
-			simplified.OldValue = "Yearly"
+			transformed.OldValue = ChangeValueYearly
 		} else {
-			simplified.OldValue = "Monthly"
+			transformed.OldValue = ChangeValueMonthly
 		}
 		if change.GetNewIsYearlyBilling() {
-			simplified.NewValue = "Yearly"
+			transformed.NewValue = ChangeValueYearly
 		} else {
-			simplified.NewValue = "Monthly"
+			transformed.NewValue = ChangeValueMonthly
 		}
 	default:
-		simplified.ChangeType = "Unknown Change"
-		simplified.OldValue = "Unknown"
-		simplified.NewValue = "Unknown"
+		transformed.ChangeType = ChangeTypeUnknown
+		transformed.OldValue = ChangeValueUnknown
+		transformed.NewValue = ChangeValueUnknown
 	}
 
-	return simplified
+	return transformed
 }
 
 // GetPendingChanges retrieves all scheduled changes for a subscription

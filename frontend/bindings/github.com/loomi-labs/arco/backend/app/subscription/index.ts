@@ -7,6 +7,8 @@ export {
 };
 
 export {
+    ChangeType,
+    ChangeValueType,
     PendingChange,
     PendingChanges
 } from "./models.js";
