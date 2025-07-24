@@ -24,8 +24,8 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy source code
-COPY . .
+# Copy source code (only backend needed for integration tests)
+COPY backend/ ./backend/
 
 # Build integration test binary
 RUN CGO_ENABLED=1 GOOS=linux go test -c -o /integration-tests ./backend/borg/integration
