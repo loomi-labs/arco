@@ -273,7 +273,7 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 		// Test basic network connectivity
 		ncCmd := exec.Command("nc", "-zv", s.serverContainerIP, sshPort)
 		if _, ncErr := ncCmd.CombinedOutput(); ncErr != nil {
-			t.Logf("Warning: Network connectivity test failed: %v", ncErr)
+			t.Fatalf("Network connectivity test failed: %v", ncErr)
 		}
 	} else {
 		// Running on host - test SSH connectivity with mapped port

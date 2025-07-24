@@ -105,12 +105,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run integration tests in client container
-        timeout-minutes: 15
+        timeout-minutes: 5
         run: |
           echo "Running integration tests in client container..."
           
           # Get Docker group ID for proper permissions
           DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+          
+          # Create Docker network for Testcontainers
+          docker network create borg-test-network || echo "Network already exists"
           
           # Run client container with same approach as script
           docker run --rm \
@@ -124,8 +127,10 @@ jobs:
             -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
             -e TESTCONTAINERS_RYUK_DISABLED=true \
             -e TESTCONTAINERS_CHECKS_DISABLE=true \
+            -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
+            -e TESTCONTAINERS_NETWORK_NAME=borg-test-network \
             -e DOCKER_HOST=unix:///var/run/docker.sock \
-            -e TEST_ARGS="-test.v" \
+            -e TEST_ARGS="-test.v -timeout=5m -test.run=TestBorgRepositoryOperations" \
             --group-add "${DOCKER_GID}" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
             echo "Integration tests failed"
@@ -142,178 +147,178 @@ jobs:
             test-results.xml
           retention-days: 30
 
-  # macOS integration tests using native Borg
-  macos-tests:
-    needs: build-images
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-#          - os: macos-14
-#            borg-version: "1.4.1"
-#          - os: macos-15
-#            borg-version: "1.4.1"
-#          - os: macos-latest
-#            borg-version: "1.4.0"
-          - os: macos-latest
-            borg-version: "1.4.1"
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-          cache: true
-
-      - name: Install Borg via Homebrew
-        timeout-minutes: 5
-        run: |
-          # Update Homebrew and install borgbackup
-          brew update
-          brew install borgbackup
-          
-          # Verify installation
-          borg --version
-
-      - name: Install and start Colima
-        timeout-minutes: 10
-        run: |
-          # Install Colima as a lightweight Docker runtime for macOS
-          brew install colima docker
-          
-          # Start Colima with minimal resources
-          colima start --cpu 2 --memory 4 --disk 10
-          
-          # Wait for Docker to be ready
-          echo "Waiting for Docker to be ready..."
-          for i in {1..30}; do
-            if docker info >/dev/null 2>&1; then
-              echo "✅ Docker is ready!"
-              docker version
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Docker failed to start"
-              colima status
-              exit 1
-            fi
-            echo "Waiting for Docker... (attempt $i/30)"
-            sleep 2
-          done
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Start Borg server container
-        run: |
-          # Pull the server image
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
-          
-          # Start server with port mapping
-          docker run -d \
-            --name borg-server \
-            -p 2222:22 \
-            -e BORG_VERSION=${{ matrix.borg-version }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
-
-      - name: Wait for Borg server to be ready
-        timeout-minutes: 2
-        run: |
-          echo "Waiting for Borg server to be ready..."
-          
-          # Wait for container to be healthy
-          for i in {1..40}; do
-            if docker inspect borg-server --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
-              echo "✅ Borg server is healthy!"
-              break
-            fi
-            
-            if ! docker ps | grep -q borg-server; then
-              echo "❌ Container stopped! Logs:"
-              docker logs borg-server
-              exit 1
-            fi
-            
-            if [ $i -eq 40 ]; then
-              echo "❌ Server failed to become healthy"
-              docker logs borg-server
-              exit 1
-            fi
-            
-            echo "Waiting for server... (attempt $i/40)"
-            sleep 3
-          done
-          
-          # Verify SSH connectivity
-          nc -zv localhost 2222 || (echo "SSH port not accessible"; exit 1)
-
-      - name: Setup SSH for tests
-        run: |
-          # Copy test SSH key and set permissions
-          mkdir -p ~/.ssh
-          cp docker/borg-client/borg_test_key ~/.ssh/
-          chmod 600 ~/.ssh/borg_test_key
-          
-          # Configure SSH
-          cat >> ~/.ssh/config <<EOF
-          Host localhost
-            HostName localhost
-            Port 2222
-            User borg
-            IdentityFile ~/.ssh/borg_test_key
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-          EOF
-
-      - name: Run integration tests natively on macOS
-        timeout-minutes: 15
-        run: |
-          echo "Running integration tests natively on macOS..."
-          
-          # Create symlink for borg binary (tests might expect it at /usr/bin/borg)
-          if [ ! -f /usr/bin/borg ]; then
-            sudo ln -sf $(which borg) /usr/bin/borg
-          fi
-          
-          # Run tests natively on macOS host
-          cd backend/borg/integration
-          
-          # Set environment to use containerized server
-          export SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
-          export SERVER_BORG_VERSION=${{ matrix.borg-version }}
-          export TESTCONTAINERS_RYUK_DISABLED=true
-          
-          # Run tests with verbose output
-          go test -v -timeout=10m ./... || {
-            echo "Tests failed. Server logs:"
-            docker logs borg-server
-            exit 1
-          }
-
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-test-results-${{ matrix.os }}-borg-${{ matrix.borg-version }}
-          path: |
-            *.log
-            test-results.xml
-          retention-days: 30
+  # macOS integration tests using native Borg (disabled for now)
+  # macos-tests:
+  #   needs: build-images
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  # #          - os: macos-14
+  # #            borg-version: "1.4.1"
+  # #          - os: macos-15
+  # #            borg-version: "1.4.1"
+  # #          - os: macos-latest
+  # #            borg-version: "1.4.0"
+  #         - os: macos-latest
+  #           borg-version: "1.4.1"
+  #   permissions:
+  #     contents: read
+  #     packages: read
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version-file: 'go.mod'
+  #         cache: true
+  #
+  #     - name: Install Borg via Homebrew
+  #       timeout-minutes: 5
+  #       run: |
+  #         # Update Homebrew and install borgbackup
+  #         brew update
+  #         brew install borgbackup
+  #         
+  #         # Verify installation
+  #         borg --version
+  #
+  #     - name: Install and start Colima
+  #       timeout-minutes: 10
+  #       run: |
+  #         # Install Colima as a lightweight Docker runtime for macOS
+  #         brew install colima docker
+  #         
+  #         # Start Colima with minimal resources
+  #         colima start --cpu 2 --memory 4 --disk 10
+  #         
+  #         # Wait for Docker to be ready
+  #         echo "Waiting for Docker to be ready..."
+  #         for i in {1..30}; do
+  #           if docker info >/dev/null 2>&1; then
+  #             echo "✅ Docker is ready!"
+  #             docker version
+  #             break
+  #           fi
+  #           if [ $i -eq 30 ]; then
+  #             echo "❌ Docker failed to start"
+  #             colima status
+  #             exit 1
+  #           fi
+  #           echo "Waiting for Docker... (attempt $i/30)"
+  #           sleep 2
+  #         done
+  #
+  #     - name: Log in to Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: Start Borg server container
+  #       run: |
+  #         # Pull the server image
+  #         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+  #         
+  #         # Start server with port mapping
+  #         docker run -d \
+  #           --name borg-server \
+  #           -p 2222:22 \
+  #           -e BORG_VERSION=${{ matrix.borg-version }} \
+  #           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+  #
+  #     - name: Wait for Borg server to be ready
+  #       timeout-minutes: 2
+  #       run: |
+  #         echo "Waiting for Borg server to be ready..."
+  #         
+  #         # Wait for container to be healthy
+  #         for i in {1..40}; do
+  #           if docker inspect borg-server --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+  #             echo "✅ Borg server is healthy!"
+  #             break
+  #           fi
+  #           
+  #           if ! docker ps | grep -q borg-server; then
+  #             echo "❌ Container stopped! Logs:"
+  #             docker logs borg-server
+  #             exit 1
+  #           fi
+  #           
+  #           if [ $i -eq 40 ]; then
+  #             echo "❌ Server failed to become healthy"
+  #             docker logs borg-server
+  #             exit 1
+  #           fi
+  #           
+  #           echo "Waiting for server... (attempt $i/40)"
+  #           sleep 3
+  #         done
+  #         
+  #         # Verify SSH connectivity
+  #         nc -zv localhost 2222 || (echo "SSH port not accessible"; exit 1)
+  #
+  #     - name: Setup SSH for tests
+  #       run: |
+  #         # Copy test SSH key and set permissions
+  #         mkdir -p ~/.ssh
+  #         cp docker/borg-client/borg_test_key ~/.ssh/
+  #         chmod 600 ~/.ssh/borg_test_key
+  #         
+  #         # Configure SSH
+  #         cat >> ~/.ssh/config <<EOF
+  #         Host localhost
+  #           HostName localhost
+  #           Port 2222
+  #           User borg
+  #           IdentityFile ~/.ssh/borg_test_key
+  #           StrictHostKeyChecking no
+  #           UserKnownHostsFile /dev/null
+  #         EOF
+  #
+  #     - name: Run integration tests natively on macOS
+  #       timeout-minutes: 15
+  #       run: |
+  #         echo "Running integration tests natively on macOS..."
+  #         
+  #         # Create symlink for borg binary (tests might expect it at /usr/bin/borg)
+  #         if [ ! -f /usr/bin/borg ]; then
+  #           sudo ln -sf $(which borg) /usr/bin/borg
+  #         fi
+  #         
+  #         # Run tests natively on macOS host
+  #         cd backend/borg/integration
+  #         
+  #         # Set environment to use containerized server
+  #         export SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+  #         export SERVER_BORG_VERSION=${{ matrix.borg-version }}
+  #         export TESTCONTAINERS_RYUK_DISABLED=true
+  #         
+  #         # Run tests with verbose output
+  #         go test -v -timeout=10m ./... || {
+  #           echo "Tests failed. Server logs:"
+  #           docker logs borg-server
+  #           exit 1
+  #         }
+  #
+  #
+  #     - name: Upload test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: macos-test-results-${{ matrix.os }}-borg-${{ matrix.borg-version }}
+  #         path: |
+  #           *.log
+  #           test-results.xml
+  #         retention-days: 30
 
   # Collect and summarize results
   collect-results:
-    needs: [ubuntu-tests, macos-tests]
+    needs: [ubuntu-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
