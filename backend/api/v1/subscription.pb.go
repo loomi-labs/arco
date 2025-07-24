@@ -1597,7 +1597,7 @@ type isPendingChange_NewValue interface {
 }
 
 type PendingChange_NewPlanId struct {
-	// New plan ID (for plan changes).and
+	// New plan ID (for plan changes).
 	NewPlanId string `protobuf:"bytes,5,opt,name=new_plan_id,json=newPlanId,proto3,oneof"`
 }
 

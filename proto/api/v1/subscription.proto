@@ -503,7 +503,7 @@ message PendingChange {
   // New value that will be applied.
   // The specific field set depends on the change_type.
   oneof new_value {
-    // New plan ID (for plan changes).and
+    // New plan ID (for plan changes).
     string new_plan_id = 5;
     // New yearly billing setting (for billing cycle changes).
     bool new_is_yearly_billing = 6;
