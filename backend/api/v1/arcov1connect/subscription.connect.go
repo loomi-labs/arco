@@ -75,7 +75,7 @@ type SubscriptionServiceClient interface {
 	// CreateCheckoutSession creates a Stripe checkout session for plan purchase.
 	//
 	// Initiates the payment flow by creating a Stripe checkout session with
-	// the specified plan, currency, and billing cycle. Returns a checkout URL
+	// the specified plan and billing cycle. Returns a checkout URL
 	// that users can visit to complete payment.
 	//
 	// Rate limited to 10 requests per hour per user to prevent abuse.
@@ -121,7 +121,7 @@ type SubscriptionServiceClient interface {
 	UpgradeSubscription(context.Context, *connect.Request[v1.UpgradeSubscriptionRequest]) (*connect.Response[v1.UpgradeSubscriptionResponse], error)
 	// ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
 	//
-	// Supports plan changes (downgrades/lateral moves), currency changes, and
+	// Supports plan changes (downgrades/lateral moves) and
 	// billing cycle changes (monthly↔yearly). Changes are scheduled to take
 	// effect at the start of the next billing period.
 	//
@@ -133,8 +133,8 @@ type SubscriptionServiceClient interface {
 	ScheduleSubscriptionUpdate(context.Context, *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error)
 	// GetPendingChanges lists all scheduled changes for a subscription.
 	//
-	// Returns pending changes ordered by effective date, including plan changes,
-	// currency changes, and billing cycle changes. Shows change details,
+	// Returns pending changes ordered by effective date, including plan changes
+	// and billing cycle changes. Shows change details,
 	// effective dates, and creation timestamps.
 	//
 	// Requires authentication and subscription ownership validation.
@@ -288,7 +288,7 @@ type SubscriptionServiceHandler interface {
 	// CreateCheckoutSession creates a Stripe checkout session for plan purchase.
 	//
 	// Initiates the payment flow by creating a Stripe checkout session with
-	// the specified plan, currency, and billing cycle. Returns a checkout URL
+	// the specified plan and billing cycle. Returns a checkout URL
 	// that users can visit to complete payment.
 	//
 	// Rate limited to 10 requests per hour per user to prevent abuse.
@@ -334,7 +334,7 @@ type SubscriptionServiceHandler interface {
 	UpgradeSubscription(context.Context, *connect.Request[v1.UpgradeSubscriptionRequest]) (*connect.Response[v1.UpgradeSubscriptionResponse], error)
 	// ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
 	//
-	// Supports plan changes (downgrades/lateral moves), currency changes, and
+	// Supports plan changes (downgrades/lateral moves) and
 	// billing cycle changes (monthly↔yearly). Changes are scheduled to take
 	// effect at the start of the next billing period.
 	//
@@ -346,8 +346,8 @@ type SubscriptionServiceHandler interface {
 	ScheduleSubscriptionUpdate(context.Context, *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error)
 	// GetPendingChanges lists all scheduled changes for a subscription.
 	//
-	// Returns pending changes ordered by effective date, including plan changes,
-	// currency changes, and billing cycle changes. Shows change details,
+	// Returns pending changes ordered by effective date, including plan changes
+	// and billing cycle changes. Shows change details,
 	// effective dates, and creation timestamps.
 	//
 	// Requires authentication and subscription ownership validation.

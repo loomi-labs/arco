@@ -1,6 +1,6 @@
 module github.com/loomi-labs/arco
 
-go 1.24.0
+go 1.24.5
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250625184727-c923a0c2a132.1

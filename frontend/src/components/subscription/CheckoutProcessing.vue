@@ -3,7 +3,6 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../../common/events";
 import * as SubscriptionService from "../../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
-import { Currency } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { showAndLogError } from "../../common/logger";
 
 /************
@@ -12,7 +11,7 @@ import { showAndLogError } from "../../common/logger";
 
 interface Props {
   planName: string;
-  currency: Currency;
+  isYearlyBilling?: boolean;
   isProcessing?: boolean;
 }
 
@@ -27,6 +26,7 @@ interface Emits {
  ************/
 
 const props = withDefaults(defineProps<Props>(), {
+  isYearlyBilling: false,
   isProcessing: false
 });
 
@@ -48,7 +48,7 @@ async function createCheckoutSession() {
     setupCheckoutEventListener();
     
     // Create checkout session
-    await SubscriptionService.CreateCheckoutSession(props.planName, props.currency);
+    await SubscriptionService.CreateCheckoutSession(props.planName, props.isYearlyBilling);
     
     // Get checkout session data from backend
     const sessionData = await SubscriptionService.GetCheckoutSession();

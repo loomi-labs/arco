@@ -14,7 +14,7 @@ option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 // All endpoints require user authentication via JWT access tokens.
 //
 // Key features:
-// - Stripe checkout session creation with multi-currency support
+// - Stripe checkout session creation with USD pricing
 // - Real-time payment completion notifications via streaming
 // - Immediate Basic→Pro upgrades with proration
 // - Scheduled subscription changes for next billing cycle
@@ -36,7 +36,7 @@ service SubscriptionService {
   // CreateCheckoutSession creates a Stripe checkout session for plan purchase.
   //
   // Initiates the payment flow by creating a Stripe checkout session with
-  // the specified plan, currency, and billing cycle. Returns a checkout URL
+  // the specified plan and billing cycle. Returns a checkout URL
   // that users can visit to complete payment.
   //
   // Rate limited to 10 requests per hour per user to prevent abuse.
@@ -87,7 +87,7 @@ service SubscriptionService {
 
   // ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
   //
-  // Supports plan changes (downgrades/lateral moves), currency changes, and
+  // Supports plan changes (downgrades/lateral moves) and
   // billing cycle changes (monthly↔yearly). Changes are scheduled to take
   // effect at the start of the next billing period.
   //
@@ -100,8 +100,8 @@ service SubscriptionService {
 
   // GetPendingChanges lists all scheduled changes for a subscription.
   //
-  // Returns pending changes ordered by effective date, including plan changes,
-  // currency changes, and billing cycle changes. Shows change details,
+  // Returns pending changes ordered by effective date, including plan changes
+  // and billing cycle changes. Shows change details,
   // effective dates, and creation timestamps.
   //
   // Requires authentication and subscription ownership validation.
@@ -224,8 +224,6 @@ message Subscription {
   // false = monthly billing, true = yearly billing.
   bool is_yearly_billing = 13;
   
-  // Subscription currency (USD, EUR, CHF).
-  Currency currency = 14;
   
   // Maximum storage allowed before overage charges apply.
   // For Pro plans, overage is charged beyond this limit.
@@ -239,20 +237,16 @@ message Subscription {
 
 // CreateCheckoutSessionRequest initiates Stripe checkout for plan purchase.
 //
-// Creates a checkout session for the specified plan with currency and
+// Creates a checkout session for the specified plan with
 // billing cycle preferences. Rate limited to prevent payment abuse.
 message CreateCheckoutSessionRequest {
   // Plan name to purchase (e.g., "Basic", "Pro").
   // Must correspond to an available plan from PlanService.
   string name = 1;
   
-  // Preferred currency for billing (USD, EUR, CHF).
-  // Determines pricing tier and regional payment methods.
-  Currency currency = 2;
-  
   // Whether to use yearly billing cycle.
   // false = monthly billing, true = yearly billing (with discount).
-  bool is_yearly_billing = 3;
+  bool is_yearly_billing = 2;
 }
 
 // CreateCheckoutSessionResponse contains Stripe checkout session details.
@@ -355,13 +349,9 @@ enum ChangeType {
   // Changes the subscription plan (e.g., Pro to Basic).
   CHANGE_TYPE_PLAN_CHANGE = 1;
   
-  // Currency change for billing.
-  // Changes the currency used for billing (USD, EUR, CHF).
-  CHANGE_TYPE_CURRENCY_CHANGE = 2;
-  
   // Billing cycle change.
   // Changes between monthly and yearly billing cycles.
-  CHANGE_TYPE_BILLING_CYCLE_CHANGE = 3;
+  CHANGE_TYPE_BILLING_CYCLE_CHANGE = 2;
 }
 
 // PendingChangeStatus represents the current state of a pending subscription change.
@@ -432,7 +422,7 @@ message UpgradeSubscriptionResponse {
 
 // ScheduleSubscriptionUpdateRequest schedules changes for the next billing cycle.
 //
-// Allows scheduling plan changes (downgrades/lateral), currency changes,
+// Allows scheduling plan changes (downgrades/lateral)
 // and billing cycle changes to take effect at the next billing period start.
 message ScheduleSubscriptionUpdateRequest {
   // Stripe subscription ID to update.
@@ -447,13 +437,9 @@ message ScheduleSubscriptionUpdateRequest {
     // For upgrades, use UpgradeSubscription instead for immediate effect.
     string plan_id = 2;
     
-    // Currency change (USD, EUR, CHF).
-    // Changes billing currency starting next billing cycle.
-    Currency currency = 3;
-    
     // Billing cycle change (monthly ↔ yearly).
     // Changes between monthly and yearly billing with appropriate pricing.
-    bool is_yearly_billing = 4;
+    bool is_yearly_billing = 3;
   }
 }
 
@@ -510,33 +496,29 @@ message PendingChange {
   oneof old_value {
     // Current plan ID (for plan changes).
     string old_plan_id = 3;
-    // Current currency (for currency changes).
-    Currency old_currency = 4;
     // Current yearly billing setting (for billing cycle changes).
-    bool old_is_yearly_billing = 5;
+    bool old_is_yearly_billing = 4;
   }
   
   // New value that will be applied.
   // The specific field set depends on the change_type.
   oneof new_value {
-    // New plan ID (for plan changes).
-    string new_plan_id = 6;
-    // New currency (for currency changes).
-    Currency new_currency = 7;
+    // New plan ID (for plan changes).and
+    string new_plan_id = 5;
     // New yearly billing setting (for billing cycle changes).
-    bool new_is_yearly_billing = 8;
+    bool new_is_yearly_billing = 6;
   }
   
   // When this change will take effect.
   // Typically the start of the next billing period.
-  google.protobuf.Timestamp effective_date = 9;
+  google.protobuf.Timestamp effective_date = 7;
   
   // Current status of this change.
   // Tracks the lifecycle state of the pending change.
-  PendingChangeStatus status = 10;
+  PendingChangeStatus status = 8;
   
   // When this change was originally scheduled.
-  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp created_at = 9;
 }
 
 // CancelPendingChangeRequest cancels a scheduled change before it takes effect.

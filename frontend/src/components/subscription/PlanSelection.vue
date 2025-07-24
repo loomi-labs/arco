@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
 import { CheckCircleIcon, CheckIcon, StarIcon } from "@heroicons/vue/24/outline";
-import { FeatureSet, Plan, Currency } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { getFeaturesByPlan } from "../../common/features";
 
 /************
@@ -14,7 +14,6 @@ interface Props {
   plans: SubscriptionPlan[];
   selectedPlan?: string;
   isYearlyBilling?: boolean;
-  selectedCurrency?: Currency;
   hasActiveSubscription?: boolean;
   userSubscriptionPlan?: string;
   disabled?: boolean;
@@ -24,7 +23,6 @@ interface Props {
 interface Emits {
   (event: "plan-selected", planName: string): void;
   (event: "billing-cycle-changed", isYearly: boolean): void;
-  (event: "currency-changed", currency: Currency): void;
   (event: "subscribe-clicked", planName: string): void;
 }
 
@@ -35,7 +33,6 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   selectedPlan: undefined,
   isYearlyBilling: false,
-  selectedCurrency: Currency.Currency_CURRENCY_USD,
   hasActiveSubscription: false,
   userSubscriptionPlan: undefined,
   disabled: false,
@@ -46,7 +43,6 @@ const emit = defineEmits<Emits>();
 
 const internalIsYearlyBilling = ref(props.isYearlyBilling);
 const internalSelectedPlan = ref(props.selectedPlan);
-const internalSelectedCurrency = ref(props.selectedCurrency);
 
 /************
  * Computed
@@ -58,21 +54,11 @@ const selectedPlanData = computed(() =>
 
 const selectedPlanPrice = computed(() => {
   const plan = selectedPlanData.value;
-  if (!plan?.prices) return null;
-  const foundPrice = plan.prices.find(price => price && price.currency === internalSelectedCurrency.value);
-  return foundPrice || null;
+  if (!plan?.price) return null;
+  return plan.price;
 });
 
-const currencyOptions = computed(() => [
-  { value: Currency.Currency_CURRENCY_USD, label: '🇺🇸 USD', symbol: '$', flag: 'us' },
-  { value: Currency.Currency_CURRENCY_EUR, label: '🇪🇺 EUR', symbol: '€', flag: 'eu' },
-  { value: Currency.Currency_CURRENCY_CHF, label: '🇨🇭 CHF', symbol: 'CHF', flag: 'ch' }
-]);
-
-const currentCurrencySymbol = computed(() => {
-  const option = currencyOptions.value.find(opt => opt.value === internalSelectedCurrency.value);
-  return option?.symbol || '$';
-});
+const currentCurrencySymbol = computed(() => '$');
 
 const yearlyDiscount = computed(() => {
   const price = selectedPlanPrice.value;
@@ -100,15 +86,10 @@ function toggleBillingCycle(isYearly: boolean) {
   emit("billing-cycle-changed", isYearly);
 }
 
-function selectCurrency(currency: Currency) {
-  internalSelectedCurrency.value = currency;
-  emit("currency-changed", currency);
-}
 
 function getPlanPrice(plan: SubscriptionPlan) {
-  if (!plan.prices) return null;
-  const foundPrice = plan.prices.find(price => price && price.currency === internalSelectedCurrency.value);
-  return foundPrice || null;
+  if (!plan.price) return null;
+  return plan.price;
 }
 
 function subscribeToPlan() {
@@ -120,23 +101,8 @@ function subscribeToPlan() {
 
 <template>
   <div class="space-y-6">
-    <!-- Currency and Billing Controls -->
-    <div class='flex flex-col sm:flex-row gap-4 justify-center items-center'>
-      <!-- Currency Selector -->
-      <div class='flex items-center gap-2'>
-        <label class='text-sm font-medium text-base-content/70'>Currency:</label>
-        <select 
-          class='select select-bordered select-sm'
-          :disabled="disabled"
-          v-model='internalSelectedCurrency'
-          @change='selectCurrency(internalSelectedCurrency)'
-        >
-          <option v-for='option in currencyOptions' :key='option.value' :value='option.value'>
-            {{ option.label }}
-          </option>
-        </select>
-      </div>
-      
+    <!-- Billing Controls -->
+    <div class='flex justify-center items-center'>
       <!-- Billing Toggle -->
       <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
         <button
