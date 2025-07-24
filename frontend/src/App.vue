@@ -40,7 +40,7 @@ async function getNotifications() {
         toast.success(notification.message);
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get notifications", error);
   }
 }
@@ -53,7 +53,7 @@ async function goToNextPage() {
     } else {
       await router.replace(Page.Dashboard);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get env vars", error);
   }
 }
@@ -62,7 +62,7 @@ async function getStartupState() {
   try {
     await initializeFeatureFlags();
     startupState.value = await appClient.GetStartupState();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get startup state", error);
   }
 }

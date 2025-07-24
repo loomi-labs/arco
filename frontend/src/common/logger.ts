@@ -10,7 +10,7 @@ const development = process.env.NODE_ENV === "development";
 /**
  * createFrontendError creates a FrontendError from various error types
  */
-function createFrontendError(error?: any): types.FrontendError {
+function createFrontendError(error?: unknown): types.FrontendError {
   const fe = types.FrontendError.createFrom();
   
   if (error instanceof Error) {
@@ -36,7 +36,7 @@ function createFrontendError(error?: any): types.FrontendError {
  * @param error The error to log.
  * @returns A promise that resolves when the error is logged.
  */
-export async function showAndLogError(message: string, error?: any): Promise<void> {
+export async function showAndLogError(message: string, error?: unknown): Promise<void> {
   const toast = useToast();
 
   if (development) {
@@ -56,7 +56,7 @@ export async function showAndLogError(message: string, error?: any): Promise<voi
  * @param error The error to log.
  * @returns A promise that resolves when the error is logged.
  */
-export async function logError(message: string, error?: any): Promise<void> {
+export async function logError(message: string, error?: unknown): Promise<void> {
   const fe = createFrontendError(error);
   await appClient.HandleError(message, fe);
 }
@@ -69,6 +69,7 @@ export async function logError(message: string, error?: any): Promise<void> {
 export async function logDebug(message: string): Promise<void> {
   try {
     await appClient.LogDebug(message);
-  } catch (error) {
+  } catch (_error) {
+    // Ignore logging errors to prevent infinite recursion
   }
 }

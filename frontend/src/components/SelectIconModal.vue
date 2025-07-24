@@ -1,7 +1,8 @@
 <script setup lang='ts'>
 import { ref, useId, useTemplateRef, watch } from "vue";
-import { getIcon, Icon, icons } from "../common/icons";
-import * as backupprofile from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import type { Icon} from "../common/icons";
+import { getIcon, icons } from "../common/icons";
+import type * as backupprofile from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 
 
 /************

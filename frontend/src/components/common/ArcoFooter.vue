@@ -4,7 +4,7 @@ import { showAndLogError } from "../../common/logger";
 import { useToast } from "vue-toastification";
 
 import * as appClient from "../../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import * as app from "../../../bindings/github.com/loomi-labs/arco/backend/app";
+import type * as app from "../../../bindings/github.com/loomi-labs/arco/backend/app";
 
 import {Browser} from "@wailsio/runtime";
 

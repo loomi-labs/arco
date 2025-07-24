@@ -185,7 +185,7 @@ watchEffect(() => {
                   :disabled='!isScheduleEnabled'
                   v-model='weekday'
                   @focus='schedule.mode = backupschedule.Mode.ModeWeekly'>
-            <option v-for='option in backupschedule.Weekday' :value='option.valueOf()'>
+            <option v-for='option in backupschedule.Weekday' :key='option' :value='option.valueOf()'>
               {{ $t(`types.${option}`) }}
             </option>
           </select>
@@ -210,7 +210,7 @@ watchEffect(() => {
                   :disabled='!isScheduleEnabled'
                   v-model='monthday'
                   @focus='schedule.mode = backupschedule.Mode.ModeMonthly'>
-            <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)'>
+            <option v-for='option in Array.from({ length: 30 }, (_, index) => index+1)' :key='option'>
               {{ option }}
             </option>
           </select>

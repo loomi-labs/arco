@@ -17,7 +17,7 @@ import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/ap
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import {Events} from "@wailsio/runtime";
 
 /************
@@ -46,7 +46,7 @@ async function getData() {
     backupProfiles.value = (await backupClient.GetBackupProfiles()).filter(p => p !== null) ?? [];
     repos.value = (await repoClient.All()).filter((repo): repo is Repository => repo !== null);
     settings.value = await appClient.GetSettings() ?? ent.Settings.createFrom();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
   }
 }
@@ -56,7 +56,7 @@ async function welcomeModalClosed() {
     settings.value.showWelcome = false;
     try {
       await appClient.SaveSettings(settings.value);
-    } catch (error: any) {
+    } catch (error: unknown) {
       await showAndLogError("Failed to save settings", error);
     }
   }

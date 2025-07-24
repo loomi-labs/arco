@@ -11,16 +11,19 @@ import { getFeaturesByPlan, getRetentionDays } from "../common/features";
 import { addDay, date, format } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
+import type {
+  Plan,
+  Subscription} from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import {
   FeatureSet,
-  Plan,
-  Subscription,
   SubscriptionStatus
 } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import type {
+  PendingChange
+} from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/models";
 import {
   ChangeType,
-  ChangeValueType,
-  PendingChange
+  ChangeValueType
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/models";
 import ArcoCloudModal from "../components/ArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
@@ -78,6 +81,12 @@ const subscriptionStatusText = computed(() => {
       return "Incomplete";
     case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_TRIALING:
       return "Trial";
+    case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED:
+      return "Incomplete Expired";
+    case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_UNPAID:
+      return "Unpaid";
+    case SubscriptionStatus.$zero:
+    case undefined:
     default:
       return "Unknown";
   }
@@ -95,6 +104,14 @@ const subscriptionStatusColor = computed(() => {
       return "badge-error";
     case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_TRIALING:
       return "badge-info";
+    case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE:
+      return "badge-warning";
+    case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED:
+      return "badge-error";
+    case SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_UNPAID:
+      return "badge-error";
+    case SubscriptionStatus.$zero:
+    case undefined:
     default:
       return "badge-neutral";
   }
@@ -104,13 +121,13 @@ const billingPeriodText = computed(() => {
   if (!subscription.value?.current_period_end) return "No billing period";
   
   try {
-    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    const endSeconds = subscription.value.current_period_end.seconds ?? 0;
     if (endSeconds <= 0) return "Invalid billing period";
     const endDate = date(new Date(endSeconds * 1000));
     
     const startDate = subscription.value.current_period_start 
       ? (() => {
-          const startSeconds = subscription.value.current_period_start.seconds || 0;
+          const startSeconds = subscription.value.current_period_start.seconds ?? 0;
           return startSeconds > 0 ? date(new Date(startSeconds * 1000)) : null;
         })()
       : null;
@@ -120,7 +137,7 @@ const billingPeriodText = computed(() => {
     } else {
       return `Until ${format(endDate, "MMM D, YYYY")}`;
     }
-  } catch (error) {
+  } catch (_error) {
     return "Invalid date";
   }
 });
@@ -129,11 +146,11 @@ const nextBillingDate = computed(() => {
   if (!subscription.value?.current_period_end) return "No billing date";
   
   try {
-    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    const endSeconds = subscription.value.current_period_end.seconds ?? 0;
     if (endSeconds <= 0) return "Invalid billing date";
     const endDate = date(new Date(endSeconds * 1000));
     return format(endDate, "MMMM D, YYYY");
-  } catch (error) {
+  } catch (_error) {
     return "Invalid date";
   }
 });
@@ -167,15 +184,15 @@ const isLoadingPendingChanges = ref(false);
 
 const storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
-  const used = subscription.value.storage_used_gb || 0;
-  const total = subscription.value.plan?.storage_gb || 0;
+  const used = subscription.value.storage_used_gb ?? 0;
+  const total = subscription.value.plan?.storage_gb ?? 0;
   return `${used} GB / ${total} GB`;
 });
 
 const storageUsagePercentage = computed(() => {
   if (!subscription.value) return 0;
-  const used = subscription.value.storage_used_gb || 0;
-  const total = subscription.value.plan?.storage_gb || 0;
+  const used = subscription.value.storage_used_gb ?? 0;
+  const total = subscription.value.plan?.storage_gb ?? 0;
   return total > 0 ? Math.min((used / total) * 100, 100) : 0;
 });
 
@@ -222,12 +239,15 @@ const hasPendingChanges = computed(() => {
   return pendingChanges.value.length > 0;
 });
 
-const formatEffectiveDate = (effectiveDate: any): string => {
-  if (!effectiveDate) return 'Unknown';
+const formatEffectiveDate = (effectiveDate: unknown): string => {
+  if (!effectiveDate || typeof effectiveDate !== 'object') return 'Unknown';
   try {
-    const date = new Date(effectiveDate);
+    const timestamp = effectiveDate as { seconds?: number; nanos?: number };
+    const seconds = timestamp.seconds ?? 0;
+    if (seconds <= 0) return 'Unknown';
+    const date = new Date(seconds * 1000);
     return format(date, 'MMMM D, YYYY');
-  } catch (error) {
+  } catch (_error) {
     return 'Unknown';
   }
 };
@@ -260,7 +280,7 @@ const shouldDisableChangeButton = computed(() => {
   // 5. No actual change has been made to the toggle
   
   const hasSubscription = !!subscription.value;
-  const isCanceled = subscription.value?.cancel_at_period_end || false;
+  const isCanceled = subscription.value?.cancel_at_period_end ?? false;
   const isChanging = isChangingBilling.value;
   const hasPendingChange = hasPendingBillingChange.value;
   const hasChange = billingCycleChanged.value;
@@ -285,14 +305,14 @@ const dataDeletionDate = computed(() => {
   if (!subscription.value?.current_period_end) return "your subscription end date";
   
   try {
-    const endSeconds = subscription.value.current_period_end.seconds || 0;
+    const endSeconds = subscription.value.current_period_end.seconds ?? 0;
     if (endSeconds <= 0) return "your subscription end date";
     const endDate = date(new Date(endSeconds * 1000));
     const retentionDays = getRetentionDays(subscription.value?.plan?.feature_set);
     const deletionDate = addDay(endDate, retentionDays);
     
     return format(deletionDate, "long");
-  } catch (error) {
+  } catch (_error) {
     return "your subscription end date";
   }
 });
@@ -312,9 +332,9 @@ async function loadSubscriptionPlans() {
           recommended: plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO
         } as SubscriptionPlan));
     }
-  } catch (error) {
-    await showAndLogError("Failed to load subscription plans", error);
-    throw error;
+  } catch (_error) {
+    await showAndLogError("...", _error);
+    throw _error;
   }
 }
 
@@ -359,10 +379,10 @@ async function loadSubscription() {
       pendingChanges.value = [];
       currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
     }
-  } catch (error) {
+  } catch (_error) {
     subscription.value = null;
     errorMessage.value = "Failed to load subscription details.";
-    await showAndLogError("Failed to load subscription", error);
+    await showAndLogError("...", _error);
     currentPageState.value = PageState.ERROR;
   }
 }
@@ -390,9 +410,9 @@ async function confirmCancellation() {
     } else {
       errorMessage.value = "Failed to cancel subscription.";
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to cancel subscription.";
-    await showAndLogError("Failed to cancel subscription", error);
+    await showAndLogError("...", _error);
   } finally {
     isCanceling.value = false;
   }
@@ -400,10 +420,6 @@ async function confirmCancellation() {
 
 async function retryLoadSubscription() {
   await loadSubscription();
-}
-
-function showSubscriptionModal() {
-  cloudModal.value?.showModal();
 }
 
 function onPlanSelected(planName: string) {
@@ -435,7 +451,7 @@ function onCheckoutCancelled() {
   currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
 }
 
-function onRepoCreated(repo: any) {
+function onRepoCreated(_repo: unknown) {
   // Handle repo creation if needed
 }
 
@@ -457,13 +473,13 @@ async function changeBillingCycle() {
     } else {
       errorMessage.value = "Failed to schedule billing cycle change.";
       // Reset toggle to current state on failure
-      selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
+      selectedBillingCycle.value = subscription.value?.is_yearly_billing ?? false;
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to schedule billing cycle change.";
-    await showAndLogError("Failed to schedule billing cycle change", error);
+    await showAndLogError("...", _error);
     // Reset toggle to current state
-    selectedBillingCycle.value = subscription.value?.is_yearly_billing || false;
+    selectedBillingCycle.value = subscription.value?.is_yearly_billing ?? false;
   } finally {
     isChangingBilling.value = false;
   }
@@ -483,9 +499,9 @@ async function reactivateSubscription() {
     } else {
       errorMessage.value = "Failed to reactivate subscription.";
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to reactivate subscription.";
-    await showAndLogError("Failed to reactivate subscription", error);
+    await showAndLogError("...", _error);
   } finally {
     isReactivating.value = false;
   }
@@ -505,9 +521,9 @@ async function upgradeSubscription() {
     } else {
       errorMessage.value = "Failed to upgrade subscription.";
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to upgrade subscription.";
-    await showAndLogError("Failed to upgrade subscription", error);
+    await showAndLogError("...", _error);
   } finally {
     isUpgrading.value = false;
   }
@@ -527,9 +543,9 @@ async function downgradeSubscription() {
     } else {
       errorMessage.value = "Failed to schedule downgrade.";
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to schedule downgrade.";
-    await showAndLogError("Failed to schedule downgrade", error);
+    await showAndLogError("...", _error);
   } finally {
     isDowngrading.value = false;
   }
@@ -542,9 +558,9 @@ async function loadPendingChanges() {
   
   try {
     const response = await SubscriptionService.GetPendingChanges(subscription.value.id);
-    pendingChanges.value = response?.pending_changes?.filter((change): change is PendingChange => change !== null) || [];
-  } catch (error) {
-    await showAndLogError("Failed to load pending changes", error);
+    pendingChanges.value = response?.pending_changes?.filter((change): change is PendingChange => change !== null) ?? [];
+  } catch (_error) {
+    await showAndLogError("...", _error);
     pendingChanges.value = [];
   } finally {
     isLoadingPendingChanges.value = false;
@@ -575,9 +591,9 @@ async function cancelPendingChange(changeId: number) {
     } else {
       errorMessage.value = "Failed to cancel pending change.";
     }
-  } catch (error) {
+  } catch (_error) {
     errorMessage.value = "Failed to cancel pending change.";
-    await showAndLogError("Failed to cancel pending change", error);
+    await showAndLogError("...", _error);
   }
 }
 
@@ -652,7 +668,7 @@ onMounted(async () => {
       </div>
       
       <CheckoutProcessing
-        :plan-name='selectedCheckoutPlan || ""'
+        :plan-name='selectedCheckoutPlan ?? ""'
         :is-yearly-billing='isYearlyBilling'
         @checkout-completed='onCheckoutCompleted'
         @checkout-failed='onCheckoutFailed'
@@ -681,7 +697,7 @@ onMounted(async () => {
                   <CloudIcon class='size-8 text-secondary' />
                 </div>
                 <div>
-                  <h2 class='text-3xl font-bold'>{{ subscription.plan?.name || 'Unknown Plan' }}</h2>
+                  <h2 class='text-3xl font-bold'>{{ subscription.plan?.name ?? 'Unknown Plan' }}</h2>
                   <div class='flex items-center gap-3 mt-2'>
                     <div :class='["badge badge-lg", subscriptionStatusColor]'>
                       {{ subscriptionStatusText }}
@@ -709,11 +725,11 @@ onMounted(async () => {
               <div class='grid grid-cols-2 gap-4 text-sm'>
                 <div>
                   <div class='font-semibold'>Used</div>
-                  <div class='text-base-content/70'>{{ subscription.storage_used_gb || 0 }} GB</div>
+                  <div class='text-base-content/70'>{{ subscription.storage_used_gb ?? 0 }} GB</div>
                 </div>
                 <div>
                   <div class='font-semibold'>Available</div>
-                  <div class='text-base-content/70'>{{ (subscription.plan?.storage_gb || 0) - (subscription.storage_used_gb || 0) }} GB</div>
+                  <div class='text-base-content/70'>{{ (subscription.plan?.storage_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB</div>
                 </div>
               </div>
             </div>
@@ -770,7 +786,7 @@ onMounted(async () => {
                       type='checkbox' 
                       class='toggle toggle-secondary toggle-sm' 
                       v-model='selectedBillingCycle'
-                      :disabled='subscription?.cancel_at_period_end || isChangingBilling || hasPendingBillingChange'
+                      :disabled='subscription?.cancel_at_period_end ?? isChangingBilling ?? hasPendingBillingChange'
                     />
                     <span class='text-sm'>Yearly</span>
                   </div>
@@ -898,7 +914,7 @@ onMounted(async () => {
               </div>
               <button 
                 class='btn btn-error btn-sm btn-outline'
-                @click="cancelPendingChange(change.id || 0)"
+                @click="cancelPendingChange(change.id ?? 0)"
               >
                 Cancel
               </button>
@@ -942,7 +958,7 @@ onMounted(async () => {
             <div class='flex items-start gap-3'>
               <div class='badge badge-error badge-sm mt-0.5'>3</div>
               <div>
-                <strong>After {{ getRetentionDays(subscription?.plan?.feature_set || FeatureSet.FeatureSet_FEATURE_SET_BASIC) }} days of read-only access ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
+                <strong>After {{ getRetentionDays(subscription?.plan?.feature_set ?? FeatureSet.FeatureSet_FEATURE_SET_BASIC) }} days of read-only access ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
               </div>
             </div>
           </div>

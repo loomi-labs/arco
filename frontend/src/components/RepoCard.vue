@@ -10,7 +10,7 @@ import { toCreationTimeBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
-import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
+import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
@@ -85,7 +85,7 @@ async function getRepo() {
     const archive = await repoClient.GetLastArchiveByBackupId(backupId) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get repository", error);
   }
 }
@@ -93,7 +93,7 @@ async function getRepo() {
 async function getRepoState() {
   try {
     repoState.value = await repoClient.GetState(backupId.repositoryId);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }
 }
@@ -101,7 +101,7 @@ async function getRepoState() {
 async function getBackupState() {
   try {
     backupState.value = await backupClient.GetState(backupId);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get backup state", error);
   }
 }
@@ -109,7 +109,7 @@ async function getBackupState() {
 async function getBackupButtonStatus() {
   try {
     buttonStatus.value = await backupClient.GetBackupButtonStatus([backupId]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get backup button state", error);
   }
 }
@@ -117,7 +117,7 @@ async function getBackupButtonStatus() {
 async function prune() {
   try {
     await backupClient.StartPruneJob(backupId);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to prune repository", error);
   }
 }

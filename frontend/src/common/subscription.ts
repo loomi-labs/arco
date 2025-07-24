@@ -59,7 +59,7 @@ export function useSubscriptionNotifications() {
         if (checkoutResult) {
           switch (checkoutResult.status) {
             case CheckoutResultStatus.CheckoutStatusFailed:
-              toast.error(`Checkout failed: ${checkoutResult.errorMessage || "Please try again."}`);
+              toast.error(`Checkout failed: ${checkoutResult.errorMessage ?? "Please try again."}`);
               break;
             case CheckoutResultStatus.CheckoutStatusTimeout:
               toast.error("Checkout timed out. Please try again.");
@@ -68,6 +68,7 @@ export function useSubscriptionNotifications() {
             case CheckoutResultStatus.CheckoutStatusPending:
               // Success is handled by subscription added event, pending doesn't need notification
               break;
+            case CheckoutResultStatus.$zero:
             default:
               toast.error("Unknown checkout status. Please try again.");
               break;

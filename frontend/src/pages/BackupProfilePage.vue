@@ -5,8 +5,9 @@ import * as zod from "zod";
 import { object } from "zod";
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
-import { BackupProfile, Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { RepoStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
@@ -90,6 +91,11 @@ switch (schedule.mode) {
   case backupschedule.Mode.ModeMonthly:
     details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
     break;
+  case backupschedule.Mode.$zero:
+  case backupschedule.Mode.DefaultMode:
+  default:
+    details = "No schedule configured";
+    break;
 }
 
   if (pruning?.isEnabled) {
@@ -126,7 +132,7 @@ async function getData() {
 
     dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
     loading.value = false;
@@ -138,7 +144,7 @@ async function deleteBackupProfile() {
     await backupClient.DeleteBackupProfile(backupProfile.value.id, deleteArchives.value);
     toast.success("Backup profile deleted");
     await router.replace({ path: Page.Dashboard, hash: `#${Anchor.BackupProfiles}` });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to delete backup profile", error);
   }
 }
@@ -147,7 +153,7 @@ async function saveBackupPaths(paths: string[]) {
   try {
     backupProfile.value.backupPaths = paths;
     await backupClient.UpdateBackupProfile(backupProfile.value);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save backup paths", error);
   }
 }
@@ -156,7 +162,7 @@ async function saveExcludePaths(paths: string[]) {
   try {
     backupProfile.value.excludePaths = paths;
     await backupClient.UpdateBackupProfile(backupProfile.value);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save exclude paths", error);
   }
 }
@@ -165,7 +171,7 @@ async function saveSchedule(schedule: ent.BackupSchedule) {
   try {
     await backupClient.SaveBackupSchedule(backupProfile.value.id, schedule);
     backupProfile.value.edges.backupSchedule = schedule;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save schedule", error);
   }
 }
@@ -182,7 +188,7 @@ async function saveBackupName() {
     try {
       backupProfile.value.name = name.value ?? "";
       await backupClient.UpdateBackupProfile(backupProfile.value);
-    } catch (error: any) {
+    } catch (error: unknown) {
       await showAndLogError("Failed to save backup name", error);
     }
   }
@@ -192,7 +198,7 @@ async function saveIcon(icon: Icon) {
   try {
     backupProfile.value.icon = icon;
     await backupClient.UpdateBackupProfile(backupProfile.value);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save icon", error);
   }
 }
@@ -200,7 +206,7 @@ async function saveIcon(icon: Icon) {
 async function setPruningRule(pruningRule: ent.PruningRule) {
   try {
     backupProfile.value.edges.pruningRule = pruningRule;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);
   }
 }
@@ -211,7 +217,7 @@ async function addRepo(repo: ent.Repository) {
     await backupClient.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
     await getData();
     toast.success("Repository added");
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to add repository", error);
   }
 }
@@ -221,7 +227,7 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
     await backupClient.RemoveRepositoryFromBackupProfile(backupProfile.value.id, repoId, deleteArchives);
     await getData();
     toast.success("Repository removed");
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to remove repository", error);
   }
 }
@@ -236,7 +242,7 @@ async function toggleCollapse(type: "data" | "schedule") {
     backupProfile.value.dataSectionCollapsed = dataSectionCollapsed.value;
     backupProfile.value.scheduleSectionCollapsed = scheduleSectionCollapsed.value;
     await backupClient.UpdateBackupProfile(backupProfile.value);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
   }
 }
