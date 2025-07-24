@@ -37,7 +37,7 @@ RUN if [ "${BORG_VERSION}" = "1.4.1" ]; then \
     ln -s /usr/local/bin/borg /usr/bin/borg
 
 # Copy SSH authorized keys
-COPY authorized_keys /home/borg/.ssh/authorized_keys
+COPY docker/borg-server/authorized_keys /home/borg/.ssh/authorized_keys
 RUN chown borg:borg /home/borg/.ssh/authorized_keys && \
     chmod 600 /home/borg/.ssh/authorized_keys
 
@@ -56,7 +56,7 @@ RUN ssh-keygen -A && \
     chmod 600 /home/borg/.ssh/environment
 
 # Copy and setup entrypoint script
-COPY entrypoint.sh /usr/local/bin/start-borg-server.sh
+COPY docker/borg-server/entrypoint.sh /usr/local/bin/start-borg-server.sh
 RUN chmod +x /usr/local/bin/start-borg-server.sh
 
 # Expose SSH port
