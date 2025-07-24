@@ -1,0 +1,255 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+// RepositoryLocation represents the geographical location of a ArcoCloud repository.
+//
+// ArcoCloud provides repositories in multiple regions for data sovereignty
+// and performance optimization based on user location.
+enum RepositoryLocation {
+  // Default unspecified location.
+  REPOSITORY_LOCATION_UNSPECIFIED = 0;
+
+  // United States region for repositories.
+  // Provides optimal performance for North American users.
+  REPOSITORY_LOCATION_US = 1;
+
+  // European Union region for repositories.
+  // Ensures GDPR compliance and optimal performance for European users.
+  REPOSITORY_LOCATION_EU = 2;
+}
+
+// RepositoryService manages ArcoCloud storage repositories for backup operations.
+//
+// This service handles the complete repository lifecycle including creation,
+// deletion, SSH key management, and usage monitoring. All repositories are
+// provisioned under a master ArcoCloud account with isolated access per user.
+//
+// Key features:
+// - ArcoCloud repository provisioning and management
+// - SSH key management for secure repository access
+// - Storage usage tracking and quota enforcement
+// - Repository isolation between users
+//
+// All endpoints require user authentication via JWT access tokens.
+// Repository creation is rate limited to prevent abuse of ArcoCloud resources.
+service RepositoryService {
+  // AddRepository creates a new ArcoCloud repository for the authenticated user.
+  //
+  // Provisions a new repository under the master ArcoCloud account with the
+  // specified name, password, location, and SSH key for access. The repository is
+  // automatically configured with the user's subscription quota limits.
+  //
+  // Repository naming: The actual ArcoCloud repository name will be prefixed with
+  // the user ID ({user.id}-{name}) for admin console identification, but users
+  // will only see the provided name in all client interfaces.
+  //
+  // Rate limited to prevent ArcoCloud abuse. Requires authentication and active
+  // subscription for quota determination.
+  //
+  // The password should be a strong passphrase for repository encryption.
+  // The SSH public key enables secure access to the repository.
+  rpc AddRepository(AddRepositoryRequest) returns (AddRepositoryResponse) {}
+
+  // DeleteRepository permanently removes a ArcoCloud repository.
+  //
+  // Completely deletes the repository and all its backup data from ArcoCloud.
+  // This operation is irreversible and will result in permanent data loss.
+  //
+  // Requires authentication and repository ownership validation.
+  // Can only be performed by the repository owner.
+  rpc DeleteRepository(DeleteRepositoryRequest) returns (DeleteRepositoryResponse) {}
+
+  // ListRepositories retrieves all repositories owned by the authenticated user.
+  //
+  // Returns a list of all ArcoCloud repositories created by the user,
+  // including their usage statistics, quotas, and access information.
+  //
+  // Requires authentication. Users can only see their own repositories.
+  rpc ListRepositories(ListRepositoriesRequest) returns (ListRepositoriesResponse) {}
+
+  // GetRepository retrieves detailed information about a specific repository.
+  //
+  // Returns complete repository details including current storage usage,
+  // quota limits, SSH key fingerprint, and access credentials.
+  //
+  // Requires authentication and repository ownership validation.
+  // Users can only access repositories they own.
+  rpc GetRepository(GetRepositoryRequest) returns (GetRepositoryResponse) {}
+
+  // ReplaceSSHKey updates the SSH public key for repository access.
+  //
+  // Replaces the current SSH key with a new one for secure repository access.
+  // The old SSH key is immediately revoked and the new key takes effect.
+  //
+  // Requires authentication and repository ownership validation.
+  // Only one SSH key is supported per repository for security simplicity.
+  rpc ReplaceSSHKey(ReplaceSSHKeyRequest) returns (ReplaceSSHKeyResponse) {}
+}
+
+// AddRepositoryRequest initiates ArcoCloud repository creation.
+//
+// Creates a new repository with the specified configuration under the
+// master ArcoCloud account, isolated for the authenticated user.
+message AddRepositoryRequest {
+  // Human-readable name for the repository.
+  // Must be unique within the user's repositories and follow ArcoCloud naming rules.
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1,
+    max_len: 64,
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
+  }];
+
+  // Repository encryption password.
+  // Should be a strong passphrase that will be used to encrypt all backup data.
+  // This password is required for all backup and restore operations.
+  string password = 2 [(buf.validate.field).string.min_len = 8];
+
+  // SSH public key for repository access.
+  // Must be a valid SSH public key (RSA, ECDSA, or Ed25519).
+  // This key will be used by the backup client to authenticate with ArcoCloud.
+  string ssh_key = 3 [(buf.validate.field).string = {
+    min_len: 100,
+    pattern: "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/]+(=*)( .*)?$"
+  }];
+
+  // Geographical location for the repository.
+  // Determines the ArcoCloud region where the repository will be created.
+  // Choose based on data sovereignty requirements and performance optimization.
+  RepositoryLocation location = 4 [(buf.validate.field).enum = {
+    defined_only: true,
+    not_in: [0] // REPOSITORY_LOCATION_UNSPECIFIED not allowed
+  }];
+}
+
+// AddRepositoryResponse contains the created repository details.
+//
+// Provides the complete repository information including ArcoCloud identifiers
+// and access credentials needed for backup operations.
+message AddRepositoryResponse {
+  // The created repository with all configuration details.
+  Repository repository = 1;
+}
+
+// DeleteRepositoryRequest initiates repository deletion.
+//
+// Permanently removes the specified repository and all its backup data.
+// This operation cannot be undone and will result in complete data loss.
+message DeleteRepositoryRequest {
+  // ArcoCloud repository ID to delete.
+  // Must be owned by the authenticated user.
+  string repository_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// DeleteRepositoryResponse confirms repository deletion.
+//
+// Indicates successful repository removal from ArcoCloud.
+message DeleteRepositoryResponse {
+  // Whether the repository was successfully deleted.
+  bool success = 1;
+}
+
+// ListRepositoriesRequest retrieves all user repositories.
+//
+// No parameters required - returns all repositories owned by the authenticated user.
+message ListRepositoriesRequest {
+  // No fields - user ID is extracted from authentication context.
+}
+
+// ListRepositoriesResponse contains all user repositories.
+//
+// Provides a complete list of repositories with their current status and usage.
+message ListRepositoriesResponse {
+  // All repositories owned by the authenticated user.
+  repeated Repository repositories = 1;
+}
+
+// GetRepositoryRequest retrieves a specific repository.
+//
+// Returns detailed information about the specified repository including usage statistics.
+message GetRepositoryRequest {
+  // ArcoCloud repository ID to retrieve.
+  // Must be owned by the authenticated user.
+  string repository_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// GetRepositoryResponse contains detailed repository information.
+//
+// Provides complete repository details including current usage and access information.
+message GetRepositoryResponse {
+  // The requested repository with all details.
+  Repository repository = 1;
+}
+
+// ReplaceSSHKeyRequest updates repository SSH access key.
+//
+// Replaces the current SSH key with a new one for secure repository access.
+message ReplaceSSHKeyRequest {
+  // ArcoCloud repository ID to update.
+  // Must be owned by the authenticated user.
+  string repository_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // New SSH public key for repository access.
+  // Must be a valid SSH public key that will replace the current key.
+  string ssh_key = 2 [(buf.validate.field).string = {
+    min_len: 100,
+    pattern: "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/]+(=*)( .*)?$"
+  }];
+}
+
+// ReplaceSSHKeyResponse confirms SSH key replacement.
+//
+// Indicates successful SSH key update with the new key fingerprint.
+message ReplaceSSHKeyResponse {
+  // Whether the SSH key was successfully replaced.
+  bool success = 1;
+
+  // Fingerprint of the new SSH key for verification.
+  string ssh_key_fingerprint = 2;
+}
+
+// Repository represents a ArcoCloud storage repository with complete configuration.
+//
+// Contains all repository metadata, access credentials, usage statistics,
+// and quota information needed for backup operations and management.
+message Repository {
+  // ArcoCloud repository ID (unique identifier from ArcoCloud).
+  string id = 1;
+
+  // Arco user ID who owns this repository.
+  string user_id = 2;
+
+  // Human-readable repository name.
+  string name = 3;
+
+  // ArcoCloud repository URL for backup client connections.
+  // Format: user@server:repo_path
+  string repo_url = 4;
+
+  // Current storage usage in bytes.
+  // Updated periodically from ArcoCloud usage reports.
+  int64 storage_used_bytes = 5;
+
+  // Maximum storage allowed in bytes based on subscription plan.
+  // Enforced by ArcoCloud quotas to prevent overage.
+  int64 storage_quota_bytes = 6;
+
+  // SSH key fingerprint for the repository access key.
+  // Used to verify the correct key is configured.
+  string ssh_key_fingerprint = 7;
+
+  // When the repository was created in ArcoCloud.
+  google.protobuf.Timestamp created_at = 8;
+
+  // When the repository information was last updated from ArcoCloud.
+  google.protobuf.Timestamp updated_at = 9;
+
+  // Geographical location of the repository.
+  // Indicates the ArcoCloud region where the repository is hosted.
+  RepositoryLocation location = 10;
+}
