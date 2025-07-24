@@ -97,12 +97,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-          cache: true
-
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -110,78 +104,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Create Docker network
-        run: docker network create borg-test-network
-
-      - name: Start Borg server container
-        run: |
-          docker run -d \
-            --name borg-server \
-            --network borg-test-network \
-            -e BORG_VERSION=${{ matrix.borg-version }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
-
-      - name: Wait for Borg server to be ready
-        timeout-minutes: 5
-        run: |
-          # Check container status first
-          echo "Checking Borg server container status..."
-          docker ps -a | grep borg-server
-          
-          # Show container logs for debugging
-          echo "Borg server container logs:"
-          docker logs borg-server || echo "Could not get container logs"
-          
-          # Wait for SSH service to be ready (increased timeout to 120 seconds)
-          echo "Waiting for SSH service on port 22..."
-          
-          # Try a few times with detailed debugging
-          for i in {1..10}; do
-            echo "Attempt $i: Checking SSH service..."
-            
-            # Check if container is still running
-            if ! docker ps | grep borg-server > /dev/null; then
-              echo "❌ Container stopped running! Checking logs..."
-              docker logs borg-server
-              exit 1
-            fi
-            
-            # Check if SSH port is listening
-            if docker exec borg-server netstat -tlnp | grep :22; then
-              echo "✅ SSH service is ready!"
-              break
-            fi
-            
-            # Show processes inside container
-            echo "Processes in container:"
-            docker exec borg-server ps aux || echo "Could not list processes"
-            
-            if [ $i -eq 10 ]; then
-              echo "❌ SSH service failed to start after 10 attempts"
-              echo "Final container logs:"
-              docker logs borg-server
-              exit 1
-            fi
-            
-            echo "Waiting 10 seconds before next check..."
-            sleep 10
-          done
-          
-          echo "SSH service is ready!"
-
-      - name: Run integration tests
+      - name: Run integration tests in client container
         timeout-minutes: 15
         run: |
-          echo "Starting integration tests..."
-          echo "Client image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}"
-          echo "Server image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}"
+          echo "Running integration tests in client container..."
           
+          # Get Docker group ID for proper permissions
+          DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+          
+          # Run client container with same approach as script
           docker run --rm \
-            --name borg-client \
-            --network borg-test-network \
+            --name borg-client-test \
+            --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${PWD}/docker:/app/docker:ro" \
             -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
@@ -189,13 +123,11 @@ jobs:
             -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
             -e TESTCONTAINERS_RYUK_DISABLED=true \
             -e TESTCONTAINERS_CHECKS_DISABLE=true \
-            -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
-            -e TESTCONTAINERS_NETWORK_NAME=borg-test-network \
             -e DOCKER_HOST=unix:///var/run/docker.sock \
-            --group-add $(getent group docker | cut -d: -f3) \
+            -e TEST_ARGS="-test.v" \
+            --group-add "${DOCKER_GID}" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
-            echo "Integration tests failed. Showing container logs for debugging..."
-            docker logs borg-server || true
+            echo "Integration tests failed"
             exit 1
           }
 
@@ -238,62 +170,30 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
-      - name: Install Borg via Homebrew
+      - name: Install and start Colima
         timeout-minutes: 10
         run: |
-          # Install specific Borg version via Homebrew
-          if [ "${{ matrix.borg-version }}" = "1.4.0" ]; then
-            # For 1.4.0, we might need to install from a specific formula or build from source
-            brew install borgbackup
-          else
-            # For latest version
-            brew install borgbackup
-          fi
+          # Install Colima as a lightweight Docker runtime for macOS
+          brew install colima docker
           
-          # Verify installation
-          borg --version
-
-      - name: Install Docker via Homebrew
-        timeout-minutes: 15
-        run: |
-          # Install Docker Desktop
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask docker
+          # Start Colima with minimal resources
+          colima start --cpu 2 --memory 4 --disk 10
           
-          # Install coreutils for gtimeout command
-          brew install coreutils
-          
-          # Start Docker Desktop (use open command which is more reliable)
-          echo "📱 Starting Docker Desktop..."
-          open -a Docker --args --unattended &
-          
-          # Give Docker more time to initialize
-          echo "⏱️ Waiting 30 seconds for Docker to initialize..."
-          sleep 30
-          
-          # Wait for Docker to start (using gtimeout on macOS)
-          echo "🔄 Waiting for Docker daemon to start..."
-          
-          # Check Docker status with better error handling
-          for i in {1..10}; do
-            echo "Attempt $i: Checking Docker daemon..."
-            
+          # Wait for Docker to be ready
+          echo "Waiting for Docker to be ready..."
+          for i in {1..30}; do
             if docker info >/dev/null 2>&1; then
-              echo "✅ Docker daemon is ready!"
-              docker info
+              echo "✅ Docker is ready!"
+              docker version
               break
             fi
-            
-            if [ $i -eq 10 ]; then
-              echo "❌ Docker daemon failed to start after 2 minutes"
-              echo "Docker processes:"
-              ps aux | grep -i docker || echo "No Docker processes found"
-              echo "Docker app status:"
-              ls -la /Applications/Docker.app/ || echo "Docker app not found"
+            if [ $i -eq 30 ]; then
+              echo "❌ Docker failed to start"
+              colima status
               exit 1
             fi
-            
-            echo "Docker not ready yet, waiting 5 seconds..."
-            sleep 5
+            echo "Waiting for Docker... (attempt $i/30)"
+            sleep 2
           done
 
       - name: Log in to Container Registry
@@ -303,24 +203,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run integration tests with Docker server
+      - name: Run integration tests in client container
         timeout-minutes: 15
         run: |
-          # Create network and start server
-          docker network create borg-test-network
-          docker run -d \
-            --name borg-server \
-            --network borg-test-network \
-            -p 2222:22 \
-            -e BORG_VERSION=${{ matrix.borg-version }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+          echo "Running integration tests in client container..."
           
-          # Wait for server to be ready (using gtimeout on macOS)
-          gtimeout 60 bash -c 'until nc -z localhost 2222; do sleep 2; done'
+          # Get Docker group ID - on macOS with Colima this might be different
+          DOCKER_GID=$(stat -f '%g' /var/run/docker.sock)
           
-          # Run tests natively with Docker server
-          cd backend/borg/integration
-          BORG_SERVER_HOST=localhost BORG_SERVER_PORT=2222 go test -v -timeout=10m ./...
+          # For macOS, we need to use a Linux client image (ubuntu-22.04 as default)
+          CLIENT_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-ubuntu-22.04
+          
+          # Run client container with same approach as script
+          docker run --rm \
+            --name borg-client-test \
+            --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${PWD}/docker:/app/docker:ro" \
+            -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
+            -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
+            -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
+            -e TESTCONTAINERS_RYUK_DISABLED=true \
+            -e TESTCONTAINERS_CHECKS_DISABLE=true \
+            -e DOCKER_HOST=unix:///var/run/docker.sock \
+            -e TEST_ARGS="-test.v" \
+            --group-add "${DOCKER_GID}" \
+            "${CLIENT_IMAGE}" || {
+            echo "Integration tests failed"
+            exit 1
+          }
 
 
       - name: Upload test results
