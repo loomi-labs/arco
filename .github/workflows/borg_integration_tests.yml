@@ -118,6 +118,7 @@ jobs:
             --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${PWD}/docker:/app/docker:ro" \
+            -v ~/.docker:/home/borg/.docker:ro \
             -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
             -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
             -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
@@ -170,6 +171,16 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - name: Install Borg via Homebrew
+        timeout-minutes: 5
+        run: |
+          # Update Homebrew and install borgbackup
+          brew update
+          brew install borgbackup
+          
+          # Verify installation
+          borg --version
+
       - name: Install and start Colima
         timeout-minutes: 10
         run: |
@@ -203,33 +214,89 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run integration tests in client container
+      - name: Start Borg server container
+        run: |
+          # Pull the server image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+          
+          # Start server with port mapping
+          docker run -d \
+            --name borg-server \
+            -p 2222:22 \
+            -e BORG_VERSION=${{ matrix.borg-version }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+
+      - name: Wait for Borg server to be ready
+        timeout-minutes: 2
+        run: |
+          echo "Waiting for Borg server to be ready..."
+          
+          # Wait for container to be healthy
+          for i in {1..40}; do
+            if docker inspect borg-server --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+              echo "✅ Borg server is healthy!"
+              break
+            fi
+            
+            if ! docker ps | grep -q borg-server; then
+              echo "❌ Container stopped! Logs:"
+              docker logs borg-server
+              exit 1
+            fi
+            
+            if [ $i -eq 40 ]; then
+              echo "❌ Server failed to become healthy"
+              docker logs borg-server
+              exit 1
+            fi
+            
+            echo "Waiting for server... (attempt $i/40)"
+            sleep 3
+          done
+          
+          # Verify SSH connectivity
+          nc -zv localhost 2222 || (echo "SSH port not accessible"; exit 1)
+
+      - name: Setup SSH for tests
+        run: |
+          # Copy test SSH key and set permissions
+          mkdir -p ~/.ssh
+          cp docker/borg-client/borg_test_key ~/.ssh/
+          chmod 600 ~/.ssh/borg_test_key
+          
+          # Configure SSH
+          cat >> ~/.ssh/config <<EOF
+          Host localhost
+            HostName localhost
+            Port 2222
+            User borg
+            IdentityFile ~/.ssh/borg_test_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+
+      - name: Run integration tests natively on macOS
         timeout-minutes: 15
         run: |
-          echo "Running integration tests in client container..."
+          echo "Running integration tests natively on macOS..."
           
-          # Get Docker group ID - on macOS with Colima this might be different
-          DOCKER_GID=$(stat -f '%g' /var/run/docker.sock)
+          # Create symlink for borg binary (tests might expect it at /usr/bin/borg)
+          if [ ! -f /usr/bin/borg ]; then
+            sudo ln -sf $(which borg) /usr/bin/borg
+          fi
           
-          # For macOS, we need to use a Linux client image (ubuntu-22.04 as default)
-          CLIENT_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-ubuntu-22.04
+          # Run tests natively on macOS host
+          cd backend/borg/integration
           
-          # Run client container with same approach as script
-          docker run --rm \
-            --name borg-client-test \
-            --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "${PWD}/docker:/app/docker:ro" \
-            -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
-            -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
-            -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
-            -e TESTCONTAINERS_RYUK_DISABLED=true \
-            -e TESTCONTAINERS_CHECKS_DISABLE=true \
-            -e DOCKER_HOST=unix:///var/run/docker.sock \
-            -e TEST_ARGS="-test.v" \
-            --group-add "${DOCKER_GID}" \
-            "${CLIENT_IMAGE}" || {
-            echo "Integration tests failed"
+          # Set environment to use containerized server
+          export SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+          export SERVER_BORG_VERSION=${{ matrix.borg-version }}
+          export TESTCONTAINERS_RYUK_DISABLED=true
+          
+          # Run tests with verbose output
+          go test -v -timeout=10m ./... || {
+            echo "Tests failed. Server logs:"
+            docker logs borg-server
             exit 1
           }
 
