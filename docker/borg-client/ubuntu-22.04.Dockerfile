@@ -53,8 +53,15 @@ RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
     usermod -aG docker borg
 
-# Download and install borg binary
-RUN curl -L "https://github.com/borgbackup/borg/releases/download/${CLIENT_BORG_VERSION}/borg-linux-glibc236" -o /usr/local/bin/borg && \
+# Download and install borg binary with version-specific URL
+RUN if [ "${CLIENT_BORG_VERSION}" = "1.4.1" ]; then \
+        BORG_BINARY="borg-linux-glibc231"; \
+    elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
+        BORG_BINARY="borg-linux-glibc236"; \
+    else \
+        echo "Unsupported Borg version: ${CLIENT_BORG_VERSION}" && exit 1; \
+    fi && \
+    curl -L "https://github.com/borgbackup/borg/releases/download/${CLIENT_BORG_VERSION}/${BORG_BINARY}" -o /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \
     chown root:root /usr/local/bin/borg && \
     ln -s /usr/local/bin/borg /usr/bin/borg

@@ -23,8 +23,15 @@ RUN groupadd -g 1000 borg && \
     chmod 700 /home/borg/.ssh && \
     chmod 755 /home/borg/repositories
 
-# Download and install borg binary
-RUN curl -L "https://github.com/borgbackup/borg/releases/download/${BORG_VERSION}/borg-linux-glibc236" -o /usr/local/bin/borg && \
+# Download and install borg binary with version-specific URL
+RUN if [ "${BORG_VERSION}" = "1.4.1" ]; then \
+        BORG_BINARY="borg-linux-glibc231"; \
+    elif [ "${BORG_VERSION}" = "1.4.0" ]; then \
+        BORG_BINARY="borg-linux-glibc236"; \
+    else \
+        echo "Unsupported Borg version: ${BORG_VERSION}" && exit 1; \
+    fi && \
+    curl -L "https://github.com/borgbackup/borg/releases/download/${BORG_VERSION}/${BORG_BINARY}" -o /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \
     chown root:root /usr/local/bin/borg && \
     ln -s /usr/local/bin/borg /usr/bin/borg
