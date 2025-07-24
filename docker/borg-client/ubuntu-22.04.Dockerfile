@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     fuse \
     libfuse2 \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories (simplified for Ubuntu 22.04)

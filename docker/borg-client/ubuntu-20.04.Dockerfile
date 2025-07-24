@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y \
     fuse \
     libfuse2 \
     tzdata \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories (simplified for Ubuntu 20.04)

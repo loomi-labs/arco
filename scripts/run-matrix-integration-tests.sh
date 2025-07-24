@@ -250,9 +250,9 @@ if [ "$OS_TYPE" = "ubuntu" ]; then
         -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
         -e TESTCONTAINERS_NETWORK_NAME="${NETWORK_NAME}" \
         -e DOCKER_HOST=unix:///var/run/docker.sock \
+        -e TEST_ARGS="${TEST_ARGS}" \
         --group-add "${DOCKER_GID}" \
-        "${CLIENT_IMAGE}" \
-        /usr/local/bin/integration-tests ${TEST_ARGS} || {
+        "${CLIENT_IMAGE}" || {
         log_error "Integration tests failed"
         exit 1
     }

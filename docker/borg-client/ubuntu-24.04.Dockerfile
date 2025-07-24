@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     fuse \
     libfuse3-3 \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories (handle existing user/group conflicts)
