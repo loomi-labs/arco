@@ -8,7 +8,7 @@ import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import { useAuth } from "../common/auth";
 import { useFeatureFlags } from "../common/featureFlags";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
 /************
@@ -53,7 +53,7 @@ const emitUpdateConnectedRepos = "update:connected-repos";
 const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
-const { isAuthenticated } = useAuth();
+const { isAuthenticated: _isAuthenticated } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
 const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);

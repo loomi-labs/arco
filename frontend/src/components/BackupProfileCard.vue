@@ -11,11 +11,12 @@ import { toLongDateString, toRelativeTimeString } from "../common/time";
 import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
-import { getIcon, Icon } from "../common/icons";
+import type { Icon } from "../common/icons";
+import { getIcon } from "../common/icons";
 import { getRepoType } from "../common/repository";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 import {Events} from "@wailsio/runtime";
@@ -34,7 +35,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { t } = useI18n();
+const { t: _t } = useI18n();
 const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string>("");
@@ -66,7 +67,7 @@ async function getFailedBackupRun() {
       if (failedBackupRun.value) {
         break;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       await showAndLogError("Failed to get last backup error message", error);
     }
   }
@@ -87,7 +88,7 @@ async function getLastArchives() {
       }
     }
     lastArchive.value = newLastArchive;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError(`Failed to get last archives for backup profile ${props.backup.id}`, error);
   }
 }

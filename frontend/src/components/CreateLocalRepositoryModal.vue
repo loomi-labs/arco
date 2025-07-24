@@ -97,7 +97,7 @@ async function createRepo() {
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
     dialog.value?.close();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to init new repository", error);
   }
   isCreating.value = false;
@@ -139,7 +139,7 @@ async function createDir() {
     await validate();
     await setNameFromLocation();
     // await testRepoConnection();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to create folder", error);
   }
 }
@@ -171,8 +171,6 @@ async function validate(force = false) {
       if (password.value || force) {
         if (result.needsPassword && !result.success) {
           passwordError.value = "Password is wrong";
-        } else if (result.needsPassword && !result.success) {
-          passwordError.value = "Enter a password for this repository";
         } else if (result.success) {
           passwordError.value = undefined;
         }
@@ -188,7 +186,7 @@ async function validate(force = false) {
         passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to run validation", error);
   }
 }

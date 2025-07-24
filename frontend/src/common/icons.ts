@@ -1,11 +1,12 @@
 import { BookOpenIcon, BriefcaseIcon, CameraIcon, EnvelopeIcon, FireIcon, HomeIcon } from "@heroicons/vue/24/solid";
 import * as backupprofile from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import type { Component } from "vue";
 
 
 export interface Icon {
   type: backupprofile.Icon;
   color: string;
-  html: any;
+  html: Component;
 }
 
 export const icons: Icon[] = [

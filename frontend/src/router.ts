@@ -1,4 +1,5 @@
-import { createRouter, createWebHashHistory, RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import BackupProfilePage from "./pages/BackupProfilePage.vue";
 import RepositoryPage from "./pages/RepositoryPage.vue";
 import DashboardPage from "./pages/DashboardPage.vue";
@@ -43,7 +44,7 @@ const router = createRouter({
       // Scroll to anchor by hash
       // Delay the scroll if we are on another page to allow the page to render first
       const delay = from.path === to.path ? 0 : 500;
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve, _reject) => {
         setTimeout(() => {
           resolve({
             el: to.hash,
@@ -52,7 +53,7 @@ const router = createRouter({
         }, delay);
       });
     }
-    return savedPosition || { left: 0, top: 0 };
+    return savedPosition ?? { left: 0, top: 0 };
   },
   routes
 });

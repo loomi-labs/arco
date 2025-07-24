@@ -23,9 +23,9 @@ import { archivesChanged } from "../common/events";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
 import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
-import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
 import { Events } from "@wailsio/runtime";
 
@@ -153,7 +153,7 @@ async function getPaginatedArchives() {
     for (const archive of archives.value) {
       inputValues.value[archive.id] = archiveNameWithoutPrefix(archive);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get archives", error);
   } finally {
     isLoading.value = false;
@@ -171,7 +171,7 @@ async function deleteArchive() {
     progressSpinnerText.value = "Deleting archive";
     await repoClient.DeleteArchive(archiveId);
     markArchiveAndFadeOut(archiveId);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to delete archive", error);
   } finally {
     progressSpinnerText.value = undefined;
@@ -192,7 +192,7 @@ async function getArchiveMountStates() {
     archiveMountStates.value = new Map(
       Object.entries(result).map(([k, v]) => [Number(k), v])
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get archive mount states", error);
   }
 }
@@ -202,7 +202,7 @@ async function mountArchive(archiveId: number) {
     progressSpinnerText.value = "Browsing archive";
     const archiveMountState = await repoClient.MountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to mount archive", error);
   } finally {
     progressSpinnerText.value = undefined;
@@ -214,7 +214,7 @@ async function unmountArchive(archiveId: number) {
     progressSpinnerText.value = "Unmounting archive";
     const archiveMountState = await repoClient.UnmountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to unmount archive", error);
   } finally {
     progressSpinnerText.value = undefined;
@@ -237,7 +237,7 @@ async function getBackupProfileFilterOptions() {
     ) {
       backupProfileFilter.value = backupProfileFilterOptions.value[0];
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile names", error);
   }
 }
@@ -246,7 +246,7 @@ async function refreshArchives() {
   try {
     progressSpinnerText.value = "Refreshing archives";
     await repoClient.RefreshArchives(props.repo.id);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to refresh archives", error);
   } finally {
     progressSpinnerText.value = undefined;
@@ -258,7 +258,7 @@ async function getPruningDates() {
     pruningDates.value = await repoClient.GetPruningDates(
       archives.value.filter((a) => a.willBePruned).map((a) => a.id)
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get next pruning date", error);
   }
 }
@@ -285,7 +285,7 @@ async function rename(archive: ent.Archive) {
     const name = inputValues.value[archive.id];
     const prefix = prefixForBackupProfile(archive);
     await repoClient.RenameArchive(archive.id, prefix, name);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to rename archive", error);
   } finally {
     inputRenameInProgress.value[archive.id] = false;
@@ -293,7 +293,7 @@ async function rename(archive: ent.Archive) {
 }
 
 function prefixForBackupProfile(archive: ent.Archive): string {
-  return archive.edges.backupProfile?.prefix || "";
+  return archive.edges.backupProfile?.prefix ?? "";
 }
 
 function archiveNameWithoutPrefix(archive: ent.Archive): string {
@@ -324,7 +324,7 @@ async function validateName(archiveId: number) {
       prefix,
       name
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to validate archive name", error);
   }
 }
@@ -365,7 +365,7 @@ async function deleteSelectedArchives() {
 
     selectedArchives.value.clear();
     isAllSelected.value = false;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to delete archives", error);
   } finally {
     progressSpinnerText.value = undefined;
@@ -517,7 +517,7 @@ onUnmounted(() => {
                   <span class='label-text-alt'>Backup Profile</span>
                 </span>
                 <select class='select select-bordered' v-model='backupProfileFilter'>
-                  <option v-for='option in backupProfileFilterOptions' :value='option'>
+                  <option v-for='option in backupProfileFilterOptions' :key='option.id' :value='option'>
                     {{ option.name }}
                   </option>
                 </select>

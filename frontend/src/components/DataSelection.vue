@@ -3,7 +3,8 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
 import { PlusIcon } from "@heroicons/vue/24/outline";
-import { FieldEntry, useFieldArray, useForm } from "vee-validate";
+import type { FieldEntry} from "vee-validate";
+import { useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
 import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
@@ -209,7 +210,7 @@ function isSuggestion(field: FieldEntry<string> | string): boolean {
 }
 
 function getError(index: number): string {
-  return (errors.value as any)[`paths[${index}]`] ?? "";
+  return (errors.value as Record<string, string>)[`paths[${index}]`] ?? "";
 }
 
 function emitResults() {
