@@ -130,7 +130,7 @@ jobs:
             -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
             -e TESTCONTAINERS_NETWORK_NAME=borg-test-network \
             -e DOCKER_HOST=unix:///var/run/docker.sock \
-            -e TEST_ARGS="-test.v -timeout=5m -test.run=TestBorgRepositoryOperations" \
+            -e TEST_ARGS="-test.v" \
             --group-add "${DOCKER_GID}" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
             echo "Integration tests failed"
