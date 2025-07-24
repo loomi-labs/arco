@@ -138,16 +138,6 @@ jobs:
             exit 1
           }
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubuntu-test-results-${{ matrix.os }}-borg-${{ matrix.borg-version }}-${{ matrix.base-image }}
-          path: |
-            *.log
-            test-results.xml
-          retention-days: 30
-
   # macOS integration tests using native Borg (disabled for now)
   # macos-tests:
   #   needs: build-images
@@ -317,38 +307,3 @@ jobs:
   #           test-results.xml
   #         retention-days: 30
 
-  # Collect and summarize results
-  collect-results:
-    needs: [ubuntu-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Generate test summary
-        run: |
-          echo "# Borg Integration Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Count artifacts and generate summary
-          ubuntu_count=$(find . -name "*ubuntu-test-results*" -type d | wc -l)
-          macos_count=$(find . -name "*macos-test-results*" -type d | wc -l)
-          
-          echo "## Test Execution Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Ubuntu tests completed: $ubuntu_count" >> $GITHUB_STEP_SUMMARY
-          echo "- macOS tests completed: $macos_count" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ $ubuntu_count -gt 0 ] || [ $macos_count -gt 0 ]; then
-            echo "✅ Integration tests executed successfully" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ No test results found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Upload combined results
-        uses: actions/upload-artifact@v4
-        with:
-          name: all-test-results-${{ github.sha }}
-          path: .
-          retention-days: 30
