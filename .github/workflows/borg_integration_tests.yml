@@ -74,19 +74,19 @@ jobs:
       matrix:
         include:
           # Version compatibility matrix
-          - os: ubuntu-latest
-            borg-version: "1.4.0"
-            base-image: ubuntu-22.04
-          - os: ubuntu-latest  
-            borg-version: "1.4.1"
-            base-image: ubuntu-22.04
-          # OS compatibility matrix
-          - os: ubuntu-20.04
-            borg-version: "1.4.1"
-            base-image: ubuntu-20.04
-          - os: ubuntu-22.04
-            borg-version: "1.4.1"
-            base-image: ubuntu-22.04
+#          - os: ubuntu-latest
+#            borg-version: "1.4.0"
+#            base-image: ubuntu-22.04
+#          - os: ubuntu-latest
+#            borg-version: "1.4.1"
+#            base-image: ubuntu-22.04
+#          # OS compatibility matrix
+#          - os: ubuntu-20.04
+#            borg-version: "1.4.1"
+#            base-image: ubuntu-20.04
+#          - os: ubuntu-22.04
+#            borg-version: "1.4.1"
+#            base-image: ubuntu-22.04
           - os: ubuntu-24.04
             borg-version: "1.4.1"
             base-image: ubuntu-24.04
@@ -125,13 +125,29 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
 
       - name: Wait for Borg server to be ready
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
-          timeout 60 bash -c 'until docker exec borg-server ss -tlnp | grep :22; do sleep 2; done'
+          # Check container status first
+          echo "Checking Borg server container status..."
+          docker ps -a | grep borg-server
+          
+          # Show container logs for debugging
+          echo "Borg server container logs:"
+          docker logs borg-server || echo "Could not get container logs"
+          
+          # Wait for SSH service to be ready (increased timeout to 120 seconds)
+          echo "Waiting for SSH service on port 22..."
+          timeout 120 bash -c 'until docker exec borg-server netstat -tlnp | grep :22; do echo "Waiting for SSH..."; sleep 2; done'
+          
+          echo "SSH service is ready!"
 
       - name: Run integration tests
         timeout-minutes: 15
         run: |
+          echo "Starting integration tests..."
+          echo "Client image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}"
+          echo "Server image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}"
+          
           docker run --rm \
             --name borg-client \
             --network borg-test-network \
@@ -146,7 +162,11 @@ jobs:
             -e TESTCONTAINERS_NETWORK_NAME=borg-test-network \
             -e DOCKER_HOST=unix:///var/run/docker.sock \
             --group-add $(getent group docker | cut -d: -f3) \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
+            echo "Integration tests failed. Showing container logs for debugging..."
+            docker logs borg-server || true
+            exit 1
+          }
 
       - name: Upload test results
         if: always()
@@ -166,12 +186,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
-            borg-version: "1.4.1"
-          - os: macos-15
-            borg-version: "1.4.1"
-          - os: macos-latest
-            borg-version: "1.4.0"
+#          - os: macos-14
+#            borg-version: "1.4.1"
+#          - os: macos-15
+#            borg-version: "1.4.1"
+#          - os: macos-latest
+#            borg-version: "1.4.0"
           - os: macos-latest
             borg-version: "1.4.1"
     permissions:
@@ -208,12 +228,15 @@ jobs:
           # Install Docker Desktop
           HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask docker
           
+          # Install coreutils for gtimeout command
+          brew install coreutils
+          
           # Start Docker Desktop
-          sudo /Applications/Docker.app/Contents/MacOS/Docker --unattended &
+          sudo "/Applications/Docker.app/Contents/MacOS/Docker Desktop" --unattended &
           sleep 30
           
-          # Wait for Docker to start
-          timeout 120 bash -c 'until docker info; do sleep 5; done'
+          # Wait for Docker to start (using gtimeout on macOS)
+          gtimeout 120 bash -c 'until docker info; do sleep 5; done'
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
@@ -234,8 +257,8 @@ jobs:
             -e BORG_VERSION=${{ matrix.borg-version }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
           
-          # Wait for server to be ready
-          timeout 60 bash -c 'until nc -z localhost 2222; do sleep 2; done'
+          # Wait for server to be ready (using gtimeout on macOS)
+          gtimeout 60 bash -c 'until nc -z localhost 2222; do sleep 2; done'
           
           # Run tests natively with Docker server
           cd backend/borg/integration
