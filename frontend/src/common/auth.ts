@@ -2,10 +2,10 @@ import { computed, ref } from "vue";
 import { useToast } from "vue-toastification";
 import { showAndLogError } from "./logger";
 import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/service";
-import { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth";
+import type { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth";
 import { Events } from "@wailsio/runtime";
 import { GetUser } from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import { User } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import type { User } from "../../bindings/github.com/loomi-labs/arco/backend/app";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 /************
@@ -41,7 +41,7 @@ export function useAuth() {
    ************/
 
   const isAuthenticated = computed(() => authState.value.isAuthenticated);
-  const userEmail = computed(() => authState.value.user?.email || "");
+  const userEmail = computed(() => authState.value.user?.email ?? "");
 
   /************
    * Functionsx
@@ -54,12 +54,11 @@ export function useAuth() {
 
       // If authenticated, fetch user data
       if (result.isAuthenticated) {
-        const user = await GetUser();
-        authState.value.user = user;
+        authState.value.user = await GetUser();
       } else {
         authState.value.user = null;
       }
-    } catch (error) {
+    } catch (_error) {
       authState.value.isAuthenticated = false;
       authState.value.user = null;
       toast.error("Failed to get authentication state.");

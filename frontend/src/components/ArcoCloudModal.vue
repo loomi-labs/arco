@@ -9,10 +9,13 @@ import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import type { Plan, Subscription, CreateCheckoutSessionResponse } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent/models";
+import { FeatureSet } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 /************
  * Types
@@ -23,7 +26,7 @@ type SubscriptionPlan = Plan & { recommended?: boolean };
 interface Emits {
   (event: "close"): void;
 
-  (event: "repo-created", repo: any): void;
+  (event: "repo-created", repo: ent.Repository): void;
 }
 
 enum ComponentState {
@@ -67,7 +70,7 @@ const isYearlyBilling = ref(false);
 const subscriptionPlans = ref<SubscriptionPlan[]>([]);
 const hasActiveSubscription = ref(false);
 const userSubscriptionPlan = ref<string | undefined>(undefined);
-const userSubscription = ref<any>(undefined);
+const userSubscription = ref<Subscription | undefined>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
 
@@ -75,7 +78,7 @@ const repoNameError = ref<string | undefined>(undefined);
 const errorMessage = ref<string | undefined>(undefined);
 
 // Checkout session data
-const checkoutSession = ref<any>(undefined);
+const checkoutSession = ref<CreateCheckoutSessionResponse | undefined>(undefined);
 
 // Event cleanup
 const cleanupFunctions: Array<() => void> = [];
@@ -138,7 +141,7 @@ const modalDescription = computed(() => {
     case ComponentState.ERROR_PLANS:
     case ComponentState.ERROR_SUBSCRIPTION:
     case ComponentState.ERROR_CHECKOUT:
-      return errorMessage.value || "An error occurred. Please try again.";
+      return errorMessage.value ?? "An error occurred. Please try again.";
     default:
       return "";
   }
@@ -156,20 +159,22 @@ const isRepoValid = computed(() =>
 const activePlanName = computed(() => {
   if (!userSubscriptionPlan.value) return "";
   const plan = subscriptionPlans.value.find(p => p.name === userSubscriptionPlan.value);
-  return plan?.name || "";
+  return plan?.name ?? "";
 });
 
 const subscriptionEndDate = computed(() => {
   if (!userSubscription.value?.current_period_end) return "Active";
   
   try {
-    // Parse the timestamp and format as readable date
-    const endDate = new Date(userSubscription.value.current_period_end);
+    // Parse the protobuf timestamp and format as readable date
+    const seconds = userSubscription.value.current_period_end.seconds ?? 0;
+    if (seconds <= 0) return "Active";
+    const endDate = new Date(seconds * 1000);
     return `Active until ${endDate.toLocaleDateString('en-US', { 
       month: 'short', 
       year: 'numeric' 
     })}`;
-  } catch (error) {
+  } catch (_error) {
     return "Active";
   }
 });
@@ -224,7 +229,7 @@ async function loadSubscriptionPlans() {
 
     // After loading plans, check initial state
     await checkInitialState();
-  } catch (error) {
+  } catch (_error) {
     transitionTo(ComponentState.ERROR_PLANS, "Failed to load subscription plans. Please try again.");
   }
 }
@@ -246,7 +251,7 @@ async function loadUserSubscription() {
       userSubscription.value = undefined;
       transitionTo(ComponentState.SUBSCRIPTION_SELECTION_AUTH);
     }
-  } catch (error) {
+  } catch (_error) {
     hasActiveSubscription.value = false;
     userSubscriptionPlan.value = undefined;
     userSubscription.value = undefined;
@@ -354,7 +359,7 @@ async function subscribeToPlan() {
     if (sessionData) {
       checkoutSession.value = sessionData;
     }
-  } catch (error) {
+  } catch (_error) {
     transitionTo(ComponentState.ERROR_CHECKOUT, "Failed to create checkout session. Please try again.");
   }
 }
@@ -407,12 +412,22 @@ function createRepository() {
   if (!isRepoValid.value) return;
 
   // Mock repository creation
-  const mockRepo = {
+  const mockRepo = Repository.createFrom({
     id: Date.now(),
     name: repoName.value,
     location: `arco-cloud://${repoName.value}`,
-    isCloud: true
-  };
+    password: "",
+    isCloud: true,
+    createdAt: { seconds: Math.floor(Date.now() / 1000), nanos: 0 },
+    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanos: 0 },
+    nextIntegrityCheck: null,
+    statsCompressed: 0,
+    statsUncompressed: 0,
+    statsDeduplication: 0,
+    statsUniqueCsize: 0,
+    statsTotalSize: 0,
+    edges: null
+  });
 
   emit("repo-created", mockRepo);
   closeModal();

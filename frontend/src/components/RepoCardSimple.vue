@@ -9,7 +9,7 @@ import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType } from "../common/repository";
 import { toRepoTypeBadge } from "../common/badge";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import {Events} from "@wailsio/runtime";
 
@@ -40,7 +40,7 @@ const cleanupFunctions: (() => void)[] = [];
 async function getNbrOfArchives() {
   try {
     nbrOfArchives.value = await repoClient.GetNbrOfArchives(props.repo.id);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get archives", error);
   }
 }
@@ -48,7 +48,7 @@ async function getNbrOfArchives() {
 async function getRepoState() {
   try {
     repoState.value = await repoClient.GetState(props.repo.id);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }
 }

@@ -50,7 +50,7 @@ function onAuthenticated() {
 async function handleLogout() {
   try {
     await logout();
-  } catch (error) {
+  } catch (_error) {
     // Error is handled in auth composable
   }
 }
@@ -77,6 +77,7 @@ router.afterEach(() => {
     case Page.Subscription:
       subroute.value = "Subscription";
       break;
+    case undefined:
     default:
       subroute.value = undefined;
   }

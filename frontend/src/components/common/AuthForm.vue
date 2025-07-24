@@ -160,8 +160,8 @@ async function sendMagicLink() {
     } else {
       emailError.value = "Failed to send login link. Please try again.";
     }
-  } catch (error: any) {
-    emailError.value = error.message || "Failed to send login link. Please try again.";
+  } catch (error: unknown) {
+    emailError.value = (error as Error)?.message ?? "Failed to send login link. Please try again.";
   } finally {
     isLoading.value = false;
   }
@@ -181,7 +181,7 @@ async function resendMagicLink() {
     if (result === AuthStatus.AuthStatusSuccess) {
       startResendTimer();
     }
-  } catch (error) {
+  } catch (_error) {
     // Error is handled by the auth composable
   }
 }

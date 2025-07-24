@@ -83,7 +83,7 @@ async function getData() {
       (await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
         (r) => r !== null
       ) ?? [];
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get repository data", error);
   }
   loading.value = false;
@@ -103,7 +103,7 @@ async function getRepoState() {
       (await repoClient.GetLastArchiveByRepoId(repoId)) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }
 }
@@ -113,7 +113,7 @@ async function saveName() {
     try {
       repo.value.name = name.value ?? "";
       await repoClient.Update(repo.value);
-    } catch (error: any) {
+    } catch (error: unknown) {
       await showAndLogError("Failed to save repository name", error);
     }
   }
@@ -126,14 +126,14 @@ function resizeNameWidth() {
   }
 }
 
-async function saveIntegrityCheckSettings() {
+async function _saveIntegrityCheckSettings() {
   try {
     const result = await repoClient.SaveIntegrityCheckSettings(
       repoId,
       isIntegrityCheckEnabled.value
     );
     repo.value.nextIntegrityCheck = result?.nextIntegrityCheck;
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save integrity check settings", error);
   }
 }
@@ -146,7 +146,7 @@ async function removeRepo() {
       path: Page.Dashboard,
       hash: `#${Anchor.Repositories}`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to remove repository", error);
   }
 }
@@ -159,7 +159,7 @@ async function deleteRepo() {
       path: Page.Dashboard,
       hash: `#${Anchor.Repositories}`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to delete repository", error);
   }
 }
@@ -320,7 +320,7 @@ onUnmounted(() => {
         <div v-else-if='deletableBackupProfiles.length > 1'>
           The following backup profiles will also be removed:
           <ul class='list-disc font-semibold pl-5'>
-            <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+            <li v-for='profile in deletableBackupProfiles' :key='profile.id'>{{ profile.name }}</li>
           </ul>
         </div>
       </div>
@@ -340,7 +340,7 @@ onUnmounted(() => {
         <div v-else-if='deletableBackupProfiles.length > 1'>
           The following backup profiles will also be deleted:
           <ul class='list-disc font-semibold pl-5'>
-            <li v-for='profile in deletableBackupProfiles'>{{ profile.name }}</li>
+            <li v-for='profile in deletableBackupProfiles' :key='profile.id'>{{ profile.name }}</li>
           </ul>
         </div>
         <p class='pt-2'>Type <span class='italic font-semibold'>{{ repo.name }}</span> to confirm.</p>

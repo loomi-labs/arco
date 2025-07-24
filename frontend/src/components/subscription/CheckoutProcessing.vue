@@ -4,6 +4,7 @@ import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../../common/events";
 import * as SubscriptionService from "../../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import { showAndLogError } from "../../common/logger";
+import type { CreateCheckoutSessionResponse } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1/models";
 
 /************
  * Types
@@ -32,7 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const checkoutSession = ref<any>(undefined);
+const checkoutSession = ref<CreateCheckoutSessionResponse | undefined>(undefined);
 const isCreatingSession = ref(false);
 const cleanupFunctions: Array<() => void> = [];
 

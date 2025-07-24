@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
 import { CheckCircleIcon, CheckIcon, StarIcon } from "@heroicons/vue/24/outline";
-import { FeatureSet, Plan } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import type { Plan } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { getFeaturesByPlan } from "../../common/features";
 
 /************
@@ -62,7 +62,7 @@ const currentCurrencySymbol = computed(() => '$');
 
 const yearlyDiscount = computed(() => {
   const price = selectedPlanPrice.value;
-  if (!price || !price.monthly_cents || !price.yearly_cents) return 0;
+  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
   const monthlyTotal = (price.monthly_cents / 100) * 12;
   const yearlyPrice = price.yearly_cents / 100;
   return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);

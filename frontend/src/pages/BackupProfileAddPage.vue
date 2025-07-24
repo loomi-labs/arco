@@ -17,8 +17,9 @@ import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/ou
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
-import { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
-import { BackupProfile, BackupSchedule, PruningRule, Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Browser } from "@wailsio/runtime";
 
 /************
@@ -90,6 +91,8 @@ function getMaxWithPerStep(): string {
   switch (currentStep.value) {
     case Step.Repository:
       return "max-w-[800px]";
+    case Step.SelectData:
+    case Step.Schedule:
     default:
       return "max-w-[600px]";
   }
@@ -126,7 +129,7 @@ async function newBackupProfile() {
   try {
     backupProfile.value = await backupClient.NewBackupProfile() ?? BackupProfile.createFrom();
     directorySuggestions.value = await backupClient.GetDirectorySuggestions();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to create backup profile", error);
   }
 }
@@ -134,7 +137,7 @@ async function newBackupProfile() {
 async function getExistingRepositories() {
   try {
     existingRepos.value = (await repoClient.All()).filter((r) => r !== null);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get existing repositories", error);
   }
 }
@@ -168,7 +171,7 @@ async function saveBackupProfile(): Promise<boolean> {
     }
 
     backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
   }
@@ -224,7 +227,7 @@ newBackupProfile();
 getExistingRepositories();
 
 // If the user tries to leave the page with unsaved changes, show a modal to cancel/discard
-onBeforeRouteLeave(async (to, from) => {
+onBeforeRouteLeave(async (to, _from) => {
   if (currentStep.value === Step.SelectData) {
     return true;
   } else if (newBackupProfileCreated.value) {

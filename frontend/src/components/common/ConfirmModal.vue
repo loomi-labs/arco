@@ -15,10 +15,10 @@ interface Props {
   cancelClass?: string;
   confirmText?: string;
   confirmClass?: string;
-  confirmValue?: any;
+  confirmValue?: unknown;
   secondaryOptionText?: string;
   secondaryOptionClass?: string;
-  secondaryOptionValue?: any;
+  secondaryOptionValue?: unknown;
 }
 
 interface Emits {

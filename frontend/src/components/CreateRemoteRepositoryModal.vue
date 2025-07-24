@@ -100,7 +100,7 @@ async function createRepo() {
     emit(emitCreateRepoStr, repo);
     toast.success("Repository created");
     dialog.value?.close();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to init new repository", error);
   }
   isCreating.value = false;
@@ -147,7 +147,7 @@ async function simpleValidate(force = false) {
       // Can't be a borg repo if the location is invalid
       isBorgRepo.value = false;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to run validation", error);
   }
 }
@@ -185,7 +185,7 @@ async function fullValidate(force = false) {
         }
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to run validation", error);
   } finally {
     isValidating.value = false;
@@ -196,7 +196,7 @@ async function fullValidate(force = false) {
 async function getConnectedRemoteHosts() {
   try {
     hosts.value = await repoClient.GetConnectedRemoteHosts();
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get connected remote hosts", error);
   }
 }
@@ -242,6 +242,7 @@ watch([name, location, password, isEncrypted], async () => {
             </FormField>
             <datalist id='locations'>
               <option v-for='host in hosts'
+                      :key='host'
                       :value='host' />
             </datalist>
           </div>

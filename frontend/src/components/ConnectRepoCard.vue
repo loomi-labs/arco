@@ -20,7 +20,7 @@ interface Emits {
  * Variables
  ************/
 
-const props = defineProps<Props>();
+const _props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 const emitClick = "click";
 

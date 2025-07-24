@@ -9,7 +9,7 @@ import FormField from "./common/FormField.vue";
 import { useToast } from "vue-toastification";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import type * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
 
 
 /************
@@ -88,7 +88,7 @@ async function getPruningOptions() {
   try {
     pruningOptions.value = (await backupClient.GetPruningOptions()).options;
     ruleToPruningOption(props.pruningRule);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to get pruning options", error);
   }
 }
@@ -134,7 +134,7 @@ async function savePruningRule() {
   try {
     const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value) ?? ent.PruningRule.createFrom();
     emits(emitUpdatePruningRule, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);
   }
 }
@@ -144,7 +144,7 @@ async function examinePrunes(saveResults: boolean): Promise<Array<app.ExaminePru
     isExaminingPrunes.value = true;
     cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false, AskForSave: false };
     return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
-  } catch (error: any) {
+  } catch (error: unknown) {
     await showAndLogError("Failed to dry run pruning rule", error);
   } finally {
     isExaminingPrunes.value = false;
@@ -244,7 +244,7 @@ getPruningOptions();
 watchEffect(() => copyCurrentPruningRule());
 
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
-onBeforeRouteLeave(async (to, from) => {
+onBeforeRouteLeave(async (to, _from) => {
   if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
     // If pruning is disabled, just save the rule
     if (!pruningRule.value.isEnabled) {
@@ -403,10 +403,12 @@ defineExpose({
       <span v-if='isExaminingPrunes' class='loading loading-dots loading-md'></span>
       <div v-if='!isExaminingPrunes' class='grid grid-cols-1 gap-2'>
         <div class='col-span-1'>{{ cleanupImpact.Summary }}</div>
-        <div v-if='cleanupImpact.Rows.length > 1' v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
-          <div>{{ row.RepositoryName }}</div>
-          <div>{{ row.Impact }}</div>
-        </div>
+        <template v-if='cleanupImpact.Rows.length > 1'>
+          <div v-for='row in cleanupImpact.Rows' :key='row.RepositoryName' class='grid grid-cols-2 gap-4'>
+            <div>{{ row.RepositoryName }}</div>
+            <div>{{ row.Impact }}</div>
+          </div>
+        </template>
       </div>
     </div>
     <br>

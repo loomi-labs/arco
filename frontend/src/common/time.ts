@@ -97,7 +97,7 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
  * @param date The date to check
  * @param ignoreTz If true, the timezone offset is ignored
  */
-export function isInPast(date: Date, ignoreTz: boolean = false): boolean {
+export function isInPast(date: Date, ignoreTz = false): boolean {
   const now = new Date();
   if (!ignoreTz) {
     const offsetToUTC = offset(now);
@@ -111,7 +111,7 @@ export function isInPast(date: Date, ignoreTz: boolean = false): boolean {
  * @param date The date to convert
  * @param ignoreTz If true, the timezone offset is ignored
  */
-export function toRelativeTimeString(date: Date, ignoreTz: boolean = false): string {
+export function toRelativeTimeString(date: Date, ignoreTz = false): string {
   const now = new Date();
   if (!ignoreTz) {
     const offsetToUTC = offset(now);

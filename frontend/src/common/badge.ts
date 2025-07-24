@@ -50,5 +50,7 @@ export function toRepoTypeBadge(type: RepoType): string {
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
     case RepoType.ArcoCloud:
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
+    default:
+      return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
   }
 }
