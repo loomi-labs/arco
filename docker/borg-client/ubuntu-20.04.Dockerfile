@@ -61,11 +61,11 @@ RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
     usermod -aG docker borg
 
-# Download and install borg binary with version-specific URL
+# Download and install borg binary with Ubuntu 20.04 compatible GLIBC
 RUN if [ "${CLIENT_BORG_VERSION}" = "1.4.1" ]; then \
         BORG_BINARY="borg-linux-glibc231"; \
     elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
-        BORG_BINARY="borg-linux-glibc236"; \
+        BORG_BINARY="borg-linux-glibc231"; \
     else \
         echo "Unsupported Borg version: ${CLIENT_BORG_VERSION}" && exit 1; \
     fi && \
