@@ -137,7 +137,38 @@ jobs:
           
           # Wait for SSH service to be ready (increased timeout to 120 seconds)
           echo "Waiting for SSH service on port 22..."
-          timeout 120 bash -c 'until docker exec borg-server netstat -tlnp | grep :22; do echo "Waiting for SSH..."; sleep 2; done'
+          
+          # Try a few times with detailed debugging
+          for i in {1..10}; do
+            echo "Attempt $i: Checking SSH service..."
+            
+            # Check if container is still running
+            if ! docker ps | grep borg-server > /dev/null; then
+              echo "❌ Container stopped running! Checking logs..."
+              docker logs borg-server
+              exit 1
+            fi
+            
+            # Check if SSH port is listening
+            if docker exec borg-server netstat -tlnp | grep :22; then
+              echo "✅ SSH service is ready!"
+              break
+            fi
+            
+            # Show processes inside container
+            echo "Processes in container:"
+            docker exec borg-server ps aux || echo "Could not list processes"
+            
+            if [ $i -eq 10 ]; then
+              echo "❌ SSH service failed to start after 10 attempts"
+              echo "Final container logs:"
+              docker logs borg-server
+              exit 1
+            fi
+            
+            echo "Waiting 10 seconds before next check..."
+            sleep 10
+          done
           
           echo "SSH service is ready!"
 
@@ -231,12 +262,39 @@ jobs:
           # Install coreutils for gtimeout command
           brew install coreutils
           
-          # Start Docker Desktop
-          sudo "/Applications/Docker.app/Contents/MacOS/Docker Desktop" --unattended &
+          # Start Docker Desktop (use open command which is more reliable)
+          echo "📱 Starting Docker Desktop..."
+          open -a Docker --args --unattended &
+          
+          # Give Docker more time to initialize
+          echo "⏱️ Waiting 30 seconds for Docker to initialize..."
           sleep 30
           
           # Wait for Docker to start (using gtimeout on macOS)
-          gtimeout 120 bash -c 'until docker info; do sleep 5; done'
+          echo "🔄 Waiting for Docker daemon to start..."
+          
+          # Check Docker status with better error handling
+          for i in {1..10}; do
+            echo "Attempt $i: Checking Docker daemon..."
+            
+            if docker info >/dev/null 2>&1; then
+              echo "✅ Docker daemon is ready!"
+              docker info
+              break
+            fi
+            
+            if [ $i -eq 10 ]; then
+              echo "❌ Docker daemon failed to start after 2 minutes"
+              echo "Docker processes:"
+              ps aux | grep -i docker || echo "No Docker processes found"
+              echo "Docker app status:"
+              ls -la /Applications/Docker.app/ || echo "Docker app not found"
+              exit 1
+            fi
+            
+            echo "Docker not ready yet, waiting 5 seconds..."
+            sleep 5
+          done
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
