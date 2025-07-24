@@ -194,7 +194,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.config.Migrations = nil // Free up memory
 
 	// Create JWT interceptor and HTTP client for cloud services
-	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db)
+	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db, a.state)
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
 	}

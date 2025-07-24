@@ -17,6 +17,10 @@ import * as arcov1$0 from "../../api/v1/models.js";
 // @ts-ignore: Unused imports
 import * as state$0 from "../state/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * CancelPendingChange cancels a specific scheduled change before it takes effect
  */
@@ -55,8 +59,8 @@ export function ClearCheckoutResult(): $CancellablePromise<void> {
 /**
  * CreateCheckoutSession creates a payment checkout session
  */
-export function CreateCheckoutSession(planName: string, currency: arcov1$0.Currency): $CancellablePromise<arcov1$0.CreateCheckoutSessionResponse | null> {
-    return $Call.ByID(54709411, planName, currency).then(($result: any) => {
+export function CreateCheckoutSession(planName: string, isYearlyBilling: boolean): $CancellablePromise<arcov1$0.CreateCheckoutSessionResponse | null> {
+    return $Call.ByID(54709411, planName, isYearlyBilling).then(($result: any) => {
         return $$createType7($result);
     });
 }
@@ -91,7 +95,7 @@ export function GetCheckoutSession(): $CancellablePromise<arcov1$0.CreateCheckou
 /**
  * GetPendingChanges retrieves all scheduled changes for a subscription
  */
-export function GetPendingChanges(subscriptionID: string): $CancellablePromise<arcov1$0.GetPendingChangesResponse | null> {
+export function GetPendingChanges(subscriptionID: string): $CancellablePromise<$models.PendingChanges | null> {
     return $Call.ByID(4217259715, subscriptionID).then(($result: any) => {
         return $$createType11($result);
     });
@@ -125,15 +129,6 @@ export function UpdateBillingCycle(subscriptionID: string, isYearly: boolean): $
 }
 
 /**
- * UpdateCurrency schedules a currency change for a subscription
- */
-export function UpdateCurrency(subscriptionID: string, currency: arcov1$0.Currency): $CancellablePromise<arcov1$0.ScheduleSubscriptionUpdateResponse | null> {
-    return $Call.ByID(2320044535, subscriptionID, currency).then(($result: any) => {
-        return $$createType5($result);
-    });
-}
-
-/**
  * UpgradeSubscription performs immediate Basic→Pro plan upgrade with proration
  */
 export function UpgradeSubscription(subscriptionID: string, planID: string): $CancellablePromise<arcov1$0.UpgradeSubscriptionResponse | null> {
@@ -153,7 +148,7 @@ const $$createType6 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
 const $$createType8 = state$0.CheckoutResult.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = arcov1$0.GetPendingChangesResponse.createFrom;
+const $$createType10 = $models.PendingChanges.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
 const $$createType12 = arcov1$0.GetSubscriptionResponse.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);

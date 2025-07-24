@@ -5,3 +5,10 @@ import * as Service from "./service.js";
 export {
     Service
 };
+
+export {
+    ChangeType,
+    ChangeValueType,
+    PendingChange,
+    PendingChanges
+} from "./models.js";

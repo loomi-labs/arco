@@ -9,6 +9,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/pkg/browser"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -67,10 +68,10 @@ func (s *Service) GetSubscription(ctx context.Context, userID string) (*arcov1.G
 }
 
 // CreateCheckoutSession creates a payment checkout session
-func (s *Service) CreateCheckoutSession(ctx context.Context, planName string, currency arcov1.Currency) (*arcov1.CreateCheckoutSessionResponse, error) {
+func (s *Service) CreateCheckoutSession(ctx context.Context, planName string, isYearlyBilling bool) (*arcov1.CreateCheckoutSessionResponse, error) {
 	req := connect.NewRequest(&arcov1.CreateCheckoutSessionRequest{
-		Name:     planName,
-		Currency: currency,
+		Name:            planName,
+		IsYearlyBilling: isYearlyBilling,
 	})
 
 	resp, err := s.rpcClient.CreateCheckoutSession(ctx, req)
@@ -194,24 +195,6 @@ func (s *Service) DowngradePlan(ctx context.Context, subscriptionID string, plan
 	return resp.Msg, nil
 }
 
-// UpdateCurrency schedules a currency change for a subscription
-func (s *Service) UpdateCurrency(ctx context.Context, subscriptionID string, currency arcov1.Currency) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
-	req := &arcov1.ScheduleSubscriptionUpdateRequest{
-		SubscriptionId: subscriptionID,
-		Change: &arcov1.ScheduleSubscriptionUpdateRequest_Currency{
-			Currency: currency,
-		},
-	}
-
-	resp, err := s.rpcClient.ScheduleSubscriptionUpdate(ctx, connect.NewRequest(req))
-	if err != nil {
-		s.log.Errorf("Failed to update currency from cloud service: %v", err)
-		return nil, err
-	}
-
-	return resp.Msg, nil
-}
-
 // UpdateBillingCycle schedules a billing cycle change for a subscription
 func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string, isYearly bool) (*arcov1.ScheduleSubscriptionUpdateResponse, error) {
 	req := &arcov1.ScheduleSubscriptionUpdateRequest{
@@ -230,8 +213,104 @@ func (s *Service) UpdateBillingCycle(ctx context.Context, subscriptionID string,
 	return resp.Msg, nil
 }
 
+// ChangeType represents the type of pending change
+type ChangeType string
+
+const (
+	// ChangeTypeUnknown Unknown change -> should not occur, probably a programming error
+	ChangeTypeUnknown ChangeType = "unknown"
+	// ChangeTypePlanChange Represents a change from one subscription plan to another
+	ChangeTypePlanChange ChangeType = "planChange"
+	// ChangeTypeBillingCycleChange Represents a change from monthly to yearly billing or vice versa
+	ChangeTypeBillingCycleChange ChangeType = "billingCycleChange"
+)
+
+// planIDToChangeValue converts a plan ID string to ChangeValueType
+func planIDToChangeValue(planID string) ChangeValueType {
+	switch strings.ToLower(planID) {
+	case "basic":
+		return ChangeValueBasic
+	case "pro":
+		return ChangeValuePro
+	default:
+		return ChangeValueUnknown
+	}
+}
+
+// ChangeValueType represents possible values for change old/new values
+type ChangeValueType string
+
+const (
+	// ChangeValueBasic Basic subscription plan
+	ChangeValueBasic ChangeValueType = "basic"
+	// ChangeValuePro Pro subscription plan
+	ChangeValuePro ChangeValueType = "pro"
+
+	// ChangeValueMonthly Monthly billing cycle
+	ChangeValueMonthly ChangeValueType = "monthly"
+	// ChangeValueYearly Yearly billing cycle
+	ChangeValueYearly ChangeValueType = "yearly"
+
+	// ChangeValueUnknown Unknown change value -> should not occur, probably a programming error
+	ChangeValueUnknown ChangeValueType = "unknown"
+)
+
+// PendingChange represents a simplified pending change with only frontend-needed fields
+type PendingChange struct {
+	ID            int64           `json:"id"`
+	ChangeType    ChangeType      `json:"change_type"`
+	OldValue      ChangeValueType `json:"old_value"`
+	NewValue      ChangeValueType `json:"new_value"`
+	EffectiveDate time.Time       `json:"effective_date"`
+}
+
+// PendingChanges represents a simplified response with only frontend-needed fields
+type PendingChanges struct {
+	PendingChanges []PendingChange `json:"pending_changes"`
+}
+
+// transformPendingChange converts a proto PendingChange to our simplified format
+func transformPendingChange(change *arcov1.PendingChange) PendingChange {
+	transformed := PendingChange{
+		ID: change.Id,
+	}
+
+	// Convert effective date from proto timestamp to time.Time
+	if change.EffectiveDate != nil && change.EffectiveDate.Seconds > 0 {
+		transformed.EffectiveDate = time.Unix(change.EffectiveDate.Seconds, 0)
+	} else {
+		transformed.EffectiveDate = time.Time{} // zero time
+	}
+
+	// Handle all transformation logic based on change type
+	switch change.ChangeType {
+	case arcov1.ChangeType_CHANGE_TYPE_PLAN_CHANGE:
+		transformed.ChangeType = ChangeTypePlanChange
+		transformed.OldValue = planIDToChangeValue(change.GetOldPlanId())
+		transformed.NewValue = planIDToChangeValue(change.GetNewPlanId())
+	case arcov1.ChangeType_CHANGE_TYPE_BILLING_CYCLE_CHANGE:
+		transformed.ChangeType = ChangeTypeBillingCycleChange
+		if change.GetOldIsYearlyBilling() {
+			transformed.OldValue = ChangeValueYearly
+		} else {
+			transformed.OldValue = ChangeValueMonthly
+		}
+		if change.GetNewIsYearlyBilling() {
+			transformed.NewValue = ChangeValueYearly
+		} else {
+			transformed.NewValue = ChangeValueMonthly
+		}
+	default:
+		transformed.ChangeType = ChangeTypeUnknown
+		transformed.OldValue = ChangeValueUnknown
+		transformed.NewValue = ChangeValueUnknown
+	}
+
+	return transformed
+}
+
 // GetPendingChanges retrieves all scheduled changes for a subscription
-func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) (*arcov1.GetPendingChangesResponse, error) {
+func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) (*PendingChanges, error) {
 	req := connect.NewRequest(&arcov1.GetPendingChangesRequest{
 		SubscriptionId: subscriptionID,
 	})
@@ -242,7 +321,15 @@ func (s *Service) GetPendingChanges(ctx context.Context, subscriptionID string) 
 		return nil, err
 	}
 
-	return resp.Msg, nil
+	// Transform the proto response to our simplified format
+	pendingChanges := make([]PendingChange, 0, len(resp.Msg.PendingChanges))
+	for _, change := range resp.Msg.GetPendingChanges() {
+		pendingChanges = append(pendingChanges, transformPendingChange(change))
+	}
+
+	return &PendingChanges{
+		PendingChanges: pendingChanges,
+	}, nil
 }
 
 // CancelPendingChange cancels a specific scheduled change before it takes effect

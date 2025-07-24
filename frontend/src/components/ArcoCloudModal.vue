@@ -9,7 +9,7 @@ import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import { FeatureSet, Plan, Currency } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
@@ -62,7 +62,6 @@ const currentState = ref<ComponentState>(ComponentState.LOADING_INITIAL);
 // Form and UI state
 const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
-const selectedCurrency = ref<Currency>(Currency.Currency_CURRENCY_USD);
 
 // Subscription data
 const subscriptionPlans = ref<SubscriptionPlan[]>([]);
@@ -273,7 +272,6 @@ async function showModal() {
 function resetAll() {
   authForm.value?.reset();
   selectedPlan.value = undefined;
-  selectedCurrency.value = Currency.Currency_CURRENCY_USD;
   repoName.value = "";
   repoNameError.value = undefined;
   errorMessage.value = undefined;
@@ -309,9 +307,6 @@ function onBillingCycleChanged(isYearly: boolean) {
   isYearlyBilling.value = isYearly;
 }
 
-function onCurrencyChanged(currency: Currency) {
-  selectedCurrency.value = currency;
-}
 
 function onSubscribeClicked(planName: string) {
   selectedPlan.value = planName;
@@ -352,7 +347,7 @@ async function subscribeToPlan() {
     setupCheckoutEventListener();
     
     // Create checkout session
-    await SubscriptionService.CreateCheckoutSession(selectedPlan.value, selectedCurrency.value);
+    await SubscriptionService.CreateCheckoutSession(selectedPlan.value, isYearlyBilling.value);
     
     // Get checkout session data from backend
     const sessionData = await SubscriptionService.GetCheckoutSession();
@@ -552,13 +547,11 @@ watch(isAuthenticated, async (authenticated) => {
           :plans='subscriptionPlans'
           :selected-plan='selectedPlan'
           :is-yearly-billing='isYearlyBilling'
-          :selected-currency='selectedCurrency'
           :has-active-subscription='hasActiveSubscription'
           :user-subscription-plan='userSubscriptionPlan'
           :hide-subscribe-button='true'
           @plan-selected='onPlanSelected'
           @billing-cycle-changed='onBillingCycleChanged'
-          @currency-changed='onCurrencyChanged'
           @subscribe-clicked='onSubscribeClicked'
         />
 
