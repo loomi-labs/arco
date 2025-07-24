@@ -38,6 +38,7 @@ jobs:
 
       # Build Borg Client Images
       - name: Build and push Borg client image
+        timeout-minutes: 20
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -52,6 +53,7 @@ jobs:
       # Build Borg Server Images (only once per version)
       - name: Build and push Borg server image
         if: matrix.base-image == 'ubuntu-22.04'  # Only build server once per version
+        timeout-minutes: 15
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -123,10 +125,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
 
       - name: Wait for Borg server to be ready
+        timeout-minutes: 3
         run: |
           timeout 60 bash -c 'until docker exec borg-server ss -tlnp | grep :22; do sleep 2; done'
 
       - name: Run integration tests
+        timeout-minutes: 15
         run: |
           docker run --rm \
             --name borg-client \
@@ -184,6 +188,7 @@ jobs:
           cache: true
 
       - name: Install Borg via Homebrew
+        timeout-minutes: 10
         run: |
           # Install specific Borg version via Homebrew
           if [ "${{ matrix.borg-version }}" = "1.4.0" ]; then
@@ -198,6 +203,7 @@ jobs:
           borg --version
 
       - name: Install Docker via Homebrew
+        timeout-minutes: 15
         run: |
           # Install Docker Desktop
           HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask docker
@@ -217,6 +223,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run integration tests with Docker server
+        timeout-minutes: 15
         run: |
           # Create network and start server
           docker network create borg-test-network
