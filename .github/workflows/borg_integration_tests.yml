@@ -118,6 +118,7 @@ jobs:
           # Run client container with same approach as script
           docker run --rm \
             --name borg-client-test \
+            --network borg-test-network \
             --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${PWD}/docker:/app/docker:ro" \
