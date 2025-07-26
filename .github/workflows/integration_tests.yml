@@ -16,7 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
       - name: Check for relevant changes
         uses: dorny/paths-filter@v3
         id: changes
@@ -121,13 +120,12 @@ jobs:
         timeout-minutes: 5
         run: |
           echo "Running integration tests in client container..."
-          
+
           # Get Docker group ID for proper permissions
           DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
-          
+
           # Create Docker network for Testcontainers
           docker network create borg-test-network || echo "Network already exists"
-          
           # Run client container with same approach as script
           docker run --rm \
             --name borg-client-test \
