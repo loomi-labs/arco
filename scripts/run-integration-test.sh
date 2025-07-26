@@ -184,7 +184,7 @@ docker build \
     --build-arg BORG_VERSION="${SERVER_VERSION}" \
     -t "${SERVER_IMAGE}" \
     -f "${PROJECT_ROOT}/docker/borg-server/Dockerfile" \
-    "${PROJECT_ROOT}/docker/borg-server" || {
+    "${PROJECT_ROOT}" || {
     log_error "Failed to build server container"
     exit 1
 }
