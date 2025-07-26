@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Check Docker socket access
 if [ -S /var/run/docker.sock ]; then
