@@ -58,7 +58,7 @@ tasks:
       - sh: command -v docker
         msg: "Docker is required for integration tests"
     cmds:
-      - ./scripts/run-matrix-integration-tests.sh --client-version {{.CLIENT_VERSION | default "1.4.1"}} --server-version {{.SERVER_VERSION | default "1.4.1"}} --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}
+      - ./scripts/run-integration-test.sh --client-version {{.CLIENT_VERSION | default "1.4.1"}} --server-version {{.SERVER_VERSION | default "1.4.1"}} --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}
 
   test:integration:matrix:
     desc: Runs integration tests with multiple borg version combinations
@@ -67,6 +67,6 @@ tasks:
         msg: "Docker is required for integration tests"
     cmds:
       - echo "Testing borg version matrix..."
-      - ./scripts/run-matrix-integration-tests.sh --client-version 1.4.0 --server-version 1.4.0
-      - ./scripts/run-matrix-integration-tests.sh --client-version 1.4.1 --server-version 1.4.1
+      - ./scripts/run-integration-test.sh --client-version 1.4.0 --server-version 1.4.0
+      - ./scripts/run-integration-test.sh --client-version 1.4.1 --server-version 1.4.1
       - echo "Matrix testing completed successfully!"
