@@ -1,10 +1,24 @@
-name: Wails Build
+name: Build Application
 
 on:
   workflow_call:
+    inputs:
+      push_artifacts:
+        description: 'Whether to push artifacts to releases'
+        type: boolean
+        required: false
+        default: false
+      version:
+        description: 'Version tag for the build (e.g., v1.1.0)'
+        required: false
+        type: string
+    outputs:
+      artifacts:
+        description: 'List of built artifacts'
+        value: ${{ jobs.build.outputs.artifacts }}
 
 jobs:
-  wails_build:
+  build:
     strategy:
       fail-fast: false
       matrix:
@@ -14,49 +28,107 @@ jobs:
           { zip-name: arco-macos, platform: darwin/universal, os: macos-latest }
         ]
     runs-on: ${{ matrix.build.os }}
+    outputs:
+      artifacts: ${{ steps.artifacts.outputs.list }}
     steps:
       # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            build:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'build/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'package.json'
+              - 'Taskfile*.yml'
+              - '.github/workflows/build.yml'
+
+      - name: Check if build should run
+        id: should-build
+        run: |
+          # Always build if artifacts should be pushed (release scenario)
+          if [ "${{ inputs.push_artifacts }}" = "true" ]; then
+            echo "reason=release" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Build required: Release artifacts needed"
+          # Build if relevant files changed
+          elif [ "${{ steps.changes.outputs.build }}" = "true" ]; then
+            echo "reason=changes" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Build required: Relevant files changed"
+          # Skip build
+          else
+            echo "reason=skip" >> $GITHUB_OUTPUT
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Build skipped: No relevant changes and no release"
+          fi
+
       # Setup Golang
       - name: 🐿 Setup Golang
-        uses: actions/setup-go@v4
+        if: steps.should-build.outputs.should_run == 'true'
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       # Install task
       - name: Install Task
+        if: steps.should-build.outputs.should_run == 'true'
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Install pnpm
       - name: Install pnpm
+        if: steps.should-build.outputs.should_run == 'true'
         uses: pnpm/action-setup@v4
         with:
           version: 10
       # Install Wails deps
       - name: Install Linux Wails deps
-        if: runner.os == 'Linux'
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
         shell: bash
       - name: Install macOS Wails deps
-        if: runner.os == 'macOS'
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
         run: brew install mitchellh/gon/gon jq
         shell: bash
 
       # Building step
       - name: Build App
+        if: steps.should-build.outputs.should_run == 'true'
         run: task build PRODUCTION=true
         shell: bash
         env:
           PLATFORM: ${{ matrix.build.platform }}
+          VERSION: ${{ inputs.version || 'dev' }}
+      
       - name: Add execute permissions
+        if: steps.should-build.outputs.should_run == 'true'
         run: chmod +x bin/*
         shell: bash
 
       # Compress build artifact
       - name: Compress build artifact
-        run: cd ./bin; zip -j ../${{ matrix.build.zip-name }}.zip arco
+        if: steps.should-build.outputs.should_run == 'true'
+        id: compress
+        run: |
+          cd ./bin
+          ZIP_NAME="${{ matrix.build.zip-name }}.zip"
+          zip -j "../$ZIP_NAME" arco
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "zip_path=$(pwd)/../$ZIP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Set artifact list
+        if: steps.should-build.outputs.should_run == 'true'
+        id: artifacts
+        run: |
+          echo "list=${{ steps.compress.outputs.zip_name }}" >> $GITHUB_OUTPUT
 
       # Package and Sign MacOS
 #      - name: Import Code-Signing Certificates for macOS
@@ -108,8 +180,21 @@ jobs:
 #          gon -log-level=info ${{ inputs.app-working-directory }}/build/darwin/gon-notarize.json
 
       # Upload build assets
-      - uses: actions/upload-artifact@v4
+      - name: Upload build artifacts
+        if: steps.should-build.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
         id: upload
         with:
-          name: ${{ matrix.build.zip-name }}
-          path: ${{ matrix.build.zip-name }}.zip
+          name: ${{ steps.compress.outputs.zip_name }}
+          path: ${{ steps.compress.outputs.zip_name }}
+          retention-days: 30
+
+      # Upload to release if this is a release build
+      - name: Upload to release
+        if: steps.should-build.outputs.should_run == 'true' && inputs.push_artifacts && inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          files: ${{ steps.compress.outputs.zip_name }}
+          draft: false
+          prerelease: false

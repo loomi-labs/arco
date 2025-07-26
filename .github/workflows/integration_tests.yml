@@ -1,0 +1,152 @@
+name: Integration Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      borg: ${{ steps.changes.outputs.borg }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            borg:
+              - 'backend/borg/**'
+              - 'docker/**'
+              - '.github/workflows/integration_tests.yml'
+
+  # Build and cache Docker images for Ubuntu testing
+  build-images:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        borg-version: ["1.4.0", "1.4.1"]
+        base-image: ["ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        if: needs.detect-changes.outputs.borg == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        if: needs.detect-changes.outputs.borg == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      # Build Borg Client Images
+      - name: Build and push Borg client image
+        if: needs.detect-changes.outputs.borg == 'true'
+        timeout-minutes: 20
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/borg-client/${{ matrix.base-image }}.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+          build-args: |
+            CLIENT_BORG_VERSION=${{ matrix.borg-version }}
+          cache-from: type=gha,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+          cache-to: type=gha,mode=max,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+
+      # Build Borg Server Images (only once per version)
+      - name: Build and push Borg server image
+        if: needs.detect-changes.outputs.borg == 'true' && matrix.base-image == 'ubuntu-22.04'  # Only build server once per version
+        timeout-minutes: 15
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/borg-server/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+          build-args: |
+            BORG_VERSION=${{ matrix.borg-version }}
+          cache-from: type=gha,scope=server-${{ matrix.borg-version }}
+          cache-to: type=gha,mode=max,scope=server-${{ matrix.borg-version }}
+
+  # Ubuntu integration tests using Docker
+  ubuntu-tests:
+    needs: [detect-changes, build-images]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            borg-version: "1.4.0"
+            base-image: ubuntu-22.04
+          - os: ubuntu-latest
+            borg-version: "1.4.1"
+            base-image: ubuntu-22.04
+          - os: ubuntu-24.04
+            borg-version: "1.4.1"
+            base-image: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        if: needs.detect-changes.outputs.borg == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests in client container
+        if: needs.detect-changes.outputs.borg == 'true'
+        timeout-minutes: 5
+        run: |
+          echo "Running integration tests in client container..."
+
+          # Get Docker group ID for proper permissions
+          DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+
+          # Create Docker network for Testcontainers
+          docker network create borg-test-network || echo "Network already exists"
+          # Run client container with same approach as script
+          docker run --rm \
+            --name borg-client-test \
+            --network borg-test-network \
+            --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${PWD}/docker:/app/docker:ro" \
+            -v ~/.docker:/home/borg/.docker:ro \
+            -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
+            -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
+            -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
+            -e TESTCONTAINERS_RYUK_DISABLED=true \
+            -e TESTCONTAINERS_CHECKS_DISABLE=true \
+            -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
+            -e TESTCONTAINERS_NETWORK_NAME=borg-test-network \
+            -e DOCKER_HOST=unix:///var/run/docker.sock \
+            -e TEST_ARGS="-test.v" \
+            --group-add "${DOCKER_GID}" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
+            echo "Integration tests failed"
+            exit 1
+          }
+
+

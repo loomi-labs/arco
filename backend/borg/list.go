@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/borg/utils"
 	"os/exec"
 	"time"
 )
@@ -20,15 +21,15 @@ func (b *borg) List(ctx context.Context, repository string, password string) (*t
 	// Convert command output and error to Status
 	status := combinedOutputToStatus(out, err)
 	if status.HasError() {
-		return nil, b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+		return nil, b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 	}
 
 	var listResponse types.ListResponse
-	err = json.Unmarshal(out, &listResponse)
+	err = json.Unmarshal(utils.SanitizeOutput(out, b.log.SugaredLogger), &listResponse)
 	if err != nil {
 		parseStatus := newStatusWithError(fmt.Errorf("failed to parse borg list output: %v", err))
-		return nil, b.log.LogCmdResult(ctx, parseStatus, cmd.String(), time.Since(startTime))
+		return nil, b.log.LogCmdStatus(ctx, parseStatus, cmd.String(), time.Since(startTime))
 	}
 
-	return &listResponse, b.log.LogCmdResult(ctx, status, cmd.String(), time.Since(startTime))
+	return &listResponse, b.log.LogCmdStatus(ctx, status, cmd.String(), time.Since(startTime))
 }
