@@ -1,3 +1,5 @@
+//go:build integration
+
 /*
 Integration Tests for Borg Backup System
 

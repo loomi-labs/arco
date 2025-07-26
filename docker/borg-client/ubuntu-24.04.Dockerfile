@@ -24,7 +24,7 @@ RUN go mod download
 COPY backend/ ./backend/
 
 # Build integration test binary
-RUN CGO_ENABLED=1 GOOS=linux go test -c -o /integration-tests ./backend/borg/integration
+RUN CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg/integration
 
 # Ubuntu 24.04 specific runtime environment
 FROM ubuntu:24.04

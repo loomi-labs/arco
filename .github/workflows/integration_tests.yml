@@ -2,20 +2,6 @@ name: Integration Tests
 
 on:
   workflow_call:
-  push:
-    branches: [ "*" ]
-    paths:
-      - 'backend/borg/**'
-      - 'docker/**'
-      - 'scripts/run-matrix-integration-tests.sh'
-      - '.github/workflows/integration_tests.yml'
-  pull_request:
-    branches: [ "*" ]
-    paths:
-      - 'backend/borg/**'
-      - 'docker/**'
-      - 'scripts/run-matrix-integration-tests.sh'
-      - '.github/workflows/integration_tests.yml'
   workflow_dispatch:
 
 env:
