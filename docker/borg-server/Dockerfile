@@ -25,9 +25,9 @@ RUN groupadd -g 1000 borg && \
 
 # Download and install borg binary with version-specific URL
 RUN if [ "${BORG_VERSION}" = "1.4.1" ]; then \
-        BORG_BINARY="borg-linux-glibc231"; \
-    elif [ "${BORG_VERSION}" = "1.4.0" ]; then \
         BORG_BINARY="borg-linux-glibc236"; \
+    elif [ "${BORG_VERSION}" = "1.4.0" ]; then \
+        BORG_BINARY="borg-linux-glibc231"; \
     else \
         echo "Unsupported Borg version: ${BORG_VERSION}" && exit 1; \
     fi && \
@@ -43,14 +43,13 @@ RUN chown borg:borg /home/borg/.ssh/authorized_keys && \
 
 # Configure SSH server
 RUN ssh-keygen -A && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
     echo "AllowUsers borg" >> /etc/ssh/sshd_config && \
     echo "LogLevel INFO" >> /etc/ssh/sshd_config && \
     echo "AddressFamily inet" >> /etc/ssh/sshd_config && \
     echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config && \
-    echo "borg:test123" | chpasswd && \
     echo "PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin" > /home/borg/.ssh/environment && \
     chown borg:borg /home/borg/.ssh/environment && \
     chmod 600 /home/borg/.ssh/environment
