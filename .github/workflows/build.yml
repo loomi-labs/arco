@@ -34,34 +34,74 @@ jobs:
       # Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            build:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'build/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'package.json'
+              - 'Taskfile*.yml'
+              - '.github/workflows/build.yml'
+
+      - name: Check if build should run
+        id: should-build
+        run: |
+          # Always build if artifacts should be pushed (release scenario)
+          if [ "${{ inputs.push_artifacts }}" == "true" ]; then
+            echo "reason=release" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Build required: Release artifacts needed"
+          # Build if relevant files changed
+          elif [ "${{ steps.changes.outputs.build }}" == "true" ]; then
+            echo "reason=changes" >> $GITHUB_OUTPUT  
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Build required: Relevant files changed"
+          # Skip build
+          else
+            echo "reason=skip" >> $GITHUB_OUTPUT
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Build skipped: No relevant changes and no release"
+          fi
+
       # Setup Golang
       - name: 🐿 Setup Golang
+        if: steps.should-build.outputs.should_run == 'true'
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
       # Install task
       - name: Install Task
+        if: steps.should-build.outputs.should_run == 'true'
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Install pnpm
       - name: Install pnpm
+        if: steps.should-build.outputs.should_run == 'true'
         uses: pnpm/action-setup@v4
         with:
           version: 10
       # Install Wails deps
       - name: Install Linux Wails deps
-        if: runner.os == 'Linux'
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
         shell: bash
       - name: Install macOS Wails deps
-        if: runner.os == 'macOS'
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
         run: brew install mitchellh/gon/gon jq
         shell: bash
 
       # Building step
       - name: Build App
+        if: steps.should-build.outputs.should_run == 'true'
         run: task build PRODUCTION=true
         shell: bash
         env:
@@ -69,11 +109,13 @@ jobs:
           VERSION: ${{ inputs.version || 'dev' }}
       
       - name: Add execute permissions
+        if: steps.should-build.outputs.should_run == 'true'
         run: chmod +x bin/*
         shell: bash
 
       # Compress build artifact
       - name: Compress build artifact
+        if: steps.should-build.outputs.should_run == 'true'
         id: compress
         run: |
           cd ./bin
@@ -83,6 +125,7 @@ jobs:
           echo "zip_path=$(pwd)/../$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Set artifact list
+        if: steps.should-build.outputs.should_run == 'true'
         id: artifacts
         run: |
           echo "list=${{ steps.compress.outputs.zip_name }}" >> $GITHUB_OUTPUT
@@ -138,6 +181,7 @@ jobs:
 
       # Upload build assets
       - name: Upload build artifacts
+        if: steps.should-build.outputs.should_run == 'true'
         uses: actions/upload-artifact@v4
         id: upload
         with:
@@ -147,7 +191,7 @@ jobs:
 
       # Upload to release if this is a release build
       - name: Upload to release
-        if: ${{ inputs.push_artifacts && inputs.version != '' }}
+        if: steps.should-build.outputs.should_run == 'true' && inputs.push_artifacts && inputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
