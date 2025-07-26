@@ -10,25 +10,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'package.json'
+              - 'Taskfile*.yml'
+              - '.github/workflows/test.yml'
+
       - name: 🐿 Set up Go
+        if: steps.changes.outputs.src == 'true'
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
 
       - name: Install Task
+        if: steps.changes.outputs.src == 'true'
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linux Wails deps
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.src == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
         shell: bash
 
       - name: Test & coverage report creation
+        if: steps.changes.outputs.src == 'true'
         run: task test
 
       - name: Lint
+        if: steps.changes.outputs.src == 'true'
         run: task dev:lint
