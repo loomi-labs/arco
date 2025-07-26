@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.2](https://github.com/loomi-labs/arco/compare/v0.14.1...v0.14.2) (2025-07-26)
+
+
+### Bug Fixes
+
+* remove multicurrency ([#175](https://github.com/loomi-labs/arco/issues/175)) ([d4d4442](https://github.com/loomi-labs/arco/commit/d4d44423cea2bbbebc0b5db12563702eff001a1a))
+
 ## [0.14.1](https://github.com/loomi-labs/arco/compare/v0.14.0...v0.14.1) (2025-07-17)
 
 
