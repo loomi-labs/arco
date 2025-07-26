@@ -1,0 +1,45 @@
+name: Main Branch CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    if: |
+      contains(github.event.head_commit.modified, 'backend/') ||
+      contains(github.event.head_commit.modified, 'frontend/') ||
+      contains(github.event.head_commit.modified, 'go.mod') ||
+      contains(github.event.head_commit.modified, 'go.sum') ||
+      contains(github.event.head_commit.modified, 'package.json') ||
+      contains(github.event.head_commit.modified, 'Taskfile') ||
+      contains(github.event.head_commit.modified, '.github/workflows/test.yml')
+
+  integration-tests:
+    uses: ./.github/workflows/integration_tests.yml
+    if: |
+      contains(github.event.head_commit.modified, 'backend/borg/') ||
+      contains(github.event.head_commit.modified, 'docker/') ||
+      contains(github.event.head_commit.modified, 'scripts/run-matrix-integration-tests.sh') ||
+      contains(github.event.head_commit.modified, '.github/workflows/integration_tests.yml')
+
+  build:
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    uses: ./.github/workflows/build.yml
+    with:
+      push_artifacts: false
+
+  release-please:
+    needs: [test, integration-tests]
+    if: always()
+    uses: ./.github/workflows/release-please.yml
+
+  build-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: ./.github/workflows/build.yml
+    with:
+      push_artifacts: true
+      version: ${{ needs.release-please.outputs.tag_name }}

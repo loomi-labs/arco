@@ -1,0 +1,71 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - 'build/**'
+      - 'scripts/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'package.json'
+      - 'Taskfile*.yml'
+      - '.github/workflows/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      borg: ${{ steps.changes.outputs.borg }}
+      docker: ${{ steps.changes.outputs.docker }}
+      build: ${{ steps.changes.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Taskfile*.yml'
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+            borg:
+              - 'backend/borg/**'
+              - 'docker/**'
+              - 'scripts/run-matrix-integration-tests.sh'
+            docker:
+              - 'docker/**'
+            build:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'build/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'package.json'
+              - 'Taskfile*.yml'
+
+  test:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true' }}
+    uses: ./.github/workflows/test.yml
+
+  integration-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.borg == 'true' }}
+    uses: ./.github/workflows/integration_tests.yml
+
+  build-check:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.build == 'true' }}
+    uses: ./.github/workflows/build.yml
+    with:
+      push_artifacts: false
