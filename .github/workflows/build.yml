@@ -54,13 +54,13 @@ jobs:
         id: should-build
         run: |
           # Always build if artifacts should be pushed (release scenario)
-          if [ "${{ inputs.push_artifacts }}" == "true" ]; then
+          if [ "${{ inputs.push_artifacts }}" = "true" ]; then
             echo "reason=release" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "Build required: Release artifacts needed"
           # Build if relevant files changed
-          elif [ "${{ steps.changes.outputs.build }}" == "true" ]; then
-            echo "reason=changes" >> $GITHUB_OUTPUT  
+          elif [ "${{ steps.changes.outputs.build }}" = "true" ]; then
+            echo "reason=changes" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "Build required: Relevant files changed"
           # Skip build
@@ -73,7 +73,7 @@ jobs:
       # Setup Golang
       - name: 🐿 Setup Golang
         if: steps.should-build.outputs.should_run == 'true'
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       # Install task
@@ -120,7 +120,7 @@ jobs:
         run: |
           cd ./bin
           ZIP_NAME="${{ matrix.build.zip-name }}.zip"
-          zip -j ../$ZIP_NAME arco
+          zip -j "../$ZIP_NAME" arco
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           echo "zip_path=$(pwd)/../$ZIP_NAME" >> $GITHUB_OUTPUT
 
