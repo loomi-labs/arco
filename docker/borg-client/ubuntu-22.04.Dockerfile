@@ -55,9 +55,9 @@ RUN groupadd -g 1000 borg && \
 
 # Download and install borg binary with version-specific URL
 RUN if [ "${CLIENT_BORG_VERSION}" = "1.4.1" ]; then \
-        BORG_BINARY="borg-linux-glibc231"; \
-    elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
         BORG_BINARY="borg-linux-glibc236"; \
+    elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
+        BORG_BINARY="borg-linux-glibc231"; \
     else \
         echo "Unsupported Borg version: ${CLIENT_BORG_VERSION}" && exit 1; \
     fi && \

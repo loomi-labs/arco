@@ -67,7 +67,7 @@ RUN if ! getent group borg; then \
 
 # Download and install borg binary with version-specific URL
 RUN if [ "${CLIENT_BORG_VERSION}" = "1.4.1" ]; then \
-        BORG_BINARY="borg-linux-glibc231"; \
+        BORG_BINARY="borg-linux-glibc236"; \
     elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
         BORG_BINARY="borg-linux-glibc236"; \
     else \
