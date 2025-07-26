@@ -60,13 +60,13 @@ tasks:
     cmds:
       - ./scripts/run-integration-test.sh --client-version {{.CLIENT_VERSION | default "1.4.1"}} --server-version {{.SERVER_VERSION | default "1.4.1"}} --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}
 
-  test:integration:matrix:
+  test:integration:all:
     desc: Runs integration tests with multiple borg version combinations
     preconditions:
       - sh: command -v docker
         msg: "Docker is required for integration tests"
     cmds:
-      - echo "Testing borg version matrix..."
+      - echo "Testing all borg versions..."
       - ./scripts/run-integration-test.sh --client-version 1.4.0 --server-version 1.4.0
       - ./scripts/run-integration-test.sh --client-version 1.4.1 --server-version 1.4.1
-      - echo "Matrix testing completed successfully!"
+      - echo "Integration testing completed successfully!"
