@@ -87,7 +87,7 @@ func TestScheduler(t *testing.T) {
 
 		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
-		r, err := a.RepoClient().Create("TestRepo", "/tmp", "test", false)
+		r, err := a.RepositoryService().Create(a.ctx, "TestRepo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
 		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})

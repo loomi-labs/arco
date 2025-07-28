@@ -72,7 +72,7 @@ func TestBackupClient_SaveBackupSchedule(t *testing.T) {
 
 		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
-		r, err := a.RepoClient().Create("TestRepo", "/tmp", "test", false)
+		r, err := a.RepositoryService().Create(a.ctx, "TestRepo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
 		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
@@ -219,7 +219,7 @@ func TestBackupClient_GetPrefixSuggestions(t *testing.T) {
 
 		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
-		r, err := a.RepoClient().Create("Test-repo", "/tmp", "test", false)
+		r, err := a.RepositoryService().Create(a.ctx, "Test-repo", "/tmp", "test", false)
 		assert.NoError(t, err, "Failed to create new repository")
 
 		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
@@ -284,7 +284,7 @@ func TestBackupClient_DeleteBackupProfile(t *testing.T) {
 
 		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
-		r, err := a.RepoClient().Create("TestRepo", "/tmp", "pw", true)
+		r, err := a.RepositoryService().Create(a.ctx, "TestRepo", "/tmp", "pw", true)
 		assert.NoError(t, err, "Failed to create new repository")
 		repo = r
 
@@ -422,9 +422,9 @@ func TestBackupClient_RemoveRepositoryFromBackupProfile(t *testing.T) {
 
 		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist}).Times(2)
 		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{}).Times(2)
-		repo1, err = a.RepoClient().Create("Test-repo-1", "/tmp1", "", true)
+		repo1, err = a.RepositoryService().Create(a.ctx, "Test-repo-1", "/tmp1", "", true)
 		assert.NoError(t, err, "Failed to create new repository")
-		repo2, err = a.RepoClient().Create("Test-repo-2", "/tmp2", "", true)
+		repo2, err = a.RepositoryService().Create(a.ctx, "Test-repo-2", "/tmp2", "", true)
 		assert.NoError(t, err, "Failed to create new repository")
 
 		p, err := a.BackupClient().NewBackupProfile()
