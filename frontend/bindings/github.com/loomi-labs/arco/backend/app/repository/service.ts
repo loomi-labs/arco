@@ -33,6 +33,14 @@ export function All(): $CancellablePromise<(ent$0.Repository | null)[]> {
     });
 }
 
+/**
+ * ArchiveName validates the name of an archive.
+ * The rules are not enforced by the database because we import them from borg repositories which have different rules.
+ */
+export function ArchiveName(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
+    return $Call.ByID(168200151, archiveId, prefix, name);
+}
+
 export function BreakLock(id: number): $CancellablePromise<void> {
     return $Call.ByID(4281482770, id);
 }
