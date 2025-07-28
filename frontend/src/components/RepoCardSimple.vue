@@ -30,7 +30,7 @@ const props = defineProps<Props>();
 const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
-const repoType = ref<RepoType>(getRepoType(props.repo.location));
+const repoType = ref<RepoType>(getRepoType(props.repo.url));
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -89,7 +89,7 @@ onUnmounted(() => {
       <div class='divider'></div>
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
-        <span class='tooltip tooltip-primary' :data-tip='repo.location'>
+        <span class='tooltip tooltip-primary' :data-tip='repo.url'>
           <span :class='toRepoTypeBadge(getRepoType(repoType))'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>

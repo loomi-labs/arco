@@ -145,7 +145,7 @@ watch(() => props.existingRepos, (newRepos) => {
            :class='getRepoCardClass(repo)'
            @click='connectOrDisconnectRepo(repo)'
       >
-        <ComputerDesktopIcon v-if='getRepoType(repo.location) === RepoType.Local' class='size-12' />
+        <ComputerDesktopIcon v-if='getRepoType(repo.url) === RepoType.Local' class='size-12' />
         <GlobeEuropeAfricaIcon v-else class='size-12' />
         {{ repo.name }}
       </div>

@@ -76,7 +76,7 @@ async function getData() {
       (await repoService.Service.Get(repoId)) ?? ent.Repository.createFrom();
     name.value = repo.value.name;
 
-    repoType.value = getRepoType(repo.value.location);
+    repoType.value = getRepoType(repo.value.url);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
     deletableBackupProfiles.value =
@@ -286,7 +286,7 @@ onUnmounted(() => {
           <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
             <span class='font-medium'>{{ $t("location") }}</span>
             <div class='flex items-center gap-2'>
-              <span class='text-sm opacity-70 break-all'>{{ repo.location }}</span>
+              <span class='text-sm opacity-70 break-all'>{{ repo.url }}</span>
               <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
             </div>
           </div>

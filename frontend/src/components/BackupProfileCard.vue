@@ -156,7 +156,7 @@ onUnmounted(() => {
           <ul class='text-right'>
             <li v-for='repo in props.backup.edges?.repositories?.filter(r => r !== null) ?? []' :key='repo.id'
                 class='mx-1'
-                :class='`${toRepoTypeBadge(getRepoType(repo.location))}`'
+                :class='`${toRepoTypeBadge(getRepoType(repo.url))}`'
             >
               {{ repo.name }}
             </li>
