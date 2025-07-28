@@ -42,6 +42,12 @@ func (Repository) Fields() []ent.Field {
 		field.String("password").
 			StructTag(`json:"password"`),
 
+		// ArcoCloud integration
+		field.String("arco_cloud_id").
+			StructTag(`json:"arcoCloudId"`).
+			Optional().
+			Nillable(),
+
 		// Integrity check
 		field.Time("next_integrity_check").
 			StructTag(`json:"nextIntegrityCheck"`).

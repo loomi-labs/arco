@@ -189,6 +189,7 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "location", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
+		{Name: "arco_cloud_id", Type: field.TypeString, Nullable: true},
 		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
