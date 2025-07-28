@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"entgo.io/ent/dialect/sql"
 	"errors"
@@ -15,12 +16,19 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/negrel/assert"
 	"go.uber.org/zap"
 	"net/url"
 	"os"
+	"os/exec"
+	"os/user"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -41,19 +49,23 @@ type ServiceInternal struct {
 	*Service
 }
 
-// NewService creates a new repository service
-func NewService(log *zap.SugaredLogger, db *ent.Client, state *state.State, borg borg.Borg, config *types.Config, eventEmitter types.EventEmitter, cloudService *CloudRepositoryService) *ServiceInternal {
+// NewService creates a new repository service with minimal dependencies (two-phase initialization)
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 	return &ServiceInternal{
 		Service: &Service{
-			log:          log,
-			db:           db,
-			state:        state,
-			borg:         borg,
-			config:       config,
-			eventEmitter: eventEmitter,
-			cloudService: cloudService,
+			log:   log,
+			state: state,
 		},
 	}
+}
+
+// Init initializes the repository service with remaining dependencies
+func (si *ServiceInternal) Init(db *ent.Client, borg borg.Borg, config *types.Config, eventEmitter types.EventEmitter, cloudService *CloudRepositoryService) {
+	si.db = db
+	si.borg = borg
+	si.config = config
+	si.eventEmitter = eventEmitter
+	si.cloudService = cloudService
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -104,12 +116,12 @@ func (s *Service) GetByBackupId(ctx context.Context, bId types.BackupId) (*ent.R
 
 func (s *Service) All(ctx context.Context) ([]*ent.Repository, error) {
 	s.mustHaveDB()
-	
+
 	// Sync cloud repositories to ensure freshness
-	if _, err := s.cloudService.ListCloudRepositories(ctx); err != nil {
-		s.log.Warnf("Failed to sync cloud repositories: %v", err)
-	}
-	
+	//if _, err := s.cloudService.ListCloudRepositories(ctx); err != nil {
+	//	s.log.Warnf("Failed to sync cloud repositories: %v", err)
+	//}
+
 	// Return all repositories (local + synced cloud)
 	return s.db.Repository.
 		Query().
@@ -226,7 +238,56 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*ent.Repository, error) {
-	return s.cloudService.AddCloudRepository(ctx, name, password, location)
+	repo, err := s.cloudService.AddCloudRepository(ctx, name, location)
+	if err != nil {
+		// Check if the error is "already exists"
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) && connectErr.Code() == connect.CodeAlreadyExists {
+			s.log.Warnf("Repository '%s' already exists in ArcoCloud, proceeding with existing repository", name)
+
+			// Find the existing repository by listing and matching name
+			cloudRepos, listErr := s.cloudService.ListCloudRepositories(ctx)
+			if listErr != nil {
+				return nil, fmt.Errorf("repository already exists but failed to retrieve it: %w", listErr)
+			}
+
+			// Find the repository with matching name
+			for _, cloudRepo := range cloudRepos {
+				if cloudRepo.Name == name {
+					repo = &arcov1.Repository{
+						Id:      *cloudRepo.ArcoCloudID,
+						Name:    cloudRepo.Name,
+						RepoUrl: cloudRepo.Location,
+					}
+					break
+				}
+			}
+
+			if repo == nil {
+				return nil, fmt.Errorf("repository '%s' already exists but could not be found in repository list", name)
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	status := s.borg.Init(ctx, repo.RepoUrl, password, false)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasError() {
+			return nil, fmt.Errorf("could not initialize repository: %s", status.GetError())
+		}
+		return nil, fmt.Errorf("repository initialization was cancelled")
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
+	}
+	return s.db.Repository.
+		Create().
+		SetName(name).
+		SetLocation(repo.RepoUrl).
+		SetPassword(password).
+		Save(ctx)
 }
 
 func (s *Service) Update(ctx context.Context, repository *ent.Repository) (*ent.Repository, error) {
@@ -527,11 +588,763 @@ func (s *Service) TestRepoConnection(ctx context.Context, path, password string)
 	return toTestRepoConnectionResult(tr, nil, true)
 }
 
-// setMountStates sets the mount states of all repositories and archives to the state
+// SetMountStates sets the mount states of all repositories and archives to the state
 // This method is called during app startup and doesn't need to be exposed to frontend
-// TODO: Implement proper mount state management - this is a temporary stub
-func (si *ServiceInternal) setMountStates(ctx context.Context) {
-	si.log.Debug("Setting mount states - functionality to be implemented")
-	// For now, this is a stub to maintain compilation while the rest of the transformation is completed
-	// The mount functionality should be properly integrated in a follow-up task
+func (si *ServiceInternal) SetMountStates(ctx context.Context) {
+	repos, err := si.All(ctx)
+	if err != nil {
+		si.log.Error("Error getting all repositories: ", err)
+		return
+	}
+	for _, repo := range repos {
+		// Save the mount state for the repository
+		path, err := getRepoMountPath(repo)
+		if err != nil {
+			return
+		}
+		mountState, err := getMountState(path)
+		if err != nil {
+			si.log.Error("Error getting mount state: ", err)
+			continue
+		}
+		si.state.SetRepoMount(ctx, repo.ID, &mountState)
+
+		// Save the mount states for all archives of the repository
+		archives, err := repo.QueryArchives().All(ctx)
+		if err != nil {
+			si.log.Error("Error getting all archives: ", err)
+			continue
+		}
+		var paths = make(map[int]string)
+		for _, arch := range archives {
+			archivePath, err := getArchiveMountPath(arch)
+			if err != nil {
+				si.log.Error("Error getting archive mount path: ", err)
+				continue
+			}
+			paths[arch.ID] = archivePath
+		}
+
+		states, err := types.GetMountStates(paths)
+		if err != nil {
+			si.log.Error("Error getting mount states: ", err)
+			continue
+		}
+		si.state.SetArchiveMounts(ctx, repo.ID, states)
+	}
+}
+
+// Archive management methods
+
+func (s *Service) RefreshArchives(ctx context.Context, repoId int) ([]*ent.Archive, error) {
+	s.mustHaveDB()
+	if s.state.GetRepoState(repoId).Status != state.RepoStatusIdle {
+		return nil, fmt.Errorf("can not refresh archives: the repository is busy")
+	}
+
+	repoLock := s.state.GetRepoLock(repoId)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
+	return s.refreshArchives(ctx, repoId)
+}
+
+// refreshArchives fetches the archives from the borg repository and saves them to the database.
+// It also deletes the archives that don't exist anymore.
+// Precondition: the caller must have acquired the lock for the repository
+func (s *Service) refreshArchives(ctx context.Context, repoId int) ([]*ent.Archive, error) {
+	repo, err := s.db.Repository.
+		Query().
+		Where(repository.ID(repoId)).
+		WithBackupProfiles().
+		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the repo as performing operation
+	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusPerformingOperation)
+	defer s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
+
+	listResponse, status := s.borg.List(ctx, repo.Location, repo.Password)
+	if status != nil && !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return nil, fmt.Errorf("archive listing was cancelled")
+		}
+		return nil, fmt.Errorf("failed to get archives: %s", status.GetError())
+	}
+	if status != nil && status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Archive listing completed with warning: %s", status.GetWarning())
+	}
+
+	// Get all the borg ids
+	borgIds := make([]string, len(listResponse.Archives))
+	for i, arch := range listResponse.Archives {
+		borgIds[i] = arch.ID
+	}
+
+	// Delete the archives that don't exist anymore
+	cntDeletedArchives, err := s.db.Archive.
+		Delete().
+		Where(
+			archive.And(
+				archive.HasRepositoryWith(repository.ID(repoId)),
+				archive.BorgIDNotIn(borgIds...),
+			)).
+		Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if cntDeletedArchives > 0 {
+		s.log.Info(fmt.Sprintf("Deleted %d archives", cntDeletedArchives))
+	}
+
+	// Check which archives are already saved
+	archives, err := s.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	savedBorgIds := make([]string, len(archives))
+	for i, arch := range archives {
+		savedBorgIds[i] = arch.BorgID
+	}
+
+	// Save the new archives
+	cntNewArchives := 0
+	for _, arch := range listResponse.Archives {
+		if !slices.Contains(savedBorgIds, arch.ID) {
+			createdAt := time.Time(arch.Start)
+			duration := time.Time(arch.End).Sub(createdAt)
+			createQuery := s.db.Archive.
+				Create().
+				SetBorgID(arch.ID).
+				SetName(arch.Name).
+				SetCreatedAt(createdAt).
+				SetDuration(duration.Seconds()).
+				SetRepositoryID(repoId)
+
+			// Find the backup profile that has the same prefix as the archive
+			for _, backupProfile := range repo.Edges.BackupProfiles {
+				if strings.HasPrefix(arch.Name, backupProfile.Prefix) {
+					createQuery = createQuery.SetBackupProfileID(backupProfile.ID)
+					break
+				}
+			}
+
+			newArchive, err := createQuery.Save(ctx)
+			if err != nil {
+				return nil, err
+			}
+			archives = append(archives, newArchive)
+			cntNewArchives++
+		}
+	}
+	if cntNewArchives > 0 {
+		s.log.Info(fmt.Sprintf("Saved %d new archives", cntNewArchives))
+	}
+
+	if cntDeletedArchives > 0 || cntNewArchives > 0 {
+		defer s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repoId))
+	}
+
+	return archives, nil
+}
+
+func (s *Service) DeleteArchive(ctx context.Context, id int) error {
+	s.mustHaveDB()
+	arch, err := s.db.Archive.
+		Query().
+		WithRepository().
+		Where(archive.ID(id)).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+	if canRun, reason := s.state.CanRunDeleteJob(arch.Edges.Repository.ID); !canRun {
+		return fmt.Errorf("can not delete archive: %s", reason)
+	}
+
+	repoLock := s.state.GetRepoLock(arch.Edges.Repository.ID)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	// Wait to acquire the lock and then set the repo as locked
+	s.state.SetRepoStatus(ctx, arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)
+	defer s.state.SetRepoStatus(ctx, arch.Edges.Repository.ID, state.RepoStatusIdle)
+
+	status := s.borg.DeleteArchive(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("archive deletion was cancelled")
+		}
+		return fmt.Errorf("failed to delete archive: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Archive deletion completed with warning: %s", status.GetWarning())
+	}
+	err = s.db.Archive.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(arch.Edges.Repository.ID))
+	return nil
+}
+
+type BackupProfileFilter struct {
+	Id              int    `json:"id,omitempty"`
+	Name            string `json:"name"`
+	IsAllFilter     bool   `json:"isAllFilter"`
+	IsUnknownFilter bool   `json:"isUnknownFilter"`
+}
+
+type PaginatedArchivesRequest struct {
+	// Required
+	RepositoryId int `json:"repositoryId"`
+	Page         int `json:"page"`
+	PageSize     int `json:"pageSize"`
+	// Optional
+	BackupProfileFilter *BackupProfileFilter `json:"backupProfileFilter,omitempty"`
+	Search              string               `json:"search,omitempty"`
+	StartDate           time.Time            `json:"startDate,omitempty"`
+	EndDate             time.Time            `json:"endDate,omitempty"`
+}
+
+type PaginatedArchivesResponse struct {
+	Archives []*ent.Archive `json:"archives"`
+	Total    int            `json:"total"`
+}
+
+func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
+	s.mustHaveDB()
+	if req.RepositoryId <= 0 {
+		return nil, fmt.Errorf("repositoryId is required")
+	}
+	if req.Page <= 0 {
+		return nil, fmt.Errorf("page is required")
+	}
+	if req.PageSize <= 0 {
+		return nil, fmt.Errorf("pageSize is required")
+	}
+
+	// Filter by repository
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
+	}
+
+	// If a backup profile filter is specified, filter by it
+	if req.BackupProfileFilter != nil {
+		if req.BackupProfileFilter.Id != 0 {
+			// First filter by BackupProfile.ID
+			archivePredicates = append(archivePredicates, archive.HasBackupProfileWith(backupprofile.ID(req.BackupProfileFilter.Id)))
+		} else if req.BackupProfileFilter.IsUnknownFilter {
+			// If the unknown filter is specified, filter by archives that don't have a backup profile
+			archivePredicates = append(archivePredicates, archive.Not(archive.HasBackupProfile()))
+		}
+		// Filter by BackupProfile.Name does not have to be supported
+		// Filter all is implicit
+	}
+
+	// If a search term is specified, filter by it
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+	}
+
+	// If start date is specified, filter by it
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	// If end date is specified, filter by it
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
+	}
+
+	total, err := s.db.Archive.
+		Query().
+		Where(archive.And(archivePredicates...)).
+		Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	archives, err := s.db.Archive.
+		Query().
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.Select(backupprofile.FieldName)
+			q.Select(backupprofile.FieldPrefix)
+		}).
+		Where(archive.And(archivePredicates...)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		Offset((req.Page - 1) * req.PageSize).
+		Limit(req.PageSize).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedArchivesResponse{
+		Archives: archives,
+		Total:    total,
+	}, nil
+}
+
+type PruningDates struct {
+	Dates []PruningDate `json:"dates"`
+}
+
+type PruningDate struct {
+	ArchiveId int       `json:"archiveId"`
+	NextRun   time.Time `json:"nextRun"`
+}
+
+func (s *Service) GetPruningDates(ctx context.Context, archiveIds []int) (response PruningDates, err error) {
+	s.mustHaveDB()
+	archives, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.IDIn(archiveIds...),
+			archive.HasBackupProfile(),
+			archive.WillBePruned(true),
+		)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithPruningRule()
+		}).
+		All(ctx)
+	if err != nil {
+		return
+	}
+	for _, arch := range archives {
+		if arch.Edges.BackupProfile.Edges.PruningRule != nil {
+			response.Dates = append(response.Dates, PruningDate{
+				ArchiveId: arch.ID,
+				NextRun:   arch.Edges.BackupProfile.Edges.PruningRule.NextRun,
+			})
+		}
+	}
+	return
+}
+
+func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.Archive, error) {
+	s.mustHaveDB()
+	first, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(repoId)),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return &ent.Archive{}, nil
+	}
+	return first, err
+}
+
+func (s *Service) GetArchive(ctx context.Context, id int) (*ent.Archive, error) {
+	return s.db.Archive.
+		Query().
+		WithRepository().
+		WithBackupProfile().
+		Where(archive.ID(id)).
+		Only(ctx)
+}
+
+func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
+	s.mustHaveDB()
+
+	first, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.HasBackupProfileWith(backupprofile.ID(backupId.BackupProfileId)),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return &ent.Archive{}, nil
+	}
+	return first, err
+}
+
+// ArchiveName validates the name of an archive.
+// The rules are not enforced by the database because we import them from borg repositories which have different rules.
+func (s *Service) ArchiveName(ctx context.Context, archiveId int, prefix, name string) (string, error) {
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < 3 {
+		return "Name must be at least 3 characters long", nil
+	}
+	if len(name) > 50 {
+		return "Name can not be longer than 50 characters", nil
+	}
+	pattern := `^[a-zA-Z0-9-_]+$`
+	matched, err := regexp.MatchString(pattern, name)
+	if err != nil {
+		return "", err
+	}
+	if !matched {
+		return "Name can only contain letters, numbers, hyphens, and underscores", nil
+	}
+
+	// TODO: Remove cross-service dependency - validation should not directly access repository service
+	// For now, this will cause a compilation error that needs to be fixed properly
+	arch, err := s.GetArchive(ctx, archiveId)
+	if err != nil {
+		return "", err
+	}
+	assert.NotNil(arch.Edges.Repository, "archive must have a repository")
+
+	// Check if the new name starts with the backup profile prefix
+	if arch.Edges.BackupProfile != nil {
+		if !strings.HasPrefix(prefix, arch.Edges.BackupProfile.Prefix) {
+			return "The new name must start with the backup profile prefix", nil
+		}
+	} else {
+		if prefix != "" {
+			err = fmt.Errorf("the archive can not have a prefix if it is not connected to a backup profile")
+			assert.Error(err)
+			return "", err
+		}
+
+		// If it is not connected to a backup profile,
+		// it can not start with any prefix used by another backup profile of the repository
+		backupProfiles, err := arch.Edges.Repository.QueryBackupProfiles().All(ctx)
+		if err != nil {
+			return "", err
+		}
+		for _, bp := range backupProfiles {
+			prefixWithoutTrailingDash := strings.TrimSuffix(bp.Prefix, "-")
+			if strings.HasPrefix(name, prefixWithoutTrailingDash) {
+				return "The new name must not start with the prefix of another backup profile", nil
+			}
+		}
+	}
+
+	fullName := prefix + name
+	exist, err := s.db.Archive.
+		Query().
+		Where(archive.Name(fullName)).
+		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Archive name must be unique", nil
+	}
+
+	return "", nil
+}
+
+// RenameArchive requires access to validation client
+func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string) error {
+	s.mustHaveDB()
+
+	s.log.Debugf("Renaming archive %d to %s", id, name)
+	validationError, err := s.ArchiveName(ctx, id, prefix, name)
+	if err != nil {
+		return err
+	}
+	if validationError != "" {
+		return fmt.Errorf("can not rename archive: %s", validationError)
+	}
+
+	newName := prefix + name
+
+	arch, err := s.GetArchive(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if s.state.GetRepoState(arch.Edges.Repository.ID).Status != state.RepoStatusIdle {
+		return fmt.Errorf("can not rename archive: the repository is busy")
+	}
+
+	repoLock := s.state.GetRepoLock(arch.Edges.Repository.ID)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
+	status := s.borg.Rename(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, newName)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("archive renaming was cancelled")
+		}
+		return fmt.Errorf("failed to rename archive: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Archive renaming completed with warning: %s", status.GetWarning())
+	}
+
+	return s.db.Archive.
+		UpdateOneID(id).
+		SetName(newName).
+		Exec(ctx)
+}
+
+// Mount management methods
+
+func (s *Service) MountRepository(ctx context.Context, repoId int) (state types.MountState, err error) {
+	s.mustHaveDB()
+	repo, err := s.Get(ctx, repoId)
+	if err != nil {
+		return
+	}
+
+	path, err := getRepoMountPath(repo)
+	if err != nil {
+		return
+	}
+
+	err = ensurePathExists(path)
+	if err != nil {
+		return
+	}
+
+	if status := s.borg.MountRepository(ctx, repo.Location, repo.Password, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("repository mounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to mount repository: %s", status.GetError())
+		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Repository mounting completed with warning: %s", status.GetWarning())
+	}
+
+	// Update the mount state
+	state, err = getMountState(path)
+	if err != nil {
+		return
+	}
+	s.state.SetRepoMount(ctx, repoId, &state)
+
+	// Open the file manager and forget about it
+	go s.openFileManager(path)
+	return
+}
+
+func (s *Service) MountArchive(ctx context.Context, archiveId int) (state types.MountState, err error) {
+	s.mustHaveDB()
+	arch, err := s.GetArchive(ctx, archiveId)
+	if err != nil {
+		return
+	}
+
+	if canMount, reason := s.state.CanMountRepo(arch.Edges.Repository.ID); !canMount {
+		err = fmt.Errorf("can not mount arch: %s", reason)
+		return
+	}
+	repoLock := s.state.GetRepoLock(arch.Edges.Repository.ID)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
+	path, err := getArchiveMountPath(arch)
+	if err != nil {
+		return
+	}
+
+	err = ensurePathExists(path)
+	if err != nil {
+		return
+	}
+
+	// Check current mount state
+	state, err = getMountState(path)
+	if err != nil {
+		return
+	}
+	if !state.IsMounted {
+		// If not mounted, mount it
+		if status := s.borg.MountArchive(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, path); !status.IsCompletedWithSuccess() {
+			if status.HasBeenCanceled {
+				err = fmt.Errorf("arch mounting was cancelled")
+				return
+			}
+			err = fmt.Errorf("failed to mount arch: %s", status.GetError())
+			return
+		} else if status.HasWarning() {
+			// TODO(log-warning): log warning to user
+			s.log.Warnf("Archive mounting completed with warning: %s", status.GetWarning())
+		}
+
+		// Update the mount state
+		state, err = getMountState(path)
+		if err != nil {
+			return
+		}
+		s.state.SetArchiveMount(ctx, arch.Edges.Repository.ID, archiveId, &state)
+	}
+
+	// Open the file manager and forget about it
+	go s.openFileManager(path)
+	return
+}
+
+func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) error {
+	s.mustHaveDB()
+	var unmountErrors []error
+	for _, repoId := range repoIds {
+		mount := s.GetRepoMountState(repoId)
+		if mount.IsMounted {
+			if _, err := s.UnmountRepository(ctx, repoId); err != nil {
+				unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting repository %d: %w", repoId, err))
+			}
+		}
+		if states, err := s.GetArchiveMountStates(ctx, repoId); err != nil {
+			unmountErrors = append(unmountErrors, fmt.Errorf("error getting archive mount states for repository %d: %w", repoId, err))
+		} else {
+			for archiveId, state := range states {
+				if state.IsMounted {
+					if _, err = s.UnmountArchive(ctx, archiveId); err != nil {
+						unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting archive %d: %w", archiveId, err))
+					}
+				}
+			}
+		}
+	}
+	if len(unmountErrors) > 0 {
+		return fmt.Errorf("unmount errors: %v", unmountErrors)
+	}
+	return nil
+}
+
+func (s *Service) UnmountRepository(ctx context.Context, repoId int) (state types.MountState, err error) {
+	s.mustHaveDB()
+	repo, err := s.Get(ctx, repoId)
+	if err != nil {
+		return
+	}
+
+	path, err := getRepoMountPath(repo)
+	if err != nil {
+		return
+	}
+
+	if status := s.borg.Umount(ctx, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("repository unmounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to unmount repository: %s", status.GetError())
+		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Repository unmounting completed with warning: %s", status.GetWarning())
+	}
+
+	// Update the mount state
+	mountState, err := getMountState(path)
+	if err != nil {
+		return
+	}
+	s.state.SetRepoMount(ctx, repoId, &mountState)
+	return
+}
+
+func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (state types.MountState, err error) {
+	s.mustHaveDB()
+	arch, err := s.GetArchive(ctx, archiveId)
+	if err != nil {
+		return
+	}
+
+	path, err := getArchiveMountPath(arch)
+	if err != nil {
+		return
+	}
+
+	if status := s.borg.Umount(ctx, path); !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			err = fmt.Errorf("arch unmounting was cancelled")
+			return
+		}
+		err = fmt.Errorf("failed to unmount arch: %s", status.GetError())
+		return
+	} else if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Archive unmounting completed with warning: %s", status.GetWarning())
+	}
+
+	// Update the mount state
+	mountState, err := getMountState(path)
+	if err != nil {
+		return
+	}
+	s.state.SetArchiveMount(ctx, arch.Edges.Repository.ID, archiveId, &mountState)
+	return
+}
+
+func (s *Service) GetRepoMountState(repoId int) types.MountState {
+	return s.state.GetRepoMount(repoId)
+}
+
+func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (states map[int]types.MountState, err error) {
+	s.mustHaveDB()
+	repo, err := s.Get(ctx, repoId)
+	if err != nil {
+		return
+	}
+	return s.state.GetArchiveMounts(repo.ID), nil
+}
+
+func (s *Service) openFileManager(path string) {
+	openCmd, err := types.GetOpenFileManagerCmd()
+	if err != nil {
+		s.log.Error("Error getting open file manager command: ", err)
+		return
+	}
+	cmd := exec.Command(openCmd, path)
+	err = cmd.Run()
+	if err != nil {
+		s.log.Error("Error opening file manager: ", err)
+	}
+}
+
+// Utility functions for mount paths
+
+func getMountPath(name string) (string, error) {
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	mountPath, err := types.GetMountPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(mountPath, currentUser.Uid, "arco", name), nil
+}
+
+func getRepoMountPath(repo *ent.Repository) (string, error) {
+	return getMountPath("repo-" + strconv.Itoa(repo.ID))
+}
+
+func getArchiveMountPath(archive *ent.Archive) (string, error) {
+	return getMountPath("archive-" + strconv.Itoa(archive.ID))
+}
+
+func ensurePathExists(path string) error {
+	// Check if the directory exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		//Create the directory
+		return os.MkdirAll(path, 0755)
+	}
+	return nil
+}
+
+func getMountState(path string) (state types.MountState, err error) {
+	states, err := types.GetMountStates(map[int]string{0: path})
+	if err != nil {
+		return
+	}
+	if len(states) == 0 {
+		return
+	}
+	return *states[0], nil
 }
