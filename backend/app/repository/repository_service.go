@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	"github.com/loomi-labs/arco/backend/app/database"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -77,7 +78,11 @@ func (s *Service) mustHaveDB() {
 
 // isCloudRepository checks if a repository is an ArcoCloud repository
 func (s *Service) isCloudRepository(repo *ent.Repository) bool {
-	return repo.ArcoCloudID != nil && *repo.ArcoCloudID != ""
+	// Check if repository has a cloud repository relationship
+	if repo.Edges.CloudRepository != nil {
+		return repo.Edges.CloudRepository.CloudID != ""
+	}
+	return false
 }
 
 // rollback helper function for transactions
@@ -92,6 +97,7 @@ func (s *Service) Get(ctx context.Context, repoId int) (*ent.Repository, error) 
 	s.mustHaveDB()
 	return s.db.Repository.
 		Query().
+		WithCloudRepository().
 		Where(repository.ID(repoId)).
 		Only(ctx)
 }
@@ -231,7 +237,7 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 	return s.db.Repository.
 		Create().
 		SetName(name).
-		SetLocation(location).
+		SetURL(location).
 		SetPassword(password).
 		Save(ctx)
 }
@@ -253,11 +259,11 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 
 			// Find the repository with matching name
 			for _, cloudRepo := range cloudRepos {
-				if cloudRepo.Name == name {
+				if cloudRepo.Name == name && cloudRepo.Edges.CloudRepository != nil {
 					repo = &arcov1.Repository{
-						Id:      *cloudRepo.ArcoCloudID,
+						Id:      cloudRepo.Edges.CloudRepository.CloudID,
 						Name:    cloudRepo.Name,
-						RepoUrl: cloudRepo.Location,
+						RepoUrl: cloudRepo.URL,
 					}
 					break
 				}
@@ -282,12 +288,34 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 		// TODO(log-warning): log warning to user
 		s.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
 	}
-	return s.db.Repository.
-		Create().
-		SetName(name).
-		SetLocation(repo.RepoUrl).
-		SetPassword(password).
-		Save(ctx)
+
+	var entRepo *ent.Repository
+	err = database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+		var txErr error
+		entRepo, txErr = tx.Repository.
+			Create().
+			SetName(name).
+			SetURL(repo.RepoUrl).
+			SetPassword(password).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+		_, txErr = tx.CloudRepository.
+			Create().
+			SetCloudID(repo.Id).
+			SetLocation(getLocationEnum(location)).
+			SetRepository(entRepo).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cloud repository: %w", err)
+	}
+	return entRepo, nil
 }
 
 func (s *Service) Update(ctx context.Context, repository *ent.Repository) (*ent.Repository, error) {
@@ -370,7 +398,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 
 	// Check if this is a cloud repository and route accordingly
 	if s.isCloudRepository(repo) {
-		return s.cloudService.DeleteCloudRepository(ctx, *repo.ArcoCloudID)
+		return s.cloudService.DeleteCloudRepository(ctx, repo.Edges.CloudRepository.CloudID)
 	}
 
 	// Handle local repository deletion
@@ -382,7 +410,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
-	status := s.borg.DeleteRepository(ctx, repo.Location, repo.Password)
+	status := s.borg.DeleteRepository(ctx, repo.URL, repo.Password)
 	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, types2.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
 		if status.HasBeenCanceled {
@@ -430,7 +458,7 @@ func (s *Service) BreakLock(ctx context.Context, id int) error {
 		return err
 	}
 
-	status := s.borg.BreakLock(ctx, repo.Location, repo.Password)
+	status := s.borg.BreakLock(ctx, repo.URL, repo.Password)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			return fmt.Errorf("lock breaking was cancelled")
@@ -448,7 +476,7 @@ func (s *Service) BreakLock(ctx context.Context, id int) error {
 func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error) {
 	s.mustHaveDB()
 	repos, err := s.db.Repository.Query().
-		Where(repository.LocationContains("@")).
+		Where(repository.URLContains("@")).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -459,7 +487,7 @@ func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error)
 	hosts := make(map[string]struct{})
 	for _, repo := range repos {
 		// Extract user, host and port from location
-		parsedURL, err := url.Parse(repo.Location)
+		parsedURL, err := url.Parse(repo.URL)
 		if err != nil {
 			continue
 		}
@@ -666,7 +694,7 @@ func (s *Service) refreshArchives(ctx context.Context, repoId int) ([]*ent.Archi
 	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusPerformingOperation)
 	defer s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
 
-	listResponse, status := s.borg.List(ctx, repo.Location, repo.Password)
+	listResponse, status := s.borg.List(ctx, repo.URL, repo.Password)
 	if status != nil && !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			return nil, fmt.Errorf("archive listing was cancelled")
@@ -776,7 +804,7 @@ func (s *Service) DeleteArchive(ctx context.Context, id int) error {
 	s.state.SetRepoStatus(ctx, arch.Edges.Repository.ID, state.RepoStatusPerformingOperation)
 	defer s.state.SetRepoStatus(ctx, arch.Edges.Repository.ID, state.RepoStatusIdle)
 
-	status := s.borg.DeleteArchive(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password)
+	status := s.borg.DeleteArchive(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			return fmt.Errorf("archive deletion was cancelled")
@@ -1069,7 +1097,7 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
-	status := s.borg.Rename(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, newName)
+	status := s.borg.Rename(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password, newName)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			return fmt.Errorf("archive renaming was cancelled")
@@ -1106,7 +1134,7 @@ func (s *Service) MountRepository(ctx context.Context, repoId int) (state types.
 		return
 	}
 
-	if status := s.borg.MountRepository(ctx, repo.Location, repo.Password, path); !status.IsCompletedWithSuccess() {
+	if status := s.borg.MountRepository(ctx, repo.URL, repo.Password, path); !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			err = fmt.Errorf("repository mounting was cancelled")
 			return
@@ -1162,7 +1190,7 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (state types.
 	}
 	if !state.IsMounted {
 		// If not mounted, mount it
-		if status := s.borg.MountArchive(ctx, arch.Edges.Repository.Location, arch.Name, arch.Edges.Repository.Password, path); !status.IsCompletedWithSuccess() {
+		if status := s.borg.MountArchive(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password, path); !status.IsCompletedWithSuccess() {
 			if status.HasBeenCanceled {
 				err = fmt.Errorf("arch mounting was cancelled")
 				return

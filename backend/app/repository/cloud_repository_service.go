@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ydb-platform/ydb-go-sdk/v3/log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,9 +16,23 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"go.uber.org/zap"
 )
+
+// Helper function to convert proto location to enum
+func getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
+	switch location {
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_EU:
+		return cloudrepository.LocationEU
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
+		return cloudrepository.LocationUS
+	default:
+		log.Error(errors.New("unknown location"))
+		return cloudrepository.LocationEU // Default to EU
+	}
+}
 
 type CloudRepositoryStatus string
 
@@ -119,7 +134,11 @@ func (s *CloudRepositoryService) getArcoCloudSSHKeyPath() string {
 
 // IsCloudRepository checks if a repository is an ArcoCloud repository
 func (s *CloudRepositoryService) IsCloudRepository(repo *ent.Repository) bool {
-	return repo.ArcoCloudID != nil && *repo.ArcoCloudID != ""
+	// Check if repository has a cloud repository relationship
+	if repo.Edges.CloudRepository != nil {
+		return repo.Edges.CloudRepository.CloudID != ""
+	}
+	return false
 }
 
 // Error Handling
@@ -131,26 +150,25 @@ func (s *CloudRepositoryService) handleRPCError(operation string, err error) err
 		switch connectErr.Code() {
 		case connect.CodeResourceExhausted:
 			s.log.Warnf("Rate limit exceeded for %s: %v", operation, err)
-			return fmt.Errorf("rate limit exceeded")
+			return fmt.Errorf("rate limit exceeded: %w", err)
 		case connect.CodeUnavailable, connect.CodeDeadlineExceeded, connect.CodeAborted:
 			s.log.Warnf("Connection error for %s: %v", operation, err)
-			return fmt.Errorf("connection error")
+			return fmt.Errorf("connection error: %w", err)
 		case connect.CodeNotFound:
 			s.log.Warnf("Resource not found for %s: %v", operation, err)
-			return fmt.Errorf("repository not found")
+			return fmt.Errorf("repository not found: %w", err)
 		case connect.CodeAlreadyExists:
 			s.log.Warnf("Resource already exists for %s: %v", operation, err)
-			return fmt.Errorf("repository already exists")
+			return fmt.Errorf("repository already exists: %w", err)
 		default:
 			s.log.Errorf("Cloud repository %s failed: %v", operation, err)
-			return fmt.Errorf("cloud repository operation failed")
+			return fmt.Errorf("cloud repository operation failed: %w", err)
 		}
 	}
 	return err
 }
 
-// Cloud-Local Repository Sync
-
+// TODO: do we need this???
 // syncCloudRepository creates or updates a local repository entity with cloud metadata
 func (s *CloudRepositoryService) syncCloudRepository(ctx context.Context, cloudRepo *arcov1.Repository) (*ent.Repository, error) {
 	s.mustHaveDB()
@@ -158,33 +176,61 @@ func (s *CloudRepositoryService) syncCloudRepository(ctx context.Context, cloudR
 	// Check if local repository already exists by ArcoCloud ID
 	if cloudRepo.Id != "" {
 		if localRepo, err := s.db.Repository.Query().
-			Where(repository.ArcoCloudIDEQ(cloudRepo.Id)).
+			Where(repository.HasCloudRepositoryWith(
+				cloudrepository.CloudIDEQ(cloudRepo.Id),
+			)).
 			First(ctx); err == nil {
 			// Update existing repository
 			updateQuery := s.db.Repository.UpdateOne(localRepo).
 				SetName(cloudRepo.Name).
-				SetLocation(cloudRepo.RepoUrl)
+				SetURL(cloudRepo.RepoUrl)
 			return updateQuery.Save(ctx)
 		}
 	}
 
 	// Check if repository exists by location (repo URL)
 	if localRepo, err := s.db.Repository.Query().
-		Where(repository.LocationEQ(cloudRepo.RepoUrl)).
+		Where(repository.URLEQ(cloudRepo.RepoUrl)).
 		First(ctx); err == nil {
-		// Update with cloud metadata
+		// Create or update cloud repository association
+		_, err := s.db.CloudRepository.Create().
+			SetCloudID(cloudRepo.Id).
+			SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+			SetLocation(getLocationEnum(cloudRepo.Location)).
+			SetRepository(localRepo).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cloud repository: %w", err)
+		}
+
+		// Update repository name if needed
 		updateQuery := s.db.Repository.UpdateOne(localRepo).
-			SetArcoCloudID(cloudRepo.Id).
 			SetName(cloudRepo.Name)
 		return updateQuery.Save(ctx)
 	}
 
-	// Create new local repository
-	return s.db.Repository.Create().
+	// Create new local repository with cloud association
+	localRepo, err := s.db.Repository.Create().
 		SetName(cloudRepo.Name).
-		SetLocation(cloudRepo.RepoUrl).
-		SetArcoCloudID(cloudRepo.Id).
+		SetURL(cloudRepo.RepoUrl).
+		SetPassword(""). // Will be set later
 		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repository: %w", err)
+	}
+
+	// Create cloud repository association
+	_, err = s.db.CloudRepository.Create().
+		SetCloudID(cloudRepo.Id).
+		SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+		SetLocation(getLocationEnum(cloudRepo.Location)).
+		SetRepository(localRepo).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cloud repository: %w", err)
+	}
+
+	return localRepo, nil
 }
 
 // Frontend-exposed business logic methods
@@ -234,7 +280,9 @@ func (s *CloudRepositoryService) DeleteCloudRepository(ctx context.Context, repo
 
 	// Delete local entity
 	affected, err := s.db.Repository.Delete().
-		Where(repository.ArcoCloudIDEQ(repositoryID)).
+		Where(repository.HasCloudRepositoryWith(
+			cloudrepository.CloudIDEQ(repositoryID),
+		)).
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete local repository: %w", err)
