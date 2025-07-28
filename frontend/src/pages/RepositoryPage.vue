@@ -8,7 +8,7 @@ import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import * as zod from "zod";
 import { object } from "zod";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
@@ -73,14 +73,14 @@ async function getData() {
     loading.value = true;
 
     repo.value =
-      (await repoClient.Get(repoId)) ?? ent.Repository.createFrom();
+      (await repoService.Service.Get(repoId)) ?? ent.Repository.createFrom();
     name.value = repo.value.name;
 
     repoType.value = getRepoType(repo.value.location);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
     deletableBackupProfiles.value =
-      (await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
+      (await repoService.Service.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
         (r) => r !== null
       ) ?? [];
   } catch (error: unknown) {
@@ -91,16 +91,16 @@ async function getData() {
 
 async function getRepoState() {
   try {
-    repoState.value = await repoClient.GetState(repoId);
+    repoState.value = await repoService.Service.GetState(repoId);
 
-    nbrOfArchives.value = await repoClient.GetNbrOfArchives(repoId);
+    nbrOfArchives.value = await repoService.Service.GetNbrOfArchives(repoId);
 
     totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
-    failedBackupRun.value = await repoClient.GetLastBackupErrorMsg(repoId);
+    failedBackupRun.value = await repoService.Service.GetLastBackupErrorMsg(repoId);
 
     const archive =
-      (await repoClient.GetLastArchiveByRepoId(repoId)) ?? undefined;
+      (await repoService.Service.GetLastArchiveByRepoId(repoId)) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: unknown) {
@@ -112,7 +112,7 @@ async function saveName() {
   if (meta.value.valid && name.value !== repo.value.name) {
     try {
       repo.value.name = name.value ?? "";
-      await repoClient.Update(repo.value);
+      await repoService.Service.Update(repo.value);
     } catch (error: unknown) {
       await showAndLogError("Failed to save repository name", error);
     }
@@ -128,7 +128,7 @@ function resizeNameWidth() {
 
 async function _saveIntegrityCheckSettings() {
   try {
-    const result = await repoClient.SaveIntegrityCheckSettings(
+    const result = await repoService.Service.SaveIntegrityCheckSettings(
       repoId,
       isIntegrityCheckEnabled.value
     );
@@ -140,7 +140,7 @@ async function _saveIntegrityCheckSettings() {
 
 async function removeRepo() {
   try {
-    await repoClient.Remove(repoId);
+    await repoService.Service.Remove(repoId);
     toast.success("Repository removed");
     await router.replace({
       path: Page.Dashboard,
@@ -153,7 +153,7 @@ async function removeRepo() {
 
 async function deleteRepo() {
   try {
-    await repoClient.Delete(repoId);
+    await repoService.Service.Delete(repoId);
     toast.success("Repository deleted");
     await router.replace({
       path: Page.Dashboard,

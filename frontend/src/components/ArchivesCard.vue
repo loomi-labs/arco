@@ -21,7 +21,7 @@ import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import { archivesChanged } from "../common/events";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
@@ -74,7 +74,7 @@ const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<app.BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
-const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
+const pruningDates = ref<repoService.PruningDates>(repoService.PruningDates.createFrom());
 pruningDates.value.dates = [];
 const inputValues = ref<{ [key: number]: string }>({});
 const inputErrors = ref<{ [key: number]: string }>({});
@@ -104,7 +104,7 @@ const isBackupProfileFilterVisible = computed<boolean>(
 async function getPaginatedArchives() {
   try {
     isLoading.value = true;
-    const request = app.PaginatedArchivesRequest.createFrom();
+    const request = repoService.PaginatedArchivesRequest.createFrom();
 
     // Required
     request.repositoryId = props.repo.id;
@@ -128,8 +128,8 @@ async function getPaginatedArchives() {
       : undefined;
 
     const result =
-      (await repoClient.GetPaginatedArchives(request)) ??
-      app.PaginatedArchivesResponse.createFrom();
+      (await repoService.Service.GetPaginatedArchives(request)) ??
+      repoService.PaginatedArchivesResponse.createFrom();
 
     archives.value = result.archives.filter((a) => a !== null);
     pagination.value = {
@@ -169,7 +169,7 @@ async function deleteArchive() {
 
   try {
     progressSpinnerText.value = "Deleting archive";
-    await repoClient.DeleteArchive(archiveId);
+    await repoService.Service.DeleteArchive(archiveId);
     markArchiveAndFadeOut(archiveId);
   } catch (error: unknown) {
     await showAndLogError("Failed to delete archive", error);
@@ -188,7 +188,7 @@ function markArchiveAndFadeOut(archiveId: number) {
 
 async function getArchiveMountStates() {
   try {
-    const result = await repoClient.GetArchiveMountStates(props.repo.id);
+    const result = await repoService.Service.GetArchiveMountStates(props.repo.id);
     archiveMountStates.value = new Map(
       Object.entries(result).map(([k, v]) => [Number(k), v])
     );
@@ -200,7 +200,7 @@ async function getArchiveMountStates() {
 async function mountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Browsing archive";
-    const archiveMountState = await repoClient.MountArchive(archiveId);
+    const archiveMountState = await repoService.Service.MountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: unknown) {
     await showAndLogError("Failed to mount archive", error);
@@ -212,7 +212,7 @@ async function mountArchive(archiveId: number) {
 async function unmountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Unmounting archive";
-    const archiveMountState = await repoClient.UnmountArchive(archiveId);
+    const archiveMountState = await repoService.Service.UnmountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount archive", error);
@@ -245,7 +245,7 @@ async function getBackupProfileFilterOptions() {
 async function refreshArchives() {
   try {
     progressSpinnerText.value = "Refreshing archives";
-    await repoClient.RefreshArchives(props.repo.id);
+    await repoService.Service.RefreshArchives(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to refresh archives", error);
   } finally {
@@ -255,7 +255,7 @@ async function refreshArchives() {
 
 async function getPruningDates() {
   try {
-    pruningDates.value = await repoClient.GetPruningDates(
+    pruningDates.value = await repoService.Service.GetPruningDates(
       archives.value.filter((a) => a.willBePruned).map((a) => a.id)
     );
   } catch (error: unknown) {
@@ -284,7 +284,7 @@ async function rename(archive: ent.Archive) {
     inputRenameInProgress.value[archive.id] = true;
     const name = inputValues.value[archive.id];
     const prefix = prefixForBackupProfile(archive);
-    await repoClient.RenameArchive(archive.id, prefix, name);
+    await repoService.Service.RenameArchive(archive.id, prefix, name);
   } catch (error: unknown) {
     await showAndLogError("Failed to rename archive", error);
   } finally {
@@ -359,7 +359,7 @@ async function deleteSelectedArchives() {
     const archiveIds = Array.from(selectedArchives.value);
 
     for (const archiveId of archiveIds) {
-      await repoClient.DeleteArchive(archiveId);
+      await repoService.Service.DeleteArchive(archiveId);
       markArchiveAndFadeOut(archiveId);
     }
 

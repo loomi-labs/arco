@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as zod from "zod";
 import { object } from "zod";
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
@@ -128,7 +128,7 @@ async function getData() {
     }
 
     // Get existing repositories
-    existingRepos.value = (await repoClient.All()).filter(r => r !== null) ;
+    existingRepos.value = (await repoService.Service.All()).filter(r => r !== null) ;
 
     dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;

@@ -7,7 +7,7 @@ import { formInputClass } from "../common/form";
 import { CheckCircleIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
@@ -88,7 +88,7 @@ async function createRepo() {
   try {
     isCreating.value = true;
     const noPassword = !isEncrypted.value;
-    const repo = await repoClient.Create(
+    const repo = await repoService.Service.Create(
       name.value!,
       location.value!,
       password.value!,
@@ -157,14 +157,14 @@ async function validate(force = false) {
       // Can't be a borg repo if the location is invalid
       isBorgRepo.value = false;
     } else {
-      isBorgRepo.value = await repoClient.IsBorgRepository(location.value);
+      isBorgRepo.value = await repoService.Service.IsBorgRepository(location.value);
     }
 
     // If the repo is a borg repo, we need to test the connection
     if (isBorgRepo.value) {
       lastTestConnectionValues.value = [location.value, password.value];
 
-      const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
+      const result = await repoService.Service.TestRepoConnection(location.value ?? "", password.value ?? "");
       isEncrypted.value = result.needsPassword;
       needsPassword.value = result.needsPassword;
 

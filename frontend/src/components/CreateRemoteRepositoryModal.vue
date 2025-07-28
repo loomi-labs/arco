@@ -6,7 +6,7 @@ import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
@@ -91,7 +91,7 @@ async function createRepo() {
   try {
     isCreating.value = true;
     const noPassword = !isEncrypted.value;
-    const repo = await repoClient.Create(
+    const repo = await repoService.Service.Create(
       name.value!,
       location.value!,
       password.value!,
@@ -158,7 +158,7 @@ async function fullValidate(force = false) {
     if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
       lastTestConnectionValues.value = [location.value, password.value];
 
-      const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
+      const result = await repoService.Service.TestRepoConnection(location.value ?? "", password.value ?? "");
 
       isBorgRepo.value = result.isBorgRepo;
 
@@ -195,7 +195,7 @@ async function fullValidate(force = false) {
 
 async function getConnectedRemoteHosts() {
   try {
-    hosts.value = await repoClient.GetConnectedRemoteHosts();
+    hosts.value = await repoService.Service.GetConnectedRemoteHosts();
   } catch (error: unknown) {
     await showAndLogError("Failed to get connected remote hosts", error);
   }

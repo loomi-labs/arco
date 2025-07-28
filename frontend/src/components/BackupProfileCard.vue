@@ -15,7 +15,7 @@ import type { Icon } from "../common/icons";
 import { getIcon } from "../common/icons";
 import { getRepoType } from "../common/repository";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
@@ -80,7 +80,7 @@ async function getLastArchives() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
-      const archive = await repoClient.GetLastArchiveByBackupId(backupId);
+      const archive = await repoService.Service.GetLastArchiveByBackupId(backupId);
       if (archive?.id) {
         if (!newLastArchive || isAfter(archive.createdAt, newLastArchive.createdAt)) {
           newLastArchive = archive;

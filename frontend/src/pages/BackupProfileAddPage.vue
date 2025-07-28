@@ -16,7 +16,7 @@ import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
@@ -136,7 +136,7 @@ async function newBackupProfile() {
 
 async function getExistingRepositories() {
   try {
-    existingRepos.value = (await repoClient.All()).filter((r) => r !== null);
+    existingRepos.value = (await repoService.Service.All()).filter((r) => r !== null);
   } catch (error: unknown) {
     await showAndLogError("Failed to get existing repositories", error);
   }
