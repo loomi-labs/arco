@@ -21,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/teamwork/reload v1.4.2
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.12
+	github.com/ydb-platform/ydb-go-sdk/v3 v3.108.1
 	go.uber.org/mock v0.5.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.40.0
@@ -373,7 +374,6 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/ydb-platform/ydb-go-genproto v0.0.0-20241112172322-ea1f63298f77 // indirect
-	github.com/ydb-platform/ydb-go-sdk/v3 v3.108.1 // indirect
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
