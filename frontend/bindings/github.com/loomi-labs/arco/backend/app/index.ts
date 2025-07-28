@@ -3,12 +3,10 @@
 
 import * as AppClient from "./appclient.js";
 import * as BackupClient from "./backupclient.js";
-import * as RepositoryClient from "./repositoryclient.js";
 import * as ValidationClient from "./validationclient.js";
 export {
     AppClient,
     BackupClient,
-    RepositoryClient,
     ValidationClient
 };
 
@@ -18,13 +16,8 @@ export {
     Env,
     ExaminePruningResult,
     GetPruningOptionsResponse,
-    PaginatedArchivesRequest,
-    PaginatedArchivesResponse,
-    PruningDate,
-    PruningDates,
     PruningOption,
     PruningOptionName,
     SelectDirectoryData,
-    TestRepoConnectionResult,
     User
 } from "./models.js";

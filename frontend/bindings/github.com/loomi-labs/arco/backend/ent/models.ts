@@ -807,6 +807,11 @@ export class Repository {
     "password": string;
 
     /**
+     * ArcoCloudID holds the value of the "arco_cloud_id" field.
+     */
+    "arcoCloudId": string | null;
+
+    /**
      * NextIntegrityCheck holds the value of the "next_integrity_check" field.
      */
     "nextIntegrityCheck": time$0.Time | null;
@@ -867,6 +872,9 @@ export class Repository {
         if (!("password" in $$source)) {
             this["password"] = "";
         }
+        if (!("arcoCloudId" in $$source)) {
+            this["arcoCloudId"] = null;
+        }
         if (!("nextIntegrityCheck" in $$source)) {
             this["nextIntegrityCheck"] = null;
         }
@@ -899,10 +907,10 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField13_0 = $$createType21;
+        const $$createField14_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField14_0($$parsedSource["edges"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }

@@ -314,6 +314,36 @@ export class ReactivateSubscriptionResponse {
 }
 
 /**
+ * RepositoryLocation represents the geographical location of a ArcoCloud repository.
+ * 
+ * ArcoCloud provides repositories in multiple regions for data sovereignty
+ * and performance optimization based on user location.
+ */
+export enum RepositoryLocation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Default unspecified location.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_UNSPECIFIED = 0,
+
+    /**
+     * United States region for repositories.
+     * Provides optimal performance for North American users.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_US = 1,
+
+    /**
+     * European Union region for repositories.
+     * Ensures GDPR compliance and optimal performance for European users.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_EU = 2,
+};
+
+/**
  * ScheduleSubscriptionUpdateResponse confirms change scheduling.
  * 
  * Provides details about when the change will take effect and how to track it.

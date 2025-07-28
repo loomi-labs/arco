@@ -11,6 +11,7 @@ export {
     Plan,
     PlanPrice,
     ReactivateSubscriptionResponse,
+    RepositoryLocation,
     ScheduleSubscriptionUpdateResponse,
     Subscription,
     SubscriptionStatus,

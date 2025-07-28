@@ -8,12 +8,6 @@ import { Create as $Create } from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as types$0 from "./types/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as ent$0 from "../ent/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../time/models.js";
 
 export class AppInfo {
     "version": string;
@@ -169,129 +163,6 @@ export class GetPruningOptionsResponse {
     }
 }
 
-export class PaginatedArchivesRequest {
-    /**
-     * Required
-     */
-    "repositoryId": number;
-    "page": number;
-    "pageSize": number;
-
-    /**
-     * Optional
-     */
-    "backupProfileFilter"?: BackupProfileFilter | null;
-    "search"?: string;
-    "startDate"?: time$0.Time;
-    "endDate"?: time$0.Time;
-
-    /** Creates a new PaginatedArchivesRequest instance. */
-    constructor($$source: Partial<PaginatedArchivesRequest> = {}) {
-        if (!("repositoryId" in $$source)) {
-            this["repositoryId"] = 0;
-        }
-        if (!("page" in $$source)) {
-            this["page"] = 0;
-        }
-        if (!("pageSize" in $$source)) {
-            this["pageSize"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PaginatedArchivesRequest instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PaginatedArchivesRequest {
-        const $$createField3_0 = $$createType4;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("backupProfileFilter" in $$parsedSource) {
-            $$parsedSource["backupProfileFilter"] = $$createField3_0($$parsedSource["backupProfileFilter"]);
-        }
-        return new PaginatedArchivesRequest($$parsedSource as Partial<PaginatedArchivesRequest>);
-    }
-}
-
-export class PaginatedArchivesResponse {
-    "archives": (ent$0.Archive | null)[];
-    "total": number;
-
-    /** Creates a new PaginatedArchivesResponse instance. */
-    constructor($$source: Partial<PaginatedArchivesResponse> = {}) {
-        if (!("archives" in $$source)) {
-            this["archives"] = [];
-        }
-        if (!("total" in $$source)) {
-            this["total"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PaginatedArchivesResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType7;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("archives" in $$parsedSource) {
-            $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
-        }
-        return new PaginatedArchivesResponse($$parsedSource as Partial<PaginatedArchivesResponse>);
-    }
-}
-
-export class PruningDate {
-    "archiveId": number;
-    "nextRun": time$0.Time;
-
-    /** Creates a new PruningDate instance. */
-    constructor($$source: Partial<PruningDate> = {}) {
-        if (!("archiveId" in $$source)) {
-            this["archiveId"] = 0;
-        }
-        if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PruningDate instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PruningDate {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new PruningDate($$parsedSource as Partial<PruningDate>);
-    }
-}
-
-export class PruningDates {
-    "dates": PruningDate[];
-
-    /** Creates a new PruningDates instance. */
-    constructor($$source: Partial<PruningDates> = {}) {
-        if (!("dates" in $$source)) {
-            this["dates"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PruningDates instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType9;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("dates" in $$parsedSource) {
-            $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
-        }
-        return new PruningDates($$parsedSource as Partial<PruningDates>);
-    }
-}
-
 export class PruningOption {
     "name": PruningOptionName;
     "keepHourly": number;
@@ -374,39 +245,6 @@ export class SelectDirectoryData {
     }
 }
 
-export class TestRepoConnectionResult {
-    "success": boolean;
-    "needsPassword": boolean;
-    "isPasswordValid": boolean;
-    "isBorgRepo": boolean;
-
-    /** Creates a new TestRepoConnectionResult instance. */
-    constructor($$source: Partial<TestRepoConnectionResult> = {}) {
-        if (!("success" in $$source)) {
-            this["success"] = false;
-        }
-        if (!("needsPassword" in $$source)) {
-            this["needsPassword"] = false;
-        }
-        if (!("isPasswordValid" in $$source)) {
-            this["isPasswordValid"] = false;
-        }
-        if (!("isBorgRepo" in $$source)) {
-            this["isBorgRepo"] = false;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new TestRepoConnectionResult instance from a string or object.
-     */
-    static createFrom($$source: any = {}): TestRepoConnectionResult {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new TestRepoConnectionResult($$parsedSource as Partial<TestRepoConnectionResult>);
-    }
-}
-
 export class User {
     "email": string;
 
@@ -432,10 +270,3 @@ export class User {
 const $$createType0 = types$0.BackupId.createFrom;
 const $$createType1 = PruningOption.createFrom;
 const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = BackupProfileFilter.createFrom;
-const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = ent$0.Archive.createFrom;
-const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = PruningDate.createFrom;
-const $$createType9 = $Create.Array($$createType8);
