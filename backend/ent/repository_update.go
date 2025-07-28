@@ -80,6 +80,26 @@ func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
 	return ru
 }
 
+// SetArcoCloudID sets the "arco_cloud_id" field.
+func (ru *RepositoryUpdate) SetArcoCloudID(s string) *RepositoryUpdate {
+	ru.mutation.SetArcoCloudID(s)
+	return ru
+}
+
+// SetNillableArcoCloudID sets the "arco_cloud_id" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableArcoCloudID(s *string) *RepositoryUpdate {
+	if s != nil {
+		ru.SetArcoCloudID(*s)
+	}
+	return ru
+}
+
+// ClearArcoCloudID clears the value of the "arco_cloud_id" field.
+func (ru *RepositoryUpdate) ClearArcoCloudID() *RepositoryUpdate {
+	ru.mutation.ClearArcoCloudID()
+	return ru
+}
+
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
 func (ru *RepositoryUpdate) SetNextIntegrityCheck(t time.Time) *RepositoryUpdate {
 	ru.mutation.SetNextIntegrityCheck(t)
@@ -415,6 +435,12 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
+	if value, ok := ru.mutation.ArcoCloudID(); ok {
+		_spec.SetField(repository.FieldArcoCloudID, field.TypeString, value)
+	}
+	if ru.mutation.ArcoCloudIDCleared() {
+		_spec.ClearField(repository.FieldArcoCloudID, field.TypeString)
+	}
 	if value, ok := ru.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
 	}
@@ -659,6 +685,26 @@ func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdate
 	if s != nil {
 		ruo.SetPassword(*s)
 	}
+	return ruo
+}
+
+// SetArcoCloudID sets the "arco_cloud_id" field.
+func (ruo *RepositoryUpdateOne) SetArcoCloudID(s string) *RepositoryUpdateOne {
+	ruo.mutation.SetArcoCloudID(s)
+	return ruo
+}
+
+// SetNillableArcoCloudID sets the "arco_cloud_id" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableArcoCloudID(s *string) *RepositoryUpdateOne {
+	if s != nil {
+		ruo.SetArcoCloudID(*s)
+	}
+	return ruo
+}
+
+// ClearArcoCloudID clears the value of the "arco_cloud_id" field.
+func (ruo *RepositoryUpdateOne) ClearArcoCloudID() *RepositoryUpdateOne {
+	ruo.mutation.ClearArcoCloudID()
 	return ruo
 }
 
@@ -1026,6 +1072,12 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.ArcoCloudID(); ok {
+		_spec.SetField(repository.FieldArcoCloudID, field.TypeString, value)
+	}
+	if ruo.mutation.ArcoCloudIDCleared() {
+		_spec.ClearField(repository.FieldArcoCloudID, field.TypeString)
 	}
 	if value, ok := ruo.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)

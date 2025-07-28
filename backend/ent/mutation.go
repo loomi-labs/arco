@@ -5601,6 +5601,7 @@ type RepositoryMutation struct {
 	name                         *string
 	location                     *string
 	password                     *string
+	arco_cloud_id                *string
 	next_integrity_check         *time.Time
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
@@ -5911,6 +5912,55 @@ func (m *RepositoryMutation) OldPassword(ctx context.Context) (v string, err err
 // ResetPassword resets all changes to the "password" field.
 func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
+}
+
+// SetArcoCloudID sets the "arco_cloud_id" field.
+func (m *RepositoryMutation) SetArcoCloudID(s string) {
+	m.arco_cloud_id = &s
+}
+
+// ArcoCloudID returns the value of the "arco_cloud_id" field in the mutation.
+func (m *RepositoryMutation) ArcoCloudID() (r string, exists bool) {
+	v := m.arco_cloud_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArcoCloudID returns the old "arco_cloud_id" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldArcoCloudID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArcoCloudID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArcoCloudID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArcoCloudID: %w", err)
+	}
+	return oldValue.ArcoCloudID, nil
+}
+
+// ClearArcoCloudID clears the value of the "arco_cloud_id" field.
+func (m *RepositoryMutation) ClearArcoCloudID() {
+	m.arco_cloud_id = nil
+	m.clearedFields[repository.FieldArcoCloudID] = struct{}{}
+}
+
+// ArcoCloudIDCleared returns if the "arco_cloud_id" field was cleared in this mutation.
+func (m *RepositoryMutation) ArcoCloudIDCleared() bool {
+	_, ok := m.clearedFields[repository.FieldArcoCloudID]
+	return ok
+}
+
+// ResetArcoCloudID resets all changes to the "arco_cloud_id" field.
+func (m *RepositoryMutation) ResetArcoCloudID() {
+	m.arco_cloud_id = nil
+	delete(m.clearedFields, repository.FieldArcoCloudID)
 }
 
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
@@ -6494,7 +6544,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, repository.FieldCreatedAt)
 	}
@@ -6509,6 +6559,9 @@ func (m *RepositoryMutation) Fields() []string {
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
+	}
+	if m.arco_cloud_id != nil {
+		fields = append(fields, repository.FieldArcoCloudID)
 	}
 	if m.next_integrity_check != nil {
 		fields = append(fields, repository.FieldNextIntegrityCheck)
@@ -6549,6 +6602,8 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Location()
 	case repository.FieldPassword:
 		return m.Password()
+	case repository.FieldArcoCloudID:
+		return m.ArcoCloudID()
 	case repository.FieldNextIntegrityCheck:
 		return m.NextIntegrityCheck()
 	case repository.FieldStatsTotalChunks:
@@ -6582,6 +6637,8 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldLocation(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
+	case repository.FieldArcoCloudID:
+		return m.OldArcoCloudID(ctx)
 	case repository.FieldNextIntegrityCheck:
 		return m.OldNextIntegrityCheck(ctx)
 	case repository.FieldStatsTotalChunks:
@@ -6639,6 +6696,13 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPassword(v)
+		return nil
+	case repository.FieldArcoCloudID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArcoCloudID(v)
 		return nil
 	case repository.FieldNextIntegrityCheck:
 		v, ok := value.(time.Time)
@@ -6794,6 +6858,9 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(repository.FieldArcoCloudID) {
+		fields = append(fields, repository.FieldArcoCloudID)
+	}
 	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
 		fields = append(fields, repository.FieldNextIntegrityCheck)
 	}
@@ -6811,6 +6878,9 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
+	case repository.FieldArcoCloudID:
+		m.ClearArcoCloudID()
+		return nil
 	case repository.FieldNextIntegrityCheck:
 		m.ClearNextIntegrityCheck()
 		return nil
@@ -6836,6 +6906,9 @@ func (m *RepositoryMutation) ResetField(name string) error {
 		return nil
 	case repository.FieldPassword:
 		m.ResetPassword()
+		return nil
+	case repository.FieldArcoCloudID:
+		m.ResetArcoCloudID()
 		return nil
 	case repository.FieldNextIntegrityCheck:
 		m.ResetNextIntegrityCheck()

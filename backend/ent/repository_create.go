@@ -69,6 +69,20 @@ func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	return rc
 }
 
+// SetArcoCloudID sets the "arco_cloud_id" field.
+func (rc *RepositoryCreate) SetArcoCloudID(s string) *RepositoryCreate {
+	rc.mutation.SetArcoCloudID(s)
+	return rc
+}
+
+// SetNillableArcoCloudID sets the "arco_cloud_id" field if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableArcoCloudID(s *string) *RepositoryCreate {
+	if s != nil {
+		rc.SetArcoCloudID(*s)
+	}
+	return rc
+}
+
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
 func (rc *RepositoryCreate) SetNextIntegrityCheck(t time.Time) *RepositoryCreate {
 	rc.mutation.SetNextIntegrityCheck(t)
@@ -378,6 +392,10 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
+	}
+	if value, ok := rc.mutation.ArcoCloudID(); ok {
+		_spec.SetField(repository.FieldArcoCloudID, field.TypeString, value)
+		_node.ArcoCloudID = &value
 	}
 	if value, ok := rc.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)

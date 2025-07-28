@@ -27,6 +27,8 @@ type Repository struct {
 	Location string `json:"location"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
+	// ArcoCloudID holds the value of the "arco_cloud_id" field.
+	ArcoCloudID *string `json:"arcoCloudId"`
 	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
 	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
 	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
@@ -94,7 +96,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
-		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
+		case repository.FieldName, repository.FieldLocation, repository.FieldPassword, repository.FieldArcoCloudID:
 			values[i] = new(sql.NullString)
 		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldNextIntegrityCheck:
 			values[i] = new(sql.NullTime)
@@ -148,6 +150,13 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
 				r.Password = value.String
+			}
+		case repository.FieldArcoCloudID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field arco_cloud_id", values[i])
+			} else if value.Valid {
+				r.ArcoCloudID = new(string)
+				*r.ArcoCloudID = value.String
 			}
 		case repository.FieldNextIntegrityCheck:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -257,6 +266,11 @@ func (r *Repository) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)
+	builder.WriteString(", ")
+	if v := r.ArcoCloudID; v != nil {
+		builder.WriteString("arco_cloud_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := r.NextIntegrityCheck; v != nil {
 		builder.WriteString("next_integrity_check=")

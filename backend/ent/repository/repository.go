@@ -24,6 +24,8 @@ const (
 	FieldLocation = "location"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldArcoCloudID holds the string denoting the arco_cloud_id field in the database.
+	FieldArcoCloudID = "arco_cloud_id"
 	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
 	FieldNextIntegrityCheck = "next_integrity_check"
 	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
@@ -75,6 +77,7 @@ var Columns = []string{
 	FieldName,
 	FieldLocation,
 	FieldPassword,
+	FieldArcoCloudID,
 	FieldNextIntegrityCheck,
 	FieldStatsTotalChunks,
 	FieldStatsTotalSize,
@@ -154,6 +157,11 @@ func ByLocation(opts ...sql.OrderTermOption) OrderOption {
 // ByPassword orders the results by the password field.
 func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+}
+
+// ByArcoCloudID orders the results by the arco_cloud_id field.
+func ByArcoCloudID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldArcoCloudID, opts...).ToFunc()
 }
 
 // ByNextIntegrityCheck orders the results by the next_integrity_check field.

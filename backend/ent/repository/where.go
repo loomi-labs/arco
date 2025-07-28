@@ -80,6 +80,11 @@ func Password(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
 }
 
+// ArcoCloudID applies equality check predicate on the "arco_cloud_id" field. It's identical to ArcoCloudIDEQ.
+func ArcoCloudID(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldArcoCloudID, v))
+}
+
 // NextIntegrityCheck applies equality check predicate on the "next_integrity_check" field. It's identical to NextIntegrityCheckEQ.
 func NextIntegrityCheck(v time.Time) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldNextIntegrityCheck, v))
@@ -388,6 +393,81 @@ func PasswordEqualFold(v string) predicate.Repository {
 // PasswordContainsFold applies the ContainsFold predicate on the "password" field.
 func PasswordContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
+}
+
+// ArcoCloudIDEQ applies the EQ predicate on the "arco_cloud_id" field.
+func ArcoCloudIDEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDNEQ applies the NEQ predicate on the "arco_cloud_id" field.
+func ArcoCloudIDNEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDIn applies the In predicate on the "arco_cloud_id" field.
+func ArcoCloudIDIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldArcoCloudID, vs...))
+}
+
+// ArcoCloudIDNotIn applies the NotIn predicate on the "arco_cloud_id" field.
+func ArcoCloudIDNotIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldArcoCloudID, vs...))
+}
+
+// ArcoCloudIDGT applies the GT predicate on the "arco_cloud_id" field.
+func ArcoCloudIDGT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDGTE applies the GTE predicate on the "arco_cloud_id" field.
+func ArcoCloudIDGTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDLT applies the LT predicate on the "arco_cloud_id" field.
+func ArcoCloudIDLT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDLTE applies the LTE predicate on the "arco_cloud_id" field.
+func ArcoCloudIDLTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDContains applies the Contains predicate on the "arco_cloud_id" field.
+func ArcoCloudIDContains(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContains(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDHasPrefix applies the HasPrefix predicate on the "arco_cloud_id" field.
+func ArcoCloudIDHasPrefix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasPrefix(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDHasSuffix applies the HasSuffix predicate on the "arco_cloud_id" field.
+func ArcoCloudIDHasSuffix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasSuffix(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDIsNil applies the IsNil predicate on the "arco_cloud_id" field.
+func ArcoCloudIDIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldArcoCloudID))
+}
+
+// ArcoCloudIDNotNil applies the NotNil predicate on the "arco_cloud_id" field.
+func ArcoCloudIDNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldArcoCloudID))
+}
+
+// ArcoCloudIDEqualFold applies the EqualFold predicate on the "arco_cloud_id" field.
+func ArcoCloudIDEqualFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEqualFold(FieldArcoCloudID, v))
+}
+
+// ArcoCloudIDContainsFold applies the ContainsFold predicate on the "arco_cloud_id" field.
+func ArcoCloudIDContainsFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContainsFold(FieldArcoCloudID, v))
 }
 
 // NextIntegrityCheckEQ applies the EQ predicate on the "next_integrity_check" field.
