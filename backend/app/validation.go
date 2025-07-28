@@ -142,7 +142,7 @@ func (v *ValidationClient) RepoPath(path string, isLocal bool) (string, error) {
 
 	exist, err := v.db.Repository.
 		Query().
-		Where(repository.Location(path)).
+		Where(repository.URL(path)).
 		Exist(v.ctx)
 	if err != nil {
 		return "", err

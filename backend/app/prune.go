@@ -231,7 +231,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
-	status := b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
+	status := b.borg.Prune(b.ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			b.state.SetPruneCancelled(b.ctx, bId)
@@ -260,7 +260,7 @@ func (b *BackupClient) runPruneJob(bId types.BackupId) (PruneResult, error) {
 			// Prune job completed successfully
 			defer b.state.SetPruneCompleted(b.ctx, bId, pruneResult)
 
-			err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
+			err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
 			if err != nil {
 				b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 			}
@@ -406,7 +406,7 @@ func (b *BackupClient) examinePrune(bId types.BackupId, pruningRuleOpt safetypes
 	go b.savePruneResult(archives, borgCh, resultCh)
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
-	status := b.borg.Prune(b.ctx, repo.Location, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
+	status := b.borg.Prune(b.ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			b.state.SetRepoStatus(b.ctx, bId.RepositoryId, state.RepoStatusLocked)

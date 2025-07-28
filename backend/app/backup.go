@@ -269,7 +269,7 @@ func (b *BackupClient) DeleteBackupProfile(backupProfileId int, deleteArchives b
 			}
 			deleteJobs = append(deleteJobs, func() {
 				go func() {
-					_, err := b.runBorgDelete(bId, repo.Location, repo.Password, backupProfile.Prefix)
+					_, err := b.runBorgDelete(bId, repo.URL, repo.Password, backupProfile.Prefix)
 					if err != nil {
 						b.log.Error(fmt.Sprintf("Delete job failed: %s", err))
 					}
@@ -351,7 +351,7 @@ func (b *BackupClient) RemoveRepositoryFromBackupProfile(backupProfileId int, re
 		}
 		repo := backupProfile.Edges.Repositories[0]
 		if repo.ID == repositoryId {
-			location, password, prefix := repo.Location, repo.Password, backupProfile.Prefix
+			location, password, prefix := repo.URL, repo.Password, backupProfile.Prefix
 			go func() {
 				_, err := b.runBorgDelete(bId, location, password, prefix)
 				if err != nil {
@@ -700,7 +700,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 	defer close(ch)
 	go b.saveProgressInfo(bId, ch)
 
-	archiveName, status := b.borg.Create(ctx, repo.Location, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	archiveName, status := b.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			b.state.SetBackupCancelled(b.ctx, bId, true)
@@ -727,7 +727,7 @@ func (b *BackupClient) runBorgCreate(bId types.BackupId) (result BackupResult, e
 		// Backup completed successfully
 		defer b.state.SetBackupCompleted(b.ctx, bId, true)
 
-		err = b.refreshRepoInfo(bId.RepositoryId, repo.Location, repo.Password)
+		err = b.refreshRepoInfo(bId.RepositoryId, repo.URL, repo.Password)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
 		}
