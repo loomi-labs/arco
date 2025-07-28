@@ -105,23 +105,17 @@ message AddRepositoryRequest {
     pattern: "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
   }];
 
-  // Repository encryption password.
-  // Should be a strong passphrase that will be used to encrypt all backup data.
-  // This password is required for all backup and restore operations.
-  string password = 2 [(buf.validate.field).string.min_len = 8];
-
   // SSH public key for repository access.
   // Must be a valid SSH public key (RSA, ECDSA, or Ed25519).
   // This key will be used by the backup client to authenticate with ArcoCloud.
-  string ssh_key = 3 [(buf.validate.field).string = {
-    min_len: 100,
+  string ssh_key = 2 [(buf.validate.field).string = {
     pattern: "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/]+(=*)( .*)?$"
   }];
 
   // Geographical location for the repository.
   // Determines the ArcoCloud region where the repository will be created.
   // Choose based on data sovereignty requirements and performance optimization.
-  RepositoryLocation location = 4 [(buf.validate.field).enum = {
+  RepositoryLocation location = 3 [(buf.validate.field).enum = {
     defined_only: true,
     not_in: [0] // REPOSITORY_LOCATION_UNSPECIFIED not allowed
   }];
@@ -235,21 +229,13 @@ message Repository {
   // Updated periodically from ArcoCloud usage reports.
   int64 storage_used_bytes = 5;
 
-  // Maximum storage allowed in bytes based on subscription plan.
-  // Enforced by ArcoCloud quotas to prevent overage.
-  int64 storage_quota_bytes = 6;
-
-  // SSH key fingerprint for the repository access key.
-  // Used to verify the correct key is configured.
-  string ssh_key_fingerprint = 7;
-
   // When the repository was created in ArcoCloud.
-  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp created_at = 6;
 
   // When the repository information was last updated from ArcoCloud.
-  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp updated_at = 7;
 
   // Geographical location of the repository.
   // Indicates the ArcoCloud region where the repository is hosted.
-  RepositoryLocation location = 10;
+  RepositoryLocation location = 8;
 }
