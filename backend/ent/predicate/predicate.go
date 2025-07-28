@@ -18,6 +18,9 @@ type BackupProfile func(*sql.Selector)
 // BackupSchedule is the predicate function for backupschedule builders.
 type BackupSchedule func(*sql.Selector)
 
+// CloudRepository is the predicate function for cloudrepository builders.
+type CloudRepository func(*sql.Selector)
+
 // Notification is the predicate function for notification builders.
 type Notification func(*sql.Selector)
 

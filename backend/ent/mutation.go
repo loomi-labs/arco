@@ -15,6 +15,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
@@ -32,15 +33,16 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArchive        = "Archive"
-	TypeAuthSession    = "AuthSession"
-	TypeBackupProfile  = "BackupProfile"
-	TypeBackupSchedule = "BackupSchedule"
-	TypeNotification   = "Notification"
-	TypePruningRule    = "PruningRule"
-	TypeRepository     = "Repository"
-	TypeSettings       = "Settings"
-	TypeUser           = "User"
+	TypeArchive         = "Archive"
+	TypeAuthSession     = "AuthSession"
+	TypeBackupProfile   = "BackupProfile"
+	TypeBackupSchedule  = "BackupSchedule"
+	TypeCloudRepository = "CloudRepository"
+	TypeNotification    = "Notification"
+	TypePruningRule     = "PruningRule"
+	TypeRepository      = "Repository"
+	TypeSettings        = "Settings"
+	TypeUser            = "User"
 )
 
 // ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
@@ -3586,6 +3588,657 @@ func (m *BackupScheduleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown BackupSchedule edge %s", name)
 }
 
+// CloudRepositoryMutation represents an operation that mutates the CloudRepository nodes in the graph.
+type CloudRepositoryMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int
+	created_at            *time.Time
+	updated_at            *time.Time
+	cloud_id              *string
+	storage_used_bytes    *int64
+	addstorage_used_bytes *int64
+	location              *cloudrepository.Location
+	clearedFields         map[string]struct{}
+	repository            *int
+	clearedrepository     bool
+	done                  bool
+	oldValue              func(context.Context) (*CloudRepository, error)
+	predicates            []predicate.CloudRepository
+}
+
+var _ ent.Mutation = (*CloudRepositoryMutation)(nil)
+
+// cloudrepositoryOption allows management of the mutation configuration using functional options.
+type cloudrepositoryOption func(*CloudRepositoryMutation)
+
+// newCloudRepositoryMutation creates new mutation for the CloudRepository entity.
+func newCloudRepositoryMutation(c config, op Op, opts ...cloudrepositoryOption) *CloudRepositoryMutation {
+	m := &CloudRepositoryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCloudRepository,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCloudRepositoryID sets the ID field of the mutation.
+func withCloudRepositoryID(id int) cloudrepositoryOption {
+	return func(m *CloudRepositoryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CloudRepository
+		)
+		m.oldValue = func(ctx context.Context) (*CloudRepository, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CloudRepository.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCloudRepository sets the old CloudRepository of the mutation.
+func withCloudRepository(node *CloudRepository) cloudrepositoryOption {
+	return func(m *CloudRepositoryMutation) {
+		m.oldValue = func(context.Context) (*CloudRepository, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CloudRepositoryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CloudRepositoryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CloudRepository entities.
+func (m *CloudRepositoryMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CloudRepositoryMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CloudRepositoryMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CloudRepository.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CloudRepositoryMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CloudRepositoryMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CloudRepository entity.
+// If the CloudRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudRepositoryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CloudRepositoryMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CloudRepositoryMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CloudRepositoryMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CloudRepository entity.
+// If the CloudRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudRepositoryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CloudRepositoryMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetCloudID sets the "cloud_id" field.
+func (m *CloudRepositoryMutation) SetCloudID(s string) {
+	m.cloud_id = &s
+}
+
+// CloudID returns the value of the "cloud_id" field in the mutation.
+func (m *CloudRepositoryMutation) CloudID() (r string, exists bool) {
+	v := m.cloud_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCloudID returns the old "cloud_id" field's value of the CloudRepository entity.
+// If the CloudRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudRepositoryMutation) OldCloudID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCloudID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCloudID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCloudID: %w", err)
+	}
+	return oldValue.CloudID, nil
+}
+
+// ResetCloudID resets all changes to the "cloud_id" field.
+func (m *CloudRepositoryMutation) ResetCloudID() {
+	m.cloud_id = nil
+}
+
+// SetStorageUsedBytes sets the "storage_used_bytes" field.
+func (m *CloudRepositoryMutation) SetStorageUsedBytes(i int64) {
+	m.storage_used_bytes = &i
+	m.addstorage_used_bytes = nil
+}
+
+// StorageUsedBytes returns the value of the "storage_used_bytes" field in the mutation.
+func (m *CloudRepositoryMutation) StorageUsedBytes() (r int64, exists bool) {
+	v := m.storage_used_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStorageUsedBytes returns the old "storage_used_bytes" field's value of the CloudRepository entity.
+// If the CloudRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudRepositoryMutation) OldStorageUsedBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStorageUsedBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStorageUsedBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStorageUsedBytes: %w", err)
+	}
+	return oldValue.StorageUsedBytes, nil
+}
+
+// AddStorageUsedBytes adds i to the "storage_used_bytes" field.
+func (m *CloudRepositoryMutation) AddStorageUsedBytes(i int64) {
+	if m.addstorage_used_bytes != nil {
+		*m.addstorage_used_bytes += i
+	} else {
+		m.addstorage_used_bytes = &i
+	}
+}
+
+// AddedStorageUsedBytes returns the value that was added to the "storage_used_bytes" field in this mutation.
+func (m *CloudRepositoryMutation) AddedStorageUsedBytes() (r int64, exists bool) {
+	v := m.addstorage_used_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStorageUsedBytes resets all changes to the "storage_used_bytes" field.
+func (m *CloudRepositoryMutation) ResetStorageUsedBytes() {
+	m.storage_used_bytes = nil
+	m.addstorage_used_bytes = nil
+}
+
+// SetLocation sets the "location" field.
+func (m *CloudRepositoryMutation) SetLocation(c cloudrepository.Location) {
+	m.location = &c
+}
+
+// Location returns the value of the "location" field in the mutation.
+func (m *CloudRepositoryMutation) Location() (r cloudrepository.Location, exists bool) {
+	v := m.location
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocation returns the old "location" field's value of the CloudRepository entity.
+// If the CloudRepository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CloudRepositoryMutation) OldLocation(ctx context.Context) (v cloudrepository.Location, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocation: %w", err)
+	}
+	return oldValue.Location, nil
+}
+
+// ResetLocation resets all changes to the "location" field.
+func (m *CloudRepositoryMutation) ResetLocation() {
+	m.location = nil
+}
+
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *CloudRepositoryMutation) SetRepositoryID(id int) {
+	m.repository = &id
+}
+
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *CloudRepositoryMutation) ClearRepository() {
+	m.clearedrepository = true
+}
+
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *CloudRepositoryMutation) RepositoryCleared() bool {
+	return m.clearedrepository
+}
+
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *CloudRepositoryMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
+	}
+	return
+}
+
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *CloudRepositoryMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRepository resets all changes to the "repository" edge.
+func (m *CloudRepositoryMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
+}
+
+// Where appends a list predicates to the CloudRepositoryMutation builder.
+func (m *CloudRepositoryMutation) Where(ps ...predicate.CloudRepository) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CloudRepositoryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CloudRepositoryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CloudRepository, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CloudRepositoryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CloudRepositoryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CloudRepository).
+func (m *CloudRepositoryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CloudRepositoryMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.created_at != nil {
+		fields = append(fields, cloudrepository.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, cloudrepository.FieldUpdatedAt)
+	}
+	if m.cloud_id != nil {
+		fields = append(fields, cloudrepository.FieldCloudID)
+	}
+	if m.storage_used_bytes != nil {
+		fields = append(fields, cloudrepository.FieldStorageUsedBytes)
+	}
+	if m.location != nil {
+		fields = append(fields, cloudrepository.FieldLocation)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CloudRepositoryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case cloudrepository.FieldCreatedAt:
+		return m.CreatedAt()
+	case cloudrepository.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case cloudrepository.FieldCloudID:
+		return m.CloudID()
+	case cloudrepository.FieldStorageUsedBytes:
+		return m.StorageUsedBytes()
+	case cloudrepository.FieldLocation:
+		return m.Location()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CloudRepositoryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cloudrepository.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case cloudrepository.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case cloudrepository.FieldCloudID:
+		return m.OldCloudID(ctx)
+	case cloudrepository.FieldStorageUsedBytes:
+		return m.OldStorageUsedBytes(ctx)
+	case cloudrepository.FieldLocation:
+		return m.OldLocation(ctx)
+	}
+	return nil, fmt.Errorf("unknown CloudRepository field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CloudRepositoryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case cloudrepository.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case cloudrepository.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case cloudrepository.FieldCloudID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCloudID(v)
+		return nil
+	case cloudrepository.FieldStorageUsedBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStorageUsedBytes(v)
+		return nil
+	case cloudrepository.FieldLocation:
+		v, ok := value.(cloudrepository.Location)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocation(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CloudRepository field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CloudRepositoryMutation) AddedFields() []string {
+	var fields []string
+	if m.addstorage_used_bytes != nil {
+		fields = append(fields, cloudrepository.FieldStorageUsedBytes)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CloudRepositoryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case cloudrepository.FieldStorageUsedBytes:
+		return m.AddedStorageUsedBytes()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CloudRepositoryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case cloudrepository.FieldStorageUsedBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStorageUsedBytes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CloudRepository numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CloudRepositoryMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CloudRepositoryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CloudRepositoryMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CloudRepository nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CloudRepositoryMutation) ResetField(name string) error {
+	switch name {
+	case cloudrepository.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case cloudrepository.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case cloudrepository.FieldCloudID:
+		m.ResetCloudID()
+		return nil
+	case cloudrepository.FieldStorageUsedBytes:
+		m.ResetStorageUsedBytes()
+		return nil
+	case cloudrepository.FieldLocation:
+		m.ResetLocation()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudRepository field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CloudRepositoryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.repository != nil {
+		edges = append(edges, cloudrepository.EdgeRepository)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CloudRepositoryMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case cloudrepository.EdgeRepository:
+		if id := m.repository; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CloudRepositoryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CloudRepositoryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CloudRepositoryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedrepository {
+		edges = append(edges, cloudrepository.EdgeRepository)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CloudRepositoryMutation) EdgeCleared(name string) bool {
+	switch name {
+	case cloudrepository.EdgeRepository:
+		return m.clearedrepository
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CloudRepositoryMutation) ClearEdge(name string) error {
+	switch name {
+	case cloudrepository.EdgeRepository:
+		m.ClearRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudRepository unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CloudRepositoryMutation) ResetEdge(name string) error {
+	switch name {
+	case cloudrepository.EdgeRepository:
+		m.ResetRepository()
+		return nil
+	}
+	return fmt.Errorf("unknown CloudRepository edge %s", name)
+}
+
 // NotificationMutation represents an operation that mutates the Notification nodes in the graph.
 type NotificationMutation struct {
 	config
@@ -5599,9 +6252,8 @@ type RepositoryMutation struct {
 	created_at                   *time.Time
 	updated_at                   *time.Time
 	name                         *string
-	location                     *string
+	url                          *string
 	password                     *string
-	arco_cloud_id                *string
 	next_integrity_check         *time.Time
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
@@ -5625,6 +6277,8 @@ type RepositoryMutation struct {
 	notifications                map[int]struct{}
 	removednotifications         map[int]struct{}
 	clearednotifications         bool
+	cloud_repository             *int
+	clearedcloud_repository      bool
 	done                         bool
 	oldValue                     func(context.Context) (*Repository, error)
 	predicates                   []predicate.Repository
@@ -5842,40 +6496,40 @@ func (m *RepositoryMutation) ResetName() {
 	m.name = nil
 }
 
-// SetLocation sets the "location" field.
-func (m *RepositoryMutation) SetLocation(s string) {
-	m.location = &s
+// SetURL sets the "url" field.
+func (m *RepositoryMutation) SetURL(s string) {
+	m.url = &s
 }
 
-// Location returns the value of the "location" field in the mutation.
-func (m *RepositoryMutation) Location() (r string, exists bool) {
-	v := m.location
+// URL returns the value of the "url" field in the mutation.
+func (m *RepositoryMutation) URL() (r string, exists bool) {
+	v := m.url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldLocation returns the old "location" field's value of the Repository entity.
+// OldURL returns the old "url" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldLocation(ctx context.Context) (v string, err error) {
+func (m *RepositoryMutation) OldURL(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLocation is only allowed on UpdateOne operations")
+		return v, errors.New("OldURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLocation requires an ID field in the mutation")
+		return v, errors.New("OldURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLocation: %w", err)
+		return v, fmt.Errorf("querying old value for OldURL: %w", err)
 	}
-	return oldValue.Location, nil
+	return oldValue.URL, nil
 }
 
-// ResetLocation resets all changes to the "location" field.
-func (m *RepositoryMutation) ResetLocation() {
-	m.location = nil
+// ResetURL resets all changes to the "url" field.
+func (m *RepositoryMutation) ResetURL() {
+	m.url = nil
 }
 
 // SetPassword sets the "password" field.
@@ -5912,55 +6566,6 @@ func (m *RepositoryMutation) OldPassword(ctx context.Context) (v string, err err
 // ResetPassword resets all changes to the "password" field.
 func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
-}
-
-// SetArcoCloudID sets the "arco_cloud_id" field.
-func (m *RepositoryMutation) SetArcoCloudID(s string) {
-	m.arco_cloud_id = &s
-}
-
-// ArcoCloudID returns the value of the "arco_cloud_id" field in the mutation.
-func (m *RepositoryMutation) ArcoCloudID() (r string, exists bool) {
-	v := m.arco_cloud_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldArcoCloudID returns the old "arco_cloud_id" field's value of the Repository entity.
-// If the Repository object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldArcoCloudID(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldArcoCloudID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldArcoCloudID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldArcoCloudID: %w", err)
-	}
-	return oldValue.ArcoCloudID, nil
-}
-
-// ClearArcoCloudID clears the value of the "arco_cloud_id" field.
-func (m *RepositoryMutation) ClearArcoCloudID() {
-	m.arco_cloud_id = nil
-	m.clearedFields[repository.FieldArcoCloudID] = struct{}{}
-}
-
-// ArcoCloudIDCleared returns if the "arco_cloud_id" field was cleared in this mutation.
-func (m *RepositoryMutation) ArcoCloudIDCleared() bool {
-	_, ok := m.clearedFields[repository.FieldArcoCloudID]
-	return ok
-}
-
-// ResetArcoCloudID resets all changes to the "arco_cloud_id" field.
-func (m *RepositoryMutation) ResetArcoCloudID() {
-	m.arco_cloud_id = nil
-	delete(m.clearedFields, repository.FieldArcoCloudID)
 }
 
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
@@ -6510,6 +7115,45 @@ func (m *RepositoryMutation) ResetNotifications() {
 	m.removednotifications = nil
 }
 
+// SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by id.
+func (m *RepositoryMutation) SetCloudRepositoryID(id int) {
+	m.cloud_repository = &id
+}
+
+// ClearCloudRepository clears the "cloud_repository" edge to the CloudRepository entity.
+func (m *RepositoryMutation) ClearCloudRepository() {
+	m.clearedcloud_repository = true
+}
+
+// CloudRepositoryCleared reports if the "cloud_repository" edge to the CloudRepository entity was cleared.
+func (m *RepositoryMutation) CloudRepositoryCleared() bool {
+	return m.clearedcloud_repository
+}
+
+// CloudRepositoryID returns the "cloud_repository" edge ID in the mutation.
+func (m *RepositoryMutation) CloudRepositoryID() (id int, exists bool) {
+	if m.cloud_repository != nil {
+		return *m.cloud_repository, true
+	}
+	return
+}
+
+// CloudRepositoryIDs returns the "cloud_repository" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CloudRepositoryID instead. It exists only for internal usage by the builders.
+func (m *RepositoryMutation) CloudRepositoryIDs() (ids []int) {
+	if id := m.cloud_repository; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCloudRepository resets all changes to the "cloud_repository" edge.
+func (m *RepositoryMutation) ResetCloudRepository() {
+	m.cloud_repository = nil
+	m.clearedcloud_repository = false
+}
+
 // Where appends a list predicates to the RepositoryMutation builder.
 func (m *RepositoryMutation) Where(ps ...predicate.Repository) {
 	m.predicates = append(m.predicates, ps...)
@@ -6544,7 +7188,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, repository.FieldCreatedAt)
 	}
@@ -6554,14 +7198,11 @@ func (m *RepositoryMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, repository.FieldName)
 	}
-	if m.location != nil {
-		fields = append(fields, repository.FieldLocation)
+	if m.url != nil {
+		fields = append(fields, repository.FieldURL)
 	}
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
-	}
-	if m.arco_cloud_id != nil {
-		fields = append(fields, repository.FieldArcoCloudID)
 	}
 	if m.next_integrity_check != nil {
 		fields = append(fields, repository.FieldNextIntegrityCheck)
@@ -6598,12 +7239,10 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case repository.FieldName:
 		return m.Name()
-	case repository.FieldLocation:
-		return m.Location()
+	case repository.FieldURL:
+		return m.URL()
 	case repository.FieldPassword:
 		return m.Password()
-	case repository.FieldArcoCloudID:
-		return m.ArcoCloudID()
 	case repository.FieldNextIntegrityCheck:
 		return m.NextIntegrityCheck()
 	case repository.FieldStatsTotalChunks:
@@ -6633,12 +7272,10 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldUpdatedAt(ctx)
 	case repository.FieldName:
 		return m.OldName(ctx)
-	case repository.FieldLocation:
-		return m.OldLocation(ctx)
+	case repository.FieldURL:
+		return m.OldURL(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
-	case repository.FieldArcoCloudID:
-		return m.OldArcoCloudID(ctx)
 	case repository.FieldNextIntegrityCheck:
 		return m.OldNextIntegrityCheck(ctx)
 	case repository.FieldStatsTotalChunks:
@@ -6683,12 +7320,12 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
-	case repository.FieldLocation:
+	case repository.FieldURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetLocation(v)
+		m.SetURL(v)
 		return nil
 	case repository.FieldPassword:
 		v, ok := value.(string)
@@ -6696,13 +7333,6 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPassword(v)
-		return nil
-	case repository.FieldArcoCloudID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetArcoCloudID(v)
 		return nil
 	case repository.FieldNextIntegrityCheck:
 		v, ok := value.(time.Time)
@@ -6858,9 +7488,6 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(repository.FieldArcoCloudID) {
-		fields = append(fields, repository.FieldArcoCloudID)
-	}
 	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
 		fields = append(fields, repository.FieldNextIntegrityCheck)
 	}
@@ -6878,9 +7505,6 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
-	case repository.FieldArcoCloudID:
-		m.ClearArcoCloudID()
-		return nil
 	case repository.FieldNextIntegrityCheck:
 		m.ClearNextIntegrityCheck()
 		return nil
@@ -6901,14 +7525,11 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldName:
 		m.ResetName()
 		return nil
-	case repository.FieldLocation:
-		m.ResetLocation()
+	case repository.FieldURL:
+		m.ResetURL()
 		return nil
 	case repository.FieldPassword:
 		m.ResetPassword()
-		return nil
-	case repository.FieldArcoCloudID:
-		m.ResetArcoCloudID()
 		return nil
 	case repository.FieldNextIntegrityCheck:
 		m.ResetNextIntegrityCheck()
@@ -6937,7 +7558,7 @@ func (m *RepositoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepositoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.backup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
@@ -6946,6 +7567,9 @@ func (m *RepositoryMutation) AddedEdges() []string {
 	}
 	if m.notifications != nil {
 		edges = append(edges, repository.EdgeNotifications)
+	}
+	if m.cloud_repository != nil {
+		edges = append(edges, repository.EdgeCloudRepository)
 	}
 	return edges
 }
@@ -6972,13 +7596,17 @@ func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repository.EdgeCloudRepository:
+		if id := m.cloud_repository; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepositoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedbackup_profiles != nil {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
@@ -7019,7 +7647,7 @@ func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepositoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedbackup_profiles {
 		edges = append(edges, repository.EdgeBackupProfiles)
 	}
@@ -7028,6 +7656,9 @@ func (m *RepositoryMutation) ClearedEdges() []string {
 	}
 	if m.clearednotifications {
 		edges = append(edges, repository.EdgeNotifications)
+	}
+	if m.clearedcloud_repository {
+		edges = append(edges, repository.EdgeCloudRepository)
 	}
 	return edges
 }
@@ -7042,6 +7673,8 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 		return m.clearedarchives
 	case repository.EdgeNotifications:
 		return m.clearednotifications
+	case repository.EdgeCloudRepository:
+		return m.clearedcloud_repository
 	}
 	return false
 }
@@ -7050,6 +7683,9 @@ func (m *RepositoryMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *RepositoryMutation) ClearEdge(name string) error {
 	switch name {
+	case repository.EdgeCloudRepository:
+		m.ClearCloudRepository()
+		return nil
 	}
 	return fmt.Errorf("unknown Repository unique edge %s", name)
 }
@@ -7066,6 +7702,9 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 		return nil
 	case repository.EdgeNotifications:
 		m.ResetNotifications()
+		return nil
+	case repository.EdgeCloudRepository:
+		m.ResetCloudRepository()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository edge %s", name)

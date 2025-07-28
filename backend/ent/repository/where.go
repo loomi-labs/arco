@@ -70,19 +70,14 @@ func Name(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldName, v))
 }
 
-// Location applies equality check predicate on the "location" field. It's identical to LocationEQ.
-func Location(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldLocation, v))
+// URL applies equality check predicate on the "url" field. It's identical to URLEQ.
+func URL(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldURL, v))
 }
 
 // Password applies equality check predicate on the "password" field. It's identical to PasswordEQ.
 func Password(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
-}
-
-// ArcoCloudID applies equality check predicate on the "arco_cloud_id" field. It's identical to ArcoCloudIDEQ.
-func ArcoCloudID(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldArcoCloudID, v))
 }
 
 // NextIntegrityCheck applies equality check predicate on the "next_integrity_check" field. It's identical to NextIntegrityCheckEQ.
@@ -265,69 +260,69 @@ func NameContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldName, v))
 }
 
-// LocationEQ applies the EQ predicate on the "location" field.
-func LocationEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldLocation, v))
+// URLEQ applies the EQ predicate on the "url" field.
+func URLEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldURL, v))
 }
 
-// LocationNEQ applies the NEQ predicate on the "location" field.
-func LocationNEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldNEQ(FieldLocation, v))
+// URLNEQ applies the NEQ predicate on the "url" field.
+func URLNEQ(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldURL, v))
 }
 
-// LocationIn applies the In predicate on the "location" field.
-func LocationIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldIn(FieldLocation, vs...))
+// URLIn applies the In predicate on the "url" field.
+func URLIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldURL, vs...))
 }
 
-// LocationNotIn applies the NotIn predicate on the "location" field.
-func LocationNotIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldNotIn(FieldLocation, vs...))
+// URLNotIn applies the NotIn predicate on the "url" field.
+func URLNotIn(vs ...string) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldURL, vs...))
 }
 
-// LocationGT applies the GT predicate on the "location" field.
-func LocationGT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGT(FieldLocation, v))
+// URLGT applies the GT predicate on the "url" field.
+func URLGT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldURL, v))
 }
 
-// LocationGTE applies the GTE predicate on the "location" field.
-func LocationGTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGTE(FieldLocation, v))
+// URLGTE applies the GTE predicate on the "url" field.
+func URLGTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldURL, v))
 }
 
-// LocationLT applies the LT predicate on the "location" field.
-func LocationLT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLT(FieldLocation, v))
+// URLLT applies the LT predicate on the "url" field.
+func URLLT(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldURL, v))
 }
 
-// LocationLTE applies the LTE predicate on the "location" field.
-func LocationLTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLTE(FieldLocation, v))
+// URLLTE applies the LTE predicate on the "url" field.
+func URLLTE(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldURL, v))
 }
 
-// LocationContains applies the Contains predicate on the "location" field.
-func LocationContains(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContains(FieldLocation, v))
+// URLContains applies the Contains predicate on the "url" field.
+func URLContains(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContains(FieldURL, v))
 }
 
-// LocationHasPrefix applies the HasPrefix predicate on the "location" field.
-func LocationHasPrefix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasPrefix(FieldLocation, v))
+// URLHasPrefix applies the HasPrefix predicate on the "url" field.
+func URLHasPrefix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasPrefix(FieldURL, v))
 }
 
-// LocationHasSuffix applies the HasSuffix predicate on the "location" field.
-func LocationHasSuffix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasSuffix(FieldLocation, v))
+// URLHasSuffix applies the HasSuffix predicate on the "url" field.
+func URLHasSuffix(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldHasSuffix(FieldURL, v))
 }
 
-// LocationEqualFold applies the EqualFold predicate on the "location" field.
-func LocationEqualFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEqualFold(FieldLocation, v))
+// URLEqualFold applies the EqualFold predicate on the "url" field.
+func URLEqualFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldEqualFold(FieldURL, v))
 }
 
-// LocationContainsFold applies the ContainsFold predicate on the "location" field.
-func LocationContainsFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContainsFold(FieldLocation, v))
+// URLContainsFold applies the ContainsFold predicate on the "url" field.
+func URLContainsFold(v string) predicate.Repository {
+	return predicate.Repository(sql.FieldContainsFold(FieldURL, v))
 }
 
 // PasswordEQ applies the EQ predicate on the "password" field.
@@ -393,81 +388,6 @@ func PasswordEqualFold(v string) predicate.Repository {
 // PasswordContainsFold applies the ContainsFold predicate on the "password" field.
 func PasswordContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
-}
-
-// ArcoCloudIDEQ applies the EQ predicate on the "arco_cloud_id" field.
-func ArcoCloudIDEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDNEQ applies the NEQ predicate on the "arco_cloud_id" field.
-func ArcoCloudIDNEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldNEQ(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDIn applies the In predicate on the "arco_cloud_id" field.
-func ArcoCloudIDIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldIn(FieldArcoCloudID, vs...))
-}
-
-// ArcoCloudIDNotIn applies the NotIn predicate on the "arco_cloud_id" field.
-func ArcoCloudIDNotIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldNotIn(FieldArcoCloudID, vs...))
-}
-
-// ArcoCloudIDGT applies the GT predicate on the "arco_cloud_id" field.
-func ArcoCloudIDGT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGT(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDGTE applies the GTE predicate on the "arco_cloud_id" field.
-func ArcoCloudIDGTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGTE(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDLT applies the LT predicate on the "arco_cloud_id" field.
-func ArcoCloudIDLT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLT(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDLTE applies the LTE predicate on the "arco_cloud_id" field.
-func ArcoCloudIDLTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLTE(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDContains applies the Contains predicate on the "arco_cloud_id" field.
-func ArcoCloudIDContains(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContains(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDHasPrefix applies the HasPrefix predicate on the "arco_cloud_id" field.
-func ArcoCloudIDHasPrefix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasPrefix(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDHasSuffix applies the HasSuffix predicate on the "arco_cloud_id" field.
-func ArcoCloudIDHasSuffix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasSuffix(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDIsNil applies the IsNil predicate on the "arco_cloud_id" field.
-func ArcoCloudIDIsNil() predicate.Repository {
-	return predicate.Repository(sql.FieldIsNull(FieldArcoCloudID))
-}
-
-// ArcoCloudIDNotNil applies the NotNil predicate on the "arco_cloud_id" field.
-func ArcoCloudIDNotNil() predicate.Repository {
-	return predicate.Repository(sql.FieldNotNull(FieldArcoCloudID))
-}
-
-// ArcoCloudIDEqualFold applies the EqualFold predicate on the "arco_cloud_id" field.
-func ArcoCloudIDEqualFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEqualFold(FieldArcoCloudID, v))
-}
-
-// ArcoCloudIDContainsFold applies the ContainsFold predicate on the "arco_cloud_id" field.
-func ArcoCloudIDContainsFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContainsFold(FieldArcoCloudID, v))
 }
 
 // NextIntegrityCheckEQ applies the EQ predicate on the "next_integrity_check" field.
@@ -821,6 +741,29 @@ func HasNotifications() predicate.Repository {
 func HasNotificationsWith(preds ...predicate.Notification) predicate.Repository {
 	return predicate.Repository(func(s *sql.Selector) {
 		step := newNotificationsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCloudRepository applies the HasEdge predicate on the "cloud_repository" edge.
+func HasCloudRepository() predicate.Repository {
+	return predicate.Repository(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, CloudRepositoryTable, CloudRepositoryColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCloudRepositoryWith applies the HasEdge predicate on the "cloud_repository" edge with a given conditions (other predicates).
+func HasCloudRepositoryWith(preds ...predicate.CloudRepository) predicate.Repository {
+	return predicate.Repository(func(s *sql.Selector) {
+		step := newCloudRepositoryStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

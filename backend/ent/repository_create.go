@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 )
@@ -57,29 +58,15 @@ func (rc *RepositoryCreate) SetName(s string) *RepositoryCreate {
 	return rc
 }
 
-// SetLocation sets the "location" field.
-func (rc *RepositoryCreate) SetLocation(s string) *RepositoryCreate {
-	rc.mutation.SetLocation(s)
+// SetURL sets the "url" field.
+func (rc *RepositoryCreate) SetURL(s string) *RepositoryCreate {
+	rc.mutation.SetURL(s)
 	return rc
 }
 
 // SetPassword sets the "password" field.
 func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
 	rc.mutation.SetPassword(s)
-	return rc
-}
-
-// SetArcoCloudID sets the "arco_cloud_id" field.
-func (rc *RepositoryCreate) SetArcoCloudID(s string) *RepositoryCreate {
-	rc.mutation.SetArcoCloudID(s)
-	return rc
-}
-
-// SetNillableArcoCloudID sets the "arco_cloud_id" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableArcoCloudID(s *string) *RepositoryCreate {
-	if s != nil {
-		rc.SetArcoCloudID(*s)
-	}
 	return rc
 }
 
@@ -232,6 +219,25 @@ func (rc *RepositoryCreate) AddNotifications(n ...*Notification) *RepositoryCrea
 	return rc.AddNotificationIDs(ids...)
 }
 
+// SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
+func (rc *RepositoryCreate) SetCloudRepositoryID(id int) *RepositoryCreate {
+	rc.mutation.SetCloudRepositoryID(id)
+	return rc
+}
+
+// SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
+func (rc *RepositoryCreate) SetNillableCloudRepositoryID(id *int) *RepositoryCreate {
+	if id != nil {
+		rc = rc.SetCloudRepositoryID(*id)
+	}
+	return rc
+}
+
+// SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
+func (rc *RepositoryCreate) SetCloudRepository(c *CloudRepository) *RepositoryCreate {
+	return rc.SetCloudRepositoryID(c.ID)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (rc *RepositoryCreate) Mutation() *RepositoryMutation {
 	return rc.mutation
@@ -317,8 +323,8 @@ func (rc *RepositoryCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
 		}
 	}
-	if _, ok := rc.mutation.Location(); !ok {
-		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "Repository.location"`)}
+	if _, ok := rc.mutation.URL(); !ok {
+		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "Repository.url"`)}
 	}
 	if _, ok := rc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
@@ -385,17 +391,13 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := rc.mutation.Location(); ok {
-		_spec.SetField(repository.FieldLocation, field.TypeString, value)
-		_node.Location = value
+	if value, ok := rc.mutation.URL(); ok {
+		_spec.SetField(repository.FieldURL, field.TypeString, value)
+		_node.URL = value
 	}
 	if value, ok := rc.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
-	}
-	if value, ok := rc.mutation.ArcoCloudID(); ok {
-		_spec.SetField(repository.FieldArcoCloudID, field.TypeString, value)
-		_node.ArcoCloudID = &value
 	}
 	if value, ok := rc.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
@@ -471,6 +473,23 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   repository.CloudRepositoryTable,
+			Columns: []string{repository.CloudRepositoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.cloud_repository_repository = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
