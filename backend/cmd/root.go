@@ -137,6 +137,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 
 	return &types.Config{
 		Dir:             configDir,
+		SSHDir:          filepath.Join(configDir, "ssh"),
 		BorgBinaries:    binaries,
 		BorgPath:        filepath.Join(configDir, binaries[0].Name),
 		BorgVersion:     binaries[0].Version,
@@ -190,7 +191,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		Services: []application.Service{
 			application.NewService(arco.AppClient()),
 			application.NewService(arco.BackupClient()),
-			application.NewService(arco.RepoClient()),
+			application.NewService(arco.RepositoryService()),
 			application.NewService(arco.ValidationClient()),
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),

@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -24,8 +25,10 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 
 	migrationsDir := os.DirFS("../ent/migrate/migrations")
 
+	tempDir := t.TempDir()
 	config := &types.Config{
-		Dir:             t.TempDir(),
+		Dir:             tempDir,
+		SSHDir:          filepath.Join(tempDir, "ssh"),
 		BorgBinaries:    nil,
 		BorgPath:        "",
 		BorgVersion:     "",
