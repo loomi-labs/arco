@@ -10,9 +10,7 @@ import (
 	"strings"
 )
 
-func (v *ValidationClient) repoClient() *RepositoryClient {
-	return (*RepositoryClient)(v)
-}
+// TODO: Remove this cross-service dependency - validation should not depend on repository client
 
 func (v *ValidationClient) backupClient() *BackupClient {
 	return (*BackupClient)(v)
@@ -39,7 +37,9 @@ func (v *ValidationClient) ArchiveName(archiveId int, prefix, name string) (stri
 		return "Name can only contain letters, numbers, hyphens, and underscores", nil
 	}
 
-	arch, err := v.repoClient().getArchive(archiveId)
+	// TODO: Remove cross-service dependency - validation should not directly access repository service
+	// For now, this will cause a compilation error that needs to be fixed properly
+	arch, err := (*App)(v).RepositoryService().GetArchive(v.ctx, archiveId)
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +133,8 @@ func (v *ValidationClient) RepoPath(path string, isLocal bool) (string, error) {
 			return "Path is not a folder", nil
 		}
 		if !v.backupClient().IsDirectoryEmpty(path) {
-			if !v.repoClient().IsBorgRepository(path) {
+			// TODO: refactor this to have access to RepositoryService
+			if !(*App)(v).RepositoryService().IsBorgRepository(path) {
 				return "Folder must be empty", nil
 			}
 		}
