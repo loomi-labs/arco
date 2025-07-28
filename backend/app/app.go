@@ -13,6 +13,7 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/plan"
+	"github.com/loomi-labs/arco/backend/app/repository"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -80,6 +81,7 @@ type App struct {
 	authService         *auth.ServiceInternal
 	planService         *plan.ServiceInternal
 	subscriptionService *subscription.ServiceInternal
+	repositoryService   *repository.ServiceInternal
 }
 
 func NewApp(
@@ -88,7 +90,7 @@ func NewApp(
 	eventEmitter types.EventEmitter,
 ) *App {
 	state := appstate.NewState(log, eventEmitter)
-	sshPrivateKeys := util.SearchSSHKeys(log)
+	sshPrivateKeys := util.SearchSSHKeys(log, config.SSHDir)
 	return &App{
 		log:                      log,
 		config:                   config,
@@ -101,14 +103,12 @@ func NewApp(
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
+		repositoryService:        repository.NewService(log, state),
 	}
 }
 
 // These clients separate the different types of operations that can be performed with the Borg client
 // This makes it easier to expose them in a clean way to the frontend
-
-// RepositoryClient is a client for repository related operations
-type RepositoryClient App
 
 // AppClient is a client for application related operations
 type AppClient App
@@ -119,8 +119,8 @@ type BackupClient App
 // ValidationClient is a client for validation related operations
 type ValidationClient App
 
-func (a *App) RepoClient() *RepositoryClient {
-	return (*RepositoryClient)(a)
+func (a *App) RepositoryService() *repository.Service {
+	return a.repositoryService.Service
 }
 
 func (a *App) AppClient() *AppClient {
@@ -145,18 +145,6 @@ func (a *App) PlanService() *plan.Service {
 
 func (a *App) SubscriptionService() *subscription.Service {
 	return a.subscriptionService.Service
-}
-
-func (r *RepositoryClient) backupClient() *BackupClient {
-	return (*BackupClient)(r)
-}
-
-func (r *RepositoryClient) validationClient() *ValidationClient {
-	return (*ValidationClient)(r)
-}
-
-func (b *BackupClient) repoClient() *RepositoryClient {
-	return (*RepositoryClient)(b)
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -217,11 +205,29 @@ func (a *App) Startup(ctx context.Context) {
 		a.config.CloudRPCURL,
 		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
 	)
+	cloudRepositoryRPCClient := arcov1connect.NewRepositoryServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
 
 	// Initialize services with database and authenticated RPC clients
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
+
+	// Create cloud repository service first
+	cloudRepositoryService := repository.NewCloudRepositoryService(a.log, a.state, a.config)
+	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
+
+	// Initialize repository service with full dependencies
+	a.repositoryService.Init(
+		a.db,
+		a.borg,
+		a.config,
+		a.eventEmitter,
+		cloudRepositoryService.CloudRepositoryService,
+	)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -246,7 +252,7 @@ func (a *App) Startup(ctx context.Context) {
 	}
 
 	// Save mount states
-	a.RepoClient().setMountStates()
+	a.repositoryService.SetMountStates(a.ctx)
 
 	// Schedule backups
 	go a.startScheduleChangeListener()
@@ -531,14 +537,4 @@ func rollback(tx *ent.Tx, err error) error {
 		err = fmt.Errorf("%w: %v", err, rerr)
 	}
 	return err
-}
-
-// TODO: remove or move somewhere else
-func (a *App) createSSHKeyPair() (string, error) {
-	pair, err := util.GenerateKeyPair()
-	if err != nil {
-		return "", err
-	}
-	a.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
-	return pair.AuthorizedKey(), nil
 }
