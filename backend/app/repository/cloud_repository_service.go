@@ -168,73 +168,6 @@ func (s *CloudRepositoryService) handleRPCError(operation string, err error) err
 	return err
 }
 
-// TODO: do we need this???
-// syncCloudRepository creates or updates a local repository entity with cloud metadata
-func (s *CloudRepositoryService) syncCloudRepository(ctx context.Context, cloudRepo *arcov1.Repository) (*ent.Repository, error) {
-	s.mustHaveDB()
-
-	// Check if local repository already exists by ArcoCloud ID
-	if cloudRepo.Id != "" {
-		if localRepo, err := s.db.Repository.Query().
-			Where(repository.HasCloudRepositoryWith(
-				cloudrepository.CloudIDEQ(cloudRepo.Id),
-			)).
-			First(ctx); err == nil {
-			// Update existing repository
-			updateQuery := s.db.Repository.UpdateOne(localRepo).
-				SetName(cloudRepo.Name).
-				SetURL(cloudRepo.RepoUrl)
-			return updateQuery.Save(ctx)
-		}
-	}
-
-	// Check if repository exists by location (repo URL)
-	if localRepo, err := s.db.Repository.Query().
-		Where(repository.URLEQ(cloudRepo.RepoUrl)).
-		First(ctx); err == nil {
-		// Create or update cloud repository association
-		_, err := s.db.CloudRepository.Create().
-			SetCloudID(cloudRepo.Id).
-			SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
-			SetLocation(getLocationEnum(cloudRepo.Location)).
-			SetRepository(localRepo).
-			Save(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create cloud repository: %w", err)
-		}
-
-		// Update repository name if needed
-		updateQuery := s.db.Repository.UpdateOne(localRepo).
-			SetName(cloudRepo.Name)
-		return updateQuery.Save(ctx)
-	}
-
-	// Create new local repository with cloud association
-	localRepo, err := s.db.Repository.Create().
-		SetName(cloudRepo.Name).
-		SetURL(cloudRepo.RepoUrl).
-		SetPassword(""). // Will be set later
-		Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create repository: %w", err)
-	}
-
-	// Create cloud repository association
-	_, err = s.db.CloudRepository.Create().
-		SetCloudID(cloudRepo.Id).
-		SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
-		SetLocation(getLocationEnum(cloudRepo.Location)).
-		SetRepository(localRepo).
-		Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cloud repository: %w", err)
-	}
-
-	return localRepo, nil
-}
-
-// Frontend-exposed business logic methods
-
 // AddCloudRepository creates a new ArcoCloud repository
 func (s *CloudRepositoryService) AddCloudRepository(ctx context.Context, name string, location arcov1.RepositoryLocation) (*arcov1.Repository, error) {
 	// Ensure SSH key exists
@@ -293,7 +226,7 @@ func (s *CloudRepositoryService) DeleteCloudRepository(ctx context.Context, repo
 }
 
 // ListCloudRepositories retrieves all ArcoCloud repositories owned by the user
-func (s *CloudRepositoryService) ListCloudRepositories(ctx context.Context) ([]*ent.Repository, error) {
+func (s *CloudRepositoryService) ListCloudRepositories(ctx context.Context) ([]*arcov1.Repository, error) {
 	// Call cloud service
 	req := connect.NewRequest(&arcov1.ListRepositoriesRequest{})
 
@@ -301,24 +234,11 @@ func (s *CloudRepositoryService) ListCloudRepositories(ctx context.Context) ([]*
 	if err != nil {
 		return nil, s.handleRPCError("list repositories", err)
 	}
-
-	// Sync all cloud repositories with local entities
-	var localRepos []*ent.Repository
-	for _, cloudRepo := range resp.Msg.Repositories {
-		localRepo, err := s.syncCloudRepository(ctx, cloudRepo)
-		if err != nil {
-			s.log.Warnf("Failed to sync repository %s: %v", cloudRepo.Id, err)
-			continue
-		}
-		localRepos = append(localRepos, localRepo)
-	}
-
-	s.log.Debugf("Listed %d ArcoCloud repositories", len(localRepos))
-	return localRepos, nil
+	return resp.Msg.Repositories, nil
 }
 
 // GetCloudRepository retrieves detailed information about a specific ArcoCloud repository
-func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, repositoryID string) (*ent.Repository, error) {
+func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, repositoryID string) (*arcov1.Repository, error) {
 	// Call cloud service
 	req := connect.NewRequest(&arcov1.GetRepositoryRequest{
 		RepositoryId: repositoryID,
@@ -328,14 +248,7 @@ func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, reposit
 	if err != nil {
 		return nil, s.handleRPCError("get repository", err)
 	}
-
-	// Sync with local entity
-	localRepo, err := s.syncCloudRepository(ctx, resp.Msg.Repository)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync local repository: %w", err)
-	}
-
-	return localRepo, nil
+	return resp.Msg.Repository, nil
 }
 
 // ReplaceCloudRepositorySSHKey regenerates the local SSH key and updates the cloud repository
@@ -379,10 +292,4 @@ func (s *CloudRepositoryService) ReplaceCloudRepositorySSHKey(ctx context.Contex
 
 	s.log.Infof("Replaced SSH key for repository %s, new fingerprint: %s", repositoryID, resp.Msg.SshKeyFingerprint)
 	return nil
-}
-
-// GetArcoCloudRepositorySSHKeyPath returns the private key path for Borg operations
-// This is exposed to allow the Borg client to use the SSH key for repository operations
-func (s *CloudRepositoryService) GetArcoCloudRepositorySSHKeyPath() string {
-	return s.getArcoCloudSSHKeyPath()
 }

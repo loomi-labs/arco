@@ -23,6 +23,7 @@ import (
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -116,7 +117,6 @@ type AppClient App
 // BackupClient is a client for backup related operations
 type BackupClient App
 
-
 func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
 }
@@ -128,7 +128,6 @@ func (a *App) AppClient() *AppClient {
 func (a *App) BackupClient() *BackupClient {
 	return (*BackupClient)(a)
 }
-
 
 func (a *App) AuthService() *auth.Service {
 	return a.authService.Service
@@ -249,6 +248,9 @@ func (a *App) Startup(ctx context.Context) {
 	// Save mount states
 	a.repositoryService.SetMountStates(a.ctx)
 
+	// Start ArcoCloud sync listener
+	go a.startArcoCloudSyncListener()
+
 	// Schedule backups
 	go a.startScheduleChangeListener()
 	go a.startPruneScheduleChangeListener()
@@ -276,6 +278,35 @@ func (a *App) SetQuit() {
 func (a *App) ShouldQuit() bool {
 	a.log.Debug("ShouldQuit called")
 	return a.state.GetStartupState().Error != "" || a.shouldQuit
+}
+
+func (a *App) startArcoCloudSyncListener() {
+	a.log.Debug("Starting ArcoCloud sync listener")
+
+	syncArcoCloudData := func() {
+		go func() {
+			_, err := a.repositoryService.SyncCloudRepositories(a.ctx)
+			if err != nil {
+				a.log.Error(err)
+			}
+		}()
+	}
+
+	// Initial sync if authenticated
+	if a.state.GetAuthState().IsAuthenticated {
+		syncArcoCloudData()
+	}
+
+	// Listen for auth state changes using Wails event system
+	application.Get().Event.On(types.EventAuthStateChanged.String(), func(event *application.CustomEvent) {
+		isAuthenticated := a.state.GetAuthState().IsAuthenticated
+		a.log.Debugf("Auth state changed, authenticated: %v", isAuthenticated)
+
+		if isAuthenticated {
+			// User became authenticated - sync data
+			syncArcoCloudData()
+		}
+	})
 }
 
 func (a *App) updateArco() (bool, error) {

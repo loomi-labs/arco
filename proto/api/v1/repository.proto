@@ -215,27 +215,24 @@ message Repository {
   // ArcoCloud repository ID (unique identifier from ArcoCloud).
   string id = 1;
 
-  // Arco user ID who owns this repository.
-  string user_id = 2;
-
   // Human-readable repository name.
-  string name = 3;
+  string name = 2;
 
   // ArcoCloud repository URL for backup client connections.
   // Format: user@server:repo_path
-  string repo_url = 4;
+  string repo_url = 3;
 
   // Current storage usage in bytes.
   // Updated periodically from ArcoCloud usage reports.
-  int64 storage_used_bytes = 5;
+  int64 storage_used_bytes = 4;
 
   // When the repository was created in ArcoCloud.
-  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp created_at = 5;
 
   // When the repository information was last updated from ArcoCloud.
-  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp updated_at = 6;
 
   // Geographical location of the repository.
   // Indicates the ArcoCloud region where the repository is hosted.
-  RepositoryLocation location = 8;
+  RepositoryLocation location = 7;
 }

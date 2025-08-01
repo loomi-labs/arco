@@ -16,6 +16,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
@@ -243,8 +244,120 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 		Save(ctx)
 }
 
+func (si *ServiceInternal) SyncCloudRepositories(ctx context.Context) ([]*ent.Repository, error) {
+	return si.syncCloudRepositories(ctx)
+}
+
+func (s *Service) syncCloudRepositories(ctx context.Context) ([]*ent.Repository, error) {
+	cloudRepos, err := s.cloudService.ListCloudRepositories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.log.Debugf("Syncing %d cloud repositories", len(cloudRepos))
+
+	var syncedRepos []*ent.Repository
+	for _, cloudRepo := range cloudRepos {
+		localRepo, err := s.syncSingleCloudRepository(ctx, cloudRepo)
+		if err != nil {
+			s.log.Errorf("Failed to sync cloud repository %s (%s): %v", cloudRepo.Name, cloudRepo.Id, err)
+			return nil, err
+		}
+		if localRepo != nil {
+			syncedRepos = append(syncedRepos, localRepo)
+		}
+	}
+	return syncedRepos, nil
+}
+
+// syncSingleCloudRepository creates or updates a local repository entity with cloud metadata
+func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arcov1.Repository) (*ent.Repository, error) {
+	s.mustHaveDB()
+
+	var result *ent.Repository
+	err := database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+		// Check if local repository already exists by ArcoCloud ID
+		if cloudRepo.Id != "" {
+			if localRepo, err := tx.Repository.Query().
+				Where(repository.HasCloudRepositoryWith(
+					cloudrepository.CloudIDEQ(cloudRepo.Id),
+				)).
+				First(ctx); err == nil {
+				// Update existing repository
+				updatedRepo, txErr := tx.Repository.UpdateOne(localRepo).
+					SetName(cloudRepo.Name).
+					SetURL(cloudRepo.RepoUrl).
+					Save(ctx)
+				if txErr != nil {
+					return txErr
+				}
+				result = updatedRepo
+				return nil
+			}
+		}
+
+		// Check if repository exists by location (repo URL)
+		if localRepo, err := tx.Repository.Query().
+			Where(repository.URLEQ(cloudRepo.RepoUrl)).
+			First(ctx); err == nil {
+			// Create cloud repository association
+			_, txErr := tx.CloudRepository.Create().
+				SetCloudID(cloudRepo.Id).
+				SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+				SetLocation(getLocationEnum(cloudRepo.Location)).
+				SetRepository(localRepo).
+				Save(ctx)
+			if txErr != nil {
+				return txErr
+			}
+
+			// Update repository name if needed
+			updatedRepo, txErr := tx.Repository.UpdateOne(localRepo).
+				SetName(cloudRepo.Name).
+				Save(ctx)
+			if txErr != nil {
+				return txErr
+			}
+			result = updatedRepo
+			return nil
+		}
+
+		// Create new local repository with cloud association
+		localRepo, txErr := tx.Repository.Create().
+			SetName(cloudRepo.Name).
+			SetURL(cloudRepo.RepoUrl).
+			SetPassword(""). // Will be set later
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+
+		// Create cloud repository association
+		_, txErr = tx.CloudRepository.Create().
+			SetCloudID(cloudRepo.Id).
+			SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+			SetLocation(getLocationEnum(cloudRepo.Location)).
+			SetRepository(localRepo).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+
+		result = localRepo
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cloud repository: %w", err)
+	}
+
+	return result, nil
+}
+
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*ent.Repository, error) {
+	var entRepo *ent.Repository
+
 	repo, err := s.cloudService.AddCloudRepository(ctx, name, location)
 	if err != nil {
 		// Check if the error is "already exists"
@@ -253,19 +366,15 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			s.log.Warnf("Repository '%s' already exists in ArcoCloud, proceeding with existing repository", name)
 
 			// Find the existing repository by listing and matching name
-			cloudRepos, listErr := s.cloudService.ListCloudRepositories(ctx)
+			repos, listErr := s.syncCloudRepositories(ctx)
 			if listErr != nil {
 				return nil, fmt.Errorf("repository already exists but failed to retrieve it: %w", listErr)
 			}
 
 			// Find the repository with matching name
-			for _, cloudRepo := range cloudRepos {
-				if cloudRepo.Name == name && cloudRepo.Edges.CloudRepository != nil {
-					repo = &arcov1.Repository{
-						Id:      cloudRepo.Edges.CloudRepository.CloudID,
-						Name:    cloudRepo.Name,
-						RepoUrl: cloudRepo.URL,
-					}
+			for _, r := range repos {
+				if r.Name == name {
+					entRepo = r
 					break
 				}
 			}
@@ -290,7 +399,10 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 		s.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
 	}
 
-	var entRepo *ent.Repository
+	if entRepo != nil {
+		return entRepo, nil
+	}
+
 	err = database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
 		var txErr error
 		entRepo, txErr = tx.Repository.
