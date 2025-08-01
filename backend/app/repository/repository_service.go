@@ -19,6 +19,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
 	"go.uber.org/zap"
@@ -998,9 +999,79 @@ func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.B
 	return first, err
 }
 
-// ArchiveName validates the name of an archive.
+// ValidateRepoName validates the name of a repository.
+// The rules are enforced by the database.
+func (s *Service) ValidateRepoName(ctx context.Context, name string) (string, error) {
+	s.mustHaveDB()
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < schema.ValRepositoryMinNameLength {
+		return fmt.Sprintf("Name must be at least %d characters long", schema.ValRepositoryMinNameLength), nil
+	}
+	if len(name) > schema.ValRepositoryMaxNameLength {
+		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValRepositoryMaxNameLength), nil
+	}
+	matched := schema.ValRepositoryNamePattern.MatchString(name)
+	if !matched {
+		return "Name can only contain letters, numbers, hyphens, and underscores", nil
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.Name(name)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Repository name must be unique", nil
+	}
+
+	return "", nil
+}
+
+// ValidateRepoPath validates the path of a repository.
+func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal bool) (string, error) {
+	s.mustHaveDB()
+	if path == "" {
+		return "Path is required", nil
+	}
+	if isLocal {
+		if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
+			return "Path must start with / or ~", nil
+		}
+		expandedPath := util.ExpandPath(path)
+		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+			return "Path does not exist", nil
+		}
+		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
+			return "Path is not a folder", nil
+		}
+		if entries, err := os.ReadDir(expandedPath); err == nil && len(entries) > 0 {
+			if !s.IsBorgRepository(expandedPath) {
+				return "Folder must be empty", nil
+			}
+		}
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.URL(path)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Repository is already connected", nil
+	}
+
+	return "", nil
+}
+
+// ValidateArchiveName validates the name of an archive.
 // The rules are not enforced by the database because we import them from borg repositories which have different rules.
-func (s *Service) ArchiveName(ctx context.Context, archiveId int, prefix, name string) (string, error) {
+func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, prefix, name string) (string, error) {
 	if name == "" {
 		return "Name is required", nil
 	}
@@ -1019,8 +1090,6 @@ func (s *Service) ArchiveName(ctx context.Context, archiveId int, prefix, name s
 		return "Name can only contain letters, numbers, hyphens, and underscores", nil
 	}
 
-	// TODO: Remove cross-service dependency - validation should not directly access repository service
-	// For now, this will cause a compilation error that needs to be fixed properly
 	arch, err := s.GetArchive(ctx, archiveId)
 	if err != nil {
 		return "", err
@@ -1074,7 +1143,7 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 	s.mustHaveDB()
 
 	s.log.Debugf("Renaming archive %d to %s", id, name)
-	validationError, err := s.ArchiveName(ctx, id, prefix, name)
+	validationError, err := s.ValidateArchiveName(ctx, id, prefix, name)
 	if err != nil {
 		return err
 	}
