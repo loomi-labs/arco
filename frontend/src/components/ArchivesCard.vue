@@ -22,7 +22,6 @@ import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/
 import { archivesChanged } from "../common/events";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -319,7 +318,7 @@ async function validateName(archiveId: number) {
   }
 
   try {
-    inputErrors.value[archiveId] = await validationClient.ArchiveName(
+    inputErrors.value[archiveId] = await repoService.Service.ValidateArchiveName(
       archiveId,
       prefix,
       name

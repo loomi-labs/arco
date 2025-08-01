@@ -7,7 +7,6 @@ import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
@@ -137,10 +136,10 @@ async function setNameFromLocation() {
 async function simpleValidate(force = false) {
   try {
     if (name.value !== undefined || force) {
-      nameError.value = await validationClient.RepoName(name.value ?? "");
+      nameError.value = await repoService.Service.ValidateRepoName(name.value ?? "");
     }
     if (location.value !== undefined || force) {
-      locationError.value = await validationClient.RepoPath(location.value ?? "", false);
+      locationError.value = await repoService.Service.ValidateRepoPath(location.value ?? "", false);
     }
 
     if (location.value === undefined || locationError.value) {
