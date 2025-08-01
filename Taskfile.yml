@@ -33,11 +33,55 @@ tasks:
       - task: "{{OS}}:run"
 
   test:
-    desc: Runs tests
+    desc: Run tests
+    silent: true
     deps:
       - task: dev:gen:mocks
     preconditions:
       - mkdir -p frontend/dist
       - touch frontend/dist/index.html
     cmds:
-      - go test -cover -mod=readonly --timeout 1m $(go list ./... | grep -v ent)
+      - |
+        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent) -json | \
+        tee >(./scripts/test-output-processor.sh) | \
+        ./scripts/test-summary.sh
+
+  test:raw:
+    desc: Run tests with raw output
+    deps:
+      - task: dev:gen:mocks
+    preconditions:
+      - mkdir -p frontend/dist
+      - touch frontend/dist/index.html
+    cmds:
+      - go test -v -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent)
+
+  test:detailed:
+    desc: Run tests with detailed output
+    silent: true
+    deps:
+      - task: dev:gen:mocks
+    preconditions:
+      - mkdir -p frontend/dist
+      - touch frontend/dist/index.html
+    cmds:
+      - |
+        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent) -json | \
+        tee >(jq --unbuffered -r '
+          if .Action == "run" and .Test == null then
+            "🔄 Starting: " + .Package
+          elif .Action == "pass" and .Test == null then
+            "✅ " + .Package + " (" + (.Elapsed // 0 | . * 100 | round / 100 | tostring) + "s)"
+          elif .Action == "fail" and .Test == null then
+            "❌ " + .Package + " - FAILED (" + (.Elapsed // 0 | . * 100 | round / 100 | tostring) + "s)"
+          elif .Action == "pass" and .Test != null then
+            "  ✅ " + .Test + " (" + (.Elapsed // 0 | . * 100 | round / 100 | tostring) + "s)"
+          elif .Action == "fail" and .Test != null then
+            "  ❌ " + .Test + " (" + (.Elapsed // 0 | . * 100 | round / 100 | tostring) + "s)"
+          elif .Action == "output" and (.Output // "" | type == "string") and (.Output | test("^coverage: [0-9.]+% of statements$")) then
+            "  📊 " + (.Output | gsub("\\t|\\n"; "") | gsub("^\\s+|\\s+$"; ""))
+          else
+            empty
+          end
+        ') | \
+        ./scripts/test-summary.sh
