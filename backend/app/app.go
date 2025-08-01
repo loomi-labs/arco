@@ -116,8 +116,6 @@ type AppClient App
 // BackupClient is a client for backup related operations
 type BackupClient App
 
-// ValidationClient is a client for validation related operations
-type ValidationClient App
 
 func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
@@ -131,9 +129,6 @@ func (a *App) BackupClient() *BackupClient {
 	return (*BackupClient)(a)
 }
 
-func (a *App) ValidationClient() *ValidationClient {
-	return (*ValidationClient)(a)
-}
 
 func (a *App) AuthService() *auth.Service {
 	return a.authService.Service
