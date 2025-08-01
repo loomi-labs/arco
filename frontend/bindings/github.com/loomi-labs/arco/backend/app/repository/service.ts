@@ -33,14 +33,6 @@ export function All(): $CancellablePromise<(ent$0.Repository | null)[]> {
     });
 }
 
-/**
- * ArchiveName validates the name of an archive.
- * The rules are not enforced by the database because we import them from borg repositories which have different rules.
- */
-export function ArchiveName(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(168200151, archiveId, prefix, name);
-}
-
 export function BreakLock(id: number): $CancellablePromise<void> {
     return $Call.ByID(4281482770, id);
 }
@@ -236,6 +228,29 @@ export function Update(repository: ent$0.Repository | null): $CancellablePromise
     return $Call.ByID(3450666087, repository).then(($result: any) => {
         return $$createType1($result);
     });
+}
+
+/**
+ * ValidateArchiveName validates the name of an archive.
+ * The rules are not enforced by the database because we import them from borg repositories which have different rules.
+ */
+export function ValidateArchiveName(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
+    return $Call.ByID(392924285, archiveId, prefix, name);
+}
+
+/**
+ * ValidateRepoName validates the name of a repository.
+ * The rules are enforced by the database.
+ */
+export function ValidateRepoName(name: string): $CancellablePromise<string> {
+    return $Call.ByID(3060066791, name);
+}
+
+/**
+ * ValidateRepoPath validates the path of a repository.
+ */
+export function ValidateRepoPath(path: string, isLocal: boolean): $CancellablePromise<string> {
+    return $Call.ByID(2882211019, path, isLocal);
 }
 
 // Private type creation functions
