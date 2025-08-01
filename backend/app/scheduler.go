@@ -13,16 +13,34 @@ import (
 func (a *App) startScheduleChangeListener() {
 	a.log.Debug("Starting schedule change listener")
 	var timers []*time.Timer
-	for {
-		<-a.backupScheduleChangedCh
-
-		// Stop all scheduled backups
+	
+	// Clean up timers when function exits
+	defer func() {
 		for _, t := range timers {
 			t.Stop()
 		}
+	}()
+	
+	// Check if channel is nil (used in tests)
+	if a.backupScheduleChangedCh == nil {
+		a.log.Debug("Backup schedule change channel is nil, exiting listener")
+		return
+	}
+	
+	for {
+		select {
+		case <-a.ctx.Done():
+			a.log.Debug("Schedule change listener stopped due to context cancellation")
+			return
+		case <-a.backupScheduleChangedCh:
+			// Stop all scheduled backups
+			for _, t := range timers {
+				t.Stop()
+			}
 
-		// Schedule all backups
-		timers = a.scheduleBackups()
+			// Schedule all backups
+			timers = a.scheduleBackups()
+		}
 	}
 }
 
@@ -261,16 +279,34 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 func (a *App) startPruneScheduleChangeListener() {
 	a.log.Debug("Starting prune schedule change listener")
 	var timers []*time.Timer
-	for {
-		<-a.pruningScheduleChangedCh
-
-		// Stop all scheduled prunes
+	
+	// Clean up timers when function exits
+	defer func() {
 		for _, t := range timers {
 			t.Stop()
 		}
+	}()
+	
+	// Check if channel is nil (used in tests)
+	if a.pruningScheduleChangedCh == nil {
+		a.log.Debug("Pruning schedule change channel is nil, exiting listener")
+		return
+	}
+	
+	for {
+		select {
+		case <-a.ctx.Done():
+			a.log.Debug("Prune schedule change listener stopped due to context cancellation")
+			return
+		case <-a.pruningScheduleChangedCh:
+			// Stop all scheduled prunes
+			for _, t := range timers {
+				t.Stop()
+			}
 
-		// Schedule all prunes
-		timers = a.schedulePrunes()
+			// Schedule all prunes
+			timers = a.schedulePrunes()
+		}
 	}
 }
 

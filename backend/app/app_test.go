@@ -41,7 +41,11 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 
 	mockEventEmitter := mocktypes.NewMockEventEmitter(gomock.NewController(t))
 	a := NewApp(log.Sugar(), config, mockEventEmitter)
-	a.ctx = context.Background()
+	
+	// Create context for tests that can be cancelled during cleanup
+	ctx, cancel := context.WithCancel(context.Background())
+	a.ctx = ctx
+	a.cancel = cancel
 
 	close(a.backupScheduleChangedCh)
 	a.backupScheduleChangedCh = nil
@@ -69,6 +73,16 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		mockEventEmitter,
 		cloudRepositoryServiceInternal.CloudRepositoryService,
 	)
+
+	// Add cleanup function to test to ensure context is cancelled
+	t.Cleanup(func() {
+		if a.cancel != nil {
+			a.cancel()
+		}
+		if a.db != nil {
+			a.db.Close()
+		}
+	})
 
 	return a, mockBorg, mockEventEmitter
 }

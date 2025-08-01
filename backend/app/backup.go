@@ -797,8 +797,7 @@ func (b *BackupClient) runBorgDelete(bId types.BackupId, location, password, pre
 			b.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
 		}
 
-		// TODO: refactor this to have access to RepositoryService
-		_, err = (*App)(b).RepositoryService().RefreshArchives(b.ctx, bId.RepositoryId)
+		_, err = b.repositoryService.RefreshArchivesWithoutLock(b.ctx, bId.RepositoryId)
 		if err != nil {
 			b.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
 		}

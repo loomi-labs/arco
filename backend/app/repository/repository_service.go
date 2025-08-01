@@ -675,13 +675,17 @@ func (s *Service) RefreshArchives(ctx context.Context, repoId int) ([]*ent.Archi
 	repoLock.Lock()         // We should not have to wait here since we checked the status before
 	defer repoLock.Unlock() // Unlock at the end
 
-	return s.refreshArchives(ctx, repoId)
+	return s.refreshArchivesWithoutLock(ctx, repoId)
 }
 
-// refreshArchives fetches the archives from the borg repository and saves them to the database.
+func (si *ServiceInternal) RefreshArchivesWithoutLock(ctx context.Context, repoId int) ([]*ent.Archive, error) {
+	return si.refreshArchivesWithoutLock(ctx, repoId)
+}
+
+// refreshArchivesWithoutLock fetches the archives from the borg repository and saves them to the database.
 // It also deletes the archives that don't exist anymore.
 // Precondition: the caller must have acquired the lock for the repository
-func (s *Service) refreshArchives(ctx context.Context, repoId int) ([]*ent.Archive, error) {
+func (s *Service) refreshArchivesWithoutLock(ctx context.Context, repoId int) ([]*ent.Archive, error) {
 	repo, err := s.db.Repository.
 		Query().
 		Where(repository.ID(repoId)).
