@@ -6,7 +6,7 @@ import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toErrorStateBadge, toWarningStateBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
@@ -68,6 +68,9 @@ const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
 const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(confirmRemoveRepoModalKey);
+
+// Session-based warning dismissal tracking
+const dismissedWarnings = ref<Set<number>>(new Set());
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -182,6 +185,20 @@ onUnmounted(() => {
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
         <span v-else>-</span>
+        <!-- Error Badge -->
+        <span v-if='toErrorStateBadge(repoState)' 
+              :class='toErrorStateBadge(repoState)'
+              class='ml-1'
+              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+          Error
+        </span>
+        <!-- Warning Badge -->
+        <span v-if='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))' 
+              :class='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))'
+              class='ml-1'
+              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+          Warning
+        </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
