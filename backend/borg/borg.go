@@ -98,7 +98,7 @@ func (z *CmdLogger) LogCmdResult(ctx context.Context, result *types.Status, cmd 
 }
 
 type Env struct {
-	password           string
+	password           *string
 	deleteConfirmation bool
 	sshPrivateKeys     []string
 }
@@ -110,7 +110,7 @@ func NewEnv(sshPrivateKeys []string) Env {
 }
 
 func (e Env) WithPassword(password string) Env {
-	e.password = password
+	e.password = &password
 	return e
 }
 
@@ -134,8 +134,8 @@ func (e Env) AsList() []string {
 		"BORG_EXIT_CODES=modern",
 		fmt.Sprintf("BORG_RSH=%s", fmt.Sprintf("ssh %s", strings.Join(sshOptions, " "))),
 	)
-	if e.password != "" {
-		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", e.password))
+	if e.password != nil {
+		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", *e.password))
 	}
 	if e.deleteConfirmation {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
@@ -164,7 +164,7 @@ func newStatusWithCanceled() *types.Status {
 	}
 }
 
-func toBorgResult(exitCode int) *types.Status {
+func toBorgResult(exitCode int, detail string) *types.Status {
 	if exitCode == 0 {
 		return &types.Status{}
 	}
@@ -182,7 +182,17 @@ func toBorgResult(exitCode int) *types.Status {
 
 	for _, err := range types.AllBorgErrors {
 		if err.ExitCode == exitCode {
-			return &types.Status{Error: err}
+			switch err.ExitCode {
+			case types.ErrorConnectionClosedWithHint.ExitCode, types.ErrorConnectionBrokenWithHint.ExitCode:
+				return &types.Status{Error: &types.BorgError{
+					ExitCode:   err.ExitCode,
+					Message:    detail,
+					Underlying: nil,
+					Category:   err.Category,
+				}}
+			default:
+				return &types.Status{Error: err}
+			}
 		}
 	}
 
@@ -198,7 +208,7 @@ func toBorgResult(exitCode int) *types.Status {
 // combinedOutputToStatus converts command output and error to a Status
 func combinedOutputToStatus(out []byte, err error) *types.Status {
 	if err == nil {
-		return toBorgResult(0)
+		return toBorgResult(0, "")
 	}
 
 	// Return the error if it is not an ExitError
@@ -211,11 +221,11 @@ func combinedOutputToStatus(out []byte, err error) *types.Status {
 		return newStatusWithError(err)
 	}
 
-	return toBorgResult(exitError.ExitCode())
+	return toBorgResult(exitError.ExitCode(), string(out))
 }
 
 // gocmdToStatus converts go-cmd status to a Status
-func gocmdToStatus(status gocmd.Status) *types.Status {
+func gocmdToStatus(status gocmd.Status, detail string) *types.Status {
 	if status.Error != nil && status.Exit == 0 {
 		// Execution error (command didn't run)
 		return &types.Status{
@@ -223,5 +233,5 @@ func gocmdToStatus(status gocmd.Status) *types.Status {
 		}
 	}
 
-	return toBorgResult(status.Exit)
+	return toBorgResult(status.Exit, detail)
 }
