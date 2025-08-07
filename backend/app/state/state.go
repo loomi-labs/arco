@@ -125,15 +125,48 @@ func (rs RepoStatus) String() string {
 	return string(rs)
 }
 
+type RepoErrorType string
+
+const (
+	RepoErrorTypeNone       RepoErrorType = "none"
+	RepoErrorTypeSSHKey     RepoErrorType = "sshKey"
+	RepoErrorTypePassphrase RepoErrorType = "passphrase"
+)
+
+func (ret RepoErrorType) String() string {
+	return string(ret)
+}
+
+type RepoErrorAction string
+
+const (
+	RepoErrorActionNone          RepoErrorAction = "none"
+	RepoErrorActionRegenerateSSH RepoErrorAction = "regenerateSSH"
+)
+
+func (rea RepoErrorAction) String() string {
+	return string(rea)
+}
+
 type RepoState struct {
-	mutex  *sync.Mutex
-	Status RepoStatus `json:"status"`
+	mutex          *sync.Mutex
+	Status         RepoStatus      `json:"status"`
+	ErrorType      RepoErrorType   `json:"errorType"`
+	ErrorMessage   string          `json:"errorMessage"`
+	ErrorAction    RepoErrorAction `json:"errorAction"`
+	HasWarning     bool            `json:"hasWarning"`
+	WarningMessage string          `json:"warningMessage"`
 }
 
 func newRepoState() *RepoState {
 	return &RepoState{
-		mutex:  &sync.Mutex{},
-		Status: RepoStatusIdle,
+		mutex:          &sync.Mutex{},
+		Status:         RepoStatusIdle,
+		ErrorType:      RepoErrorTypeNone,
+		ErrorMessage:   "",
+		ErrorAction:    RepoErrorActionNone,
+		HasWarning:     false,
+		WarningMessage: "",
 	}
 }
 
@@ -353,6 +386,70 @@ func (s *State) GetRepoState(repoId int) RepoState {
 		return *rs
 	}
 	return *newRepoState()
+}
+
+func (s *State) SetRepoErrorState(ctx context.Context, repoId int, errorType RepoErrorType, errorMessage string, errorAction RepoErrorAction) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].ErrorType = errorType
+	s.repoStates[repoId].ErrorMessage = errorMessage
+	s.repoStates[repoId].ErrorAction = errorAction
+}
+
+func (s *State) ClearRepoErrorState(ctx context.Context, repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].ErrorType = RepoErrorTypeNone
+	s.repoStates[repoId].ErrorMessage = ""
+	s.repoStates[repoId].ErrorAction = RepoErrorActionNone
+}
+
+func (s *State) GetRepoErrorState(repoId int) (RepoErrorType, string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if rs, ok := s.repoStates[repoId]; ok {
+		return rs.ErrorType, rs.ErrorMessage
+	}
+	return RepoErrorTypeNone, ""
+}
+
+func (s *State) SetRepoWarningState(ctx context.Context, repoId int, warningMessage string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].HasWarning = true
+	s.repoStates[repoId].WarningMessage = warningMessage
+}
+
+func (s *State) ClearRepoWarningState(ctx context.Context, repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].HasWarning = false
+	s.repoStates[repoId].WarningMessage = ""
 }
 
 /***********************************/

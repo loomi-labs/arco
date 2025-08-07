@@ -12,7 +12,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
-	types2 "github.com/loomi-labs/arco/backend/borg/types"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -79,12 +79,17 @@ func (s *Service) mustHaveDB() {
 }
 
 // isCloudRepository checks if a repository is an ArcoCloud repository
-func (s *Service) isCloudRepository(repo *ent.Repository) bool {
-	// Check if repository has a cloud repository relationship
-	if repo.Edges.CloudRepository != nil {
-		return repo.Edges.CloudRepository.CloudID != ""
+func (s *Service) isCloudRepository(ctx context.Context, repoId int) bool {
+	exists, err := s.db.Repository.Query().
+		Where(repository.And(
+			repository.IDEQ(repoId),
+			repository.HasCloudRepository(),
+		)).
+		Exist(ctx)
+	if err != nil {
+		s.log.Errorf("IsCloudRepository query error: %s", err)
 	}
-	return false
+	return exists
 }
 
 // rollback helper function for transactions
@@ -221,15 +226,8 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 	if !result.Success && !result.IsBorgRepo {
 		// Create the repository if it does not exist
 		status := s.borg.Init(ctx, util.ExpandPath(location), password, noPassword)
-		if !status.IsCompletedWithSuccess() {
-			if status.HasBeenCanceled {
-				return nil, fmt.Errorf("repository initialization was cancelled")
-			}
-			return nil, fmt.Errorf("failed to initialize repository: %s", status.GetError())
-		}
-		if status.HasWarning() {
-			// TODO(log-warning): log warning to user
-			s.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
+		if err := s.handleBorgStatus(ctx, nil, status, "initialize repository"); err != nil {
+			return nil, err
 		}
 	} else if !result.Success {
 		return nil, fmt.Errorf("could not connect to repository")
@@ -354,10 +352,13 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 	return result, nil
 }
 
+// RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
+func (s *Service) RegenerateSSHKey(ctx context.Context) error {
+	return s.cloudService.AddOrReplaceSSHKey(ctx)
+}
+
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*ent.Repository, error) {
-	var entRepo *ent.Repository
-
 	repo, err := s.cloudService.AddCloudRepository(ctx, name, location)
 	if err != nil {
 		// Check if the error is "already exists"
@@ -374,45 +375,33 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			// Find the repository with matching name
 			for _, r := range repos {
 				if r.Name == name {
-					entRepo = r
-					break
+					status := s.borg.Init(ctx, r.URL, password, false)
+					if err := s.handleBorgStatus(ctx, r, status, "initialize repository"); err != nil {
+						return nil, err
+					}
+					return r, nil
 				}
 			}
-
-			if repo == nil {
-				return nil, fmt.Errorf("repository '%s' already exists but could not be found in repository list", name)
-			}
+			return nil, fmt.Errorf("repository '%s' already exists but could not be found in repository list", name)
 		} else {
 			return nil, err
 		}
 	}
 
 	status := s.borg.Init(ctx, repo.RepoUrl, password, false)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasError() {
-			return nil, fmt.Errorf("could not initialize repository: %s", status.GetError())
-		}
-		return nil, fmt.Errorf("repository initialization was cancelled")
-	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository initialization completed with warning: %s", status.GetWarning())
+	if err := s.handleBorgStatus(ctx, nil, status, "initialize repository"); err != nil {
+		return nil, err
 	}
 
-	if entRepo != nil {
-		return entRepo, nil
-	}
-
-	err = database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
-		var txErr error
-		entRepo, txErr = tx.Repository.
+	return database.WithTxData(ctx, s.db, func(tx *ent.Tx) (*ent.Repository, error) {
+		entRepo, txErr := tx.Repository.
 			Create().
 			SetName(name).
 			SetURL(repo.RepoUrl).
 			SetPassword(password).
 			Save(ctx)
 		if txErr != nil {
-			return txErr
+			return nil, txErr
 		}
 		_, txErr = tx.CloudRepository.
 			Create().
@@ -421,14 +410,10 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			SetRepository(entRepo).
 			Save(ctx)
 		if txErr != nil {
-			return txErr
+			return nil, txErr
 		}
-		return nil
+		return entRepo, nil
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cloud repository: %w", err)
-	}
-	return entRepo, nil
 }
 
 func (s *Service) Update(ctx context.Context, repository *ent.Repository) (*ent.Repository, error) {
@@ -510,7 +495,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	}
 
 	// Check if this is a cloud repository and route accordingly
-	if s.isCloudRepository(repo) {
+	if s.isCloudRepository(ctx, repo.ID) {
 		return s.cloudService.DeleteCloudRepository(ctx, repo.Edges.CloudRepository.CloudID)
 	}
 
@@ -524,16 +509,12 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	defer repoLock.Unlock() // Unlock at the end
 
 	status := s.borg.DeleteRepository(ctx, repo.URL, repo.Password)
-	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, types2.ErrorRepositoryDoesNotExist) {
+	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) {
 		// If the repository does not exist, we can ignore the error
 		if status.HasBeenCanceled {
 			return fmt.Errorf("repository deletion was cancelled")
 		}
 		return fmt.Errorf("failed to delete repository: %s", status.GetError())
-	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository deletion completed with warning: %s", status.GetWarning())
 	}
 	return s.Remove(ctx, id)
 }
@@ -572,15 +553,8 @@ func (s *Service) BreakLock(ctx context.Context, id int) error {
 	}
 
 	status := s.borg.BreakLock(ctx, repo.URL, repo.Password)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return fmt.Errorf("lock breaking was cancelled")
-		}
-		return fmt.Errorf("failed to break lock: %s", status.GetError())
-	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Lock breaking completed with warning: %s", status.GetWarning())
+	if err := s.handleBorgStatus(ctx, repo, status, "break lock"); err != nil {
+		return err
 	}
 	s.state.SetRepoStatus(ctx, id, state.RepoStatusIdle)
 	return nil
@@ -675,20 +649,19 @@ func (s *Service) testRepoConnection(ctx context.Context, path, password string)
 		if status.HasBeenCanceled {
 			return result, fmt.Errorf("repository info retrieval was cancelled")
 		}
-		if errors.Is(status.Error, types2.ErrorPassphraseWrong) {
+		if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
 			result.IsBorgRepo = true
 			return result, nil
 		}
-		if errors.Is(status.Error, types2.ErrorRepositoryDoesNotExist) {
+		if errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) {
 			return result, nil
 		}
-		if errors.Is(status.Error, types2.ErrorRepositoryInvalidRepository) {
+		if errors.Is(status.Error, borgtypes.ErrorRepositoryInvalidRepository) {
 			return result, nil
 		}
 		return result, fmt.Errorf("info command failed: %s", status.GetError())
 	}
 	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
 		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
 	}
 	result.Success = true
@@ -812,15 +785,8 @@ func (s *Service) refreshArchivesWithoutLock(ctx context.Context, repoId int) ([
 	defer s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
 
 	listResponse, status := s.borg.List(ctx, repo.URL, repo.Password)
-	if status != nil && !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return nil, fmt.Errorf("archive listing was cancelled")
-		}
-		return nil, fmt.Errorf("failed to get archives: %s", status.GetError())
-	}
-	if status != nil && status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Archive listing completed with warning: %s", status.GetWarning())
+	if err := s.handleBorgStatus(ctx, repo, status, "get archives"); err != nil {
+		return nil, err
 	}
 
 	// Get all the borg ids
@@ -922,15 +888,8 @@ func (s *Service) DeleteArchive(ctx context.Context, id int) error {
 	defer s.state.SetRepoStatus(ctx, arch.Edges.Repository.ID, state.RepoStatusIdle)
 
 	status := s.borg.DeleteArchive(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return fmt.Errorf("archive deletion was cancelled")
-		}
-		return fmt.Errorf("failed to delete archive: %s", status.GetError())
-	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Archive deletion completed with warning: %s", status.GetWarning())
+	if err := s.handleBorgStatus(ctx, arch.Edges.Repository, status, "delete archive"); err != nil {
+		return err
 	}
 	err = s.db.Archive.DeleteOneID(id).Exec(ctx)
 	if err != nil {
@@ -1283,15 +1242,8 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 	defer repoLock.Unlock() // Unlock at the end
 
 	status := s.borg.Rename(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password, newName)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return fmt.Errorf("archive renaming was cancelled")
-		}
-		return fmt.Errorf("failed to rename archive: %s", status.GetError())
-	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Archive renaming completed with warning: %s", status.GetWarning())
+	if err := s.handleBorgStatus(ctx, arch.Edges.Repository, status, "rename archive"); err != nil {
+		return err
 	}
 
 	return s.db.Archive.
@@ -1302,7 +1254,7 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 
 // Mount management methods
 
-func (s *Service) MountRepository(ctx context.Context, repoId int) (state types.MountState, err error) {
+func (s *Service) MountRepository(ctx context.Context, repoId int) (mountState types.MountState, err error) {
 	s.mustHaveDB()
 	repo, err := s.Get(ctx, repoId)
 	if err != nil {
@@ -1319,24 +1271,17 @@ func (s *Service) MountRepository(ctx context.Context, repoId int) (state types.
 		return
 	}
 
-	if status := s.borg.MountRepository(ctx, repo.URL, repo.Password, path); !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			err = fmt.Errorf("repository mounting was cancelled")
-			return
-		}
-		err = fmt.Errorf("failed to mount repository: %s", status.GetError())
+	status := s.borg.MountRepository(ctx, repo.URL, repo.Password, path)
+	if err = s.handleBorgStatus(ctx, repo, status, "mount repository"); err != nil {
 		return
-	} else if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository mounting completed with warning: %s", status.GetWarning())
 	}
 
-	// Update the mount state
-	state, err = getMountState(path)
+	// Update the mount mountState
+	mountState, err = getMountState(path)
 	if err != nil {
 		return
 	}
-	s.state.SetRepoMount(ctx, repoId, &state)
+	s.state.SetRepoMount(ctx, repoId, &mountState)
 
 	// Open the file manager and forget about it
 	go s.openFileManager(path)
@@ -1375,16 +1320,9 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (state types.
 	}
 	if !state.IsMounted {
 		// If not mounted, mount it
-		if status := s.borg.MountArchive(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password, path); !status.IsCompletedWithSuccess() {
-			if status.HasBeenCanceled {
-				err = fmt.Errorf("arch mounting was cancelled")
-				return
-			}
-			err = fmt.Errorf("failed to mount arch: %s", status.GetError())
+		status := s.borg.MountArchive(ctx, arch.Edges.Repository.URL, arch.Name, arch.Edges.Repository.Password, path)
+		if err = s.handleBorgStatus(ctx, arch.Edges.Repository, status, "mount archive"); err != nil {
 			return
-		} else if status.HasWarning() {
-			// TODO(log-warning): log warning to user
-			s.log.Warnf("Archive mounting completed with warning: %s", status.GetWarning())
 		}
 
 		// Update the mount state
@@ -1413,8 +1351,8 @@ func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) error {
 		if states, err := s.GetArchiveMountStates(ctx, repoId); err != nil {
 			unmountErrors = append(unmountErrors, fmt.Errorf("error getting archive mount states for repository %d: %w", repoId, err))
 		} else {
-			for archiveId, state := range states {
-				if state.IsMounted {
+			for archiveId, mountState := range states {
+				if mountState.IsMounted {
 					if _, err = s.UnmountArchive(ctx, archiveId); err != nil {
 						unmountErrors = append(unmountErrors, fmt.Errorf("error unmounting archive %d: %w", archiveId, err))
 					}
@@ -1440,16 +1378,9 @@ func (s *Service) UnmountRepository(ctx context.Context, repoId int) (state type
 		return
 	}
 
-	if status := s.borg.Umount(ctx, path); !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			err = fmt.Errorf("repository unmounting was cancelled")
-			return
-		}
-		err = fmt.Errorf("failed to unmount repository: %s", status.GetError())
+	status := s.borg.Umount(ctx, path)
+	if err = s.handleBorgStatus(ctx, repo, status, "unmount repository"); err != nil {
 		return
-	} else if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository unmounting completed with warning: %s", status.GetWarning())
 	}
 
 	// Update the mount state
@@ -1473,16 +1404,9 @@ func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (state type
 		return
 	}
 
-	if status := s.borg.Umount(ctx, path); !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			err = fmt.Errorf("arch unmounting was cancelled")
-			return
-		}
-		err = fmt.Errorf("failed to unmount arch: %s", status.GetError())
+	status := s.borg.Umount(ctx, path)
+	if err = s.handleBorgStatus(ctx, arch.Edges.Repository, status, "unmount archive"); err != nil {
 		return
-	} else if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Archive unmounting completed with warning: %s", status.GetWarning())
 	}
 
 	// Update the mount state
@@ -1560,4 +1484,65 @@ func getMountState(path string) (state types.MountState, err error) {
 		return
 	}
 	return *states[0], nil
+}
+
+// handleBorgStatus handles common Borg status errors and updates repository error state accordingly
+func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, status *borgtypes.Status, operationName string) error {
+	if status == nil {
+		return nil
+	}
+
+	// Handle special case where repo is nil (initialization errors)
+	if repo == nil {
+		if status.HasError() {
+			s.log.Errorf("Failed to %s during initialization: %s", operationName, status.GetError())
+			return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
+		}
+		return nil
+	}
+
+	repoId := repo.ID
+	if status.HasError() {
+		if status.HasBeenCanceled {
+			s.log.Warnf("Operation %s was cancelled for repository %d", operationName, repoId)
+			return fmt.Errorf("%s was cancelled", operationName)
+		}
+
+		// Check for specific error types and update state accordingly
+		if errors.Is(status.Error, borgtypes.ErrorConnectionClosedWithHint) {
+			s.log.Errorf("SSH key authentication failed for repository %d during %s: %s", repoId, operationName, status.GetError())
+
+			// Determine error action based on repository type
+			var errorAction state.RepoErrorAction
+			if s.isCloudRepository(ctx, repo.ID) {
+				errorAction = state.RepoErrorActionRegenerateSSH
+			} else {
+				errorAction = state.RepoErrorActionNone
+			}
+
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeSSHKey, "SSH key authentication failed", errorAction)
+			return fmt.Errorf("SSH key authentication failed: %s", status.GetError())
+		}
+		if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
+			s.log.Errorf("Incorrect passphrase for repository %d during %s: %s", repoId, operationName, status.GetError())
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypePassphrase, "Incorrect passphrase", state.RepoErrorActionNone)
+			return fmt.Errorf("incorrect passphrase: %s", status.GetError())
+		}
+
+		s.log.Errorf("Failed to %s for repository %d: %s", operationName, repoId, status.GetError())
+		return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
+	} else if status.HasWarning() {
+		// Set warning state and log warning
+		s.log.Warnf("Operation %s completed with warning for repository %d: %s", operationName, repoId, status.GetWarning())
+		s.state.SetRepoWarningState(ctx, repoId, status.GetWarning())
+		// Clear error state since operation completed successfully with warning
+		s.state.ClearRepoErrorState(ctx, repoId)
+	} else if status.IsCompletedWithSuccess() {
+		// Clear any previous error and warning states on success
+		s.state.ClearRepoErrorState(ctx, repoId)
+		s.state.ClearRepoWarningState(ctx, repoId)
+	} else {
+		assert.Failf("Unexpected status %s", status.GetError())
+	}
+	return nil
 }

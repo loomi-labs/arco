@@ -35,6 +35,7 @@ const failedBackupRun = ref<string | undefined>(undefined);
 const isIntegrityCheckEnabled = ref(false);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
+const isRegeneratingSSH = ref(false);
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -44,6 +45,9 @@ const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmDeleteModalKey
 );
+
+// Session-based warning dismissal tracking
+const isWarningDismissed = ref(false);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -164,6 +168,21 @@ async function deleteRepo() {
   }
 }
 
+async function regenerateSSHKey() {
+  try {
+    isRegeneratingSSH.value = true;
+    await repoService.Service.RegenerateSSHKey();
+    toast.success("SSH key regenerated successfully");
+    
+    // Refresh repository state after SSH key regeneration
+    await getRepoState();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to regenerate SSH key", error);
+  } finally {
+    isRegeneratingSSH.value = false;
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -228,6 +247,46 @@ onUnmounted(() => {
           </li>
         </ul>
       </div>
+    </div>
+
+    <!-- Error Alert Banner -->
+    <div v-if='repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && repoState.errorType !== state.RepoErrorType.$zero' 
+         role='alert' 
+         class='alert alert-error mb-4'>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class='flex-1'>
+        <div class='font-bold'>Repository Error</div>
+        <div class='text-sm'>{{ repoState.errorMessage }}</div>
+      </div>
+      <!-- SSH Regeneration Button for Cloud Repositories -->
+      <div v-if='repoState.errorAction === state.RepoErrorAction.RepoErrorActionRegenerateSSH' class='flex-none'>
+        <button class='btn btn-sm btn-outline btn-warning'
+                :disabled='isRegeneratingSSH'
+                @click='regenerateSSHKey'>
+          <span v-if='isRegeneratingSSH' class='loading loading-spinner loading-xs'></span>
+          {{ isRegeneratingSSH ? 'Regenerating...' : 'Regenerate SSH Key' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Warning Alert Banner -->
+    <div v-if='repoState.hasWarning && !isWarningDismissed' 
+         role='alert' 
+         class='alert alert-warning mb-4'>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div class='flex-1'>
+        <div class='font-bold'>Warning</div>
+        <div class='text-sm'>{{ repoState.warningMessage }}</div>
+      </div>
+      <button class='btn btn-sm btn-ghost' @click='isWarningDismissed = true'>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
 
     <!-- Repository Info Cards -->
