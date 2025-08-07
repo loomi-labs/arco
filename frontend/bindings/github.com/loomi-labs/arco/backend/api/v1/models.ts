@@ -199,7 +199,7 @@ export class OveragePrice {
 /**
  * Plan represents a complete subscription plan with pricing and features.
  * 
- * Each plan defines storage limits, feature availability, and USD pricing
+ * Each plan defines storage limits, device limits, feature availability, and USD pricing
  * for monthly and yearly billing cycles.
  */
 export class Plan {
@@ -230,6 +230,12 @@ export class Plan {
      * Set for Pro plans with per-10GB pricing.
      */
     "overage_price"?: OveragePrice | null;
+
+    /**
+     * Maximum number of devices (SSH keys) allowed for this plan.
+     * Each device represents one SSH key that can access user repositories.
+     */
+    "max_devices"?: number;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {

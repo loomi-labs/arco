@@ -45,9 +45,9 @@ const (
 	// RepositoryServiceGetRepositoryProcedure is the fully-qualified name of the RepositoryService's
 	// GetRepository RPC.
 	RepositoryServiceGetRepositoryProcedure = "/api.v1.RepositoryService/GetRepository"
-	// RepositoryServiceReplaceSSHKeyProcedure is the fully-qualified name of the RepositoryService's
-	// ReplaceSSHKey RPC.
-	RepositoryServiceReplaceSSHKeyProcedure = "/api.v1.RepositoryService/ReplaceSSHKey"
+	// RepositoryServiceAddOrReplaceSSHKeyProcedure is the fully-qualified name of the
+	// RepositoryService's AddOrReplaceSSHKey RPC.
+	RepositoryServiceAddOrReplaceSSHKeyProcedure = "/api.v1.RepositoryService/AddOrReplaceSSHKey"
 )
 
 // RepositoryServiceClient is a client for the api.v1.RepositoryService service.
@@ -91,14 +91,19 @@ type RepositoryServiceClient interface {
 	// Requires authentication and repository ownership validation.
 	// Users can only access repositories they own.
 	GetRepository(context.Context, *connect.Request[v1.GetRepositoryRequest]) (*connect.Response[v1.GetRepositoryResponse], error)
-	// ReplaceSSHKey updates the SSH public key for repository access.
+	// AddOrReplaceSSHKey adds an SSH public key for repository access with device limit management.
 	//
-	// Replaces the current SSH key with a new one for secure repository access.
-	// The old SSH key is immediately revoked and the new key takes effect.
+	// Adds a new SSH key for secure repository access across all user repositories.
+	// If the user has reached their plan's device limit, the oldest SSH key is removed
+	// before adding the new one. Each SSH key represents one device that can access
+	// the user's repositories.
 	//
-	// Requires authentication and repository ownership validation.
-	// Only one SSH key is supported per repository for security simplicity.
-	ReplaceSSHKey(context.Context, *connect.Request[v1.ReplaceSSHKeyRequest]) (*connect.Response[v1.ReplaceSSHKeyResponse], error)
+	// Device limits are based on subscription plan:
+	// - Basic plan: 3 devices maximum
+	// - Pro plan: 10 devices maximum
+	//
+	// Requires authentication. The key is added to all repositories owned by the user.
+	AddOrReplaceSSHKey(context.Context, *connect.Request[v1.AddOrReplaceSSHKeyRequest]) (*connect.Response[v1.AddOrReplaceSSHKeyResponse], error)
 }
 
 // NewRepositoryServiceClient constructs a client for the api.v1.RepositoryService service. By
@@ -136,10 +141,10 @@ func NewRepositoryServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(repositoryServiceMethods.ByName("GetRepository")),
 			connect.WithClientOptions(opts...),
 		),
-		replaceSSHKey: connect.NewClient[v1.ReplaceSSHKeyRequest, v1.ReplaceSSHKeyResponse](
+		addOrReplaceSSHKey: connect.NewClient[v1.AddOrReplaceSSHKeyRequest, v1.AddOrReplaceSSHKeyResponse](
 			httpClient,
-			baseURL+RepositoryServiceReplaceSSHKeyProcedure,
-			connect.WithSchema(repositoryServiceMethods.ByName("ReplaceSSHKey")),
+			baseURL+RepositoryServiceAddOrReplaceSSHKeyProcedure,
+			connect.WithSchema(repositoryServiceMethods.ByName("AddOrReplaceSSHKey")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -147,11 +152,11 @@ func NewRepositoryServiceClient(httpClient connect.HTTPClient, baseURL string, o
 
 // repositoryServiceClient implements RepositoryServiceClient.
 type repositoryServiceClient struct {
-	addRepository    *connect.Client[v1.AddRepositoryRequest, v1.AddRepositoryResponse]
-	deleteRepository *connect.Client[v1.DeleteRepositoryRequest, v1.DeleteRepositoryResponse]
-	listRepositories *connect.Client[v1.ListRepositoriesRequest, v1.ListRepositoriesResponse]
-	getRepository    *connect.Client[v1.GetRepositoryRequest, v1.GetRepositoryResponse]
-	replaceSSHKey    *connect.Client[v1.ReplaceSSHKeyRequest, v1.ReplaceSSHKeyResponse]
+	addRepository      *connect.Client[v1.AddRepositoryRequest, v1.AddRepositoryResponse]
+	deleteRepository   *connect.Client[v1.DeleteRepositoryRequest, v1.DeleteRepositoryResponse]
+	listRepositories   *connect.Client[v1.ListRepositoriesRequest, v1.ListRepositoriesResponse]
+	getRepository      *connect.Client[v1.GetRepositoryRequest, v1.GetRepositoryResponse]
+	addOrReplaceSSHKey *connect.Client[v1.AddOrReplaceSSHKeyRequest, v1.AddOrReplaceSSHKeyResponse]
 }
 
 // AddRepository calls api.v1.RepositoryService.AddRepository.
@@ -174,9 +179,9 @@ func (c *repositoryServiceClient) GetRepository(ctx context.Context, req *connec
 	return c.getRepository.CallUnary(ctx, req)
 }
 
-// ReplaceSSHKey calls api.v1.RepositoryService.ReplaceSSHKey.
-func (c *repositoryServiceClient) ReplaceSSHKey(ctx context.Context, req *connect.Request[v1.ReplaceSSHKeyRequest]) (*connect.Response[v1.ReplaceSSHKeyResponse], error) {
-	return c.replaceSSHKey.CallUnary(ctx, req)
+// AddOrReplaceSSHKey calls api.v1.RepositoryService.AddOrReplaceSSHKey.
+func (c *repositoryServiceClient) AddOrReplaceSSHKey(ctx context.Context, req *connect.Request[v1.AddOrReplaceSSHKeyRequest]) (*connect.Response[v1.AddOrReplaceSSHKeyResponse], error) {
+	return c.addOrReplaceSSHKey.CallUnary(ctx, req)
 }
 
 // RepositoryServiceHandler is an implementation of the api.v1.RepositoryService service.
@@ -220,14 +225,19 @@ type RepositoryServiceHandler interface {
 	// Requires authentication and repository ownership validation.
 	// Users can only access repositories they own.
 	GetRepository(context.Context, *connect.Request[v1.GetRepositoryRequest]) (*connect.Response[v1.GetRepositoryResponse], error)
-	// ReplaceSSHKey updates the SSH public key for repository access.
+	// AddOrReplaceSSHKey adds an SSH public key for repository access with device limit management.
 	//
-	// Replaces the current SSH key with a new one for secure repository access.
-	// The old SSH key is immediately revoked and the new key takes effect.
+	// Adds a new SSH key for secure repository access across all user repositories.
+	// If the user has reached their plan's device limit, the oldest SSH key is removed
+	// before adding the new one. Each SSH key represents one device that can access
+	// the user's repositories.
 	//
-	// Requires authentication and repository ownership validation.
-	// Only one SSH key is supported per repository for security simplicity.
-	ReplaceSSHKey(context.Context, *connect.Request[v1.ReplaceSSHKeyRequest]) (*connect.Response[v1.ReplaceSSHKeyResponse], error)
+	// Device limits are based on subscription plan:
+	// - Basic plan: 3 devices maximum
+	// - Pro plan: 10 devices maximum
+	//
+	// Requires authentication. The key is added to all repositories owned by the user.
+	AddOrReplaceSSHKey(context.Context, *connect.Request[v1.AddOrReplaceSSHKeyRequest]) (*connect.Response[v1.AddOrReplaceSSHKeyResponse], error)
 }
 
 // NewRepositoryServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -261,10 +271,10 @@ func NewRepositoryServiceHandler(svc RepositoryServiceHandler, opts ...connect.H
 		connect.WithSchema(repositoryServiceMethods.ByName("GetRepository")),
 		connect.WithHandlerOptions(opts...),
 	)
-	repositoryServiceReplaceSSHKeyHandler := connect.NewUnaryHandler(
-		RepositoryServiceReplaceSSHKeyProcedure,
-		svc.ReplaceSSHKey,
-		connect.WithSchema(repositoryServiceMethods.ByName("ReplaceSSHKey")),
+	repositoryServiceAddOrReplaceSSHKeyHandler := connect.NewUnaryHandler(
+		RepositoryServiceAddOrReplaceSSHKeyProcedure,
+		svc.AddOrReplaceSSHKey,
+		connect.WithSchema(repositoryServiceMethods.ByName("AddOrReplaceSSHKey")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/api.v1.RepositoryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -277,8 +287,8 @@ func NewRepositoryServiceHandler(svc RepositoryServiceHandler, opts ...connect.H
 			repositoryServiceListRepositoriesHandler.ServeHTTP(w, r)
 		case RepositoryServiceGetRepositoryProcedure:
 			repositoryServiceGetRepositoryHandler.ServeHTTP(w, r)
-		case RepositoryServiceReplaceSSHKeyProcedure:
-			repositoryServiceReplaceSSHKeyHandler.ServeHTTP(w, r)
+		case RepositoryServiceAddOrReplaceSSHKeyProcedure:
+			repositoryServiceAddOrReplaceSSHKeyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -304,6 +314,6 @@ func (UnimplementedRepositoryServiceHandler) GetRepository(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RepositoryService.GetRepository is not implemented"))
 }
 
-func (UnimplementedRepositoryServiceHandler) ReplaceSSHKey(context.Context, *connect.Request[v1.ReplaceSSHKeyRequest]) (*connect.Response[v1.ReplaceSSHKeyResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RepositoryService.ReplaceSSHKey is not implemented"))
+func (UnimplementedRepositoryServiceHandler) AddOrReplaceSSHKey(context.Context, *connect.Request[v1.AddOrReplaceSSHKeyRequest]) (*connect.Response[v1.AddOrReplaceSSHKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RepositoryService.AddOrReplaceSSHKey is not implemented"))
 }

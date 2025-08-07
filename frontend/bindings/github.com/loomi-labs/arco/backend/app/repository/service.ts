@@ -182,6 +182,13 @@ export function RefreshArchives(repoId: number): $CancellablePromise<(ent$0.Arch
 }
 
 /**
+ * RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
+ */
+export function RegenerateSSHKey(): $CancellablePromise<void> {
+    return $Call.ByID(3683576253);
+}
+
+/**
  * Remove deletes the repository with the given ID and all its backup profiles if they only have this repository
  * It does not delete the physical repository on disk
  */

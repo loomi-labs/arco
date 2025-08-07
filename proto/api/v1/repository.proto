@@ -82,14 +82,19 @@ service RepositoryService {
   // Users can only access repositories they own.
   rpc GetRepository(GetRepositoryRequest) returns (GetRepositoryResponse) {}
 
-  // ReplaceSSHKey updates the SSH public key for repository access.
+  // AddOrReplaceSSHKey adds an SSH public key for repository access with device limit management.
   //
-  // Replaces the current SSH key with a new one for secure repository access.
-  // The old SSH key is immediately revoked and the new key takes effect.
+  // Adds a new SSH key for secure repository access across all user repositories.
+  // If the user has reached their plan's device limit, the oldest SSH key is removed
+  // before adding the new one. Each SSH key represents one device that can access
+  // the user's repositories.
   //
-  // Requires authentication and repository ownership validation.
-  // Only one SSH key is supported per repository for security simplicity.
-  rpc ReplaceSSHKey(ReplaceSSHKeyRequest) returns (ReplaceSSHKeyResponse) {}
+  // Device limits are based on subscription plan:
+  // - Basic plan: 3 devices maximum
+  // - Pro plan: 10 devices maximum
+  //
+  // Requires authentication. The key is added to all repositories owned by the user.
+  rpc AddOrReplaceSSHKey(AddOrReplaceSSHKeyRequest) returns (AddOrReplaceSSHKeyResponse) {}
 }
 
 // AddRepositoryRequest initiates ArcoCloud repository creation.
@@ -180,31 +185,30 @@ message GetRepositoryResponse {
   Repository repository = 1;
 }
 
-// ReplaceSSHKeyRequest updates repository SSH access key.
+// AddOrReplaceSSHKeyRequest adds or replaces SSH access key across all user repositories.
 //
-// Replaces the current SSH key with a new one for secure repository access.
-message ReplaceSSHKeyRequest {
-  // ArcoCloud repository ID to update.
-  // Must be owned by the authenticated user.
-  string repository_id = 1 [(buf.validate.field).string.min_len = 1];
-
+// Provides a new SSH public key to add for repository access. If the user has reached
+// their plan's device limit, the oldest SSH key is removed before adding the new one.
+// The key is applied to all repositories owned by the authenticated user.
+message AddOrReplaceSSHKeyRequest {
   // New SSH public key for repository access.
-  // Must be a valid SSH public key that will replace the current key.
-  string ssh_key = 2 [(buf.validate.field).string = {
-    min_len: 100,
+  // Must be a valid SSH public key that will be added to all user repositories.
+  string ssh_key = 1 [(buf.validate.field).string = {
     pattern: "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/]+(=*)( .*)?$"
   }];
 }
 
-// ReplaceSSHKeyResponse confirms SSH key replacement.
+// AddOrReplaceSSHKeyResponse confirms SSH key addition or replacement.
 //
-// Indicates successful SSH key update with the new key fingerprint.
-message ReplaceSSHKeyResponse {
-  // Whether the SSH key was successfully replaced.
+// Indicates successful SSH key addition with details about whether an existing key was replaced.
+message AddOrReplaceSSHKeyResponse {
+  // Whether the SSH key was successfully added.
   bool success = 1;
 
-  // Fingerprint of the new SSH key for verification.
-  string ssh_key_fingerprint = 2;
+  // Whether an existing SSH key was replaced due to device limit.
+  // True if the user was at their device limit and the oldest key was removed.
+  // False if the key was simply added without removing any existing keys.
+  bool key_replaced = 2;
 }
 
 // Repository represents a ArcoCloud storage repository with complete configuration.

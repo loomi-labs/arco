@@ -8,6 +8,8 @@ export {
     BackupStatus,
     CheckoutResult,
     CheckoutResultStatus,
+    RepoErrorAction,
+    RepoErrorType,
     RepoState,
     RepoStatus,
     StartupState,
