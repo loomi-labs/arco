@@ -41,7 +41,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 
 	mockEventEmitter := mocktypes.NewMockEventEmitter(gomock.NewController(t))
 	a := NewApp(log.Sugar(), config, mockEventEmitter)
-	
+
 	// Create context for tests that can be cancelled during cleanup
 	ctx, cancel := context.WithCancel(context.Background())
 	a.ctx = ctx

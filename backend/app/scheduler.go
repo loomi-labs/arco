@@ -13,20 +13,20 @@ import (
 func (a *App) startScheduleChangeListener() {
 	a.log.Debug("Starting schedule change listener")
 	var timers []*time.Timer
-	
+
 	// Clean up timers when function exits
 	defer func() {
 		for _, t := range timers {
 			t.Stop()
 		}
 	}()
-	
+
 	// Check if channel is nil (used in tests)
 	if a.backupScheduleChangedCh == nil {
 		a.log.Debug("Backup schedule change channel is nil, exiting listener")
 		return
 	}
-	
+
 	for {
 		select {
 		case <-a.ctx.Done():
@@ -279,20 +279,20 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 func (a *App) startPruneScheduleChangeListener() {
 	a.log.Debug("Starting prune schedule change listener")
 	var timers []*time.Timer
-	
+
 	// Clean up timers when function exits
 	defer func() {
 		for _, t := range timers {
 			t.Stop()
 		}
 	}()
-	
+
 	// Check if channel is nil (used in tests)
 	if a.pruningScheduleChangedCh == nil {
 		a.log.Debug("Pruning schedule change channel is nil, exiting listener")
 		return
 	}
-	
+
 	for {
 		select {
 		case <-a.ctx.Done():
