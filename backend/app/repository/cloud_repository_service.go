@@ -251,8 +251,8 @@ func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, reposit
 	return resp.Msg.Repository, nil
 }
 
-// ReplaceCloudRepositorySSHKey regenerates the local SSH key and updates the cloud repository
-func (s *CloudRepositoryService) ReplaceCloudRepositorySSHKey(ctx context.Context, repositoryID string) error {
+// AddOrReplaceSSHKey regenerates the local SSH key and updates the cloud repository
+func (s *CloudRepositoryService) AddOrReplaceSSHKey(ctx context.Context) error {
 	// Remove existing SSH key
 	keyPath := s.getArcoCloudSSHKeyPath()
 	publicKeyPath := keyPath + ".pub"
@@ -276,12 +276,11 @@ func (s *CloudRepositoryService) ReplaceCloudRepositorySSHKey(ctx context.Contex
 	}
 
 	// Call cloud service to replace SSH key
-	req := connect.NewRequest(&arcov1.ReplaceSSHKeyRequest{
-		RepositoryId: repositoryID,
-		SshKey:       publicKey,
+	req := connect.NewRequest(&arcov1.AddOrReplaceSSHKeyRequest{
+		SshKey: publicKey,
 	})
 
-	resp, err := s.rpcClient.ReplaceSSHKey(ctx, req)
+	resp, err := s.rpcClient.AddOrReplaceSSHKey(ctx, req)
 	if err != nil {
 		return s.handleRPCError("replace SSH key", err)
 	}
@@ -290,6 +289,10 @@ func (s *CloudRepositoryService) ReplaceCloudRepositorySSHKey(ctx context.Contex
 		return fmt.Errorf("SSH key replacement failed")
 	}
 
-	s.log.Infof("Replaced SSH key for repository %s, new fingerprint: %s", repositoryID, resp.Msg.SshKeyFingerprint)
+	if resp.Msg.KeyReplaced {
+		s.log.Info("SSH key replaced successfully")
+	} else {
+		s.log.Info("SSH key added successfully")
+	}
 	return nil
 }
