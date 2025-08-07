@@ -468,7 +468,6 @@ async function createRepository() {
       closeModal();
     } else {
       errorMessage.value = "Failed to create repository. Please try again.";
-      await logError("CreateCloudRepository returned null response");
     }
   } catch (error: unknown) {
     errorMessage.value = "Failed to create repository. Please check your connection and try again.";
