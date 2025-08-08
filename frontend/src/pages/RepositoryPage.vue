@@ -262,7 +262,7 @@ onUnmounted(() => {
       </div>
       <!-- SSH Regeneration Button for Cloud Repositories -->
       <div v-if='repoState.errorAction === state.RepoErrorAction.RepoErrorActionRegenerateSSH' class='flex-none'>
-        <button class='btn btn-sm btn-outline btn-warning'
+        <button class='btn btn-sm btn-outline btn-error-content'
                 :disabled='isRegeneratingSSH'
                 @click='regenerateSSHKey'>
           <span v-if='isRegeneratingSSH' class='loading loading-spinner loading-xs'></span>
