@@ -116,13 +116,13 @@ func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId
 	// Run the backup
 	a.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	result, err := a.BackupClient().runBorgCreate(backupId)
+	err = a.repositoryService.StartBackupJobs(a.ctx, []types.BackupId{backupId})
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
 		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
 		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 	} else {
-		lastRunStatus = result.String()
+		lastRunStatus = "started"
 	}
 	updated, err := a.updateBackupSchedule(bs, lastRunStatus)
 	if err != nil {
@@ -377,13 +377,13 @@ func (a *App) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, up
 	// Run the prune
 	a.log.Infof("Running scheduled prune for %s", backupId)
 	var lastRunStatus string
-	result, err := a.BackupClient().runPruneJob(backupId)
+	err = a.repositoryService.StartPruneJob(a.ctx, backupId)
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
 		a.log.Error(fmt.Sprintf("Failed to run scheduled prune: %s", err))
 		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
 	} else {
-		lastRunStatus = result.String()
+		lastRunStatus = "started"
 	}
 	updated, err := a.updatePruningRule(ps, lastRunStatus)
 	if err != nil {
