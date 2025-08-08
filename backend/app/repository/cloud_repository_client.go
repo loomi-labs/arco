@@ -44,8 +44,8 @@ const (
 	CloudRepositoryStatusError           CloudRepositoryStatus = "error"
 )
 
-// CloudRepositoryService contains the business logic for ArcoCloud repositories
-type CloudRepositoryService struct {
+// CloudRepositoryClient contains the business logic for ArcoCloud repositories
+type CloudRepositoryClient struct {
 	log       *zap.SugaredLogger
 	db        *ent.Client
 	state     *state.State
@@ -53,40 +53,32 @@ type CloudRepositoryService struct {
 	rpcClient arcov1connect.RepositoryServiceClient
 }
 
-// CloudRepositoryServiceInternal provides backend-only methods that should not be exposed to frontend
-type CloudRepositoryServiceInternal struct {
-	*CloudRepositoryService
-	arcov1connect.UnimplementedRepositoryServiceHandler
-}
-
-// NewCloudRepositoryService creates a new cloud repository service
-func NewCloudRepositoryService(log *zap.SugaredLogger, state *state.State, config *types.Config) *CloudRepositoryServiceInternal {
-	return &CloudRepositoryServiceInternal{
-		CloudRepositoryService: &CloudRepositoryService{
-			log:    log,
-			state:  state,
-			config: config,
-		},
+// NewCloudRepositoryClient creates a new cloud repository client
+func NewCloudRepositoryClient(log *zap.SugaredLogger, state *state.State, config *types.Config) *CloudRepositoryClient {
+	return &CloudRepositoryClient{
+		log:    log,
+		state:  state,
+		config: config,
 	}
 }
 
-// Init initializes the service with database and RPC client
-func (si *CloudRepositoryServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.RepositoryServiceClient) {
-	si.db = db
-	si.rpcClient = rpcClient
+// Init initializes the client with database and RPC client
+func (s *CloudRepositoryClient) Init(db *ent.Client, rpcClient arcov1connect.RepositoryServiceClient) {
+	s.db = db
+	s.rpcClient = rpcClient
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
-func (s *CloudRepositoryService) mustHaveDB() {
+func (s *CloudRepositoryClient) mustHaveDB() {
 	if s.db == nil {
-		panic("CloudRepositoryService: database client is nil")
+		panic("CloudRepositoryClient: database client is nil")
 	}
 }
 
 // SSH Key Management Functions
 
 // ensureArcoCloudSSHKey ensures that the ArcoCloud SSH key pair exists
-func (s *CloudRepositoryService) ensureArcoCloudSSHKey() error {
+func (s *CloudRepositoryClient) ensureArcoCloudSSHKey() error {
 	keyPath := s.getArcoCloudSSHKeyPath()
 	sshDir := filepath.Dir(keyPath)
 
@@ -116,7 +108,7 @@ func (s *CloudRepositoryService) ensureArcoCloudSSHKey() error {
 }
 
 // getArcoCloudPublicKey returns the public key content for API calls
-func (s *CloudRepositoryService) getArcoCloudPublicKey() (string, error) {
+func (s *CloudRepositoryClient) getArcoCloudPublicKey() (string, error) {
 	publicKeyPath := s.getArcoCloudSSHKeyPath() + ".pub"
 	content, err := os.ReadFile(publicKeyPath)
 	if err != nil {
@@ -126,14 +118,14 @@ func (s *CloudRepositoryService) getArcoCloudPublicKey() (string, error) {
 }
 
 // getArcoCloudSSHKeyPath returns the private key path for Borg operations
-func (s *CloudRepositoryService) getArcoCloudSSHKeyPath() string {
+func (s *CloudRepositoryClient) getArcoCloudSSHKeyPath() string {
 	return filepath.Join(s.config.SSHDir, "arco_cloud_ed25519")
 }
 
 // Repository Type Detection
 
 // IsCloudRepository checks if a repository is an ArcoCloud repository
-func (s *CloudRepositoryService) IsCloudRepository(repo *ent.Repository) bool {
+func (s *CloudRepositoryClient) IsCloudRepository(repo *ent.Repository) bool {
 	// Check if repository has a cloud repository relationship
 	if repo.Edges.CloudRepository != nil {
 		return repo.Edges.CloudRepository.CloudID != ""
@@ -144,7 +136,7 @@ func (s *CloudRepositoryService) IsCloudRepository(repo *ent.Repository) bool {
 // Error Handling
 
 // handleRPCError maps Connect RPC errors to CloudRepositoryStatus
-func (s *CloudRepositoryService) handleRPCError(operation string, err error) error {
+func (s *CloudRepositoryClient) handleRPCError(operation string, err error) error {
 	var connectErr *connect.Error
 	if errors.As(err, &connectErr) {
 		switch connectErr.Code() {
@@ -169,7 +161,7 @@ func (s *CloudRepositoryService) handleRPCError(operation string, err error) err
 }
 
 // AddCloudRepository creates a new ArcoCloud repository
-func (s *CloudRepositoryService) AddCloudRepository(ctx context.Context, name string, location arcov1.RepositoryLocation) (*arcov1.Repository, error) {
+func (s *CloudRepositoryClient) AddCloudRepository(ctx context.Context, name string, location arcov1.RepositoryLocation) (*arcov1.Repository, error) {
 	// Ensure SSH key exists
 	if err := s.ensureArcoCloudSSHKey(); err != nil {
 		return nil, fmt.Errorf("failed to ensure SSH key: %w", err)
@@ -198,7 +190,7 @@ func (s *CloudRepositoryService) AddCloudRepository(ctx context.Context, name st
 }
 
 // DeleteCloudRepository permanently removes an ArcoCloud repository
-func (s *CloudRepositoryService) DeleteCloudRepository(ctx context.Context, repositoryID string) error {
+func (s *CloudRepositoryClient) DeleteCloudRepository(ctx context.Context, repositoryID string) error {
 	s.mustHaveDB()
 
 	// Call cloud service to delete
@@ -226,7 +218,7 @@ func (s *CloudRepositoryService) DeleteCloudRepository(ctx context.Context, repo
 }
 
 // ListCloudRepositories retrieves all ArcoCloud repositories owned by the user
-func (s *CloudRepositoryService) ListCloudRepositories(ctx context.Context) ([]*arcov1.Repository, error) {
+func (s *CloudRepositoryClient) ListCloudRepositories(ctx context.Context) ([]*arcov1.Repository, error) {
 	// Call cloud service
 	req := connect.NewRequest(&arcov1.ListRepositoriesRequest{})
 
@@ -238,7 +230,7 @@ func (s *CloudRepositoryService) ListCloudRepositories(ctx context.Context) ([]*
 }
 
 // GetCloudRepository retrieves detailed information about a specific ArcoCloud repository
-func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, repositoryID string) (*arcov1.Repository, error) {
+func (s *CloudRepositoryClient) GetCloudRepository(ctx context.Context, repositoryID string) (*arcov1.Repository, error) {
 	// Call cloud service
 	req := connect.NewRequest(&arcov1.GetRepositoryRequest{
 		RepositoryId: repositoryID,
@@ -252,7 +244,7 @@ func (s *CloudRepositoryService) GetCloudRepository(ctx context.Context, reposit
 }
 
 // AddOrReplaceSSHKey regenerates the local SSH key and updates the cloud repository
-func (s *CloudRepositoryService) AddOrReplaceSSHKey(ctx context.Context) error {
+func (s *CloudRepositoryClient) AddOrReplaceSSHKey(ctx context.Context) error {
 	// Remove existing SSH key
 	keyPath := s.getArcoCloudSSHKeyPath()
 	publicKeyPath := keyPath + ".pub"
