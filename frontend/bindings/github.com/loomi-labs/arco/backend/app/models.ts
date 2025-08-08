@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as types$0 from "./types/models.js";
-
 export class AppInfo {
     "version": string;
     "websiteUrl": string;
@@ -42,36 +38,6 @@ export class AppInfo {
     }
 }
 
-export class BackupProfileFilter {
-    "id"?: number;
-    "name": string;
-    "isAllFilter": boolean;
-    "isUnknownFilter": boolean;
-
-    /** Creates a new BackupProfileFilter instance. */
-    constructor($$source: Partial<BackupProfileFilter> = {}) {
-        if (!("name" in $$source)) {
-            this["name"] = "";
-        }
-        if (!("isAllFilter" in $$source)) {
-            this["isAllFilter"] = false;
-        }
-        if (!("isUnknownFilter" in $$source)) {
-            this["isUnknownFilter"] = false;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new BackupProfileFilter instance from a string or object.
-     */
-    static createFrom($$source: any = {}): BackupProfileFilter {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new BackupProfileFilter($$parsedSource as Partial<BackupProfileFilter>);
-    }
-}
-
 export class Env {
     "debug": boolean;
     "startPage": string;
@@ -101,150 +67,6 @@ export class Env {
     }
 }
 
-export class ExaminePruningResult {
-    "BackupID": types$0.BackupId;
-    "RepositoryName": string;
-    "CntArchivesToBeDeleted": number;
-    "Error": any;
-
-    /** Creates a new ExaminePruningResult instance. */
-    constructor($$source: Partial<ExaminePruningResult> = {}) {
-        if (!("BackupID" in $$source)) {
-            this["BackupID"] = (new types$0.BackupId());
-        }
-        if (!("RepositoryName" in $$source)) {
-            this["RepositoryName"] = "";
-        }
-        if (!("CntArchivesToBeDeleted" in $$source)) {
-            this["CntArchivesToBeDeleted"] = 0;
-        }
-        if (!("Error" in $$source)) {
-            this["Error"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ExaminePruningResult instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ExaminePruningResult {
-        const $$createField0_0 = $$createType0;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("BackupID" in $$parsedSource) {
-            $$parsedSource["BackupID"] = $$createField0_0($$parsedSource["BackupID"]);
-        }
-        return new ExaminePruningResult($$parsedSource as Partial<ExaminePruningResult>);
-    }
-}
-
-export class GetPruningOptionsResponse {
-    "options": PruningOption[];
-
-    /** Creates a new GetPruningOptionsResponse instance. */
-    constructor($$source: Partial<GetPruningOptionsResponse> = {}) {
-        if (!("options" in $$source)) {
-            this["options"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new GetPruningOptionsResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): GetPruningOptionsResponse {
-        const $$createField0_0 = $$createType2;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("options" in $$parsedSource) {
-            $$parsedSource["options"] = $$createField0_0($$parsedSource["options"]);
-        }
-        return new GetPruningOptionsResponse($$parsedSource as Partial<GetPruningOptionsResponse>);
-    }
-}
-
-export class PruningOption {
-    "name": PruningOptionName;
-    "keepHourly": number;
-    "keepDaily": number;
-    "keepWeekly": number;
-    "keepMonthly": number;
-    "keepYearly": number;
-
-    /** Creates a new PruningOption instance. */
-    constructor($$source: Partial<PruningOption> = {}) {
-        if (!("name" in $$source)) {
-            this["name"] = PruningOptionName.$zero;
-        }
-        if (!("keepHourly" in $$source)) {
-            this["keepHourly"] = 0;
-        }
-        if (!("keepDaily" in $$source)) {
-            this["keepDaily"] = 0;
-        }
-        if (!("keepWeekly" in $$source)) {
-            this["keepWeekly"] = 0;
-        }
-        if (!("keepMonthly" in $$source)) {
-            this["keepMonthly"] = 0;
-        }
-        if (!("keepYearly" in $$source)) {
-            this["keepYearly"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PruningOption instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PruningOption {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new PruningOption($$parsedSource as Partial<PruningOption>);
-    }
-}
-
-export enum PruningOptionName {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    PruningOptionNone = "none",
-    PruningOptionFew = "few",
-    PruningOptionMany = "many",
-    PruningOptionCustom = "custom",
-};
-
-export class SelectDirectoryData {
-    "title": string;
-    "message": string;
-    "buttonText": string;
-
-    /** Creates a new SelectDirectoryData instance. */
-    constructor($$source: Partial<SelectDirectoryData> = {}) {
-        if (!("title" in $$source)) {
-            this["title"] = "";
-        }
-        if (!("message" in $$source)) {
-            this["message"] = "";
-        }
-        if (!("buttonText" in $$source)) {
-            this["buttonText"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new SelectDirectoryData instance from a string or object.
-     */
-    static createFrom($$source: any = {}): SelectDirectoryData {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new SelectDirectoryData($$parsedSource as Partial<SelectDirectoryData>);
-    }
-}
-
 export class User {
     "email": string;
 
@@ -265,8 +87,3 @@ export class User {
         return new User($$parsedSource as Partial<User>);
     }
 }
-
-// Private type creation functions
-const $$createType0 = types$0.BackupId.createFrom;
-const $$createType1 = PruningOption.createFrom;
-const $$createType2 = $Create.Array($$createType1);

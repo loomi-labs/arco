@@ -12,6 +12,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as backup_profile$0 from "./backup_profile/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as state$0 from "./state/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -22,10 +25,6 @@ import * as types$1 from "../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as ent$0 from "../ent/models.js";
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as $models from "./models.js";
 
 export function AbortBackupJobs(bIds: types$0.BackupId[]): $CancellablePromise<void> {
     return $Call.ByID(158665837, bIds);
@@ -53,7 +52,7 @@ export function DoesPathExist(path: string): $CancellablePromise<boolean> {
     return $Call.ByID(2517090612, path);
 }
 
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<types$0.ExaminePruningResult[]> {
     return $Call.ByID(3315475643, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType3($result);
     });
@@ -69,7 +68,7 @@ export function GetBackupProfile(id: number): $CancellablePromise<ent$0.BackupPr
     });
 }
 
-export function GetBackupProfileFilterOptions(repoId: number): $CancellablePromise<$models.BackupProfileFilter[]> {
+export function GetBackupProfileFilterOptions(repoId: number): $CancellablePromise<backup_profile$0.BackupProfileFilter[]> {
     return $Call.ByID(169520516, repoId).then(($result: any) => {
         return $$createType5($result);
     });
@@ -101,7 +100,7 @@ export function GetPrefixSuggestion(name: string): $CancellablePromise<string> {
     return $Call.ByID(2653689665, name);
 }
 
-export function GetPruningOptions(): $CancellablePromise<$models.GetPruningOptionsResponse> {
+export function GetPruningOptions(): $CancellablePromise<backup_profile$0.GetPruningOptionsResponse> {
     return $Call.ByID(2377421126).then(($result: any) => {
         return $$createType10($result);
     });
@@ -141,7 +140,7 @@ export function SavePruningRule(backupId: number, rule: ent$0.PruningRule): $Can
     });
 }
 
-export function SelectDirectory(data: $models.SelectDirectoryData): $CancellablePromise<string> {
+export function SelectDirectory(data: backup_profile$0.SelectDirectoryData): $CancellablePromise<string> {
     return $Call.ByID(1473199266, data);
 }
 
@@ -162,15 +161,15 @@ export function UpdateBackupProfile(backup: ent$0.BackupProfile): $CancellablePr
 // Private type creation functions
 const $$createType0 = ent$0.BackupProfile.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $models.ExaminePruningResult.createFrom;
+const $$createType2 = types$0.ExaminePruningResult.createFrom;
 const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = $models.BackupProfileFilter.createFrom;
+const $$createType4 = backup_profile$0.BackupProfileFilter.createFrom;
 const $$createType5 = $Create.Array($$createType4);
 const $$createType6 = $Create.Array($$createType1);
 const $$createType7 = types$1.BackupProgress.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
 const $$createType9 = $Create.Array($Create.Any);
-const $$createType10 = $models.GetPruningOptionsResponse.createFrom;
+const $$createType10 = backup_profile$0.GetPruningOptionsResponse.createFrom;
 const $$createType11 = state$0.BackupState.createFrom;
 const $$createType12 = ent$0.PruningRule.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);

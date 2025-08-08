@@ -10,12 +10,6 @@ export {
 
 export {
     AppInfo,
-    BackupProfileFilter,
     Env,
-    ExaminePruningResult,
-    GetPruningOptionsResponse,
-    PruningOption,
-    PruningOptionName,
-    SelectDirectoryData,
     User
 } from "./models.js";
