@@ -75,7 +75,7 @@ export function DeleteArchive(id: number): $CancellablePromise<void> {
     return $Call.ByID(2710326337, id);
 }
 
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<types$0.ExaminePruningResult[]> {
     return $Call.ByID(166629156, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType4($result);
     });
@@ -317,7 +317,7 @@ export function ValidateRepoPath(path: string, isLocal: boolean): $CancellablePr
 const $$createType0 = ent$0.Repository.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = $models.ExaminePruningResult.createFrom;
+const $$createType3 = types$0.ExaminePruningResult.createFrom;
 const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = ent$0.Archive.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);

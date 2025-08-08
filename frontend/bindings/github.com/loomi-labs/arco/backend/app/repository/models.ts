@@ -7,9 +7,6 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../types/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -42,43 +39,6 @@ export class BackupProfileFilter {
     static createFrom($$source: any = {}): BackupProfileFilter {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new BackupProfileFilter($$parsedSource as Partial<BackupProfileFilter>);
-    }
-}
-
-export class ExaminePruningResult {
-    "BackupID": types$0.BackupId;
-    "RepositoryName": string;
-    "CntArchivesToBeDeleted": number;
-    "Error": any;
-
-    /** Creates a new ExaminePruningResult instance. */
-    constructor($$source: Partial<ExaminePruningResult> = {}) {
-        if (!("BackupID" in $$source)) {
-            this["BackupID"] = (new types$0.BackupId());
-        }
-        if (!("RepositoryName" in $$source)) {
-            this["RepositoryName"] = "";
-        }
-        if (!("CntArchivesToBeDeleted" in $$source)) {
-            this["CntArchivesToBeDeleted"] = 0;
-        }
-        if (!("Error" in $$source)) {
-            this["Error"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ExaminePruningResult instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ExaminePruningResult {
-        const $$createField0_0 = $$createType0;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("BackupID" in $$parsedSource) {
-            $$parsedSource["BackupID"] = $$createField0_0($$parsedSource["BackupID"]);
-        }
-        return new ExaminePruningResult($$parsedSource as Partial<ExaminePruningResult>);
     }
 }
 
@@ -117,7 +77,7 @@ export class PaginatedArchivesRequest {
      * Creates a new PaginatedArchivesRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesRequest {
-        const $$createField3_0 = $$createType2;
+        const $$createField3_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupProfileFilter" in $$parsedSource) {
             $$parsedSource["backupProfileFilter"] = $$createField3_0($$parsedSource["backupProfileFilter"]);
@@ -146,7 +106,7 @@ export class PaginatedArchivesResponse {
      * Creates a new PaginatedArchivesResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("archives" in $$parsedSource) {
             $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
@@ -196,7 +156,7 @@ export class PruningDates {
      * Creates a new PruningDates instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType7;
+        const $$createField0_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("dates" in $$parsedSource) {
             $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
@@ -239,11 +199,10 @@ export class TestRepoConnectionResult {
 }
 
 // Private type creation functions
-const $$createType0 = types$0.BackupId.createFrom;
-const $$createType1 = BackupProfileFilter.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = ent$0.Archive.createFrom;
-const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = PruningDate.createFrom;
-const $$createType7 = $Create.Array($$createType6);
+const $$createType0 = BackupProfileFilter.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = ent$0.Archive.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = PruningDate.createFrom;
+const $$createType6 = $Create.Array($$createType5);
