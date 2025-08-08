@@ -4,6 +4,7 @@
 export {
     BackupId,
     Event,
+    ExaminePruningResult,
     FrontendError,
     MountState,
     Notification,
