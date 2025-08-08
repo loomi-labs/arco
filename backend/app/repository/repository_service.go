@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"connectrpc.com/connect"
 	"context"
 	"entgo.io/ent/dialect/sql"
 	"errors"
@@ -44,7 +43,7 @@ type Service struct {
 	borg         borg.Borg
 	config       *types.Config
 	eventEmitter types.EventEmitter
-	cloudService *CloudRepositoryService
+	cloudService *CloudRepositoryClient
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -63,7 +62,7 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 }
 
 // Init initializes the repository service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client, borg borg.Borg, config *types.Config, eventEmitter types.EventEmitter, cloudService *CloudRepositoryService) {
+func (si *ServiceInternal) Init(db *ent.Client, borg borg.Borg, config *types.Config, eventEmitter types.EventEmitter, cloudService *CloudRepositoryClient) {
 	si.db = db
 	si.borg = borg
 	si.config = config
@@ -324,7 +323,6 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 		localRepo, txErr := tx.Repository.Create().
 			SetName(cloudRepo.Name).
 			SetURL(cloudRepo.RepoUrl).
-			SetPassword(""). // Will be set later
 			Save(ctx)
 		if txErr != nil {
 			return txErr
@@ -359,41 +357,37 @@ func (s *Service) RegenerateSSHKey(ctx context.Context) error {
 
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*ent.Repository, error) {
-	repo, err := s.cloudService.AddCloudRepository(ctx, name, location)
+	// List existing cloud repositories to check if one already exists
+	cloudRepos, err := s.cloudService.ListCloudRepositories(ctx)
 	if err != nil {
-		// Check if the error is "already exists"
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) && connectErr.Code() == connect.CodeAlreadyExists {
+		return nil, err
+	}
+
+	// Check if repository already exists
+	var repo *arcov1.Repository
+	for _, cloudRepo := range cloudRepos {
+		if cloudRepo.Name == name {
+			repo = cloudRepo
 			s.log.Warnf("Repository '%s' already exists in ArcoCloud, proceeding with existing repository", name)
+			break
+		}
+	}
 
-			// Find the existing repository by listing and matching name
-			repos, listErr := s.syncCloudRepositories(ctx)
-			if listErr != nil {
-				return nil, fmt.Errorf("repository already exists but failed to retrieve it: %w", listErr)
-			}
+	// If repository doesn't exist, create it
+	if repo == nil {
+		repo, err = s.cloudService.AddCloudRepository(ctx, name, location)
+		if err != nil {
+			return nil, err
+		}
 
-			// Find the repository with matching name
-			for _, r := range repos {
-				if r.Name == name {
-					status := s.borg.Init(ctx, r.URL, password, false)
-					if err := s.handleBorgStatus(ctx, r, status, "initialize repository"); err != nil {
-						return nil, err
-					}
-					return r, nil
-				}
-			}
-			return nil, fmt.Errorf("repository '%s' already exists but could not be found in repository list", name)
-		} else {
+		status := s.borg.Init(ctx, repo.RepoUrl, password, false)
+		if err := s.handleBorgStatus(ctx, nil, status, "initialize repository"); err != nil {
 			return nil, err
 		}
 	}
 
-	status := s.borg.Init(ctx, repo.RepoUrl, password, false)
-	if err := s.handleBorgStatus(ctx, nil, status, "initialize repository"); err != nil {
-		return nil, err
-	}
-
 	return database.WithTxData(ctx, s.db, func(tx *ent.Tx) (*ent.Repository, error) {
+		// Create new local repository with cloud association
 		entRepo, txErr := tx.Repository.
 			Create().
 			SetName(name).
