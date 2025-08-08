@@ -36,6 +36,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
 
@@ -1571,7 +1572,7 @@ func (s *Service) StartBackupJob(ctx context.Context, bId types.BackupId) error 
 	}
 
 	go func() {
-		_, err := s.runBorgCreate(ctx, bId)
+		_, err := s.runBorgCreate(application.Get().Context(), bId)
 		if err != nil {
 			s.log.Error(fmt.Sprintf("Backup job failed: %s", err))
 		}
@@ -1766,7 +1767,6 @@ func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result
 	}
 }
 
-
 func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error) {
 	repoLock := s.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
@@ -1901,7 +1901,7 @@ func (s *Service) StartPruneJob(ctx context.Context, bId types.BackupId) error {
 	}
 
 	go func() {
-		_, err := s.runPruneJob(ctx, bId)
+		_, err := s.runPruneJob(application.Get().Context(), bId)
 		if err != nil {
 			s.log.Error(fmt.Sprintf("Prune job failed: %s", err))
 		}
@@ -1909,14 +1909,7 @@ func (s *Service) StartPruneJob(ctx context.Context, bId types.BackupId) error {
 	return nil
 }
 
-type ExaminePruningResult struct {
-	BackupID               types.BackupId
-	RepositoryName         string
-	CntArchivesToBeDeleted int
-	Error                  error
-}
-
-func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- types.ExaminePruningResult) {
 	defer wg.Done()
 
 	repo, err := s.db.Repository.Query().
@@ -1930,26 +1923,26 @@ func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pru
 	cntToBeDeleted, err := s.examinePrune(ctx, bId, safetypes.Some(pruningRule), saveResults, false)
 	if err != nil {
 		s.log.Debugf("Failed to examine prune: %s", err)
-		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
+		resultCh <- types.ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
 		return
 	}
 
-	resultCh <- ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
+	resultCh <- types.ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
 }
 
-func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) []ExaminePruningResult {
+func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) []types.ExaminePruningResult {
 	backupProfile, err := s.db.BackupProfile.
 		Query().
 		WithRepositories().
 		Where(backupprofile.ID(backupProfileId)).
 		Only(ctx)
 	if err != nil {
-		return []ExaminePruningResult{{Error: err}}
+		return []types.ExaminePruningResult{{Error: err}}
 	}
 
 	var wg sync.WaitGroup
-	resultCh := make(chan ExaminePruningResult, len(backupProfile.Edges.Repositories))
-	results := make([]ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
+	resultCh := make(chan types.ExaminePruningResult, len(backupProfile.Edges.Repositories))
+	results := make([]types.ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
 
 	for _, repo := range backupProfile.Edges.Repositories {
 		wg.Add(1)

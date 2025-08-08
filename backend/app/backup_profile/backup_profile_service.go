@@ -330,7 +330,7 @@ func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, 
 			}
 			deleteJobs = append(deleteJobs, func() {
 				go func() {
-					_, err := s.repositoryService.RunBorgDelete(ctx, bId, repo.URL, repo.Password, backupProfile.Prefix)
+					_, err := s.repositoryService.RunBorgDelete(application.Get().Context(), bId, repo.URL, repo.Password, backupProfile.Prefix)
 					if err != nil {
 						s.log.Error("Delete job failed: ", err)
 					}
