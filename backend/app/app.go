@@ -3,15 +3,24 @@ package app
 import (
 	"archive/zip"
 	"bytes"
-	"connectrpc.com/connect"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"connectrpc.com/connect"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
-	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/plan"
 	"github.com/loomi-labs/arco/backend/app/repository"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
@@ -25,13 +34,6 @@ import (
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
-	"io"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (
@@ -76,13 +78,14 @@ type App struct {
 	shouldQuit               bool
 
 	// Startup
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	db                  *ent.Client
-	authService         *auth.ServiceInternal
-	planService         *plan.ServiceInternal
-	subscriptionService *subscription.ServiceInternal
-	repositoryService   *repository.ServiceInternal
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	db                   *ent.Client
+	authService          *auth.ServiceInternal
+	planService          *plan.ServiceInternal
+	subscriptionService  *subscription.ServiceInternal
+	repositoryService    *repository.ServiceInternal
+	backupProfileService *backup_profile.ServiceInternal
 }
 
 func NewApp(
@@ -105,6 +108,7 @@ func NewApp(
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
 		repositoryService:        repository.NewService(log, state),
+		backupProfileService:     backup_profile.NewService(log, state, config),
 	}
 }
 
@@ -119,6 +123,10 @@ type BackupClient App
 
 func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
+}
+
+func (a *App) BackupProfileService() *backup_profile.Service {
+	return a.backupProfileService.Service
 }
 
 func (a *App) AppClient() *AppClient {
@@ -209,6 +217,9 @@ func (a *App) Startup(ctx context.Context) {
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
+
+	// Initialize backup profile service
+	a.backupProfileService.Init(a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh)
 
 	// Create cloud repository service first
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
