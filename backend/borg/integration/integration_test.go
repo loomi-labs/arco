@@ -169,11 +169,13 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	// Determine server context path (works in both host and container)
-	serverContextPath := filepath.Join(wd, "..", "..", "..", "docker", "borg-server")
-	if _, err := os.Stat(serverContextPath); os.IsNotExist(err) {
+	// Determine project root for Docker context (works in both host and container)
+	projectRoot := filepath.Join(wd, "..", "..", "..")
+	dockerfilePath := "docker/borg-server/Dockerfile"
+	if _, err := os.Stat(filepath.Join(projectRoot, dockerfilePath)); os.IsNotExist(err) {
 		// Try mounted docker directory for containerized environment
-		serverContextPath = "/app/docker/borg-server"
+		projectRoot = "/app"
+		dockerfilePath = "docker/borg-server/Dockerfile"
 	}
 
 	// Get server borg version from environment, fallback to default
@@ -193,8 +195,8 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	} else {
 		serverRequest = testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    serverContextPath,
-				Dockerfile: "Dockerfile",
+				Context:    projectRoot,
+				Dockerfile: dockerfilePath,
 				BuildArgs: map[string]*string{
 					"BUILDTIME":    &[]string{fmt.Sprintf("%d", time.Now().UnixNano())}[0],
 					"BORG_VERSION": &serverBorgVersion,
@@ -889,5 +891,39 @@ func TestBorgErrorHandling(t *testing.T) {
 		status = suite.borg.DeleteArchive(suite.ctx, repoPath, "nonexistent-archive", testPassword)
 		assert.True(t, status.HasWarning(), "Delete should fail or warn for non-existent archive")
 		assert.True(t, errors.Is(status.Warning, types.WarningGeneric), "Should be generic warning")
+	})
+
+	t.Run("MissingSSHKey", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+
+		// Initialize repository first (while SSH key exists)
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Get SSH keys directory and private key path
+		var sshKeysDir string
+		if _, err := os.Stat("/home/borg/.ssh/borg_test_key"); err == nil {
+			sshKeysDir = "/home/borg/.ssh"
+		} else {
+			wd, err := os.Getwd()
+			require.NoError(t, err)
+			sshKeysDir = filepath.Join(wd, "..", "..", "..", "docker", "borg-client")
+		}
+		privateKeyPath := filepath.Join(sshKeysDir, "borg_test_key")
+
+		// Verify SSH key exists before deletion
+		_, err := os.Stat(privateKeyPath)
+		require.NoError(t, err, "SSH key should exist before test")
+
+		// Delete the SSH private key
+		err = os.Remove(privateKeyPath)
+		require.NoError(t, err, "Should be able to delete SSH key")
+
+		// Try to perform a borg operation that requires SSH - this should fail
+		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword)
+		assert.True(t, status.HasError(), "Info should fail when SSH key is missing")
+
+		// The error should be related to connection or general error
+		assert.True(t, errors.Is(status.Error, types.ErrorConnectionClosedWithHint), "Should be a connection closed with hint error")
 	})
 }
