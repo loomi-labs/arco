@@ -30,7 +30,6 @@ type Service struct {
 	state                    *state.State
 	config                   *types.Config
 	eventEmitter             types.EventEmitter
-	ctx                      context.Context
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
 }
@@ -41,10 +40,9 @@ type ServiceInternal struct {
 }
 
 // NewService creates a new backup profile service
-func NewService(ctx context.Context, log *zap.SugaredLogger, state *state.State, config *types.Config) *ServiceInternal {
+func NewService(log *zap.SugaredLogger, state *state.State, config *types.Config) *ServiceInternal {
 	return &ServiceInternal{
 		Service: &Service{
-			ctx:    ctx,
 			log:    log,
 			state:  state,
 			config: config,
@@ -53,19 +51,11 @@ func NewService(ctx context.Context, log *zap.SugaredLogger, state *state.State,
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter) {
+func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter, backupScheduleChangedCh, pruningScheduleChangedCh chan struct{}) {
 	si.db = db
 	si.eventEmitter = eventEmitter
-}
-
-// SetBackupScheduleChangedCh sets the channel for backup schedule changes
-func (si *ServiceInternal) SetBackupScheduleChangedCh(ch chan struct{}) {
-	si.backupScheduleChangedCh = ch
-}
-
-// SetPruningScheduleChangedCh sets the channel for pruning schedule changes  
-func (si *ServiceInternal) SetPruningScheduleChangedCh(ch chan struct{}) {
-	si.pruningScheduleChangedCh = ch
+	si.backupScheduleChangedCh = backupScheduleChangedCh
+	si.pruningScheduleChangedCh = pruningScheduleChangedCh
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -79,7 +69,7 @@ func (s *Service) mustHaveDB() {
 /********** Backup Profile *********/
 /***********************************/
 
-func (s *Service) GetBackupProfile(id int) (*ent.BackupProfile, error) {
+func (s *Service) GetBackupProfile(ctx context.Context, id int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	return s.db.BackupProfile.
 		Query().
@@ -87,10 +77,10 @@ func (s *Service) GetBackupProfile(id int) (*ent.BackupProfile, error) {
 		WithBackupSchedule().
 		WithPruningRule().
 		Where(backupprofile.ID(id)).
-		Only(s.ctx)
+		Only(ctx)
 }
 
-func (s *Service) GetBackupProfiles() ([]*ent.BackupProfile, error) {
+func (s *Service) GetBackupProfiles(ctx context.Context) ([]*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	return s.db.BackupProfile.
 		Query().
@@ -101,7 +91,7 @@ func (s *Service) GetBackupProfiles() ([]*ent.BackupProfile, error) {
 			// Order by name, case-insensitive
 			sel.OrderExpr(sql.Expr(fmt.Sprintf("%s COLLATE NOCASE", backupprofile.FieldName)))
 		}).
-		All(s.ctx)
+		All(ctx)
 }
 
 type BackupProfileFilter struct {
@@ -111,13 +101,13 @@ type BackupProfileFilter struct {
 	IsUnknownFilter bool   `json:"isUnknownFilter"`
 }
 
-func (s *Service) GetBackupProfileFilterOptions(repoId int) ([]BackupProfileFilter, error) {
+func (s *Service) GetBackupProfileFilterOptions(ctx context.Context, repoId int) ([]BackupProfileFilter, error) {
 	s.mustHaveDB()
 	profiles, err := s.db.BackupProfile.
 		Query().
 		Where(backupprofile.HasRepositoriesWith(repository.ID(repoId))).
 		Order(ent.Desc(backupprofile.FieldName)).
-		All(s.ctx)
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +123,7 @@ func (s *Service) GetBackupProfileFilterOptions(repoId int) ([]BackupProfileFilt
 			repository.ID(repoId),
 			repository.HasArchivesWith(archive.Not(archive.HasBackupProfile())),
 		)).
-		Exist(s.ctx)
+		Exist(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -149,13 +139,13 @@ func (s *Service) GetBackupProfileFilterOptions(repoId int) ([]BackupProfileFilt
 	return filters, nil
 }
 
-func (s *Service) NewBackupProfile() (*ent.BackupProfile, error) {
+func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	// Choose the first icon that is not already in use
 	all, err := s.db.BackupProfile.
 		Query().
 		Select(backupprofile.FieldIcon).
-		All(s.ctx)
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +239,7 @@ func (s *Service) CreateDirectory(path string) error {
 	return os.MkdirAll(util.ExpandPath(path), 0755)
 }
 
-func (s *Service) GetPrefixSuggestion(name string) (string, error) {
+func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string, error) {
 	s.mustHaveDB()
 	if name == "" {
 		return "", errors.New("name cannot be empty")
@@ -269,19 +259,19 @@ func (s *Service) GetPrefixSuggestion(name string) (string, error) {
 	exist, err := s.db.BackupProfile.
 		Query().
 		Where(backupprofile.Prefix(fullPrefix)).
-		Exist(s.ctx)
+		Exist(ctx)
 	if err != nil {
 		return "", err
 	}
 	if exist {
 		// If the prefix already exists, we create a new one by appending a random number
 		prefix = fmt.Sprintf("%s%04d", prefix, rand.Intn(1000))
-		return s.GetPrefixSuggestion(prefix)
+		return s.GetPrefixSuggestion(ctx, prefix)
 	}
 	return fullPrefix, nil
 }
 
-func (s *Service) CreateBackupProfile(backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
+func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
 	return s.db.BackupProfile.
@@ -292,10 +282,10 @@ func (s *Service) CreateBackupProfile(backup ent.BackupProfile, repositoryIds []
 		SetExcludePaths(backup.ExcludePaths).
 		SetIcon(backup.Icon).
 		AddRepositoryIDs(repositoryIds...).
-		Save(s.ctx)
+		Save(ctx)
 }
 
-func (s *Service) UpdateBackupProfile(backup ent.BackupProfile) (*ent.BackupProfile, error) {
+func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProfile) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
 	return s.db.BackupProfile.
@@ -306,20 +296,20 @@ func (s *Service) UpdateBackupProfile(backup ent.BackupProfile) (*ent.BackupProf
 		SetExcludePaths(backup.ExcludePaths).
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
-		Save(s.ctx)
+		Save(ctx)
 }
 
 // DeleteBackupProfile deletes a backup profile and optionally its archives
 // The deleteJobs parameter contains functions to execute Borg delete operations
-func (s *Service) DeleteBackupProfile(backupProfileId int, deleteJobs []func()) error {
+func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, deleteJobs []func()) error {
 	s.mustHaveDB()
 	err := s.db.BackupProfile.
 		DeleteOneID(backupProfileId).
-		Exec(s.ctx)
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
-	s.eventEmitter.EmitEvent(s.ctx, types.EventBackupProfileDeleted.String())
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileDeleted.String())
 
 	// Execute the delete jobs
 	for _, fn := range deleteJobs {
@@ -329,9 +319,9 @@ func (s *Service) DeleteBackupProfile(backupProfileId int, deleteJobs []func()) 
 	return nil
 }
 
-func (s *Service) AddRepositoryToBackupProfile(backupProfileId int, repositoryId int) error {
+func (s *Service) AddRepositoryToBackupProfile(ctx context.Context, backupProfileId int, repositoryId int) error {
 	s.mustHaveDB()
-	bs, err := s.GetBackupProfile(backupProfileId)
+	bs, err := s.GetBackupProfile(ctx, backupProfileId)
 	if err != nil {
 		return err
 	}
@@ -344,12 +334,12 @@ func (s *Service) AddRepositoryToBackupProfile(backupProfileId int, repositoryId
 	return s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		AddRepositoryIDs(repositoryId).
-		Exec(s.ctx)
+		Exec(ctx)
 }
 
 // RemoveRepositoryFromBackupProfile removes a repository from a backup profile
 // The deleteJob parameter contains a function to execute Borg delete operations if needed
-func (s *Service) RemoveRepositoryFromBackupProfile(backupProfileId int, repositoryId int, deleteJob func()) error {
+func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupProfileId int, repositoryId int, deleteJob func()) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Removing repository %d from backup profile %d", repositoryId, backupProfileId))
 
@@ -357,7 +347,7 @@ func (s *Service) RemoveRepositoryFromBackupProfile(backupProfileId int, reposit
 	cnt, err := s.db.Repository.
 		Query().
 		Where(repository.HasBackupProfilesWith(backupprofile.ID(backupProfileId))).
-		Count(s.ctx)
+		Count(ctx)
 	if err != nil {
 		return err
 	}
@@ -374,7 +364,7 @@ func (s *Service) RemoveRepositoryFromBackupProfile(backupProfileId int, reposit
 	return s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
-		Exec(s.ctx)
+		Exec(ctx)
 }
 
 type SelectDirectoryData struct {
@@ -409,7 +399,7 @@ func (s *Service) SelectDirectory(data SelectDirectoryData) (string, error) {
 /********** Backup Schedule ********/
 /***********************************/
 
-func (s *Service) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSchedule) error {
+func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, schedule ent.BackupSchedule) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Saving backup schedule for backup profile %d", backupProfileId))
 
@@ -417,7 +407,7 @@ func (s *Service) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSch
 	doesExist, err := s.db.BackupSchedule.
 		Query().
 		Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-		Exist(s.ctx)
+		Exist(ctx)
 	if err != nil {
 		return err
 	}
@@ -444,7 +434,7 @@ func (s *Service) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSch
 			SetMonthday(schedule.Monthday).
 			ClearNextRun().
 			SetNillableNextRun(nextRun).
-			Exec(s.ctx)
+			Exec(ctx)
 	}
 	return s.db.BackupSchedule.
 		Create().
@@ -456,7 +446,7 @@ func (s *Service) SaveBackupSchedule(backupProfileId int, schedule ent.BackupSch
 		SetMonthday(schedule.Monthday).
 		SetNillableNextRun(nextRun).
 		SetBackupProfileID(backupProfileId).
-		Exec(s.ctx)
+		Exec(ctx)
 }
 
 func (s *Service) sendBackupScheduleChanged() {
@@ -509,11 +499,11 @@ func (s *Service) GetPruningOptions() GetPruningOptionsResponse {
 	return GetPruningOptionsResponse{Options: PruningOptions}
 }
 
-func (s *Service) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
+func (s *Service) SavePruningRule(ctx context.Context, backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
 	s.mustHaveDB()
 	defer s.sendPruningRuleChanged()
 
-	backupProfile, err := s.GetBackupProfile(backupId)
+	backupProfile, err := s.GetBackupProfile(ctx, backupId)
 	if err != nil {
 		return nil, err
 	}
@@ -533,7 +523,7 @@ func (s *Service) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.Prun
 			SetKeepYearly(rule.KeepYearly).
 			SetKeepWithinDays(rule.KeepWithinDays).
 			SetNextRun(nextRun).
-			Save(s.ctx)
+			Save(ctx)
 	}
 	s.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
 	return s.db.PruningRule.
@@ -547,7 +537,7 @@ func (s *Service) SavePruningRule(backupId int, rule ent.PruningRule) (*ent.Prun
 		SetKeepWithinDays(rule.KeepWithinDays).
 		SetBackupProfileID(backupId).
 		SetNextRun(nextRun).
-		Save(s.ctx)
+		Save(ctx)
 }
 
 func (s *Service) sendPruningRuleChanged() {
