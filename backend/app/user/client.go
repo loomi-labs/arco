@@ -1,18 +1,54 @@
-package app
+package user
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"go.uber.org/zap"
 )
 
-func (a *AppClient) GetStartupState() state.StartupState {
-	return a.state.GetStartupState()
+// Service contains the business logic and provides methods exposed to the frontend
+type Service struct {
+	log   *zap.SugaredLogger
+	db    *ent.Client
+	state *state.State
 }
 
-func (a *AppClient) HandleError(msg string, fErr *types.FrontendError) {
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
+	*Service
+}
+
+// NewService creates a new user service
+func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
+	return &ServiceInternal{
+		Service: &Service{
+			log:   log,
+			state: state,
+		},
+	}
+}
+
+// Init initializes the service with remaining dependencies
+func (si *ServiceInternal) Init(db *ent.Client) {
+	si.db = db
+}
+
+// mustHaveDB panics if db is nil. This is a programming error guard.
+func (s *Service) mustHaveDB() {
+	if s.db == nil {
+		panic("UserService: database client is nil")
+	}
+}
+
+func (s *Service) GetStartupState(ctx context.Context) state.StartupState {
+	return s.state.GetStartupState()
+}
+
+func (s *Service) HandleError(ctx context.Context, msg string, fErr *types.FrontendError) {
 	errStr := ""
 	if fErr != nil {
 		if fErr.Message != "" && fErr.Stack != "" {
@@ -23,12 +59,12 @@ func (a *AppClient) HandleError(msg string, fErr *types.FrontendError) {
 	}
 
 	// We don't want to show the stack trace from the go code because the error comes from the frontend
-	a.log.WithOptions(zap.AddCallerSkip(9999999)).
+	s.log.WithOptions(zap.AddCallerSkip(9999999)).
 		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
 }
 
-func (a *AppClient) GetNotifications() []types.Notification {
-	return a.state.GetAndDeleteNotifications()
+func (s *Service) GetNotifications(ctx context.Context) []types.Notification {
+	return s.state.GetAndDeleteNotifications()
 }
 
 type Env struct {
@@ -37,24 +73,26 @@ type Env struct {
 	LoginBetaEnabled bool   `json:"loginBetaEnabled"`
 }
 
-func (a *AppClient) GetEnvVars() Env {
+func (s *Service) GetEnvVars(ctx context.Context) Env {
 	return Env{
-		Debug:            EnvVarDebug.Bool(),
-		StartPage:        EnvVarStartPage.String(),
-		LoginBetaEnabled: EnvVarEnableLoginBeta.Bool(),
+		Debug:            types.EnvVarDebug.Bool(),
+		StartPage:        types.EnvVarStartPage.String(),
+		LoginBetaEnabled: types.EnvVarEnableLoginBeta.Bool(),
 	}
 }
 
-func (a *AppClient) GetSettings() (*ent.Settings, error) {
-	return a.db.Settings.Query().First(a.ctx)
+func (s *Service) GetSettings(ctx context.Context) (*ent.Settings, error) {
+	s.mustHaveDB()
+	return s.db.Settings.Query().First(ctx)
 }
 
-func (a *AppClient) SaveSettings(settings *ent.Settings) error {
-	a.log.Debugf("Saving settings: %s", settings)
-	return a.db.Settings.
+func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) error {
+	s.mustHaveDB()
+	s.log.Debugf("Saving settings: %s", settings)
+	return s.db.Settings.
 		Update().
 		SetShowWelcome(settings.ShowWelcome).
-		Exec(a.ctx)
+		Exec(ctx)
 }
 
 type AppInfo struct {
@@ -64,16 +102,16 @@ type AppInfo struct {
 	Description string `json:"description"`
 }
 
-func (a *AppClient) GetAppInfo() AppInfo {
+func (s *Service) GetAppInfo(ctx context.Context) AppInfo {
 	return AppInfo{
-		Version:     Version,
+		Version:     types.Version,
 		WebsiteURL:  "https://arco-backup.com",
 		GithubURL:   "https://github.com/loomi-labs/arco",
 		Description: "Arco is a modern, user-friendly backup tool powered by Borg Backup.",
 	}
 }
 
-func (a *AppClient) GetAllEvents() []types.Event {
+func (s *Service) GetAllEvents(ctx context.Context) []types.Event {
 	return types.AllEvents
 }
 
@@ -81,8 +119,9 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func (a *AppClient) GetUser() (*User, error) {
-	entUser, err := a.db.User.Query().First(a.ctx)
+func (s *Service) GetUser(ctx context.Context) (*User, error) {
+	s.mustHaveDB()
+	entUser, err := s.db.User.Query().First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +131,6 @@ func (a *AppClient) GetUser() (*User, error) {
 	}, nil
 }
 
-func (a *AppClient) LogDebug(message string) {
-	a.log.Debug(message)
+func (s *Service) LogDebug(ctx context.Context, message string) {
+	s.log.Debug(message)
 }
