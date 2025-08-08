@@ -1,4 +1,4 @@
-name: Test
+name: Test Suite
 
 on:
   workflow_call:
@@ -7,25 +7,46 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
-      - name: Check out repository code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      # Setup Golang
-      - name: 🐿 Setup Golang
-        uses: actions/setup-go@v4
+
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'package.json'
+              - 'Taskfile*.yml'
+              - '.github/workflows/test.yml'
+
+      - name: 🐿 Set up Go
+        if: steps.changes.outputs.src == 'true'
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      # Install task
+          cache: true
+
       - name: Install Task
+        if: steps.changes.outputs.src == 'true'
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      # Install Linux Wails deps
+
       - name: Install Linux Wails deps
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.src == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu jq
         shell: bash
-      # Test & coverage report creation
+
       - name: Test & coverage report creation
+        if: steps.changes.outputs.src == 'true'
         run: task test
+
+      - name: Lint
+        if: steps.changes.outputs.src == 'true'
+        run: task dev:lint

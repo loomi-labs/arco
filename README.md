@@ -1,6 +1,6 @@
 
 
-![Icon](icon-small.png)
+![Icon](docs/icon-small.png)
 
 # Arco Backup
 

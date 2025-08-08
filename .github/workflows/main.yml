@@ -1,0 +1,23 @@
+name: Main Branch CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  integration-tests:
+    uses: ./.github/workflows/integration_tests.yml
+
+  release-please:
+    needs: [test, integration-tests]
+    uses: ./.github/workflows/release-please.yml
+
+  build:
+    needs: [test, integration-tests, release-please]
+    uses: ./.github/workflows/build.yml
+    with:
+      push_artifacts: ${{ needs.release-please.outputs.release_created == 'true' }}
+      version: ${{ needs.release-please.outputs.tag_name }}
