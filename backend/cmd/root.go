@@ -3,6 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -12,11 +18,6 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io/fs"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 var binaries = []types.BorgBinary{
@@ -190,7 +191,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		Description: "Arco is a backup tool.",
 		Services: []application.Service{
 			application.NewService(arco.AppClient()),
-			application.NewService(arco.BackupClient()),
+			application.NewService(arco.BackupProfileService()),
 			application.NewService(arco.RepositoryService()),
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),

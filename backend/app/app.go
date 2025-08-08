@@ -118,23 +118,16 @@ func NewApp(
 // AppClient is a client for application related operations
 type AppClient App
 
-// BackupClient is a client for backup related operations
-type BackupClient App
+func (a *App) BackupProfileService() *backup_profile.Service {
+	return a.backupProfileService.Service
+}
 
 func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
 }
 
-func (a *App) BackupProfileService() *backup_profile.Service {
-	return a.backupProfileService.Service
-}
-
 func (a *App) AppClient() *AppClient {
 	return (*AppClient)(a)
-}
-
-func (a *App) BackupClient() *BackupClient {
-	return (*BackupClient)(a)
 }
 
 func (a *App) AuthService() *auth.Service {
