@@ -14,8 +14,7 @@ import { debounce } from "lodash";
 import type { Icon } from "../common/icons";
 import { getIcon } from "../common/icons";
 import { getRepoType } from "../common/repository";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
@@ -61,7 +60,7 @@ async function getFailedBackupRun() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repoId;
-      failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
+      failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
 
       // We only care about the first error message.
       if (failedBackupRun.value) {
@@ -80,7 +79,7 @@ async function getLastArchives() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
-      const archive = await repoService.Service.GetLastArchiveByBackupId(backupId);
+      const archive = await repoService.GetLastArchiveByBackupId(backupId);
       if (archive?.id) {
         if (!newLastArchive || isAfter(archive.createdAt, newLastArchive.createdAt)) {
           newLastArchive = archive;

@@ -8,7 +8,7 @@ import { Page, withId } from "../router";
 import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType } from "../common/repository";
 import { toRepoTypeBadge } from "../common/badge";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import {Events} from "@wailsio/runtime";
@@ -39,7 +39,7 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getNbrOfArchives() {
   try {
-    nbrOfArchives.value = await repoService.Service.GetNbrOfArchives(props.repo.id);
+    nbrOfArchives.value = await repoService.GetNbrOfArchives(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to get archives", error);
   }
@@ -47,7 +47,7 @@ async function getNbrOfArchives() {
 
 async function getRepoState() {
   try {
-    repoState.value = await repoService.Service.GetState(props.repo.id);
+    repoState.value = await repoService.GetState(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }

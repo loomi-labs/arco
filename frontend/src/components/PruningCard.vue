@@ -7,11 +7,11 @@ import { showAndLogError } from "../common/logger";
 import { formInputClass, Size } from "../common/form";
 import FormField from "./common/FormField.vue";
 import { useToast } from "vue-toastification";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import type * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
-import { PruningOption } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import type { PruningOption } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
+import type { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 
 /************
@@ -88,7 +88,7 @@ const isValid = computed(() => {
 
 async function getPruningOptions() {
   try {
-    pruningOptions.value = (await backupClient.GetPruningOptions()).options;
+    pruningOptions.value = (await backupProfileService.GetPruningOptions()).options;
     ruleToPruningOption(props.pruningRule);
   } catch (error: unknown) {
     await showAndLogError("Failed to get pruning options", error);
@@ -134,7 +134,7 @@ function toPruningRule() {
 
 async function savePruningRule() {
   try {
-    const result = await backupClient.SavePruningRule(props.backupProfileId, pruningRule.value) ?? ent.PruningRule.createFrom();
+    const result = await backupProfileService.SavePruningRule(props.backupProfileId, pruningRule.value) ?? ent.PruningRule.createFrom();
     emits(emitUpdatePruningRule, result);
   } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);
@@ -145,7 +145,7 @@ async function examinePrunes(saveResults: boolean): Promise<Array<ExaminePruning
   try {
     isExaminingPrunes.value = true;
     cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false, AskForSave: false };
-    return await backupClient.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
+    return await repoService.ExaminePrunes(props.backupProfileId, pruningRule.value, saveResults);
   } catch (error: unknown) {
     await showAndLogError("Failed to dry run pruning rule", error);
   } finally {

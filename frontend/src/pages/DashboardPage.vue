@@ -14,8 +14,8 @@ import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
 import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import {Events} from "@wailsio/runtime";
@@ -43,8 +43,8 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getData() {
   try {
-    backupProfiles.value = (await backupClient.GetBackupProfiles()).filter(p => p !== null) ?? [];
-    repos.value = (await repoService.Service.All()).filter((repo): repo is Repository => repo !== null);
+    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
+    repos.value = (await repoService.All()).filter((repo): repo is Repository => repo !== null);
     settings.value = await appClient.GetSettings() ?? ent.Settings.createFrom();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);

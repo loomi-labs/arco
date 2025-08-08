@@ -6,8 +6,8 @@ import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
@@ -87,7 +87,7 @@ async function createRepo() {
   try {
     isCreating.value = true;
     const noPassword = !isEncrypted.value;
-    const repo = await repoService.Service.Create(
+    const repo = await repoService.Create(
       name.value!,
       location.value!,
       password.value!,
@@ -124,7 +124,7 @@ async function selectDirectory() {
   data.title = "Select a directory";
   data.message = "Select the directory where you want to store your backups";
   data.buttonText = "Select";
-  const pathStr = await backupClient.SelectDirectory(data);
+  const pathStr = await backupProfileService.SelectDirectory(data);
   if (pathStr) {
     location.value = pathStr;
   }
@@ -133,7 +133,7 @@ async function selectDirectory() {
 async function createDir() {
   try {
     const path = location.value ?? "";
-    await backupClient.CreateDirectory(path);
+    await backupProfileService.CreateDirectory(path);
     location.value = path;
     await validate();
     await setNameFromLocation();
@@ -146,24 +146,24 @@ async function createDir() {
 async function validate(force = false) {
   try {
     if (name.value !== undefined || force) {
-      nameError.value = await repoService.Service.ValidateRepoName(name.value ?? "");
+      nameError.value = await repoService.ValidateRepoName(name.value ?? "");
     }
     if (location.value !== undefined || force) {
-      locationError.value = await repoService.Service.ValidateRepoPath(location.value ?? "", true);
+      locationError.value = await repoService.ValidateRepoPath(location.value ?? "", true);
     }
 
     if (location.value === undefined || locationError.value) {
       // Can't be a borg repo if the location is invalid
       isBorgRepo.value = false;
     } else {
-      isBorgRepo.value = await repoService.Service.IsBorgRepository(location.value);
+      isBorgRepo.value = await repoService.IsBorgRepository(location.value);
     }
 
     // If the repo is a borg repo, we need to test the connection
     if (isBorgRepo.value) {
       lastTestConnectionValues.value = [location.value, password.value];
 
-      const result = await repoService.Service.TestRepoConnection(location.value ?? "", password.value ?? "");
+      const result = await repoService.TestRepoConnection(location.value ?? "", password.value ?? "");
       isEncrypted.value = result.needsPassword;
       needsPassword.value = result.needsPassword;
 

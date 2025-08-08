@@ -8,8 +8,7 @@ import { showAndLogError } from "../common/logger";
 import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -186,7 +185,7 @@ async function getButtonStatus() {
   }
 
   try {
-    buttonStatus.value = await backupClient.GetBackupButtonStatus(props.backupIds);
+    buttonStatus.value = await repoService.GetBackupButtonStatus(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup state", error);
   }
@@ -194,7 +193,7 @@ async function getButtonStatus() {
 
 async function getBackupProgress() {
   try {
-    backupProgress.value = await backupClient.GetCombinedBackupProgress(props.backupIds) ?? undefined;
+    backupProgress.value = await repoService.GetCombinedBackupProgress(props.backupIds) ?? undefined;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup progress", error);
   }
@@ -202,7 +201,7 @@ async function getBackupProgress() {
 
 async function getLockedRepos() {
   try {
-    const result = (await repoService.Service.GetLocked()).filter(r => r !== null) ?? [];
+    const result = (await repoService.GetLocked()).filter(r => r !== null) ?? [];
     lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
   } catch (error: unknown) {
     await showAndLogError("Failed to get locked repositories", error);
@@ -211,7 +210,7 @@ async function getLockedRepos() {
 
 async function getReposWithMounts() {
   try {
-    const result = (await repoService.Service.GetWithActiveMounts()).filter(r => r !== null) ?? [];
+    const result = (await repoService.GetWithActiveMounts()).filter(r => r !== null) ?? [];
     reposWithMounts.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
   } catch (error: unknown) {
     await showAndLogError("Failed to get mounted repositories", error);
@@ -221,7 +220,7 @@ async function getReposWithMounts() {
 async function getRepoStates() {
   try {
     for (const backupId of props.backupIds) {
-      const repoState = await repoService.Service.GetState(backupId.repositoryId);
+      const repoState = await repoService.GetState(backupId.repositoryId);
       repoStates.value.set(backupId.repositoryId, repoState);
     }
   } catch (error: unknown) {
@@ -249,7 +248,7 @@ async function runButtonAction() {
 
 async function runBackups() {
   try {
-    await backupClient.StartBackupJobs(props.backupIds);
+    await repoService.StartBackupJobs(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to run backup", error);
   }
@@ -257,7 +256,7 @@ async function runBackups() {
 
 async function abortBackups() {
   try {
-    await backupClient.AbortBackupJobs(props.backupIds);
+    await repoService.AbortBackupJobs(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to abort backup", error);
   }
@@ -265,7 +264,7 @@ async function abortBackups() {
 
 async function unmountAll() {
   try {
-    await repoService.Service.UnmountAllForRepos(props.backupIds.map((id) => id.repositoryId));
+    await repoService.UnmountAllForRepos(props.backupIds.map((id) => id.repositoryId));
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount directories", error);
   }
@@ -275,7 +274,7 @@ async function breakLock() {
   try {
     showProgressSpinner.value = true;
     for (const repo of lockedRepos.value) {
-      await repoService.Service.BreakLock(repo.id);
+      await repoService.BreakLock(repo.id);
     }
   } catch (error: unknown) {
     await showAndLogError("Failed to break lock", error);
