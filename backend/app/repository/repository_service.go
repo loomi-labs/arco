@@ -2,9 +2,22 @@ package repository
 
 import (
 	"context"
-	"entgo.io/ent/dialect/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"entgo.io/ent/dialect/sql"
+	"github.com/eminarican/safetypes"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/database"
@@ -18,21 +31,12 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
+	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
 	"go.uber.org/zap"
-	"net/url"
-	"os"
-	"os/exec"
-	"os/user"
-	"path/filepath"
-	"regexp"
-	"slices"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // Service contains the business logic and provides methods exposed to the frontend
@@ -112,13 +116,6 @@ func (s *Service) GetByBackupId(ctx context.Context, bId types.BackupId) (*ent.R
 	s.mustHaveDB()
 	return s.db.Repository.
 		Query().
-		//WithNotifications(func(query *ent.NotificationQuery) {
-		//	query.Where(notification.And(
-		//		notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-		//		notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-		//		notification.Seen(false),
-		//	))
-		//}).
 		Where(repository.And(
 			repository.ID(bId.RepositoryId),
 			repository.HasBackupProfilesWith(backupprofile.ID(bId.BackupProfileId)),
@@ -1539,4 +1536,737 @@ func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, st
 		assert.Failf("Unexpected status %s", status.GetError())
 	}
 	return nil
+}
+
+/***********************************/
+/********** Backup Operations ******/
+/***********************************/
+
+func (s *Service) getRepoWithBackupProfile(ctx context.Context, repoId int, backupProfileId int) (*ent.Repository, error) {
+	s.mustHaveDB()
+	repo, err := s.db.Repository.
+		Query().
+		Where(repository.And(
+			repository.ID(repoId),
+			repository.HasBackupProfilesWith(backupprofile.ID(backupProfileId)),
+		)).
+		WithBackupProfiles(func(q *ent.BackupProfileQuery) {
+			q.Limit(1)
+			q.Where(backupprofile.ID(backupProfileId))
+			q.WithPruningRule()
+		}).
+		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(repo.Edges.BackupProfiles) != 1 {
+		return nil, fmt.Errorf("repository does not have the backup profile")
+	}
+	return repo, nil
+}
+
+func (s *Service) StartBackupJob(ctx context.Context, bId types.BackupId) error {
+	if canRun, reason := s.state.CanRunBackup(bId); !canRun {
+		return errors.New(reason)
+	}
+
+	go func() {
+		_, err := s.runBorgCreate(ctx, bId)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Backup job failed: %s", err))
+		}
+	}()
+
+	return nil
+}
+
+func (s *Service) StartBackupJobs(ctx context.Context, bIds []types.BackupId) error {
+	var errs []error
+	for _, bId := range bIds {
+		err := s.StartBackupJob(ctx, bId)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to start some backup jobs: %v", errs)
+	}
+	return nil
+}
+
+func (s *Service) AbortBackupJob(ctx context.Context, id types.BackupId) error {
+	s.state.SetBackupCancelled(ctx, id, true)
+	return nil
+}
+
+func (s *Service) AbortBackupJobs(ctx context.Context, bIds []types.BackupId) error {
+	for _, bId := range bIds {
+		if s.state.GetBackupState(bId).Status == state.BackupStatusRunning {
+			err := s.AbortBackupJob(ctx, bId)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Service) GetBackupState(bId types.BackupId) state.BackupState {
+	return s.state.GetBackupState(bId)
+}
+
+func (s *Service) GetBackupButtonStatus(bIds []types.BackupId) state.BackupButtonStatus {
+	switch len(bIds) {
+	case 0:
+		return state.BackupButtonStatusRunBackup
+	case 1:
+		return s.state.GetBackupButtonStatus(bIds[0])
+	default:
+		return s.state.GetCombinedBackupButtonStatus(bIds)
+	}
+}
+
+func (s *Service) GetCombinedBackupProgress(bIds []types.BackupId) *borgtypes.BackupProgress {
+	return s.state.GetCombinedBackupProgress(bIds)
+}
+
+type BackupProgressResponse struct {
+	BackupId types.BackupId           `json:"backupId"`
+	Progress borgtypes.BackupProgress `json:"progress"`
+	Found    bool                     `json:"found"`
+}
+
+func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
+	s.mustHaveDB()
+	// Get the last notification for the backup profile and repository
+	lastNotification, err := s.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := s.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
+}
+
+type BackupResult string
+
+const (
+	BackupResultSuccess   BackupResult = "success"
+	BackupResultCancelled BackupResult = "cancelled"
+	BackupResultError     BackupResult = "error"
+)
+
+func (b BackupResult) String() string {
+	return string(b)
+}
+
+// runBorgCreate runs the actual backup job.
+// It is long running and should be run in a goroutine.
+func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result BackupResult, err error) {
+	repo, err := s.getRepoWithBackupProfile(ctx, bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		s.state.SetBackupError(ctx, bId, err, false, false)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
+		return BackupResultError, err
+	}
+	assert.NotEmpty(repo.Edges.BackupProfiles, "repository does not have backup profiles")
+	backupProfile := repo.Edges.BackupProfiles[0]
+	s.state.SetBackupWaiting(ctx, bId)
+
+	repoLock := s.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	// Wait to acquire the lock and then set the backup as running
+	ctx = s.state.SetBackupRunning(ctx, bId)
+
+	// Create go routine to receive progress info
+	ch := make(chan borgtypes.BackupProgress)
+	defer close(ch)
+	go s.saveProgressInfo(ctx, bId, ch)
+
+	archiveName, status := s.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			s.state.SetBackupCancelled(ctx, bId, true)
+			return BackupResultCancelled, nil
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			retErr := fmt.Errorf("repository %s is locked", repo.Name)
+			saveErr := s.saveDbNotification(ctx, bId, retErr.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
+			if saveErr != nil {
+				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			s.state.SetBackupError(ctx, bId, retErr, false, true)
+			s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
+			return BackupResultError, retErr
+		} else {
+			saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
+			if saveErr != nil {
+				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			s.state.SetBackupError(ctx, bId, status.Error, true, false)
+			s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: %s", status.Error), types.LevelError)
+			return BackupResultError, status.Error
+		}
+	} else {
+		// Backup completed successfully
+		defer s.state.SetBackupCompleted(ctx, bId, true)
+
+		err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+		}
+
+		err = s.addNewArchive(ctx, bId, archiveName, repo.Password)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
+		}
+
+		pruningRule, pErr := s.db.PruningRule.
+			Query().
+			Where(pruningrule.And(
+				pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				pruningrule.IsEnabled(true),
+			)).
+			Only(ctx)
+		if pErr != nil && !ent.IsNotFound(pErr) {
+			s.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", pErr))
+		}
+		if pruningRule != nil && pruningRule.IsEnabled {
+			_, err = s.examinePrune(ctx, bId, safetypes.Some(pruningRule), true, true)
+			if err != nil {
+				s.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+			}
+		}
+
+		return BackupResultSuccess, nil
+	}
+}
+
+type DeleteResult string
+
+const (
+	DeleteResultSuccess   DeleteResult = "success"
+	DeleteResultCancelled DeleteResult = "cancelled"
+	DeleteResultError     DeleteResult = "error"
+)
+
+func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (DeleteResult, error) {
+	repoLock := s.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	// Wait to acquire the lock and then set the repo as locked
+	s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusDeleting)
+
+	status := s.borg.DeleteArchives(ctx, location, password, prefix)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return DeleteResultCancelled, nil
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			s.state.AddNotification(ctx, "Delete job failed: repository is locked", types.LevelError)
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusLocked)
+			return DeleteResultError, status.Error
+		} else {
+			s.state.AddNotification(ctx, fmt.Sprintf("Delete job failed: %s", status.Error), types.LevelError)
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return DeleteResultError, status.Error
+		}
+	} else {
+		// Delete completed successfully
+		defer s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+		err := s.refreshRepoInfo(ctx, bId.RepositoryId, location, password)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+		}
+
+		_, err = s.refreshArchivesWithoutLock(ctx, bId.RepositoryId)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+		}
+
+		return DeleteResultSuccess, nil
+	}
+}
+
+func (s *Service) saveProgressInfo(ctx context.Context, id types.BackupId, ch chan borgtypes.BackupProgress) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case progress, ok := <-ch:
+			if !ok {
+				// Channel is closed, break the loop
+				return
+			}
+			s.state.UpdateBackupProgress(ctx, id, progress)
+		}
+	}
+}
+
+func (s *Service) refreshRepoInfo(ctx context.Context, repoId int, url, password string) error {
+	info, status := s.borg.Info(ctx, url, password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository info retrieval was cancelled")
+		}
+		return fmt.Errorf("failed to get repository info: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+	}
+	if info == nil {
+		return fmt.Errorf("failed to get repository info: response is nil")
+	}
+	return s.db.Repository.
+		UpdateOneID(repoId).
+		SetStatsTotalSize(info.Cache.Stats.TotalSize).
+		SetStatsTotalCsize(info.Cache.Stats.TotalCSize).
+		SetStatsTotalChunks(info.Cache.Stats.TotalChunks).
+		SetStatsTotalUniqueChunks(info.Cache.Stats.TotalUniqueChunks).
+		SetStatsUniqueCsize(info.Cache.Stats.UniqueCSize).
+		SetStatsUniqueSize(info.Cache.Stats.UniqueSize).
+		Exec(ctx)
+}
+
+func (s *Service) addNewArchive(ctx context.Context, bId types.BackupId, archivePath, password string) error {
+	info, status := s.borg.Info(ctx, archivePath, password)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository info retrieval was cancelled")
+		}
+		return fmt.Errorf("failed to get archive info: %s", status.GetError())
+	}
+	if status.HasWarning() {
+		// TODO(log-warning): log warning to user
+		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+	}
+	if info == nil {
+		return fmt.Errorf("failed to get archive info: response is nil")
+	}
+	if len(info.Archives) == 0 {
+		return fmt.Errorf("no archives found")
+	}
+	createdAt := time.Time(info.Archives[0].Start)
+	duration := time.Time(info.Archives[0].End).Sub(createdAt)
+	_, err := s.db.Archive.
+		Create().
+		SetRepositoryID(bId.RepositoryId).
+		SetBackupProfileID(bId.BackupProfileId).
+		SetBorgID(info.Archives[0].ID).
+		SetName(info.Archives[0].Name).
+		SetCreatedAt(createdAt).
+		SetDuration(duration.Seconds()).
+		Save(ctx)
+	return err
+}
+
+func (s *Service) saveDbNotification(ctx context.Context, backupId types.BackupId, message string, notificationType notification.Type, action safetypes.Option[notification.Action]) error {
+	return s.db.Notification.
+		Create().
+		SetMessage(message).
+		SetType(notificationType).
+		SetBackupProfileID(backupId.BackupProfileId).
+		SetRepositoryID(backupId.RepositoryId).
+		SetNillableAction(action.Value).
+		Exec(ctx)
+}
+
+/***********************************/
+/********** Prune Operations ********/
+/***********************************/
+
+func (s *Service) StartPruneJob(ctx context.Context, bId types.BackupId) error {
+	if canRun, reason := s.state.CanRunPrune(bId); !canRun {
+		return errors.New(reason)
+	}
+
+	go func() {
+		_, err := s.runPruneJob(ctx, bId)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Prune job failed: %s", err))
+		}
+	}()
+	return nil
+}
+
+type ExaminePruningResult struct {
+	BackupID               types.BackupId
+	RepositoryName         string
+	CntArchivesToBeDeleted int
+	Error                  error
+}
+
+func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+	defer wg.Done()
+
+	repo, err := s.db.Repository.Query().
+		Where(repository.ID(bId.RepositoryId)).
+		Select(repository.FieldName).
+		Only(ctx)
+	if err != nil {
+		return
+	}
+
+	cntToBeDeleted, err := s.examinePrune(ctx, bId, safetypes.Some(pruningRule), saveResults, false)
+	if err != nil {
+		s.log.Debugf("Failed to examine prune: %s", err)
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
+		return
+	}
+
+	resultCh <- ExaminePruningResult{BackupID: bId, CntArchivesToBeDeleted: cntToBeDeleted, RepositoryName: repo.Name}
+}
+
+func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) []ExaminePruningResult {
+	backupProfile, err := s.db.BackupProfile.
+		Query().
+		WithRepositories().
+		Where(backupprofile.ID(backupProfileId)).
+		Only(ctx)
+	if err != nil {
+		return []ExaminePruningResult{{Error: err}}
+	}
+
+	var wg sync.WaitGroup
+	resultCh := make(chan ExaminePruningResult, len(backupProfile.Edges.Repositories))
+	results := make([]ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
+
+	for _, repo := range backupProfile.Edges.Repositories {
+		wg.Add(1)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		go s.startExaminePrune(ctx, bId, pruningRule, saveResults, &wg, resultCh)
+	}
+
+	// Wait for all examine prune jobs to finish
+	wg.Wait()
+	close(resultCh)
+
+	// Collect results
+	for result := range resultCh {
+		results = append(results, result)
+	}
+
+	return results
+}
+
+type PruneResult string
+
+const (
+	PruneResultSuccess  PruneResult = "success"
+	PruneResultCanceled PruneResult = "canceled"
+	PruneResultError    PruneResult = "error"
+)
+
+func (p PruneResult) String() string {
+	return string(p)
+}
+
+func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneResult, error) {
+	repo, err := s.getRepoWithBackupProfile(ctx, bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
+		return PruneResultError, err
+	}
+	backupProfile := repo.Edges.BackupProfiles[0]
+	pruningRule := backupProfile.Edges.PruningRule
+	if pruningRule == nil {
+		err = errors.New("pruning rule not found")
+		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get pruning rule: %s", err), types.LevelError)
+		return PruneResultError, err
+	}
+
+	s.state.SetPruneWaiting(ctx, bId)
+
+	repoLock := s.state.GetRepoLock(bId.RepositoryId)
+	repoLock.Lock()         // We might wait here for other operations to finish
+	defer repoLock.Unlock() // Unlock at the end
+
+	// Wait to acquire the lock and then set the prune as running
+	s.state.SetPruneRunning(ctx, bId)
+
+	// Get all archives from the database
+	archives, err := s.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
+		All(ctx)
+	if err != nil {
+		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get archives: %s", err), types.LevelError)
+		return PruneResultError, err
+	}
+
+	// Create go routine to save prune result
+	borgCh := make(chan borgtypes.PruneResult)
+	resultCh := make(chan state.PruneJobResult)
+	go s.savePruneResult(ctx, archives, borgCh, resultCh)
+
+	cmd := pruneEntityToBorgCmd(pruningRule)
+	status := s.borg.Prune(ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			s.state.SetPruneCancelled(ctx, bId)
+			return PruneResultCanceled, nil
+		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			err = fmt.Errorf("repository %s is locked", repo.Name)
+			saveErr := s.saveDbNotification(ctx, bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
+			if saveErr != nil {
+				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			s.state.SetPruneError(ctx, bId, err, false, true)
+			s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
+			return PruneResultError, err
+		} else {
+			saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
+			if saveErr != nil {
+				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
+			}
+			s.state.SetPruneError(ctx, bId, status.Error, true, false)
+			s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", status.Error), types.LevelError)
+			return PruneResultError, status.Error
+		}
+	} else {
+		select {
+		case pruneResult := <-resultCh:
+			// Prune job completed successfully
+			defer s.state.SetPruneCompleted(ctx, bId, pruneResult)
+
+			err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
+			if err != nil {
+				s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+			}
+
+			_, err = s.RefreshArchives(ctx, bId.RepositoryId)
+			if err != nil {
+				s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+			}
+
+			return PruneResultSuccess, nil
+		case <-time.After(30 * time.Second):
+			return PruneResultError, fmt.Errorf("timeout waiting for prune result")
+		case <-ctx.Done():
+			return PruneResultError, fmt.Errorf("context canceled")
+		}
+	}
+}
+
+func pruneEntityToBorgCmd(pruningRule *ent.PruningRule) []string {
+	var cmd []string
+	if pruningRule.KeepHourly > 0 {
+		cmd = append(cmd, "--keep-hourly", fmt.Sprintf("%d", pruningRule.KeepHourly))
+	}
+	if pruningRule.KeepDaily > 0 {
+		cmd = append(cmd, "--keep-daily", fmt.Sprintf("%d", pruningRule.KeepDaily))
+	}
+	if pruningRule.KeepWeekly > 0 {
+		cmd = append(cmd, "--keep-weekly", fmt.Sprintf("%d", pruningRule.KeepWeekly))
+	}
+	if pruningRule.KeepMonthly > 0 {
+		cmd = append(cmd, "--keep-monthly", fmt.Sprintf("%d", pruningRule.KeepMonthly))
+	}
+	if pruningRule.KeepYearly > 0 {
+		cmd = append(cmd, "--keep-yearly", fmt.Sprintf("%d", pruningRule.KeepYearly))
+	}
+	if pruningRule.KeepWithinDays > 0 {
+		cmd = append(cmd, "--keep-within", fmt.Sprintf("%dd", pruningRule.KeepWithinDays))
+	}
+	return cmd
+}
+
+func (s *Service) savePruneResult(ctx context.Context, archives []*ent.Archive, ch chan borgtypes.PruneResult, resultCh chan state.PruneJobResult) {
+	defer close(resultCh)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case result, ok := <-ch:
+			if !ok {
+				// Channel is closed, break the loop
+				return
+			}
+
+			// Merge the prune result with the archives
+			var pjr state.PruneJobResult
+			for _, arch := range archives {
+				found := false
+				for _, keep := range result.KeepArchives {
+					if arch.Name == keep.Name {
+						pjr.KeepArchives = append(pjr.KeepArchives, state.KeepArchive{
+							Id:     arch.ID,
+							Name:   arch.Name,
+							Reason: keep.Reason,
+						})
+						found = true
+						break
+					}
+				}
+				if !found {
+					for _, prune := range result.PruneArchives {
+						if arch.Name == prune.Name {
+							pjr.PruneArchives = append(pjr.PruneArchives, arch.ID)
+							break
+						}
+					}
+				}
+			}
+
+			resultCh <- pjr
+		}
+	}
+}
+
+func (s *Service) examinePrune(ctx context.Context, bId types.BackupId, pruningRuleOpt safetypes.Option[*ent.PruningRule], saveResults, skipAcquiringRepoLock bool) (int, error) {
+	repo, err := s.getRepoWithBackupProfile(ctx, bId.RepositoryId, bId.BackupProfileId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get repository: %w", err)
+	}
+	backupProfile := repo.Edges.BackupProfiles[0]
+
+	pruningRule := pruningRuleOpt.UnwrapOr(backupProfile.Edges.PruningRule)
+	if pruningRule == nil {
+		return 0, fmt.Errorf("no pruning rule found")
+	}
+
+	// If the pruning rule is not enabled, we don't need to call borg
+	if !pruningRule.IsEnabled {
+		if saveResults {
+			defer s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(bId.RepositoryId))
+			err = s.db.Archive.
+				Update().
+				Where(archive.And(
+					archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+					archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+					archive.WillBePruned(true)),
+				).
+				SetWillBePruned(false).
+				Exec(ctx)
+			if err != nil {
+				return 0, fmt.Errorf("failed to update archives: %w", err)
+			}
+		}
+		return 0, nil
+	}
+
+	if !skipAcquiringRepoLock {
+		// We do not wait for other operations to finish
+		// Either we can run the operation or we return an error
+		if canRun, reason := s.state.CanPerformRepoOperation(bId.RepositoryId); !canRun {
+			return 0, fmt.Errorf("can not examine prune: %s", reason)
+		}
+
+		repoLock := s.state.GetRepoLock(bId.RepositoryId)
+		repoLock.Lock()         // We should not have to wait here
+		defer repoLock.Unlock() // Unlock at the end
+
+		s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusPerformingOperation)
+	}
+
+	// Get all archives from the database
+	archives, err := s.db.Archive.
+		Query().
+		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
+		All(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get archives: %w", err)
+	}
+
+	// Create go routine to save prune result
+	borgCh := make(chan borgtypes.PruneResult)
+	resultCh := make(chan state.PruneJobResult)
+	go s.savePruneResult(ctx, archives, borgCh, resultCh)
+
+	cmd := pruneEntityToBorgCmd(pruningRule)
+	status := s.borg.Prune(ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
+	if !status.IsCompletedWithSuccess() {
+		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusLocked)
+			return 0, fmt.Errorf("repository %s is locked", repo.Name)
+		} else {
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+			return 0, fmt.Errorf("failed to examine prune: %w", status.Error)
+		}
+	} else {
+		select {
+		case pruneResult := <-resultCh:
+			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+			if saveResults {
+				keepIds := make([]int, len(pruneResult.KeepArchives))
+				for i, keep := range pruneResult.KeepArchives {
+					keepIds[i] = keep.Id
+				}
+
+				tx, err := s.db.Tx(ctx)
+				if err != nil {
+					return 0, fmt.Errorf("failed to start transaction: %w", err)
+				}
+
+				cntToTrue, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(pruneResult.PruneArchives...),
+						archive.WillBePruned(false)),
+					).
+					SetWillBePruned(true).
+					Save(ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+
+				cntToFalse, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(keepIds...),
+						archive.WillBePruned(true)),
+					).
+					SetWillBePruned(false).
+					Save(ctx)
+				if err != nil {
+					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+				}
+				err = tx.Commit()
+				if err != nil {
+					return 0, fmt.Errorf("failed to commit transaction: %w", err)
+				}
+				if cntToTrue+cntToFalse > 0 {
+					s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(bId.RepositoryId))
+				}
+
+				return len(pruneResult.PruneArchives), nil
+			}
+			return len(pruneResult.PruneArchives), nil
+		case <-time.After(10 * time.Second):
+			return 0, fmt.Errorf("timeout waiting for prune result")
+		case <-ctx.Done():
+			return 0, fmt.Errorf("context canceled")
+		}
+	}
 }
