@@ -2,9 +2,15 @@ package backup_profile
 
 import (
 	"context"
-	"entgo.io/ent/dialect/sql"
 	"errors"
 	"fmt"
+	"math/rand"
+	"os"
+	"regexp"
+	"strings"
+	"time"
+
+	"entgo.io/ent/dialect/sql"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -16,11 +22,6 @@ import (
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
-	"math/rand"
-	"os"
-	"regexp"
-	"strings"
-	"time"
 )
 
 // Service contains the business logic for backup profiles
@@ -32,6 +33,15 @@ type Service struct {
 	eventEmitter             types.EventEmitter
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
+	repositoryService        RepositoryServiceInterface
+	ctx                      context.Context
+}
+
+// RepositoryServiceInterface defines the methods needed from repository service
+type RepositoryServiceInterface interface {
+	RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error)
+	StartBackupJobs(ctx context.Context, bIds []types.BackupId) error
+	StartPruneJob(ctx context.Context, bId types.BackupId) error
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -51,11 +61,13 @@ func NewService(log *zap.SugaredLogger, state *state.State, config *types.Config
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter, backupScheduleChangedCh, pruningScheduleChangedCh chan struct{}) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, backupScheduleChangedCh, pruningScheduleChangedCh chan struct{}, repositoryService RepositoryServiceInterface) {
+	si.ctx = ctx
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.backupScheduleChangedCh = backupScheduleChangedCh
 	si.pruningScheduleChangedCh = pruningScheduleChangedCh
+	si.repositoryService = repositoryService
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -300,10 +312,34 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 }
 
 // DeleteBackupProfile deletes a backup profile and optionally its archives
-// The deleteJobs parameter contains functions to execute Borg delete operations
-func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, deleteJobs []func()) error {
+func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, deleteArchives bool) error {
 	s.mustHaveDB()
-	err := s.db.BackupProfile.
+	backupProfile, err := s.GetBackupProfile(ctx, backupProfileId)
+	if err != nil {
+		return err
+	}
+
+	var deleteJobs []func()
+	// If deleteArchives is true, we prepare a delete job for each repository
+	if deleteArchives && s.repositoryService != nil {
+		for _, r := range backupProfile.Edges.Repositories {
+			repo := r // Capture loop variable
+			bId := types.BackupId{
+				BackupProfileId: backupProfileId,
+				RepositoryId:    repo.ID,
+			}
+			deleteJobs = append(deleteJobs, func() {
+				go func() {
+					_, err := s.repositoryService.RunBorgDelete(ctx, bId, repo.URL, repo.Password, backupProfile.Prefix)
+					if err != nil {
+						s.log.Error("Delete job failed: ", err)
+					}
+				}()
+			})
+		}
+	}
+
+	err = s.db.BackupProfile.
 		DeleteOneID(backupProfileId).
 		Exec(ctx)
 	if err != nil {
@@ -338,10 +374,24 @@ func (s *Service) AddRepositoryToBackupProfile(ctx context.Context, backupProfil
 }
 
 // RemoveRepositoryFromBackupProfile removes a repository from a backup profile
-// The deleteJob parameter contains a function to execute Borg delete operations if needed
-func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupProfileId int, repositoryId int, deleteJob func()) error {
+func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupProfileId int, repositoryId int, deleteArchives bool) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Removing repository %d from backup profile %d", repositoryId, backupProfileId))
+
+	// Get the backup profile with the repository
+	backupProfile, err := s.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.ID(backupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(repositoryId)),
+		)).
+		WithRepositories(func(q *ent.RepositoryQuery) {
+			q.Where(repository.ID(repositoryId))
+		}).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Check if the repository is the only one in the backup profile
 	cnt, err := s.db.Repository.
@@ -356,7 +406,26 @@ func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupP
 		return fmt.Errorf("cannot remove the only repository from the backup profile")
 	}
 
-	// Execute the delete job if provided
+	var deleteJob func()
+	// If deleteArchives is true, we run a delete job for the repository
+	if deleteArchives && len(backupProfile.Edges.Repositories) > 0 && s.repositoryService != nil {
+		bId := types.BackupId{
+			BackupProfileId: backupProfileId,
+			RepositoryId:    repositoryId,
+		}
+		repo := backupProfile.Edges.Repositories[0]
+		if repo.ID == repositoryId {
+			location, password, prefix := repo.URL, repo.Password, backupProfile.Prefix
+			deleteJob = func() {
+				_, err := s.repositoryService.RunBorgDelete(ctx, bId, location, password, prefix)
+				if err != nil {
+					s.log.Error("Delete job failed: ", err)
+				}
+			}
+		}
+	}
+
+	// Execute the delete job if created
 	if deleteJob != nil {
 		go deleteJob()
 	}
@@ -548,26 +617,3 @@ func (s *Service) sendPruningRuleChanged() {
 	s.pruningScheduleChangedCh <- struct{}{}
 }
 
-// Helper functions (these need to be imported from schedule_utils.go or defined here)
-func getNextBackupTime(schedule *ent.BackupSchedule, now time.Time) (time.Time, error) {
-	// TODO: Implement this function or import it from schedule_utils
-	// This is a placeholder implementation
-	switch schedule.Mode {
-	case backupschedule.ModeHourly:
-		return now.Add(time.Hour), nil
-	case backupschedule.ModeDaily:
-		return schedule.DailyAt, nil
-	case backupschedule.ModeWeekly:
-		return schedule.WeeklyAt, nil
-	case backupschedule.ModeMonthly:
-		return schedule.MonthlyAt, nil
-	default:
-		return time.Time{}, errors.New("invalid schedule mode")
-	}
-}
-
-func getNextPruneTime(schedule *ent.BackupSchedule, now time.Time) time.Time {
-	// TODO: Implement this function or import it from schedule_utils
-	// This is a placeholder implementation
-	return now.Add(24 * time.Hour)
-}

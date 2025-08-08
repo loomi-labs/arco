@@ -30,6 +30,20 @@ export class BackupId {
     }
 }
 
+/**
+ * DeleteResult represents the result of a delete operation
+ */
+export enum DeleteResult {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    DeleteResultSuccess = "success",
+    DeleteResultCancelled = "cancelled",
+    DeleteResultError = "error",
+};
+
 export enum Event {
     /**
      * The Go zero value for the underlying type of the enum.

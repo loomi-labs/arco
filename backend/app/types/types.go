@@ -46,6 +46,15 @@ type ExaminePruningResult struct {
 	Error                  error
 }
 
+// DeleteResult represents the result of a delete operation
+type DeleteResult string
+
+const (
+	DeleteResultSuccess   DeleteResult = "success"
+	DeleteResultCancelled DeleteResult = "cancelled" 
+	DeleteResultError     DeleteResult = "error"
+)
+
 type Icons struct {
 	AppIconDark  []byte
 	AppIconLight []byte

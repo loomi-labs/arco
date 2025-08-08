@@ -218,9 +218,6 @@ func (a *App) Startup(ctx context.Context) {
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
-	// Initialize backup profile service
-	a.backupProfileService.Init(a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh)
-
 	// Create cloud repository service first
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
@@ -233,6 +230,9 @@ func (a *App) Startup(ctx context.Context) {
 		a.eventEmitter,
 		cloudRepositoryService,
 	)
+
+	// Initialize backup profile service with repository service dependency
+	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -263,8 +263,8 @@ func (a *App) Startup(ctx context.Context) {
 	go a.startArcoCloudSyncListener()
 
 	// Schedule backups
-	go a.startScheduleChangeListener()
-	go a.startPruneScheduleChangeListener()
+	go a.backupProfileService.StartScheduleChangeListener()
+	go a.backupProfileService.StartPruneScheduleChangeListener()
 	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
 

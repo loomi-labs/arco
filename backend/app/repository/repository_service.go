@@ -1766,15 +1766,8 @@ func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result
 	}
 }
 
-type DeleteResult string
 
-const (
-	DeleteResultSuccess   DeleteResult = "success"
-	DeleteResultCancelled DeleteResult = "cancelled"
-	DeleteResultError     DeleteResult = "error"
-)
-
-func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (DeleteResult, error) {
+func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error) {
 	repoLock := s.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
@@ -1786,15 +1779,15 @@ func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, locatio
 	if !status.IsCompletedWithSuccess() {
 		if status.HasBeenCanceled {
 			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return DeleteResultCancelled, nil
+			return types.DeleteResultCancelled, nil
 		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			s.state.AddNotification(ctx, "Delete job failed: repository is locked", types.LevelError)
 			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusLocked)
-			return DeleteResultError, status.Error
+			return types.DeleteResultError, status.Error
 		} else {
 			s.state.AddNotification(ctx, fmt.Sprintf("Delete job failed: %s", status.Error), types.LevelError)
 			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return DeleteResultError, status.Error
+			return types.DeleteResultError, status.Error
 		}
 	} else {
 		// Delete completed successfully
@@ -1810,7 +1803,7 @@ func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, locatio
 			s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
 		}
 
-		return DeleteResultSuccess, nil
+		return types.DeleteResultSuccess, nil
 	}
 }
 

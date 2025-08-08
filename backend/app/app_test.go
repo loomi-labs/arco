@@ -75,6 +75,9 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		cloudRepositoryClient,
 	)
 
+	// Initialize backup profile service with repository service dependency
+	a.backupProfileService.Init(a.ctx, db, mockEventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
+
 	// Add cleanup function to test to ensure context is cancelled
 	t.Cleanup(func() {
 		if a.cancel != nil {

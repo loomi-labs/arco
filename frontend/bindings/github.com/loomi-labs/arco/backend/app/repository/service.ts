@@ -240,7 +240,7 @@ export function RenameArchive(id: number, prefix: string, name: string): $Cancel
     return $Call.ByID(1548605398, id, prefix, name);
 }
 
-export function RunBorgDelete(bId: types$0.BackupId, location: string, password: string, prefix: string): $CancellablePromise<$models.DeleteResult> {
+export function RunBorgDelete(bId: types$0.BackupId, location: string, password: string, prefix: string): $CancellablePromise<types$0.DeleteResult> {
     return $Call.ByID(2228910016, bId, location, password, prefix);
 }
 

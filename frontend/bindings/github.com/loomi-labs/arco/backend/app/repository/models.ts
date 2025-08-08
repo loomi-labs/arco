@@ -45,17 +45,6 @@ export class BackupProfileFilter {
     }
 }
 
-export enum DeleteResult {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    DeleteResultSuccess = "success",
-    DeleteResultCancelled = "cancelled",
-    DeleteResultError = "error",
-};
-
 export class ExaminePruningResult {
     "BackupID": types$0.BackupId;
     "RepositoryName": string;

@@ -1,17 +1,19 @@
-package app
+package backup_profile
 
 import (
+	"context"
 	"fmt"
+	"time"
+
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/negrel/assert"
-	"time"
 )
 
-func (a *App) startScheduleChangeListener() {
-	a.log.Debug("Starting schedule change listener")
+func (s *Service) StartScheduleChangeListener() {
+	s.log.Debug("Starting schedule change listener")
 	var timers []*time.Timer
 
 	// Clean up timers when function exits
@@ -22,24 +24,24 @@ func (a *App) startScheduleChangeListener() {
 	}()
 
 	// Check if channel is nil (used in tests)
-	if a.backupScheduleChangedCh == nil {
-		a.log.Debug("Backup schedule change channel is nil, exiting listener")
+	if s.backupScheduleChangedCh == nil {
+		s.log.Debug("Backup schedule change channel is nil, exiting listener")
 		return
 	}
 
 	for {
 		select {
-		case <-a.ctx.Done():
-			a.log.Debug("Schedule change listener stopped due to context cancellation")
+		case <-s.ctx.Done():
+			s.log.Debug("Schedule change listener stopped due to context cancellation")
 			return
-		case <-a.backupScheduleChangedCh:
+		case <-s.backupScheduleChangedCh:
 			// Stop all scheduled backups
 			for _, t := range timers {
 				t.Stop()
 			}
 
 			// Schedule all backups
-			timers = a.scheduleBackups()
+			timers = s.scheduleBackups(s.ctx)
 		}
 	}
 }
@@ -48,13 +50,13 @@ func (a *App) startScheduleChangeListener() {
 /********** Backup Scheduling ******/
 /***********************************/
 
-func (a *App) scheduleBackups() []*time.Timer {
-	a.log.Info("Scheduling backups")
+func (s *Service) scheduleBackups(ctx context.Context) []*time.Timer {
+	s.log.Info("Scheduling backups")
 
-	allBs, err := a.getBackupSchedules()
+	allBs, err := s.getBackupSchedules(ctx)
 	if err != nil {
-		a.log.Errorf("Failed to get backup schedules: %s", err)
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
+		s.log.Errorf("Failed to get backup schedules: %s", err)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get backup schedules: %s", err), types.LevelError)
 		return nil
 	}
 
@@ -69,14 +71,14 @@ func (a *App) scheduleBackups() []*time.Timer {
 				BackupProfileId: backupProfileId,
 				RepositoryId:    r.ID,
 			}
-			timer := a.scheduleBackup(bs, backupId)
+			timer := s.scheduleBackup(bs, backupId)
 			timers = append(timers, timer)
 		}
 	}
 	return timers
 }
 
-func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *time.Timer {
+func (s *Service) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *time.Timer {
 	// Calculate the duration until the next backup
 	durationUntilNextBackup := time.Until(bs.NextRun)
 	if durationUntilNextBackup < 0 {
@@ -87,53 +89,53 @@ func (a *App) scheduleBackup(bs *ent.BackupSchedule, backupId types.BackupId) *t
 	// Schedule the backup
 	updatedAt := bs.UpdatedAt
 	timer := time.AfterFunc(durationUntilNextBackup, func() {
-		a.runScheduledBackup(bs, backupId, updatedAt)
+		s.runScheduledBackup(bs, backupId, updatedAt)
 	})
-	a.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
+	s.log.Info(fmt.Sprintf("Scheduled backup %s in %s", backupId, durationUntilNextBackup))
 	return timer
 }
 
-func (a *App) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId, updatedAt time.Time) {
+func (s *Service) runScheduledBackup(bs *ent.BackupSchedule, backupId types.BackupId, updatedAt time.Time) {
 	// Check if the backup schedule still exists
 	// This is necessary because the backup schedule might have been deleted or modified (modified -> deleted and recreated)
-	exist, err := a.db.BackupSchedule.
+	exist, err := s.db.BackupSchedule.
 		Query().
 		Where(backupschedule.And(
 			backupschedule.ID(bs.ID),
 			backupschedule.UpdatedAtEQ(updatedAt),
 		)).
-		Exist(a.ctx)
+		Exist(s.ctx)
 	if err != nil {
-		a.log.Error(fmt.Sprintf("Failed to check if backup schedule exists: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to check if backup schedule exists: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 		return
 	}
 	if !exist {
-		a.log.Infof("Backup schedule %d does not exist anymore, skipping", bs.ID)
+		s.log.Infof("Backup schedule %d does not exist anymore, skipping", bs.ID)
 		return
 	}
 
 	// Run the backup
-	a.log.Infof("Running scheduled backup for %s", backupId)
+	s.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err = a.repositoryService.StartBackupJobs(a.ctx, []types.BackupId{backupId})
+	err = s.repositoryService.StartBackupJobs(s.ctx, []types.BackupId{backupId})
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
-		a.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to run scheduled backup: %s", err), types.LevelError)
 	} else {
 		lastRunStatus = "started"
 	}
-	updated, err := a.updateBackupSchedule(bs, lastRunStatus)
+	updated, err := s.updateBackupSchedule(bs, lastRunStatus)
 	if err != nil {
-		a.log.Error(fmt.Sprintf("Failed to save backup run: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to save backup run: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to save backup run: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to save backup run: %s", err), types.LevelError)
 	} else {
-		a.scheduleBackup(updated, backupId)
+		s.scheduleBackup(updated, backupId)
 	}
 }
 
-func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string) (*ent.BackupSchedule, error) {
+func (s *Service) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string) (*ent.BackupSchedule, error) {
 	lastRunTime := time.Now()
 	update := bs.Update()
 	update.SetLastRun(lastRunTime)
@@ -144,19 +146,19 @@ func (a *App) updateBackupSchedule(bs *ent.BackupSchedule, lastRunStatus string)
 	if err != nil {
 		return nil, err
 	}
-	a.log.Debugf("Next run in %s", time.Until(nextBackupTime))
+	s.log.Debugf("Next run in %s", time.Until(nextBackupTime))
 	update.SetNextRun(nextBackupTime)
-	return update.Save(a.ctx)
+	return update.Save(s.ctx)
 }
 
-func (a *App) getBackupSchedules() ([]*ent.BackupSchedule, error) {
-	return a.db.BackupSchedule.
+func (s *Service) getBackupSchedules(ctx context.Context) ([]*ent.BackupSchedule, error) {
+	return s.db.BackupSchedule.
 		Query().
 		Where(backupschedule.ModeNEQ(backupschedule.ModeDisabled)).
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithRepositories()
 		}).
-		All(a.ctx)
+		All(ctx)
 }
 
 func weekdayToTimeWeekday(weekday backupschedule.Weekday) time.Weekday {
@@ -276,8 +278,8 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 /********** Prune Scheduling *******/
 /***********************************/
 
-func (a *App) startPruneScheduleChangeListener() {
-	a.log.Debug("Starting prune schedule change listener")
+func (s *Service) StartPruneScheduleChangeListener() {
+	s.log.Debug("Starting prune schedule change listener")
 	var timers []*time.Timer
 
 	// Clean up timers when function exits
@@ -288,35 +290,35 @@ func (a *App) startPruneScheduleChangeListener() {
 	}()
 
 	// Check if channel is nil (used in tests)
-	if a.pruningScheduleChangedCh == nil {
-		a.log.Debug("Pruning schedule change channel is nil, exiting listener")
+	if s.pruningScheduleChangedCh == nil {
+		s.log.Debug("Pruning schedule change channel is nil, exiting listener")
 		return
 	}
 
 	for {
 		select {
-		case <-a.ctx.Done():
-			a.log.Debug("Prune schedule change listener stopped due to context cancellation")
+		case <-s.ctx.Done():
+			s.log.Debug("Prune schedule change listener stopped due to context cancellation")
 			return
-		case <-a.pruningScheduleChangedCh:
+		case <-s.pruningScheduleChangedCh:
 			// Stop all scheduled prunes
 			for _, t := range timers {
 				t.Stop()
 			}
 
 			// Schedule all prunes
-			timers = a.schedulePrunes()
+			timers = s.schedulePrunes(s.ctx)
 		}
 	}
 }
 
-func (a *App) schedulePrunes() []*time.Timer {
-	a.log.Info("Scheduling prunes")
+func (s *Service) schedulePrunes(ctx context.Context) []*time.Timer {
+	s.log.Info("Scheduling prunes")
 
-	pruningRules, err := a.getPruningRules()
+	pruningRules, err := s.getPruningRules(ctx)
 	if err != nil {
-		a.log.Errorf("Failed to get pruning schedules: %s", err)
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to get pruning rules: %s", err), types.LevelError)
+		s.log.Errorf("Failed to get pruning schedules: %s", err)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get pruning rules: %s", err), types.LevelError)
 		return nil
 	}
 
@@ -331,14 +333,14 @@ func (a *App) schedulePrunes() []*time.Timer {
 				BackupProfileId: backupProfileId,
 				RepositoryId:    r.ID,
 			}
-			timer := a.schedulePrune(pruningRule, pruneId)
+			timer := s.schedulePrune(pruningRule, pruneId)
 			timers = append(timers, timer)
 		}
 	}
 	return timers
 }
 
-func (a *App) schedulePrune(ps *ent.PruningRule, backupId types.BackupId) *time.Timer {
+func (s *Service) schedulePrune(ps *ent.PruningRule, backupId types.BackupId) *time.Timer {
 	// Calculate the duration until the next prune
 	durationUntilNextPrune := time.Until(ps.NextRun)
 	if durationUntilNextPrune < 0 {
@@ -349,76 +351,76 @@ func (a *App) schedulePrune(ps *ent.PruningRule, backupId types.BackupId) *time.
 	// Schedule the prune
 	updatedAt := ps.UpdatedAt
 	timer := time.AfterFunc(durationUntilNextPrune, func() {
-		a.runScheduledPrune(ps, backupId, updatedAt)
+		s.runScheduledPrune(ps, backupId, updatedAt)
 	})
-	a.log.Info(fmt.Sprintf("Scheduled prune %s in %s", backupId, durationUntilNextPrune))
+	s.log.Info(fmt.Sprintf("Scheduled prune %s in %s", backupId, durationUntilNextPrune))
 	return timer
 }
 
-func (a *App) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, updatedAt time.Time) {
+func (s *Service) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId, updatedAt time.Time) {
 	// Check if the prune schedule still exists and has not been modified
-	exist, err := a.db.PruningRule.
+	exist, err := s.db.PruningRule.
 		Query().
 		Where(pruningrule.And(
 			pruningrule.ID(ps.ID),
 			pruningrule.UpdatedAtEQ(updatedAt),
 		)).
-		Exist(a.ctx)
+		Exist(s.ctx)
 	if err != nil {
-		a.log.Error(fmt.Sprintf("Failed to check if prune schedule exists: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to check if prune schedule exists: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
 		return
 	}
 	if !exist {
-		a.log.Infof("Prune schedule %d does not exist anymore or has been modified, skipping", ps.ID)
+		s.log.Infof("Prune schedule %d does not exist anymore or has been modified, skipping", ps.ID)
 		return
 	}
 
 	// Run the prune
-	a.log.Infof("Running scheduled prune for %s", backupId)
+	s.log.Infof("Running scheduled prune for %s", backupId)
 	var lastRunStatus string
-	err = a.repositoryService.StartPruneJob(a.ctx, backupId)
+	err = s.repositoryService.StartPruneJob(s.ctx, backupId)
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
-		a.log.Error(fmt.Sprintf("Failed to run scheduled prune: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to run scheduled prune: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to run scheduled prune: %s", err), types.LevelError)
 	} else {
 		lastRunStatus = "started"
 	}
-	updated, err := a.updatePruningRule(ps, lastRunStatus)
+	updated, err := s.updatePruningRule(ps, lastRunStatus)
 	if err != nil {
-		a.log.Error(fmt.Sprintf("Failed to save prune run: %s", err))
-		a.state.AddNotification(a.ctx, fmt.Sprintf("Failed to save prune run: %s", err), types.LevelError)
+		s.log.Error(fmt.Sprintf("Failed to save prune run: %s", err))
+		s.state.AddNotification(s.ctx, fmt.Sprintf("Failed to save prune run: %s", err), types.LevelError)
 	} else {
-		a.schedulePrune(updated, backupId)
+		s.schedulePrune(updated, backupId)
 	}
 }
 
-func (a *App) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus string) (*ent.PruningRule, error) {
+func (s *Service) updatePruningRule(pruningRule *ent.PruningRule, lastRunStatus string) (*ent.PruningRule, error) {
 	lastRunTime := time.Now()
 	update := pruningRule.Update()
 	update.SetLastRun(lastRunTime)
 	if lastRunStatus != "" {
 		update.SetNillableLastRunStatus(&lastRunStatus)
 	}
-	backupSchedule, err := pruningRule.QueryBackupProfile().QueryBackupSchedule().First(a.ctx)
+	backupSchedule, err := pruningRule.QueryBackupProfile().QueryBackupSchedule().First(s.ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
 	nextPruneTime := getNextPruneTime(backupSchedule, lastRunTime)
 	update.SetNextRun(nextPruneTime)
-	return update.Save(a.ctx)
+	return update.Save(s.ctx)
 }
 
-func (a *App) getPruningRules() ([]*ent.PruningRule, error) {
-	return a.db.PruningRule.
+func (s *Service) getPruningRules(ctx context.Context) ([]*ent.PruningRule, error) {
+	return s.db.PruningRule.
 		Query().
 		WithBackupProfile(func(q *ent.BackupProfileQuery) {
 			q.WithRepositories()
 			q.WithBackupSchedule()
 		}).
 		Where(pruningrule.IsEnabledEQ(true)).
-		All(a.ctx)
+		All(ctx)
 }
 
 func getNextPruneTime(bs *ent.BackupSchedule, fromTime time.Time) time.Time {

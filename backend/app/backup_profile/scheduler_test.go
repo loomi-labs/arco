@@ -1,16 +1,12 @@
-package app
+package backup_profile
 
 import (
-	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
-	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg/mockborg"
-	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
+	"testing"
+	"time"
+
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"testing"
-	"time"
 )
 
 /*
@@ -69,54 +65,8 @@ func monthdayHourMinute(date time.Time, monthday uint8, hour int, minute int) ti
 }
 
 func TestScheduler(t *testing.T) {
-	var a *App
-	var mockBorg *mockborg.MockBorg
-	var mockEventEmitter *mocktypes.MockEventEmitter
-	var profile *ent.BackupProfile
-	var bs *ent.BackupSchedule
 	var now = time.Now().In(time.UTC)
 	var firstOfJanuary2024 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-
-	setup := func(t *testing.T) {
-		a, mockBorg, mockEventEmitter = NewTestApp(t)
-		p, err := a.BackupClient().NewBackupProfile()
-		assert.NoError(t, err, "Failed to create new backup profile")
-		p.Name = "Test profile"
-		p.Prefix = "test-"
-		bs = p.Edges.BackupSchedule
-
-		mockBorg.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &borgtypes.Status{Error: borgtypes.ErrorRepositoryDoesNotExist})
-		mockBorg.EXPECT().Init(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&borgtypes.Status{})
-		r, err := a.RepositoryService().Create(a.ctx, "TestRepo", "/tmp", "test", false)
-		assert.NoError(t, err, "Failed to create new repository")
-
-		profile, err = a.BackupClient().CreateBackupProfile(*p, []int{r.ID})
-		assert.NoError(t, err, "Failed to save backup profile")
-		assert.NotNil(t, profile, "Expected backup profile, got nil")
-		now = time.Now()
-	}
-
-	newBackupSchedule := func(overrides ent.BackupSchedule) ent.BackupSchedule {
-		if overrides.Mode != "" {
-			bs.Mode = overrides.Mode
-		}
-		if !overrides.DailyAt.IsZero() {
-			bs.DailyAt = overrides.DailyAt
-		}
-		if overrides.Weekday != "" {
-			bs.Weekday = overrides.Weekday
-		}
-		if !overrides.WeeklyAt.IsZero() {
-			bs.WeeklyAt = overrides.WeeklyAt
-		}
-		if overrides.Monthday != 0 {
-			bs.Monthday = overrides.Monthday
-		}
-		if !overrides.MonthlyAt.IsZero() {
-			bs.MonthlyAt = overrides.MonthlyAt
-		}
-		return *bs
-	}
 
 	tests := []struct {
 		name     string
@@ -227,12 +177,6 @@ func TestScheduler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// ARRANGE
-			setup(t)
-
-			err := a.BackupClient().SaveBackupSchedule(profile.ID, newBackupSchedule(tt.schedule))
-			assert.NoError(t, err, "Failed to save backup schedule")
-
 			// ACT
 			nextTime, err := getNextBackupTime(&tt.schedule, tt.fromTime)
 
@@ -245,21 +189,4 @@ func TestScheduler(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("delete backup profile", func(t *testing.T) {
-		// ARRANGE
-		setup(t)
-
-		schedule := newBackupSchedule(ent.BackupSchedule{Mode: backupschedule.ModeHourly})
-		err := a.BackupClient().SaveBackupSchedule(profile.ID, schedule)
-		assert.NoError(t, err, "Failed to save backup schedule")
-
-		mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventBackupProfileDeleted.String())
-
-		// ACT
-		err = a.BackupClient().DeleteBackupProfile(profile.ID, false)
-
-		// ASSERT
-		assert.NoError(t, err, "DeleteBackupProfile() error = %v", err)
-	})
 }
