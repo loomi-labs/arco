@@ -8,6 +8,8 @@ export {
 
 export {
     BackupProfileFilter,
+    DeleteResult,
+    ExaminePruningResult,
     PaginatedArchivesRequest,
     PaginatedArchivesResponse,
     PruningDate,
