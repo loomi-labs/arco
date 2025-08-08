@@ -7,7 +7,7 @@ import { Page } from "./router";
 import Navbar from "./components/Navbar.vue";
 import { computed, onUnmounted, ref, watchEffect } from "vue";
 import ArcoFooter from "./components/common/ArcoFooter.vue";
-import * as appClient from "../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
 import { Events } from "@wailsio/runtime";
@@ -30,7 +30,7 @@ const isInitialized = computed(() => startupState.value.status === state.Startup
 
 async function getNotifications() {
   try {
-    const notifications = await appClient.GetNotifications();
+    const notifications = await userService.GetNotifications();
     for (const notification of notifications) {
       if (notification.level === "error") {
         toast.error(notification.message);
@@ -47,7 +47,7 @@ async function getNotifications() {
 
 async function goToNextPage() {
   try {
-    const env = await appClient.GetEnvVars();
+    const env = await userService.GetEnvVars();
     if (env.startPage) {
       await router.replace(env.startPage);
     } else {
@@ -61,7 +61,7 @@ async function goToNextPage() {
 async function getStartupState() {
   try {
     await initializeFeatureFlags();
-    startupState.value = await appClient.GetStartupState();
+    startupState.value = await userService.GetStartupState();
   } catch (error: unknown) {
     await showAndLogError("Failed to get startup state", error);
   }

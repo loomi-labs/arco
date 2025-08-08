@@ -13,7 +13,7 @@ import { backupProfileDeletedEvent } from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
-import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
@@ -45,7 +45,7 @@ async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is Repository => repo !== null);
-    settings.value = await appClient.GetSettings() ?? ent.Settings.createFrom();
+    settings.value = await userService.GetSettings() ?? ent.Settings.createFrom();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
   }
@@ -55,7 +55,7 @@ async function welcomeModalClosed() {
   if (settings.value.showWelcome) {
     settings.value.showWelcome = false;
     try {
-      await appClient.SaveSettings(settings.value);
+      await userService.SaveSettings(settings.value);
     } catch (error: unknown) {
       await showAndLogError("Failed to save settings", error);
     }

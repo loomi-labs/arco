@@ -3,8 +3,8 @@ import { ref } from "vue";
 import { showAndLogError } from "../../common/logger";
 import { useToast } from "vue-toastification";
 
-import * as appClient from "../../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import type * as app from "../../../bindings/github.com/loomi-labs/arco/backend/app";
+import * as userService from "../../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
+import type * as user from "../../../bindings/github.com/loomi-labs/arco/backend/app/user";
 
 import {Browser} from "@wailsio/runtime";
 
@@ -13,7 +13,7 @@ import {Browser} from "@wailsio/runtime";
  ************/
 
 const toast = useToast();
-const appInfo = ref<app.AppInfo | null>(null);
+const appInfo = ref<user.AppInfo | null>(null);
 
 /************
  * Functions
@@ -21,7 +21,7 @@ const appInfo = ref<app.AppInfo | null>(null);
 
 async function getAppInfo() {
   try {
-    appInfo.value = await appClient.GetAppInfo();
+    appInfo.value = await userService.GetAppInfo();
   } catch (error) {
     await showAndLogError("Failed to get app info", error);
   }
