@@ -48,7 +48,7 @@ var binaries = []types.BorgBinary{
 }
 
 func initLogger(configDir string) *zap.SugaredLogger {
-	if app.EnvVarDevelopment.Bool() {
+	if types.EnvVarDevelopment.Bool() {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
@@ -71,7 +71,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 
 		// Create a production config
 		config := zap.NewProductionConfig()
-		if app.EnvVarDebug.Bool() {
+		if types.EnvVarDebug.Bool() {
 			config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 		}
 
@@ -122,14 +122,14 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		}
 	}
 
-	version, err := semver.NewVersion(app.Version)
+	version, err := semver.NewVersion(types.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version: %w", err)
 	}
 
-	cloudRPCURL := app.EnvVarCloudRPCURL.String()
+	cloudRPCURL := types.EnvVarCloudRPCURL.String()
 	if cloudRPCURL == "" {
-		if app.EnvVarDevelopment.Bool() {
+		if types.EnvVarDevelopment.Bool() {
 			cloudRPCURL = "http://localhost:8080"
 		} else {
 			cloudRPCURL = "https://api.arco-backup.com"
@@ -190,7 +190,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		Name:        app.Name,
 		Description: "Arco is a backup tool.",
 		Services: []application.Service{
-			application.NewService(arco.AppClient()),
+			application.NewService(arco.UserService()),
 			application.NewService(arco.BackupProfileService()),
 			application.NewService(arco.RepositoryService()),
 			application.NewService(arco.AuthService()),
@@ -281,7 +281,7 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to get version flag: %w", err)
 		}
 		if showVersion {
-			fmt.Printf("%s %s\n", app.Name, app.Version)
+			fmt.Printf("%s %s\n", app.Name, types.Version)
 			return nil
 		}
 

@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"fmt"
+	"os"
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -10,6 +11,32 @@ import (
 )
 
 const WindowTitle = "Arco"
+
+var (
+	Version = "v0.0.0"
+)
+
+type EnvVar string
+
+const (
+	EnvVarDebug           EnvVar = "ARCO_DEBUG"
+	EnvVarDevelopment     EnvVar = "ARCO_DEVELOPMENT"
+	EnvVarStartPage       EnvVar = "ARCO_START_PAGE"
+	EnvVarCloudRPCURL     EnvVar = "ARCO_CLOUD_RPC_URL"
+	EnvVarEnableLoginBeta EnvVar = "ARCO_ENABLE_LOGIN_BETA"
+)
+
+func (e EnvVar) Name() string {
+	return string(e)
+}
+
+func (e EnvVar) String() string {
+	return os.Getenv(e.Name())
+}
+
+func (e EnvVar) Bool() bool {
+	return os.Getenv(e.Name()) == "true"
+}
 
 // FrontendError is the error type that is received from the frontend
 type FrontendError struct {

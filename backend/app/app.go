@@ -26,6 +26,7 @@ import (
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/app/user"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
@@ -40,31 +41,6 @@ const (
 	Name = "Arco"
 )
 
-var (
-	Version = "v0.0.0"
-)
-
-type EnvVar string
-
-const (
-	EnvVarDebug           EnvVar = "ARCO_DEBUG"
-	EnvVarDevelopment     EnvVar = "ARCO_DEVELOPMENT"
-	EnvVarStartPage       EnvVar = "ARCO_START_PAGE"
-	EnvVarCloudRPCURL     EnvVar = "ARCO_CLOUD_RPC_URL"
-	EnvVarEnableLoginBeta EnvVar = "ARCO_ENABLE_LOGIN_BETA"
-)
-
-func (e EnvVar) Name() string {
-	return string(e)
-}
-
-func (e EnvVar) String() string {
-	return os.Getenv(e.Name())
-}
-
-func (e EnvVar) Bool() bool {
-	return os.Getenv(e.Name()) == "true"
-}
 
 type App struct {
 	// Init
@@ -81,6 +57,7 @@ type App struct {
 	ctx                  context.Context
 	cancel               context.CancelFunc
 	db                   *ent.Client
+	userService          *user.ServiceInternal
 	authService          *auth.ServiceInternal
 	planService          *plan.ServiceInternal
 	subscriptionService  *subscription.ServiceInternal
@@ -104,6 +81,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		userService:              user.NewService(log, state),
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
@@ -112,11 +90,9 @@ func NewApp(
 	}
 }
 
-// These clients separate the different types of operations that can be performed with the Borg client
-// This makes it easier to expose them in a clean way to the frontend
-
-// AppClient is a client for application related operations
-type AppClient App
+func (a *App) UserService() *user.Service {
+	return a.userService.Service
+}
 
 func (a *App) BackupProfileService() *backup_profile.Service {
 	return a.backupProfileService.Service
@@ -124,10 +100,6 @@ func (a *App) BackupProfileService() *backup_profile.Service {
 
 func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
-}
-
-func (a *App) AppClient() *AppClient {
-	return (*AppClient)(a)
 }
 
 func (a *App) AuthService() *auth.Service {
@@ -207,6 +179,7 @@ func (a *App) Startup(ctx context.Context) {
 	)
 
 	// Initialize services with database and authenticated RPC clients
+	a.userService.Init(a.db)
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
@@ -314,7 +287,7 @@ func (a *App) startArcoCloudSyncListener() {
 }
 
 func (a *App) updateArco() (bool, error) {
-	if EnvVarDevelopment.Bool() {
+	if types.EnvVarDevelopment.Bool() {
 		a.log.Info("Development mode enabled, skipping update check")
 		return false, nil
 	}
@@ -558,13 +531,4 @@ func (a *App) installBorgBinary() error {
 
 	// Download the binary
 	return util.DownloadFile(a.config.BorgPath, binary.Url)
-}
-
-// rollback calls to tx.Rollback and wraps the given error
-// with the rollback error if occurred.
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: %v", err, rerr)
-	}
-	return err
 }
