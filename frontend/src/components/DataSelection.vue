@@ -10,7 +10,7 @@ import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
 import FormField from "./common/FormField.vue";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 
 /************

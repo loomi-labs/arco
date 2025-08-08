@@ -25,7 +25,7 @@ import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
-import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
 
 /************
@@ -69,8 +69,8 @@ const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
 >(confirmDeleteMultipleModalKey);
-const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
-const backupProfileFilter = ref<app.BackupProfileFilter>();
+const backupProfileFilterOptions = ref<BackupProfileFilter[]>([]);
+const backupProfileFilter = ref<BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
 const pruningDates = ref<repoService.PruningDates>(repoService.PruningDates.createFrom());
@@ -112,7 +112,7 @@ async function getPaginatedArchives() {
 
     // Optional
     if (props.backupProfileId) {
-      request.backupProfileFilter = app.BackupProfileFilter.createFrom();
+      request.backupProfileFilter = BackupProfileFilter.createFrom();
       request.backupProfileFilter.id = props.backupProfileId;
     } else {
       request.backupProfileFilter = backupProfileFilter.value;
@@ -504,9 +504,9 @@ onUnmounted(() => {
                 </span>
                 <label>
                   <vue-tailwind-datepicker v-model='dateRange'
-                                          :formatter='formatter'
-                                          :shortcuts='customDateRangeShortcuts'
-                                          input-classes='input input-bordered placeholder-transparent' />
+                                           :formatter='formatter'
+                                           :shortcuts='customDateRangeShortcuts'
+                                           input-classes='input input-bordered placeholder-transparent' />
                 </label>
               </label>
 
@@ -595,7 +595,8 @@ onUnmounted(() => {
           <td>
             <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
               <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
-toRelativeTimeString(archive.createdAt) }}</span>
+                  toRelativeTimeString(archive.createdAt)
+                }}</span>
             </span>
           </td>
           <!-- Duration -->
@@ -647,7 +648,8 @@ toRelativeTimeString(archive.createdAt) }}</span>
           <ChevronLeftIcon class='size-6' />
         </button>
         <span class='mx-4'>{{ pagination.page }}/{{
-Math.ceil(pagination.total / pagination.pageSize) }}</span>
+            Math.ceil(pagination.total / pagination.pageSize)
+          }}</span>
         <button class='btn btn-ghost'
                 :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
                 @click='pagination.page++; getPaginatedArchives()'>

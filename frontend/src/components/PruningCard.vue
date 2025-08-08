@@ -10,6 +10,8 @@ import { useToast } from "vue-toastification";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import type * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { PruningOption } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
+import { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 
 /************
@@ -51,8 +53,8 @@ const emitUpdatePruningRule = "update:pruningRule";
 const router = useRouter();
 const toast = useToast();
 const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
-const pruningOptions = ref<app.PruningOption[]>([]);
-const selectedPruningOption = ref<app.PruningOption | undefined>(undefined);
+const pruningOptions = ref<PruningOption[]>([]);
+const selectedPruningOption = ref<PruningOption | undefined>(undefined);
 const confirmSaveModalKey = useId();
 const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmSaveModalKey);
 const wantToGoRoute = ref<string | undefined>(undefined);
@@ -139,7 +141,7 @@ async function savePruningRule() {
   }
 }
 
-async function examinePrunes(saveResults: boolean): Promise<Array<app.ExaminePruningResult> | undefined> {
+async function examinePrunes(saveResults: boolean): Promise<Array<ExaminePruningResult> | undefined> {
   try {
     isExaminingPrunes.value = true;
     cleanupImpact.value = { Summary: "", Rows: [], ShowWarning: false, AskForSave: false };
@@ -159,7 +161,7 @@ function toArchiveText(cnt: number) {
   return `${cnt} archives`;
 }
 
-function toCleanupImpact(result: Array<app.ExaminePruningResult>): CleanupImpact {
+function toCleanupImpact(result: Array<ExaminePruningResult>): CleanupImpact {
   const rows: CleanupImpactRow[] = result.map((r) => {
     if (r.Error) {
       return { RepositoryName: r.RepositoryName, Impact: "unknown" };

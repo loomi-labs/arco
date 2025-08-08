@@ -9,7 +9,7 @@ import { capitalizeFirstLetter } from "../common/util";
 import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 
 /************
