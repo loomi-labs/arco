@@ -2,6 +2,10 @@ package app
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/repository"
@@ -11,9 +15,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmitter) {
@@ -63,15 +64,15 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 	a.db = db
 
 	// Initialize repository service with required dependencies for tests
-	// Create a cloud repository service for testing
-	cloudRepositoryServiceInternal := repository.NewCloudRepositoryService(a.log, a.state, config)
-	cloudRepositoryServiceInternal.Init(db, nil) // Pass nil for RPC client in tests
+	// Create a cloud repository client for testing
+	cloudRepositoryClient := repository.NewCloudRepositoryClient(a.log, a.state, config)
+	cloudRepositoryClient.Init(db, nil) // Pass nil for RPC client in tests
 	a.repositoryService.Init(
 		db,
 		mockBorg,
 		config,
 		mockEventEmitter,
-		cloudRepositoryServiceInternal.CloudRepositoryService,
+		cloudRepositoryClient,
 	)
 
 	// Add cleanup function to test to ensure context is cancelled

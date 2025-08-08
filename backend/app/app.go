@@ -211,7 +211,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
 	// Create cloud repository service first
-	cloudRepositoryService := repository.NewCloudRepositoryService(a.log, a.state, a.config)
+	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
 	// Initialize repository service with full dependencies
@@ -220,7 +220,7 @@ func (a *App) Startup(ctx context.Context) {
 		a.borg,
 		a.config,
 		a.eventEmitter,
-		cloudRepositoryService.CloudRepositoryService,
+		cloudRepositoryService,
 	)
 
 	// Ensure Borg binary is installed
