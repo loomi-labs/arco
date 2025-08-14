@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/ent"
 	"log/slog"
 	"time"
+
+	"github.com/loomi-labs/arco/backend/ent"
 )
 
 // WithTx executes a function within a database transaction
@@ -24,7 +25,7 @@ func WithTxData[T any](ctx context.Context, client *ent.Client, fn func(tx *ent.
 	tx, err := client.Tx(ctx)
 	if err != nil {
 		slog.Error("failed to begin database transaction", "error", err)
-		return data, err
+		return data, fmt.Errorf("begin database transaction: %w", err)
 	}
 
 	defer func() {
