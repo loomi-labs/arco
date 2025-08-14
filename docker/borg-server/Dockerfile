@@ -41,9 +41,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create borg user and directories
-RUN groupadd -g 1000 borg && \
-    useradd -m -u 1000 -g borg -s /bin/bash borg && \
+# Create borg user and directories (handle existing user/group conflicts)
+RUN if ! getent group borg; then \
+        if getent group 1000; then \
+            groupadd -g 1001 borg; \
+        else \
+            groupadd -g 1000 borg; \
+        fi; \
+    fi && \
+    if ! getent passwd borg; then \
+        if getent passwd 1000; then \
+            useradd -m -u 1001 -g borg -s /bin/bash borg; \
+        else \
+            useradd -m -u 1000 -g borg -s /bin/bash borg; \
+        fi; \
+    fi && \
     mkdir -p /home/borg/.ssh /home/borg/repositories /var/run/sshd && \
     chown -R borg:borg /home/borg && \
     chmod 700 /home/borg/.ssh && \
