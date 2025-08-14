@@ -3,11 +3,11 @@ package types
 import (
 	"context"
 	"fmt"
-	"os"
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"io/fs"
+	"os"
 )
 
 const WindowTitle = "Arco"
@@ -78,7 +78,7 @@ type DeleteResult string
 
 const (
 	DeleteResultSuccess   DeleteResult = "success"
-	DeleteResultCancelled DeleteResult = "cancelled" 
+	DeleteResultCancelled DeleteResult = "cancelled"
 	DeleteResultError     DeleteResult = "error"
 )
 
