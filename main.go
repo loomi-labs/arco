@@ -3,12 +3,13 @@ package main
 import (
 	"embed"
 	"fmt"
+	"io"
+	"io/fs"
+
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/cmd"
 	_ "github.com/loomi-labs/arco/backend/ent/runtime" // required to allow cyclic imports
 	_ "github.com/mattn/go-sqlite3"
-	"io"
-	"io/fs"
 )
 
 //go:embed all:frontend/dist

@@ -294,20 +294,6 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		// Check if show-borg-url flag is set
-		showBorgUrl, err := cmd.Flags().GetBool(borgUrlFlag)
-		if err != nil {
-			return fmt.Errorf("failed to get show-borg-url flag: %w", err)
-		}
-		if showBorgUrl {
-			binary, err := platform.GetLatestBorgBinary(platform.Binaries)
-			if err != nil {
-				return fmt.Errorf("failed to get borg binary: %w", err)
-			}
-			fmt.Println(binary.Url)
-			return nil
-		}
-
 		configDir, err := cmd.Flags().GetString(configFlag)
 		if err != nil {
 			return fmt.Errorf("failed to get config flag: %w", err)
@@ -374,7 +360,6 @@ const hiddenFlag = "hidden"
 const uniqueRunIdFlag = "unique-run-id"
 const autoUpdateFlag = "auto-update"
 const versionFlag = "version"
-const borgUrlFlag = "show-borg-url"
 
 func init() {
 	rootCmd.PersistentFlags().StringP(configFlag, "c", "", "config path (default is $HOME/.config/arco/)")
@@ -382,5 +367,4 @@ func init() {
 	rootCmd.PersistentFlags().String(uniqueRunIdFlag, "", "unique run id. Only one instance of Arco can run with the same id")
 	rootCmd.PersistentFlags().Bool(autoUpdateFlag, true, "enable auto update (default is true)")
 	rootCmd.PersistentFlags().BoolP(versionFlag, "v", false, "print version information and exit")
-	rootCmd.PersistentFlags().Bool(borgUrlFlag, false, "print borg download URL for current system and exit")
 }
