@@ -13,6 +13,8 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/enttest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 /*
@@ -86,8 +88,8 @@ func newTestBackupProfileService(t *testing.T) (*Service, *ent.Client, context.C
 	log, _ := zap.NewDevelopment()
 	sugarLog := log.Sugar()
 
-	// Create state and config
-	state := &state.State{}
+	// Create st and config
+	st := &state.State{}
 	config := &types.Config{}
 
 	// Create context
@@ -99,7 +101,7 @@ func newTestBackupProfileService(t *testing.T) (*Service, *ent.Client, context.C
 	mockEmitter := &mockEventEmitter{}
 
 	// Create service
-	serviceInternal := NewService(sugarLog, state, config)
+	serviceInternal := NewService(sugarLog, st, config)
 	serviceInternal.Init(ctx, db, mockEmitter, make(chan struct{}, 1), make(chan struct{}, 1), mockRepoService)
 
 	return serviceInternal.Service, db, ctx
