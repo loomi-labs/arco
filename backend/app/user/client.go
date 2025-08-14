@@ -60,7 +60,7 @@ func (s *Service) HandleError(ctx context.Context, msg string, fErr *types.Front
 
 	// We don't want to show the stack trace from the go code because the error comes from the frontend
 	s.log.WithOptions(zap.AddCallerSkip(9999999)).
-		Errorf(fmt.Sprintf("%s: %s", msg, errStr))
+		Errorf("%s: %s", msg, errStr)
 }
 
 func (s *Service) GetNotifications(ctx context.Context) []types.Notification {
