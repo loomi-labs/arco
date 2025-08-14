@@ -40,6 +40,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// ============================================================================
+// SERVICE INFRASTRUCTURE
+// ============================================================================
+
 // Service contains the business logic and provides methods exposed to the frontend
 type Service struct {
 	log          *zap.SugaredLogger
@@ -96,13 +100,126 @@ func (s *Service) isCloudRepository(ctx context.Context, repoId int) bool {
 	return exists
 }
 
-// rollback helper function for transactions
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
-	}
-	return err
+// doesRepoNeedFixing checks if repository has errors that need fixing
+func (s *Service) doesRepoNeedFixing(repoId int) bool {
+	return s.state.GetRepoState(repoId).ErrorType != state.RepoErrorTypeNone
 }
+
+// handleBorgStatus handles common Borg status errors and updates repository error state accordingly
+func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, status *borgtypes.Status, operationName string) error {
+	if status == nil {
+		return nil
+	}
+
+	// Handle special case where repo is nil (initialization errors)
+	if repo == nil {
+		if status.HasError() {
+			s.log.Errorf("Failed to %s during initialization: %s", operationName, status.GetError())
+			return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
+		}
+		return nil
+	}
+
+	repoId := repo.ID
+	if status.HasError() {
+		if status.HasBeenCanceled {
+			s.log.Warnf("Operation %s was cancelled for repository %d", operationName, repoId)
+			return fmt.Errorf("%s was cancelled", operationName)
+		}
+
+		// Check for specific error types and update state accordingly
+		if errors.Is(status.Error, borgtypes.ErrorConnectionClosedWithHint) {
+			s.log.Errorf("SSH key authentication failed for repository %d during %s: %s", repoId, operationName, status.GetError())
+
+			// Determine error action based on repository type
+			var errorAction state.RepoErrorAction
+			if s.isCloudRepository(ctx, repo.ID) {
+				errorAction = state.RepoErrorActionRegenerateSSH
+			} else {
+				errorAction = state.RepoErrorActionNone
+			}
+
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeSSHKey, "SSH key authentication failed", errorAction)
+			return fmt.Errorf("SSH key authentication failed: %s", status.GetError())
+		}
+		if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
+			s.log.Errorf("Incorrect passphrase for repository %d during %s: %s", repoId, operationName, status.GetError())
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypePassphrase, "Incorrect passphrase", state.RepoErrorActionNone)
+			return fmt.Errorf("incorrect passphrase: %s", status.GetError())
+		}
+		if errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			s.log.Errorf("Repository %d is locked during %s: %s", repoId, operationName, status.GetError())
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeLockTimeout, "Repository is locked", state.RepoErrorActionUnlockRepository)
+			return fmt.Errorf("repository is locked: %s", status.GetError())
+		}
+
+		s.log.Errorf("Failed to %s for repository %d: %s", operationName, repoId, status.GetError())
+		return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
+	} else if status.HasWarning() {
+		// Set warning state and log warning
+		s.log.Warnf("Operation %s completed with warning for repository %d: %s", operationName, repoId, status.GetWarning())
+		s.state.SetRepoWarningState(ctx, repoId, status.GetWarning())
+		// Clear error state since operation completed successfully with warning
+		s.state.ClearRepoErrorState(ctx, repoId)
+	} else if status.IsCompletedWithSuccess() {
+		// Clear any previous error and warning states on success
+		s.state.ClearRepoErrorState(ctx, repoId)
+		s.state.ClearRepoWarningState(ctx, repoId)
+	} else {
+		assert.Failf("Unexpected status %s", status.GetError())
+	}
+	return nil
+}
+
+// SetMountStates sets the mount states of all repositories and archives to the state
+// This method is called during app startup and doesn't need to be exposed to frontend
+func (si *ServiceInternal) SetMountStates(ctx context.Context) {
+	repos, err := si.All(ctx)
+	if err != nil {
+		si.log.Error("Error getting all repositories: ", err)
+		return
+	}
+	for _, repo := range repos {
+		// Save the mount state for the repository
+		path, err := getRepoMountPath(repo)
+		if err != nil {
+			return
+		}
+		mountState, err := getMountState(path)
+		if err != nil {
+			si.log.Error("Error getting mount state: ", err)
+			continue
+		}
+		si.state.SetRepoMount(ctx, repo.ID, &mountState)
+
+		// Save the mount states for all archives of the repository
+		archives, err := repo.QueryArchives().All(ctx)
+		if err != nil {
+			si.log.Error("Error getting all archives: ", err)
+			continue
+		}
+		var paths = make(map[int]string)
+		for _, arch := range archives {
+			archivePath, err := getArchiveMountPath(arch)
+			if err != nil {
+				si.log.Error("Error getting archive mount path: ", err)
+				continue
+			}
+			paths[arch.ID] = archivePath
+		}
+
+		states, err := types.GetMountStates(paths)
+		if err != nil {
+			si.log.Error("Error getting mount states: ", err)
+			continue
+		}
+		si.state.SetArchiveMounts(ctx, repo.ID, states)
+	}
+}
+
+// ============================================================================
+// REPOSITORY CRUD OPERATIONS
+// ============================================================================
 
 func (s *Service) Get(ctx context.Context, repoId int) (*ent.Repository, error) {
 	s.mustHaveDB()
@@ -142,77 +259,6 @@ func (s *Service) All(ctx context.Context) ([]*ent.Repository, error) {
 		All(ctx)
 }
 
-func (s *Service) GetNbrOfArchives(ctx context.Context, repoId int) (int, error) {
-	s.mustHaveDB()
-	return s.db.Archive.
-		Query().
-		Where(archive.HasRepositoryWith(repository.ID(repoId))).
-		Count(ctx)
-}
-
-func (s *Service) GetLastBackupErrorMsg(ctx context.Context, repoId int) (string, error) {
-	s.mustHaveDB()
-	// Get the last notification for the backup profile and repository
-	// that is a failed backup run or failed pruning run
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasRepositoryWith(repository.ID(repoId)),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the error message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasRepositoryWith(repository.ID(repoId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
-}
-
-func (s *Service) GetLocked(ctx context.Context) ([]*ent.Repository, error) {
-	all, err := s.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	locked := make([]*ent.Repository, 0)
-	for _, repo := range all {
-		if s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeLockTimeout {
-			locked = append(locked, repo)
-		}
-	}
-	return locked, nil
-}
-
-func (s *Service) GetWithActiveMounts(ctx context.Context) ([]*ent.Repository, error) {
-	all, err := s.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	active := make([]*ent.Repository, 0)
-	for _, repo := range all {
-		if s.state.GetRepoState(repo.ID).Status == state.RepoStatusMounted {
-			active = append(active, repo)
-		}
-	}
-	return active, nil
-}
-
 func (s *Service) Create(ctx context.Context, name, location, password string, noPassword bool) (*ent.Repository, error) {
 	s.mustHaveDB()
 	s.log.Debugf("Creating repository %s at %s", name, location)
@@ -238,6 +284,107 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 		SetPassword(password).
 		Save(ctx)
 }
+
+func (s *Service) Update(ctx context.Context, repository *ent.Repository) (*ent.Repository, error) {
+	s.mustHaveDB()
+	s.log.Debugf("Updating repository %d", repository.ID)
+	return s.db.Repository.
+		UpdateOne(repository).
+		SetName(repository.Name).
+		Save(ctx)
+}
+
+// GetBackupProfilesThatHaveOnlyRepo returns all backup profiles that only have the given repository
+func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId int) ([]*ent.BackupProfile, error) {
+	s.mustHaveDB()
+	backupProfiles, err := s.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.HasRepositoriesWith(repository.ID(repoId)),
+		)).
+		WithRepositories().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var result []*ent.BackupProfile
+	for _, bp := range backupProfiles {
+		if len(bp.Edges.Repositories) == 1 {
+			result = append(result, bp)
+		}
+	}
+	return result, nil
+}
+
+// Remove deletes the repository with the given ID and all its backup profiles if they only have this repository
+// It does not delete the physical repository on disk
+func (s *Service) Remove(ctx context.Context, id int) error {
+	s.mustHaveDB()
+	s.log.Debugf("Removing repository %d", id)
+	backupProfiles, err := s.GetBackupProfilesThatHaveOnlyRepo(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+		if len(backupProfiles) > 0 {
+			bpIds := make([]int, 0, len(backupProfiles))
+			for _, bp := range backupProfiles {
+				bpIds = append(bpIds, bp.ID)
+			}
+
+			_, err = tx.BackupProfile.Delete().
+				Where(backupprofile.IDIn(bpIds...)).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return tx.Repository.
+			DeleteOneID(id).
+			Exec(ctx)
+	})
+}
+
+// Delete deletes the repository with the given ID and all its backup profiles if they only have this repository
+// It also deletes the physical repository on disk or cloud
+func (s *Service) Delete(ctx context.Context, id int) error {
+	s.mustHaveDB()
+	s.log.Debugf("Deleting repository %d", id)
+	repo, err := s.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Check if this is a cloud repository and route accordingly
+	if s.isCloudRepository(ctx, repo.ID) {
+		return s.cloudService.DeleteCloudRepository(ctx, repo.Edges.CloudRepository.CloudID)
+	}
+
+	// Handle local repository deletion
+	if canMount, reason := s.state.CanRunDeleteJob(repo.ID); !canMount {
+		return fmt.Errorf("cannot delete repository: %s", reason)
+	}
+
+	repoLock := s.state.GetRepoLock(repo.ID)
+	repoLock.Lock()         // We should not have to wait here since we checked the status before
+	defer repoLock.Unlock() // Unlock at the end
+
+	status := s.borg.DeleteRepository(ctx, repo.URL, repo.Password)
+	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) {
+		// If the repository does not exist, we can ignore the error
+		if status.HasBeenCanceled {
+			return fmt.Errorf("repository deletion was cancelled")
+		}
+		return fmt.Errorf("failed to delete repository: %s", status.GetError())
+	}
+	return s.Remove(ctx, id)
+}
+
+// ============================================================================
+// CLOUD REPOSITORY OPERATIONS
+// ============================================================================
 
 func (si *ServiceInternal) SyncCloudRepositories(ctx context.Context) ([]*ent.Repository, error) {
 	return si.syncCloudRepositories(ctx)
@@ -361,38 +508,6 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 	return result, nil
 }
 
-// RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
-func (s *Service) RegenerateSSHKey(ctx context.Context) error {
-	err := s.cloudService.AddOrReplaceSSHKey(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Get all repositories and clear SSH error states for cloud repositories
-	repos, err := s.All(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, repo := range repos {
-		if s.isCloudRepository(ctx, repo.ID) && s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeSSHKey {
-			s.state.ClearRepoErrorState(ctx, repo.ID)
-			s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
-		}
-	}
-
-	return nil
-}
-
-func (s *Service) ChangePassword(ctx context.Context, repoId int, password string) error {
-	// TODO: implement change password
-
-	s.state.ClearRepoErrorState(ctx, repoId)
-	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
-
-	return nil
-}
-
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*ent.Repository, error) {
 	// List existing cloud repositories to check if one already exists
@@ -448,107 +563,111 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	})
 }
 
-func (s *Service) Update(ctx context.Context, repository *ent.Repository) (*ent.Repository, error) {
-	s.mustHaveDB()
-	s.log.Debugf("Updating repository %d", repository.ID)
-	return s.db.Repository.
-		UpdateOne(repository).
-		SetName(repository.Name).
-		Save(ctx)
+// RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
+func (s *Service) RegenerateSSHKey(ctx context.Context) error {
+	err := s.cloudService.AddOrReplaceSSHKey(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get all repositories and clear SSH error states for cloud repositories
+	repos, err := s.All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range repos {
+		if s.isCloudRepository(ctx, repo.ID) && s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeSSHKey {
+			s.state.ClearRepoErrorState(ctx, repo.ID)
+			s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
+		}
+	}
+
+	return nil
 }
 
-// GetBackupProfilesThatHaveOnlyRepo returns all backup profiles that only have the given repository
-func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId int) ([]*ent.BackupProfile, error) {
+// ============================================================================
+// REPOSITORY STATE & STATUS
+// ============================================================================
+
+func (s *Service) GetNbrOfArchives(ctx context.Context, repoId int) (int, error) {
 	s.mustHaveDB()
-	backupProfiles, err := s.db.BackupProfile.
+	return s.db.Archive.
 		Query().
-		Where(backupprofile.And(
-			backupprofile.HasRepositoriesWith(repository.ID(repoId)),
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Count(ctx)
+}
+
+func (s *Service) GetLastBackupErrorMsg(ctx context.Context, repoId int) (string, error) {
+	s.mustHaveDB()
+	// Get the last notification for the backup profile and repository
+	// that is a failed backup run or failed pruning run
+	lastNotification, err := s.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasRepositoryWith(repository.ID(repoId)),
 		)).
-		WithRepositories().
-		All(ctx)
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := s.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasRepositoryWith(repository.ID(repoId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
+}
+
+func (s *Service) GetLocked(ctx context.Context) ([]*ent.Repository, error) {
+	all, err := s.All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var result []*ent.BackupProfile
-	for _, bp := range backupProfiles {
-		if len(bp.Edges.Repositories) == 1 {
-			result = append(result, bp)
+
+	locked := make([]*ent.Repository, 0)
+	for _, repo := range all {
+		if s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeLockTimeout {
+			locked = append(locked, repo)
 		}
 	}
-	return result, nil
+	return locked, nil
 }
 
-// Remove deletes the repository with the given ID and all its backup profiles if they only have this repository
-// It does not delete the physical repository on disk
-func (s *Service) Remove(ctx context.Context, id int) error {
-	s.mustHaveDB()
-	s.log.Debugf("Removing repository %d", id)
-	backupProfiles, err := s.GetBackupProfilesThatHaveOnlyRepo(ctx, id)
+func (s *Service) GetWithActiveMounts(ctx context.Context) ([]*ent.Repository, error) {
+	all, err := s.All(ctx)
 	if err != nil {
-		return err
-	}
-	tx, err := s.db.Tx(ctx)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if len(backupProfiles) > 0 {
-		bpIds := make([]int, 0, len(backupProfiles))
-		for _, bp := range backupProfiles {
-			bpIds = append(bpIds, bp.ID)
-		}
-
-		_, err = tx.BackupProfile.Delete().
-			Where(backupprofile.IDIn(bpIds...)).
-			Exec(ctx)
-		if err != nil {
-			return rollback(tx, err)
+	active := make([]*ent.Repository, 0)
+	for _, repo := range all {
+		if s.state.GetRepoState(repo.ID).Status == state.RepoStatusMounted {
+			active = append(active, repo)
 		}
 	}
-
-	err = tx.Repository.
-		DeleteOneID(id).
-		Exec(ctx)
-	if err != nil {
-		return rollback(tx, err)
-	}
-	return tx.Commit()
+	return active, nil
 }
 
-// Delete deletes the repository with the given ID and all its backup profiles if they only have this repository
-// It also deletes the physical repository on disk or cloud
-func (s *Service) Delete(ctx context.Context, id int) error {
-	s.mustHaveDB()
-	s.log.Debugf("Deleting repository %d", id)
-	repo, err := s.Get(ctx, id)
-	if err != nil {
-		return err
-	}
+func (s *Service) ChangePassword(ctx context.Context, repoId int, password string) error {
+	// TODO: implement change password
 
-	// Check if this is a cloud repository and route accordingly
-	if s.isCloudRepository(ctx, repo.ID) {
-		return s.cloudService.DeleteCloudRepository(ctx, repo.Edges.CloudRepository.CloudID)
-	}
+	s.state.ClearRepoErrorState(ctx, repoId)
+	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
 
-	// Handle local repository deletion
-	if canMount, reason := s.state.CanRunDeleteJob(repo.ID); !canMount {
-		return fmt.Errorf("cannot delete repository: %s", reason)
-	}
-
-	repoLock := s.state.GetRepoLock(repo.ID)
-	repoLock.Lock()         // We should not have to wait here since we checked the status before
-	defer repoLock.Unlock() // Unlock at the end
-
-	status := s.borg.DeleteRepository(ctx, repo.URL, repo.Password)
-	if !status.IsCompletedWithSuccess() && !errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) {
-		// If the repository does not exist, we can ignore the error
-		if status.HasBeenCanceled {
-			return fmt.Errorf("repository deletion was cancelled")
-		}
-		return fmt.Errorf("failed to delete repository: %s", status.GetError())
-	}
-	return s.Remove(ctx, id)
+	return nil
 }
 
 func endOfMonth(t time.Time) time.Time {
@@ -657,6 +776,10 @@ func (s *Service) IsBorgRepository(path string) bool {
 	return strings.Contains(string(contents), "[repository]")
 }
 
+// ============================================================================
+// REPOSITORY VALIDATION
+// ============================================================================
+
 type TestRepoConnectionResult struct {
 	Success         bool `json:"success"`
 	NeedsPassword   bool `json:"needsPassword"`
@@ -735,53 +858,79 @@ func (s *Service) TestRepoConnection(ctx context.Context, path, password string)
 	return toTestRepoConnectionResult(tr, nil, true)
 }
 
-// SetMountStates sets the mount states of all repositories and archives to the state
-// This method is called during app startup and doesn't need to be exposed to frontend
-func (si *ServiceInternal) SetMountStates(ctx context.Context) {
-	repos, err := si.All(ctx)
+// ValidateRepoName validates the name of a repository.
+// The rules are enforced by the database.
+func (s *Service) ValidateRepoName(ctx context.Context, name string) (string, error) {
+	s.mustHaveDB()
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < schema.ValRepositoryMinNameLength {
+		return fmt.Sprintf("Name must be at least %d characters long", schema.ValRepositoryMinNameLength), nil
+	}
+	if len(name) > schema.ValRepositoryMaxNameLength {
+		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValRepositoryMaxNameLength), nil
+	}
+	matched := schema.ValRepositoryNamePattern.MatchString(name)
+	if !matched {
+		return "Name can only contain letters, numbers, hyphens, and underscores", nil
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.Name(name)).
+		Exist(ctx)
 	if err != nil {
-		si.log.Error("Error getting all repositories: ", err)
-		return
+		return "", err
 	}
-	for _, repo := range repos {
-		// Save the mount state for the repository
-		path, err := getRepoMountPath(repo)
-		if err != nil {
-			return
-		}
-		mountState, err := getMountState(path)
-		if err != nil {
-			si.log.Error("Error getting mount state: ", err)
-			continue
-		}
-		si.state.SetRepoMount(ctx, repo.ID, &mountState)
-
-		// Save the mount states for all archives of the repository
-		archives, err := repo.QueryArchives().All(ctx)
-		if err != nil {
-			si.log.Error("Error getting all archives: ", err)
-			continue
-		}
-		var paths = make(map[int]string)
-		for _, arch := range archives {
-			archivePath, err := getArchiveMountPath(arch)
-			if err != nil {
-				si.log.Error("Error getting archive mount path: ", err)
-				continue
-			}
-			paths[arch.ID] = archivePath
-		}
-
-		states, err := types.GetMountStates(paths)
-		if err != nil {
-			si.log.Error("Error getting mount states: ", err)
-			continue
-		}
-		si.state.SetArchiveMounts(ctx, repo.ID, states)
+	if exist {
+		return "Repository name must be unique", nil
 	}
+
+	return "", nil
 }
 
-// Archive management methods
+// ValidateRepoPath validates the path of a repository.
+func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal bool) (string, error) {
+	s.mustHaveDB()
+	if path == "" {
+		return "Path is required", nil
+	}
+	if isLocal {
+		if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
+			return "Path must start with / or ~", nil
+		}
+		expandedPath := util.ExpandPath(path)
+		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+			return "Path does not exist", nil
+		}
+		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
+			return "Path is not a folder", nil
+		}
+		if entries, err := os.ReadDir(expandedPath); err == nil && len(entries) > 0 {
+			if !s.IsBorgRepository(expandedPath) {
+				return "Folder must be empty", nil
+			}
+		}
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.URL(path)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Repository is already connected", nil
+	}
+
+	return "", nil
+}
+
+// ============================================================================
+// ARCHIVE MANAGEMENT
+// ============================================================================
 
 func (s *Service) RefreshArchives(ctx context.Context, repoId int) ([]*ent.Archive, error) {
 	s.mustHaveDB()
@@ -1107,76 +1256,6 @@ func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.B
 	return first, err
 }
 
-// ValidateRepoName validates the name of a repository.
-// The rules are enforced by the database.
-func (s *Service) ValidateRepoName(ctx context.Context, name string) (string, error) {
-	s.mustHaveDB()
-	if name == "" {
-		return "Name is required", nil
-	}
-	if len(name) < schema.ValRepositoryMinNameLength {
-		return fmt.Sprintf("Name must be at least %d characters long", schema.ValRepositoryMinNameLength), nil
-	}
-	if len(name) > schema.ValRepositoryMaxNameLength {
-		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValRepositoryMaxNameLength), nil
-	}
-	matched := schema.ValRepositoryNamePattern.MatchString(name)
-	if !matched {
-		return "Name can only contain letters, numbers, hyphens, and underscores", nil
-	}
-
-	exist, err := s.db.Repository.
-		Query().
-		Where(repository.Name(name)).
-		Exist(ctx)
-	if err != nil {
-		return "", err
-	}
-	if exist {
-		return "Repository name must be unique", nil
-	}
-
-	return "", nil
-}
-
-// ValidateRepoPath validates the path of a repository.
-func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal bool) (string, error) {
-	s.mustHaveDB()
-	if path == "" {
-		return "Path is required", nil
-	}
-	if isLocal {
-		if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
-			return "Path must start with / or ~", nil
-		}
-		expandedPath := util.ExpandPath(path)
-		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
-			return "Path does not exist", nil
-		}
-		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
-			return "Path is not a folder", nil
-		}
-		if entries, err := os.ReadDir(expandedPath); err == nil && len(entries) > 0 {
-			if !s.IsBorgRepository(expandedPath) {
-				return "Folder must be empty", nil
-			}
-		}
-	}
-
-	exist, err := s.db.Repository.
-		Query().
-		Where(repository.URL(path)).
-		Exist(ctx)
-	if err != nil {
-		return "", err
-	}
-	if exist {
-		return "Repository is already connected", nil
-	}
-
-	return "", nil
-}
-
 // ValidateArchiveName validates the name of an archive.
 // The rules are not enforced by the database because we import them from borg repositories which have different rules.
 func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, prefix, name string) (string, error) {
@@ -1285,7 +1364,9 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 		Exec(ctx)
 }
 
-// Mount management methods
+// ============================================================================
+// MOUNT OPERATIONS
+// ============================================================================
 
 func (s *Service) MountRepository(ctx context.Context, repoId int) (mountState types.MountState, err error) {
 	s.mustHaveDB()
@@ -1519,79 +1600,9 @@ func getMountState(path string) (state types.MountState, err error) {
 	return *states[0], nil
 }
 
-func (s *Service) doesRepoNeedFixing(repoId int) bool {
-	return s.state.GetRepoState(repoId).ErrorType != state.RepoErrorTypeNone
-}
-
-// handleBorgStatus handles common Borg status errors and updates repository error state accordingly
-func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, status *borgtypes.Status, operationName string) error {
-	if status == nil {
-		return nil
-	}
-
-	// Handle special case where repo is nil (initialization errors)
-	if repo == nil {
-		if status.HasError() {
-			s.log.Errorf("Failed to %s during initialization: %s", operationName, status.GetError())
-			return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
-		}
-		return nil
-	}
-
-	repoId := repo.ID
-	if status.HasError() {
-		if status.HasBeenCanceled {
-			s.log.Warnf("Operation %s was cancelled for repository %d", operationName, repoId)
-			return fmt.Errorf("%s was cancelled", operationName)
-		}
-
-		// Check for specific error types and update state accordingly
-		if errors.Is(status.Error, borgtypes.ErrorConnectionClosedWithHint) {
-			s.log.Errorf("SSH key authentication failed for repository %d during %s: %s", repoId, operationName, status.GetError())
-
-			// Determine error action based on repository type
-			var errorAction state.RepoErrorAction
-			if s.isCloudRepository(ctx, repo.ID) {
-				errorAction = state.RepoErrorActionRegenerateSSH
-			} else {
-				errorAction = state.RepoErrorActionNone
-			}
-
-			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeSSHKey, "SSH key authentication failed", errorAction)
-			return fmt.Errorf("SSH key authentication failed: %s", status.GetError())
-		}
-		if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
-			s.log.Errorf("Incorrect passphrase for repository %d during %s: %s", repoId, operationName, status.GetError())
-			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypePassphrase, "Incorrect passphrase", state.RepoErrorActionNone)
-			return fmt.Errorf("incorrect passphrase: %s", status.GetError())
-		}
-		if errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
-			s.log.Errorf("Repository %d is locked during %s: %s", repoId, operationName, status.GetError())
-			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeLockTimeout, "Repository is locked", state.RepoErrorActionUnlockRepository)
-			return fmt.Errorf("repository is locked: %s", status.GetError())
-		}
-
-		s.log.Errorf("Failed to %s for repository %d: %s", operationName, repoId, status.GetError())
-		return fmt.Errorf("failed to %s: %s", operationName, status.GetError())
-	} else if status.HasWarning() {
-		// Set warning state and log warning
-		s.log.Warnf("Operation %s completed with warning for repository %d: %s", operationName, repoId, status.GetWarning())
-		s.state.SetRepoWarningState(ctx, repoId, status.GetWarning())
-		// Clear error state since operation completed successfully with warning
-		s.state.ClearRepoErrorState(ctx, repoId)
-	} else if status.IsCompletedWithSuccess() {
-		// Clear any previous error and warning states on success
-		s.state.ClearRepoErrorState(ctx, repoId)
-		s.state.ClearRepoWarningState(ctx, repoId)
-	} else {
-		assert.Failf("Unexpected status %s", status.GetError())
-	}
-	return nil
-}
-
-/***********************************/
-/********** Backup Operations ******/
-/***********************************/
+// ============================================================================
+// BACKUP OPERATIONS
+// ============================================================================
 
 func (s *Service) getRepoWithBackupProfile(ctx context.Context, repoId int, backupProfileId int) (*ent.Repository, error) {
 	s.mustHaveDB()
@@ -1945,9 +1956,9 @@ func (s *Service) saveDbNotification(ctx context.Context, backupId types.BackupI
 		Exec(ctx)
 }
 
-/***********************************/
-/********* Prune Operations ********/
-/***********************************/
+// ============================================================================
+// PRUNE OPERATIONS
+// ============================================================================
 
 func (s *Service) StartPruneJob(ctx context.Context, bId types.BackupId) error {
 	if canRun, reason := s.state.CanRunPrune(bId); !canRun {
@@ -2262,39 +2273,38 @@ func (s *Service) examinePrune(ctx context.Context, bId types.BackupId, pruningR
 				keepIds[i] = keep.Id
 			}
 
-			tx, err := s.db.Tx(ctx)
+			totalChanged, err := database.WithTxData(ctx, s.db, func(tx *ent.Tx) (int, error) {
+				cntToTrue, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(pruneResult.PruneArchives...),
+						archive.WillBePruned(false)),
+					).
+					SetWillBePruned(true).
+					Save(ctx)
+				if err != nil {
+					return 0, fmt.Errorf("failed to update archives to be pruned: %w", err)
+				}
+
+				cntToFalse, err := tx.Archive.
+					Update().
+					Where(archive.And(
+						archive.IDIn(keepIds...),
+						archive.WillBePruned(true)),
+					).
+					SetWillBePruned(false).
+					Save(ctx)
+				if err != nil {
+					return 0, fmt.Errorf("failed to update archives to be kept: %w", err)
+				}
+
+				return cntToTrue + cntToFalse, nil
+			})
 			if err != nil {
-				return 0, fmt.Errorf("failed to start transaction: %w", err)
+				return 0, err
 			}
 
-			cntToTrue, err := tx.Archive.
-				Update().
-				Where(archive.And(
-					archive.IDIn(pruneResult.PruneArchives...),
-					archive.WillBePruned(false)),
-				).
-				SetWillBePruned(true).
-				Save(ctx)
-			if err != nil {
-				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
-			}
-
-			cntToFalse, err := tx.Archive.
-				Update().
-				Where(archive.And(
-					archive.IDIn(keepIds...),
-					archive.WillBePruned(true)),
-				).
-				SetWillBePruned(false).
-				Save(ctx)
-			if err != nil {
-				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
-			}
-			err = tx.Commit()
-			if err != nil {
-				return 0, fmt.Errorf("failed to commit transaction: %w", err)
-			}
-			if cntToTrue+cntToFalse > 0 {
+			if totalChanged > 0 {
 				s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(bId.RepositoryId))
 			}
 
