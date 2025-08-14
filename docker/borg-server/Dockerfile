@@ -1,7 +1,33 @@
 # Borg Server Container for Integration Tests
 # Runs borg in server mode over SSH for client connections
 
-FROM ubuntu:22.04
+# Builder stage for arco-cli
+FROM docker.io/library/golang:1.24-bullseye AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Go module files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code (only backend needed for integration tests)
+COPY backend/ ./backend/
+
+# Build minimal arco binary for borg-url detection (no CGO needed)
+RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
+
+# Ubuntu 24.04 runtime environment
+FROM ubuntu:24.04
 
 # Build arguments for borg version
 ARG BORG_VERSION=1.4.1
@@ -23,15 +49,14 @@ RUN groupadd -g 1000 borg && \
     chmod 700 /home/borg/.ssh && \
     chmod 755 /home/borg/repositories
 
-# Download and install borg binary with version-specific URL
-RUN if [ "${BORG_VERSION}" = "1.4.1" ]; then \
-        BORG_BINARY="borg-linux-glibc236"; \
-    elif [ "${BORG_VERSION}" = "1.4.0" ]; then \
-        BORG_BINARY="borg-linux-glibc231"; \
-    else \
-        echo "Unsupported Borg version: ${BORG_VERSION}" && exit 1; \
-    fi && \
-    curl -L "https://github.com/borgbackup/borg/releases/download/${BORG_VERSION}/${BORG_BINARY}" -o /usr/local/bin/borg && \
+# Copy Arco binary for borg-url detection (must be before borg install)
+COPY --from=builder /arco-cli /usr/local/bin/arco-cli
+RUN chmod +x /usr/local/bin/arco-cli
+
+# Download and install borg binary using dynamic URL detection
+RUN BORG_URL=$(/usr/local/bin/arco-cli --show-borg-url) && \
+    echo "Detected Borg URL for this system: $BORG_URL" && \
+    curl -L "$BORG_URL" -o /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \
     chown root:root /usr/local/bin/borg && \
     ln -s /usr/local/bin/borg /usr/bin/borg
