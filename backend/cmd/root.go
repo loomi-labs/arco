@@ -95,16 +95,49 @@ func getConfigDir() (path string, err error) {
 	return filepath.Join(dir, ".config", "arco"), nil
 }
 
+// ensureSSHDir creates SSH directory with proper permissions if it doesn't exist,
+// or ensures existing directory has correct permissions
+func ensureSSHDir(configDir string) error {
+	sshDir := filepath.Join(configDir, "ssh")
+	
+	if _, err := os.Stat(sshDir); os.IsNotExist(err) {
+		// SSH directory doesn't exist, create it with strict permissions
+		if err := os.MkdirAll(sshDir, 0700); err != nil {
+			return fmt.Errorf("failed to create SSH directory %q: %w", sshDir, err)
+		}
+	} else if err != nil {
+		// Error accessing SSH directory
+		return fmt.Errorf("failed to access SSH directory %q: %w", sshDir, err)
+	} else {
+		// SSH directory exists, ensure it has proper permissions
+		if err := os.Chmod(sshDir, 0700); err != nil {
+			return fmt.Errorf("failed to set SSH directory permissions: %w", err)
+		}
+	}
+	
+	return nil
+}
+
 func createConfigDir() (string, error) {
 	configDir, err := getConfigDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get config directory: %w", err)
 	}
-	if _, err = os.Stat(configDir); os.IsNotExist(err) {
-		return configDir, os.MkdirAll(configDir, 0755)
+	
+	// Create config directory if it doesn't exist
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return "", fmt.Errorf("failed to create config directory %q: %w", configDir, err)
+		}
 	} else if err != nil {
+		return "", fmt.Errorf("failed to access config directory %q: %w", configDir, err)
+	}
+	
+	// Ensure SSH directory exists with proper permissions
+	if err := ensureSSHDir(configDir); err != nil {
 		return "", err
 	}
+	
 	return configDir, nil
 }
 
