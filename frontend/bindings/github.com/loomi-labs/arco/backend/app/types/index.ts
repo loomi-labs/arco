@@ -7,7 +7,6 @@ export {
     Event,
     ExaminePruningResult,
     FrontendError,
-    MountState,
     Notification,
     NotificationLevel
 } from "./models.js";

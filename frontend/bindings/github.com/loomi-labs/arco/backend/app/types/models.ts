@@ -128,31 +128,6 @@ export class FrontendError {
     }
 }
 
-export class MountState {
-    "isMounted": boolean;
-    "mountPath": string;
-
-    /** Creates a new MountState instance. */
-    constructor($$source: Partial<MountState> = {}) {
-        if (!("isMounted" in $$source)) {
-            this["isMounted"] = false;
-        }
-        if (!("mountPath" in $$source)) {
-            this["mountPath"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new MountState instance from a string or object.
-     */
-    static createFrom($$source: any = {}): MountState {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new MountState($$parsedSource as Partial<MountState>);
-    }
-}
-
 export class Notification {
     "message": string;
     "level": NotificationLevel;

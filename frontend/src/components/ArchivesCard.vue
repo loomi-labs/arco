@@ -24,11 +24,12 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
-import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import type * as platform from "../../bindings/github.com/loomi-labs/arco/backend/platform";
 import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
 import {
-  PaginatedArchivesRequest, PaginatedArchivesResponse,
+  PaginatedArchivesRequest,
+  PaginatedArchivesResponse,
   PruningDates
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
@@ -61,7 +62,7 @@ const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
-const archiveMountStates = ref<Map<number, types.MountState>>(new Map()); // Map<archiveId, MountState>
+const archiveMountStates = ref<Map<number, platform.MountState>>(new Map()); // Map<archiveId, MountState>
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
