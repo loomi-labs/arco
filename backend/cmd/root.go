@@ -153,7 +153,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		BorgVersion:     platform.Binaries[0].Version.String(),
 		Icons:           icons,
 		Migrations:      migrations,
-		GithubAssetName: util.GithubAssetName(),
+		GithubAssetName: platform.GithubAssetName(),
 		Version:         version,
 		CheckForUpdates: autoUpdate,
 		CloudRPCURL:     cloudRPCURL,
@@ -242,7 +242,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 
 	systray := wailsApp.SystemTray.New()
 	systray.SetLabel(app.Name)
-	if util.IsMacOS() {
+	if platform.IsMacOS() {
 		// Support for template icons on macOS
 		systray.SetTemplateIcon(config.Icons.DarwinIcons)
 	} else {

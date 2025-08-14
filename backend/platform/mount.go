@@ -6,9 +6,29 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loomi-labs/arco/backend/util"
 	"github.com/prometheus/procfs"
 )
+
+// GetMountPath returns the default mount path for the current OS
+func GetMountPath() (string, error) {
+	if IsLinux() {
+		return "/run/user", nil
+	}
+	if IsMacOS() {
+		return "/private/tmp", nil
+	}
+	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
+
+func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
+	if IsLinux() {
+		return getLinuxMountStates(paths)
+	}
+	if IsMacOS() {
+		return getDarwinMountStates(paths)
+	}
+	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
 
 func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
 	cmd := exec.Command("mount")
@@ -51,14 +71,4 @@ func getLinuxMountStates(paths map[int]string) (map[int]*MountState, error) {
 		}
 	}
 	return states, nil
-}
-
-func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
-	if util.IsLinux() {
-		return getLinuxMountStates(paths)
-	}
-	if util.IsMacOS() {
-		return getDarwinMountStates(paths)
-	}
-	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }
