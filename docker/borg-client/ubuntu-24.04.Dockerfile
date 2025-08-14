@@ -73,6 +73,10 @@ RUN chmod +x /usr/local/bin/arco-cli
 
 # Download and install borg binary using dynamic URL detection
 RUN BORG_URL=$(/usr/local/bin/arco-cli --show-borg-url) && \
+    if [ -z "$BORG_URL" ]; then \
+        echo "Error: Failed to detect Borg URL" >&2; \
+        exit 1; \
+    fi && \
     echo "Detected Borg URL for this system: $BORG_URL" && \
     curl -L "$BORG_URL" -o /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \

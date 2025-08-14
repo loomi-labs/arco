@@ -14,7 +14,7 @@ import (
 // GetGlibcVersion detects the system's GLIBC version on Linux systems
 func GetGlibcVersion() (*version.Version, error) {
 	if !util.IsLinux() {
-		return nil, nil // Not applicable for non-Linux systems
+		return nil, fmt.Errorf("only Linux supports glibc") // Not applicable for non-Linux systems
 	}
 
 	cmd := exec.Command("ldd", "--version")

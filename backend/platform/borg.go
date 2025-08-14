@@ -12,21 +12,21 @@ import (
 var Binaries = []BorgBinary{
 	// Borg 1.4.1 - Linux variants
 	{
-		Name:         "borg_1.4.1_glibc228",
+		Name:         "borg_1.4.1",
 		Version:      version.Must(version.NewVersion("1.4.1")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.28")),
 		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
 	},
 	{
-		Name:         "borg_1.4.1_glibc231",
+		Name:         "borg_1.4.1",
 		Version:      version.Must(version.NewVersion("1.4.1")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.31")),
 		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
 	},
 	{
-		Name:         "borg_1.4.1_glibc236",
+		Name:         "borg_1.4.1",
 		Version:      version.Must(version.NewVersion("1.4.1")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.36")),
@@ -34,7 +34,7 @@ var Binaries = []BorgBinary{
 	},
 	// Borg 1.4.1 - macOS
 	{
-		Name:         "borg_1.4.1_macos",
+		Name:         "borg_1.4.1",
 		Version:      version.Must(version.NewVersion("1.4.1")),
 		Os:           util.Darwin,
 		GlibcVersion: nil,
@@ -42,21 +42,21 @@ var Binaries = []BorgBinary{
 	},
 	// Borg 1.4.0 - Linux variants
 	{
-		Name:         "borg_1.4.0_glibc228",
+		Name:         "borg_1.4.0",
 		Version:      version.Must(version.NewVersion("1.4.0")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.28")),
 		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc228",
 	},
 	{
-		Name:         "borg_1.4.0_glibc231",
+		Name:         "borg_1.4.0",
 		Version:      version.Must(version.NewVersion("1.4.0")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.31")),
 		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc231",
 	},
 	{
-		Name:         "borg_1.4.0_glibc236",
+		Name:         "borg_1.4.0",
 		Version:      version.Must(version.NewVersion("1.4.0")),
 		Os:           util.Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.36")),
@@ -64,7 +64,7 @@ var Binaries = []BorgBinary{
 	},
 	// Borg 1.4.0 - macOS
 	{
-		Name:         "borg_1.4.0_macos",
+		Name:         "borg_1.4.0",
 		Version:      version.Must(version.NewVersion("1.4.0")),
 		Os:           util.Darwin,
 		GlibcVersion: nil,

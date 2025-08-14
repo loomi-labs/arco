@@ -110,8 +110,3 @@ var AllIcons = []backupprofile.Icon{
 	backupprofile.IconCamera,
 	backupprofile.IconFire,
 }
-
-type MountState struct {
-	IsMounted bool   `json:"isMounted"`
-	MountPath string `json:"mountPath"`
-}
