@@ -122,11 +122,6 @@ func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, st
 
 	repoId := repo.ID
 	if status.HasError() {
-		if status.HasBeenCanceled {
-			s.log.Warnf("Operation %s was cancelled for repository %d", operationName, repoId)
-			return fmt.Errorf("%s was cancelled", operationName)
-		}
-
 		// Check for specific error types and update state accordingly
 		if errors.Is(status.Error, borgtypes.ErrorConnectionClosedWithHint) {
 			s.log.Errorf("SSH key authentication failed for repository %d during %s: %s", repoId, operationName, status.GetError())
@@ -165,6 +160,8 @@ func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, st
 		// Clear any previous error and warning states on success
 		s.state.ClearRepoErrorState(ctx, repoId)
 		s.state.ClearRepoWarningState(ctx, repoId)
+	} else if status.HasBeenCanceled {
+		s.log.Infof("Operation %s has been canceled", operationName)
 	} else {
 		assert.Failf("Unexpected status %s", status.GetError())
 	}
@@ -1779,10 +1776,6 @@ func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result
 			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
 		}
 
-		if status.HasBeenCanceled {
-			s.state.SetBackupCancelled(ctx, bId)
-			return BackupResultCancelled, nil
-		}
 		saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
 		if saveErr != nil {
 			s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
@@ -1790,6 +1783,11 @@ func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result
 		s.state.SetBackupError(ctx, bId, status.Error)
 		s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: %s", status.Error), types.LevelError)
 		return BackupResultError, status.Error
+	}
+
+	if status.HasBeenCanceled {
+		s.state.SetBackupCancelled(ctx, bId)
+		return BackupResultCancelled, nil
 	}
 
 	// Backup completed successfully
@@ -1847,16 +1845,18 @@ func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, locatio
 			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
 		}
 
-		if status.HasBeenCanceled {
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return types.DeleteResultCancelled, nil
-		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			s.state.AddNotification(ctx, "Delete job failed: repository is locked", types.LevelError)
 			return types.DeleteResultError, status.Error
 		} else {
 			s.state.AddNotification(ctx, fmt.Sprintf("Delete job failed: %s", status.Error), types.LevelError)
 			return types.DeleteResultError, status.Error
 		}
+	}
+
+	if status.HasBeenCanceled {
+		s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+		return types.DeleteResultCancelled, nil
 	}
 
 	// Delete completed successfully
@@ -2089,11 +2089,6 @@ func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneRes
 			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
 		}
 
-		if status.HasBeenCanceled {
-			s.state.SetPruneCancelled(ctx, bId)
-			return PruneResultCanceled, nil
-		}
-
 		saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
 		if saveErr != nil {
 			s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
@@ -2101,6 +2096,11 @@ func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneRes
 		s.state.SetPruneError(ctx, bId, status.Error)
 		s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", status.Error), types.LevelError)
 		return PruneResultError, status.Error
+	}
+
+	if status.HasBeenCanceled {
+		s.state.SetPruneCancelled(ctx, bId)
+		return PruneResultCanceled, nil
 	}
 
 	select {
