@@ -6,14 +6,13 @@ import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toErrorStateBadge, toWarningStateBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
 import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -69,6 +68,9 @@ const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
 const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(confirmRemoveRepoModalKey);
 
+// Session-based warning dismissal tracking
+const dismissedWarnings = ref<Set<number>>(new Set());
+
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -77,12 +79,12 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getRepo() {
   try {
-    repo.value = await repoClient.GetByBackupId(backupId) ?? ent.Repository.createFrom();
+    repo.value = await repoService.GetByBackupId(backupId) ?? ent.Repository.createFrom();
     totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
-    failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
+    failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
 
-    const archive = await repoClient.GetLastArchiveByBackupId(backupId) ?? undefined;
+    const archive = await repoService.GetLastArchiveByBackupId(backupId) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: unknown) {
@@ -92,7 +94,7 @@ async function getRepo() {
 
 async function getRepoState() {
   try {
-    repoState.value = await repoClient.GetState(backupId.repositoryId);
+    repoState.value = await repoService.GetState(backupId.repositoryId);
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }
@@ -100,7 +102,7 @@ async function getRepoState() {
 
 async function getBackupState() {
   try {
-    backupState.value = await backupClient.GetState(backupId);
+    backupState.value = await repoService.GetBackupState(backupId);
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup state", error);
   }
@@ -108,7 +110,7 @@ async function getBackupState() {
 
 async function getBackupButtonStatus() {
   try {
-    buttonStatus.value = await backupClient.GetBackupButtonStatus([backupId]);
+    buttonStatus.value = await repoService.GetBackupButtonStatus([backupId]);
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup button state", error);
   }
@@ -116,7 +118,7 @@ async function getBackupButtonStatus() {
 
 async function prune() {
   try {
-    await backupClient.StartPruneJob(backupId);
+    await repoService.StartPruneJob(backupId);
   } catch (error: unknown) {
     await showAndLogError("Failed to prune repository", error);
   }
@@ -182,6 +184,20 @@ onUnmounted(() => {
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
         </span>
         <span v-else>-</span>
+        <!-- Error Badge -->
+        <span v-if='toErrorStateBadge(repoState)' 
+              :class='toErrorStateBadge(repoState)'
+              class='ml-1'
+              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+          Error
+        </span>
+        <!-- Warning Badge -->
+        <span v-if='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))' 
+              :class='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))'
+              class='ml-1'
+              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+          Warning
+        </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
       <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>

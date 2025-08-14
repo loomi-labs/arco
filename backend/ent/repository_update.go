@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
@@ -52,16 +53,16 @@ func (ru *RepositoryUpdate) SetNillableName(s *string) *RepositoryUpdate {
 	return ru
 }
 
-// SetLocation sets the "location" field.
-func (ru *RepositoryUpdate) SetLocation(s string) *RepositoryUpdate {
-	ru.mutation.SetLocation(s)
+// SetURL sets the "url" field.
+func (ru *RepositoryUpdate) SetURL(s string) *RepositoryUpdate {
+	ru.mutation.SetURL(s)
 	return ru
 }
 
-// SetNillableLocation sets the "location" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableLocation(s *string) *RepositoryUpdate {
+// SetNillableURL sets the "url" field if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableURL(s *string) *RepositoryUpdate {
 	if s != nil {
-		ru.SetLocation(*s)
+		ru.SetURL(*s)
 	}
 	return ru
 }
@@ -271,6 +272,25 @@ func (ru *RepositoryUpdate) AddNotifications(n ...*Notification) *RepositoryUpda
 	return ru.AddNotificationIDs(ids...)
 }
 
+// SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
+func (ru *RepositoryUpdate) SetCloudRepositoryID(id int) *RepositoryUpdate {
+	ru.mutation.SetCloudRepositoryID(id)
+	return ru
+}
+
+// SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
+func (ru *RepositoryUpdate) SetNillableCloudRepositoryID(id *int) *RepositoryUpdate {
+	if id != nil {
+		ru = ru.SetCloudRepositoryID(*id)
+	}
+	return ru
+}
+
+// SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
+func (ru *RepositoryUpdate) SetCloudRepository(c *CloudRepository) *RepositoryUpdate {
+	return ru.SetCloudRepositoryID(c.ID)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ru *RepositoryUpdate) Mutation() *RepositoryMutation {
 	return ru.mutation
@@ -337,6 +357,12 @@ func (ru *RepositoryUpdate) RemoveNotifications(n ...*Notification) *RepositoryU
 		ids[i] = n[i].ID
 	}
 	return ru.RemoveNotificationIDs(ids...)
+}
+
+// ClearCloudRepository clears the "cloud_repository" edge to the CloudRepository entity.
+func (ru *RepositoryUpdate) ClearCloudRepository() *RepositoryUpdate {
+	ru.mutation.ClearCloudRepository()
+	return ru
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -409,8 +435,8 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.Location(); ok {
-		_spec.SetField(repository.FieldLocation, field.TypeString, value)
+	if value, ok := ru.mutation.URL(); ok {
+		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
@@ -592,6 +618,35 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.CloudRepositoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   repository.CloudRepositoryTable,
+			Columns: []string{repository.CloudRepositoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   repository.CloudRepositoryTable,
+			Columns: []string{repository.CloudRepositoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(ru.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -634,16 +689,16 @@ func (ruo *RepositoryUpdateOne) SetNillableName(s *string) *RepositoryUpdateOne 
 	return ruo
 }
 
-// SetLocation sets the "location" field.
-func (ruo *RepositoryUpdateOne) SetLocation(s string) *RepositoryUpdateOne {
-	ruo.mutation.SetLocation(s)
+// SetURL sets the "url" field.
+func (ruo *RepositoryUpdateOne) SetURL(s string) *RepositoryUpdateOne {
+	ruo.mutation.SetURL(s)
 	return ruo
 }
 
-// SetNillableLocation sets the "location" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableLocation(s *string) *RepositoryUpdateOne {
+// SetNillableURL sets the "url" field if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableURL(s *string) *RepositoryUpdateOne {
 	if s != nil {
-		ruo.SetLocation(*s)
+		ruo.SetURL(*s)
 	}
 	return ruo
 }
@@ -853,6 +908,25 @@ func (ruo *RepositoryUpdateOne) AddNotifications(n ...*Notification) *Repository
 	return ruo.AddNotificationIDs(ids...)
 }
 
+// SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
+func (ruo *RepositoryUpdateOne) SetCloudRepositoryID(id int) *RepositoryUpdateOne {
+	ruo.mutation.SetCloudRepositoryID(id)
+	return ruo
+}
+
+// SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
+func (ruo *RepositoryUpdateOne) SetNillableCloudRepositoryID(id *int) *RepositoryUpdateOne {
+	if id != nil {
+		ruo = ruo.SetCloudRepositoryID(*id)
+	}
+	return ruo
+}
+
+// SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
+func (ruo *RepositoryUpdateOne) SetCloudRepository(c *CloudRepository) *RepositoryUpdateOne {
+	return ruo.SetCloudRepositoryID(c.ID)
+}
+
 // Mutation returns the RepositoryMutation object of the builder.
 func (ruo *RepositoryUpdateOne) Mutation() *RepositoryMutation {
 	return ruo.mutation
@@ -919,6 +993,12 @@ func (ruo *RepositoryUpdateOne) RemoveNotifications(n ...*Notification) *Reposit
 		ids[i] = n[i].ID
 	}
 	return ruo.RemoveNotificationIDs(ids...)
+}
+
+// ClearCloudRepository clears the "cloud_repository" edge to the CloudRepository entity.
+func (ruo *RepositoryUpdateOne) ClearCloudRepository() *RepositoryUpdateOne {
+	ruo.mutation.ClearCloudRepository()
+	return ruo
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
@@ -1021,8 +1101,8 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 	if value, ok := ruo.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.Location(); ok {
-		_spec.SetField(repository.FieldLocation, field.TypeString, value)
+	if value, ok := ruo.mutation.URL(); ok {
+		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
@@ -1197,6 +1277,35 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.CloudRepositoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   repository.CloudRepositoryTable,
+			Columns: []string{repository.CloudRepositoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   repository.CloudRepositoryTable,
+			Columns: []string{repository.CloudRepositoryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

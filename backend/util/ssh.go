@@ -1,35 +1,16 @@
 package util
 
 import (
-	"github.com/charmbracelet/keygen"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"os"
 	"path/filepath"
 )
 
-func GenerateKeyPair() (*keygen.KeyPair, error) {
-	kp, err := keygen.New(
-		"~/sshtest/id_storage_test",
-		keygen.WithKeyType(keygen.Ed25519),
-		keygen.WithWrite(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return kp, err
-}
-
-func SearchSSHKeys(log *zap.SugaredLogger) []string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Warnf("Failed to get home directory: %v", err)
-		return nil
-	}
-	sshDir := filepath.Join(home, ".ssh")
+func searchSSHKeysInDir(log *zap.SugaredLogger, sshDir string) []string {
 	files, err := os.ReadDir(sshDir)
 	if err != nil {
-		log.Warnf("Failed to read directory: %v", err)
+		log.Warnf("Failed to read directory %s: %v", sshDir, err)
 		return nil
 	}
 
@@ -50,4 +31,37 @@ func SearchSSHKeys(log *zap.SugaredLogger) []string {
 		}
 	}
 	return keys
+}
+
+func searchSSHKeysInHomeDir(log *zap.SugaredLogger) []string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Warnf("Failed to get home directory: %v", err)
+		return nil
+	}
+	sshDir := filepath.Join(home, ".ssh")
+	return searchSSHKeysInDir(log, sshDir)
+}
+
+func SearchSSHKeys(log *zap.SugaredLogger, sshDir string) []string {
+	var allKeys []string
+
+	// Search in home directory
+	homeKeys := searchSSHKeysInHomeDir(log)
+	allKeys = append(allKeys, homeKeys...)
+
+	// Search in arco ssh directory
+	allKeys = append(allKeys, searchSSHKeysInDir(log, sshDir)...)
+
+	// Remove duplicates (in case same key exists in both locations)
+	uniqueKeys := make([]string, 0, len(allKeys))
+	seen := make(map[string]bool)
+	for _, key := range allKeys {
+		if !seen[key] {
+			seen[key] = true
+			uniqueKeys = append(uniqueKeys, key)
+		}
+	}
+
+	return uniqueKeys
 }

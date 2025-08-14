@@ -20,8 +20,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldLocation holds the string denoting the location field in the database.
-	FieldLocation = "location"
+	// FieldURL holds the string denoting the url field in the database.
+	FieldURL = "url"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
 	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
@@ -44,6 +44,8 @@ const (
 	EdgeArchives = "archives"
 	// EdgeNotifications holds the string denoting the notifications edge name in mutations.
 	EdgeNotifications = "notifications"
+	// EdgeCloudRepository holds the string denoting the cloud_repository edge name in mutations.
+	EdgeCloudRepository = "cloud_repository"
 	// Table holds the table name of the repository in the database.
 	Table = "repositories"
 	// BackupProfilesTable is the table that holds the backup_profiles relation/edge. The primary key declared below.
@@ -65,6 +67,13 @@ const (
 	NotificationsInverseTable = "notifications"
 	// NotificationsColumn is the table column denoting the notifications relation/edge.
 	NotificationsColumn = "notification_repository"
+	// CloudRepositoryTable is the table that holds the cloud_repository relation/edge.
+	CloudRepositoryTable = "repositories"
+	// CloudRepositoryInverseTable is the table name for the CloudRepository entity.
+	// It exists in this package in order to avoid circular dependency with the "cloudrepository" package.
+	CloudRepositoryInverseTable = "cloud_repositories"
+	// CloudRepositoryColumn is the table column denoting the cloud_repository relation/edge.
+	CloudRepositoryColumn = "cloud_repository_repository"
 )
 
 // Columns holds all SQL columns for repository fields.
@@ -73,7 +82,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldName,
-	FieldLocation,
+	FieldURL,
 	FieldPassword,
 	FieldNextIntegrityCheck,
 	FieldStatsTotalChunks,
@@ -82,6 +91,12 @@ var Columns = []string{
 	FieldStatsTotalUniqueChunks,
 	FieldStatsUniqueSize,
 	FieldStatsUniqueCsize,
+}
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "repositories"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"cloud_repository_repository",
 }
 
 var (
@@ -94,6 +109,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -146,9 +166,9 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByLocation orders the results by the location field.
-func ByLocation(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLocation, opts...).ToFunc()
+// ByURL orders the results by the url field.
+func ByURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldURL, opts...).ToFunc()
 }
 
 // ByPassword orders the results by the password field.
@@ -232,6 +252,13 @@ func ByNotifications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newNotificationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCloudRepositoryField orders the results by cloud_repository field.
+func ByCloudRepositoryField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCloudRepositoryStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newBackupProfilesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -251,5 +278,12 @@ func newNotificationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NotificationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, NotificationsTable, NotificationsColumn),
+	)
+}
+func newCloudRepositoryStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CloudRepositoryInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, CloudRepositoryTable, CloudRepositoryColumn),
 	)
 }

@@ -199,7 +199,7 @@ export class OveragePrice {
 /**
  * Plan represents a complete subscription plan with pricing and features.
  * 
- * Each plan defines storage limits, feature availability, and USD pricing
+ * Each plan defines storage limits, device limits, feature availability, and USD pricing
  * for monthly and yearly billing cycles.
  */
 export class Plan {
@@ -230,6 +230,12 @@ export class Plan {
      * Set for Pro plans with per-10GB pricing.
      */
     "overage_price"?: OveragePrice | null;
+
+    /**
+     * Maximum number of devices (SSH keys) allowed for this plan.
+     * Each device represents one SSH key that can access user repositories.
+     */
+    "max_devices"?: number;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
@@ -312,6 +318,36 @@ export class ReactivateSubscriptionResponse {
         return new ReactivateSubscriptionResponse($$parsedSource as Partial<ReactivateSubscriptionResponse>);
     }
 }
+
+/**
+ * RepositoryLocation represents the geographical location of a ArcoCloud repository.
+ * 
+ * ArcoCloud provides repositories in multiple regions for data sovereignty
+ * and performance optimization based on user location.
+ */
+export enum RepositoryLocation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Default unspecified location.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_UNSPECIFIED = 0,
+
+    /**
+     * United States region for repositories.
+     * Provides optimal performance for North American users.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_US = 1,
+
+    /**
+     * European Union region for repositories.
+     * Ensures GDPR compliance and optimal performance for European users.
+     */
+    RepositoryLocation_REPOSITORY_LOCATION_EU = 2,
+};
 
 /**
  * ScheduleSubscriptionUpdateResponse confirms change scheduling.

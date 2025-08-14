@@ -1,6 +1,6 @@
 import { useToast } from "vue-toastification";
 
-import * as appClient from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
+import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 
@@ -46,7 +46,7 @@ export async function showAndLogError(message: string, error?: unknown): Promise
   }
 
   const fe = createFrontendError(error);
-  await appClient.HandleError(message, fe);
+  await userService.HandleError(message, fe);
 }
 
 /**
@@ -58,7 +58,7 @@ export async function showAndLogError(message: string, error?: unknown): Promise
  */
 export async function logError(message: string, error?: unknown): Promise<void> {
   const fe = createFrontendError(error);
-  await appClient.HandleError(message, fe);
+  await userService.HandleError(message, fe);
 }
 
 /**
@@ -68,7 +68,7 @@ export async function logError(message: string, error?: unknown): Promise<void> 
  */
 export async function logDebug(message: string): Promise<void> {
   try {
-    await appClient.LogDebug(message);
+    await userService.LogDebug(message);
   } catch (_error) {
     // Ignore logging errors to prevent infinite recursion
   }

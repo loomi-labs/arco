@@ -15,8 +15,8 @@ import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
@@ -127,8 +127,8 @@ function selectIcon(icon: Icon) {
 
 async function newBackupProfile() {
   try {
-    backupProfile.value = await backupClient.NewBackupProfile() ?? BackupProfile.createFrom();
-    directorySuggestions.value = await backupClient.GetDirectorySuggestions();
+    backupProfile.value = await backupProfileService.NewBackupProfile() ?? BackupProfile.createFrom();
+    directorySuggestions.value = await backupProfileService.GetDirectorySuggestions();
   } catch (error: unknown) {
     await showAndLogError("Failed to create backup profile", error);
   }
@@ -136,7 +136,7 @@ async function newBackupProfile() {
 
 async function getExistingRepositories() {
   try {
-    existingRepos.value = (await repoClient.All()).filter((r) => r !== null);
+    existingRepos.value = (await repoService.All()).filter((r) => r !== null);
   } catch (error: unknown) {
     await showAndLogError("Failed to get existing repositories", error);
   }
@@ -154,23 +154,23 @@ const connectRepos = (repos: Repository[]) => {
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
-    backupProfile.value.prefix = await backupClient.GetPrefixSuggestion(backupProfile.value.name);
+    backupProfile.value.prefix = await backupProfileService.GetPrefixSuggestion(backupProfile.value.name);
     backupProfile.value.edges = backupProfile.value.edges ?? {};
     backupProfile.value.edges.repositories = connectedRepos.value;
-    const savedBackupProfile = await backupClient.CreateBackupProfile(
+    const savedBackupProfile = await backupProfileService.CreateBackupProfile(
       backupProfile.value,
       (backupProfile.value.edges.repositories ?? []).filter((r) => r !== null).map((r) => r.id)
     ) ?? BackupProfile.createFrom();
 
     if (backupProfile.value.edges.backupSchedule) {
-      await backupClient.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
+      await backupProfileService.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
     }
 
     if (backupProfile.value.edges.pruningRule) {
-      await backupClient.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
+      await backupProfileService.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
     }
 
-    backupProfile.value = await backupClient.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
+    backupProfile.value = await backupProfileService.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
   } catch (error: unknown) {
     await showAndLogError("Failed to save backup profile", error);
     return false;
@@ -208,6 +208,9 @@ const nextStep = async () => {
         toast.success("Backup profile created");
         await router.replace(withId(Page.BackupProfile, backupProfile.value.id.toString()));
       }
+      break;
+    default:
+      // No action needed for other steps
       break;
   }
 };

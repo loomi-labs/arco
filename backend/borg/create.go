@@ -46,7 +46,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	b.log.LogCmdStart(cmdLog)
 	statusChan := cmd.Start()
 
-	go decodeBackupProgress(cmd, totalFiles, ch, b.log)
+	go decodeBackupProgress(cmd, totalFiles, ch)
 
 	select {
 	case <-ctx.Done():
@@ -69,12 +69,12 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 	// If we are here the command has completed
 	status := cmd.Status()
-	borgStatus = gocmdToStatus(status)
+	borgStatus = gocmdToStatus(status, "")
 	return archivePath, b.log.LogCmdStatus(ctx, borgStatus, cmdLog, time.Duration(status.Runtime))
 }
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
-func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.BackupProgress, log *CmdLogger) {
+func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.BackupProgress) {
 	for {
 		select {
 		case _ = <-cmd.Stdout:
@@ -150,7 +150,7 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 
 	// If we are here the command has completed or the context has been cancelled
 	status := cmd.Status()
-	result := gocmdToStatus(status)
+	result := gocmdToStatus(status, "")
 	if result.HasError() || result.HasBeenCanceled {
 		return 0, b.log.LogCmdStatus(ctx, result, cmdLog, time.Duration(status.Runtime)), nil
 	}

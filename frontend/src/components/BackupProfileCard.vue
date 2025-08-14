@@ -14,8 +14,7 @@ import { debounce } from "lodash";
 import type { Icon } from "../common/icons";
 import { getIcon } from "../common/icons";
 import { getRepoType } from "../common/repository";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
@@ -61,7 +60,7 @@ async function getFailedBackupRun() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repoId;
-      failedBackupRun.value = await backupClient.GetLastBackupErrorMsg(backupId);
+      failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
 
       // We only care about the first error message.
       if (failedBackupRun.value) {
@@ -80,7 +79,7 @@ async function getLastArchives() {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
-      const archive = await repoClient.GetLastArchiveByBackupId(backupId);
+      const archive = await repoService.GetLastArchiveByBackupId(backupId);
       if (archive?.id) {
         if (!newLastArchive || isAfter(archive.createdAt, newLastArchive.createdAt)) {
           newLastArchive = archive;
@@ -156,7 +155,7 @@ onUnmounted(() => {
           <ul class='text-right'>
             <li v-for='repo in props.backup.edges?.repositories?.filter(r => r !== null) ?? []' :key='repo.id'
                 class='mx-1'
-                :class='`${toRepoTypeBadge(getRepoType(repo.location))}`'
+                :class='`${toRepoTypeBadge(getRepoType(repo.url))}`'
             >
               {{ repo.name }}
             </li>

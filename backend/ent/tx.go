@@ -20,6 +20,8 @@ type Tx struct {
 	BackupProfile *BackupProfileClient
 	// BackupSchedule is the client for interacting with the BackupSchedule builders.
 	BackupSchedule *BackupScheduleClient
+	// CloudRepository is the client for interacting with the CloudRepository builders.
+	CloudRepository *CloudRepositoryClient
 	// Notification is the client for interacting with the Notification builders.
 	Notification *NotificationClient
 	// PruningRule is the client for interacting with the PruningRule builders.
@@ -165,6 +167,7 @@ func (tx *Tx) init() {
 	tx.AuthSession = NewAuthSessionClient(tx.config)
 	tx.BackupProfile = NewBackupProfileClient(tx.config)
 	tx.BackupSchedule = NewBackupScheduleClient(tx.config)
+	tx.CloudRepository = NewCloudRepositoryClient(tx.config)
 	tx.Notification = NewNotificationClient(tx.config)
 	tx.PruningRule = NewPruningRuleClient(tx.config)
 	tx.Repository = NewRepositoryClient(tx.config)

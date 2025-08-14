@@ -8,7 +8,7 @@ import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import * as zod from "zod";
 import { object } from "zod";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
@@ -35,6 +35,7 @@ const failedBackupRun = ref<string | undefined>(undefined);
 const isIntegrityCheckEnabled = ref(false);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
+const isRegeneratingSSH = ref(false);
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -44,6 +45,9 @@ const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmDeleteModalKey
 );
+
+// Session-based warning dismissal tracking
+const isWarningDismissed = ref(false);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -73,14 +77,14 @@ async function getData() {
     loading.value = true;
 
     repo.value =
-      (await repoClient.Get(repoId)) ?? ent.Repository.createFrom();
+      (await repoService.Get(repoId)) ?? ent.Repository.createFrom();
     name.value = repo.value.name;
 
-    repoType.value = getRepoType(repo.value.location);
+    repoType.value = getRepoType(repo.value.url);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
     deletableBackupProfiles.value =
-      (await repoClient.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
+      (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
         (r) => r !== null
       ) ?? [];
   } catch (error: unknown) {
@@ -91,16 +95,16 @@ async function getData() {
 
 async function getRepoState() {
   try {
-    repoState.value = await repoClient.GetState(repoId);
+    repoState.value = await repoService.GetState(repoId);
 
-    nbrOfArchives.value = await repoClient.GetNbrOfArchives(repoId);
+    nbrOfArchives.value = await repoService.GetNbrOfArchives(repoId);
 
     totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
     sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
-    failedBackupRun.value = await repoClient.GetLastBackupErrorMsg(repoId);
+    failedBackupRun.value = await repoService.GetLastBackupErrorMsg(repoId);
 
     const archive =
-      (await repoClient.GetLastArchiveByRepoId(repoId)) ?? undefined;
+      (await repoService.GetLastArchiveByRepoId(repoId)) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: unknown) {
@@ -112,7 +116,7 @@ async function saveName() {
   if (meta.value.valid && name.value !== repo.value.name) {
     try {
       repo.value.name = name.value ?? "";
-      await repoClient.Update(repo.value);
+      await repoService.Update(repo.value);
     } catch (error: unknown) {
       await showAndLogError("Failed to save repository name", error);
     }
@@ -128,7 +132,7 @@ function resizeNameWidth() {
 
 async function _saveIntegrityCheckSettings() {
   try {
-    const result = await repoClient.SaveIntegrityCheckSettings(
+    const result = await repoService.SaveIntegrityCheckSettings(
       repoId,
       isIntegrityCheckEnabled.value
     );
@@ -140,7 +144,7 @@ async function _saveIntegrityCheckSettings() {
 
 async function removeRepo() {
   try {
-    await repoClient.Remove(repoId);
+    await repoService.Remove(repoId);
     toast.success("Repository removed");
     await router.replace({
       path: Page.Dashboard,
@@ -153,7 +157,7 @@ async function removeRepo() {
 
 async function deleteRepo() {
   try {
-    await repoClient.Delete(repoId);
+    await repoService.Delete(repoId);
     toast.success("Repository deleted");
     await router.replace({
       path: Page.Dashboard,
@@ -161,6 +165,21 @@ async function deleteRepo() {
     });
   } catch (error: unknown) {
     await showAndLogError("Failed to delete repository", error);
+  }
+}
+
+async function regenerateSSHKey() {
+  try {
+    isRegeneratingSSH.value = true;
+    await repoService.RegenerateSSHKey();
+    toast.success("SSH key regenerated successfully");
+    
+    // Refresh repository state after SSH key regeneration
+    await getRepoState();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to regenerate SSH key", error);
+  } finally {
+    isRegeneratingSSH.value = false;
   }
 }
 
@@ -230,6 +249,46 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Error Alert Banner -->
+    <div v-if='repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && repoState.errorType !== state.RepoErrorType.$zero' 
+         role='alert' 
+         class='alert alert-error mb-4'>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class='flex-1'>
+        <div class='font-bold'>Repository Error</div>
+        <div class='text-sm'>{{ repoState.errorMessage }}</div>
+      </div>
+      <!-- SSH Regeneration Button for Cloud Repositories -->
+      <div v-if='repoState.errorAction === state.RepoErrorAction.RepoErrorActionRegenerateSSH' class='flex-none'>
+        <button class='btn btn-sm btn-outline btn-error-content'
+                :disabled='isRegeneratingSSH'
+                @click='regenerateSSHKey'>
+          <span v-if='isRegeneratingSSH' class='loading loading-spinner loading-xs'></span>
+          {{ isRegeneratingSSH ? 'Regenerating...' : 'Regenerate SSH Key' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Warning Alert Banner -->
+    <div v-if='repoState.hasWarning && !isWarningDismissed' 
+         role='alert' 
+         class='alert alert-warning mb-4'>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div class='flex-1'>
+        <div class='font-bold'>Warning</div>
+        <div class='text-sm'>{{ repoState.warningMessage }}</div>
+      </div>
+      <button class='btn btn-sm btn-ghost' @click='isWarningDismissed = true'>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
     <!-- Repository Info Cards -->
     <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
       <!-- Archives Card -->
@@ -286,7 +345,7 @@ onUnmounted(() => {
           <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
             <span class='font-medium'>{{ $t("location") }}</span>
             <div class='flex items-center gap-2'>
-              <span class='text-sm opacity-70 break-all'>{{ repo.location }}</span>
+              <span class='text-sm opacity-70 break-all'>{{ repo.url }}</span>
               <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
             </div>
           </div>

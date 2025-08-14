@@ -4,8 +4,8 @@ import { showAndLogError } from "./logger";
 import * as authService from "../../bindings/github.com/loomi-labs/arco/backend/app/auth/service";
 import type { AuthStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/auth";
 import { Events } from "@wailsio/runtime";
-import { GetUser } from "../../bindings/github.com/loomi-labs/arco/backend/app/appclient";
-import type { User } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { GetUser } from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
+import type { User } from "../../bindings/github.com/loomi-labs/arco/backend/app/user";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 /************

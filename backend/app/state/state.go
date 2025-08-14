@@ -3,12 +3,13 @@ package state
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/negrel/assert"
 	"go.uber.org/zap"
-	"sync"
 )
 
 type State struct {
@@ -108,7 +109,7 @@ const (
 	RepoStatusDeleting            RepoStatus = "deleting"
 	RepoStatusMounted             RepoStatus = "mounted"
 	RepoStatusPerformingOperation RepoStatus = "performingOperation"
-	RepoStatusLocked              RepoStatus = "locked"
+	RepoStatusError               RepoStatus = "error"
 )
 
 var AvailableRepoStatuses = []RepoStatus{
@@ -118,22 +119,57 @@ var AvailableRepoStatuses = []RepoStatus{
 	RepoStatusDeleting,
 	RepoStatusMounted,
 	RepoStatusPerformingOperation,
-	RepoStatusLocked,
+	RepoStatusError,
 }
 
 func (rs RepoStatus) String() string {
 	return string(rs)
 }
 
+type RepoErrorType string
+
+const (
+	RepoErrorTypeNone        RepoErrorType = "none"
+	RepoErrorTypeSSHKey      RepoErrorType = "sshKey"
+	RepoErrorTypePassphrase  RepoErrorType = "passphrase"
+	RepoErrorTypeLockTimeout RepoErrorType = "lockTimeout"
+)
+
+func (ret RepoErrorType) String() string {
+	return string(ret)
+}
+
+type RepoErrorAction string
+
+const (
+	RepoErrorActionNone             RepoErrorAction = "none"
+	RepoErrorActionRegenerateSSH    RepoErrorAction = "regenerateSSH"
+	RepoErrorActionUnlockRepository RepoErrorAction = "unlockRepository"
+)
+
+func (rea RepoErrorAction) String() string {
+	return string(rea)
+}
+
 type RepoState struct {
-	mutex  *sync.Mutex
-	Status RepoStatus `json:"status"`
+	mutex          *sync.Mutex
+	Status         RepoStatus      `json:"status"`
+	ErrorType      RepoErrorType   `json:"errorType"`
+	ErrorMessage   string          `json:"errorMessage"`
+	ErrorAction    RepoErrorAction `json:"errorAction"`
+	HasWarning     bool            `json:"hasWarning"`
+	WarningMessage string          `json:"warningMessage"`
 }
 
 func newRepoState() *RepoState {
 	return &RepoState{
-		mutex:  &sync.Mutex{},
-		Status: RepoStatusIdle,
+		mutex:          &sync.Mutex{},
+		Status:         RepoStatusIdle,
+		ErrorType:      RepoErrorTypeNone,
+		ErrorMessage:   "",
+		ErrorAction:    RepoErrorActionNone,
+		HasWarning:     false,
+		WarningMessage: "",
 	}
 }
 
@@ -355,6 +391,72 @@ func (s *State) GetRepoState(repoId int) RepoState {
 	return *newRepoState()
 }
 
+func (s *State) SetRepoErrorState(ctx context.Context, repoId int, errorType RepoErrorType, errorMessage string, errorAction RepoErrorAction) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].Status = RepoStatusError
+	s.repoStates[repoId].ErrorType = errorType
+	s.repoStates[repoId].ErrorMessage = errorMessage
+	s.repoStates[repoId].ErrorAction = errorAction
+}
+
+func (s *State) ClearRepoErrorState(ctx context.Context, repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].ErrorType = RepoErrorTypeNone
+	s.repoStates[repoId].ErrorMessage = ""
+	s.repoStates[repoId].ErrorAction = RepoErrorActionNone
+	s.repoStates[repoId].Status = RepoStatusIdle
+}
+
+func (s *State) GetRepoErrorState(repoId int) (RepoErrorType, string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if rs, ok := s.repoStates[repoId]; ok {
+		return rs.ErrorType, rs.ErrorMessage
+	}
+	return RepoErrorTypeNone, ""
+}
+
+func (s *State) SetRepoWarningState(ctx context.Context, repoId int, warningMessage string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].HasWarning = true
+	s.repoStates[repoId].WarningMessage = warningMessage
+}
+
+func (s *State) ClearRepoWarningState(ctx context.Context, repoId int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChanged.String()+fmt.Sprintf(":%d", repoId))
+
+	if _, ok := s.repoStates[repoId]; !ok {
+		s.repoStates[repoId] = newRepoState()
+	}
+
+	s.repoStates[repoId].HasWarning = false
+	s.repoStates[repoId].WarningMessage = ""
+}
+
 /***********************************/
 /********** Backup States **********/
 /***********************************/
@@ -413,31 +515,25 @@ func (s *State) SetBackupRunning(ctx context.Context, bId types.BackupId) contex
 	return s.backupStates[bId].ctx
 }
 
-func (s *State) SetBackupCompleted(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
+func (s *State) SetBackupCompleted(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
 	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCompleted)
-	if setRepoStateIdle {
-		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
-	}
 }
 
-func (s *State) SetBackupCancelled(ctx context.Context, bId types.BackupId, setRepoStateIdle bool) {
+func (s *State) SetBackupCancelled(ctx context.Context, bId types.BackupId) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
 	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(bId.RepositoryId))
 
 	s.changeBackupState(bId, BackupStatusCancelled)
-	if setRepoStateIdle {
-		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
-	}
 }
 
-func (s *State) SetBackupError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
+func (s *State) SetBackupError(ctx context.Context, bId types.BackupId, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(bId))
@@ -445,11 +541,6 @@ func (s *State) SetBackupError(ctx context.Context, bId types.BackupId, err erro
 
 	s.changeBackupState(bId, BackupStatusFailed)
 	s.backupStates[bId].Error = err.Error()
-	if setRepoLocked {
-		s.setRepoState(bId.RepositoryId, RepoStatusLocked)
-	} else if setRepoStateIdle {
-		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
-	}
 }
 
 func (s *State) changeBackupState(bId types.BackupId, newState BackupStatus) {
@@ -598,7 +689,7 @@ func (s *State) SetPruneCancelled(ctx context.Context, bId types.BackupId) {
 	s.setRepoState(bId.RepositoryId, RepoStatusIdle)
 }
 
-func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error, setRepoStateIdle bool, setRepoLocked bool) {
+func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventPruneStateChangedString(bId))
@@ -607,11 +698,6 @@ func (s *State) SetPruneError(ctx context.Context, bId types.BackupId, err error
 
 	s.changePruneState(bId, PruningStatusFailed)
 	s.pruneStates[bId].Error = err.Error()
-	if setRepoLocked {
-		s.setRepoState(bId.RepositoryId, RepoStatusLocked)
-	} else if setRepoStateIdle {
-		s.setRepoState(bId.RepositoryId, RepoStatusIdle)
-	}
 }
 
 func (s *State) changePruneState(bId types.BackupId, newState PruningStatus) {
@@ -807,7 +893,7 @@ func (s *State) GetBackupButtonStatus(id types.BackupId) BackupButtonStatus {
 
 	// If the repository is locked, we can't do anything
 	if rs, ok := s.repoStates[id.RepositoryId]; ok {
-		if rs.Status == RepoStatusLocked {
+		if rs.Status == RepoStatusError {
 			return BackupButtonStatusLocked
 		}
 		if rs.Status == RepoStatusMounted {
@@ -855,7 +941,7 @@ func (s *State) GetCombinedBackupButtonStatus(bIds []types.BackupId) BackupButto
 
 	for _, bId := range bIds {
 		if rs, ok := s.repoStates[bId.RepositoryId]; ok {
-			if rs.Status == RepoStatusLocked {
+			if rs.Status == RepoStatusError {
 				// If any repository is locked, we can't do anything
 				return BackupButtonStatusLocked
 			}

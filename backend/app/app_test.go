@@ -2,16 +2,19 @@ package app
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
+	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg/mockborg"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"testing"
 )
 
 func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmitter) {
@@ -24,8 +27,10 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 
 	migrationsDir := os.DirFS("../ent/migrate/migrations")
 
+	tempDir := t.TempDir()
 	config := &types.Config{
-		Dir:             t.TempDir(),
+		Dir:             tempDir,
+		SSHDir:          filepath.Join(tempDir, "ssh"),
 		BorgBinaries:    nil,
 		BorgPath:        "",
 		BorgVersion:     "",
@@ -37,7 +42,11 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 
 	mockEventEmitter := mocktypes.NewMockEventEmitter(gomock.NewController(t))
 	a := NewApp(log.Sugar(), config, mockEventEmitter)
-	a.ctx = context.Background()
+
+	// Create context for tests that can be cancelled during cleanup
+	ctx, cancel := context.WithCancel(context.Background())
+	a.ctx = ctx
+	a.cancel = cancel
 
 	close(a.backupScheduleChangedCh)
 	a.backupScheduleChangedCh = nil
@@ -53,5 +62,31 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		t.Fatalf("failed to init db: %v", err)
 	}
 	a.db = db
+
+	// Initialize repository service with required dependencies for tests
+	// Create a cloud repository client for testing
+	cloudRepositoryClient := repository.NewCloudRepositoryClient(a.log, a.state, config)
+	cloudRepositoryClient.Init(db, nil) // Pass nil for RPC client in tests
+	a.repositoryService.Init(
+		db,
+		mockBorg,
+		config,
+		mockEventEmitter,
+		cloudRepositoryClient,
+	)
+
+	// Initialize backup profile service with repository service dependency
+	a.backupProfileService.Init(a.ctx, db, mockEventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
+
+	// Add cleanup function to test to ensure context is cancelled
+	t.Cleanup(func() {
+		if a.cancel != nil {
+			a.cancel()
+		}
+		if a.db != nil {
+			a.db.Close()
+		}
+	})
+
 	return a, mockBorg, mockEventEmitter
 }

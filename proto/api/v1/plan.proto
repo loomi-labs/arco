@@ -82,7 +82,7 @@ message OveragePrice {
 
 // Plan represents a complete subscription plan with pricing and features.
 //
-// Each plan defines storage limits, feature availability, and USD pricing
+// Each plan defines storage limits, device limits, feature availability, and USD pricing
 // for monthly and yearly billing cycles.
 message Plan {
   // Human-readable plan name (e.g., "Basic", "Pro").
@@ -102,4 +102,8 @@ message Plan {
   // Not set for Basic plans (no overage allowed).
   // Set for Pro plans with per-10GB pricing.
   OveragePrice overage_price = 5;
+
+  // Maximum number of devices (SSH keys) allowed for this plan.
+  // Each device represents one SSH key that can access user repositories.
+  int32 max_devices = 6;
 }

@@ -8,7 +8,7 @@ import { Page, withId } from "../router";
 import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType } from "../common/repository";
 import { toRepoTypeBadge } from "../common/badge";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import {Events} from "@wailsio/runtime";
@@ -30,7 +30,7 @@ const props = defineProps<Props>();
 const router = useRouter();
 const nbrOfArchives = ref<number>(0);
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
-const repoType = ref<RepoType>(getRepoType(props.repo.location));
+const repoType = ref<RepoType>(getRepoType(props.repo.url));
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -39,7 +39,7 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getNbrOfArchives() {
   try {
-    nbrOfArchives.value = await repoClient.GetNbrOfArchives(props.repo.id);
+    nbrOfArchives.value = await repoService.GetNbrOfArchives(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to get archives", error);
   }
@@ -47,7 +47,7 @@ async function getNbrOfArchives() {
 
 async function getRepoState() {
   try {
-    repoState.value = await repoClient.GetState(props.repo.id);
+    repoState.value = await repoService.GetState(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository state", error);
   }
@@ -89,7 +89,7 @@ onUnmounted(() => {
       <div class='divider'></div>
       <div class='flex justify-between'>
         <div>{{ $t("location") }}</div>
-        <span class='tooltip tooltip-primary' :data-tip='repo.location'>
+        <span class='tooltip tooltip-primary' :data-tip='repo.url'>
           <span :class='toRepoTypeBadge(getRepoType(repoType))'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
         </span>
       </div>

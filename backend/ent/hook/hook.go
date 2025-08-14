@@ -57,6 +57,18 @@ func (f BackupScheduleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackupScheduleMutation", m)
 }
 
+// The CloudRepositoryFunc type is an adapter to allow the use of ordinary
+// function as CloudRepository mutator.
+type CloudRepositoryFunc func(context.Context, *ent.CloudRepositoryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CloudRepositoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CloudRepositoryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CloudRepositoryMutation", m)
+}
+
 // The NotificationFunc type is an adapter to allow the use of ordinary
 // function as Notification mutator.
 type NotificationFunc func(context.Context, *ent.NotificationMutation) (ent.Value, error)

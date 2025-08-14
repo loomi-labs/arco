@@ -36,8 +36,8 @@ func (Repository) Fields() []ent.Field {
 			MaxLen(ValRepositoryMaxNameLength).
 			Match(ValRepositoryNamePattern).
 			Unique(),
-		field.String("location").
-			StructTag(`json:"location"`).
+		field.String("url").
+			StructTag(`json:"url"`).
 			Unique(),
 		field.String("password").
 			StructTag(`json:"password"`),
@@ -81,5 +81,9 @@ func (Repository) Edges() []ent.Edge {
 		edge.From("notifications", Notification.Type).
 			StructTag(`json:"notifications,omitempty"`).
 			Ref("repository"),
+		edge.From("cloud_repository", CloudRepository.Type).
+			StructTag(`json:"cloudRepository,omitempty"`).
+			Ref("repository").
+			Unique(),
 	}
 }

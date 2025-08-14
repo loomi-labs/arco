@@ -63,7 +63,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 	// If we are here the command has completed
 	status := cmd.Status()
-	borgStatus := gocmdToStatus(status)
+	borgStatus := gocmdToStatus(status, "")
 	if !isDryRun && borgStatus.IsCompletedWithSuccess() {
 		// Run compact to free up space
 		compactResult := b.Compact(ctx, repository, password)

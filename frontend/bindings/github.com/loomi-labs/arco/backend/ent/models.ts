@@ -13,6 +13,9 @@ import * as backupprofile$0 from "./backupprofile/models.js";
 import * as backupschedule$0 from "./backupschedule/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as cloudrepository$0 from "./cloudrepository/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as notification$0 from "./notification/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -484,6 +487,117 @@ export class BackupScheduleEdges {
 }
 
 /**
+ * CloudRepository is the model entity for the CloudRepository schema.
+ */
+export class CloudRepository {
+    /**
+     * ID of the ent.
+     */
+    "id": number;
+
+    /**
+     * CreatedAt holds the value of the "created_at" field.
+     */
+    "createdAt": time$0.Time;
+
+    /**
+     * UpdatedAt holds the value of the "updated_at" field.
+     */
+    "updatedAt": time$0.Time;
+
+    /**
+     * CloudID holds the value of the "cloud_id" field.
+     */
+    "cloudId": string;
+
+    /**
+     * StorageUsedBytes holds the value of the "storage_used_bytes" field.
+     */
+    "storageUsedBytes": number;
+
+    /**
+     * Location holds the value of the "location" field.
+     */
+    "location": cloudrepository$0.Location;
+
+    /**
+     * Edges holds the relations/edges for other nodes in the graph.
+     * The values are being populated by the CloudRepositoryQuery when eager-loading is set.
+     */
+    "edges": CloudRepositoryEdges;
+
+    /** Creates a new CloudRepository instance. */
+    constructor($$source: Partial<CloudRepository> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
+        }
+        if (!("cloudId" in $$source)) {
+            this["cloudId"] = "";
+        }
+        if (!("storageUsedBytes" in $$source)) {
+            this["storageUsedBytes"] = 0;
+        }
+        if (!("location" in $$source)) {
+            this["location"] = cloudrepository$0.Location.$zero;
+        }
+        if (!("edges" in $$source)) {
+            this["edges"] = (new CloudRepositoryEdges());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CloudRepository instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CloudRepository {
+        const $$createField6_0 = $$createType19;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("edges" in $$parsedSource) {
+            $$parsedSource["edges"] = $$createField6_0($$parsedSource["edges"]);
+        }
+        return new CloudRepository($$parsedSource as Partial<CloudRepository>);
+    }
+}
+
+/**
+ * CloudRepositoryEdges holds the relations/edges for other nodes in the graph.
+ */
+export class CloudRepositoryEdges {
+    /**
+     * Repository holds the value of the repository edge.
+     */
+    "repository": Repository | null;
+
+    /** Creates a new CloudRepositoryEdges instance. */
+    constructor($$source: Partial<CloudRepositoryEdges> = {}) {
+        if (!("repository" in $$source)) {
+            this["repository"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CloudRepositoryEdges instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CloudRepositoryEdges {
+        const $$createField0_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("repository" in $$parsedSource) {
+            $$parsedSource["repository"] = $$createField0_0($$parsedSource["repository"]);
+        }
+        return new CloudRepositoryEdges($$parsedSource as Partial<CloudRepositoryEdges>);
+    }
+}
+
+/**
  * Notification is the model entity for the Notification schema.
  */
 export class Notification {
@@ -562,7 +676,7 @@ export class Notification {
      * Creates a new Notification instance from a string or object.
      */
     static createFrom($$source: any = {}): Notification {
-        const $$createField7_0 = $$createType19;
+        const $$createField7_0 = $$createType20;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
@@ -735,7 +849,7 @@ export class PruningRule {
      * Creates a new PruningRule instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningRule {
-        const $$createField13_0 = $$createType20;
+        const $$createField13_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
@@ -797,9 +911,9 @@ export class Repository {
     "name": string;
 
     /**
-     * Location holds the value of the "location" field.
+     * URL holds the value of the "url" field.
      */
-    "location": string;
+    "url": string;
 
     /**
      * Password holds the value of the "password" field.
@@ -861,8 +975,8 @@ export class Repository {
         if (!("name" in $$source)) {
             this["name"] = "";
         }
-        if (!("location" in $$source)) {
-            this["location"] = "";
+        if (!("url" in $$source)) {
+            this["url"] = "";
         }
         if (!("password" in $$source)) {
             this["password"] = "";
@@ -899,7 +1013,7 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField13_0 = $$createType21;
+        const $$createField13_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
@@ -927,6 +1041,11 @@ export class RepositoryEdges {
      */
     "notifications"?: (Notification | null)[];
 
+    /**
+     * CloudRepository holds the value of the cloud_repository edge.
+     */
+    "cloudRepository"?: CloudRepository | null;
+
     /** Creates a new RepositoryEdges instance. */
     constructor($$source: Partial<RepositoryEdges> = {}) {
 
@@ -937,9 +1056,10 @@ export class RepositoryEdges {
      * Creates a new RepositoryEdges instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryEdges {
-        const $$createField0_0 = $$createType22;
+        const $$createField0_0 = $$createType23;
         const $$createField1_0 = $$createType10;
         const $$createField2_0 = $$createType17;
+        const $$createField3_0 = $$createType25;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupProfiles" in $$parsedSource) {
             $$parsedSource["backupProfiles"] = $$createField0_0($$parsedSource["backupProfiles"]);
@@ -949,6 +1069,9 @@ export class RepositoryEdges {
         }
         if ("notifications" in $$parsedSource) {
             $$parsedSource["notifications"] = $$createField2_0($$parsedSource["notifications"]);
+        }
+        if ("cloudRepository" in $$parsedSource) {
+            $$parsedSource["cloudRepository"] = $$createField3_0($$parsedSource["cloudRepository"]);
         }
         return new RepositoryEdges($$parsedSource as Partial<RepositoryEdges>);
     }
@@ -1022,7 +1145,10 @@ const $$createType15 = Notification.createFrom;
 const $$createType16 = $Create.Nullable($$createType15);
 const $$createType17 = $Create.Array($$createType16);
 const $$createType18 = BackupScheduleEdges.createFrom;
-const $$createType19 = NotificationEdges.createFrom;
-const $$createType20 = PruningRuleEdges.createFrom;
-const $$createType21 = RepositoryEdges.createFrom;
-const $$createType22 = $Create.Array($$createType4);
+const $$createType19 = CloudRepositoryEdges.createFrom;
+const $$createType20 = NotificationEdges.createFrom;
+const $$createType21 = PruningRuleEdges.createFrom;
+const $$createType22 = RepositoryEdges.createFrom;
+const $$createType23 = $Create.Array($$createType4);
+const $$createType24 = CloudRepository.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);

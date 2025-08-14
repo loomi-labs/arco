@@ -3,7 +3,9 @@
 
 export {
     BackupId,
+    DeleteResult,
     Event,
+    ExaminePruningResult,
     FrontendError,
     MountState,
     Notification,

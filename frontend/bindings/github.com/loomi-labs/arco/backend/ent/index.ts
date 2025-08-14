@@ -8,6 +8,8 @@ export {
     BackupProfileEdges,
     BackupSchedule,
     BackupScheduleEdges,
+    CloudRepository,
+    CloudRepositoryEdges,
     Notification,
     NotificationEdges,
     PruningRule,

@@ -118,6 +118,21 @@ var (
 			},
 		},
 	}
+	// CloudRepositoriesColumns holds the columns for the "cloud_repositories" table.
+	CloudRepositoriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "cloud_id", Type: field.TypeString},
+		{Name: "storage_used_bytes", Type: field.TypeInt64, Default: 0},
+		{Name: "location", Type: field.TypeEnum, Enums: []string{"EU", "US"}},
+	}
+	// CloudRepositoriesTable holds the schema information for the "cloud_repositories" table.
+	CloudRepositoriesTable = &schema.Table{
+		Name:       "cloud_repositories",
+		Columns:    CloudRepositoriesColumns,
+		PrimaryKey: []*schema.Column{CloudRepositoriesColumns[0]},
+	}
 	// NotificationsColumns holds the columns for the "notifications" table.
 	NotificationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -187,7 +202,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
-		{Name: "location", Type: field.TypeString, Unique: true},
+		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
 		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
@@ -196,12 +211,21 @@ var (
 		{Name: "stats_total_unique_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_unique_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_unique_csize", Type: field.TypeInt, Default: 0},
+		{Name: "cloud_repository_repository", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// RepositoriesTable holds the schema information for the "repositories" table.
 	RepositoriesTable = &schema.Table{
 		Name:       "repositories",
 		Columns:    RepositoriesColumns,
 		PrimaryKey: []*schema.Column{RepositoriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "repositories_cloud_repositories_repository",
+				Columns:    []*schema.Column{RepositoriesColumns[13]},
+				RefColumns: []*schema.Column{CloudRepositoriesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// SettingsColumns holds the columns for the "settings" table.
 	SettingsColumns = []*schema.Column{
@@ -265,6 +289,7 @@ var (
 		AuthSessionsTable,
 		BackupProfilesTable,
 		BackupSchedulesTable,
+		CloudRepositoriesTable,
 		NotificationsTable,
 		PruningRulesTable,
 		RepositoriesTable,
@@ -282,6 +307,7 @@ func init() {
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable
 	PruningRulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
+	RepositoriesTable.ForeignKeys[0].RefTable = CloudRepositoriesTable
 	BackupProfileRepositoriesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	BackupProfileRepositoriesTable.ForeignKeys[1].RefTable = RepositoriesTable
 }

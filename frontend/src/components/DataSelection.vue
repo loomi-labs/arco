@@ -9,8 +9,8 @@ import * as yup from "yup";
 import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
 import FormField from "./common/FormField.vue";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 
 /************
@@ -137,7 +137,7 @@ async function doesPathExist(path: string | undefined): Promise<boolean> {
 
   // Only check if path exists if it's a backup selection
   if (props.isBackupSelection) {
-    return await backupClient.DoesPathExist(path);
+    return await backupProfileService.DoesPathExist(path);
   }
   return true;
 }
@@ -190,7 +190,7 @@ async function addDirectory() {
   data.title = props.isBackupSelection ? "Select data to backup" : "Select data to ignore";
   data.message = props.isBackupSelection ? "Select the data you want to backup" : "Select the data you want to ignore";
   data.buttonText = "Select";
-  const pathStr = await backupClient.SelectDirectory(data);
+  const pathStr = await backupProfileService.SelectDirectory(data);
   if (pathStr) {
     newPath.value = pathStr;
     await newPathForm.validate();

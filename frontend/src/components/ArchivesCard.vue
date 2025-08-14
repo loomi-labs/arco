@@ -20,14 +20,17 @@ import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import { archivesChanged } from "../common/events";
-import * as backupClient from "../../bindings/github.com/loomi-labs/arco/backend/app/backupclient";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
-import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
-import * as app from "../../bindings/github.com/loomi-labs/arco/backend/app";
+import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
+import {
+  PaginatedArchivesRequest, PaginatedArchivesResponse,
+  PruningDates
+} from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -70,11 +73,11 @@ const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
 >(confirmDeleteMultipleModalKey);
-const backupProfileFilterOptions = ref<app.BackupProfileFilter[]>([]);
-const backupProfileFilter = ref<app.BackupProfileFilter>();
+const backupProfileFilterOptions = ref<BackupProfileFilter[]>([]);
+const backupProfileFilter = ref<BackupProfileFilter>();
 const search = ref<string>("");
 const isLoading = ref<boolean>(false);
-const pruningDates = ref<app.PruningDates>(app.PruningDates.createFrom());
+const pruningDates = ref<PruningDates>(PruningDates.createFrom());
 pruningDates.value.dates = [];
 const inputValues = ref<{ [key: number]: string }>({});
 const inputErrors = ref<{ [key: number]: string }>({});
@@ -104,7 +107,7 @@ const isBackupProfileFilterVisible = computed<boolean>(
 async function getPaginatedArchives() {
   try {
     isLoading.value = true;
-    const request = app.PaginatedArchivesRequest.createFrom();
+    const request = PaginatedArchivesRequest.createFrom();
 
     // Required
     request.repositoryId = props.repo.id;
@@ -113,7 +116,7 @@ async function getPaginatedArchives() {
 
     // Optional
     if (props.backupProfileId) {
-      request.backupProfileFilter = app.BackupProfileFilter.createFrom();
+      request.backupProfileFilter = BackupProfileFilter.createFrom();
       request.backupProfileFilter.id = props.backupProfileId;
     } else {
       request.backupProfileFilter = backupProfileFilter.value;
@@ -128,8 +131,7 @@ async function getPaginatedArchives() {
       : undefined;
 
     const result =
-      (await repoClient.GetPaginatedArchives(request)) ??
-      app.PaginatedArchivesResponse.createFrom();
+      (await repoService.GetPaginatedArchives(request)) ?? PaginatedArchivesResponse.createFrom();
 
     archives.value = result.archives.filter((a) => a !== null);
     pagination.value = {
@@ -169,7 +171,7 @@ async function deleteArchive() {
 
   try {
     progressSpinnerText.value = "Deleting archive";
-    await repoClient.DeleteArchive(archiveId);
+    await repoService.DeleteArchive(archiveId);
     markArchiveAndFadeOut(archiveId);
   } catch (error: unknown) {
     await showAndLogError("Failed to delete archive", error);
@@ -188,7 +190,7 @@ function markArchiveAndFadeOut(archiveId: number) {
 
 async function getArchiveMountStates() {
   try {
-    const result = await repoClient.GetArchiveMountStates(props.repo.id);
+    const result = await repoService.GetArchiveMountStates(props.repo.id);
     archiveMountStates.value = new Map(
       Object.entries(result).map(([k, v]) => [Number(k), v])
     );
@@ -200,7 +202,7 @@ async function getArchiveMountStates() {
 async function mountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Browsing archive";
-    const archiveMountState = await repoClient.MountArchive(archiveId);
+    const archiveMountState = await repoService.MountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: unknown) {
     await showAndLogError("Failed to mount archive", error);
@@ -212,7 +214,7 @@ async function mountArchive(archiveId: number) {
 async function unmountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Unmounting archive";
-    const archiveMountState = await repoClient.UnmountArchive(archiveId);
+    const archiveMountState = await repoService.UnmountArchive(archiveId);
     archiveMountStates.value.set(archiveId, archiveMountState);
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount archive", error);
@@ -229,7 +231,7 @@ async function getBackupProfileFilterOptions() {
 
   try {
     backupProfileFilterOptions.value =
-      await backupClient.GetBackupProfileFilterOptions(props.repo.id);
+      await backupProfileService.GetBackupProfileFilterOptions(props.repo.id);
 
     if (
       backupProfileFilter.value === undefined &&
@@ -245,7 +247,7 @@ async function getBackupProfileFilterOptions() {
 async function refreshArchives() {
   try {
     progressSpinnerText.value = "Refreshing archives";
-    await repoClient.RefreshArchives(props.repo.id);
+    await repoService.RefreshArchives(props.repo.id);
   } catch (error: unknown) {
     await showAndLogError("Failed to refresh archives", error);
   } finally {
@@ -255,7 +257,7 @@ async function refreshArchives() {
 
 async function getPruningDates() {
   try {
-    pruningDates.value = await repoClient.GetPruningDates(
+    pruningDates.value = await repoService.GetPruningDates(
       archives.value.filter((a) => a.willBePruned).map((a) => a.id)
     );
   } catch (error: unknown) {
@@ -284,7 +286,7 @@ async function rename(archive: ent.Archive) {
     inputRenameInProgress.value[archive.id] = true;
     const name = inputValues.value[archive.id];
     const prefix = prefixForBackupProfile(archive);
-    await repoClient.RenameArchive(archive.id, prefix, name);
+    await repoService.RenameArchive(archive.id, prefix, name);
   } catch (error: unknown) {
     await showAndLogError("Failed to rename archive", error);
   } finally {
@@ -319,7 +321,7 @@ async function validateName(archiveId: number) {
   }
 
   try {
-    inputErrors.value[archiveId] = await validationClient.ArchiveName(
+    inputErrors.value[archiveId] = await repoService.ValidateArchiveName(
       archiveId,
       prefix,
       name
@@ -359,7 +361,7 @@ async function deleteSelectedArchives() {
     const archiveIds = Array.from(selectedArchives.value);
 
     for (const archiveId of archiveIds) {
-      await repoClient.DeleteArchive(archiveId);
+      await repoService.DeleteArchive(archiveId);
       markArchiveAndFadeOut(archiveId);
     }
 
@@ -505,9 +507,9 @@ onUnmounted(() => {
                 </span>
                 <label>
                   <vue-tailwind-datepicker v-model='dateRange'
-                                          :formatter='formatter'
-                                          :shortcuts='customDateRangeShortcuts'
-                                          input-classes='input input-bordered placeholder-transparent' />
+                                           :formatter='formatter'
+                                           :shortcuts='customDateRangeShortcuts'
+                                           input-classes='input input-bordered placeholder-transparent' />
                 </label>
               </label>
 
@@ -596,7 +598,8 @@ onUnmounted(() => {
           <td>
             <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
               <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
-toRelativeTimeString(archive.createdAt) }}</span>
+                  toRelativeTimeString(archive.createdAt)
+                }}</span>
             </span>
           </td>
           <!-- Duration -->
@@ -648,7 +651,8 @@ toRelativeTimeString(archive.createdAt) }}</span>
           <ChevronLeftIcon class='size-6' />
         </button>
         <span class='mx-4'>{{ pagination.page }}/{{
-Math.ceil(pagination.total / pagination.pageSize) }}</span>
+            Math.ceil(pagination.total / pagination.pageSize)
+          }}</span>
         <button class='btn btn-ghost'
                 :disabled='pagination.page === Math.ceil(pagination.total / pagination.pageSize)'
                 @click='pagination.page++; getPaginatedArchives()'>

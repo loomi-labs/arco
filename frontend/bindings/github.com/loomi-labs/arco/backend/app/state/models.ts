@@ -120,13 +120,56 @@ export enum CheckoutResultStatus {
     CheckoutStatusTimeout = "timeout",
 };
 
+export enum RepoErrorAction {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    RepoErrorActionNone = "none",
+    RepoErrorActionRegenerateSSH = "regenerateSSH",
+    RepoErrorActionUnlockRepository = "unlockRepository",
+};
+
+export enum RepoErrorType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    RepoErrorTypeNone = "none",
+    RepoErrorTypeSSHKey = "sshKey",
+    RepoErrorTypePassphrase = "passphrase",
+    RepoErrorTypeLockTimeout = "lockTimeout",
+};
+
 export class RepoState {
     "status": RepoStatus;
+    "errorType": RepoErrorType;
+    "errorMessage": string;
+    "errorAction": RepoErrorAction;
+    "hasWarning": boolean;
+    "warningMessage": string;
 
     /** Creates a new RepoState instance. */
     constructor($$source: Partial<RepoState> = {}) {
         if (!("status" in $$source)) {
             this["status"] = RepoStatus.$zero;
+        }
+        if (!("errorType" in $$source)) {
+            this["errorType"] = RepoErrorType.$zero;
+        }
+        if (!("errorMessage" in $$source)) {
+            this["errorMessage"] = "";
+        }
+        if (!("errorAction" in $$source)) {
+            this["errorAction"] = RepoErrorAction.$zero;
+        }
+        if (!("hasWarning" in $$source)) {
+            this["hasWarning"] = false;
+        }
+        if (!("warningMessage" in $$source)) {
+            this["warningMessage"] = "";
         }
 
         Object.assign(this, $$source);
@@ -153,7 +196,7 @@ export enum RepoStatus {
     RepoStatusDeleting = "deleting",
     RepoStatusMounted = "mounted",
     RepoStatusPerformingOperation = "performingOperation",
-    RepoStatusLocked = "locked",
+    RepoStatusError = "error",
 };
 
 export class StartupState {

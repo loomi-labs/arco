@@ -6,8 +6,7 @@ import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
-import * as repoClient from "../../bindings/github.com/loomi-labs/arco/backend/app/repositoryclient";
-import * as validationClient from "../../bindings/github.com/loomi-labs/arco/backend/app/validationclient";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 
@@ -91,7 +90,7 @@ async function createRepo() {
   try {
     isCreating.value = true;
     const noPassword = !isEncrypted.value;
-    const repo = await repoClient.Create(
+    const repo = await repoService.Create(
       name.value!,
       location.value!,
       password.value!,
@@ -137,10 +136,10 @@ async function setNameFromLocation() {
 async function simpleValidate(force = false) {
   try {
     if (name.value !== undefined || force) {
-      nameError.value = await validationClient.RepoName(name.value ?? "");
+      nameError.value = await repoService.ValidateRepoName(name.value ?? "");
     }
     if (location.value !== undefined || force) {
-      locationError.value = await validationClient.RepoPath(location.value ?? "", false);
+      locationError.value = await repoService.ValidateRepoPath(location.value ?? "", false);
     }
 
     if (location.value === undefined || locationError.value) {
@@ -158,7 +157,7 @@ async function fullValidate(force = false) {
     if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
       lastTestConnectionValues.value = [location.value, password.value];
 
-      const result = await repoClient.TestRepoConnection(location.value ?? "", password.value ?? "");
+      const result = await repoService.TestRepoConnection(location.value ?? "", password.value ?? "");
 
       isBorgRepo.value = result.isBorgRepo;
 
@@ -195,7 +194,7 @@ async function fullValidate(force = false) {
 
 async function getConnectedRemoteHosts() {
   try {
-    hosts.value = await repoClient.GetConnectedRemoteHosts();
+    hosts.value = await repoService.GetConnectedRemoteHosts();
   } catch (error: unknown) {
     await showAndLogError("Failed to get connected remote hosts", error);
   }

@@ -9,9 +9,13 @@ import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import type { Plan, Subscription, CreateCheckoutSessionResponse } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent/models";
-import { FeatureSet } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import type {
+  CreateCheckoutSessionResponse,
+  Plan,
+  Subscription
+} from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { FeatureSet, RepositoryLocation } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
@@ -73,6 +77,10 @@ const userSubscriptionPlan = ref<string | undefined>(undefined);
 const userSubscription = ref<Subscription | undefined>(undefined);
 const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
+const repoPassword = ref("");
+const repoPasswordError = ref<string | undefined>(undefined);
+const selectedLocation = ref<RepositoryLocation>(RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU);
+const isCreatingRepository = ref(false);
 
 // Error messages
 const errorMessage = ref<string | undefined>(undefined);
@@ -83,6 +91,20 @@ const checkoutSession = ref<CreateCheckoutSessionResponse | undefined>(undefined
 // Event cleanup
 const cleanupFunctions: Array<() => void> = [];
 
+// Location options for repository creation
+const locationOptions = [
+  {
+    value: RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU,
+    label: "Europe",
+    emoji: "🇪🇺"
+  },
+  {
+    value: RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_US,
+    label: "United States", 
+    emoji: "🇺🇸"
+  }
+];
+
 
 /************
  * Computed
@@ -91,7 +113,8 @@ const cleanupFunctions: Array<() => void> = [];
 // Loading state helpers
 const isLoading = computed(() =>
   currentState.value === ComponentState.LOADING_INITIAL ||
-  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED
+  currentState.value === ComponentState.SUBSCRIPTION_AUTHENTICATED ||
+  isCreatingRepository.value
 );
 
 const modalTitle = computed(() => {
@@ -153,7 +176,8 @@ const selectedPlanData = computed(() =>
 );
 
 const isRepoValid = computed(() =>
-  repoName.value.length > 0 && !repoNameError.value
+  repoName.value.length > 0 && !repoNameError.value &&
+  repoPassword.value.length > 0 && !repoPasswordError.value
 );
 
 const activePlanName = computed(() => {
@@ -279,6 +303,10 @@ function resetAll() {
   selectedPlan.value = undefined;
   repoName.value = "";
   repoNameError.value = undefined;
+  repoPassword.value = "";
+  repoPasswordError.value = undefined;
+  selectedLocation.value = RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU;
+  isCreatingRepository.value = false;
   errorMessage.value = undefined;
   checkoutSession.value = undefined;
   transitionTo(ComponentState.LOADING_INITIAL);
@@ -379,6 +407,19 @@ function validateRepoName() {
   }
 }
 
+function validateRepoPassword() {
+  if (!repoPassword.value) {
+    repoPasswordError.value = undefined;
+    return;
+  }
+
+  if (repoPassword.value.length < 1) {
+    repoPasswordError.value = "Password is required";
+  } else {
+    repoPasswordError.value = undefined;
+  }
+}
+
 function setupCheckoutEventListener() {
   // Listen for subscription completion events
   const checkoutCleanup = Events.On(EventHelpers.subscriptionAddedEvent(), async () => {
@@ -408,29 +449,32 @@ function openCheckoutUrl(url: string) {
   Browser.OpenURL(url)
 }
 
-function createRepository() {
+async function createRepository() {
   if (!isRepoValid.value) return;
 
-  // Mock repository creation
-  const mockRepo = Repository.createFrom({
-    id: Date.now(),
-    name: repoName.value,
-    location: `arco-cloud://${repoName.value}`,
-    password: "",
-    isCloud: true,
-    createdAt: { seconds: Math.floor(Date.now() / 1000), nanos: 0 },
-    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanos: 0 },
-    nextIntegrityCheck: null,
-    statsCompressed: 0,
-    statsUncompressed: 0,
-    statsDeduplication: 0,
-    statsUniqueCsize: 0,
-    statsTotalSize: 0,
-    edges: null
-  });
+  isCreatingRepository.value = true;
+  errorMessage.value = undefined;
 
-  emit("repo-created", mockRepo);
-  closeModal();
+  try {
+    // Create ArcoCloud repository with user-provided password and location
+    const response = await repoService.CreateCloudRepository(
+      repoName.value,
+      repoPassword.value,
+      selectedLocation.value
+    );
+
+    if (response) {
+      emit("repo-created", response);
+      closeModal();
+    } else {
+      errorMessage.value = "Failed to create repository. Please try again.";
+    }
+  } catch (error: unknown) {
+    errorMessage.value = "Failed to create repository. Please check your connection and try again.";
+    await logError("Error creating ArcoCloud repository", error);
+  } finally {
+    isCreatingRepository.value = false;
+  }
 }
 
 function onAuthenticated() {
@@ -462,6 +506,10 @@ onUnmounted(() => {
 
 function onRepoNameInput() {
   validateRepoName();
+}
+
+function onRepoPasswordInput() {
+  validateRepoPassword();
 }
 
 
@@ -613,7 +661,15 @@ watch(isAuthenticated, async (authenticated) => {
 
       <!-- Create Repository State -->
       <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION'>
-        <div class='flex flex-col gap-4'>
+        <!-- Error Alert for Repository Creation -->
+        <div v-if='errorMessage' role="alert" class="alert alert-error mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errorMessage }}</span>
+        </div>
+        
+        <div class='flex flex-col gap-4 mb-6'>
           <FormField label='Repository Name' :error='repoNameError'>
             <input
               :class='formInputClass'
@@ -624,6 +680,42 @@ watch(isAuthenticated, async (authenticated) => {
               :disabled='isLoading'
             />
           </FormField>
+
+          <FormField label='Password' :error='repoPasswordError'>
+            <input
+              :class='formInputClass'
+              type='password'
+              v-model='repoPassword'
+              @input='onRepoPasswordInput'
+              placeholder='Enter repository password'
+              :disabled='isLoading'
+            />
+          </FormField>
+
+          <div>
+            <label class='label'>
+              <span class='label-text'>Location</span>
+            </label>
+            <div class='flex gap-3'>
+              <div 
+                v-for='option in locationOptions' 
+                :key='option.value'
+                class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
+                :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
+                @click='selectedLocation = option.value'
+              >
+                <input
+                  type='radio'
+                  :value='option.value'
+                  v-model='selectedLocation'
+                  class='radio radio-secondary radio-sm'
+                  :disabled='isLoading'
+                />
+                <span class='text-base'>{{ option.emoji }}</span>
+                <span class='font-medium text-sm'>{{ option.label }}</span>
+              </div>
+            </div>
+          </div>
 
           <div class='modal-action justify-start'>
             <button
@@ -645,3 +737,4 @@ watch(isAuthenticated, async (authenticated) => {
     </div>
   </dialog>
 </template>
+

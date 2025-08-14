@@ -3,26 +3,8 @@ package app
 import (
 	"archive/zip"
 	"bytes"
-	"connectrpc.com/connect"
 	"context"
-	"entgo.io/ent/dialect"
-	"entgo.io/ent/dialect/sql"
 	"fmt"
-	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v66/github"
-	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
-	"github.com/loomi-labs/arco/backend/app/auth"
-	"github.com/loomi-labs/arco/backend/app/plan"
-	appstate "github.com/loomi-labs/arco/backend/app/state"
-	"github.com/loomi-labs/arco/backend/app/subscription"
-	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
-	"github.com/loomi-labs/arco/backend/ent"
-	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
-	"github.com/loomi-labs/arco/backend/util"
-	"github.com/pressly/goose/v3"
-	"github.com/teamwork/reload"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
@@ -30,37 +12,34 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"connectrpc.com/connect"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"github.com/Masterminds/semver/v3"
+	"github.com/google/go-github/v66/github"
+	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/backup_profile"
+	"github.com/loomi-labs/arco/backend/app/plan"
+	"github.com/loomi-labs/arco/backend/app/repository"
+	appstate "github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/subscription"
+	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/app/user"
+	"github.com/loomi-labs/arco/backend/borg"
+	"github.com/loomi-labs/arco/backend/ent"
+	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
+	"github.com/loomi-labs/arco/backend/util"
+	"github.com/pressly/goose/v3"
+	"github.com/teamwork/reload"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"go.uber.org/zap"
 )
 
 const (
 	Name = "Arco"
 )
-
-var (
-	Version = "v0.0.0"
-)
-
-type EnvVar string
-
-const (
-	EnvVarDebug           EnvVar = "ARCO_DEBUG"
-	EnvVarDevelopment     EnvVar = "ARCO_DEVELOPMENT"
-	EnvVarStartPage       EnvVar = "ARCO_START_PAGE"
-	EnvVarCloudRPCURL     EnvVar = "ARCO_CLOUD_RPC_URL"
-	EnvVarEnableLoginBeta EnvVar = "ARCO_ENABLE_LOGIN_BETA"
-)
-
-func (e EnvVar) Name() string {
-	return string(e)
-}
-
-func (e EnvVar) String() string {
-	return os.Getenv(e.Name())
-}
-
-func (e EnvVar) Bool() bool {
-	return os.Getenv(e.Name()) == "true"
-}
 
 type App struct {
 	// Init
@@ -74,12 +53,15 @@ type App struct {
 	shouldQuit               bool
 
 	// Startup
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	db                  *ent.Client
-	authService         *auth.ServiceInternal
-	planService         *plan.ServiceInternal
-	subscriptionService *subscription.ServiceInternal
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	db                   *ent.Client
+	userService          *user.ServiceInternal
+	authService          *auth.ServiceInternal
+	planService          *plan.ServiceInternal
+	subscriptionService  *subscription.ServiceInternal
+	repositoryService    *repository.ServiceInternal
+	backupProfileService *backup_profile.ServiceInternal
 }
 
 func NewApp(
@@ -88,7 +70,7 @@ func NewApp(
 	eventEmitter types.EventEmitter,
 ) *App {
 	state := appstate.NewState(log, eventEmitter)
-	sshPrivateKeys := util.SearchSSHKeys(log)
+	sshPrivateKeys := util.SearchSSHKeys(log, config.SSHDir)
 	return &App{
 		log:                      log,
 		config:                   config,
@@ -98,41 +80,25 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		userService:              user.NewService(log, state),
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
+		repositoryService:        repository.NewService(log, state),
+		backupProfileService:     backup_profile.NewService(log, state, config),
 	}
 }
 
-// These clients separate the different types of operations that can be performed with the Borg client
-// This makes it easier to expose them in a clean way to the frontend
-
-// RepositoryClient is a client for repository related operations
-type RepositoryClient App
-
-// AppClient is a client for application related operations
-type AppClient App
-
-// BackupClient is a client for backup related operations
-type BackupClient App
-
-// ValidationClient is a client for validation related operations
-type ValidationClient App
-
-func (a *App) RepoClient() *RepositoryClient {
-	return (*RepositoryClient)(a)
+func (a *App) UserService() *user.Service {
+	return a.userService.Service
 }
 
-func (a *App) AppClient() *AppClient {
-	return (*AppClient)(a)
+func (a *App) BackupProfileService() *backup_profile.Service {
+	return a.backupProfileService.Service
 }
 
-func (a *App) BackupClient() *BackupClient {
-	return (*BackupClient)(a)
-}
-
-func (a *App) ValidationClient() *ValidationClient {
-	return (*ValidationClient)(a)
+func (a *App) RepositoryService() *repository.Service {
+	return a.repositoryService.Service
 }
 
 func (a *App) AuthService() *auth.Service {
@@ -145,18 +111,6 @@ func (a *App) PlanService() *plan.Service {
 
 func (a *App) SubscriptionService() *subscription.Service {
 	return a.subscriptionService.Service
-}
-
-func (r *RepositoryClient) backupClient() *BackupClient {
-	return (*BackupClient)(r)
-}
-
-func (r *RepositoryClient) validationClient() *ValidationClient {
-	return (*ValidationClient)(r)
-}
-
-func (b *BackupClient) repoClient() *RepositoryClient {
-	return (*RepositoryClient)(b)
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -217,11 +171,33 @@ func (a *App) Startup(ctx context.Context) {
 		a.config.CloudRPCURL,
 		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
 	)
+	cloudRepositoryRPCClient := arcov1connect.NewRepositoryServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
 
 	// Initialize services with database and authenticated RPC clients
+	a.userService.Init(a.db)
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
+
+	// Create cloud repository service first
+	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
+	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
+
+	// Initialize repository service with full dependencies
+	a.repositoryService.Init(
+		a.db,
+		a.borg,
+		a.config,
+		a.eventEmitter,
+		cloudRepositoryService,
+	)
+
+	// Initialize backup profile service with repository service dependency
+	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -246,11 +222,14 @@ func (a *App) Startup(ctx context.Context) {
 	}
 
 	// Save mount states
-	a.RepoClient().setMountStates()
+	a.repositoryService.SetMountStates(a.ctx)
+
+	// Start ArcoCloud sync listener
+	go a.startArcoCloudSyncListener()
 
 	// Schedule backups
-	go a.startScheduleChangeListener()
-	go a.startPruneScheduleChangeListener()
+	go a.backupProfileService.StartScheduleChangeListener()
+	go a.backupProfileService.StartPruneScheduleChangeListener()
 	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
 
@@ -277,8 +256,37 @@ func (a *App) ShouldQuit() bool {
 	return a.state.GetStartupState().Error != "" || a.shouldQuit
 }
 
+func (a *App) startArcoCloudSyncListener() {
+	a.log.Debug("Starting ArcoCloud sync listener")
+
+	syncArcoCloudData := func() {
+		go func() {
+			_, err := a.repositoryService.SyncCloudRepositories(a.ctx)
+			if err != nil {
+				a.log.Error(err)
+			}
+		}()
+	}
+
+	// Initial sync if authenticated
+	if a.state.GetAuthState().IsAuthenticated {
+		syncArcoCloudData()
+	}
+
+	// Listen for auth state changes using Wails event system
+	application.Get().Event.On(types.EventAuthStateChanged.String(), func(event *application.CustomEvent) {
+		isAuthenticated := a.state.GetAuthState().IsAuthenticated
+		a.log.Debugf("Auth state changed, authenticated: %v", isAuthenticated)
+
+		if isAuthenticated {
+			// User became authenticated - sync data
+			syncArcoCloudData()
+		}
+	})
+}
+
 func (a *App) updateArco() (bool, error) {
-	if EnvVarDevelopment.Bool() {
+	if types.EnvVarDevelopment.Bool() {
 		a.log.Info("Development mode enabled, skipping update check")
 		return false, nil
 	}
@@ -522,23 +530,4 @@ func (a *App) installBorgBinary() error {
 
 	// Download the binary
 	return util.DownloadFile(a.config.BorgPath, binary.Url)
-}
-
-// rollback calls to tx.Rollback and wraps the given error
-// with the rollback error if occurred.
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: %v", err, rerr)
-	}
-	return err
-}
-
-// TODO: remove or move somewhere else
-func (a *App) createSSHKeyPair() (string, error) {
-	pair, err := util.GenerateKeyPair()
-	if err != nil {
-		return "", err
-	}
-	a.log.Info(fmt.Sprintf("Generated SSH key pair: %s", pair.AuthorizedKey()))
-	return pair.AuthorizedKey(), nil
 }

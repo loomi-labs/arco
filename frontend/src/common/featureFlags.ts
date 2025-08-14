@@ -1,5 +1,5 @@
 import { ref, readonly } from 'vue'
-import * as appClient from '../../bindings/github.com/loomi-labs/arco/backend/app/appclient'
+import * as userService from '../../bindings/github.com/loomi-labs/arco/backend/app/user/service'
 import { showAndLogError } from "./logger";
 
 interface FeatureFlags {
@@ -18,7 +18,7 @@ export async function initializeFeatureFlags(): Promise<void> {
   }
 
   try {
-    const env = await appClient.GetEnvVars()
+    const env = await userService.GetEnvVars()
     featureFlags.value = {
       loginBetaEnabled: env.loginBetaEnabled
     }

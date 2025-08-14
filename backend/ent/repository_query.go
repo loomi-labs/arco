@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
@@ -22,14 +23,16 @@ import (
 // RepositoryQuery is the builder for querying Repository entities.
 type RepositoryQuery struct {
 	config
-	ctx                *QueryContext
-	order              []repository.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.Repository
-	withBackupProfiles *BackupProfileQuery
-	withArchives       *ArchiveQuery
-	withNotifications  *NotificationQuery
-	modifiers          []func(*sql.Selector)
+	ctx                 *QueryContext
+	order               []repository.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Repository
+	withBackupProfiles  *BackupProfileQuery
+	withArchives        *ArchiveQuery
+	withNotifications   *NotificationQuery
+	withCloudRepository *CloudRepositoryQuery
+	withFKs             bool
+	modifiers           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +128,28 @@ func (rq *RepositoryQuery) QueryNotifications() *NotificationQuery {
 			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(notification.Table, notification.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, repository.NotificationsTable, repository.NotificationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCloudRepository chains the current query on the "cloud_repository" edge.
+func (rq *RepositoryQuery) QueryCloudRepository() *CloudRepositoryQuery {
+	query := (&CloudRepositoryClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
+			sqlgraph.To(cloudrepository.Table, cloudrepository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, repository.CloudRepositoryTable, repository.CloudRepositoryColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -319,14 +344,15 @@ func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 		return nil
 	}
 	return &RepositoryQuery{
-		config:             rq.config,
-		ctx:                rq.ctx.Clone(),
-		order:              append([]repository.OrderOption{}, rq.order...),
-		inters:             append([]Interceptor{}, rq.inters...),
-		predicates:         append([]predicate.Repository{}, rq.predicates...),
-		withBackupProfiles: rq.withBackupProfiles.Clone(),
-		withArchives:       rq.withArchives.Clone(),
-		withNotifications:  rq.withNotifications.Clone(),
+		config:              rq.config,
+		ctx:                 rq.ctx.Clone(),
+		order:               append([]repository.OrderOption{}, rq.order...),
+		inters:              append([]Interceptor{}, rq.inters...),
+		predicates:          append([]predicate.Repository{}, rq.predicates...),
+		withBackupProfiles:  rq.withBackupProfiles.Clone(),
+		withArchives:        rq.withArchives.Clone(),
+		withNotifications:   rq.withNotifications.Clone(),
+		withCloudRepository: rq.withCloudRepository.Clone(),
 		// clone intermediate query.
 		sql:       rq.sql.Clone(),
 		path:      rq.path,
@@ -364,6 +390,17 @@ func (rq *RepositoryQuery) WithNotifications(opts ...func(*NotificationQuery)) *
 		opt(query)
 	}
 	rq.withNotifications = query
+	return rq
+}
+
+// WithCloudRepository tells the query-builder to eager-load the nodes that are connected to
+// the "cloud_repository" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepositoryQuery) WithCloudRepository(opts ...func(*CloudRepositoryQuery)) *RepositoryQuery {
+	query := (&CloudRepositoryClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withCloudRepository = query
 	return rq
 }
 
@@ -444,13 +481,21 @@ func (rq *RepositoryQuery) prepareQuery(ctx context.Context) error {
 func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Repository, error) {
 	var (
 		nodes       = []*Repository{}
+		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			rq.withBackupProfiles != nil,
 			rq.withArchives != nil,
 			rq.withNotifications != nil,
+			rq.withCloudRepository != nil,
 		}
 	)
+	if rq.withCloudRepository != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, repository.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Repository).scanValues(nil, columns)
 	}
@@ -490,6 +535,12 @@ func (rq *RepositoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*R
 		if err := rq.loadNotifications(ctx, query, nodes,
 			func(n *Repository) { n.Edges.Notifications = []*Notification{} },
 			func(n *Repository, e *Notification) { n.Edges.Notifications = append(n.Edges.Notifications, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withCloudRepository; query != nil {
+		if err := rq.loadCloudRepository(ctx, query, nodes, nil,
+			func(n *Repository, e *CloudRepository) { n.Edges.CloudRepository = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -616,6 +667,38 @@ func (rq *RepositoryQuery) loadNotifications(ctx context.Context, query *Notific
 			return fmt.Errorf(`unexpected referenced foreign-key "notification_repository" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (rq *RepositoryQuery) loadCloudRepository(ctx context.Context, query *CloudRepositoryQuery, nodes []*Repository, init func(*Repository), assign func(*Repository, *CloudRepository)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Repository)
+	for i := range nodes {
+		if nodes[i].cloud_repository_repository == nil {
+			continue
+		}
+		fk := *nodes[i].cloud_repository_repository
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(cloudrepository.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "cloud_repository_repository" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

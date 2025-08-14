@@ -3,6 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -12,11 +18,6 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io/fs"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 var binaries = []types.BorgBinary{
@@ -47,7 +48,7 @@ var binaries = []types.BorgBinary{
 }
 
 func initLogger(configDir string) *zap.SugaredLogger {
-	if app.EnvVarDevelopment.Bool() {
+	if types.EnvVarDevelopment.Bool() {
 		config := zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
@@ -70,7 +71,7 @@ func initLogger(configDir string) *zap.SugaredLogger {
 
 		// Create a production config
 		config := zap.NewProductionConfig()
-		if app.EnvVarDebug.Bool() {
+		if types.EnvVarDebug.Bool() {
 			config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 		}
 
@@ -94,16 +95,49 @@ func getConfigDir() (path string, err error) {
 	return filepath.Join(dir, ".config", "arco"), nil
 }
 
+// ensureSSHDir creates SSH directory with proper permissions if it doesn't exist,
+// or ensures existing directory has correct permissions
+func ensureSSHDir(configDir string) error {
+	sshDir := filepath.Join(configDir, "ssh")
+
+	if _, err := os.Stat(sshDir); os.IsNotExist(err) {
+		// SSH directory doesn't exist, create it with strict permissions
+		if err := os.MkdirAll(sshDir, 0700); err != nil {
+			return fmt.Errorf("failed to create SSH directory %q: %w", sshDir, err)
+		}
+	} else if err != nil {
+		// Error accessing SSH directory
+		return fmt.Errorf("failed to access SSH directory %q: %w", sshDir, err)
+	} else {
+		// SSH directory exists, ensure it has proper permissions
+		if err := os.Chmod(sshDir, 0700); err != nil {
+			return fmt.Errorf("failed to set SSH directory permissions: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func createConfigDir() (string, error) {
 	configDir, err := getConfigDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get config directory: %w", err)
 	}
-	if _, err = os.Stat(configDir); os.IsNotExist(err) {
-		return configDir, os.MkdirAll(configDir, 0755)
+
+	// Create config directory if it doesn't exist
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return "", fmt.Errorf("failed to create config directory %q: %w", configDir, err)
+		}
 	} else if err != nil {
+		return "", fmt.Errorf("failed to access config directory %q: %w", configDir, err)
+	}
+
+	// Ensure SSH directory exists with proper permissions
+	if err := ensureSSHDir(configDir); err != nil {
 		return "", err
 	}
+
 	return configDir, nil
 }
 
@@ -121,14 +155,14 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		}
 	}
 
-	version, err := semver.NewVersion(app.Version)
+	version, err := semver.NewVersion(types.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version: %w", err)
 	}
 
-	cloudRPCURL := app.EnvVarCloudRPCURL.String()
+	cloudRPCURL := types.EnvVarCloudRPCURL.String()
 	if cloudRPCURL == "" {
-		if app.EnvVarDevelopment.Bool() {
+		if types.EnvVarDevelopment.Bool() {
 			cloudRPCURL = "http://localhost:8080"
 		} else {
 			cloudRPCURL = "https://api.arco-backup.com"
@@ -137,6 +171,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 
 	return &types.Config{
 		Dir:             configDir,
+		SSHDir:          filepath.Join(configDir, "ssh"),
 		BorgBinaries:    binaries,
 		BorgPath:        filepath.Join(configDir, binaries[0].Name),
 		BorgVersion:     binaries[0].Version,
@@ -188,10 +223,9 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		Name:        app.Name,
 		Description: "Arco is a backup tool.",
 		Services: []application.Service{
-			application.NewService(arco.AppClient()),
-			application.NewService(arco.BackupClient()),
-			application.NewService(arco.RepoClient()),
-			application.NewService(arco.ValidationClient()),
+			application.NewService(arco.UserService()),
+			application.NewService(arco.BackupProfileService()),
+			application.NewService(arco.RepositoryService()),
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),
 			application.NewService(arco.SubscriptionService()),
@@ -280,7 +314,7 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to get version flag: %w", err)
 		}
 		if showVersion {
-			fmt.Printf("%s %s\n", app.Name, app.Version)
+			fmt.Printf("%s %s\n", app.Name, types.Version)
 			return nil
 		}
 

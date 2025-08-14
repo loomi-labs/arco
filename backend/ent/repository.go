@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 )
 
@@ -23,8 +24,8 @@ type Repository struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name"`
-	// Location holds the value of the "location" field.
-	Location string `json:"location"`
+	// URL holds the value of the "url" field.
+	URL string `json:"url"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
 	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
@@ -43,8 +44,9 @@ type Repository struct {
 	StatsUniqueCsize int `json:"statsUniqueCsize"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
-	Edges        RepositoryEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges                       RepositoryEdges `json:"edges"`
+	cloud_repository_repository *int
+	selectValues                sql.SelectValues
 }
 
 // RepositoryEdges holds the relations/edges for other nodes in the graph.
@@ -55,9 +57,11 @@ type RepositoryEdges struct {
 	Archives []*Archive `json:"archives,omitempty"`
 	// Notifications holds the value of the notifications edge.
 	Notifications []*Notification `json:"notifications,omitempty"`
+	// CloudRepository holds the value of the cloud_repository edge.
+	CloudRepository *CloudRepository `json:"cloudRepository,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // BackupProfilesOrErr returns the BackupProfiles value or an error if the edge
@@ -87,6 +91,17 @@ func (e RepositoryEdges) NotificationsOrErr() ([]*Notification, error) {
 	return nil, &NotLoadedError{edge: "notifications"}
 }
 
+// CloudRepositoryOrErr returns the CloudRepository value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RepositoryEdges) CloudRepositoryOrErr() (*CloudRepository, error) {
+	if e.CloudRepository != nil {
+		return e.CloudRepository, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: cloudrepository.Label}
+	}
+	return nil, &NotLoadedError{edge: "cloud_repository"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Repository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -94,10 +109,12 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
-		case repository.FieldName, repository.FieldLocation, repository.FieldPassword:
+		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
 			values[i] = new(sql.NullString)
 		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldNextIntegrityCheck:
 			values[i] = new(sql.NullTime)
+		case repository.ForeignKeys[0]: // cloud_repository_repository
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -137,11 +154,11 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.Name = value.String
 			}
-		case repository.FieldLocation:
+		case repository.FieldURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field location", values[i])
+				return fmt.Errorf("unexpected type %T for field url", values[i])
 			} else if value.Valid {
-				r.Location = value.String
+				r.URL = value.String
 			}
 		case repository.FieldPassword:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -192,6 +209,13 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.StatsUniqueCsize = int(value.Int64)
 			}
+		case repository.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field cloud_repository_repository", value)
+			} else if value.Valid {
+				r.cloud_repository_repository = new(int)
+				*r.cloud_repository_repository = int(value.Int64)
+			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
 		}
@@ -218,6 +242,11 @@ func (r *Repository) QueryArchives() *ArchiveQuery {
 // QueryNotifications queries the "notifications" edge of the Repository entity.
 func (r *Repository) QueryNotifications() *NotificationQuery {
 	return NewRepositoryClient(r.config).QueryNotifications(r)
+}
+
+// QueryCloudRepository queries the "cloud_repository" edge of the Repository entity.
+func (r *Repository) QueryCloudRepository() *CloudRepositoryQuery {
+	return NewRepositoryClient(r.config).QueryCloudRepository(r)
 }
 
 // Update returns a builder for updating this Repository.
@@ -252,8 +281,8 @@ func (r *Repository) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
 	builder.WriteString(", ")
-	builder.WriteString("location=")
-	builder.WriteString(r.Location)
+	builder.WriteString("url=")
+	builder.WriteString(r.URL)
 	builder.WriteString(", ")
 	builder.WriteString("password=")
 	builder.WriteString(r.Password)

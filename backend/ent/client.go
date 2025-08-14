@@ -19,6 +19,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
@@ -39,6 +40,8 @@ type Client struct {
 	BackupProfile *BackupProfileClient
 	// BackupSchedule is the client for interacting with the BackupSchedule builders.
 	BackupSchedule *BackupScheduleClient
+	// CloudRepository is the client for interacting with the CloudRepository builders.
+	CloudRepository *CloudRepositoryClient
 	// Notification is the client for interacting with the Notification builders.
 	Notification *NotificationClient
 	// PruningRule is the client for interacting with the PruningRule builders.
@@ -64,6 +67,7 @@ func (c *Client) init() {
 	c.AuthSession = NewAuthSessionClient(c.config)
 	c.BackupProfile = NewBackupProfileClient(c.config)
 	c.BackupSchedule = NewBackupScheduleClient(c.config)
+	c.CloudRepository = NewCloudRepositoryClient(c.config)
 	c.Notification = NewNotificationClient(c.config)
 	c.PruningRule = NewPruningRuleClient(c.config)
 	c.Repository = NewRepositoryClient(c.config)
@@ -159,17 +163,18 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		Archive:        NewArchiveClient(cfg),
-		AuthSession:    NewAuthSessionClient(cfg),
-		BackupProfile:  NewBackupProfileClient(cfg),
-		BackupSchedule: NewBackupScheduleClient(cfg),
-		Notification:   NewNotificationClient(cfg),
-		PruningRule:    NewPruningRuleClient(cfg),
-		Repository:     NewRepositoryClient(cfg),
-		Settings:       NewSettingsClient(cfg),
-		User:           NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Archive:         NewArchiveClient(cfg),
+		AuthSession:     NewAuthSessionClient(cfg),
+		BackupProfile:   NewBackupProfileClient(cfg),
+		BackupSchedule:  NewBackupScheduleClient(cfg),
+		CloudRepository: NewCloudRepositoryClient(cfg),
+		Notification:    NewNotificationClient(cfg),
+		PruningRule:     NewPruningRuleClient(cfg),
+		Repository:      NewRepositoryClient(cfg),
+		Settings:        NewSettingsClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
@@ -187,17 +192,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		Archive:        NewArchiveClient(cfg),
-		AuthSession:    NewAuthSessionClient(cfg),
-		BackupProfile:  NewBackupProfileClient(cfg),
-		BackupSchedule: NewBackupScheduleClient(cfg),
-		Notification:   NewNotificationClient(cfg),
-		PruningRule:    NewPruningRuleClient(cfg),
-		Repository:     NewRepositoryClient(cfg),
-		Settings:       NewSettingsClient(cfg),
-		User:           NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Archive:         NewArchiveClient(cfg),
+		AuthSession:     NewAuthSessionClient(cfg),
+		BackupProfile:   NewBackupProfileClient(cfg),
+		BackupSchedule:  NewBackupScheduleClient(cfg),
+		CloudRepository: NewCloudRepositoryClient(cfg),
+		Notification:    NewNotificationClient(cfg),
+		PruningRule:     NewPruningRuleClient(cfg),
+		Repository:      NewRepositoryClient(cfg),
+		Settings:        NewSettingsClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
@@ -227,8 +233,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Archive, c.AuthSession, c.BackupProfile, c.BackupSchedule, c.Notification,
-		c.PruningRule, c.Repository, c.Settings, c.User,
+		c.Archive, c.AuthSession, c.BackupProfile, c.BackupSchedule, c.CloudRepository,
+		c.Notification, c.PruningRule, c.Repository, c.Settings, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -238,8 +244,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Archive, c.AuthSession, c.BackupProfile, c.BackupSchedule, c.Notification,
-		c.PruningRule, c.Repository, c.Settings, c.User,
+		c.Archive, c.AuthSession, c.BackupProfile, c.BackupSchedule, c.CloudRepository,
+		c.Notification, c.PruningRule, c.Repository, c.Settings, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -256,6 +262,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackupProfile.mutate(ctx, m)
 	case *BackupScheduleMutation:
 		return c.BackupSchedule.mutate(ctx, m)
+	case *CloudRepositoryMutation:
+		return c.CloudRepository.mutate(ctx, m)
 	case *NotificationMutation:
 		return c.Notification.mutate(ctx, m)
 	case *PruningRuleMutation:
@@ -931,6 +939,155 @@ func (c *BackupScheduleClient) mutate(ctx context.Context, m *BackupScheduleMuta
 	}
 }
 
+// CloudRepositoryClient is a client for the CloudRepository schema.
+type CloudRepositoryClient struct {
+	config
+}
+
+// NewCloudRepositoryClient returns a client for the CloudRepository from the given config.
+func NewCloudRepositoryClient(c config) *CloudRepositoryClient {
+	return &CloudRepositoryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cloudrepository.Hooks(f(g(h())))`.
+func (c *CloudRepositoryClient) Use(hooks ...Hook) {
+	c.hooks.CloudRepository = append(c.hooks.CloudRepository, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cloudrepository.Intercept(f(g(h())))`.
+func (c *CloudRepositoryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CloudRepository = append(c.inters.CloudRepository, interceptors...)
+}
+
+// Create returns a builder for creating a CloudRepository entity.
+func (c *CloudRepositoryClient) Create() *CloudRepositoryCreate {
+	mutation := newCloudRepositoryMutation(c.config, OpCreate)
+	return &CloudRepositoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CloudRepository entities.
+func (c *CloudRepositoryClient) CreateBulk(builders ...*CloudRepositoryCreate) *CloudRepositoryCreateBulk {
+	return &CloudRepositoryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CloudRepositoryClient) MapCreateBulk(slice any, setFunc func(*CloudRepositoryCreate, int)) *CloudRepositoryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CloudRepositoryCreateBulk{err: fmt.Errorf("calling to CloudRepositoryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CloudRepositoryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CloudRepositoryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CloudRepository.
+func (c *CloudRepositoryClient) Update() *CloudRepositoryUpdate {
+	mutation := newCloudRepositoryMutation(c.config, OpUpdate)
+	return &CloudRepositoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CloudRepositoryClient) UpdateOne(cr *CloudRepository) *CloudRepositoryUpdateOne {
+	mutation := newCloudRepositoryMutation(c.config, OpUpdateOne, withCloudRepository(cr))
+	return &CloudRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CloudRepositoryClient) UpdateOneID(id int) *CloudRepositoryUpdateOne {
+	mutation := newCloudRepositoryMutation(c.config, OpUpdateOne, withCloudRepositoryID(id))
+	return &CloudRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CloudRepository.
+func (c *CloudRepositoryClient) Delete() *CloudRepositoryDelete {
+	mutation := newCloudRepositoryMutation(c.config, OpDelete)
+	return &CloudRepositoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CloudRepositoryClient) DeleteOne(cr *CloudRepository) *CloudRepositoryDeleteOne {
+	return c.DeleteOneID(cr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CloudRepositoryClient) DeleteOneID(id int) *CloudRepositoryDeleteOne {
+	builder := c.Delete().Where(cloudrepository.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CloudRepositoryDeleteOne{builder}
+}
+
+// Query returns a query builder for CloudRepository.
+func (c *CloudRepositoryClient) Query() *CloudRepositoryQuery {
+	return &CloudRepositoryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCloudRepository},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CloudRepository entity by its id.
+func (c *CloudRepositoryClient) Get(ctx context.Context, id int) (*CloudRepository, error) {
+	return c.Query().Where(cloudrepository.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CloudRepositoryClient) GetX(ctx context.Context, id int) *CloudRepository {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRepository queries the repository edge of a CloudRepository.
+func (c *CloudRepositoryClient) QueryRepository(cr *CloudRepository) *RepositoryQuery {
+	query := (&RepositoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cloudrepository.Table, cloudrepository.FieldID, id),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, cloudrepository.RepositoryTable, cloudrepository.RepositoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CloudRepositoryClient) Hooks() []Hook {
+	return c.hooks.CloudRepository
+}
+
+// Interceptors returns the client interceptors.
+func (c *CloudRepositoryClient) Interceptors() []Interceptor {
+	return c.inters.CloudRepository
+}
+
+func (c *CloudRepositoryClient) mutate(ctx context.Context, m *CloudRepositoryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CloudRepositoryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CloudRepositoryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CloudRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CloudRepositoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CloudRepository mutation op: %q", m.Op())
+	}
+}
+
 // NotificationClient is a client for the Notification schema.
 type NotificationClient struct {
 	config
@@ -1401,6 +1558,22 @@ func (c *RepositoryClient) QueryNotifications(r *Repository) *NotificationQuery 
 	return query
 }
 
+// QueryCloudRepository queries the cloud_repository edge of a Repository.
+func (c *RepositoryClient) QueryCloudRepository(r *Repository) *CloudRepositoryQuery {
+	query := (&CloudRepositoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repository.Table, repository.FieldID, id),
+			sqlgraph.To(cloudrepository.Table, cloudrepository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, repository.CloudRepositoryTable, repository.CloudRepositoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RepositoryClient) Hooks() []Hook {
 	return c.hooks.Repository
@@ -1695,11 +1868,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Archive, AuthSession, BackupProfile, BackupSchedule, Notification, PruningRule,
-		Repository, Settings, User []ent.Hook
+		Archive, AuthSession, BackupProfile, BackupSchedule, CloudRepository,
+		Notification, PruningRule, Repository, Settings, User []ent.Hook
 	}
 	inters struct {
-		Archive, AuthSession, BackupProfile, BackupSchedule, Notification, PruningRule,
-		Repository, Settings, User []ent.Interceptor
+		Archive, AuthSession, BackupProfile, BackupSchedule, CloudRepository,
+		Notification, PruningRule, Repository, Settings, User []ent.Interceptor
 	}
 )
