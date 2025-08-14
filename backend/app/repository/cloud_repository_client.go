@@ -21,19 +21,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// getLocationEnum converts proto location to enum with proper error logging
-func (s *CloudRepositoryClient) getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
-	switch location {
-	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_EU:
-		return cloudrepository.LocationEU
-	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
-		return cloudrepository.LocationUS
-	default:
-		s.log.Errorf("Unknown repository location %v, defaulting to EU", location)
-		return cloudrepository.LocationEU
-	}
-}
-
 type CloudRepositoryStatus string
 
 const (

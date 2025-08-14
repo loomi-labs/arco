@@ -265,6 +265,19 @@ func (s *Service) syncCloudRepositories(ctx context.Context) ([]*ent.Repository,
 	return syncedRepos, nil
 }
 
+// getLocationEnum converts proto location to enum with proper error logging
+func (s *Service) getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
+	switch location {
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_EU:
+		return cloudrepository.LocationEU
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
+		return cloudrepository.LocationUS
+	default:
+		s.log.Errorf("Unknown repository location %v, defaulting to EU", location)
+		return cloudrepository.LocationEU
+	}
+}
+
 // syncSingleCloudRepository creates or updates a local repository entity with cloud metadata
 func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arcov1.Repository) (*ent.Repository, error) {
 	s.mustHaveDB()
@@ -299,7 +312,7 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 			_, txErr := tx.CloudRepository.Create().
 				SetCloudID(cloudRepo.Id).
 				SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
-				SetLocation(getLocationEnum(cloudRepo.Location)).
+				SetLocation(s.getLocationEnum(cloudRepo.Location)).
 				SetRepository(localRepo).
 				Save(ctx)
 			if txErr != nil {
@@ -330,7 +343,7 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 		_, txErr = tx.CloudRepository.Create().
 			SetCloudID(cloudRepo.Id).
 			SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
-			SetLocation(getLocationEnum(cloudRepo.Location)).
+			SetLocation(s.getLocationEnum(cloudRepo.Location)).
 			SetRepository(localRepo).
 			Save(ctx)
 		if txErr != nil {
@@ -425,7 +438,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 		_, txErr = tx.CloudRepository.
 			Create().
 			SetCloudID(repo.Id).
-			SetLocation(getLocationEnum(location)).
+			SetLocation(s.getLocationEnum(location)).
 			SetRepository(entRepo).
 			Save(ctx)
 		if txErr != nil {
