@@ -34,6 +34,8 @@ func (Notification) Fields() []ent.Field {
 		field.Bool("seen").
 			StructTag(`json:"seen"`).
 			Default(false),
+
+		// TODO: This field can most likely be removed since it's never considered
 		field.Enum("action").
 			StructTag(`json:"action"`).
 			Values("unlockRepository").
