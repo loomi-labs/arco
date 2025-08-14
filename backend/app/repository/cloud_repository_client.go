@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ydb-platform/ydb-go-sdk/v3/log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"connectrpc.com/connect"
 
 	"github.com/charmbracelet/keygen"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
@@ -21,16 +21,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// Helper function to convert proto location to enum
-func getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
+// getLocationEnum converts proto location to enum with proper error logging
+func (s *CloudRepositoryClient) getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
 	switch location {
 	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_EU:
 		return cloudrepository.LocationEU
 	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
 		return cloudrepository.LocationUS
 	default:
-		log.Error(errors.New("unknown location"))
-		return cloudrepository.LocationEU // Default to EU
+		s.log.Errorf("Unknown repository location %v, defaulting to EU", location)
+		return cloudrepository.LocationEU
 	}
 }
 
