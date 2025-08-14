@@ -1,5 +1,4 @@
 # Borg Client Container for Integration Tests - Ubuntu 22.04
-# Extends main Dockerfile with Ubuntu 22.04 specific configuration
 
 # Import from main Dockerfile's builder stage
 FROM docker.io/library/golang:1.24-bullseye AS builder
@@ -25,6 +24,9 @@ COPY backend/ ./backend/
 
 # Build integration test binary
 RUN CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg/integration
+
+# Build minimal arco binary for borg-url detection (no CGO needed)
+RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
 
 # Ubuntu 22.04 specific runtime environment
 FROM ubuntu:22.04
@@ -53,15 +55,14 @@ RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
     usermod -aG docker borg
 
-# Download and install borg binary with version-specific URL
-RUN if [ "${CLIENT_BORG_VERSION}" = "1.4.1" ]; then \
-        BORG_BINARY="borg-linux-glibc236"; \
-    elif [ "${CLIENT_BORG_VERSION}" = "1.4.0" ]; then \
-        BORG_BINARY="borg-linux-glibc231"; \
-    else \
-        echo "Unsupported Borg version: ${CLIENT_BORG_VERSION}" && exit 1; \
-    fi && \
-    curl -L "https://github.com/borgbackup/borg/releases/download/${CLIENT_BORG_VERSION}/${BORG_BINARY}" -o /usr/local/bin/borg && \
+# Copy Arco binary for borg-url detection (must be before borg install)
+COPY --from=builder /arco-cli /usr/local/bin/arco-cli
+RUN chmod +x /usr/local/bin/arco-cli
+
+# Download and install borg binary using dynamic URL detection
+RUN BORG_URL=$(/usr/local/bin/arco-cli --show-borg-url) && \
+    echo "Detected Borg URL for this system: $BORG_URL" && \
+    curl -L "$BORG_URL" -o /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \
     chown root:root /usr/local/bin/borg && \
     ln -s /usr/local/bin/borg /usr/bin/borg
