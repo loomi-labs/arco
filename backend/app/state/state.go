@@ -418,6 +418,7 @@ func (s *State) ClearRepoErrorState(ctx context.Context, repoId int) {
 	s.repoStates[repoId].ErrorType = RepoErrorTypeNone
 	s.repoStates[repoId].ErrorMessage = ""
 	s.repoStates[repoId].ErrorAction = RepoErrorActionNone
+	s.repoStates[repoId].Status = RepoStatusIdle
 }
 
 func (s *State) GetRepoErrorState(repoId int) (RepoErrorType, string) {
