@@ -41,7 +41,6 @@ const (
 	Name = "Arco"
 )
 
-
 type App struct {
 	// Init
 	log                      *zap.SugaredLogger

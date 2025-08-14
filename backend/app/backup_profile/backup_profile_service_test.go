@@ -86,7 +86,7 @@ func newTestBackupProfileService(t *testing.T) (*Service, *ent.Client, context.C
 	log, _ := zap.NewDevelopment()
 	sugarLog := log.Sugar()
 
-	// Create state and config  
+	// Create state and config
 	state := &state.State{}
 	config := &types.Config{}
 

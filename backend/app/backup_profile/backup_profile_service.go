@@ -616,4 +616,3 @@ func (s *Service) sendPruningRuleChanged() {
 	}
 	s.pruningScheduleChangedCh <- struct{}{}
 }
-
