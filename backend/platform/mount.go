@@ -1,52 +1,36 @@
-package types
+package platform
 
 import (
 	"fmt"
-	"github.com/loomi-labs/arco/backend/util"
-	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/prometheus/procfs"
 )
 
-type BorgBinary struct {
-	Name    string
-	Version string
-	Os      util.OS
-	Url     string
-}
-
-func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
-	for _, binary := range binaries {
-		if binary.Os == util.OS(runtime.GOOS) {
-			return binary, nil
-		}
-	}
-	return BorgBinary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
-}
-
-func GetOpenFileManagerCmd() (string, error) {
-	if util.IsLinux() {
-		return "xdg-open", nil
-	}
-	if util.IsMacOS() {
-		return "open", nil
-	}
-	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
-}
-
+// GetMountPath returns the default mount path for the current OS
 func GetMountPath() (string, error) {
-	if util.IsLinux() {
+	if IsLinux() {
 		return "/run/user", nil
 	}
-	if util.IsMacOS() {
+	if IsMacOS() {
 		return "/private/tmp", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }
 
-func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
+func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
+	if IsLinux() {
+		return getLinuxMountStates(paths)
+	}
+	if IsMacOS() {
+		return getDarwinMountStates(paths)
+	}
+	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
 
+func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
 	cmd := exec.Command("mount")
 	output, err := cmd.Output()
 	if err != nil {
@@ -87,14 +71,4 @@ func getLinuxMountStates(paths map[int]string) (map[int]*MountState, error) {
 		}
 	}
 	return states, nil
-}
-
-func GetMountStates(paths map[int]string) (states map[int]*MountState, err error) {
-	if util.IsLinux() {
-		return getLinuxMountStates(paths)
-	}
-	if util.IsMacOS() {
-		return getDarwinMountStates(paths)
-	}
-	return nil, fmt.Errorf("operating system %s is not supported", runtime.GOOS)
 }

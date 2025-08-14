@@ -30,6 +30,7 @@ import (
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
@@ -523,7 +524,7 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	binary, err := types.GetLatestBorgBinary(a.config.BorgBinaries)
+	binary, err := platform.GetLatestBorgBinary(a.config.BorgBinaries)
 	if err != nil {
 		return err
 	}

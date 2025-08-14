@@ -1,3 +1,5 @@
+//go:build !integration
+
 package cmd
 
 import (
@@ -12,6 +14,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/app"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/spf13/cobra"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -19,33 +22,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-var binaries = []types.BorgBinary{
-	{
-		Name:    "borg_1.4.1",
-		Version: "1.4.1",
-		Os:      util.Linux,
-		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
-	},
-	{
-		Name:    "borg_1.4.1",
-		Version: "1.4.1",
-		Os:      util.Darwin,
-		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012",
-	},
-	{
-		Name:    "borg_1.4.0",
-		Version: "1.4.0",
-		Os:      util.Linux,
-		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
-	},
-	{
-		Name:    "borg_1.4.0",
-		Version: "1.4.0",
-		Os:      util.Darwin,
-		Url:     "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
-	},
-}
 
 func initLogger(configDir string) *zap.SugaredLogger {
 	if types.EnvVarDevelopment.Bool() {
@@ -172,12 +148,12 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	return &types.Config{
 		Dir:             configDir,
 		SSHDir:          filepath.Join(configDir, "ssh"),
-		BorgBinaries:    binaries,
-		BorgPath:        filepath.Join(configDir, binaries[0].Name),
-		BorgVersion:     binaries[0].Version,
+		BorgBinaries:    platform.Binaries,
+		BorgPath:        filepath.Join(configDir, platform.Binaries[0].Name),
+		BorgVersion:     platform.Binaries[0].Version.String(),
 		Icons:           icons,
 		Migrations:      migrations,
-		GithubAssetName: util.GithubAssetName(),
+		GithubAssetName: platform.GithubAssetName(),
 		Version:         version,
 		CheckForUpdates: autoUpdate,
 		CloudRPCURL:     cloudRPCURL,
@@ -266,7 +242,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 
 	systray := wailsApp.SystemTray.New()
 	systray.SetLabel(app.Name)
-	if util.IsMacOS() {
+	if platform.IsMacOS() {
 		// Support for template icons on macOS
 		systray.SetTemplateIcon(config.Icons.DarwinIcons)
 	} else {

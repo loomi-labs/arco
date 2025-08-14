@@ -34,6 +34,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/pruningrule"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -205,7 +206,7 @@ func (si *ServiceInternal) SetMountStates(ctx context.Context) {
 			paths[arch.ID] = archivePath
 		}
 
-		states, err := types.GetMountStates(paths)
+		states, err := platform.GetMountStates(paths)
 		if err != nil {
 			si.log.Error("Error getting mount states: ", err)
 			continue
@@ -1365,7 +1366,7 @@ func (s *Service) RenameArchive(ctx context.Context, id int, prefix, name string
 // MOUNT OPERATIONS
 // ============================================================================
 
-func (s *Service) MountRepository(ctx context.Context, repoId int) (mountState types.MountState, err error) {
+func (s *Service) MountRepository(ctx context.Context, repoId int) (mountState platform.MountState, err error) {
 	s.mustHaveDB()
 	repo, err := s.Get(ctx, repoId)
 	if err != nil {
@@ -1399,7 +1400,7 @@ func (s *Service) MountRepository(ctx context.Context, repoId int) (mountState t
 	return
 }
 
-func (s *Service) MountArchive(ctx context.Context, archiveId int) (state types.MountState, err error) {
+func (s *Service) MountArchive(ctx context.Context, archiveId int) (state platform.MountState, err error) {
 	s.mustHaveDB()
 	arch, err := s.GetArchive(ctx, archiveId)
 	if err != nil {
@@ -1477,7 +1478,7 @@ func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) error {
 	return nil
 }
 
-func (s *Service) UnmountRepository(ctx context.Context, repoId int) (state types.MountState, err error) {
+func (s *Service) UnmountRepository(ctx context.Context, repoId int) (state platform.MountState, err error) {
 	s.mustHaveDB()
 	repo, err := s.Get(ctx, repoId)
 	if err != nil {
@@ -1503,7 +1504,7 @@ func (s *Service) UnmountRepository(ctx context.Context, repoId int) (state type
 	return
 }
 
-func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (state types.MountState, err error) {
+func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (state platform.MountState, err error) {
 	s.mustHaveDB()
 	arch, err := s.GetArchive(ctx, archiveId)
 	if err != nil {
@@ -1529,11 +1530,11 @@ func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (state type
 	return
 }
 
-func (s *Service) GetRepoMountState(repoId int) types.MountState {
+func (s *Service) GetRepoMountState(repoId int) platform.MountState {
 	return s.state.GetRepoMount(repoId)
 }
 
-func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (states map[int]types.MountState, err error) {
+func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (states map[int]platform.MountState, err error) {
 	s.mustHaveDB()
 	repo, err := s.Get(ctx, repoId)
 	if err != nil {
@@ -1543,7 +1544,7 @@ func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (states
 }
 
 func (s *Service) openFileManager(path string) {
-	openCmd, err := types.GetOpenFileManagerCmd()
+	openCmd, err := platform.GetOpenFileManagerCmd()
 	if err != nil {
 		s.log.Error("Error getting open file manager command: ", err)
 		return
@@ -1562,7 +1563,7 @@ func getMountPath(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	mountPath, err := types.GetMountPath()
+	mountPath, err := platform.GetMountPath()
 	if err != nil {
 		return "", err
 	}
@@ -1586,8 +1587,8 @@ func ensurePathExists(path string) error {
 	return nil
 }
 
-func getMountState(path string) (state types.MountState, err error) {
-	states, err := types.GetMountStates(map[int]string{0: path})
+func getMountState(path string) (state platform.MountState, err error) {
+	states, err := platform.GetMountStates(map[int]string{0: path})
 	if err != nil {
 		return
 	}

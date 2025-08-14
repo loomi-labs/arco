@@ -25,6 +25,9 @@ import * as types$1 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as platform$0 from "../../platform/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -97,7 +100,7 @@ export function GetArchive(id: number): $CancellablePromise<ent$0.Archive | null
     });
 }
 
-export function GetArchiveMountStates(repoId: number): $CancellablePromise<{ [_: `${number}`]: types$0.MountState }> {
+export function GetArchiveMountStates(repoId: number): $CancellablePromise<{ [_: `${number}`]: platform$0.MountState }> {
     return $Call.ByID(1005351287, repoId).then(($result: any) => {
         return $$createType8($result);
     });
@@ -182,7 +185,7 @@ export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$mode
     });
 }
 
-export function GetRepoMountState(repoId: number): $CancellablePromise<types$0.MountState> {
+export function GetRepoMountState(repoId: number): $CancellablePromise<platform$0.MountState> {
     return $Call.ByID(2042207536, repoId).then(($result: any) => {
         return $$createType7($result);
     });
@@ -204,13 +207,13 @@ export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
     return $Call.ByID(101129870, path);
 }
 
-export function MountArchive(archiveId: number): $CancellablePromise<types$0.MountState> {
+export function MountArchive(archiveId: number): $CancellablePromise<platform$0.MountState> {
     return $Call.ByID(1226599023, archiveId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
-export function MountRepository(repoId: number): $CancellablePromise<types$0.MountState> {
+export function MountRepository(repoId: number): $CancellablePromise<platform$0.MountState> {
     return $Call.ByID(3803510467, repoId).then(($result: any) => {
         return $$createType7($result);
     });
@@ -276,13 +279,13 @@ export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<void>
     return $Call.ByID(1105783937, repoIds);
 }
 
-export function UnmountArchive(archiveId: number): $CancellablePromise<types$0.MountState> {
+export function UnmountArchive(archiveId: number): $CancellablePromise<platform$0.MountState> {
     return $Call.ByID(2999465112, archiveId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
-export function UnmountRepository(repoId: number): $CancellablePromise<types$0.MountState> {
+export function UnmountRepository(repoId: number): $CancellablePromise<platform$0.MountState> {
     return $Call.ByID(2002243586, repoId).then(($result: any) => {
         return $$createType7($result);
     });
@@ -325,7 +328,7 @@ const $$createType3 = types$0.ExaminePruningResult.createFrom;
 const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = ent$0.Archive.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = types$0.MountState.createFrom;
+const $$createType7 = platform$0.MountState.createFrom;
 const $$createType8 = $Create.Map($Create.Any, $$createType7);
 const $$createType9 = ent$0.BackupProfile.createFrom;
 const $$createType10 = $Create.Nullable($$createType9);
