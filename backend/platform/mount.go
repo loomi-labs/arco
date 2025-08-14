@@ -1,52 +1,16 @@
-package types
+package platform
 
 import (
 	"fmt"
-	"github.com/loomi-labs/arco/backend/util"
-	"github.com/prometheus/procfs"
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/loomi-labs/arco/backend/util"
+	"github.com/prometheus/procfs"
 )
 
-type BorgBinary struct {
-	Name    string
-	Version string
-	Os      util.OS
-	Url     string
-}
-
-func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
-	for _, binary := range binaries {
-		if binary.Os == util.OS(runtime.GOOS) {
-			return binary, nil
-		}
-	}
-	return BorgBinary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
-}
-
-func GetOpenFileManagerCmd() (string, error) {
-	if util.IsLinux() {
-		return "xdg-open", nil
-	}
-	if util.IsMacOS() {
-		return "open", nil
-	}
-	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
-}
-
-func GetMountPath() (string, error) {
-	if util.IsLinux() {
-		return "/run/user", nil
-	}
-	if util.IsMacOS() {
-		return "/private/tmp", nil
-	}
-	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
-}
-
 func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
-
 	cmd := exec.Command("mount")
 	output, err := cmd.Output()
 	if err != nil {

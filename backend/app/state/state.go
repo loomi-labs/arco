@@ -8,6 +8,7 @@ import (
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/negrel/assert"
 	"go.uber.org/zap"
 )
@@ -26,8 +27,8 @@ type State struct {
 	backupStates    map[types.BackupId]*BackupState
 	pruneStates     map[types.BackupId]*PruneState
 
-	repoMounts    map[int]*types.MountState         // map of repository ID to mount state
-	archiveMounts map[int]map[int]*types.MountState // maps of [repository ID][archive ID] to mount state
+	repoMounts    map[int]*platform.MountState         // map of repository ID to mount state
+	archiveMounts map[int]map[int]*platform.MountState // maps of [repository ID][archive ID] to mount state
 }
 
 type StartupStatus string
@@ -294,8 +295,8 @@ func NewState(log *zap.SugaredLogger, eventEmitter types.EventEmitter) *State {
 		backupStates: map[types.BackupId]*BackupState{},
 		pruneStates:  map[types.BackupId]*PruneState{},
 
-		repoMounts:    make(map[int]*types.MountState),
-		archiveMounts: make(map[int]map[int]*types.MountState),
+		repoMounts:    make(map[int]*platform.MountState),
+		archiveMounts: make(map[int]map[int]*platform.MountState),
 	}
 }
 
@@ -776,13 +777,13 @@ func (s *State) CanMountRepo(id int) (canMount bool, reason string) {
 	return true, ""
 }
 
-func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.MountState) {
+func (s *State) SetRepoMount(ctx context.Context, repoId int, state *platform.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.eventEmitter.EmitEvent(ctx, types.EventRepoStateChangedString(repoId))
 
 	if _, ok := s.repoMounts[repoId]; !ok {
-		s.repoMounts[repoId] = &types.MountState{}
+		s.repoMounts[repoId] = &platform.MountState{}
 	}
 
 	s.repoMounts[repoId].IsMounted = state.IsMounted
@@ -804,12 +805,12 @@ func (s *State) SetRepoMount(ctx context.Context, repoId int, state *types.Mount
 	}
 }
 
-func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, state *types.MountState) {
+func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, state *platform.MountState) {
 	if _, ok := s.archiveMounts[repoId]; !ok {
-		s.archiveMounts[repoId] = make(map[int]*types.MountState)
+		s.archiveMounts[repoId] = make(map[int]*platform.MountState)
 	}
 	if _, ok := s.archiveMounts[repoId][archiveId]; !ok {
-		s.archiveMounts[repoId][archiveId] = &types.MountState{}
+		s.archiveMounts[repoId][archiveId] = &platform.MountState{}
 	}
 
 	s.archiveMounts[repoId][archiveId].IsMounted = state.IsMounted
@@ -833,14 +834,14 @@ func (s *State) setArchiveMount(ctx context.Context, repoId int, archiveId int, 
 	}
 }
 
-func (s *State) SetArchiveMount(ctx context.Context, repoId int, archiveId int, state *types.MountState) {
+func (s *State) SetArchiveMount(ctx context.Context, repoId int, archiveId int, state *platform.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.setArchiveMount(ctx, repoId, archiveId, state)
 }
 
-func (s *State) SetArchiveMounts(ctx context.Context, repoId int, states map[int]*types.MountState) {
+func (s *State) SetArchiveMounts(ctx context.Context, repoId int, states map[int]*platform.MountState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -849,22 +850,22 @@ func (s *State) SetArchiveMounts(ctx context.Context, repoId int, states map[int
 	}
 }
 
-func (s *State) getRepoMount(id int) types.MountState {
+func (s *State) getRepoMount(id int) platform.MountState {
 	if state, ok := s.repoMounts[id]; ok {
 		return *state
 	}
-	return types.MountState{}
+	return platform.MountState{}
 }
 
-func (s *State) GetRepoMount(id int) types.MountState {
+func (s *State) GetRepoMount(id int) platform.MountState {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return s.getRepoMount(id)
 }
 
-func (s *State) getArchiveMounts(repoId int) (states map[int]types.MountState) {
-	states = make(map[int]types.MountState)
+func (s *State) getArchiveMounts(repoId int) (states map[int]platform.MountState) {
+	states = make(map[int]platform.MountState)
 	for rId, state := range s.archiveMounts {
 		if rId == repoId {
 			for aId, aState := range state {
@@ -875,7 +876,7 @@ func (s *State) getArchiveMounts(repoId int) (states map[int]types.MountState) {
 	return states
 }
 
-func (s *State) GetArchiveMounts(repoId int) (states map[int]types.MountState) {
+func (s *State) GetArchiveMounts(repoId int) (states map[int]platform.MountState) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
