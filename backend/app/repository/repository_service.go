@@ -191,7 +191,7 @@ func (s *Service) GetLocked(ctx context.Context) ([]*ent.Repository, error) {
 
 	locked := make([]*ent.Repository, 0)
 	for _, repo := range all {
-		if s.state.GetRepoState(repo.ID).Status == state.RepoStatusLocked {
+		if s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeLockTimeout {
 			locked = append(locked, repo)
 		}
 	}
@@ -350,7 +350,34 @@ func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arco
 
 // RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
 func (s *Service) RegenerateSSHKey(ctx context.Context) error {
-	return s.cloudService.AddOrReplaceSSHKey(ctx)
+	err := s.cloudService.AddOrReplaceSSHKey(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get all repositories and clear SSH error states for cloud repositories
+	repos, err := s.All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range repos {
+		if s.isCloudRepository(ctx, repo.ID) && s.state.GetRepoState(repo.ID).ErrorType == state.RepoErrorTypeSSHKey {
+			s.state.ClearRepoErrorState(ctx, repo.ID)
+			s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) ChangePassword(ctx context.Context, repoId int, password string) error {
+	// TODO: implement change password
+
+	s.state.ClearRepoErrorState(ctx, repoId)
+	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
+
+	return nil
 }
 
 // CreateCloudRepository creates a new ArcoCloud repository
@@ -548,6 +575,7 @@ func (s *Service) BreakLock(ctx context.Context, id int) error {
 	if err := s.handleBorgStatus(ctx, repo, status, "break lock"); err != nil {
 		return err
 	}
+	s.state.ClearRepoErrorState(ctx, id)
 	s.state.SetRepoStatus(ctx, id, state.RepoStatusIdle)
 	return nil
 }
@@ -1478,6 +1506,10 @@ func getMountState(path string) (state types.MountState, err error) {
 	return *states[0], nil
 }
 
+func (s *Service) doesRepoNeedFixing(repoId int) bool {
+	return s.state.GetRepoState(repoId).ErrorType != state.RepoErrorTypeNone
+}
+
 // handleBorgStatus handles common Borg status errors and updates repository error state accordingly
 func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, status *borgtypes.Status, operationName string) error {
 	if status == nil {
@@ -1519,6 +1551,11 @@ func (s *Service) handleBorgStatus(ctx context.Context, repo *ent.Repository, st
 			s.log.Errorf("Incorrect passphrase for repository %d during %s: %s", repoId, operationName, status.GetError())
 			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypePassphrase, "Incorrect passphrase", state.RepoErrorActionNone)
 			return fmt.Errorf("incorrect passphrase: %s", status.GetError())
+		}
+		if errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
+			s.log.Errorf("Repository %d is locked during %s: %s", repoId, operationName, status.GetError())
+			s.state.SetRepoErrorState(ctx, repoId, state.RepoErrorTypeLockTimeout, "Repository is locked", state.RepoErrorActionUnlockRepository)
+			return fmt.Errorf("repository is locked: %s", status.GetError())
 		}
 
 		s.log.Errorf("Failed to %s for repository %d: %s", operationName, repoId, status.GetError())
@@ -1596,7 +1633,8 @@ func (s *Service) StartBackupJobs(ctx context.Context, bIds []types.BackupId) er
 }
 
 func (s *Service) AbortBackupJob(ctx context.Context, id types.BackupId) error {
-	s.state.SetBackupCancelled(ctx, id, true)
+	s.state.SetBackupCancelled(ctx, id)
+	s.state.SetRepoStatus(ctx, id.RepositoryId, state.RepoStatusIdle)
 	return nil
 }
 
@@ -1689,7 +1727,7 @@ func (b BackupResult) String() string {
 func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result BackupResult, err error) {
 	repo, err := s.getRepoWithBackupProfile(ctx, bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
-		s.state.SetBackupError(ctx, bId, err, false, false)
+		s.state.SetBackupError(ctx, bId, err)
 		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return BackupResultError, err
 	}
@@ -1710,64 +1748,66 @@ func (s *Service) runBorgCreate(ctx context.Context, bId types.BackupId) (result
 	go s.saveProgressInfo(ctx, bId, ch)
 
 	archiveName, status := s.borg.Create(ctx, repo.URL, repo.Password, backupProfile.Prefix, backupProfile.BackupPaths, backupProfile.ExcludePaths, ch)
-	if !status.IsCompletedWithSuccess() {
+	err = s.handleBorgStatus(ctx, repo, status, "backup")
+	if err != nil {
+		// We only set it idle if there is no error that needs to be fixed
+		if !s.doesRepoNeedFixing(repo.ID) {
+			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
+		}
+
 		if status.HasBeenCanceled {
-			s.state.SetBackupCancelled(ctx, bId, true)
+			s.state.SetBackupCancelled(ctx, bId)
 			return BackupResultCancelled, nil
-		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
-			retErr := fmt.Errorf("repository %s is locked", repo.Name)
-			saveErr := s.saveDbNotification(ctx, bId, retErr.Error(), notification.TypeFailedBackupRun, safetypes.Some(notification.ActionUnlockRepository))
-			if saveErr != nil {
-				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
-			}
-			s.state.SetBackupError(ctx, bId, retErr, false, true)
-			s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: repository %s is locked", repo.Name), types.LevelError)
-			return BackupResultError, retErr
-		} else {
-			saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
-			if saveErr != nil {
-				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
-			}
-			s.state.SetBackupError(ctx, bId, status.Error, true, false)
-			s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: %s", status.Error), types.LevelError)
-			return BackupResultError, status.Error
 		}
-	} else {
-		// Backup completed successfully
-		defer s.state.SetBackupCompleted(ctx, bId, true)
-
-		err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+		saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedBackupRun, safetypes.None[notification.Action]())
+		if saveErr != nil {
+			s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 		}
-
-		err = s.addNewArchive(ctx, bId, archiveName, repo.Password)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
-		}
-
-		pruningRule, pErr := s.db.PruningRule.
-			Query().
-			Where(pruningrule.And(
-				pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				pruningrule.IsEnabled(true),
-			)).
-			Only(ctx)
-		if pErr != nil && !ent.IsNotFound(pErr) {
-			s.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", pErr))
-		}
-		if pruningRule != nil && pruningRule.IsEnabled {
-			_, err = s.examinePrune(ctx, bId, safetypes.Some(pruningRule), true, true)
-			if err != nil {
-				s.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
-			}
-		}
-
-		return BackupResultSuccess, nil
+		s.state.SetBackupError(ctx, bId, status.Error)
+		s.state.AddNotification(ctx, fmt.Sprintf("Backup job failed: %s", status.Error), types.LevelError)
+		return BackupResultError, status.Error
 	}
+
+	// Backup completed successfully
+	defer s.state.SetBackupCompleted(ctx, bId)
+	defer s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+	err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
+	if err != nil {
+		s.log.Error(fmt.Sprintf("Failed to get info for backup %d: %s", bId, err))
+	}
+
+	err = s.addNewArchive(ctx, bId, archiveName, repo.Password)
+	if err != nil {
+		s.log.Error(fmt.Sprintf("Failed to add new archive for backup %d: %s", bId, err))
+	}
+
+	pruningRule, pErr := s.db.PruningRule.
+		Query().
+		Where(pruningrule.And(
+			pruningrule.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			pruningrule.IsEnabled(true),
+		)).
+		Only(ctx)
+	if pErr != nil && !ent.IsNotFound(pErr) {
+		s.log.Error(fmt.Sprintf("Failed to get pruning rule: %s", pErr))
+	}
+	if pruningRule != nil && pruningRule.IsEnabled {
+		_, err = s.examinePrune(ctx, bId, safetypes.Some(pruningRule), true, true)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to examine prune: %s", err))
+		}
+	}
+
+	return BackupResultSuccess, nil
 }
 
 func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error) {
+	repo, err := s.Get(ctx, bId.RepositoryId)
+	if err != nil {
+		return types.DeleteResultError, err
+	}
+
 	repoLock := s.state.GetRepoLock(bId.RepositoryId)
 	repoLock.Lock()         // We might wait here for other operations to finish
 	defer repoLock.Unlock() // Unlock at the end
@@ -1776,35 +1816,39 @@ func (s *Service) RunBorgDelete(ctx context.Context, bId types.BackupId, locatio
 	s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusDeleting)
 
 	status := s.borg.DeleteArchives(ctx, location, password, prefix)
-	if !status.IsCompletedWithSuccess() {
+	err = s.handleBorgStatus(ctx, repo, status, "delete archives")
+	if err != nil {
+		// We only set it idle if there is no error that needs to be fixed
+		if !s.doesRepoNeedFixing(repo.ID) {
+			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
+		}
+
 		if status.HasBeenCanceled {
 			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
 			return types.DeleteResultCancelled, nil
 		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
 			s.state.AddNotification(ctx, "Delete job failed: repository is locked", types.LevelError)
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusLocked)
 			return types.DeleteResultError, status.Error
 		} else {
 			s.state.AddNotification(ctx, fmt.Sprintf("Delete job failed: %s", status.Error), types.LevelError)
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
 			return types.DeleteResultError, status.Error
 		}
-	} else {
-		// Delete completed successfully
-		defer s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
-
-		err := s.refreshRepoInfo(ctx, bId.RepositoryId, location, password)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
-		}
-
-		_, err = s.refreshArchivesWithoutLock(ctx, bId.RepositoryId)
-		if err != nil {
-			s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
-		}
-
-		return types.DeleteResultSuccess, nil
 	}
+
+	// Delete completed successfully
+	defer s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
+
+	err = s.refreshRepoInfo(ctx, bId.RepositoryId, location, password)
+	if err != nil {
+		s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+	}
+
+	_, err = s.refreshArchivesWithoutLock(ctx, bId.RepositoryId)
+	if err != nil {
+		s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+	}
+
+	return types.DeleteResultSuccess, nil
 }
 
 func (s *Service) saveProgressInfo(ctx context.Context, id types.BackupId, ch chan borgtypes.BackupProgress) {
@@ -1823,19 +1867,18 @@ func (s *Service) saveProgressInfo(ctx context.Context, id types.BackupId, ch ch
 }
 
 func (s *Service) refreshRepoInfo(ctx context.Context, repoId int, url, password string) error {
-	info, status := s.borg.Info(ctx, url, password)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return fmt.Errorf("repository info retrieval was cancelled")
-		}
-		return fmt.Errorf("failed to get repository info: %s", status.GetError())
+	repo, err := s.Get(ctx, repoId)
+	if err != nil {
+		return err
 	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+
+	info, status := s.borg.Info(ctx, url, password)
+	err = s.handleBorgStatus(ctx, repo, status, "refresh repository metadata")
+	if err != nil {
+		return fmt.Errorf("failed to refresh repository metadata: %w", err)
 	}
 	if info == nil {
-		return fmt.Errorf("failed to get repository info: response is nil")
+		return fmt.Errorf("failed to refresh repository metadata: no information found")
 	}
 	return s.db.Repository.
 		UpdateOneID(repoId).
@@ -1849,26 +1892,25 @@ func (s *Service) refreshRepoInfo(ctx context.Context, repoId int, url, password
 }
 
 func (s *Service) addNewArchive(ctx context.Context, bId types.BackupId, archivePath, password string) error {
-	info, status := s.borg.Info(ctx, archivePath, password)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasBeenCanceled {
-			return fmt.Errorf("repository info retrieval was cancelled")
-		}
-		return fmt.Errorf("failed to get archive info: %s", status.GetError())
+	repo, err := s.Get(ctx, bId.RepositoryId)
+	if err != nil {
+		return err
 	}
-	if status.HasWarning() {
-		// TODO(log-warning): log warning to user
-		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+
+	info, status := s.borg.Info(ctx, archivePath, password)
+	err = s.handleBorgStatus(ctx, repo, status, "refresh repository metadata")
+	if err != nil {
+		return fmt.Errorf("failed to refresh archive metadata: %w", err)
 	}
 	if info == nil {
-		return fmt.Errorf("failed to get archive info: response is nil")
+		return fmt.Errorf("failed to refresh archive metadata: no information found")
 	}
 	if len(info.Archives) == 0 {
 		return fmt.Errorf("no archives found")
 	}
 	createdAt := time.Time(info.Archives[0].Start)
 	duration := time.Time(info.Archives[0].End).Sub(createdAt)
-	_, err := s.db.Archive.
+	return s.db.Archive.
 		Create().
 		SetRepositoryID(bId.RepositoryId).
 		SetBackupProfileID(bId.BackupProfileId).
@@ -1876,8 +1918,7 @@ func (s *Service) addNewArchive(ctx context.Context, bId types.BackupId, archive
 		SetName(info.Archives[0].Name).
 		SetCreatedAt(createdAt).
 		SetDuration(duration.Seconds()).
-		Save(ctx)
-	return err
+		Exec(ctx)
 }
 
 func (s *Service) saveDbNotification(ctx context.Context, backupId types.BackupId, message string, notificationType notification.Type, action safetypes.Option[notification.Action]) error {
@@ -1892,7 +1933,7 @@ func (s *Service) saveDbNotification(ctx context.Context, backupId types.BackupI
 }
 
 /***********************************/
-/********** Prune Operations ********/
+/********* Prune Operations ********/
 /***********************************/
 
 func (s *Service) StartPruneJob(ctx context.Context, bId types.BackupId) error {
@@ -1977,7 +2018,7 @@ func (p PruneResult) String() string {
 func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneResult, error) {
 	repo, err := s.getRepoWithBackupProfile(ctx, bId.RepositoryId, bId.BackupProfileId)
 	if err != nil {
-		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.SetPruneError(ctx, bId, err)
 		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get repository: %s", err), types.LevelError)
 		return PruneResultError, err
 	}
@@ -1985,7 +2026,7 @@ func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneRes
 	pruningRule := backupProfile.Edges.PruningRule
 	if pruningRule == nil {
 		err = errors.New("pruning rule not found")
-		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.SetPruneError(ctx, bId, err)
 		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get pruning rule: %s", err), types.LevelError)
 		return PruneResultError, err
 	}
@@ -2005,7 +2046,7 @@ func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneRes
 		Where(archive.HasRepositoryWith(repository.ID(bId.RepositoryId))).
 		All(ctx)
 	if err != nil {
-		s.state.SetPruneError(ctx, bId, err, false, false)
+		s.state.SetPruneError(ctx, bId, err)
 		s.state.AddNotification(ctx, fmt.Sprintf("Failed to get archives: %s", err), types.LevelError)
 		return PruneResultError, err
 	}
@@ -2017,50 +2058,47 @@ func (s *Service) runPruneJob(ctx context.Context, bId types.BackupId) (PruneRes
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	status := s.borg.Prune(ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, false, borgCh)
-	if !status.IsCompletedWithSuccess() {
+	err = s.handleBorgStatus(ctx, repo, status, "prune")
+	if err != nil {
+		// We only set it idle if there is no error that needs to be fixed
+		if !s.doesRepoNeedFixing(repo.ID) {
+			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
+		}
+
 		if status.HasBeenCanceled {
 			s.state.SetPruneCancelled(ctx, bId)
 			return PruneResultCanceled, nil
-		} else if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
-			err = fmt.Errorf("repository %s is locked", repo.Name)
-			saveErr := s.saveDbNotification(ctx, bId, err.Error(), notification.TypeFailedPruningRun, safetypes.Some(notification.ActionUnlockRepository))
-			if saveErr != nil {
-				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
-			}
-			s.state.SetPruneError(ctx, bId, err, false, true)
-			s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", err), types.LevelError)
-			return PruneResultError, err
-		} else {
-			saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
-			if saveErr != nil {
-				s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
-			}
-			s.state.SetPruneError(ctx, bId, status.Error, true, false)
-			s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", status.Error), types.LevelError)
-			return PruneResultError, status.Error
 		}
-	} else {
-		select {
-		case pruneResult := <-resultCh:
-			// Prune job completed successfully
-			defer s.state.SetPruneCompleted(ctx, bId, pruneResult)
 
-			err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
-			if err != nil {
-				s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
-			}
-
-			_, err = s.RefreshArchives(ctx, bId.RepositoryId)
-			if err != nil {
-				s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
-			}
-
-			return PruneResultSuccess, nil
-		case <-time.After(30 * time.Second):
-			return PruneResultError, fmt.Errorf("timeout waiting for prune result")
-		case <-ctx.Done():
-			return PruneResultError, fmt.Errorf("context canceled")
+		saveErr := s.saveDbNotification(ctx, bId, status.Error.Error(), notification.TypeFailedPruningRun, safetypes.None[notification.Action]())
+		if saveErr != nil {
+			s.log.Error(fmt.Sprintf("Failed to save notification: %s", saveErr))
 		}
+		s.state.SetPruneError(ctx, bId, status.Error)
+		s.state.AddNotification(ctx, fmt.Sprintf("Failed to prune repository: %s", status.Error), types.LevelError)
+		return PruneResultError, status.Error
+	}
+
+	select {
+	case pruneResult := <-resultCh:
+		// Prune job completed successfully
+		defer s.state.SetPruneCompleted(ctx, bId, pruneResult)
+
+		err = s.refreshRepoInfo(ctx, bId.RepositoryId, repo.URL, repo.Password)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to get info for backup-profile %d: %s", bId, err))
+		}
+
+		_, err = s.RefreshArchives(ctx, bId.RepositoryId)
+		if err != nil {
+			s.log.Error(fmt.Sprintf("Failed to refresh archives for backup-profile %d: %s", bId, err))
+		}
+
+		return PruneResultSuccess, nil
+	case <-time.After(30 * time.Second):
+		return PruneResultError, fmt.Errorf("timeout waiting for prune result")
+	case <-ctx.Done():
+		return PruneResultError, fmt.Errorf("context canceled")
 	}
 }
 
@@ -2191,68 +2229,68 @@ func (s *Service) examinePrune(ctx context.Context, bId types.BackupId, pruningR
 
 	cmd := pruneEntityToBorgCmd(pruningRule)
 	status := s.borg.Prune(ctx, repo.URL, repo.Password, backupProfile.Prefix, cmd, true, borgCh)
-	if !status.IsCompletedWithSuccess() {
-		if status.HasError() && errors.Is(status.Error, borgtypes.ErrorLockTimeout) {
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusLocked)
-			return 0, fmt.Errorf("repository %s is locked", repo.Name)
-		} else {
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
-			return 0, fmt.Errorf("failed to examine prune: %w", status.Error)
+	err = s.handleBorgStatus(ctx, repo, status, "examine prune")
+	if err != nil {
+		// We only set it idle if there is no error that needs to be fixed
+		if !s.doesRepoNeedFixing(repo.ID) {
+			defer s.state.SetRepoStatus(ctx, repo.ID, state.RepoStatusIdle)
 		}
-	} else {
-		select {
-		case pruneResult := <-resultCh:
-			s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
 
-			if saveResults {
-				keepIds := make([]int, len(pruneResult.KeepArchives))
-				for i, keep := range pruneResult.KeepArchives {
-					keepIds[i] = keep.Id
-				}
+		return 0, fmt.Errorf("failed to examine prune: %w", status.Error)
+	}
 
-				tx, err := s.db.Tx(ctx)
-				if err != nil {
-					return 0, fmt.Errorf("failed to start transaction: %w", err)
-				}
+	select {
+	case pruneResult := <-resultCh:
+		s.state.SetRepoStatus(ctx, bId.RepositoryId, state.RepoStatusIdle)
 
-				cntToTrue, err := tx.Archive.
-					Update().
-					Where(archive.And(
-						archive.IDIn(pruneResult.PruneArchives...),
-						archive.WillBePruned(false)),
-					).
-					SetWillBePruned(true).
-					Save(ctx)
-				if err != nil {
-					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
-				}
-
-				cntToFalse, err := tx.Archive.
-					Update().
-					Where(archive.And(
-						archive.IDIn(keepIds...),
-						archive.WillBePruned(true)),
-					).
-					SetWillBePruned(false).
-					Save(ctx)
-				if err != nil {
-					return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
-				}
-				err = tx.Commit()
-				if err != nil {
-					return 0, fmt.Errorf("failed to commit transaction: %w", err)
-				}
-				if cntToTrue+cntToFalse > 0 {
-					s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(bId.RepositoryId))
-				}
-
-				return len(pruneResult.PruneArchives), nil
+		if saveResults {
+			keepIds := make([]int, len(pruneResult.KeepArchives))
+			for i, keep := range pruneResult.KeepArchives {
+				keepIds[i] = keep.Id
 			}
+
+			tx, err := s.db.Tx(ctx)
+			if err != nil {
+				return 0, fmt.Errorf("failed to start transaction: %w", err)
+			}
+
+			cntToTrue, err := tx.Archive.
+				Update().
+				Where(archive.And(
+					archive.IDIn(pruneResult.PruneArchives...),
+					archive.WillBePruned(false)),
+				).
+				SetWillBePruned(true).
+				Save(ctx)
+			if err != nil {
+				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+			}
+
+			cntToFalse, err := tx.Archive.
+				Update().
+				Where(archive.And(
+					archive.IDIn(keepIds...),
+					archive.WillBePruned(true)),
+				).
+				SetWillBePruned(false).
+				Save(ctx)
+			if err != nil {
+				return 0, rollback(tx, fmt.Errorf("failed to update archives: %w", err))
+			}
+			err = tx.Commit()
+			if err != nil {
+				return 0, fmt.Errorf("failed to commit transaction: %w", err)
+			}
+			if cntToTrue+cntToFalse > 0 {
+				s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(bId.RepositoryId))
+			}
+
 			return len(pruneResult.PruneArchives), nil
-		case <-time.After(10 * time.Second):
-			return 0, fmt.Errorf("timeout waiting for prune result")
-		case <-ctx.Done():
-			return 0, fmt.Errorf("context canceled")
 		}
+		return len(pruneResult.PruneArchives), nil
+	case <-time.After(10 * time.Second):
+		return 0, fmt.Errorf("timeout waiting for prune result")
+	case <-ctx.Done():
+		return 0, fmt.Errorf("context canceled")
 	}
 }
