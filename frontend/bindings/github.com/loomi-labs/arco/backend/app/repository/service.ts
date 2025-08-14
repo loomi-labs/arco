@@ -48,6 +48,10 @@ export function BreakLock(id: number): $CancellablePromise<void> {
     return $Call.ByID(4281482770, id);
 }
 
+export function ChangePassword(repoId: number, password: string): $CancellablePromise<void> {
+    return $Call.ByID(2850019591, repoId, password);
+}
+
 export function Create(name: string, location: string, password: string, noPassword: boolean): $CancellablePromise<ent$0.Repository | null> {
     return $Call.ByID(3296679418, name, location, password, noPassword).then(($result: any) => {
         return $$createType1($result);

@@ -128,6 +128,7 @@ export enum RepoErrorAction {
 
     RepoErrorActionNone = "none",
     RepoErrorActionRegenerateSSH = "regenerateSSH",
+    RepoErrorActionUnlockRepository = "unlockRepository",
 };
 
 export enum RepoErrorType {
@@ -139,6 +140,7 @@ export enum RepoErrorType {
     RepoErrorTypeNone = "none",
     RepoErrorTypeSSHKey = "sshKey",
     RepoErrorTypePassphrase = "passphrase",
+    RepoErrorTypeLockTimeout = "lockTimeout",
 };
 
 export class RepoState {
@@ -194,7 +196,7 @@ export enum RepoStatus {
     RepoStatusDeleting = "deleting",
     RepoStatusMounted = "mounted",
     RepoStatusPerformingOperation = "performingOperation",
-    RepoStatusLocked = "locked",
+    RepoStatusError = "error",
 };
 
 export class StartupState {
