@@ -41,11 +41,11 @@ const (
 type PlanServiceClient interface {
 	// ListPlans returns all available subscription plans with USD pricing.
 	//
-	// This endpoint is publicly accessible and returns both Basic and Pro plans
-	// with their respective storage limits, feature sets, and USD pricing.
+	// This endpoint is publicly accessible and returns all available plans
+	// with their respective storage limits, repository limits, and USD pricing.
 	//
-	// Pro plans include overage pricing for storage beyond the base limit,
-	// charged in 10GB increments.
+	// Plans include overage pricing for storage beyond the base limit,
+	// charged per GB of additional usage.
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 }
 
@@ -83,11 +83,11 @@ func (c *planServiceClient) ListPlans(ctx context.Context, req *connect.Request[
 type PlanServiceHandler interface {
 	// ListPlans returns all available subscription plans with USD pricing.
 	//
-	// This endpoint is publicly accessible and returns both Basic and Pro plans
-	// with their respective storage limits, feature sets, and USD pricing.
+	// This endpoint is publicly accessible and returns all available plans
+	// with their respective storage limits, repository limits, and USD pricing.
 	//
-	// Pro plans include overage pricing for storage beyond the base limit,
-	// charged in 10GB increments.
+	// Plans include overage pricing for storage beyond the base limit,
+	// charged per GB of additional usage.
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 }
 
