@@ -2,7 +2,7 @@ package borg
 
 import (
 	"context"
-	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	"github.com/loomi-labs/arco/backend/borg/mocks"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -295,7 +295,7 @@ var withJsonError = testBorgInfo{
 
 func TestBorgInfo(t *testing.T) {
 	var b Borg
-	var cr *mockborg.MockCommandRunner
+	var cr *mocks.MockCommandRunner
 
 	var setup = func(t *testing.T, output []byte, err error) {
 		logConfig := zap.NewDevelopmentConfig()
@@ -303,7 +303,7 @@ func TestBorgInfo(t *testing.T) {
 		log, logErr := logConfig.Build()
 		assert.NoError(t, logErr, "Failed to create logger")
 
-		cr = mockborg.NewMockCommandRunner(gomock.NewController(t))
+		cr = mocks.NewMockCommandRunner(gomock.NewController(t))
 		cr.EXPECT().Info(gomock.Any()).Return(output, err)
 		b = NewBorg("borg", log.Sugar(), []string{}, cr)
 	}
