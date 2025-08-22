@@ -71,10 +71,6 @@ func EventSubscriptionCancelledString() string {
 	return fmt.Sprintf("%s", EventSubscriptionCancelled.String())
 }
 
-type EventEmitter interface {
-	EmitEvent(ctx context.Context, event string)
-}
-
 type RuntimeEventEmitter struct{}
 
 func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string) {
