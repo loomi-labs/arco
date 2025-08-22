@@ -39,8 +39,7 @@ tasks:
     deps:
       - task: common:go:mod:tidy
     cmds:
-      - go tool mockgen -source=backend/borg/borg.go -destination=backend/borg/mockborg/mockborg.go --package=mockborg
-      - go tool mockgen -source=backend/app/types/types.go -destination=backend/app/mockapp/mocktypes/mocktypes.go --package=mocktypes
+      - go generate ./...
 
 
   clean:
