@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination=mocks/borg.go -package=mocks . Borg,CommandRunner
+
 type Borg interface {
 	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status)
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
