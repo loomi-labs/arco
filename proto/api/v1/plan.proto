@@ -7,19 +7,18 @@ option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 // PlanService provides public access to subscription plan information.
 //
 // This service is publicly accessible and does not require authentication.
-// It returns available subscription plans with USD pricing for
-// Basic (250GB) and Pro (1TB) tiers.
+// It returns available subscription plans sourced with USD pricing.
 //
-// The service integrates with Stripe for payment processing and provides
+// The service integrates with Polar for payment processing and provides
 // pricing information needed for checkout session creation.
 service PlanService {
   // ListPlans returns all available subscription plans with USD pricing.
   //
-  // This endpoint is publicly accessible and returns both Basic and Pro plans
-  // with their respective storage limits, feature sets, and USD pricing.
+  // This endpoint is publicly accessible and returns all available plans
+  // with their respective storage limits, repository limits, and USD pricing.
   //
-  // Pro plans include overage pricing for storage beyond the base limit,
-  // charged in 10GB increments.
+  // Plans include overage pricing for storage beyond the base limit,
+  // charged per GB of additional usage.
   rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {}
 }
 
@@ -32,78 +31,40 @@ message ListPlansRequest {
 
 // ListPlansResponse contains all available subscription plans.
 //
-// Returns both Basic and Pro plans with complete pricing information
-// for USD pricing and billing cycles.
+// Returns all available plans (Lite, Pro, Max) with complete pricing
+// information for USD pricing and yearly billing cycles.
 message ListPlansResponse {
   // All available subscription plans with USD pricing.
   repeated Plan plans = 1;
 }
 
-// FeatureSet represents the tier of features available in a subscription plan.
-//
-// Each feature set defines the capabilities and storage limits available
-// to subscribers of that plan tier.
-enum FeatureSet {
-  // Default unspecified feature set.
-  FEATURE_SET_UNSPECIFIED = 0;
-  
-  // Basic feature set with 250GB storage limit.
-  // No overage billing - users cannot exceed storage limit.
-  FEATURE_SET_BASIC = 1;
-  
-  // Pro feature set with 1TB base storage and overage billing.
-  // Includes advanced features and unlimited storage with usage-based pricing.
-  FEATURE_SET_PRO = 2;
-}
-
-
-// PlanPrice represents pricing information for a plan in USD.
-//
-// Contains both monthly and yearly pricing with yearly billing offering
-// significant discounts. Stripe price IDs are used for payment processing.
-message PlanPrice {
-  // Monthly subscription price in cents (e.g., 500 = $5.00).
-  int64 monthly_cents = 1;
-  
-  // Yearly subscription price in cents with discount (e.g., 4800 = $48.00).
-  // Yearly billing typically offers 15-20% savings compared to monthly.
-  int64 yearly_cents = 2;
-}
-
-// OveragePrice represents additional storage pricing for Pro plans.
-//
-// Pro plans include overage billing for storage usage beyond the base 1TB limit.
-// Overage is charged in 10GB increments and billed monthly based on peak usage.
-message OveragePrice {
-  // Price per 10GB block in cents (e.g., 10 = $0.10 per 10GB).
-  // Charged monthly based on peak storage usage above the base limit.
-  int64 per_10gb_cents = 1;
-}
 
 // Plan represents a complete subscription plan with pricing and features.
 //
-// Each plan defines storage limits, device limits, feature availability, and USD pricing
-// for monthly and yearly billing cycles.
+// Each plan is sourced from Polar products and contains all necessary
+// information for displaying plans and handling subscriptions.
 message Plan {
-  // Human-readable plan name (e.g., "Basic", "Pro").
-  string name = 1;
-  
-  // Feature set tier determining available capabilities.
-  FeatureSet feature_set = 2;
-  
-  // Base storage limit in GB (250 for Basic, 1000 for Pro).
-  // Pro plans allow overage beyond this limit with additional charges.
-  int64 storage_gb = 3;
-  
-  // Pricing information for USD in monthly and yearly billing cycles.
-  PlanPrice price = 4;
-  
-  // Overage pricing for usage beyond base storage limit.
-  // Not set for Basic plans (no overage allowed).
-  // Set for Pro plans with per-10GB pricing.
-  OveragePrice overage_price = 5;
+  // ID is the product ID of Polar used for checkout sessions and subscriptions
+  string id = 1;
 
-  // Maximum number of devices (SSH keys) allowed for this plan.
-  // Each device represents one SSH key that can access user repositories.
-  int32 max_devices = 6;
+  // Human-readable plan name (e.g., "Arco Cloud - Lite", "Arco Cloud - Pro").
+  string name = 2;
+  
+  // Plan description with storage and pricing details.
+  string description = 3;
+  
+  // Base storage limit in GB included in the plan.
+  int64 storage_gb = 4;
+  
+  // Maximum number of repositories allowed for this plan.
+  int32 allowed_repositories = 5;
+  
+  // Whether this plan should be highlighted as popular/recommended.
+  bool popular = 6;
+  
+  // Base yearly subscription price in cents (e.g., 2400 = $24.00).
+  int64 price_cents = 7;
+  
+  // Overage pricing per GB in cents for usage beyond base storage limit.
+  int64 overage_per_gb_cents = 8;
 }
