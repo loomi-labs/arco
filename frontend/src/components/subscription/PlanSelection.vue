@@ -62,7 +62,7 @@ function selectPlan(planName: string) {
 }
 
 function getPlanPrice(plan: SubscriptionPlan) {
-  if (!plan.price_cents) return null;
+  if (plan.price_cents == null) return null;
   return (plan.price_cents / 100).toFixed(2);
 }
 
