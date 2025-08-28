@@ -192,7 +192,7 @@ export class Plan {
     /**
      * Overage pricing per GB in cents for usage beyond base storage limit.
      */
-    "overage_per_gb_cents"?: number;
+    "overage_cents_per_gb"?: number;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
