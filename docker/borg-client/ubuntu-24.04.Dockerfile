@@ -1,7 +1,7 @@
 # Borg Client Container for Integration Tests - Ubuntu 24.04
 
 # Import from main Dockerfile's builder stage
-FROM docker.io/library/golang:1.24-bullseye AS builder
+FROM docker.io/library/golang:1.25-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
