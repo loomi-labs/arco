@@ -15,7 +15,7 @@ import type {
   Plan,
   Subscription
 } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { FeatureSet, RepositoryLocation } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import { RepositoryLocation } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
@@ -24,8 +24,6 @@ import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent
 /************
  * Types
  ************/
-
-type SubscriptionPlan = Plan & { recommended?: boolean };
 
 interface Emits {
   (event: "close"): void;
@@ -57,7 +55,7 @@ defineExpose({
   showModal
 });
 
-const { isAuthenticated, userEmail } = useAuth();
+const { isAuthenticated } = useAuth();
 useSubscriptionNotifications(); // Initialize global subscription notifications
 
 const dialog = ref<HTMLDialogElement>();
@@ -71,7 +69,7 @@ const selectedPlan = ref<string | undefined>(undefined);
 const isYearlyBilling = ref(false);
 
 // Subscription data
-const subscriptionPlans = ref<SubscriptionPlan[]>([]);
+const subscriptionPlans = ref<Plan[]>([]);
 const hasActiveSubscription = ref(false);
 const userSubscriptionPlan = ref<string | undefined>(undefined);
 const userSubscription = ref<Subscription | undefined>(undefined);
@@ -243,12 +241,7 @@ async function loadSubscriptionPlans() {
     const response = await PlanService.ListPlans();
 
     if (response) {
-      subscriptionPlans.value = response
-        .filter((plan): plan is Plan => plan !== null)
-        .map(plan => ({
-          ...plan,
-          recommended: plan.feature_set === FeatureSet.FeatureSet_FEATURE_SET_PRO
-        } as SubscriptionPlan));
+      subscriptionPlans.value = response.filter((plan): plan is Plan => plan !== null);
     }
 
     // After loading plans, check initial state
@@ -262,7 +255,7 @@ async function loadUserSubscription() {
   if (!isAuthenticated.value) return;
 
   try {
-    const response = await SubscriptionService.GetSubscription(userEmail.value);
+    const response = await SubscriptionService.GetSubscription();
 
     if (response?.subscription) {
       hasActiveSubscription.value = true;
@@ -380,7 +373,7 @@ async function subscribeToPlan() {
     setupCheckoutEventListener();
     
     // Create checkout session
-    await SubscriptionService.CreateCheckoutSession(selectedPlan.value, isYearlyBilling.value);
+    await SubscriptionService.CreateCheckoutSession(selectedPlanData.value?.id ?? "");
     
     // Get checkout session data from backend
     const sessionData = await SubscriptionService.GetCheckoutSession();

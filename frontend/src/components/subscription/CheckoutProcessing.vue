@@ -11,8 +11,7 @@ import type { CreateCheckoutSessionResponse } from "../../../bindings/github.com
  ************/
 
 interface Props {
-  planName: string;
-  isYearlyBilling?: boolean;
+  planId: string;
   isProcessing?: boolean;
 }
 
@@ -27,7 +26,6 @@ interface Emits {
  ************/
 
 const props = withDefaults(defineProps<Props>(), {
-  isYearlyBilling: false,
   isProcessing: false
 });
 
@@ -49,7 +47,7 @@ async function createCheckoutSession() {
     setupCheckoutEventListener();
     
     // Create checkout session
-    await SubscriptionService.CreateCheckoutSession(props.planName, props.isYearlyBilling);
+    await SubscriptionService.CreateCheckoutSession(props.planId);
     
     // Get checkout session data from backend
     const sessionData = await SubscriptionService.GetCheckoutSession();

@@ -7,17 +7,17 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/loomi-labs/arco/backend/app/mockapp/mocktypes"
 	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg/mockborg"
+	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
+	borgmocks "github.com/loomi-labs/arco/backend/borg/mocks"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmitter) {
+func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventEmitter) {
 	logConfig := zap.NewDevelopmentConfig()
 	logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	log, err := logConfig.Build()
@@ -40,7 +40,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 		Version:         semver.MustParse("0.0.0"),
 	}
 
-	mockEventEmitter := mocktypes.NewMockEventEmitter(gomock.NewController(t))
+	mockEventEmitter := typesmocks.NewMockEventEmitter(gomock.NewController(t))
 	a := NewApp(log.Sugar(), config, mockEventEmitter)
 
 	// Create context for tests that can be cancelled during cleanup
@@ -53,7 +53,7 @@ func NewTestApp(t *testing.T) (*App, *mockborg.MockBorg, *mocktypes.MockEventEmi
 	close(a.pruningScheduleChangedCh)
 	a.pruningScheduleChangedCh = nil
 
-	mockBorg := mockborg.NewMockBorg(gomock.NewController(t))
+	mockBorg := borgmocks.NewMockBorg(gomock.NewController(t))
 	a.borg = mockBorg
 
 	mockEventEmitter.EXPECT().EmitEvent(gomock.Any(), types.EventStartupStateChanged.String())

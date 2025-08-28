@@ -10,32 +10,6 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as timestamppb$0 from "../../../../../../google.golang.org/protobuf/types/known/timestamppb/models.js";
 
 /**
- * CancelPendingChangeResponse confirms change cancellation.
- * 
- * Indicates successful cancellation of a pending subscription change.
- */
-export class CancelPendingChangeResponse {
-    /**
-     * Whether the change was successfully canceled.
-     */
-    "success"?: boolean;
-
-    /** Creates a new CancelPendingChangeResponse instance. */
-    constructor($$source: Partial<CancelPendingChangeResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new CancelPendingChangeResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): CancelPendingChangeResponse {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new CancelPendingChangeResponse($$parsedSource as Partial<CancelPendingChangeResponse>);
-    }
-}
-
-/**
  * CancelSubscriptionResponse confirms cancellation scheduling.
  * 
  * Indicates successful cancellation scheduling and when access will end.
@@ -73,20 +47,20 @@ export class CancelSubscriptionResponse {
 }
 
 /**
- * CreateCheckoutSessionResponse contains Stripe checkout session details.
+ * CreateCheckoutSessionResponse contains payment checkout session details.
  * 
  * Provides the checkout URL for payment completion and session ID
  * for tracking payment status via WaitForCheckoutCompletion.
  */
 export class CreateCheckoutSessionResponse {
     /**
-     * Stripe checkout session ID for tracking.
+     * Checkout session ID for tracking.
      * Use this with WaitForCheckoutCompletion for real-time updates.
      */
     "session_id"?: string;
 
     /**
-     * Stripe checkout URL for payment completion.
+     * Checkout URL for payment completion.
      * Users should be redirected to this URL to complete payment.
      */
     "checkout_url"?: string;
@@ -107,40 +81,45 @@ export class CreateCheckoutSessionResponse {
 }
 
 /**
- * FeatureSet represents the tier of features available in a subscription plan.
+ * DowngradeSubscriptionResponse confirms downgrade scheduling.
  * 
- * Each feature set defines the capabilities and storage limits available
- * to subscribers of that plan tier.
+ * Indicates successful downgrade scheduling with effect at end of current billing period.
  */
-export enum FeatureSet {
+export class DowngradeSubscriptionResponse {
     /**
-     * The Go zero value for the underlying type of the enum.
+     * Whether the downgrade was successfully scheduled.
      */
-    $zero = 0,
+    "success"?: boolean;
 
     /**
-     * Default unspecified feature set.
+     * When the downgrade will take effect.
+     * Always at the end of the current billing period.
      */
-    FeatureSet_FEATURE_SET_UNSPECIFIED = 0,
+    "effective_date"?: timestamppb$0.Timestamp | null;
+
+    /** Creates a new DowngradeSubscriptionResponse instance. */
+    constructor($$source: Partial<DowngradeSubscriptionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
 
     /**
-     * Basic feature set with 250GB storage limit.
-     * No overage billing - users cannot exceed storage limit.
+     * Creates a new DowngradeSubscriptionResponse instance from a string or object.
      */
-    FeatureSet_FEATURE_SET_BASIC = 1,
-
-    /**
-     * Pro feature set with 1TB base storage and overage billing.
-     * Includes advanced features and unlimited storage with usage-based pricing.
-     */
-    FeatureSet_FEATURE_SET_PRO = 2,
-};
+    static createFrom($$source: any = {}): DowngradeSubscriptionResponse {
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("effective_date" in $$parsedSource) {
+            $$parsedSource["effective_date"] = $$createField1_0($$parsedSource["effective_date"]);
+        }
+        return new DowngradeSubscriptionResponse($$parsedSource as Partial<DowngradeSubscriptionResponse>);
+    }
+}
 
 /**
  * GetSubscriptionResponse contains the user's subscription details.
  * 
  * Returns null subscription field if the user has no active subscription.
- * Otherwise includes complete subscription information with plan details.
  */
 export class GetSubscriptionResponse {
     /**
@@ -169,73 +148,51 @@ export class GetSubscriptionResponse {
 }
 
 /**
- * OveragePrice represents additional storage pricing for Pro plans.
- * 
- * Pro plans include overage billing for storage usage beyond the base 1TB limit.
- * Overage is charged in 10GB increments and billed monthly based on peak usage.
- */
-export class OveragePrice {
-    /**
-     * Price per 10GB block in cents (e.g., 10 = $0.10 per 10GB).
-     * Charged monthly based on peak storage usage above the base limit.
-     */
-    "per_10gb_cents"?: number;
-
-    /** Creates a new OveragePrice instance. */
-    constructor($$source: Partial<OveragePrice> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new OveragePrice instance from a string or object.
-     */
-    static createFrom($$source: any = {}): OveragePrice {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new OveragePrice($$parsedSource as Partial<OveragePrice>);
-    }
-}
-
-/**
  * Plan represents a complete subscription plan with pricing and features.
  * 
- * Each plan defines storage limits, device limits, feature availability, and USD pricing
- * for monthly and yearly billing cycles.
+ * Each plan is sourced from Polar products and contains all necessary
+ * information for displaying plans and handling subscriptions.
  */
 export class Plan {
     /**
-     * Human-readable plan name (e.g., "Basic", "Pro").
+     * ID is the product ID of Polar used for checkout sessions and subscriptions
+     */
+    "id"?: string;
+
+    /**
+     * Human-readable plan name (e.g., "Arco Cloud - Lite", "Arco Cloud - Pro").
      */
     "name"?: string;
 
     /**
-     * Feature set tier determining available capabilities.
+     * Plan description with storage and pricing details.
      */
-    "feature_set"?: FeatureSet;
+    "description"?: string;
 
     /**
-     * Base storage limit in GB (250 for Basic, 1000 for Pro).
-     * Pro plans allow overage beyond this limit with additional charges.
+     * Base storage limit in GB included in the plan.
      */
     "storage_gb"?: number;
 
     /**
-     * Pricing information for USD in monthly and yearly billing cycles.
+     * Maximum number of repositories allowed for this plan.
      */
-    "price"?: PlanPrice | null;
+    "allowed_repositories"?: number;
 
     /**
-     * Overage pricing for usage beyond base storage limit.
-     * Not set for Basic plans (no overage allowed).
-     * Set for Pro plans with per-10GB pricing.
+     * Whether this plan should be highlighted as popular/recommended.
      */
-    "overage_price"?: OveragePrice | null;
+    "popular"?: boolean;
 
     /**
-     * Maximum number of devices (SSH keys) allowed for this plan.
-     * Each device represents one SSH key that can access user repositories.
+     * Base yearly subscription price in cents (e.g., 2400 = $24.00).
      */
-    "max_devices"?: number;
+    "price_cents"?: number;
+
+    /**
+     * Overage pricing per GB in cents for usage beyond base storage limit.
+     */
+    "overage_cents_per_gb"?: number;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
@@ -247,49 +204,8 @@ export class Plan {
      * Creates a new Plan instance from a string or object.
      */
     static createFrom($$source: any = {}): Plan {
-        const $$createField3_0 = $$createType5;
-        const $$createField4_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("price" in $$parsedSource) {
-            $$parsedSource["price"] = $$createField3_0($$parsedSource["price"]);
-        }
-        if ("overage_price" in $$parsedSource) {
-            $$parsedSource["overage_price"] = $$createField4_0($$parsedSource["overage_price"]);
-        }
         return new Plan($$parsedSource as Partial<Plan>);
-    }
-}
-
-/**
- * PlanPrice represents pricing information for a plan in USD.
- * 
- * Contains both monthly and yearly pricing with yearly billing offering
- * significant discounts. Stripe price IDs are used for payment processing.
- */
-export class PlanPrice {
-    /**
-     * Monthly subscription price in cents (e.g., 500 = $5.00).
-     */
-    "monthly_cents"?: number;
-
-    /**
-     * Yearly subscription price in cents with discount (e.g., 4800 = $48.00).
-     * Yearly billing typically offers 15-20% savings compared to monthly.
-     */
-    "yearly_cents"?: number;
-
-    /** Creates a new PlanPrice instance. */
-    constructor($$source: Partial<PlanPrice> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PlanPrice instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PlanPrice {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new PlanPrice($$parsedSource as Partial<PlanPrice>);
     }
 }
 
@@ -350,63 +266,16 @@ export enum RepositoryLocation {
 };
 
 /**
- * ScheduleSubscriptionUpdateResponse confirms change scheduling.
- * 
- * Provides details about when the change will take effect and how to track it.
- */
-export class ScheduleSubscriptionUpdateResponse {
-    /**
-     * Whether the change was successfully scheduled.
-     */
-    "success"?: boolean;
-
-    /**
-     * When the change will take effect.
-     * Always the start of the next billing period.
-     */
-    "effective_date"?: timestamppb$0.Timestamp | null;
-
-    /**
-     * Unique ID for tracking this pending change.
-     * Use with GetPendingChanges or CancelPendingChange.
-     */
-    "change_id"?: number;
-
-    /** Creates a new ScheduleSubscriptionUpdateResponse instance. */
-    constructor($$source: Partial<ScheduleSubscriptionUpdateResponse> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ScheduleSubscriptionUpdateResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ScheduleSubscriptionUpdateResponse {
-        const $$createField1_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("effective_date" in $$parsedSource) {
-            $$parsedSource["effective_date"] = $$createField1_0($$parsedSource["effective_date"]);
-        }
-        return new ScheduleSubscriptionUpdateResponse($$parsedSource as Partial<ScheduleSubscriptionUpdateResponse>);
-    }
-}
-
-/**
  * Subscription represents a user's active subscription with complete details.
  * 
  * Contains subscription metadata, billing information, usage tracking,
- * and plan details. Integrates with Stripe for payment processing.
+ * and plan details.
  */
 export class Subscription {
     /**
-     * Unique subscription identifier (Stripe subscription ID).
+     * Unique subscription identifier.
      */
     "id"?: string;
-
-    /**
-     * ID of the user who owns this subscription.
-     */
-    "user_id"?: string;
 
     /**
      * Plan identifier (e.g., "BASIC", "PRO").
@@ -414,7 +283,7 @@ export class Subscription {
     "plan_id"?: string;
 
     /**
-     * Current subscription status from Stripe.
+     * Current subscription status.
      */
     "status"?: SubscriptionStatus;
 
@@ -458,28 +327,18 @@ export class Subscription {
 
     /**
      * Current storage usage in GB.
-     * Updated periodically from backup client usage reports.
      */
     "storage_used_gb"?: number;
 
     /**
-     * Whether the subscription uses yearly billing.
-     * false = monthly billing, true = yearly billing.
-     */
-    "is_yearly_billing"?: boolean;
-
-    /**
      * Maximum storage allowed before overage charges apply.
-     * For Pro plans, overage is charged beyond this limit.
      */
     "storage_limit_gb"?: number;
 
     /**
-     * Overage rate per 10GB block in cents.
-     * 0 for Basic plans (no overage allowed).
-     * >0 for Pro plans with usage-based billing.
+     * Overage rate per GB in cents.
      */
-    "overage_rate_per_10gb_cents"?: number;
+    "overage_rate_per_gb_cents"?: number;
 
     /** Creates a new Subscription instance. */
     constructor($$source: Partial<Subscription> = {}) {
@@ -491,40 +350,39 @@ export class Subscription {
      * Creates a new Subscription instance from a string or object.
      */
     static createFrom($$source: any = {}): Subscription {
+        const $$createField3_0 = $$createType1;
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType1;
+        const $$createField6_0 = $$createType1;
         const $$createField7_0 = $$createType1;
         const $$createField8_0 = $$createType1;
-        const $$createField9_0 = $$createType1;
-        const $$createField10_0 = $$createType9;
+        const $$createField9_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current_period_start" in $$parsedSource) {
-            $$parsedSource["current_period_start"] = $$createField4_0($$parsedSource["current_period_start"]);
+            $$parsedSource["current_period_start"] = $$createField3_0($$parsedSource["current_period_start"]);
         }
         if ("current_period_end" in $$parsedSource) {
-            $$parsedSource["current_period_end"] = $$createField5_0($$parsedSource["current_period_end"]);
+            $$parsedSource["current_period_end"] = $$createField4_0($$parsedSource["current_period_end"]);
         }
         if ("canceled_at" in $$parsedSource) {
-            $$parsedSource["canceled_at"] = $$createField7_0($$parsedSource["canceled_at"]);
+            $$parsedSource["canceled_at"] = $$createField6_0($$parsedSource["canceled_at"]);
         }
         if ("created_at" in $$parsedSource) {
-            $$parsedSource["created_at"] = $$createField8_0($$parsedSource["created_at"]);
+            $$parsedSource["created_at"] = $$createField7_0($$parsedSource["created_at"]);
         }
         if ("updated_at" in $$parsedSource) {
-            $$parsedSource["updated_at"] = $$createField9_0($$parsedSource["updated_at"]);
+            $$parsedSource["updated_at"] = $$createField8_0($$parsedSource["updated_at"]);
         }
         if ("plan" in $$parsedSource) {
-            $$parsedSource["plan"] = $$createField10_0($$parsedSource["plan"]);
+            $$parsedSource["plan"] = $$createField9_0($$parsedSource["plan"]);
         }
         return new Subscription($$parsedSource as Partial<Subscription>);
     }
 }
 
 /**
- * SubscriptionStatus represents the current state of a Stripe subscription.
+ * SubscriptionStatus represents the current state of a subscription.
  * 
- * These statuses correspond directly to Stripe's subscription status values
- * and determine subscription behavior and access permissions.
+ * These statuses determine subscription behavior and access permissions.
  */
 export enum SubscriptionStatus {
     /**
@@ -621,9 +479,5 @@ const $$createType0 = timestamppb$0.Timestamp.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = Subscription.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = PlanPrice.createFrom;
+const $$createType4 = Plan.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = OveragePrice.createFrom;
-const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = Plan.createFrom;
-const $$createType9 = $Create.Nullable($$createType8);

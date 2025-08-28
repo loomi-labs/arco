@@ -13,7 +13,6 @@ type SubscriptionPlan = Plan & { recommended?: boolean };
 interface Props {
   plans: SubscriptionPlan[];
   selectedPlan?: string;
-  isYearlyBilling?: boolean;
   hasActiveSubscription?: boolean;
   userSubscriptionPlan?: string;
   disabled?: boolean;
@@ -22,7 +21,6 @@ interface Props {
 
 interface Emits {
   (event: "plan-selected", planName: string): void;
-  (event: "billing-cycle-changed", isYearly: boolean): void;
   (event: "subscribe-clicked", planName: string): void;
 }
 
@@ -32,7 +30,6 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   selectedPlan: undefined,
-  isYearlyBilling: false,
   hasActiveSubscription: false,
   userSubscriptionPlan: undefined,
   disabled: false,
@@ -41,7 +38,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const internalIsYearlyBilling = ref(props.isYearlyBilling);
 const internalSelectedPlan = ref(props.selectedPlan);
 
 /************
@@ -51,22 +47,6 @@ const internalSelectedPlan = ref(props.selectedPlan);
 const selectedPlanData = computed(() =>
   props.plans.find(plan => plan.name === internalSelectedPlan.value)
 );
-
-const selectedPlanPrice = computed(() => {
-  const plan = selectedPlanData.value;
-  if (!plan?.price) return null;
-  return plan.price;
-});
-
-const currentCurrencySymbol = computed(() => '$');
-
-const yearlyDiscount = computed(() => {
-  const price = selectedPlanPrice.value;
-  if (!price?.monthly_cents || !price?.yearly_cents) return 0;
-  const monthlyTotal = (price.monthly_cents / 100) * 12;
-  const yearlyPrice = price.yearly_cents / 100;
-  return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100);
-});
 
 /************
  * Functions
@@ -81,15 +61,9 @@ function selectPlan(planName: string) {
   emit("plan-selected", planName);
 }
 
-function toggleBillingCycle(isYearly: boolean) {
-  internalIsYearlyBilling.value = isYearly;
-  emit("billing-cycle-changed", isYearly);
-}
-
-
 function getPlanPrice(plan: SubscriptionPlan) {
-  if (!plan.price) return null;
-  return plan.price;
+  if (plan.price_cents == null) return null;
+  return (plan.price_cents / 100).toFixed(2);
 }
 
 function subscribeToPlan() {
@@ -101,28 +75,6 @@ function subscribeToPlan() {
 
 <template>
   <div class="space-y-6">
-    <!-- Billing Controls -->
-    <div class='flex justify-center items-center'>
-      <!-- Billing Toggle -->
-      <div class='flex items-center gap-4 bg-base-200 rounded-lg p-1'>
-        <button
-          :class='["btn btn-sm", !internalIsYearlyBilling ? "btn-primary" : "btn-ghost"]'
-          :disabled="disabled"
-          @click='toggleBillingCycle(false)'
-        >
-          Monthly
-        </button>
-        <button
-          :class='["btn btn-sm", internalIsYearlyBilling ? "btn-primary" : "btn-ghost"]'
-          :disabled="disabled"
-          @click='toggleBillingCycle(true)'
-        >
-          Yearly
-          <span v-if='yearlyDiscount && selectedPlanData'
-                class='badge badge-success badge-sm'>Save {{ yearlyDiscount }}%</span>
-        </button>
-      </div>
-    </div>
 
     <!-- Plan Cards -->
     <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -149,36 +101,11 @@ function subscribeToPlan() {
           <div class='flex-1'>
             <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
             <p class='text-3xl font-bold mt-2'>
-              {{ currentCurrencySymbol }}{{
-                (() => {
-                  const price = getPlanPrice(plan);
-                  if (!price) return '0';
-                  const amount = internalIsYearlyBilling ? (price.yearly_cents ?? 0) : (price.monthly_cents ?? 0);
-                  return (amount / 100).toFixed(2);
-                })()
-              }}
+              $ {{ getPlanPrice(plan) }}
               <span class='text-sm font-normal text-base-content/70'>
-                /{{ internalIsYearlyBilling ? "year" : "month" }}
+                /year
               </span>
             </p>
-            <!-- Always render savings text with fixed height to prevent layout jumping -->
-            <div class='h-5 mt-1'>
-              <p
-                v-if='(() => {
-                  const price = getPlanPrice(plan);
-                  if (!internalIsYearlyBilling || !price || !price.monthly_cents || !price.yearly_cents) return false;
-                  return ((price.monthly_cents / 100) * 12) > (price.yearly_cents / 100);
-                })()'
-                class='text-sm text-success'>
-                Save {{ currentCurrencySymbol }}{{ (() => {
-                  const price = getPlanPrice(plan);
-                  if (!price) return '0';
-                  const monthlyTotal = (price.monthly_cents || 0) / 100 * 12;
-                  const yearlyTotal = (price.yearly_cents || 0) / 100;
-                  return (monthlyTotal - yearlyTotal).toFixed(2);
-                })() }} annually
-              </p>
-            </div>
           </div>
           <StarIcon v-if='plan.recommended' class='size-6 text-warning flex-shrink-0' />
         </div>
@@ -187,7 +114,7 @@ function subscribeToPlan() {
 
         <!-- Features list with flex-grow to push icon to bottom -->
         <ul class='space-y-2 flex-grow'>
-          <li v-for='feature in getFeaturesByPlan(plan.feature_set)' :key='feature.text' class='flex items-center gap-2'>
+          <li v-for='feature in getFeaturesByPlan(plan)' :key='feature.text' class='flex items-center gap-2'>
             <CheckIcon class='size-4 text-success flex-shrink-0' />
             <span :class='["text-sm", feature.highlight ? "font-semibold text-secondary" : ""]'>{{ feature.text }}</span>
           </li>

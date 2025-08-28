@@ -51,15 +51,9 @@ const (
 	// SubscriptionServiceUpgradeSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's UpgradeSubscription RPC.
 	SubscriptionServiceUpgradeSubscriptionProcedure = "/api.v1.SubscriptionService/UpgradeSubscription"
-	// SubscriptionServiceScheduleSubscriptionUpdateProcedure is the fully-qualified name of the
-	// SubscriptionService's ScheduleSubscriptionUpdate RPC.
-	SubscriptionServiceScheduleSubscriptionUpdateProcedure = "/api.v1.SubscriptionService/ScheduleSubscriptionUpdate"
-	// SubscriptionServiceGetPendingChangesProcedure is the fully-qualified name of the
-	// SubscriptionService's GetPendingChanges RPC.
-	SubscriptionServiceGetPendingChangesProcedure = "/api.v1.SubscriptionService/GetPendingChanges"
-	// SubscriptionServiceCancelPendingChangeProcedure is the fully-qualified name of the
-	// SubscriptionService's CancelPendingChange RPC.
-	SubscriptionServiceCancelPendingChangeProcedure = "/api.v1.SubscriptionService/CancelPendingChange"
+	// SubscriptionServiceDowngradeSubscriptionProcedure is the fully-qualified name of the
+	// SubscriptionService's DowngradeSubscription RPC.
+	SubscriptionServiceDowngradeSubscriptionProcedure = "/api.v1.SubscriptionService/DowngradeSubscription"
 )
 
 // SubscriptionServiceClient is a client for the api.v1.SubscriptionService service.
@@ -72,14 +66,14 @@ type SubscriptionServiceClient interface {
 	//
 	// Requires authentication. Users can only access their own subscription.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
-	// CreateCheckoutSession creates a Stripe checkout session for plan purchase.
+	// CreateCheckoutSession creates a payment checkout session for plan purchase or upgrade.
 	//
-	// Initiates the payment flow by creating a Stripe checkout session with
+	// Initiates the payment flow by creating a checkout session with
 	// the specified plan and billing cycle. Returns a checkout URL
 	// that users can visit to complete payment.
 	//
-	// Rate limited to 10 requests per hour per user to prevent abuse.
-	// Requires authentication and automatically creates Stripe customer if needed.
+	// Rate limited to prevent abuse. Requires authentication and
+	// automatically creates customer if needed.
 	//
 	// Use WaitForCheckoutCompletion to receive real-time payment status updates.
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
@@ -90,15 +84,12 @@ type SubscriptionServiceClient interface {
 	//
 	// The stream automatically times out when the checkout session expires and
 	// provides periodic keepalive messages to prevent client timeout.
-	//
-	// Uses PostgreSQL LISTEN/NOTIFY for instant updates from Stripe webhooks.
 	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest]) (*connect.ServerStreamForClient[v1.WaitForCheckoutCompletionResponse], error)
 	// CancelSubscription schedules subscription cancellation at the end of the current billing period.
 	//
 	// Users retain access to their subscription until the current period ends.
 	// The subscription can be reactivated before the period ends using ReactivateSubscription.
 	//
-	// Does not issue refunds - users are charged for the full billing period.
 	// Requires authentication and subscription ownership validation.
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
 	// ReactivateSubscription removes scheduled cancellation before it takes effect.
@@ -109,44 +100,22 @@ type SubscriptionServiceClient interface {
 	//
 	// Requires authentication and subscription ownership validation.
 	ReactivateSubscription(context.Context, *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error)
-	// UpgradeSubscription performs immediate Basic→Pro plan upgrades with Stripe proration.
+	// UpgradeSubscription performs immediate plan upgrade with proration.
 	//
-	// Only supports upgrades from Basic to Pro plans. The upgrade takes effect
-	// immediately with prorated billing for the remaining period.
-	//
-	// For downgrades or lateral moves, use ScheduleSubscriptionUpdate instead.
-	// Prevents upgrades if conflicting pending changes exist.
+	// Upgrades an existing subscription to a higher-tier plan with immediate effect.
+	// The upgrade includes proration for the remaining billing period, charging
+	// the difference between plans immediately.
 	//
 	// Requires active subscription and authentication.
 	UpgradeSubscription(context.Context, *connect.Request[v1.UpgradeSubscriptionRequest]) (*connect.Response[v1.UpgradeSubscriptionResponse], error)
-	// ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
+	// DowngradeSubscription schedules plan downgrades to take effect at the end of the current billing period.
 	//
-	// Supports plan changes (downgrades/lateral moves) and
-	// billing cycle changes (monthly↔yearly). Changes are scheduled to take
-	// effect at the start of the next billing period.
+	// Supports downgrades to lower-tier plans with effect at the end of the current billing period.
+	// Users retain access to their current plan features until the period ends, then are
+	// automatically moved to the lower-tier plan without additional charges.
 	//
-	// Only one pending change of each type is allowed per subscription.
-	// Use CancelPendingChange to cancel scheduled changes before they take effect.
-	//
-	// Currently all changes get the same effective date - change sequencing
-	// across multiple billing periods is not yet implemented.
-	ScheduleSubscriptionUpdate(context.Context, *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error)
-	// GetPendingChanges lists all scheduled changes for a subscription.
-	//
-	// Returns pending changes ordered by effective date, including plan changes
-	// and billing cycle changes. Shows change details,
-	// effective dates, and creation timestamps.
-	//
-	// Requires authentication and subscription ownership validation.
-	GetPendingChanges(context.Context, *connect.Request[v1.GetPendingChangesRequest]) (*connect.Response[v1.GetPendingChangesResponse], error)
-	// CancelPendingChange cancels a specific scheduled change before it takes effect.
-	//
-	// Allows users to cancel individual pending changes if they change their mind
-	// before the change takes effect. The change is marked as canceled with
-	// an optional reason for audit purposes.
-	//
-	// Requires authentication and subscription ownership validation.
-	CancelPendingChange(context.Context, *connect.Request[v1.CancelPendingChangeRequest]) (*connect.Response[v1.CancelPendingChangeResponse], error)
+	// Requires active subscription and authentication.
+	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
 }
 
 // NewSubscriptionServiceClient constructs a client for the api.v1.SubscriptionService service. By
@@ -196,22 +165,10 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("UpgradeSubscription")),
 			connect.WithClientOptions(opts...),
 		),
-		scheduleSubscriptionUpdate: connect.NewClient[v1.ScheduleSubscriptionUpdateRequest, v1.ScheduleSubscriptionUpdateResponse](
+		downgradeSubscription: connect.NewClient[v1.DowngradeSubscriptionRequest, v1.DowngradeSubscriptionResponse](
 			httpClient,
-			baseURL+SubscriptionServiceScheduleSubscriptionUpdateProcedure,
-			connect.WithSchema(subscriptionServiceMethods.ByName("ScheduleSubscriptionUpdate")),
-			connect.WithClientOptions(opts...),
-		),
-		getPendingChanges: connect.NewClient[v1.GetPendingChangesRequest, v1.GetPendingChangesResponse](
-			httpClient,
-			baseURL+SubscriptionServiceGetPendingChangesProcedure,
-			connect.WithSchema(subscriptionServiceMethods.ByName("GetPendingChanges")),
-			connect.WithClientOptions(opts...),
-		),
-		cancelPendingChange: connect.NewClient[v1.CancelPendingChangeRequest, v1.CancelPendingChangeResponse](
-			httpClient,
-			baseURL+SubscriptionServiceCancelPendingChangeProcedure,
-			connect.WithSchema(subscriptionServiceMethods.ByName("CancelPendingChange")),
+			baseURL+SubscriptionServiceDowngradeSubscriptionProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("DowngradeSubscription")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -219,15 +176,13 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription            *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
-	createCheckoutSession      *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
-	waitForCheckoutCompletion  *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
-	cancelSubscription         *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
-	reactivateSubscription     *connect.Client[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse]
-	upgradeSubscription        *connect.Client[v1.UpgradeSubscriptionRequest, v1.UpgradeSubscriptionResponse]
-	scheduleSubscriptionUpdate *connect.Client[v1.ScheduleSubscriptionUpdateRequest, v1.ScheduleSubscriptionUpdateResponse]
-	getPendingChanges          *connect.Client[v1.GetPendingChangesRequest, v1.GetPendingChangesResponse]
-	cancelPendingChange        *connect.Client[v1.CancelPendingChangeRequest, v1.CancelPendingChangeResponse]
+	getSubscription           *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
+	createCheckoutSession     *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
+	waitForCheckoutCompletion *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
+	cancelSubscription        *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
+	reactivateSubscription    *connect.Client[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse]
+	upgradeSubscription       *connect.Client[v1.UpgradeSubscriptionRequest, v1.UpgradeSubscriptionResponse]
+	downgradeSubscription     *connect.Client[v1.DowngradeSubscriptionRequest, v1.DowngradeSubscriptionResponse]
 }
 
 // GetSubscription calls api.v1.SubscriptionService.GetSubscription.
@@ -260,19 +215,9 @@ func (c *subscriptionServiceClient) UpgradeSubscription(ctx context.Context, req
 	return c.upgradeSubscription.CallUnary(ctx, req)
 }
 
-// ScheduleSubscriptionUpdate calls api.v1.SubscriptionService.ScheduleSubscriptionUpdate.
-func (c *subscriptionServiceClient) ScheduleSubscriptionUpdate(ctx context.Context, req *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error) {
-	return c.scheduleSubscriptionUpdate.CallUnary(ctx, req)
-}
-
-// GetPendingChanges calls api.v1.SubscriptionService.GetPendingChanges.
-func (c *subscriptionServiceClient) GetPendingChanges(ctx context.Context, req *connect.Request[v1.GetPendingChangesRequest]) (*connect.Response[v1.GetPendingChangesResponse], error) {
-	return c.getPendingChanges.CallUnary(ctx, req)
-}
-
-// CancelPendingChange calls api.v1.SubscriptionService.CancelPendingChange.
-func (c *subscriptionServiceClient) CancelPendingChange(ctx context.Context, req *connect.Request[v1.CancelPendingChangeRequest]) (*connect.Response[v1.CancelPendingChangeResponse], error) {
-	return c.cancelPendingChange.CallUnary(ctx, req)
+// DowngradeSubscription calls api.v1.SubscriptionService.DowngradeSubscription.
+func (c *subscriptionServiceClient) DowngradeSubscription(ctx context.Context, req *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error) {
+	return c.downgradeSubscription.CallUnary(ctx, req)
 }
 
 // SubscriptionServiceHandler is an implementation of the api.v1.SubscriptionService service.
@@ -285,14 +230,14 @@ type SubscriptionServiceHandler interface {
 	//
 	// Requires authentication. Users can only access their own subscription.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.GetSubscriptionResponse], error)
-	// CreateCheckoutSession creates a Stripe checkout session for plan purchase.
+	// CreateCheckoutSession creates a payment checkout session for plan purchase or upgrade.
 	//
-	// Initiates the payment flow by creating a Stripe checkout session with
+	// Initiates the payment flow by creating a checkout session with
 	// the specified plan and billing cycle. Returns a checkout URL
 	// that users can visit to complete payment.
 	//
-	// Rate limited to 10 requests per hour per user to prevent abuse.
-	// Requires authentication and automatically creates Stripe customer if needed.
+	// Rate limited to prevent abuse. Requires authentication and
+	// automatically creates customer if needed.
 	//
 	// Use WaitForCheckoutCompletion to receive real-time payment status updates.
 	CreateCheckoutSession(context.Context, *connect.Request[v1.CreateCheckoutSessionRequest]) (*connect.Response[v1.CreateCheckoutSessionResponse], error)
@@ -303,15 +248,12 @@ type SubscriptionServiceHandler interface {
 	//
 	// The stream automatically times out when the checkout session expires and
 	// provides periodic keepalive messages to prevent client timeout.
-	//
-	// Uses PostgreSQL LISTEN/NOTIFY for instant updates from Stripe webhooks.
 	WaitForCheckoutCompletion(context.Context, *connect.Request[v1.WaitForCheckoutCompletionRequest], *connect.ServerStream[v1.WaitForCheckoutCompletionResponse]) error
 	// CancelSubscription schedules subscription cancellation at the end of the current billing period.
 	//
 	// Users retain access to their subscription until the current period ends.
 	// The subscription can be reactivated before the period ends using ReactivateSubscription.
 	//
-	// Does not issue refunds - users are charged for the full billing period.
 	// Requires authentication and subscription ownership validation.
 	CancelSubscription(context.Context, *connect.Request[v1.CancelSubscriptionRequest]) (*connect.Response[v1.CancelSubscriptionResponse], error)
 	// ReactivateSubscription removes scheduled cancellation before it takes effect.
@@ -322,44 +264,22 @@ type SubscriptionServiceHandler interface {
 	//
 	// Requires authentication and subscription ownership validation.
 	ReactivateSubscription(context.Context, *connect.Request[v1.ReactivateSubscriptionRequest]) (*connect.Response[v1.ReactivateSubscriptionResponse], error)
-	// UpgradeSubscription performs immediate Basic→Pro plan upgrades with Stripe proration.
+	// UpgradeSubscription performs immediate plan upgrade with proration.
 	//
-	// Only supports upgrades from Basic to Pro plans. The upgrade takes effect
-	// immediately with prorated billing for the remaining period.
-	//
-	// For downgrades or lateral moves, use ScheduleSubscriptionUpdate instead.
-	// Prevents upgrades if conflicting pending changes exist.
+	// Upgrades an existing subscription to a higher-tier plan with immediate effect.
+	// The upgrade includes proration for the remaining billing period, charging
+	// the difference between plans immediately.
 	//
 	// Requires active subscription and authentication.
 	UpgradeSubscription(context.Context, *connect.Request[v1.UpgradeSubscriptionRequest]) (*connect.Response[v1.UpgradeSubscriptionResponse], error)
-	// ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
+	// DowngradeSubscription schedules plan downgrades to take effect at the end of the current billing period.
 	//
-	// Supports plan changes (downgrades/lateral moves) and
-	// billing cycle changes (monthly↔yearly). Changes are scheduled to take
-	// effect at the start of the next billing period.
+	// Supports downgrades to lower-tier plans with effect at the end of the current billing period.
+	// Users retain access to their current plan features until the period ends, then are
+	// automatically moved to the lower-tier plan without additional charges.
 	//
-	// Only one pending change of each type is allowed per subscription.
-	// Use CancelPendingChange to cancel scheduled changes before they take effect.
-	//
-	// Currently all changes get the same effective date - change sequencing
-	// across multiple billing periods is not yet implemented.
-	ScheduleSubscriptionUpdate(context.Context, *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error)
-	// GetPendingChanges lists all scheduled changes for a subscription.
-	//
-	// Returns pending changes ordered by effective date, including plan changes
-	// and billing cycle changes. Shows change details,
-	// effective dates, and creation timestamps.
-	//
-	// Requires authentication and subscription ownership validation.
-	GetPendingChanges(context.Context, *connect.Request[v1.GetPendingChangesRequest]) (*connect.Response[v1.GetPendingChangesResponse], error)
-	// CancelPendingChange cancels a specific scheduled change before it takes effect.
-	//
-	// Allows users to cancel individual pending changes if they change their mind
-	// before the change takes effect. The change is marked as canceled with
-	// an optional reason for audit purposes.
-	//
-	// Requires authentication and subscription ownership validation.
-	CancelPendingChange(context.Context, *connect.Request[v1.CancelPendingChangeRequest]) (*connect.Response[v1.CancelPendingChangeResponse], error)
+	// Requires active subscription and authentication.
+	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
 }
 
 // NewSubscriptionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -405,22 +325,10 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("UpgradeSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
-	subscriptionServiceScheduleSubscriptionUpdateHandler := connect.NewUnaryHandler(
-		SubscriptionServiceScheduleSubscriptionUpdateProcedure,
-		svc.ScheduleSubscriptionUpdate,
-		connect.WithSchema(subscriptionServiceMethods.ByName("ScheduleSubscriptionUpdate")),
-		connect.WithHandlerOptions(opts...),
-	)
-	subscriptionServiceGetPendingChangesHandler := connect.NewUnaryHandler(
-		SubscriptionServiceGetPendingChangesProcedure,
-		svc.GetPendingChanges,
-		connect.WithSchema(subscriptionServiceMethods.ByName("GetPendingChanges")),
-		connect.WithHandlerOptions(opts...),
-	)
-	subscriptionServiceCancelPendingChangeHandler := connect.NewUnaryHandler(
-		SubscriptionServiceCancelPendingChangeProcedure,
-		svc.CancelPendingChange,
-		connect.WithSchema(subscriptionServiceMethods.ByName("CancelPendingChange")),
+	subscriptionServiceDowngradeSubscriptionHandler := connect.NewUnaryHandler(
+		SubscriptionServiceDowngradeSubscriptionProcedure,
+		svc.DowngradeSubscription,
+		connect.WithSchema(subscriptionServiceMethods.ByName("DowngradeSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/api.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -437,12 +345,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceReactivateSubscriptionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceUpgradeSubscriptionProcedure:
 			subscriptionServiceUpgradeSubscriptionHandler.ServeHTTP(w, r)
-		case SubscriptionServiceScheduleSubscriptionUpdateProcedure:
-			subscriptionServiceScheduleSubscriptionUpdateHandler.ServeHTTP(w, r)
-		case SubscriptionServiceGetPendingChangesProcedure:
-			subscriptionServiceGetPendingChangesHandler.ServeHTTP(w, r)
-		case SubscriptionServiceCancelPendingChangeProcedure:
-			subscriptionServiceCancelPendingChangeHandler.ServeHTTP(w, r)
+		case SubscriptionServiceDowngradeSubscriptionProcedure:
+			subscriptionServiceDowngradeSubscriptionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -476,14 +380,6 @@ func (UnimplementedSubscriptionServiceHandler) UpgradeSubscription(context.Conte
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.UpgradeSubscription is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) ScheduleSubscriptionUpdate(context.Context, *connect.Request[v1.ScheduleSubscriptionUpdateRequest]) (*connect.Response[v1.ScheduleSubscriptionUpdateResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.ScheduleSubscriptionUpdate is not implemented"))
-}
-
-func (UnimplementedSubscriptionServiceHandler) GetPendingChanges(context.Context, *connect.Request[v1.GetPendingChangesRequest]) (*connect.Response[v1.GetPendingChangesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.GetPendingChanges is not implemented"))
-}
-
-func (UnimplementedSubscriptionServiceHandler) CancelPendingChange(context.Context, *connect.Request[v1.CancelPendingChangeRequest]) (*connect.Response[v1.CancelPendingChangeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.CancelPendingChange is not implemented"))
+func (UnimplementedSubscriptionServiceHandler) DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.DowngradeSubscription is not implemented"))
 }

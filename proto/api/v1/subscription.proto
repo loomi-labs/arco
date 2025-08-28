@@ -7,22 +7,10 @@ import "api/v1/plan.proto";
 
 option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 
-// SubscriptionService manages user subscriptions and integrates with Stripe.
+// SubscriptionService manages user subscriptions and integrates with payment providers.
 //
 // This service handles the complete subscription lifecycle including plan
 // selection, payment processing, upgrades, downgrades, and cancellations.
-// All endpoints require user authentication via JWT access tokens.
-//
-// Key features:
-// - Stripe checkout session creation with USD pricing
-// - Real-time payment completion notifications via streaming
-// - Immediate Basic→Pro upgrades with proration
-// - Scheduled subscription changes for next billing cycle
-// - Subscription cancellation and reactivation
-// - Pending change management and cancellation
-//
-// Rate limiting applies to checkout session creation (10 requests per hour
-// per user) to prevent abuse of Stripe's payment infrastructure.
 service SubscriptionService {
   // GetSubscription retrieves the current user's subscription details.
   //
@@ -33,14 +21,14 @@ service SubscriptionService {
   // Requires authentication. Users can only access their own subscription.
   rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
 
-  // CreateCheckoutSession creates a Stripe checkout session for plan purchase.
+  // CreateCheckoutSession creates a payment checkout session for plan purchase or upgrade.
   //
-  // Initiates the payment flow by creating a Stripe checkout session with
+  // Initiates the payment flow by creating a checkout session with
   // the specified plan and billing cycle. Returns a checkout URL
   // that users can visit to complete payment.
   //
-  // Rate limited to 10 requests per hour per user to prevent abuse.
-  // Requires authentication and automatically creates Stripe customer if needed.
+  // Rate limited to prevent abuse. Requires authentication and
+  // automatically creates customer if needed.
   //
   // Use WaitForCheckoutCompletion to receive real-time payment status updates.
   rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse) {}
@@ -52,8 +40,6 @@ service SubscriptionService {
   //
   // The stream automatically times out when the checkout session expires and
   // provides periodic keepalive messages to prevent client timeout.
-  //
-  // Uses PostgreSQL LISTEN/NOTIFY for instant updates from Stripe webhooks.
   rpc WaitForCheckoutCompletion(WaitForCheckoutCompletionRequest) returns (stream WaitForCheckoutCompletionResponse) {}
 
   // CancelSubscription schedules subscription cancellation at the end of the current billing period.
@@ -61,7 +47,6 @@ service SubscriptionService {
   // Users retain access to their subscription until the current period ends.
   // The subscription can be reactivated before the period ends using ReactivateSubscription.
   //
-  // Does not issue refunds - users are charged for the full billing period.
   // Requires authentication and subscription ownership validation.
   rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
 
@@ -74,102 +59,69 @@ service SubscriptionService {
   // Requires authentication and subscription ownership validation.
   rpc ReactivateSubscription(ReactivateSubscriptionRequest) returns (ReactivateSubscriptionResponse) {}
 
-  // UpgradeSubscription performs immediate Basic→Pro plan upgrades with Stripe proration.
+  // UpgradeSubscription performs immediate plan upgrade with proration.
   //
-  // Only supports upgrades from Basic to Pro plans. The upgrade takes effect
-  // immediately with prorated billing for the remaining period.
-  //
-  // For downgrades or lateral moves, use ScheduleSubscriptionUpdate instead.
-  // Prevents upgrades if conflicting pending changes exist.
+  // Upgrades an existing subscription to a higher-tier plan with immediate effect.
+  // The upgrade includes proration for the remaining billing period, charging
+  // the difference between plans immediately.
   //
   // Requires active subscription and authentication.
   rpc UpgradeSubscription(UpgradeSubscriptionRequest) returns (UpgradeSubscriptionResponse) {}
 
-  // ScheduleSubscriptionUpdate schedules changes to take effect at the next billing cycle.
+  // DowngradeSubscription schedules plan downgrades to take effect at the end of the current billing period.
   //
-  // Supports plan changes (downgrades/lateral moves) and
-  // billing cycle changes (monthly↔yearly). Changes are scheduled to take
-  // effect at the start of the next billing period.
+  // Supports downgrades to lower-tier plans with effect at the end of the current billing period.
+  // Users retain access to their current plan features until the period ends, then are
+  // automatically moved to the lower-tier plan without additional charges.
   //
-  // Only one pending change of each type is allowed per subscription.
-  // Use CancelPendingChange to cancel scheduled changes before they take effect.
-  //
-  // Currently all changes get the same effective date - change sequencing
-  // across multiple billing periods is not yet implemented.
-  rpc ScheduleSubscriptionUpdate(ScheduleSubscriptionUpdateRequest) returns (ScheduleSubscriptionUpdateResponse) {}
-
-  // GetPendingChanges lists all scheduled changes for a subscription.
-  //
-  // Returns pending changes ordered by effective date, including plan changes
-  // and billing cycle changes. Shows change details,
-  // effective dates, and creation timestamps.
-  //
-  // Requires authentication and subscription ownership validation.
-  rpc GetPendingChanges(GetPendingChangesRequest) returns (GetPendingChangesResponse) {}
-
-  // CancelPendingChange cancels a specific scheduled change before it takes effect.
-  //
-  // Allows users to cancel individual pending changes if they change their mind
-  // before the change takes effect. The change is marked as canceled with
-  // an optional reason for audit purposes.
-  //
-  // Requires authentication and subscription ownership validation.
-  rpc CancelPendingChange(CancelPendingChangeRequest) returns (CancelPendingChangeResponse) {}
+  // Requires active subscription and authentication.
+  rpc DowngradeSubscription(DowngradeSubscriptionRequest) returns (DowngradeSubscriptionResponse) {}
 }
 
 // GetSubscriptionRequest initiates retrieval of the current user's subscription.
-//
-// The user_id is extracted from the authentication context and used for
-// subscription lookup and ownership validation.
 message GetSubscriptionRequest {
-  // The user ID for subscription lookup.
-  // This field is populated automatically from the authentication context
-  // and should match the authenticated user's ID.
-  string user_id = 1;
 }
 
 // GetSubscriptionResponse contains the user's subscription details.
 //
 // Returns null subscription field if the user has no active subscription.
-// Otherwise includes complete subscription information with plan details.
 message GetSubscriptionResponse {
   // The user's current subscription.
   // Null if the user has no active subscription.
   Subscription subscription = 1;
 }
 
-// SubscriptionStatus represents the current state of a Stripe subscription.
+// SubscriptionStatus represents the current state of a subscription.
 //
-// These statuses correspond directly to Stripe's subscription status values
-// and determine subscription behavior and access permissions.
+// These statuses determine subscription behavior and access permissions.
 enum SubscriptionStatus {
   // Default unspecified status.
   SUBSCRIPTION_STATUS_UNSPECIFIED = 0;
-  
+
   // Subscription created but payment not completed.
   // User has limited or no access until payment succeeds.
   SUBSCRIPTION_STATUS_INCOMPLETE = 1;
-  
+
   // Incomplete subscription has expired.
   // Payment was never completed within the allowed timeframe.
   SUBSCRIPTION_STATUS_INCOMPLETE_EXPIRED = 2;
-  
+
   // Subscription is in trial period.
   // User has full access without payment required yet.
   SUBSCRIPTION_STATUS_TRIALING = 3;
-  
+
   // Subscription is active and paid.
   // User has full access to plan features.
   SUBSCRIPTION_STATUS_ACTIVE = 4;
-  
+
   // Payment failed but subscription is still active.
   // User retains access while payment issues are resolved.
   SUBSCRIPTION_STATUS_PAST_DUE = 5;
-  
+
   // Subscription has been canceled.
   // User loses access at the end of the billing period.
   SUBSCRIPTION_STATUS_CANCELED = 6;
-  
+
   // Subscription is unpaid and access is revoked.
   // Similar to past_due but with access restrictions.
   SUBSCRIPTION_STATUS_UNPAID = 7;
@@ -178,87 +130,71 @@ enum SubscriptionStatus {
 // Subscription represents a user's active subscription with complete details.
 //
 // Contains subscription metadata, billing information, usage tracking,
-// and plan details. Integrates with Stripe for payment processing.
+// and plan details.
 message Subscription {
-  // Unique subscription identifier (Stripe subscription ID).
+  // Unique subscription identifier.
   string id = 1;
-  
-  // ID of the user who owns this subscription.
-  string user_id = 2;
-  
+
   // Plan identifier (e.g., "BASIC", "PRO").
-  string plan_id = 3;
-  
-  // Current subscription status from Stripe.
-  SubscriptionStatus status = 4;
-  
+  string plan_id = 2;
+
+  // Current subscription status.
+  SubscriptionStatus status = 3;
+
   // Start of the current billing period.
-  google.protobuf.Timestamp current_period_start = 5;
-  
+  google.protobuf.Timestamp current_period_start = 4;
+
   // End of the current billing period.
   // New billing cycles begin immediately after this time.
-  google.protobuf.Timestamp current_period_end = 6;
-  
+  google.protobuf.Timestamp current_period_end = 5;
+
   // Whether the subscription will cancel at the end of the current period.
   // If true, subscription ends at current_period_end without renewal.
-  bool cancel_at_period_end = 7;
-  
+  bool cancel_at_period_end = 6;
+
   // When the subscription was canceled (if applicable).
   // Set when cancel_at_period_end is enabled.
-  google.protobuf.Timestamp canceled_at = 8;
-  
+  google.protobuf.Timestamp canceled_at = 7;
+
   // When the subscription was originally created.
-  google.protobuf.Timestamp created_at = 9;
-  
+  google.protobuf.Timestamp created_at = 8;
+
   // When the subscription was last updated.
-  google.protobuf.Timestamp updated_at = 10;
-  
+  google.protobuf.Timestamp updated_at = 9;
+
   // Complete plan details including pricing and features.
-  Plan plan = 11;
-  
+  Plan plan = 10;
+
   // Current storage usage in GB.
-  // Updated periodically from backup client usage reports.
-  int64 storage_used_gb = 12;
-  
-  // Whether the subscription uses yearly billing.
-  // false = monthly billing, true = yearly billing.
-  bool is_yearly_billing = 13;
-  
-  
+  int64 storage_used_gb = 11;
+
   // Maximum storage allowed before overage charges apply.
-  // For Pro plans, overage is charged beyond this limit.
-  int64 storage_limit_gb = 15;
-  
-  // Overage rate per 10GB block in cents.
-  // 0 for Basic plans (no overage allowed).
-  // >0 for Pro plans with usage-based billing.
-  int64 overage_rate_per_10gb_cents = 16;
+  int64 storage_limit_gb = 12;
+
+  // Overage rate per GB in cents.
+  double overage_rate_per_gb_cents = 13;
 }
 
-// CreateCheckoutSessionRequest initiates Stripe checkout for plan purchase.
+// CreateCheckoutSessionRequest initiates payment checkout for plan purchase.
 //
-// Creates a checkout session for the specified plan with
-// billing cycle preferences. Rate limited to prevent payment abuse.
+// Creates a checkout session for the specified plan.
+// Rate limited to prevent payment abuse.
 message CreateCheckoutSessionRequest {
-  // Plan name to purchase (e.g., "Basic", "Pro").
+  // Plan to purchase.
   // Must correspond to an available plan from PlanService.
-  string name = 1;
-  
-  // Whether to use yearly billing cycle.
-  // false = monthly billing, true = yearly billing (with discount).
-  bool is_yearly_billing = 2;
+  string plan_id = 1;
 }
 
-// CreateCheckoutSessionResponse contains Stripe checkout session details.
+// CreateCheckoutSessionResponse contains payment checkout session details.
 //
 // Provides the checkout URL for payment completion and session ID
 // for tracking payment status via WaitForCheckoutCompletion.
 message CreateCheckoutSessionResponse {
-  // Stripe checkout session ID for tracking.
+  // Checkout session ID for tracking.
   // Use this with WaitForCheckoutCompletion for real-time updates.
   string session_id = 1;
-  
-  // Stripe checkout URL for payment completion.
+
+  // Checkout URL for payment completion.
   // Users should be redirected to this URL to complete payment.
   string checkout_url = 2;
 }
@@ -268,7 +204,7 @@ message CreateCheckoutSessionResponse {
 // Schedules the subscription to cancel at the end of the current billing period.
 // Users retain access until the period ends and can reactivate before then.
 message CancelSubscriptionRequest {
-  // Stripe subscription ID to cancel.
+  // Subscription ID to cancel.
   // Must be owned by the authenticated user.
   string subscription_id = 1;
 }
@@ -280,7 +216,7 @@ message CancelSubscriptionRequest {
 message CancelSubscriptionResponse {
   // Whether the cancellation was successfully scheduled.
   bool success = 1;
-  
+
   // When the subscription will actually end.
   // Users retain access until this time.
   google.protobuf.Timestamp effective_date = 2;
@@ -291,7 +227,7 @@ message CancelSubscriptionResponse {
 // Begins streaming real-time updates for the specified checkout session.
 // Should be called immediately after CreateCheckoutSession.
 message WaitForCheckoutCompletionRequest {
-  // Stripe checkout session ID to monitor.
+  // Checkout session ID to monitor.
   // Must be a valid session created by the authenticated user.
   string session_id = 1;
 }
@@ -299,88 +235,50 @@ message WaitForCheckoutCompletionRequest {
 // WaitForCheckoutCompletionResponse provides real-time payment status updates.
 //
 // Streamed continuously until payment is completed, failed, or expired.
-// Includes periodic keepalive messages to prevent client timeout.
 message WaitForCheckoutCompletionResponse {
   // Current checkout session status.
   CheckoutStatus status = 1;
-  
+
   // Created subscription ID when payment succeeds.
   // Only populated when status = CHECKOUT_STATUS_COMPLETED.
   string subscription_id = 2;
-  
+
   // Error details when payment fails.
   // Only populated when status = CHECKOUT_STATUS_FAILED.
   string error_message = 3;
 }
 
-// CheckoutStatus represents the current state of a Stripe checkout session.
+// CheckoutStatus represents the current state of a payment checkout session.
 //
 // These statuses track payment progress from creation through completion
 // or failure, enabling real-time UI updates during the payment flow.
 enum CheckoutStatus {
   // Default unspecified status.
   CHECKOUT_STATUS_UNSPECIFIED = 0;
-  
+
   // Payment is in progress, waiting for user completion.
   CHECKOUT_STATUS_PENDING = 1;
-  
+
   // Payment completed successfully.
   // Subscription is now active and accessible.
   CHECKOUT_STATUS_COMPLETED = 2;
-  
+
   // Payment failed due to card decline or other issues.
   // User can retry payment with a different method.
   CHECKOUT_STATUS_FAILED = 3;
-  
+
   // Checkout session expired without completion.
   // User must create a new checkout session to retry.
   CHECKOUT_STATUS_EXPIRED = 4;
 }
 
-// ChangeType represents the type of pending subscription change.
-//
-// These types correspond to the different kinds of modifications that can be
-// scheduled for a subscription to take effect at the next billing cycle.
-enum ChangeType {
-  // Default unspecified change type.
-  CHANGE_TYPE_UNSPECIFIED = 0;
-  
-  // Plan change for downgrades or lateral moves.
-  // Changes the subscription plan (e.g., Pro to Basic).
-  CHANGE_TYPE_PLAN_CHANGE = 1;
-  
-  // Billing cycle change.
-  // Changes between monthly and yearly billing cycles.
-  CHANGE_TYPE_BILLING_CYCLE_CHANGE = 2;
-}
-
-// PendingChangeStatus represents the current state of a pending subscription change.
-//
-// These statuses track the lifecycle of scheduled changes from creation
-// through application or cancellation.
-enum PendingChangeStatus {
-  // Default unspecified status.
-  PENDING_CHANGE_STATUS_UNSPECIFIED = 0;
-  
-  // Change is scheduled and waiting to be applied.
-  // Will take effect at the scheduled effective date.
-  PENDING_CHANGE_STATUS_PENDING = 1;
-  
-  // Change has been successfully applied.
-  // The subscription has been updated with the new values.
-  PENDING_CHANGE_STATUS_APPLIED = 2;
-  
-  // Change has been canceled before taking effect.
-  // The subscription will not be modified.
-  PENDING_CHANGE_STATUS_CANCELED = 3;
-}
 
 // ReactivateSubscriptionRequest removes scheduled cancellation.
 //
 // Prevents a subscription from canceling at the end of the current period.
 // Only works on subscriptions that are scheduled for cancellation but not yet canceled.
 message ReactivateSubscriptionRequest {
-  // Stripe subscription ID to reactivate.
+  // Subscription ID to reactivate.
   // Must be owned by the authenticated user and scheduled for cancellation.
   string subscription_id = 1;
 }
@@ -393,18 +291,18 @@ message ReactivateSubscriptionResponse {
   bool success = 1;
 }
 
-// UpgradeSubscriptionRequest initiates immediate Basic→Pro upgrade.
+// UpgradeSubscriptionRequest initiates immediate plan upgrade.
 //
-// Performs immediate plan upgrade with Stripe proration for the remaining
-// billing period. Only supports Basic to Pro upgrades.
+// Performs immediate plan upgrade with proration for the remaining
+// billing period.
 message UpgradeSubscriptionRequest {
-  // Stripe subscription ID to upgrade.
-  // Must be owned by the authenticated user and currently on Basic plan.
+  // Subscription ID to upgrade.
+  // Must be owned by the authenticated user.
   string subscription_id = 1;
-  
+
   // Target plan ID for upgrade.
-  // Must be "PRO" - only Basic→Pro upgrades are supported.
-  // Use ScheduleSubscriptionUpdate for downgrades or lateral moves.
+  // Must be a higher-tier plan than the current subscription.
+  // Use DowngradeSubscription for downgrades.
   string plan_id = 2;
 }
 
@@ -414,131 +312,34 @@ message UpgradeSubscriptionRequest {
 message UpgradeSubscriptionResponse {
   // Whether the upgrade was successful.
   bool success = 1;
-  
+
   // When the upgrade took effect.
   // Always immediate for upgrades (no delay).
   google.protobuf.Timestamp effective_date = 2;
 }
 
-// ScheduleSubscriptionUpdateRequest schedules changes for the next billing cycle.
+// DowngradeSubscriptionRequest schedules plan downgrade for end of billing period.
 //
-// Allows scheduling plan changes (downgrades/lateral)
-// and billing cycle changes to take effect at the next billing period start.
-message ScheduleSubscriptionUpdateRequest {
-  // Stripe subscription ID to update.
+// Schedules a downgrade to a lower-tier plan that will take effect at the end of the
+// current billing period. User retains current plan access until then.
+message DowngradeSubscriptionRequest {
+  // Subscription ID to downgrade.
   // Must be owned by the authenticated user.
   string subscription_id = 1;
-  
-  // The type of change to schedule.
-  // Only one change type can be specified per request.
-  // Multiple changes of different types can be scheduled separately.
-  oneof change {
-    // Plan change for downgrades or lateral moves (e.g., "BASIC").
-    // For upgrades, use UpgradeSubscription instead for immediate effect.
-    string plan_id = 2;
-    
-    // Billing cycle change (monthly ↔ yearly).
-    // Changes between monthly and yearly billing with appropriate pricing.
-    bool is_yearly_billing = 3;
-  }
+
+  // Target plan ID for downgrade.
+  // Must be a lower-tier plan than the current subscription.
+  string plan_id = 2;
 }
 
-// ScheduleSubscriptionUpdateResponse confirms change scheduling.
+// DowngradeSubscriptionResponse confirms downgrade scheduling.
 //
-// Provides details about when the change will take effect and how to track it.
-message ScheduleSubscriptionUpdateResponse {
-  // Whether the change was successfully scheduled.
+// Indicates successful downgrade scheduling with effect at end of current billing period.
+message DowngradeSubscriptionResponse {
+  // Whether the downgrade was successfully scheduled.
   bool success = 1;
-  
-  // When the change will take effect.
-  // Always the start of the next billing period.
+
+  // When the downgrade will take effect.
+  // Always at the end of the current billing period.
   google.protobuf.Timestamp effective_date = 2;
-  
-  // Unique ID for tracking this pending change.
-  // Use with GetPendingChanges or CancelPendingChange.
-  int64 change_id = 3;
-}
-
-// GetPendingChangesRequest retrieves all scheduled changes for a subscription.
-//
-// Returns pending changes ordered by effective date, showing what changes
-// are scheduled and when they will take effect.
-message GetPendingChangesRequest {
-  // Stripe subscription ID to query for pending changes.
-  // Must be owned by the authenticated user.
-  string subscription_id = 1;
-}
-
-// GetPendingChangesResponse contains all scheduled subscription changes.
-//
-// Lists pending changes in chronological order with complete details
-// about what will change and when.
-message GetPendingChangesResponse {
-  // All pending changes for the subscription, ordered by effective date.
-  repeated PendingChange pending_changes = 1;
-}
-
-// PendingChange represents a scheduled subscription modification.
-//
-// Contains complete details about a change that will take effect in the future,
-// including the type of change, old and new values, and timing.
-message PendingChange {
-  // Unique identifier for this pending change.
-  // Use with CancelPendingChange to cancel before it takes effect.
-  int64 id = 1;
-  
-  // Type of change being made.
-  // Specifies what aspect of the subscription is being changed.
-  ChangeType change_type = 2;
-  
-  // Current value that will be changed.
-  // The specific field set depends on the change_type.
-  oneof old_value {
-    // Current plan ID (for plan changes).
-    string old_plan_id = 3;
-    // Current yearly billing setting (for billing cycle changes).
-    bool old_is_yearly_billing = 4;
-  }
-  
-  // New value that will be applied.
-  // The specific field set depends on the change_type.
-  oneof new_value {
-    // New plan ID (for plan changes).
-    string new_plan_id = 5;
-    // New yearly billing setting (for billing cycle changes).
-    bool new_is_yearly_billing = 6;
-  }
-  
-  // When this change will take effect.
-  // Typically the start of the next billing period.
-  google.protobuf.Timestamp effective_date = 7;
-  
-  // Current status of this change.
-  // Tracks the lifecycle state of the pending change.
-  PendingChangeStatus status = 8;
-  
-  // When this change was originally scheduled.
-  google.protobuf.Timestamp created_at = 9;
-}
-
-// CancelPendingChangeRequest cancels a scheduled change before it takes effect.
-//
-// Allows users to cancel individual pending changes if they change their mind
-// before the effective date arrives.
-message CancelPendingChangeRequest {
-  // Stripe subscription ID containing the pending change.
-  // Must be owned by the authenticated user.
-  string subscription_id = 1;
-  
-  // ID of the pending change to cancel.
-  // Must be a valid pending change for the specified subscription.
-  int64 change_id = 2;
-}
-
-// CancelPendingChangeResponse confirms change cancellation.
-//
-// Indicates successful cancellation of a pending subscription change.
-message CancelPendingChangeResponse {
-  // Whether the change was successfully canceled.
-  bool success = 1;
 }
