@@ -32,7 +32,7 @@ export function getFeaturesByPlan(plan: Plan | undefined): PlanFeature[] {
   }
 
   // Determine if this is a Pro plan based on having overage pricing
-  const isProPlan = (plan.overage_per_gb_cents ?? 0) > 0;
+  const isProPlan = (plan.overage_cents_per_gb ?? 0) > 0;
   
   return [
     {
@@ -60,7 +60,7 @@ export function getFeaturesByPlan(plan: Plan | undefined): PlanFeature[] {
 export function getRetentionDays(plan: Plan | undefined): number {
   // For now, return default retention based on plan features
   // This could be moved to the proto if needed
-  const isProPlan = (plan?.overage_per_gb_cents ?? 0) > 0;
+  const isProPlan = (plan?.overage_cents_per_gb ?? 0) > 0;
   return isProPlan ? 60 : 30;
 }
 
