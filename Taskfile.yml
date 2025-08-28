@@ -35,8 +35,6 @@ tasks:
   test:
     desc: Run tests
     silent: true
-    deps:
-      - task: dev:gen:mocks
     preconditions:
       - mkdir -p frontend/dist
       - touch frontend/dist/index.html
@@ -48,8 +46,6 @@ tasks:
 
   test:raw:
     desc: Run tests with raw output
-    deps:
-      - task: dev:gen:mocks
     preconditions:
       - mkdir -p frontend/dist
       - touch frontend/dist/index.html
@@ -59,8 +55,6 @@ tasks:
   test:detailed:
     desc: Run tests with detailed output
     silent: true
-    deps:
-      - task: dev:gen:mocks
     preconditions:
       - mkdir -p frontend/dist
       - touch frontend/dist/index.html
@@ -88,8 +82,6 @@ tasks:
 
   test:integration:
     desc: Runs integration tests against real borg instances
-    deps:
-      - task: dev:gen:mocks
     preconditions:
       - sh: command -v docker
         msg: "Docker is required for integration tests"
