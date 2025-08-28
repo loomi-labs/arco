@@ -4,7 +4,7 @@
 Arco is a desktop backup management application built with Go backend and Vue frontend using Wails3 framework. It uses SQLite for local data storage and integrates with Borg backup.
 
 ## Tech Stack
-- **Language**: Go 1.24, TypeScript/Vue 3
+- **Language**: Go 1.25, TypeScript/Vue 3
 - **Framework**: Wails3 (desktop app framework)
 - **Database**: SQLite (local file-based)
 - **ORM**: Ent (type-safe entity framework)

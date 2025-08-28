@@ -2,7 +2,7 @@
 # Runs borg in server mode over SSH for client connections
 
 # Builder stage for arco-cli
-FROM docker.io/library/golang:1.24-bullseye AS builder
+FROM docker.io/library/golang:1.25-bullseye AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
