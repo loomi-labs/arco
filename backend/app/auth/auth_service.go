@@ -420,7 +420,7 @@ func (as *Service) startAuthMonitoring(session *ent.AuthSession) {
 				// Still pending - continue waiting
 				as.log.Debugf("Session %s: pending authentication", session.SessionID)
 				continue
-			default:
+			case v1.AuthStatus_AUTH_STATUS_UNSPECIFIED:
 				// Unknown status
 				as.log.Debugf("Session %s: unknown auth status %v", session.SessionID, authStatus.Status)
 				return

@@ -46,9 +46,10 @@ func (c ErrorCategory) String() string {
 		return "permission"
 	case CategoryRuntime:
 		return "runtime"
-	default:
+	case CategoryUnknown:
 		return "unknown"
 	}
+	return "unknown"
 }
 
 // BorgError represents any error that can occur during a Borg operation

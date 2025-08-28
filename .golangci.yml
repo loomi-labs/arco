@@ -6,11 +6,14 @@ linters:
     - bidichk
     - gocheckcompilerdirectives
     - prealloc
+    - exhaustive
+
   disable:
     - errcheck
     - govet
     - staticcheck
     - unused
+
   exclusions:
     generated: lax
     presets:
@@ -23,6 +26,16 @@ linters:
       - third_party$
       - builtin$
       - examples$
+
+  # All available settings of specific linters.
+  settings:
+    exhaustive:
+      # Program elements to check for exhaustiveness.
+      # Default: [ switch ]
+      check:
+        - switch
+        - map
+      ignore-enum-members: "connect.+"
 
 issues:
   # Fix found issues (if it's supported by the linter).
