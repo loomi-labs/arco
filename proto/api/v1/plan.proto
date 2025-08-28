@@ -66,5 +66,5 @@ message Plan {
   int64 price_cents = 7;
   
   // Overage pricing per GB in cents for usage beyond base storage limit.
-  int64 overage_per_gb_cents = 8;
+  double overage_cents_per_gb = 8;
 }

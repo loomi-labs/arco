@@ -11,16 +11,6 @@ option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
 //
 // This service handles the complete subscription lifecycle including plan
 // selection, payment processing, upgrades, downgrades, and cancellations.
-// All endpoints require user authentication via JWT access tokens.
-//
-// Key features:
-// - Payment checkout session creation
-// - Real-time payment completion notifications via streaming
-// - Immediate upgrades with proration
-// - Scheduled downgrades for end of billing period
-// - Subscription cancellation and reactivation
-//
-// Rate limiting applies to checkout session creation to prevent abuse.
 service SubscriptionService {
   // GetSubscription retrieves the current user's subscription details.
   //
@@ -83,9 +73,6 @@ service SubscriptionService {
   // Supports downgrades to lower-tier plans with effect at the end of the current billing period.
   // Users retain access to their current plan features until the period ends, then are
   // automatically moved to the lower-tier plan without additional charges.
-  //
-  // For upgrades to higher tiers, use CreateCheckoutSession instead to collect
-  // additional payment through the standard checkout flow.
   //
   // Requires active subscription and authentication.
   rpc DowngradeSubscription(DowngradeSubscriptionRequest) returns (DowngradeSubscriptionResponse) {}
@@ -185,7 +172,7 @@ message Subscription {
   int64 storage_limit_gb = 12;
 
   // Overage rate per GB in cents.
-  int64 overage_rate_per_gb_cents = 13;
+  double overage_rate_per_gb_cents = 13;
 }
 
 // CreateCheckoutSessionRequest initiates payment checkout for plan purchase.
