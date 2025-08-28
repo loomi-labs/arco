@@ -114,9 +114,6 @@ type SubscriptionServiceClient interface {
 	// Users retain access to their current plan features until the period ends, then are
 	// automatically moved to the lower-tier plan without additional charges.
 	//
-	// For upgrades to higher tiers, use CreateCheckoutSession instead to collect
-	// additional payment through the standard checkout flow.
-	//
 	// Requires active subscription and authentication.
 	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
 }
@@ -280,9 +277,6 @@ type SubscriptionServiceHandler interface {
 	// Supports downgrades to lower-tier plans with effect at the end of the current billing period.
 	// Users retain access to their current plan features until the period ends, then are
 	// automatically moved to the lower-tier plan without additional charges.
-	//
-	// For upgrades to higher tiers, use CreateCheckoutSession instead to collect
-	// additional payment through the standard checkout flow.
 	//
 	// Requires active subscription and authentication.
 	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
