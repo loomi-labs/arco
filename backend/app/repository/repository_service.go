@@ -417,10 +417,10 @@ func (s *Service) getLocationEnum(location arcov1.RepositoryLocation) cloudrepos
 		return cloudrepository.LocationEU
 	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
 		return cloudrepository.LocationUS
-	default:
-		s.log.Errorf("Unknown repository location %v, defaulting to EU", location)
-		return cloudrepository.LocationEU
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_UNSPECIFIED:
 	}
+	s.log.Errorf("Unknown repository location %v, defaulting to EU", location)
+	return cloudrepository.LocationEU
 }
 
 // syncSingleCloudRepository creates or updates a local repository entity with cloud metadata

@@ -269,9 +269,9 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 		}
 		// Otherwise we just wait the difference
 		return fromTime.Add(diff), nil
-	default:
-		return time.Time{}, fmt.Errorf("no valid schedule found")
+	case backupschedule.ModeDisabled:
 	}
+	return time.Time{}, fmt.Errorf("no valid schedule found")
 }
 
 /***********************************/

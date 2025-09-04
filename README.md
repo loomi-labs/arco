@@ -5,10 +5,10 @@
 # Arco Backup
 
 [![CI][s0]][l0] 
-[![Go Report Card][s1]][l1] 
+[![Go Report Card][s1]][l1]
 
-[s0]: https://github.com/loomi-labs/arco/actions/workflows/on_push_go_changes.yml/badge.svg
-[l0]: https://github.com/loomi-labs/arco/actions/workflows/on_push_go_changes.yml
+[s0]: https://github.com/loomi-labs/arco/actions/workflows/main.yml/badge.svg
+[l0]: https://github.com/loomi-labs/arco/actions/workflows/main.yml
 [s1]: https://goreportcard.com/badge/github.com/loomi-labs/arco
 [l1]: https://goreportcard.com/report/github.com/loomi-labs/arco
 

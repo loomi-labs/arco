@@ -1,32 +1,50 @@
+version: "2"
+
 linters:
-  # Enable presets.
-  # https://golangci-lint.run/usage/linters
-  # Default: []
-  presets:
-    - bugs
-    - error
-    - performance
+  enable:
+    - asciicheck
+    - bidichk
+    - gocheckcompilerdirectives
+    - prealloc
+    - exhaustive
+
+  disable:
+    - errcheck
+    - govet
+    - staticcheck
     - unused
 
-  # Enable only fast linters from enabled linters set (first run won't be fast)
-  # Default: false
-  fast: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - backend/ent
+      - third_party$
+      - builtin$
+      - examples$
+
+  # All available settings of specific linters.
+  settings:
+    exhaustive:
+      # Program elements to check for exhaustiveness.
+      # Default: [ switch ]
+      check:
+        - switch
+        - map
+      ignore-enum-members: "connect.+"
 
 issues:
-  # Which dirs to exclude: issues from them won't be reported.
-  # Can use regexp here: `generated.*`, regexp is applied on full path,
-  # including the path prefix if one is set.
-  # Default dirs are skipped independently of this option's value (see exclude-dirs-use-default).
-  # "/" will be replaced by current OS file path separator to properly work on Windows.
-  # Default: []
-  exclude-dirs:
-    - backend/ent
   # Fix found issues (if it's supported by the linter).
-  # Default: false
   fix: true
 
-# Options for analysis running.
-run:
-  # Timeout for analysis, e.g. 30s, 5m.
-  # Default: 1m
-  timeout: 5m
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

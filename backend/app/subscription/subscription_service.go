@@ -244,7 +244,7 @@ func (si *ServiceInternal) startCheckoutMonitoring(sessionId string) {
 				// Still pending - continue waiting
 				si.log.Debugf("Checkout session %s: pending checkout", sessionId)
 				continue
-			default:
+			case arcov1.CheckoutStatus_CHECKOUT_STATUS_UNSPECIFIED:
 				// Unknown status
 				si.log.Debugf("Checkout session %s: unknown checkout status %v", sessionId, checkoutStatus.Status)
 				result := createResult(state.CheckoutStatusFailed, "Unknown checkout status")
