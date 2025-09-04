@@ -28,6 +28,57 @@ type OperationData struct {
 	Options   interface{}   `json:"options,omitempty"`
 }
 
+type RepoStatus string
+
+const (
+	RepoStatusIdle                RepoStatus = "idle"
+	RepoStatusBackingUp           RepoStatus = "backingUp"
+	RepoStatusPruning             RepoStatus = "pruning"
+	RepoStatusDeleting            RepoStatus = "deleting"
+	RepoStatusMounted             RepoStatus = "mounted"
+	RepoStatusPerformingOperation RepoStatus = "performingOperation"
+	RepoStatusError               RepoStatus = "error"
+)
+
+var AvailableRepoStatuses = []RepoStatus{
+	RepoStatusIdle,
+	RepoStatusBackingUp,
+	RepoStatusPruning,
+	RepoStatusDeleting,
+	RepoStatusMounted,
+	RepoStatusPerformingOperation,
+	RepoStatusError,
+}
+
+func (rs RepoStatus) String() string {
+	return string(rs)
+}
+
+type RepoErrorType string
+
+const (
+	RepoErrorTypeNone        RepoErrorType = "none"
+	RepoErrorTypeSSHKey      RepoErrorType = "sshKey"
+	RepoErrorTypePassphrase  RepoErrorType = "passphrase"
+	RepoErrorTypeLockTimeout RepoErrorType = "lockTimeout"
+)
+
+func (ret RepoErrorType) String() string {
+	return string(ret)
+}
+
+type RepoErrorAction string
+
+const (
+	RepoErrorActionNone             RepoErrorAction = "none"
+	RepoErrorActionRegenerateSSH    RepoErrorAction = "regenerateSSH"
+	RepoErrorActionUnlockRepository RepoErrorAction = "unlockRepository"
+)
+
+func (rea RepoErrorAction) String() string {
+	return string(rea)
+}
+
 // MountInfo stores information about mounted repositories
 type MountInfo struct {
 	Path      string    `json:"path"`
@@ -75,6 +126,10 @@ type Repository struct {
 	lastError       error
 	lastBackupStats *BackupStats
 	lastPruneStats  *PruneStats
+	errorType       RepoErrorType
+	errorMessage    string
+	errorAction     RepoErrorAction
+	warningMessage  string
 	mu              sync.RWMutex
 }
 
@@ -86,6 +141,8 @@ func NewRepository(id int, eventEmitter types.EventEmitter) *Repository {
 	repo := &Repository{
 		id:           id,
 		stateMachine: stateMachine,
+		errorType:    RepoErrorTypeNone,
+		errorAction:  RepoErrorActionNone,
 	}
 
 	// Store the executor in the repository for transition execution
@@ -132,7 +189,6 @@ func (r *Repository) transitionTo(ctx context.Context, targetState RepoStatus, r
 
 	transitionCtx := TransitionContext{
 		RepoID:  r.id,
-		Reason:  reason,
 		Context: ctx,
 	}
 
@@ -235,14 +291,10 @@ func (rsm *RepositoryStateManager) failOperation(ctx context.Context, repoID int
 	if transErr := repo.transitionTo(ctx, RepoStatusError, reason); transErr != nil {
 		// Force transition if regular transition fails
 		repo.mu.Lock()
-		_, err = repo.stateMachine.executor.ForceTransition(TransitionContext{
+		repo.stateMachine.executor.ForceTransition(TransitionContext{
 			RepoID:  repoID,
-			Reason:  "Emergency: " + reason,
 			Context: ctx,
 		}, repo.GetStatus(), RepoStatusError)
-		if err != nil {
-			rsm.log.Errorf("failed to fail operation: %v", err)
-		}
 		repo.mu.Unlock()
 	}
 
@@ -255,15 +307,14 @@ func (rsm *RepositoryStateManager) failOperation(ctx context.Context, repoID int
 }
 
 // forceReset forces a repository to idle state for emergency situations
-func (rsm *RepositoryStateManager) forceReset(ctx context.Context, repoID int, reason string) error {
+func (rsm *RepositoryStateManager) forceReset(ctx context.Context, repoID int, reason string) {
 	repo := rsm.getRepository(repoID)
 
 	currentStatus := repo.GetStatus()
 
 	repo.mu.Lock()
-	_, err := repo.stateMachine.executor.ForceTransition(TransitionContext{
+	repo.stateMachine.executor.ForceTransition(TransitionContext{
 		RepoID:  repoID,
-		Reason:  fmt.Sprintf("FORCE RESET: %s", reason),
 		Context: ctx,
 	}, currentStatus, RepoStatusIdle)
 
@@ -274,7 +325,6 @@ func (rsm *RepositoryStateManager) forceReset(ctx context.Context, repoID int, r
 	repo.mu.Unlock()
 
 	rsm.eventEmitter.EmitEvent(ctx, types.EventRepoForceReset(repoID))
-	return err
 }
 
 // TODO: do we need the following func's???
@@ -332,4 +382,52 @@ func (rsm *RepositoryStateManager) HasError(repoID int) bool {
 	}
 
 	return false
+}
+
+// SetWarning sets repository warning state
+func (rsm *RepositoryStateManager) SetWarning(ctx context.Context, repoID int, message string) {
+	repo := rsm.getRepository(repoID)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	repo.warningMessage = message
+	// Note: warnings don't change the repository state, they're just informational
+}
+
+// ClearError clears repository error state
+func (rsm *RepositoryStateManager) ClearError(ctx context.Context, repoID int) {
+	repo := rsm.getRepository(repoID)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	repo.errorType = RepoErrorTypeNone
+	repo.errorMessage = ""
+	repo.errorAction = RepoErrorActionNone
+}
+
+// ClearWarning clears repository warning state
+func (rsm *RepositoryStateManager) ClearWarning(ctx context.Context, repoID int) {
+	repo := rsm.getRepository(repoID)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	repo.warningMessage = ""
+}
+
+// GetErrorInfo returns the current error information for a repository
+func (rsm *RepositoryStateManager) GetErrorInfo(repoID int) (RepoErrorType, string, RepoErrorAction) {
+	repo := rsm.getRepository(repoID)
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
+	return repo.errorType, repo.errorMessage, repo.errorAction
+}
+
+// GetWarningMessage returns the current warning message for a repository
+func (rsm *RepositoryStateManager) GetWarningMessage(repoID int) string {
+	repo := rsm.getRepository(repoID)
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
+	return repo.warningMessage
 }

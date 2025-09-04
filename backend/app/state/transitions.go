@@ -12,7 +12,6 @@ import (
 // TransitionContext provides context for state transitions
 type TransitionContext struct {
 	RepoID    int
-	Reason    string
 	UserID    string
 	RequestID string
 	Context   context.Context
@@ -88,20 +87,6 @@ func (v *BusinessRuleValidator) registerDefaultValidators() {
 
 		return nil
 	}
-
-	// Validate reason requirements for certain transitions
-	v.validators["require_detailed_reasons"] = func(ctx TransitionContext, from, to RepoStatus) error {
-		criticalTransitions := []RepoStatus{
-			RepoStatusDeleting,
-			RepoStatusError,
-		}
-
-		if containsStatus(criticalTransitions, to) && len(ctx.Reason) < 10 {
-			return fmt.Errorf("detailed reason required for transition to %s (minimum 10 characters)", to)
-		}
-
-		return nil
-	}
 }
 
 // ValidateTransition runs all registered validators against a transition
@@ -148,12 +133,12 @@ func (e *TransitionExecutor) ExecuteTransition(ctx TransitionContext, currentSta
 	result := &TransitionResult{
 		From:      currentState,
 		To:        targetState,
-		Reason:    ctx.Reason,
+		Reason:    fmt.Sprintf("Transition from %s to %s", currentState, targetState),
 		Timestamp: startTime,
 	}
 
 	// Step 1: Validate the transition
-	if err := e.stateMachine.ValidateTransition(ctx.RepoID, currentState, targetState, ctx.Reason); err != nil {
+	if err := e.stateMachine.ValidateTransition(ctx.RepoID, currentState, targetState, ""); err != nil {
 		result.Success = false
 		result.Error = fmt.Sprintf("state machine validation failed: %v", err)
 		result.Duration = time.Since(startTime)
@@ -173,7 +158,7 @@ func (e *TransitionExecutor) ExecuteTransition(ctx TransitionContext, currentSta
 		RepoID:    ctx.RepoID,
 		From:      currentState,
 		To:        targetState,
-		Reason:    ctx.Reason,
+		Reason:    fmt.Sprintf("Transition from %s to %s", currentState, targetState),
 		Timestamp: startTime,
 		Success:   false, // Will be updated on success
 	}
@@ -209,13 +194,13 @@ func (e *TransitionExecutor) ExecuteTransition(ctx TransitionContext, currentSta
 }
 
 // ForceTransition bypasses validation for emergency situations
-func (e *TransitionExecutor) ForceTransition(ctx TransitionContext, currentState, targetState RepoStatus) (*TransitionResult, error) {
+func (e *TransitionExecutor) ForceTransition(ctx TransitionContext, currentState, targetState RepoStatus) *TransitionResult {
 	startTime := time.Now()
 
 	result := &TransitionResult{
 		From:      currentState,
 		To:        targetState,
-		Reason:    fmt.Sprintf("FORCED: %s", ctx.Reason),
+		Reason:    fmt.Sprintf("FORCED: Transition from %s to %s", currentState, targetState),
 		Timestamp: startTime,
 		Success:   true,
 	}
@@ -241,7 +226,7 @@ func (e *TransitionExecutor) ForceTransition(ctx TransitionContext, currentState
 	e.eventEmitter.EmitEvent(ctx.Context, types.EventRepoStateChangedString(ctx.RepoID))
 
 	result.Duration = time.Since(startTime)
-	return result, nil
+	return result
 }
 
 // containsStatus checks if a slice contains a specific RepoStatus

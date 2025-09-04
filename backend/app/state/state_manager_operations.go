@@ -155,7 +155,6 @@ func (rsm *RepositoryStateManager) CanTransitionTo(repoID int, targetState RepoS
 	validator := NewBusinessRuleValidator()
 	ctx := TransitionContext{
 		RepoID: repoID,
-		Reason: "validation check",
 	}
 
 	if err := validator.ValidateTransition(ctx, currentState, targetState); err != nil {
@@ -186,4 +185,27 @@ func (rsm *RepositoryStateManager) RecoverFromError(ctx context.Context, repoID 
 
 	rsm.eventEmitter.EmitEvent(ctx, types.EventRepoRecovered(repoID))
 	return nil
+}
+
+// SetError sets repository error state with specific error type and recovery action
+func (rsm *RepositoryStateManager) SetError(ctx context.Context, repoID int, errorType RepoErrorType, message string, action RepoErrorAction) {
+	repo := rsm.getRepository(repoID)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	repo.errorType = errorType
+	repo.errorMessage = message
+	repo.errorAction = action
+
+	// Force transition repository to error state
+	transitionCtx := TransitionContext{
+		Context: ctx,
+		RepoID:  repoID,
+	}
+	currentState := repo.stateMachine.GetCurrentState(repoID)
+	_, err := repo.stateMachine.executor.ExecuteTransition(transitionCtx, currentState, RepoStatusError)
+	if err != nil {
+		rsm.log.Errorf("failed to execute transition err: %s", err)
+		repo.stateMachine.executor.ForceTransition(transitionCtx, currentState, RepoStatusError)
+	}
 }

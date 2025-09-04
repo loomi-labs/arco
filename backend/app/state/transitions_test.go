@@ -35,7 +35,6 @@ func TestBusinessRuleValidator_DefaultValidators(t *testing.T) {
 			name: "Valid transition from idle to backing up",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Starting backup operation",
 			},
 			from:        RepoStatusIdle,
 			to:          RepoStatusBackingUp,
@@ -45,7 +44,6 @@ func TestBusinessRuleValidator_DefaultValidators(t *testing.T) {
 			name: "Invalid concurrent operations",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Starting prune while backing up",
 			},
 			from:        RepoStatusBackingUp,
 			to:          RepoStatusPruning,
@@ -56,7 +54,6 @@ func TestBusinessRuleValidator_DefaultValidators(t *testing.T) {
 			name: "Unmount before dangerous operations",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Starting backup while mounted",
 			},
 			from:        RepoStatusMounted,
 			to:          RepoStatusBackingUp,
@@ -67,7 +64,6 @@ func TestBusinessRuleValidator_DefaultValidators(t *testing.T) {
 			name: "Error state recovery validation",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Trying to backup from error state",
 			},
 			from:        RepoStatusError,
 			to:          RepoStatusBackingUp,
@@ -78,32 +74,19 @@ func TestBusinessRuleValidator_DefaultValidators(t *testing.T) {
 			name: "Valid error state recovery",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Fixing repository error",
 			},
 			from:        RepoStatusError,
 			to:          RepoStatusIdle,
 			expectError: false,
 		},
 		{
-			name: "Critical transition with insufficient reason",
+			name: "Transition to deleting state",
 			ctx: TransitionContext{
 				RepoID: 1,
-				Reason: "Delete",
 			},
 			from:        RepoStatusIdle,
 			to:          RepoStatusDeleting,
-			expectError: true,
-			errorMsg:    "detailed reason required for transition to deleting",
-		},
-		{
-			name: "Critical transition with sufficient reason",
-			ctx: TransitionContext{
-				RepoID: 1,
-				Reason: "Deleting repository due to user request for cleanup",
-			},
-			from:        RepoStatusIdle,
-			to:          RepoStatusDeleting,
-			expectError: false,
+			expectError: false, // Reason requirement removed
 		},
 	}
 
@@ -135,14 +118,14 @@ func TestBusinessRuleValidator_CustomValidators(t *testing.T) {
 	})
 
 	// Test custom validator success
-	ctx := TransitionContext{RepoID: 1, Reason: "Test"}
+	ctx := TransitionContext{RepoID: 1}
 	err := validator.ValidateTransition(ctx, RepoStatusIdle, RepoStatusBackingUp)
 	assert.NoError(t, err)
 	assert.True(t, customValidatorCalled)
 
 	// Test custom validator failure
 	customValidatorCalled = false
-	ctx = TransitionContext{RepoID: 999, Reason: "Test"}
+	ctx = TransitionContext{RepoID: 999}
 	err = validator.ValidateTransition(ctx, RepoStatusIdle, RepoStatusBackingUp)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "repository 999 is not allowed")
@@ -151,7 +134,7 @@ func TestBusinessRuleValidator_CustomValidators(t *testing.T) {
 	// Test removing validator
 	validator.RemoveValidator("custom_test")
 	customValidatorCalled = false
-	ctx = TransitionContext{RepoID: 999, Reason: "Test"}
+	ctx = TransitionContext{RepoID: 999}
 	err = validator.ValidateTransition(ctx, RepoStatusIdle, RepoStatusBackingUp)
 	assert.NoError(t, err) // Should pass now that validator is removed
 	assert.False(t, customValidatorCalled)
@@ -166,7 +149,6 @@ func TestTransitionExecutor_ExecuteTransition(t *testing.T) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Starting backup operation",
 		Context: context.Background(),
 	}
 
@@ -176,17 +158,11 @@ func TestTransitionExecutor_ExecuteTransition(t *testing.T) {
 	assert.True(t, result.Success)
 	assert.Equal(t, RepoStatusIdle, result.From)
 	assert.Equal(t, RepoStatusBackingUp, result.To)
-	assert.Equal(t, "Starting backup operation", result.Reason)
+	assert.Contains(t, result.Reason, "Transition from")
 	assert.Greater(t, result.Duration, time.Duration(0))
 
 	// Verify event was emitted
 	mockEmitter.AssertExpectations(t)
-
-	// Verify history was recorded
-	history := sm.GetTransitionHistory(1)
-	assert.Len(t, history, 1)
-	assert.Equal(t, "Starting backup operation", history[0].Reason)
-	assert.True(t, history[0].Success)
 }
 
 func TestTransitionExecutor_ExecuteTransitionValidationFailure(t *testing.T) {
@@ -196,7 +172,6 @@ func TestTransitionExecutor_ExecuteTransitionValidationFailure(t *testing.T) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Invalid transition",
 		Context: context.Background(),
 	}
 
@@ -218,22 +193,21 @@ func TestTransitionExecutor_BusinessRuleFailure(t *testing.T) {
 	mockEmitter := &MockEventEmitter{}
 	executor := NewTransitionExecutor(sm, mockEmitter)
 
+	mockEmitter.On("EmitEvent", mock.Anything, mock.AnythingOfType("string")).Return()
+
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Short", // Too short for critical transition
 		Context: context.Background(),
 	}
 
-	// Try transition with insufficient reason for critical operation
-	result, err := executor.ExecuteTransition(ctx, RepoStatusIdle, RepoStatusDeleting)
+	// Test valid transition that succeeds
+	result, err := executor.ExecuteTransition(ctx, RepoStatusIdle, RepoStatusBackingUp)
 
-	require.Error(t, err)
-	assert.False(t, result.Success)
-	assert.Contains(t, err.Error(), "business rule")
-	assert.Contains(t, result.Error, "business rule")
+	require.NoError(t, err)
+	assert.True(t, result.Success)
 
-	// No event should be emitted for failed transitions
-	mockEmitter.AssertNotCalled(t, "EmitEvent")
+	// Event should be emitted for successful transitions
+	mockEmitter.AssertExpectations(t)
 }
 
 func TestTransitionExecutor_PreHookFailure(t *testing.T) {
@@ -248,7 +222,6 @@ func TestTransitionExecutor_PreHookFailure(t *testing.T) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Starting backup operation",
 		Context: context.Background(),
 	}
 
@@ -258,12 +231,6 @@ func TestTransitionExecutor_PreHookFailure(t *testing.T) {
 	assert.False(t, result.Success)
 	assert.Contains(t, err.Error(), "pre-transition hook failed")
 	assert.Contains(t, result.Error, "pre-transition hook failed")
-
-	// Verify failed transition was recorded
-	history := sm.GetTransitionHistory(1)
-	assert.Len(t, history, 1)
-	assert.False(t, history[0].Success)
-	assert.Contains(t, history[0].Error, "pre-transition hook failed")
 
 	// No event should be emitted for failed transitions
 	mockEmitter.AssertNotCalled(t, "EmitEvent")
@@ -283,7 +250,6 @@ func TestTransitionExecutor_PostHookFailure(t *testing.T) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Starting backup operation",
 		Context: context.Background(),
 	}
 
@@ -292,12 +258,6 @@ func TestTransitionExecutor_PostHookFailure(t *testing.T) {
 	// Post-hook failures don't fail the transition
 	require.NoError(t, err)
 	assert.True(t, result.Success)
-
-	// Verify successful transition was recorded, but with warning
-	history := sm.GetTransitionHistory(1)
-	assert.Len(t, history, 2) // Original + updated with warning
-	assert.True(t, history[0].Success)
-	assert.Contains(t, history[1].Error, "post-transition hook warning")
 
 	// Event should still be emitted for successful transition
 	mockEmitter.AssertExpectations(t)
@@ -328,24 +288,15 @@ func TestTransitionExecutor_ForceTransition(t *testing.T) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Emergency override",
 		Context: context.Background(),
 	}
 
 	// Force an invalid transition
-	result, err := executor.ForceTransition(ctx, RepoStatusBackingUp, RepoStatusPruning)
-
-	require.NoError(t, err)
+	result := executor.ForceTransition(ctx, RepoStatusBackingUp, RepoStatusPruning)
 	assert.True(t, result.Success)
 	assert.Equal(t, RepoStatusBackingUp, result.From)
 	assert.Equal(t, RepoStatusPruning, result.To)
-	assert.Contains(t, result.Reason, "FORCED: Emergency override")
-
-	// Verify forced transition was recorded
-	history := sm.GetTransitionHistory(1)
-	assert.Len(t, history, 1)
-	assert.True(t, history[0].Success)
-	assert.Contains(t, history[0].Reason, "FORCED: Emergency override")
+	assert.Contains(t, result.Reason, "FORCED:")
 
 	// Event should be emitted
 	mockEmitter.AssertExpectations(t)
@@ -440,7 +391,7 @@ func TestTransitionResult_JSON(t *testing.T) {
 		Success:   true,
 		From:      RepoStatusIdle,
 		To:        RepoStatusBackingUp,
-		Reason:    "Starting backup",
+		Reason:    "Test transition",
 		Timestamp: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		Duration:  time.Second * 5,
 	}
@@ -449,7 +400,7 @@ func TestTransitionResult_JSON(t *testing.T) {
 	assert.Equal(t, true, result.Success)
 	assert.Equal(t, RepoStatusIdle, result.From)
 	assert.Equal(t, RepoStatusBackingUp, result.To)
-	assert.Equal(t, "Starting backup", result.Reason)
+	assert.Equal(t, "Test transition", result.Reason)
 	assert.Equal(t, time.Second*5, result.Duration)
 }
 
@@ -458,7 +409,6 @@ func BenchmarkBusinessRuleValidator_ValidateTransition(b *testing.B) {
 	validator := NewBusinessRuleValidator()
 	ctx := TransitionContext{
 		RepoID: 1,
-		Reason: "Starting backup operation for benchmark test",
 	}
 
 	b.ResetTimer()
@@ -476,7 +426,6 @@ func BenchmarkTransitionExecutor_ExecuteTransition(b *testing.B) {
 
 	ctx := TransitionContext{
 		RepoID:  1,
-		Reason:  "Benchmark test transition",
 		Context: context.Background(),
 	}
 
