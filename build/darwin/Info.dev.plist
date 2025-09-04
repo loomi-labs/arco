@@ -2,27 +2,27 @@
 <plist version="1.0">
     <dict>
         <key>CFBundlePackageType</key>
-        <string>APPL</string>
+            <string>APPL</string>
         <key>CFBundleName</key>
-        <string>Arco</string>
+            <string>Arco</string>
         <key>CFBundleExecutable</key>
-        <string>arco</string>
+            <string>arco</string>
         <key>CFBundleIdentifier</key>
-        <string>com.backup.arco</string>
+            <string>com.backup.arco</string>
         <key>CFBundleVersion</key>
-        <string></string>
+            <string>0.14.1</string>
         <key>CFBundleGetInfoString</key>
-        <string>Desktop client for BorgBackup</string>
+            <string>Backup application based on BorgBackup</string>
         <key>CFBundleShortVersionString</key>
-        <string></string>
+            <string>0.14.1</string>
         <key>CFBundleIconFile</key>
-        <string>icons</string>
+            <string>icons</string>
         <key>LSMinimumSystemVersion</key>
-        <string>10.13.0</string>
+            <string>10.15.0</string>
         <key>NSHighResolutionCapable</key>
-        <string>true</string>
+            <string>true</string>
         <key>NSHumanReadableCopyright</key>
-        <string>(c) 2024, Raphael Thurnherr</string>
+            <string>(c) 2025, Loomi Labs</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

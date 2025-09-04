@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": ""
+		"file_version": "0.14.1"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "",
-			"CompanyName": "Raphael Thurnherr",
-			"FileDescription": "A modern, user-friendly Borg backup client",
-			"LegalCopyright": "(c) 2024, Raphael Thurnherr",
+			"ProductVersion": "0.14.1",
+			"CompanyName": "Loomi Labs",
+			"FileDescription": "A modern, user-friendly backup application based on BorgBackup",
+			"LegalCopyright": "(c) 2025, Loomi Labs",
 			"ProductName": "Arco",
-			"Comments": "Desktop client for BorgBackup"
+			"Comments": "Backup application based on BorgBackup"
 		}
 	}
 }

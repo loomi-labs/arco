@@ -1,16 +1,16 @@
 # This file contains the configuration for this project.
-# When you update `info` or `fileAssociations`, run `wails3 task common:update:build-assets` to update the assets.
+# When you update `info` or `fileAssociations`, run `task common:update:build-assets` to update the assets.
 # Note that this will overwrite any changes you have made to the assets.
 version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "Raphael Thurnherr" # The name of the company
+  companyName: "Loomi Labs" # The name of the company
   productName: "Arco" # The name of the application
   productIdentifier: "com.backup.arco" # The unique product identifier
-  description: "A modern, user-friendly Borg backup client" # The application description
-  copyright: "(c) 2024, Raphael Thurnherr" # Copyright text
-  comments: "Desktop client for BorgBackup" # Comments
+  description: "A modern, user-friendly backup application based on BorgBackup" # The application description
+  copyright: "(c) 2025, Loomi Labs" # Copyright text
+  comments: "Backup application based on BorgBackup" # Comments
   homepage: "https://arco-backup.com" # The homepage of the application
 
 # Dev mode configuration
@@ -32,15 +32,15 @@ dev_mode:
       - "*.go"
     git_ignore: true
   executes:
-    - cmd: wails3 task common:install:frontend:deps
+    - cmd: task common:install:frontend:deps
       type: once
-    - cmd: wails3 task common:dev:frontend
+    - cmd: task common:dev:frontend
       type: background
     - cmd: go mod tidy
       type: blocking
-    - cmd: wails3 task build
+    - cmd: task build
       type: blocking
-    - cmd: wails3 task run
+    - cmd: task run
       type: primary
 
 # File Associations

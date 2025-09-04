@@ -8,16 +8,16 @@
     !define INFO_PROJECTNAME "arco"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "Raphael Thurnherr"
+    !define INFO_COMPANYNAME "Loomi Labs"
 !endif
 !ifndef INFO_PRODUCTNAME
     !define INFO_PRODUCTNAME "Arco"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION ""
+    !define INFO_PRODUCTVERSION "0.14.1"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "(c) 2024, Raphael Thurnherr"
+    !define INFO_COPYRIGHT "(c) 2025, Loomi Labs"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"
@@ -158,7 +158,7 @@ RequestExecutionLevel "${REQUEST_EXECUTION_LEVEL}"
 
     ${If} ${REQUEST_EXECUTION_LEVEL} == "user"
         # If the installer is run in user level, check the user specific key exists and is not empty then webview2 is already installed
-	    ReadRegStr $0 HKCU "Software\Microsoft\EdgeUpdate\Clients{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+	    ReadRegStr $0 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
         ${If} $0 != ""
             Goto ok
         ${EndIf}
