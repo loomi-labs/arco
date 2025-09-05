@@ -23,21 +23,21 @@ type TransitionRule[S any] struct {
 	Guard func(interface{}) bool // Optional validation function
 }
 
-// GenericStateMachine provides a generic implementation of StateMachine
-type GenericStateMachine[S comparable] struct {
+// genericStateMachine provides a generic implementation of StateMachine
+type genericStateMachine[S comparable] struct {
 	transitions map[string]TransitionRule[S]
 	mu          sync.RWMutex
 }
 
-// NewGenericStateMachine creates a new generic state machine
-func NewGenericStateMachine[S comparable]() *GenericStateMachine[S] {
-	return &GenericStateMachine[S]{
+// newGenericStateMachine creates a new generic state machine
+func newGenericStateMachine[S comparable]() *genericStateMachine[S] {
+	return &genericStateMachine[S]{
 		transitions: make(map[string]TransitionRule[S]),
 	}
 }
 
 // AddTransition adds a transition rule to the state machine
-func (sm *GenericStateMachine[S]) AddTransition(from, to S, guard func(interface{}) bool) {
+func (sm *genericStateMachine[S]) AddTransition(from, to S, guard func(interface{}) bool) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -50,7 +50,7 @@ func (sm *GenericStateMachine[S]) AddTransition(from, to S, guard func(interface
 }
 
 // CanTransition checks if a transition is valid
-func (sm *GenericStateMachine[S]) CanTransition(from S, to S) bool {
+func (sm *genericStateMachine[S]) CanTransition(from S, to S) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -72,7 +72,7 @@ func (sm *GenericStateMachine[S]) CanTransition(from S, to S) bool {
 }
 
 // Transition performs a state transition
-func (sm *GenericStateMachine[S]) Transition(from S, to S) error {
+func (sm *genericStateMachine[S]) Transition(from S, to S) error {
 	// TODO: Implement transition logic:
 	// 1. Validate transition is allowed
 	// 2. Execute any pre-transition hooks
@@ -89,7 +89,7 @@ func (sm *GenericStateMachine[S]) Transition(from S, to S) error {
 }
 
 // GetTransitions returns all valid transitions from a state
-func (sm *GenericStateMachine[S]) GetTransitions(from S) []S {
+func (sm *genericStateMachine[S]) GetTransitions(from S) []S {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -110,14 +110,14 @@ func (sm *GenericStateMachine[S]) GetTransitions(from S) []S {
 }
 
 // transitionKey generates a unique key for a transition
-func (sm *GenericStateMachine[S]) transitionKey(from, to S) string {
+func (sm *genericStateMachine[S]) transitionKey(from, to S) string {
 	// TODO: Implement proper key generation based on state type
 	// This is a placeholder - actual implementation depends on S type
 	return ""
 }
 
 // GetAllTransitions returns all registered transition rules
-func (sm *GenericStateMachine[S]) GetAllTransitions() []TransitionRule[S] {
+func (sm *genericStateMachine[S]) GetAllTransitions() []TransitionRule[S] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -130,7 +130,7 @@ func (sm *GenericStateMachine[S]) GetAllTransitions() []TransitionRule[S] {
 }
 
 // RemoveTransition removes a transition rule
-func (sm *GenericStateMachine[S]) RemoveTransition(from, to S) {
+func (sm *genericStateMachine[S]) RemoveTransition(from, to S) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -139,7 +139,7 @@ func (sm *GenericStateMachine[S]) RemoveTransition(from, to S) {
 }
 
 // Clear removes all transition rules
-func (sm *GenericStateMachine[S]) Clear() {
+func (sm *genericStateMachine[S]) Clear() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 

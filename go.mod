@@ -8,6 +8,7 @@ require (
 	entgo.io/ent v0.14.5
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/charmbracelet/keygen v0.5.3
+	github.com/chris-tomich/adtenum v0.0.0-20240224102410-27b45bba484e
 	github.com/eminarican/safetypes v0.0.8
 	github.com/go-cmd/cmd v1.4.3
 	github.com/google/go-github/v66 v66.0.0
@@ -119,7 +120,6 @@ require (
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/chris-tomich/adtenum v0.0.0-20240224102410-27b45bba484e // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/coder/websocket v1.8.13 // indirect

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
-	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -20,16 +19,15 @@ import (
 // Service contains the business logic and provides methods exposed to the frontend
 type Service struct {
 	log          *zap.SugaredLogger
+	config       *types.Config
 	queueManager *QueueManager
 	stateMachine *statemachine.RepositoryStateMachine
 
 	// Dependencies to be set via Init()
 	db              *ent.Client
-	state           *state.State
 	eventEmitter    types.EventEmitter
 	borgClient      borg.Borg
 	cloudRepoClient *CloudRepositoryClient
-	config          *types.Config
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -38,29 +36,25 @@ type ServiceInternal struct {
 }
 
 // NewService creates a new repository service instance
-func NewService(log *zap.SugaredLogger, maxHeavyOps int) *ServiceInternal {
-	// TODO: Implement service constructor with:
-	// 1. Initialize QueueManager
-	// 2. Initialize StateMachine
-	// 3. Set up logging
-	// 4. Initialize other components
+func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
+	var maxHeavyOperations = 1
+
 	return &ServiceInternal{
 		Service: &Service{
 			log:          log,
-			queueManager: nil, // TODO: NewQueueManager(maxHeavyOps)
-			stateMachine: nil, // TODO: statemachine.NewRepositoryStateMachine()
+			queueManager: NewQueueManager(maxHeavyOperations),
+			stateMachine: statemachine.NewRepositoryStateMachine(),
+			config:       config,
 		},
 	}
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, state *state.State, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, config *types.Config) {
+func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient) {
 	si.db = db
-	si.state = state
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
-	si.config = config
 	// TODO: Start periodic cleanup goroutine
 	// go si.startPeriodicCleanup(ctx)
 }

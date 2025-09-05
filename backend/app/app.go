@@ -22,6 +22,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/plan"
+	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/repository_old"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
@@ -62,6 +63,7 @@ type App struct {
 	planService          *plan.ServiceInternal
 	subscriptionService  *subscription.ServiceInternal
 	repositoryService    *repository_old.ServiceInternal
+	repositoryServiceN   *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
 }
 
@@ -86,6 +88,7 @@ func NewApp(
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
 		repositoryService:        repository_old.NewService(log, state),
+		repositoryServiceN:       repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
 	}
 }
@@ -185,8 +188,8 @@ func (a *App) Startup(ctx context.Context) {
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
 	// Create cloud repository service first
-	cloudRepositoryService := repository_old.NewCloudRepositoryClient(a.log, a.state, a.config)
-	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
+	cloudRepositoryServiceO := repository_old.NewCloudRepositoryClient(a.log, a.state, a.config)
+	cloudRepositoryServiceO.Init(a.db, cloudRepositoryRPCClient)
 
 	// Initialize repository service with full dependencies
 	a.repositoryService.Init(
@@ -194,8 +197,13 @@ func (a *App) Startup(ctx context.Context) {
 		a.borg,
 		a.config,
 		a.eventEmitter,
-		cloudRepositoryService,
+		cloudRepositoryServiceO,
 	)
+
+	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
+	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
+
+	a.repositoryServiceN.Init(a.db, a.eventEmitter, a.borg, cloudRepositoryService)
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
