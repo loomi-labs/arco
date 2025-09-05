@@ -24,73 +24,73 @@ type AuthSessionUpdate struct {
 }
 
 // Where appends a list predicates to the AuthSessionUpdate builder.
-func (asu *AuthSessionUpdate) Where(ps ...predicate.AuthSession) *AuthSessionUpdate {
-	asu.mutation.Where(ps...)
-	return asu
+func (_u *AuthSessionUpdate) Where(ps ...predicate.AuthSession) *AuthSessionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (asu *AuthSessionUpdate) SetUpdatedAt(t time.Time) *AuthSessionUpdate {
-	asu.mutation.SetUpdatedAt(t)
-	return asu
+func (_u *AuthSessionUpdate) SetUpdatedAt(v time.Time) *AuthSessionUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetSessionID sets the "session_id" field.
-func (asu *AuthSessionUpdate) SetSessionID(s string) *AuthSessionUpdate {
-	asu.mutation.SetSessionID(s)
-	return asu
+func (_u *AuthSessionUpdate) SetSessionID(v string) *AuthSessionUpdate {
+	_u.mutation.SetSessionID(v)
+	return _u
 }
 
 // SetNillableSessionID sets the "session_id" field if the given value is not nil.
-func (asu *AuthSessionUpdate) SetNillableSessionID(s *string) *AuthSessionUpdate {
-	if s != nil {
-		asu.SetSessionID(*s)
+func (_u *AuthSessionUpdate) SetNillableSessionID(v *string) *AuthSessionUpdate {
+	if v != nil {
+		_u.SetSessionID(*v)
 	}
-	return asu
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (asu *AuthSessionUpdate) SetStatus(a authsession.Status) *AuthSessionUpdate {
-	asu.mutation.SetStatus(a)
-	return asu
+func (_u *AuthSessionUpdate) SetStatus(v authsession.Status) *AuthSessionUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (asu *AuthSessionUpdate) SetNillableStatus(a *authsession.Status) *AuthSessionUpdate {
-	if a != nil {
-		asu.SetStatus(*a)
+func (_u *AuthSessionUpdate) SetNillableStatus(v *authsession.Status) *AuthSessionUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return asu
+	return _u
 }
 
 // SetExpiresAt sets the "expires_at" field.
-func (asu *AuthSessionUpdate) SetExpiresAt(t time.Time) *AuthSessionUpdate {
-	asu.mutation.SetExpiresAt(t)
-	return asu
+func (_u *AuthSessionUpdate) SetExpiresAt(v time.Time) *AuthSessionUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
 }
 
 // SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
-func (asu *AuthSessionUpdate) SetNillableExpiresAt(t *time.Time) *AuthSessionUpdate {
-	if t != nil {
-		asu.SetExpiresAt(*t)
+func (_u *AuthSessionUpdate) SetNillableExpiresAt(v *time.Time) *AuthSessionUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
 	}
-	return asu
+	return _u
 }
 
 // Mutation returns the AuthSessionMutation object of the builder.
-func (asu *AuthSessionUpdate) Mutation() *AuthSessionMutation {
-	return asu.mutation
+func (_u *AuthSessionUpdate) Mutation() *AuthSessionMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (asu *AuthSessionUpdate) Save(ctx context.Context) (int, error) {
-	asu.defaults()
-	return withHooks(ctx, asu.sqlSave, asu.mutation, asu.hooks)
+func (_u *AuthSessionUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (asu *AuthSessionUpdate) SaveX(ctx context.Context) int {
-	affected, err := asu.Save(ctx)
+func (_u *AuthSessionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -98,29 +98,29 @@ func (asu *AuthSessionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (asu *AuthSessionUpdate) Exec(ctx context.Context) error {
-	_, err := asu.Save(ctx)
+func (_u *AuthSessionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (asu *AuthSessionUpdate) ExecX(ctx context.Context) {
-	if err := asu.Exec(ctx); err != nil {
+func (_u *AuthSessionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (asu *AuthSessionUpdate) defaults() {
-	if _, ok := asu.mutation.UpdatedAt(); !ok {
+func (_u *AuthSessionUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := authsession.UpdateDefaultUpdatedAt()
-		asu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (asu *AuthSessionUpdate) check() error {
-	if v, ok := asu.mutation.Status(); ok {
+func (_u *AuthSessionUpdate) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := authsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AuthSession.status": %w`, err)}
 		}
@@ -129,37 +129,37 @@ func (asu *AuthSessionUpdate) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (asu *AuthSessionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AuthSessionUpdate {
-	asu.modifiers = append(asu.modifiers, modifiers...)
-	return asu
+func (_u *AuthSessionUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AuthSessionUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (asu *AuthSessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := asu.check(); err != nil {
-		return n, err
+func (_u *AuthSessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
-	if ps := asu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := asu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := asu.mutation.SessionID(); ok {
+	if value, ok := _u.mutation.SessionID(); ok {
 		_spec.SetField(authsession.FieldSessionID, field.TypeString, value)
 	}
-	if value, ok := asu.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := asu.mutation.ExpiresAt(); ok {
+	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(authsession.FieldExpiresAt, field.TypeTime, value)
 	}
-	_spec.AddModifiers(asu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, asu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{authsession.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -167,8 +167,8 @@ func (asu *AuthSessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	asu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // AuthSessionUpdateOne is the builder for updating a single AuthSession entity.
@@ -181,80 +181,80 @@ type AuthSessionUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (asuo *AuthSessionUpdateOne) SetUpdatedAt(t time.Time) *AuthSessionUpdateOne {
-	asuo.mutation.SetUpdatedAt(t)
-	return asuo
+func (_u *AuthSessionUpdateOne) SetUpdatedAt(v time.Time) *AuthSessionUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetSessionID sets the "session_id" field.
-func (asuo *AuthSessionUpdateOne) SetSessionID(s string) *AuthSessionUpdateOne {
-	asuo.mutation.SetSessionID(s)
-	return asuo
+func (_u *AuthSessionUpdateOne) SetSessionID(v string) *AuthSessionUpdateOne {
+	_u.mutation.SetSessionID(v)
+	return _u
 }
 
 // SetNillableSessionID sets the "session_id" field if the given value is not nil.
-func (asuo *AuthSessionUpdateOne) SetNillableSessionID(s *string) *AuthSessionUpdateOne {
-	if s != nil {
-		asuo.SetSessionID(*s)
+func (_u *AuthSessionUpdateOne) SetNillableSessionID(v *string) *AuthSessionUpdateOne {
+	if v != nil {
+		_u.SetSessionID(*v)
 	}
-	return asuo
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (asuo *AuthSessionUpdateOne) SetStatus(a authsession.Status) *AuthSessionUpdateOne {
-	asuo.mutation.SetStatus(a)
-	return asuo
+func (_u *AuthSessionUpdateOne) SetStatus(v authsession.Status) *AuthSessionUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (asuo *AuthSessionUpdateOne) SetNillableStatus(a *authsession.Status) *AuthSessionUpdateOne {
-	if a != nil {
-		asuo.SetStatus(*a)
+func (_u *AuthSessionUpdateOne) SetNillableStatus(v *authsession.Status) *AuthSessionUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return asuo
+	return _u
 }
 
 // SetExpiresAt sets the "expires_at" field.
-func (asuo *AuthSessionUpdateOne) SetExpiresAt(t time.Time) *AuthSessionUpdateOne {
-	asuo.mutation.SetExpiresAt(t)
-	return asuo
+func (_u *AuthSessionUpdateOne) SetExpiresAt(v time.Time) *AuthSessionUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
 }
 
 // SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
-func (asuo *AuthSessionUpdateOne) SetNillableExpiresAt(t *time.Time) *AuthSessionUpdateOne {
-	if t != nil {
-		asuo.SetExpiresAt(*t)
+func (_u *AuthSessionUpdateOne) SetNillableExpiresAt(v *time.Time) *AuthSessionUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
 	}
-	return asuo
+	return _u
 }
 
 // Mutation returns the AuthSessionMutation object of the builder.
-func (asuo *AuthSessionUpdateOne) Mutation() *AuthSessionMutation {
-	return asuo.mutation
+func (_u *AuthSessionUpdateOne) Mutation() *AuthSessionMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the AuthSessionUpdate builder.
-func (asuo *AuthSessionUpdateOne) Where(ps ...predicate.AuthSession) *AuthSessionUpdateOne {
-	asuo.mutation.Where(ps...)
-	return asuo
+func (_u *AuthSessionUpdateOne) Where(ps ...predicate.AuthSession) *AuthSessionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (asuo *AuthSessionUpdateOne) Select(field string, fields ...string) *AuthSessionUpdateOne {
-	asuo.fields = append([]string{field}, fields...)
-	return asuo
+func (_u *AuthSessionUpdateOne) Select(field string, fields ...string) *AuthSessionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated AuthSession entity.
-func (asuo *AuthSessionUpdateOne) Save(ctx context.Context) (*AuthSession, error) {
-	asuo.defaults()
-	return withHooks(ctx, asuo.sqlSave, asuo.mutation, asuo.hooks)
+func (_u *AuthSessionUpdateOne) Save(ctx context.Context) (*AuthSession, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (asuo *AuthSessionUpdateOne) SaveX(ctx context.Context) *AuthSession {
-	node, err := asuo.Save(ctx)
+func (_u *AuthSessionUpdateOne) SaveX(ctx context.Context) *AuthSession {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -262,29 +262,29 @@ func (asuo *AuthSessionUpdateOne) SaveX(ctx context.Context) *AuthSession {
 }
 
 // Exec executes the query on the entity.
-func (asuo *AuthSessionUpdateOne) Exec(ctx context.Context) error {
-	_, err := asuo.Save(ctx)
+func (_u *AuthSessionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (asuo *AuthSessionUpdateOne) ExecX(ctx context.Context) {
-	if err := asuo.Exec(ctx); err != nil {
+func (_u *AuthSessionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (asuo *AuthSessionUpdateOne) defaults() {
-	if _, ok := asuo.mutation.UpdatedAt(); !ok {
+func (_u *AuthSessionUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := authsession.UpdateDefaultUpdatedAt()
-		asuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (asuo *AuthSessionUpdateOne) check() error {
-	if v, ok := asuo.mutation.Status(); ok {
+func (_u *AuthSessionUpdateOne) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := authsession.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "AuthSession.status": %w`, err)}
 		}
@@ -293,22 +293,22 @@ func (asuo *AuthSessionUpdateOne) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (asuo *AuthSessionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AuthSessionUpdateOne {
-	asuo.modifiers = append(asuo.modifiers, modifiers...)
-	return asuo
+func (_u *AuthSessionUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AuthSessionUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSession, err error) {
-	if err := asuo.check(); err != nil {
+func (_u *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSession, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(authsession.Table, authsession.Columns, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
-	id, ok := asuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AuthSession.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := asuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, authsession.FieldID)
 		for _, f := range fields {
@@ -320,30 +320,30 @@ func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSessi
 			}
 		}
 	}
-	if ps := asuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := asuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(authsession.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := asuo.mutation.SessionID(); ok {
+	if value, ok := _u.mutation.SessionID(); ok {
 		_spec.SetField(authsession.FieldSessionID, field.TypeString, value)
 	}
-	if value, ok := asuo.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(authsession.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := asuo.mutation.ExpiresAt(); ok {
+	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(authsession.FieldExpiresAt, field.TypeTime, value)
 	}
-	_spec.AddModifiers(asuo.modifiers...)
-	_node = &AuthSession{config: asuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &AuthSession{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, asuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{authsession.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -351,6 +351,6 @@ func (asuo *AuthSessionUpdateOne) sqlSave(ctx context.Context) (_node *AuthSessi
 		}
 		return nil, err
 	}
-	asuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

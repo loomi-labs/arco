@@ -24,45 +24,45 @@ type SettingsUpdate struct {
 }
 
 // Where appends a list predicates to the SettingsUpdate builder.
-func (su *SettingsUpdate) Where(ps ...predicate.Settings) *SettingsUpdate {
-	su.mutation.Where(ps...)
-	return su
+func (_u *SettingsUpdate) Where(ps ...predicate.Settings) *SettingsUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (su *SettingsUpdate) SetUpdatedAt(t time.Time) *SettingsUpdate {
-	su.mutation.SetUpdatedAt(t)
-	return su
+func (_u *SettingsUpdate) SetUpdatedAt(v time.Time) *SettingsUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetShowWelcome sets the "show_welcome" field.
-func (su *SettingsUpdate) SetShowWelcome(b bool) *SettingsUpdate {
-	su.mutation.SetShowWelcome(b)
-	return su
+func (_u *SettingsUpdate) SetShowWelcome(v bool) *SettingsUpdate {
+	_u.mutation.SetShowWelcome(v)
+	return _u
 }
 
 // SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (su *SettingsUpdate) SetNillableShowWelcome(b *bool) *SettingsUpdate {
-	if b != nil {
-		su.SetShowWelcome(*b)
+func (_u *SettingsUpdate) SetNillableShowWelcome(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetShowWelcome(*v)
 	}
-	return su
+	return _u
 }
 
 // Mutation returns the SettingsMutation object of the builder.
-func (su *SettingsUpdate) Mutation() *SettingsMutation {
-	return su.mutation
+func (_u *SettingsUpdate) Mutation() *SettingsMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (su *SettingsUpdate) Save(ctx context.Context) (int, error) {
-	su.defaults()
-	return withHooks(ctx, su.sqlSave, su.mutation, su.hooks)
+func (_u *SettingsUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (su *SettingsUpdate) SaveX(ctx context.Context) int {
-	affected, err := su.Save(ctx)
+func (_u *SettingsUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -70,49 +70,49 @@ func (su *SettingsUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (su *SettingsUpdate) Exec(ctx context.Context) error {
-	_, err := su.Save(ctx)
+func (_u *SettingsUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (su *SettingsUpdate) ExecX(ctx context.Context) {
-	if err := su.Exec(ctx); err != nil {
+func (_u *SettingsUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (su *SettingsUpdate) defaults() {
-	if _, ok := su.mutation.UpdatedAt(); !ok {
+func (_u *SettingsUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := settings.UpdateDefaultUpdatedAt()
-		su.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (su *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
-	su.modifiers = append(su.modifiers, modifiers...)
-	return su
+func (_u *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
+func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
-	if ps := su.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := su.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := su.mutation.ShowWelcome(); ok {
+	if value, ok := _u.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
-	_spec.AddModifiers(su.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{settings.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -120,8 +120,8 @@ func (su *SettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	su.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // SettingsUpdateOne is the builder for updating a single Settings entity.
@@ -134,52 +134,52 @@ type SettingsUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (suo *SettingsUpdateOne) SetUpdatedAt(t time.Time) *SettingsUpdateOne {
-	suo.mutation.SetUpdatedAt(t)
-	return suo
+func (_u *SettingsUpdateOne) SetUpdatedAt(v time.Time) *SettingsUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetShowWelcome sets the "show_welcome" field.
-func (suo *SettingsUpdateOne) SetShowWelcome(b bool) *SettingsUpdateOne {
-	suo.mutation.SetShowWelcome(b)
-	return suo
+func (_u *SettingsUpdateOne) SetShowWelcome(v bool) *SettingsUpdateOne {
+	_u.mutation.SetShowWelcome(v)
+	return _u
 }
 
 // SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (suo *SettingsUpdateOne) SetNillableShowWelcome(b *bool) *SettingsUpdateOne {
-	if b != nil {
-		suo.SetShowWelcome(*b)
+func (_u *SettingsUpdateOne) SetNillableShowWelcome(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetShowWelcome(*v)
 	}
-	return suo
+	return _u
 }
 
 // Mutation returns the SettingsMutation object of the builder.
-func (suo *SettingsUpdateOne) Mutation() *SettingsMutation {
-	return suo.mutation
+func (_u *SettingsUpdateOne) Mutation() *SettingsMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the SettingsUpdate builder.
-func (suo *SettingsUpdateOne) Where(ps ...predicate.Settings) *SettingsUpdateOne {
-	suo.mutation.Where(ps...)
-	return suo
+func (_u *SettingsUpdateOne) Where(ps ...predicate.Settings) *SettingsUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (suo *SettingsUpdateOne) Select(field string, fields ...string) *SettingsUpdateOne {
-	suo.fields = append([]string{field}, fields...)
-	return suo
+func (_u *SettingsUpdateOne) Select(field string, fields ...string) *SettingsUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Settings entity.
-func (suo *SettingsUpdateOne) Save(ctx context.Context) (*Settings, error) {
-	suo.defaults()
-	return withHooks(ctx, suo.sqlSave, suo.mutation, suo.hooks)
+func (_u *SettingsUpdateOne) Save(ctx context.Context) (*Settings, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (suo *SettingsUpdateOne) SaveX(ctx context.Context) *Settings {
-	node, err := suo.Save(ctx)
+func (_u *SettingsUpdateOne) SaveX(ctx context.Context) *Settings {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -187,40 +187,40 @@ func (suo *SettingsUpdateOne) SaveX(ctx context.Context) *Settings {
 }
 
 // Exec executes the query on the entity.
-func (suo *SettingsUpdateOne) Exec(ctx context.Context) error {
-	_, err := suo.Save(ctx)
+func (_u *SettingsUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (suo *SettingsUpdateOne) ExecX(ctx context.Context) {
-	if err := suo.Exec(ctx); err != nil {
+func (_u *SettingsUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (suo *SettingsUpdateOne) defaults() {
-	if _, ok := suo.mutation.UpdatedAt(); !ok {
+func (_u *SettingsUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := settings.UpdateDefaultUpdatedAt()
-		suo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (suo *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
-	suo.modifiers = append(suo.modifiers, modifiers...)
-	return suo
+func (_u *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
+func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
-	id, ok := suo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Settings.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := suo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, settings.FieldID)
 		for _, f := range fields {
@@ -232,24 +232,24 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 			}
 		}
 	}
-	if ps := suo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := suo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := suo.mutation.ShowWelcome(); ok {
+	if value, ok := _u.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
-	_spec.AddModifiers(suo.modifiers...)
-	_node = &Settings{config: suo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Settings{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, suo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{settings.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -257,6 +257,6 @@ func (suo *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err
 		}
 		return nil, err
 	}
-	suo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

@@ -40,44 +40,44 @@ type BackupProfileQuery struct {
 }
 
 // Where adds a new predicate for the BackupProfileQuery builder.
-func (bpq *BackupProfileQuery) Where(ps ...predicate.BackupProfile) *BackupProfileQuery {
-	bpq.predicates = append(bpq.predicates, ps...)
-	return bpq
+func (_q *BackupProfileQuery) Where(ps ...predicate.BackupProfile) *BackupProfileQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (bpq *BackupProfileQuery) Limit(limit int) *BackupProfileQuery {
-	bpq.ctx.Limit = &limit
-	return bpq
+func (_q *BackupProfileQuery) Limit(limit int) *BackupProfileQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (bpq *BackupProfileQuery) Offset(offset int) *BackupProfileQuery {
-	bpq.ctx.Offset = &offset
-	return bpq
+func (_q *BackupProfileQuery) Offset(offset int) *BackupProfileQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (bpq *BackupProfileQuery) Unique(unique bool) *BackupProfileQuery {
-	bpq.ctx.Unique = &unique
-	return bpq
+func (_q *BackupProfileQuery) Unique(unique bool) *BackupProfileQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (bpq *BackupProfileQuery) Order(o ...backupprofile.OrderOption) *BackupProfileQuery {
-	bpq.order = append(bpq.order, o...)
-	return bpq
+func (_q *BackupProfileQuery) Order(o ...backupprofile.OrderOption) *BackupProfileQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryRepositories chains the current query on the "repositories" edge.
-func (bpq *BackupProfileQuery) QueryRepositories() *RepositoryQuery {
-	query := (&RepositoryClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) QueryRepositories() *RepositoryQuery {
+	query := (&RepositoryClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bpq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -86,20 +86,20 @@ func (bpq *BackupProfileQuery) QueryRepositories() *RepositoryQuery {
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, backupprofile.RepositoriesTable, backupprofile.RepositoriesPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryArchives chains the current query on the "archives" edge.
-func (bpq *BackupProfileQuery) QueryArchives() *ArchiveQuery {
-	query := (&ArchiveClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) QueryArchives() *ArchiveQuery {
+	query := (&ArchiveClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bpq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -108,20 +108,20 @@ func (bpq *BackupProfileQuery) QueryArchives() *ArchiveQuery {
 			sqlgraph.To(archive.Table, archive.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, backupprofile.ArchivesTable, backupprofile.ArchivesColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryBackupSchedule chains the current query on the "backup_schedule" edge.
-func (bpq *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
-	query := (&BackupScheduleClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
+	query := (&BackupScheduleClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bpq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -130,20 +130,20 @@ func (bpq *BackupProfileQuery) QueryBackupSchedule() *BackupScheduleQuery {
 			sqlgraph.To(backupschedule.Table, backupschedule.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.BackupScheduleTable, backupprofile.BackupScheduleColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryPruningRule chains the current query on the "pruning_rule" edge.
-func (bpq *BackupProfileQuery) QueryPruningRule() *PruningRuleQuery {
-	query := (&PruningRuleClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) QueryPruningRule() *PruningRuleQuery {
+	query := (&PruningRuleClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bpq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -152,20 +152,20 @@ func (bpq *BackupProfileQuery) QueryPruningRule() *PruningRuleQuery {
 			sqlgraph.To(pruningrule.Table, pruningrule.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.PruningRuleTable, backupprofile.PruningRuleColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryNotifications chains the current query on the "notifications" edge.
-func (bpq *BackupProfileQuery) QueryNotifications() *NotificationQuery {
-	query := (&NotificationClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) QueryNotifications() *NotificationQuery {
+	query := (&NotificationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bpq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (bpq *BackupProfileQuery) QueryNotifications() *NotificationQuery {
 			sqlgraph.To(notification.Table, notification.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.NotificationsTable, backupprofile.NotificationsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -182,8 +182,8 @@ func (bpq *BackupProfileQuery) QueryNotifications() *NotificationQuery {
 
 // First returns the first BackupProfile entity from the query.
 // Returns a *NotFoundError when no BackupProfile was found.
-func (bpq *BackupProfileQuery) First(ctx context.Context) (*BackupProfile, error) {
-	nodes, err := bpq.Limit(1).All(setContextOp(ctx, bpq.ctx, ent.OpQueryFirst))
+func (_q *BackupProfileQuery) First(ctx context.Context) (*BackupProfile, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -194,8 +194,8 @@ func (bpq *BackupProfileQuery) First(ctx context.Context) (*BackupProfile, error
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (bpq *BackupProfileQuery) FirstX(ctx context.Context) *BackupProfile {
-	node, err := bpq.First(ctx)
+func (_q *BackupProfileQuery) FirstX(ctx context.Context) *BackupProfile {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -204,9 +204,9 @@ func (bpq *BackupProfileQuery) FirstX(ctx context.Context) *BackupProfile {
 
 // FirstID returns the first BackupProfile ID from the query.
 // Returns a *NotFoundError when no BackupProfile ID was found.
-func (bpq *BackupProfileQuery) FirstID(ctx context.Context) (id int, err error) {
+func (_q *BackupProfileQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bpq.Limit(1).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -217,8 +217,8 @@ func (bpq *BackupProfileQuery) FirstID(ctx context.Context) (id int, err error) 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bpq *BackupProfileQuery) FirstIDX(ctx context.Context) int {
-	id, err := bpq.FirstID(ctx)
+func (_q *BackupProfileQuery) FirstIDX(ctx context.Context) int {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -228,8 +228,8 @@ func (bpq *BackupProfileQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single BackupProfile entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one BackupProfile entity is found.
 // Returns a *NotFoundError when no BackupProfile entities are found.
-func (bpq *BackupProfileQuery) Only(ctx context.Context) (*BackupProfile, error) {
-	nodes, err := bpq.Limit(2).All(setContextOp(ctx, bpq.ctx, ent.OpQueryOnly))
+func (_q *BackupProfileQuery) Only(ctx context.Context) (*BackupProfile, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -244,8 +244,8 @@ func (bpq *BackupProfileQuery) Only(ctx context.Context) (*BackupProfile, error)
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (bpq *BackupProfileQuery) OnlyX(ctx context.Context) *BackupProfile {
-	node, err := bpq.Only(ctx)
+func (_q *BackupProfileQuery) OnlyX(ctx context.Context) *BackupProfile {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -255,9 +255,9 @@ func (bpq *BackupProfileQuery) OnlyX(ctx context.Context) *BackupProfile {
 // OnlyID is like Only, but returns the only BackupProfile ID in the query.
 // Returns a *NotSingularError when more than one BackupProfile ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bpq *BackupProfileQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *BackupProfileQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bpq.Limit(2).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -272,8 +272,8 @@ func (bpq *BackupProfileQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bpq *BackupProfileQuery) OnlyIDX(ctx context.Context) int {
-	id, err := bpq.OnlyID(ctx)
+func (_q *BackupProfileQuery) OnlyIDX(ctx context.Context) int {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -281,18 +281,18 @@ func (bpq *BackupProfileQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of BackupProfiles.
-func (bpq *BackupProfileQuery) All(ctx context.Context) ([]*BackupProfile, error) {
-	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryAll)
-	if err := bpq.prepareQuery(ctx); err != nil {
+func (_q *BackupProfileQuery) All(ctx context.Context) ([]*BackupProfile, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*BackupProfile, *BackupProfileQuery]()
-	return withInterceptors[[]*BackupProfile](ctx, bpq, qr, bpq.inters)
+	return withInterceptors[[]*BackupProfile](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (bpq *BackupProfileQuery) AllX(ctx context.Context) []*BackupProfile {
-	nodes, err := bpq.All(ctx)
+func (_q *BackupProfileQuery) AllX(ctx context.Context) []*BackupProfile {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -300,20 +300,20 @@ func (bpq *BackupProfileQuery) AllX(ctx context.Context) []*BackupProfile {
 }
 
 // IDs executes the query and returns a list of BackupProfile IDs.
-func (bpq *BackupProfileQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if bpq.ctx.Unique == nil && bpq.path != nil {
-		bpq.Unique(true)
+func (_q *BackupProfileQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryIDs)
-	if err = bpq.Select(backupprofile.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(backupprofile.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bpq *BackupProfileQuery) IDsX(ctx context.Context) []int {
-	ids, err := bpq.IDs(ctx)
+func (_q *BackupProfileQuery) IDsX(ctx context.Context) []int {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -321,17 +321,17 @@ func (bpq *BackupProfileQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (bpq *BackupProfileQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryCount)
-	if err := bpq.prepareQuery(ctx); err != nil {
+func (_q *BackupProfileQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, bpq, querierCount[*BackupProfileQuery](), bpq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*BackupProfileQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (bpq *BackupProfileQuery) CountX(ctx context.Context) int {
-	count, err := bpq.Count(ctx)
+func (_q *BackupProfileQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -339,9 +339,9 @@ func (bpq *BackupProfileQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (bpq *BackupProfileQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, bpq.ctx, ent.OpQueryExist)
-	switch _, err := bpq.FirstID(ctx); {
+func (_q *BackupProfileQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -352,8 +352,8 @@ func (bpq *BackupProfileQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (bpq *BackupProfileQuery) ExistX(ctx context.Context) bool {
-	exist, err := bpq.Exist(ctx)
+func (_q *BackupProfileQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -362,81 +362,81 @@ func (bpq *BackupProfileQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the BackupProfileQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (bpq *BackupProfileQuery) Clone() *BackupProfileQuery {
-	if bpq == nil {
+func (_q *BackupProfileQuery) Clone() *BackupProfileQuery {
+	if _q == nil {
 		return nil
 	}
 	return &BackupProfileQuery{
-		config:             bpq.config,
-		ctx:                bpq.ctx.Clone(),
-		order:              append([]backupprofile.OrderOption{}, bpq.order...),
-		inters:             append([]Interceptor{}, bpq.inters...),
-		predicates:         append([]predicate.BackupProfile{}, bpq.predicates...),
-		withRepositories:   bpq.withRepositories.Clone(),
-		withArchives:       bpq.withArchives.Clone(),
-		withBackupSchedule: bpq.withBackupSchedule.Clone(),
-		withPruningRule:    bpq.withPruningRule.Clone(),
-		withNotifications:  bpq.withNotifications.Clone(),
+		config:             _q.config,
+		ctx:                _q.ctx.Clone(),
+		order:              append([]backupprofile.OrderOption{}, _q.order...),
+		inters:             append([]Interceptor{}, _q.inters...),
+		predicates:         append([]predicate.BackupProfile{}, _q.predicates...),
+		withRepositories:   _q.withRepositories.Clone(),
+		withArchives:       _q.withArchives.Clone(),
+		withBackupSchedule: _q.withBackupSchedule.Clone(),
+		withPruningRule:    _q.withPruningRule.Clone(),
+		withNotifications:  _q.withNotifications.Clone(),
 		// clone intermediate query.
-		sql:       bpq.sql.Clone(),
-		path:      bpq.path,
-		modifiers: append([]func(*sql.Selector){}, bpq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithRepositories tells the query-builder to eager-load the nodes that are connected to
 // the "repositories" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BackupProfileQuery) WithRepositories(opts ...func(*RepositoryQuery)) *BackupProfileQuery {
-	query := (&RepositoryClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) WithRepositories(opts ...func(*RepositoryQuery)) *BackupProfileQuery {
+	query := (&RepositoryClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bpq.withRepositories = query
-	return bpq
+	_q.withRepositories = query
+	return _q
 }
 
 // WithArchives tells the query-builder to eager-load the nodes that are connected to
 // the "archives" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BackupProfileQuery) WithArchives(opts ...func(*ArchiveQuery)) *BackupProfileQuery {
-	query := (&ArchiveClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) WithArchives(opts ...func(*ArchiveQuery)) *BackupProfileQuery {
+	query := (&ArchiveClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bpq.withArchives = query
-	return bpq
+	_q.withArchives = query
+	return _q
 }
 
 // WithBackupSchedule tells the query-builder to eager-load the nodes that are connected to
 // the "backup_schedule" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BackupProfileQuery) WithBackupSchedule(opts ...func(*BackupScheduleQuery)) *BackupProfileQuery {
-	query := (&BackupScheduleClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) WithBackupSchedule(opts ...func(*BackupScheduleQuery)) *BackupProfileQuery {
+	query := (&BackupScheduleClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bpq.withBackupSchedule = query
-	return bpq
+	_q.withBackupSchedule = query
+	return _q
 }
 
 // WithPruningRule tells the query-builder to eager-load the nodes that are connected to
 // the "pruning_rule" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BackupProfileQuery) WithPruningRule(opts ...func(*PruningRuleQuery)) *BackupProfileQuery {
-	query := (&PruningRuleClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) WithPruningRule(opts ...func(*PruningRuleQuery)) *BackupProfileQuery {
+	query := (&PruningRuleClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bpq.withPruningRule = query
-	return bpq
+	_q.withPruningRule = query
+	return _q
 }
 
 // WithNotifications tells the query-builder to eager-load the nodes that are connected to
 // the "notifications" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BackupProfileQuery) WithNotifications(opts ...func(*NotificationQuery)) *BackupProfileQuery {
-	query := (&NotificationClient{config: bpq.config}).Query()
+func (_q *BackupProfileQuery) WithNotifications(opts ...func(*NotificationQuery)) *BackupProfileQuery {
+	query := (&NotificationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bpq.withNotifications = query
-	return bpq
+	_q.withNotifications = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -453,10 +453,10 @@ func (bpq *BackupProfileQuery) WithNotifications(opts ...func(*NotificationQuery
 //		GroupBy(backupprofile.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (bpq *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupProfileGroupBy {
-	bpq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &BackupProfileGroupBy{build: bpq}
-	grbuild.flds = &bpq.ctx.Fields
+func (_q *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupProfileGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &BackupProfileGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = backupprofile.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -474,106 +474,106 @@ func (bpq *BackupProfileQuery) GroupBy(field string, fields ...string) *BackupPr
 //	client.BackupProfile.Query().
 //		Select(backupprofile.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (bpq *BackupProfileQuery) Select(fields ...string) *BackupProfileSelect {
-	bpq.ctx.Fields = append(bpq.ctx.Fields, fields...)
-	sbuild := &BackupProfileSelect{BackupProfileQuery: bpq}
+func (_q *BackupProfileQuery) Select(fields ...string) *BackupProfileSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &BackupProfileSelect{BackupProfileQuery: _q}
 	sbuild.label = backupprofile.Label
-	sbuild.flds, sbuild.scan = &bpq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a BackupProfileSelect configured with the given aggregations.
-func (bpq *BackupProfileQuery) Aggregate(fns ...AggregateFunc) *BackupProfileSelect {
-	return bpq.Select().Aggregate(fns...)
+func (_q *BackupProfileQuery) Aggregate(fns ...AggregateFunc) *BackupProfileSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (bpq *BackupProfileQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range bpq.inters {
+func (_q *BackupProfileQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, bpq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range bpq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !backupprofile.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if bpq.path != nil {
-		prev, err := bpq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		bpq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*BackupProfile, error) {
+func (_q *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*BackupProfile, error) {
 	var (
 		nodes       = []*BackupProfile{}
-		_spec       = bpq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [5]bool{
-			bpq.withRepositories != nil,
-			bpq.withArchives != nil,
-			bpq.withBackupSchedule != nil,
-			bpq.withPruningRule != nil,
-			bpq.withNotifications != nil,
+			_q.withRepositories != nil,
+			_q.withArchives != nil,
+			_q.withBackupSchedule != nil,
+			_q.withPruningRule != nil,
+			_q.withNotifications != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*BackupProfile).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &BackupProfile{config: bpq.config}
+		node := &BackupProfile{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(bpq.modifiers) > 0 {
-		_spec.Modifiers = bpq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, bpq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := bpq.withRepositories; query != nil {
-		if err := bpq.loadRepositories(ctx, query, nodes,
+	if query := _q.withRepositories; query != nil {
+		if err := _q.loadRepositories(ctx, query, nodes,
 			func(n *BackupProfile) { n.Edges.Repositories = []*Repository{} },
 			func(n *BackupProfile, e *Repository) { n.Edges.Repositories = append(n.Edges.Repositories, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := bpq.withArchives; query != nil {
-		if err := bpq.loadArchives(ctx, query, nodes,
+	if query := _q.withArchives; query != nil {
+		if err := _q.loadArchives(ctx, query, nodes,
 			func(n *BackupProfile) { n.Edges.Archives = []*Archive{} },
 			func(n *BackupProfile, e *Archive) { n.Edges.Archives = append(n.Edges.Archives, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := bpq.withBackupSchedule; query != nil {
-		if err := bpq.loadBackupSchedule(ctx, query, nodes, nil,
+	if query := _q.withBackupSchedule; query != nil {
+		if err := _q.loadBackupSchedule(ctx, query, nodes, nil,
 			func(n *BackupProfile, e *BackupSchedule) { n.Edges.BackupSchedule = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := bpq.withPruningRule; query != nil {
-		if err := bpq.loadPruningRule(ctx, query, nodes, nil,
+	if query := _q.withPruningRule; query != nil {
+		if err := _q.loadPruningRule(ctx, query, nodes, nil,
 			func(n *BackupProfile, e *PruningRule) { n.Edges.PruningRule = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := bpq.withNotifications; query != nil {
-		if err := bpq.loadNotifications(ctx, query, nodes,
+	if query := _q.withNotifications; query != nil {
+		if err := _q.loadNotifications(ctx, query, nodes,
 			func(n *BackupProfile) { n.Edges.Notifications = []*Notification{} },
 			func(n *BackupProfile, e *Notification) { n.Edges.Notifications = append(n.Edges.Notifications, e) }); err != nil {
 			return nil, err
@@ -582,7 +582,7 @@ func (bpq *BackupProfileQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	return nodes, nil
 }
 
-func (bpq *BackupProfileQuery) loadRepositories(ctx context.Context, query *RepositoryQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Repository)) error {
+func (_q *BackupProfileQuery) loadRepositories(ctx context.Context, query *RepositoryQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Repository)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*BackupProfile)
 	nids := make(map[int]map[*BackupProfile]struct{})
@@ -643,7 +643,7 @@ func (bpq *BackupProfileQuery) loadRepositories(ctx context.Context, query *Repo
 	}
 	return nil
 }
-func (bpq *BackupProfileQuery) loadArchives(ctx context.Context, query *ArchiveQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Archive)) error {
+func (_q *BackupProfileQuery) loadArchives(ctx context.Context, query *ArchiveQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Archive)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*BackupProfile)
 	for i := range nodes {
@@ -674,7 +674,7 @@ func (bpq *BackupProfileQuery) loadArchives(ctx context.Context, query *ArchiveQ
 	}
 	return nil
 }
-func (bpq *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *BackupScheduleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *BackupSchedule)) error {
+func (_q *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *BackupScheduleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *BackupSchedule)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*BackupProfile)
 	for i := range nodes {
@@ -702,7 +702,7 @@ func (bpq *BackupProfileQuery) loadBackupSchedule(ctx context.Context, query *Ba
 	}
 	return nil
 }
-func (bpq *BackupProfileQuery) loadPruningRule(ctx context.Context, query *PruningRuleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *PruningRule)) error {
+func (_q *BackupProfileQuery) loadPruningRule(ctx context.Context, query *PruningRuleQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *PruningRule)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*BackupProfile)
 	for i := range nodes {
@@ -730,7 +730,7 @@ func (bpq *BackupProfileQuery) loadPruningRule(ctx context.Context, query *Pruni
 	}
 	return nil
 }
-func (bpq *BackupProfileQuery) loadNotifications(ctx context.Context, query *NotificationQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Notification)) error {
+func (_q *BackupProfileQuery) loadNotifications(ctx context.Context, query *NotificationQuery, nodes []*BackupProfile, init func(*BackupProfile), assign func(*BackupProfile, *Notification)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*BackupProfile)
 	for i := range nodes {
@@ -762,27 +762,27 @@ func (bpq *BackupProfileQuery) loadNotifications(ctx context.Context, query *Not
 	return nil
 }
 
-func (bpq *BackupProfileQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := bpq.querySpec()
-	if len(bpq.modifiers) > 0 {
-		_spec.Modifiers = bpq.modifiers
+func (_q *BackupProfileQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = bpq.ctx.Fields
-	if len(bpq.ctx.Fields) > 0 {
-		_spec.Unique = bpq.ctx.Unique != nil && *bpq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, bpq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (bpq *BackupProfileQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *BackupProfileQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(backupprofile.Table, backupprofile.Columns, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
-	_spec.From = bpq.sql
-	if unique := bpq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if bpq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := bpq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, backupprofile.FieldID)
 		for i := range fields {
@@ -791,20 +791,20 @@ func (bpq *BackupProfileQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := bpq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := bpq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := bpq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := bpq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -814,45 +814,45 @@ func (bpq *BackupProfileQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (bpq *BackupProfileQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(bpq.driver.Dialect())
+func (_q *BackupProfileQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(backupprofile.Table)
-	columns := bpq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = backupprofile.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if bpq.sql != nil {
-		selector = bpq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if bpq.ctx.Unique != nil && *bpq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range bpq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range bpq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range bpq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := bpq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := bpq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (bpq *BackupProfileQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
-	bpq.modifiers = append(bpq.modifiers, modifiers...)
-	return bpq.Select()
+func (_q *BackupProfileQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // BackupProfileGroupBy is the group-by builder for BackupProfile entities.
@@ -862,41 +862,41 @@ type BackupProfileGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (bpgb *BackupProfileGroupBy) Aggregate(fns ...AggregateFunc) *BackupProfileGroupBy {
-	bpgb.fns = append(bpgb.fns, fns...)
-	return bpgb
+func (_g *BackupProfileGroupBy) Aggregate(fns ...AggregateFunc) *BackupProfileGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (bpgb *BackupProfileGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bpgb.build.ctx, ent.OpQueryGroupBy)
-	if err := bpgb.build.prepareQuery(ctx); err != nil {
+func (_g *BackupProfileGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*BackupProfileQuery, *BackupProfileGroupBy](ctx, bpgb.build, bpgb, bpgb.build.inters, v)
+	return scanWithInterceptors[*BackupProfileQuery, *BackupProfileGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (bpgb *BackupProfileGroupBy) sqlScan(ctx context.Context, root *BackupProfileQuery, v any) error {
+func (_g *BackupProfileGroupBy) sqlScan(ctx context.Context, root *BackupProfileQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(bpgb.fns))
-	for _, fn := range bpgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*bpgb.flds)+len(bpgb.fns))
-		for _, f := range *bpgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*bpgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := bpgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -910,27 +910,27 @@ type BackupProfileSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (bps *BackupProfileSelect) Aggregate(fns ...AggregateFunc) *BackupProfileSelect {
-	bps.fns = append(bps.fns, fns...)
-	return bps
+func (_s *BackupProfileSelect) Aggregate(fns ...AggregateFunc) *BackupProfileSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (bps *BackupProfileSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bps.ctx, ent.OpQuerySelect)
-	if err := bps.prepareQuery(ctx); err != nil {
+func (_s *BackupProfileSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*BackupProfileQuery, *BackupProfileSelect](ctx, bps.BackupProfileQuery, bps, bps.inters, v)
+	return scanWithInterceptors[*BackupProfileQuery, *BackupProfileSelect](ctx, _s.BackupProfileQuery, _s, _s.inters, v)
 }
 
-func (bps *BackupProfileSelect) sqlScan(ctx context.Context, root *BackupProfileQuery, v any) error {
+func (_s *BackupProfileSelect) sqlScan(ctx context.Context, root *BackupProfileQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(bps.fns))
-	for _, fn := range bps.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*bps.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -938,7 +938,7 @@ func (bps *BackupProfileSelect) sqlScan(ctx context.Context, root *BackupProfile
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := bps.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -946,7 +946,7 @@ func (bps *BackupProfileSelect) sqlScan(ctx context.Context, root *BackupProfile
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (bps *BackupProfileSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
-	bps.modifiers = append(bps.modifiers, modifiers...)
-	return bps
+func (_s *BackupProfileSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupProfileSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

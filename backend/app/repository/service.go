@@ -8,6 +8,9 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/platform"
 	"go.uber.org/zap"
 )
@@ -39,7 +42,7 @@ type ServiceInternal struct {
 func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 	var maxHeavyOperations = 1
 	var stateMachine = statemachine.NewRepositoryStateMachine()
-	var queueManager = NewQueueManager(stateMachine, maxHeavyOperations)
+	var queueManager = NewQueueManager(log, stateMachine, maxHeavyOperations)
 	stateMachine.SetQueueManager(queueManager)
 
 	return &ServiceInternal{
@@ -59,8 +62,8 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
 
-	// Set database client on queue manager
-	si.queueManager.SetDB(db)
+	// Initialize queue manager with database and borg clients
+	si.queueManager.Init(db, si.borgClient)
 
 	// TODO: Start periodic cleanup goroutine
 	// go si.startPeriodicCleanup(ctx)
@@ -397,4 +400,54 @@ func (s *Service) startPeriodicCleanup(ctx context.Context) {
 	// TODO: Implement periodic cleanup:
 	// 1. Run goroutine that periodically calls QueueManager.expireOldOperations()
 	// 2. Handle context cancellation for graceful shutdown
+}
+
+// populateLastBackupError populates the LastBackupError field from the latest error/warning notifications
+func (s *Service) populateLastBackupError(ctx context.Context, repo *Repository) error {
+	// Query latest error or warning notification for this repository
+	// Include both error and warning types to show the most recent issue
+	notification, err := s.db.Notification.Query().
+		Where(
+			notification.HasRepositoryWith(repository.ID(repo.ID)),
+			notification.TypeIn(
+				notification.TypeFailedBackupRun,
+				notification.TypeFailedPruningRun,
+				notification.TypeWarningBackupRun,
+				notification.TypeWarningPruningRun,
+			),
+		).
+		Order(ent.Desc("created_at")).
+		First(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			// No error/warning notifications found - clear any existing error
+			repo.LastBackupError = ""
+			return nil
+		}
+		return err
+	}
+
+	// Check if there's a newer successful archive since this notification
+	// If there is, don't show the old error/warning
+	hasNewerArchive, err := s.db.Archive.Query().
+		Where(
+			archive.HasRepositoryWith(repository.ID(repo.ID)),
+			archive.CreatedAtGT(notification.CreatedAt),
+		).
+		Exist(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if hasNewerArchive {
+		// There's a newer archive, so clear the old error
+		repo.LastBackupError = ""
+	} else {
+		// Show the error/warning message
+		repo.LastBackupError = notification.Message
+	}
+
+	return nil
 }

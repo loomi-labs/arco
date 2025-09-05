@@ -25,69 +25,69 @@ type CloudRepositoryUpdate struct {
 }
 
 // Where appends a list predicates to the CloudRepositoryUpdate builder.
-func (cru *CloudRepositoryUpdate) Where(ps ...predicate.CloudRepository) *CloudRepositoryUpdate {
-	cru.mutation.Where(ps...)
-	return cru
+func (_u *CloudRepositoryUpdate) Where(ps ...predicate.CloudRepository) *CloudRepositoryUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (cru *CloudRepositoryUpdate) SetUpdatedAt(t time.Time) *CloudRepositoryUpdate {
-	cru.mutation.SetUpdatedAt(t)
-	return cru
+func (_u *CloudRepositoryUpdate) SetUpdatedAt(v time.Time) *CloudRepositoryUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetStorageUsedBytes sets the "storage_used_bytes" field.
-func (cru *CloudRepositoryUpdate) SetStorageUsedBytes(i int64) *CloudRepositoryUpdate {
-	cru.mutation.ResetStorageUsedBytes()
-	cru.mutation.SetStorageUsedBytes(i)
-	return cru
+func (_u *CloudRepositoryUpdate) SetStorageUsedBytes(v int64) *CloudRepositoryUpdate {
+	_u.mutation.ResetStorageUsedBytes()
+	_u.mutation.SetStorageUsedBytes(v)
+	return _u
 }
 
 // SetNillableStorageUsedBytes sets the "storage_used_bytes" field if the given value is not nil.
-func (cru *CloudRepositoryUpdate) SetNillableStorageUsedBytes(i *int64) *CloudRepositoryUpdate {
-	if i != nil {
-		cru.SetStorageUsedBytes(*i)
+func (_u *CloudRepositoryUpdate) SetNillableStorageUsedBytes(v *int64) *CloudRepositoryUpdate {
+	if v != nil {
+		_u.SetStorageUsedBytes(*v)
 	}
-	return cru
+	return _u
 }
 
-// AddStorageUsedBytes adds i to the "storage_used_bytes" field.
-func (cru *CloudRepositoryUpdate) AddStorageUsedBytes(i int64) *CloudRepositoryUpdate {
-	cru.mutation.AddStorageUsedBytes(i)
-	return cru
+// AddStorageUsedBytes adds value to the "storage_used_bytes" field.
+func (_u *CloudRepositoryUpdate) AddStorageUsedBytes(v int64) *CloudRepositoryUpdate {
+	_u.mutation.AddStorageUsedBytes(v)
+	return _u
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (cru *CloudRepositoryUpdate) SetRepositoryID(id int) *CloudRepositoryUpdate {
-	cru.mutation.SetRepositoryID(id)
-	return cru
+func (_u *CloudRepositoryUpdate) SetRepositoryID(id int) *CloudRepositoryUpdate {
+	_u.mutation.SetRepositoryID(id)
+	return _u
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (cru *CloudRepositoryUpdate) SetRepository(r *Repository) *CloudRepositoryUpdate {
-	return cru.SetRepositoryID(r.ID)
+func (_u *CloudRepositoryUpdate) SetRepository(v *Repository) *CloudRepositoryUpdate {
+	return _u.SetRepositoryID(v.ID)
 }
 
 // Mutation returns the CloudRepositoryMutation object of the builder.
-func (cru *CloudRepositoryUpdate) Mutation() *CloudRepositoryMutation {
-	return cru.mutation
+func (_u *CloudRepositoryUpdate) Mutation() *CloudRepositoryMutation {
+	return _u.mutation
 }
 
 // ClearRepository clears the "repository" edge to the Repository entity.
-func (cru *CloudRepositoryUpdate) ClearRepository() *CloudRepositoryUpdate {
-	cru.mutation.ClearRepository()
-	return cru
+func (_u *CloudRepositoryUpdate) ClearRepository() *CloudRepositoryUpdate {
+	_u.mutation.ClearRepository()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (cru *CloudRepositoryUpdate) Save(ctx context.Context) (int, error) {
-	cru.defaults()
-	return withHooks(ctx, cru.sqlSave, cru.mutation, cru.hooks)
+func (_u *CloudRepositoryUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cru *CloudRepositoryUpdate) SaveX(ctx context.Context) int {
-	affected, err := cru.Save(ctx)
+func (_u *CloudRepositoryUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -95,62 +95,62 @@ func (cru *CloudRepositoryUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (cru *CloudRepositoryUpdate) Exec(ctx context.Context) error {
-	_, err := cru.Save(ctx)
+func (_u *CloudRepositoryUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cru *CloudRepositoryUpdate) ExecX(ctx context.Context) {
-	if err := cru.Exec(ctx); err != nil {
+func (_u *CloudRepositoryUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cru *CloudRepositoryUpdate) defaults() {
-	if _, ok := cru.mutation.UpdatedAt(); !ok {
+func (_u *CloudRepositoryUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := cloudrepository.UpdateDefaultUpdatedAt()
-		cru.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cru *CloudRepositoryUpdate) check() error {
-	if cru.mutation.RepositoryCleared() && len(cru.mutation.RepositoryIDs()) > 0 {
+func (_u *CloudRepositoryUpdate) check() error {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CloudRepository.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (cru *CloudRepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CloudRepositoryUpdate {
-	cru.modifiers = append(cru.modifiers, modifiers...)
-	return cru
+func (_u *CloudRepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CloudRepositoryUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (cru *CloudRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := cru.check(); err != nil {
-		return n, err
+func (_u *CloudRepositoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(cloudrepository.Table, cloudrepository.Columns, sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt))
-	if ps := cru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cru.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(cloudrepository.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := cru.mutation.StorageUsedBytes(); ok {
+	if value, ok := _u.mutation.StorageUsedBytes(); ok {
 		_spec.SetField(cloudrepository.FieldStorageUsedBytes, field.TypeInt64, value)
 	}
-	if value, ok := cru.mutation.AddedStorageUsedBytes(); ok {
+	if value, ok := _u.mutation.AddedStorageUsedBytes(); ok {
 		_spec.AddField(cloudrepository.FieldStorageUsedBytes, field.TypeInt64, value)
 	}
-	if cru.mutation.RepositoryCleared() {
+	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -163,7 +163,7 @@ func (cru *CloudRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cru.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -179,8 +179,8 @@ func (cru *CloudRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(cru.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, cru.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{cloudrepository.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -188,8 +188,8 @@ func (cru *CloudRepositoryUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		return 0, err
 	}
-	cru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // CloudRepositoryUpdateOne is the builder for updating a single CloudRepository entity.
@@ -202,76 +202,76 @@ type CloudRepositoryUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (cruo *CloudRepositoryUpdateOne) SetUpdatedAt(t time.Time) *CloudRepositoryUpdateOne {
-	cruo.mutation.SetUpdatedAt(t)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) SetUpdatedAt(v time.Time) *CloudRepositoryUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetStorageUsedBytes sets the "storage_used_bytes" field.
-func (cruo *CloudRepositoryUpdateOne) SetStorageUsedBytes(i int64) *CloudRepositoryUpdateOne {
-	cruo.mutation.ResetStorageUsedBytes()
-	cruo.mutation.SetStorageUsedBytes(i)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) SetStorageUsedBytes(v int64) *CloudRepositoryUpdateOne {
+	_u.mutation.ResetStorageUsedBytes()
+	_u.mutation.SetStorageUsedBytes(v)
+	return _u
 }
 
 // SetNillableStorageUsedBytes sets the "storage_used_bytes" field if the given value is not nil.
-func (cruo *CloudRepositoryUpdateOne) SetNillableStorageUsedBytes(i *int64) *CloudRepositoryUpdateOne {
-	if i != nil {
-		cruo.SetStorageUsedBytes(*i)
+func (_u *CloudRepositoryUpdateOne) SetNillableStorageUsedBytes(v *int64) *CloudRepositoryUpdateOne {
+	if v != nil {
+		_u.SetStorageUsedBytes(*v)
 	}
-	return cruo
+	return _u
 }
 
-// AddStorageUsedBytes adds i to the "storage_used_bytes" field.
-func (cruo *CloudRepositoryUpdateOne) AddStorageUsedBytes(i int64) *CloudRepositoryUpdateOne {
-	cruo.mutation.AddStorageUsedBytes(i)
-	return cruo
+// AddStorageUsedBytes adds value to the "storage_used_bytes" field.
+func (_u *CloudRepositoryUpdateOne) AddStorageUsedBytes(v int64) *CloudRepositoryUpdateOne {
+	_u.mutation.AddStorageUsedBytes(v)
+	return _u
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (cruo *CloudRepositoryUpdateOne) SetRepositoryID(id int) *CloudRepositoryUpdateOne {
-	cruo.mutation.SetRepositoryID(id)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) SetRepositoryID(id int) *CloudRepositoryUpdateOne {
+	_u.mutation.SetRepositoryID(id)
+	return _u
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (cruo *CloudRepositoryUpdateOne) SetRepository(r *Repository) *CloudRepositoryUpdateOne {
-	return cruo.SetRepositoryID(r.ID)
+func (_u *CloudRepositoryUpdateOne) SetRepository(v *Repository) *CloudRepositoryUpdateOne {
+	return _u.SetRepositoryID(v.ID)
 }
 
 // Mutation returns the CloudRepositoryMutation object of the builder.
-func (cruo *CloudRepositoryUpdateOne) Mutation() *CloudRepositoryMutation {
-	return cruo.mutation
+func (_u *CloudRepositoryUpdateOne) Mutation() *CloudRepositoryMutation {
+	return _u.mutation
 }
 
 // ClearRepository clears the "repository" edge to the Repository entity.
-func (cruo *CloudRepositoryUpdateOne) ClearRepository() *CloudRepositoryUpdateOne {
-	cruo.mutation.ClearRepository()
-	return cruo
+func (_u *CloudRepositoryUpdateOne) ClearRepository() *CloudRepositoryUpdateOne {
+	_u.mutation.ClearRepository()
+	return _u
 }
 
 // Where appends a list predicates to the CloudRepositoryUpdate builder.
-func (cruo *CloudRepositoryUpdateOne) Where(ps ...predicate.CloudRepository) *CloudRepositoryUpdateOne {
-	cruo.mutation.Where(ps...)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) Where(ps ...predicate.CloudRepository) *CloudRepositoryUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (cruo *CloudRepositoryUpdateOne) Select(field string, fields ...string) *CloudRepositoryUpdateOne {
-	cruo.fields = append([]string{field}, fields...)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) Select(field string, fields ...string) *CloudRepositoryUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated CloudRepository entity.
-func (cruo *CloudRepositoryUpdateOne) Save(ctx context.Context) (*CloudRepository, error) {
-	cruo.defaults()
-	return withHooks(ctx, cruo.sqlSave, cruo.mutation, cruo.hooks)
+func (_u *CloudRepositoryUpdateOne) Save(ctx context.Context) (*CloudRepository, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cruo *CloudRepositoryUpdateOne) SaveX(ctx context.Context) *CloudRepository {
-	node, err := cruo.Save(ctx)
+func (_u *CloudRepositoryUpdateOne) SaveX(ctx context.Context) *CloudRepository {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -279,51 +279,51 @@ func (cruo *CloudRepositoryUpdateOne) SaveX(ctx context.Context) *CloudRepositor
 }
 
 // Exec executes the query on the entity.
-func (cruo *CloudRepositoryUpdateOne) Exec(ctx context.Context) error {
-	_, err := cruo.Save(ctx)
+func (_u *CloudRepositoryUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cruo *CloudRepositoryUpdateOne) ExecX(ctx context.Context) {
-	if err := cruo.Exec(ctx); err != nil {
+func (_u *CloudRepositoryUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cruo *CloudRepositoryUpdateOne) defaults() {
-	if _, ok := cruo.mutation.UpdatedAt(); !ok {
+func (_u *CloudRepositoryUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := cloudrepository.UpdateDefaultUpdatedAt()
-		cruo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cruo *CloudRepositoryUpdateOne) check() error {
-	if cruo.mutation.RepositoryCleared() && len(cruo.mutation.RepositoryIDs()) > 0 {
+func (_u *CloudRepositoryUpdateOne) check() error {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CloudRepository.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (cruo *CloudRepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CloudRepositoryUpdateOne {
-	cruo.modifiers = append(cruo.modifiers, modifiers...)
-	return cruo
+func (_u *CloudRepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *CloudRepositoryUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (cruo *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *CloudRepository, err error) {
-	if err := cruo.check(); err != nil {
+func (_u *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *CloudRepository, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(cloudrepository.Table, cloudrepository.Columns, sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt))
-	id, ok := cruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "CloudRepository.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := cruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, cloudrepository.FieldID)
 		for _, f := range fields {
@@ -335,23 +335,23 @@ func (cruo *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Cloud
 			}
 		}
 	}
-	if ps := cruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cruo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(cloudrepository.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := cruo.mutation.StorageUsedBytes(); ok {
+	if value, ok := _u.mutation.StorageUsedBytes(); ok {
 		_spec.SetField(cloudrepository.FieldStorageUsedBytes, field.TypeInt64, value)
 	}
-	if value, ok := cruo.mutation.AddedStorageUsedBytes(); ok {
+	if value, ok := _u.mutation.AddedStorageUsedBytes(); ok {
 		_spec.AddField(cloudrepository.FieldStorageUsedBytes, field.TypeInt64, value)
 	}
-	if cruo.mutation.RepositoryCleared() {
+	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -364,7 +364,7 @@ func (cruo *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Cloud
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cruo.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -380,11 +380,11 @@ func (cruo *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Cloud
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(cruo.modifiers...)
-	_node = &CloudRepository{config: cruo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &CloudRepository{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, cruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{cloudrepository.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -392,6 +392,6 @@ func (cruo *CloudRepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Cloud
 		}
 		return nil, err
 	}
-	cruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

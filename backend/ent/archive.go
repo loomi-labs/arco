@@ -103,7 +103,7 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Archive fields.
-func (a *Archive) assignValues(columns []string, values []any) error {
+func (_m *Archive) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -114,66 +114,66 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			a.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case archive.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				a.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case archive.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				a.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case archive.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				a.Name = value.String
+				_m.Name = value.String
 			}
 		case archive.FieldDuration:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field duration", values[i])
 			} else if value.Valid {
-				a.Duration = value.Float64
+				_m.Duration = value.Float64
 			}
 		case archive.FieldBorgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field borg_id", values[i])
 			} else if value.Valid {
-				a.BorgID = value.String
+				_m.BorgID = value.String
 			}
 		case archive.FieldWillBePruned:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field will_be_pruned", values[i])
 			} else if value.Valid {
-				a.WillBePruned = value.Bool
+				_m.WillBePruned = value.Bool
 			}
 		case archive.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field archive_repository", value)
 			} else if value.Valid {
-				a.archive_repository = new(int)
-				*a.archive_repository = int(value.Int64)
+				_m.archive_repository = new(int)
+				*_m.archive_repository = int(value.Int64)
 			}
 		case archive.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field archive_backup_profile", value)
 			} else if value.Valid {
-				a.archive_backup_profile = new(int)
-				*a.archive_backup_profile = int(value.Int64)
+				_m.archive_backup_profile = new(int)
+				*_m.archive_backup_profile = int(value.Int64)
 			}
 		case archive.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field backup_profile_archives", value)
 			} else if value.Valid {
-				a.backup_profile_archives = new(int)
-				*a.backup_profile_archives = int(value.Int64)
+				_m.backup_profile_archives = new(int)
+				*_m.backup_profile_archives = int(value.Int64)
 			}
 		default:
-			a.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -181,60 +181,60 @@ func (a *Archive) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Archive.
 // This includes values selected through modifiers, order, etc.
-func (a *Archive) Value(name string) (ent.Value, error) {
-	return a.selectValues.Get(name)
+func (_m *Archive) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryRepository queries the "repository" edge of the Archive entity.
-func (a *Archive) QueryRepository() *RepositoryQuery {
-	return NewArchiveClient(a.config).QueryRepository(a)
+func (_m *Archive) QueryRepository() *RepositoryQuery {
+	return NewArchiveClient(_m.config).QueryRepository(_m)
 }
 
 // QueryBackupProfile queries the "backup_profile" edge of the Archive entity.
-func (a *Archive) QueryBackupProfile() *BackupProfileQuery {
-	return NewArchiveClient(a.config).QueryBackupProfile(a)
+func (_m *Archive) QueryBackupProfile() *BackupProfileQuery {
+	return NewArchiveClient(_m.config).QueryBackupProfile(_m)
 }
 
 // Update returns a builder for updating this Archive.
 // Note that you need to call Archive.Unwrap() before calling this method if this Archive
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (a *Archive) Update() *ArchiveUpdateOne {
-	return NewArchiveClient(a.config).UpdateOne(a)
+func (_m *Archive) Update() *ArchiveUpdateOne {
+	return NewArchiveClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Archive entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (a *Archive) Unwrap() *Archive {
-	_tx, ok := a.config.driver.(*txDriver)
+func (_m *Archive) Unwrap() *Archive {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Archive is not a transactional entity")
 	}
-	a.config.driver = _tx.drv
-	return a
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (a *Archive) String() string {
+func (_m *Archive) String() string {
 	var builder strings.Builder
 	builder.WriteString("Archive(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(a.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(a.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("duration=")
-	builder.WriteString(fmt.Sprintf("%v", a.Duration))
+	builder.WriteString(fmt.Sprintf("%v", _m.Duration))
 	builder.WriteString(", ")
 	builder.WriteString("borg_id=")
-	builder.WriteString(a.BorgID)
+	builder.WriteString(_m.BorgID)
 	builder.WriteString(", ")
 	builder.WriteString("will_be_pruned=")
-	builder.WriteString(fmt.Sprintf("%v", a.WillBePruned))
+	builder.WriteString(fmt.Sprintf("%v", _m.WillBePruned))
 	builder.WriteByte(')')
 	return builder.String()
 }

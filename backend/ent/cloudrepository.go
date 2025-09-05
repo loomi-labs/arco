@@ -74,7 +74,7 @@ func (*CloudRepository) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the CloudRepository fields.
-func (cr *CloudRepository) assignValues(columns []string, values []any) error {
+func (_m *CloudRepository) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -85,39 +85,39 @@ func (cr *CloudRepository) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			cr.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case cloudrepository.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				cr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case cloudrepository.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				cr.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case cloudrepository.FieldCloudID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field cloud_id", values[i])
 			} else if value.Valid {
-				cr.CloudID = value.String
+				_m.CloudID = value.String
 			}
 		case cloudrepository.FieldStorageUsedBytes:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field storage_used_bytes", values[i])
 			} else if value.Valid {
-				cr.StorageUsedBytes = value.Int64
+				_m.StorageUsedBytes = value.Int64
 			}
 		case cloudrepository.FieldLocation:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
-				cr.Location = cloudrepository.Location(value.String)
+				_m.Location = cloudrepository.Location(value.String)
 			}
 		default:
-			cr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -125,52 +125,52 @@ func (cr *CloudRepository) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the CloudRepository.
 // This includes values selected through modifiers, order, etc.
-func (cr *CloudRepository) Value(name string) (ent.Value, error) {
-	return cr.selectValues.Get(name)
+func (_m *CloudRepository) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryRepository queries the "repository" edge of the CloudRepository entity.
-func (cr *CloudRepository) QueryRepository() *RepositoryQuery {
-	return NewCloudRepositoryClient(cr.config).QueryRepository(cr)
+func (_m *CloudRepository) QueryRepository() *RepositoryQuery {
+	return NewCloudRepositoryClient(_m.config).QueryRepository(_m)
 }
 
 // Update returns a builder for updating this CloudRepository.
 // Note that you need to call CloudRepository.Unwrap() before calling this method if this CloudRepository
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (cr *CloudRepository) Update() *CloudRepositoryUpdateOne {
-	return NewCloudRepositoryClient(cr.config).UpdateOne(cr)
+func (_m *CloudRepository) Update() *CloudRepositoryUpdateOne {
+	return NewCloudRepositoryClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the CloudRepository entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (cr *CloudRepository) Unwrap() *CloudRepository {
-	_tx, ok := cr.config.driver.(*txDriver)
+func (_m *CloudRepository) Unwrap() *CloudRepository {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: CloudRepository is not a transactional entity")
 	}
-	cr.config.driver = _tx.drv
-	return cr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (cr *CloudRepository) String() string {
+func (_m *CloudRepository) String() string {
 	var builder strings.Builder
 	builder.WriteString("CloudRepository(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", cr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(cr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(cr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("cloud_id=")
-	builder.WriteString(cr.CloudID)
+	builder.WriteString(_m.CloudID)
 	builder.WriteString(", ")
 	builder.WriteString("storage_used_bytes=")
-	builder.WriteString(fmt.Sprintf("%v", cr.StorageUsedBytes))
+	builder.WriteString(fmt.Sprintf("%v", _m.StorageUsedBytes))
 	builder.WriteString(", ")
 	builder.WriteString("location=")
-	builder.WriteString(fmt.Sprintf("%v", cr.Location))
+	builder.WriteString(fmt.Sprintf("%v", _m.Location))
 	builder.WriteByte(')')
 	return builder.String()
 }

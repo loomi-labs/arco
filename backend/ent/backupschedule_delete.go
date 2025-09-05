@@ -20,56 +20,56 @@ type BackupScheduleDelete struct {
 }
 
 // Where appends a list predicates to the BackupScheduleDelete builder.
-func (bsd *BackupScheduleDelete) Where(ps ...predicate.BackupSchedule) *BackupScheduleDelete {
-	bsd.mutation.Where(ps...)
-	return bsd
+func (_d *BackupScheduleDelete) Where(ps ...predicate.BackupSchedule) *BackupScheduleDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (bsd *BackupScheduleDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, bsd.sqlExec, bsd.mutation, bsd.hooks)
+func (_d *BackupScheduleDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bsd *BackupScheduleDelete) ExecX(ctx context.Context) int {
-	n, err := bsd.Exec(ctx)
+func (_d *BackupScheduleDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (bsd *BackupScheduleDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *BackupScheduleDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(backupschedule.Table, sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt))
-	if ps := bsd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, bsd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	bsd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // BackupScheduleDeleteOne is the builder for deleting a single BackupSchedule entity.
 type BackupScheduleDeleteOne struct {
-	bsd *BackupScheduleDelete
+	_d *BackupScheduleDelete
 }
 
 // Where appends a list predicates to the BackupScheduleDelete builder.
-func (bsdo *BackupScheduleDeleteOne) Where(ps ...predicate.BackupSchedule) *BackupScheduleDeleteOne {
-	bsdo.bsd.mutation.Where(ps...)
-	return bsdo
+func (_d *BackupScheduleDeleteOne) Where(ps ...predicate.BackupSchedule) *BackupScheduleDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (bsdo *BackupScheduleDeleteOne) Exec(ctx context.Context) error {
-	n, err := bsdo.bsd.Exec(ctx)
+func (_d *BackupScheduleDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (bsdo *BackupScheduleDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bsdo *BackupScheduleDeleteOne) ExecX(ctx context.Context) {
-	if err := bsdo.Exec(ctx); err != nil {
+func (_d *BackupScheduleDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

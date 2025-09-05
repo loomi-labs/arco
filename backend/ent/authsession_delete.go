@@ -20,56 +20,56 @@ type AuthSessionDelete struct {
 }
 
 // Where appends a list predicates to the AuthSessionDelete builder.
-func (asd *AuthSessionDelete) Where(ps ...predicate.AuthSession) *AuthSessionDelete {
-	asd.mutation.Where(ps...)
-	return asd
+func (_d *AuthSessionDelete) Where(ps ...predicate.AuthSession) *AuthSessionDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (asd *AuthSessionDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, asd.sqlExec, asd.mutation, asd.hooks)
+func (_d *AuthSessionDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (asd *AuthSessionDelete) ExecX(ctx context.Context) int {
-	n, err := asd.Exec(ctx)
+func (_d *AuthSessionDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (asd *AuthSessionDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *AuthSessionDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(authsession.Table, sqlgraph.NewFieldSpec(authsession.FieldID, field.TypeInt))
-	if ps := asd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, asd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	asd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // AuthSessionDeleteOne is the builder for deleting a single AuthSession entity.
 type AuthSessionDeleteOne struct {
-	asd *AuthSessionDelete
+	_d *AuthSessionDelete
 }
 
 // Where appends a list predicates to the AuthSessionDelete builder.
-func (asdo *AuthSessionDeleteOne) Where(ps ...predicate.AuthSession) *AuthSessionDeleteOne {
-	asdo.asd.mutation.Where(ps...)
-	return asdo
+func (_d *AuthSessionDeleteOne) Where(ps ...predicate.AuthSession) *AuthSessionDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (asdo *AuthSessionDeleteOne) Exec(ctx context.Context) error {
-	n, err := asdo.asd.Exec(ctx)
+func (_d *AuthSessionDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (asdo *AuthSessionDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (asdo *AuthSessionDeleteOne) ExecX(ctx context.Context) {
-	if err := asdo.Exec(ctx); err != nil {
+func (_d *AuthSessionDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

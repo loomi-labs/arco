@@ -98,7 +98,7 @@ func (*Notification) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Notification fields.
-func (n *Notification) assignValues(columns []string, values []any) error {
+func (_m *Notification) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -109,59 +109,59 @@ func (n *Notification) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			n.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case notification.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				n.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case notification.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				n.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case notification.FieldMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field message", values[i])
 			} else if value.Valid {
-				n.Message = value.String
+				_m.Message = value.String
 			}
 		case notification.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				n.Type = notification.Type(value.String)
+				_m.Type = notification.Type(value.String)
 			}
 		case notification.FieldSeen:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field seen", values[i])
 			} else if value.Valid {
-				n.Seen = value.Bool
+				_m.Seen = value.Bool
 			}
 		case notification.FieldAction:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field action", values[i])
 			} else if value.Valid {
-				n.Action = notification.Action(value.String)
+				_m.Action = notification.Action(value.String)
 			}
 		case notification.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field notification_backup_profile", value)
 			} else if value.Valid {
-				n.notification_backup_profile = new(int)
-				*n.notification_backup_profile = int(value.Int64)
+				_m.notification_backup_profile = new(int)
+				*_m.notification_backup_profile = int(value.Int64)
 			}
 		case notification.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field notification_repository", value)
 			} else if value.Valid {
-				n.notification_repository = new(int)
-				*n.notification_repository = int(value.Int64)
+				_m.notification_repository = new(int)
+				*_m.notification_repository = int(value.Int64)
 			}
 		default:
-			n.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -169,60 +169,60 @@ func (n *Notification) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Notification.
 // This includes values selected through modifiers, order, etc.
-func (n *Notification) Value(name string) (ent.Value, error) {
-	return n.selectValues.Get(name)
+func (_m *Notification) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryBackupProfile queries the "backup_profile" edge of the Notification entity.
-func (n *Notification) QueryBackupProfile() *BackupProfileQuery {
-	return NewNotificationClient(n.config).QueryBackupProfile(n)
+func (_m *Notification) QueryBackupProfile() *BackupProfileQuery {
+	return NewNotificationClient(_m.config).QueryBackupProfile(_m)
 }
 
 // QueryRepository queries the "repository" edge of the Notification entity.
-func (n *Notification) QueryRepository() *RepositoryQuery {
-	return NewNotificationClient(n.config).QueryRepository(n)
+func (_m *Notification) QueryRepository() *RepositoryQuery {
+	return NewNotificationClient(_m.config).QueryRepository(_m)
 }
 
 // Update returns a builder for updating this Notification.
 // Note that you need to call Notification.Unwrap() before calling this method if this Notification
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (n *Notification) Update() *NotificationUpdateOne {
-	return NewNotificationClient(n.config).UpdateOne(n)
+func (_m *Notification) Update() *NotificationUpdateOne {
+	return NewNotificationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Notification entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (n *Notification) Unwrap() *Notification {
-	_tx, ok := n.config.driver.(*txDriver)
+func (_m *Notification) Unwrap() *Notification {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Notification is not a transactional entity")
 	}
-	n.config.driver = _tx.drv
-	return n
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (n *Notification) String() string {
+func (_m *Notification) String() string {
 	var builder strings.Builder
 	builder.WriteString("Notification(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(n.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(n.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("message=")
-	builder.WriteString(n.Message)
+	builder.WriteString(_m.Message)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(fmt.Sprintf("%v", n.Type))
+	builder.WriteString(fmt.Sprintf("%v", _m.Type))
 	builder.WriteString(", ")
 	builder.WriteString("seen=")
-	builder.WriteString(fmt.Sprintf("%v", n.Seen))
+	builder.WriteString(fmt.Sprintf("%v", _m.Seen))
 	builder.WriteString(", ")
 	builder.WriteString("action=")
-	builder.WriteString(fmt.Sprintf("%v", n.Action))
+	builder.WriteString(fmt.Sprintf("%v", _m.Action))
 	builder.WriteByte(')')
 	return builder.String()
 }

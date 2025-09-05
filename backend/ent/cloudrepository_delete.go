@@ -20,56 +20,56 @@ type CloudRepositoryDelete struct {
 }
 
 // Where appends a list predicates to the CloudRepositoryDelete builder.
-func (crd *CloudRepositoryDelete) Where(ps ...predicate.CloudRepository) *CloudRepositoryDelete {
-	crd.mutation.Where(ps...)
-	return crd
+func (_d *CloudRepositoryDelete) Where(ps ...predicate.CloudRepository) *CloudRepositoryDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (crd *CloudRepositoryDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, crd.sqlExec, crd.mutation, crd.hooks)
+func (_d *CloudRepositoryDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crd *CloudRepositoryDelete) ExecX(ctx context.Context) int {
-	n, err := crd.Exec(ctx)
+func (_d *CloudRepositoryDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (crd *CloudRepositoryDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *CloudRepositoryDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(cloudrepository.Table, sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt))
-	if ps := crd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, crd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	crd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // CloudRepositoryDeleteOne is the builder for deleting a single CloudRepository entity.
 type CloudRepositoryDeleteOne struct {
-	crd *CloudRepositoryDelete
+	_d *CloudRepositoryDelete
 }
 
 // Where appends a list predicates to the CloudRepositoryDelete builder.
-func (crdo *CloudRepositoryDeleteOne) Where(ps ...predicate.CloudRepository) *CloudRepositoryDeleteOne {
-	crdo.crd.mutation.Where(ps...)
-	return crdo
+func (_d *CloudRepositoryDeleteOne) Where(ps ...predicate.CloudRepository) *CloudRepositoryDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (crdo *CloudRepositoryDeleteOne) Exec(ctx context.Context) error {
-	n, err := crdo.crd.Exec(ctx)
+func (_d *CloudRepositoryDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (crdo *CloudRepositoryDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crdo *CloudRepositoryDeleteOne) ExecX(ctx context.Context) {
-	if err := crdo.Exec(ctx); err != nil {
+func (_d *CloudRepositoryDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

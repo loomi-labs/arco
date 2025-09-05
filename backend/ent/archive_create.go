@@ -23,115 +23,115 @@ type ArchiveCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (ac *ArchiveCreate) SetCreatedAt(t time.Time) *ArchiveCreate {
-	ac.mutation.SetCreatedAt(t)
-	return ac
+func (_c *ArchiveCreate) SetCreatedAt(v time.Time) *ArchiveCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (ac *ArchiveCreate) SetNillableCreatedAt(t *time.Time) *ArchiveCreate {
-	if t != nil {
-		ac.SetCreatedAt(*t)
+func (_c *ArchiveCreate) SetNillableCreatedAt(v *time.Time) *ArchiveCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return ac
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (ac *ArchiveCreate) SetUpdatedAt(t time.Time) *ArchiveCreate {
-	ac.mutation.SetUpdatedAt(t)
-	return ac
+func (_c *ArchiveCreate) SetUpdatedAt(v time.Time) *ArchiveCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (ac *ArchiveCreate) SetNillableUpdatedAt(t *time.Time) *ArchiveCreate {
-	if t != nil {
-		ac.SetUpdatedAt(*t)
+func (_c *ArchiveCreate) SetNillableUpdatedAt(v *time.Time) *ArchiveCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return ac
+	return _c
 }
 
 // SetName sets the "name" field.
-func (ac *ArchiveCreate) SetName(s string) *ArchiveCreate {
-	ac.mutation.SetName(s)
-	return ac
+func (_c *ArchiveCreate) SetName(v string) *ArchiveCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDuration sets the "duration" field.
-func (ac *ArchiveCreate) SetDuration(f float64) *ArchiveCreate {
-	ac.mutation.SetDuration(f)
-	return ac
+func (_c *ArchiveCreate) SetDuration(v float64) *ArchiveCreate {
+	_c.mutation.SetDuration(v)
+	return _c
 }
 
 // SetBorgID sets the "borg_id" field.
-func (ac *ArchiveCreate) SetBorgID(s string) *ArchiveCreate {
-	ac.mutation.SetBorgID(s)
-	return ac
+func (_c *ArchiveCreate) SetBorgID(v string) *ArchiveCreate {
+	_c.mutation.SetBorgID(v)
+	return _c
 }
 
 // SetWillBePruned sets the "will_be_pruned" field.
-func (ac *ArchiveCreate) SetWillBePruned(b bool) *ArchiveCreate {
-	ac.mutation.SetWillBePruned(b)
-	return ac
+func (_c *ArchiveCreate) SetWillBePruned(v bool) *ArchiveCreate {
+	_c.mutation.SetWillBePruned(v)
+	return _c
 }
 
 // SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
-func (ac *ArchiveCreate) SetNillableWillBePruned(b *bool) *ArchiveCreate {
-	if b != nil {
-		ac.SetWillBePruned(*b)
+func (_c *ArchiveCreate) SetNillableWillBePruned(v *bool) *ArchiveCreate {
+	if v != nil {
+		_c.SetWillBePruned(*v)
 	}
-	return ac
+	return _c
 }
 
 // SetID sets the "id" field.
-func (ac *ArchiveCreate) SetID(i int) *ArchiveCreate {
-	ac.mutation.SetID(i)
-	return ac
+func (_c *ArchiveCreate) SetID(v int) *ArchiveCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (ac *ArchiveCreate) SetRepositoryID(id int) *ArchiveCreate {
-	ac.mutation.SetRepositoryID(id)
-	return ac
+func (_c *ArchiveCreate) SetRepositoryID(id int) *ArchiveCreate {
+	_c.mutation.SetRepositoryID(id)
+	return _c
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (ac *ArchiveCreate) SetRepository(r *Repository) *ArchiveCreate {
-	return ac.SetRepositoryID(r.ID)
+func (_c *ArchiveCreate) SetRepository(v *Repository) *ArchiveCreate {
+	return _c.SetRepositoryID(v.ID)
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (ac *ArchiveCreate) SetBackupProfileID(id int) *ArchiveCreate {
-	ac.mutation.SetBackupProfileID(id)
-	return ac
+func (_c *ArchiveCreate) SetBackupProfileID(id int) *ArchiveCreate {
+	_c.mutation.SetBackupProfileID(id)
+	return _c
 }
 
 // SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
-func (ac *ArchiveCreate) SetNillableBackupProfileID(id *int) *ArchiveCreate {
+func (_c *ArchiveCreate) SetNillableBackupProfileID(id *int) *ArchiveCreate {
 	if id != nil {
-		ac = ac.SetBackupProfileID(*id)
+		_c = _c.SetBackupProfileID(*id)
 	}
-	return ac
+	return _c
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (ac *ArchiveCreate) SetBackupProfile(b *BackupProfile) *ArchiveCreate {
-	return ac.SetBackupProfileID(b.ID)
+func (_c *ArchiveCreate) SetBackupProfile(v *BackupProfile) *ArchiveCreate {
+	return _c.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the ArchiveMutation object of the builder.
-func (ac *ArchiveCreate) Mutation() *ArchiveMutation {
-	return ac.mutation
+func (_c *ArchiveCreate) Mutation() *ArchiveMutation {
+	return _c.mutation
 }
 
 // Save creates the Archive in the database.
-func (ac *ArchiveCreate) Save(ctx context.Context) (*Archive, error) {
-	ac.defaults()
-	return withHooks(ctx, ac.sqlSave, ac.mutation, ac.hooks)
+func (_c *ArchiveCreate) Save(ctx context.Context) (*Archive, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (ac *ArchiveCreate) SaveX(ctx context.Context) *Archive {
-	v, err := ac.Save(ctx)
+func (_c *ArchiveCreate) SaveX(ctx context.Context) *Archive {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -139,66 +139,66 @@ func (ac *ArchiveCreate) SaveX(ctx context.Context) *Archive {
 }
 
 // Exec executes the query.
-func (ac *ArchiveCreate) Exec(ctx context.Context) error {
-	_, err := ac.Save(ctx)
+func (_c *ArchiveCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ac *ArchiveCreate) ExecX(ctx context.Context) {
-	if err := ac.Exec(ctx); err != nil {
+func (_c *ArchiveCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (ac *ArchiveCreate) defaults() {
-	if _, ok := ac.mutation.CreatedAt(); !ok {
+func (_c *ArchiveCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := archive.DefaultCreatedAt()
-		ac.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := ac.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := archive.DefaultUpdatedAt()
-		ac.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := ac.mutation.WillBePruned(); !ok {
+	if _, ok := _c.mutation.WillBePruned(); !ok {
 		v := archive.DefaultWillBePruned
-		ac.mutation.SetWillBePruned(v)
+		_c.mutation.SetWillBePruned(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (ac *ArchiveCreate) check() error {
-	if _, ok := ac.mutation.CreatedAt(); !ok {
+func (_c *ArchiveCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Archive.created_at"`)}
 	}
-	if _, ok := ac.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Archive.updated_at"`)}
 	}
-	if _, ok := ac.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Archive.name"`)}
 	}
-	if _, ok := ac.mutation.Duration(); !ok {
+	if _, ok := _c.mutation.Duration(); !ok {
 		return &ValidationError{Name: "duration", err: errors.New(`ent: missing required field "Archive.duration"`)}
 	}
-	if _, ok := ac.mutation.BorgID(); !ok {
+	if _, ok := _c.mutation.BorgID(); !ok {
 		return &ValidationError{Name: "borg_id", err: errors.New(`ent: missing required field "Archive.borg_id"`)}
 	}
-	if _, ok := ac.mutation.WillBePruned(); !ok {
+	if _, ok := _c.mutation.WillBePruned(); !ok {
 		return &ValidationError{Name: "will_be_pruned", err: errors.New(`ent: missing required field "Archive.will_be_pruned"`)}
 	}
-	if len(ac.mutation.RepositoryIDs()) == 0 {
+	if len(_c.mutation.RepositoryIDs()) == 0 {
 		return &ValidationError{Name: "repository", err: errors.New(`ent: missing required edge "Archive.repository"`)}
 	}
 	return nil
 }
 
-func (ac *ArchiveCreate) sqlSave(ctx context.Context) (*Archive, error) {
-	if err := ac.check(); err != nil {
+func (_c *ArchiveCreate) sqlSave(ctx context.Context) (*Archive, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := ac.createSpec()
-	if err := sqlgraph.CreateNode(ctx, ac.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -208,45 +208,45 @@ func (ac *ArchiveCreate) sqlSave(ctx context.Context) (*Archive, error) {
 		id := _spec.ID.Value.(int64)
 		_node.ID = int(id)
 	}
-	ac.mutation.id = &_node.ID
-	ac.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
+func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Archive{config: ac.config}
+		_node = &Archive{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(archive.Table, sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt))
 	)
-	if id, ok := ac.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := ac.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(archive.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := ac.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := ac.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(archive.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := ac.mutation.Duration(); ok {
+	if value, ok := _c.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
 		_node.Duration = value
 	}
-	if value, ok := ac.mutation.BorgID(); ok {
+	if value, ok := _c.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
 		_node.BorgID = value
 	}
-	if value, ok := ac.mutation.WillBePruned(); ok {
+	if value, ok := _c.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 		_node.WillBePruned = value
 	}
-	if nodes := ac.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -263,7 +263,7 @@ func (ac *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		_node.archive_repository = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := ac.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -291,16 +291,16 @@ type ArchiveCreateBulk struct {
 }
 
 // Save creates the Archive entities in the database.
-func (acb *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
-	if acb.err != nil {
-		return nil, acb.err
+func (_c *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(acb.builders))
-	nodes := make([]*Archive, len(acb.builders))
-	mutators := make([]Mutator, len(acb.builders))
-	for i := range acb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Archive, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := acb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ArchiveMutation)
@@ -314,11 +314,11 @@ func (acb *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, acb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, acb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -342,7 +342,7 @@ func (acb *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, acb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -350,8 +350,8 @@ func (acb *ArchiveCreateBulk) Save(ctx context.Context) ([]*Archive, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (acb *ArchiveCreateBulk) SaveX(ctx context.Context) []*Archive {
-	v, err := acb.Save(ctx)
+func (_c *ArchiveCreateBulk) SaveX(ctx context.Context) []*Archive {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -359,14 +359,14 @@ func (acb *ArchiveCreateBulk) SaveX(ctx context.Context) []*Archive {
 }
 
 // Exec executes the query.
-func (acb *ArchiveCreateBulk) Exec(ctx context.Context) error {
-	_, err := acb.Save(ctx)
+func (_c *ArchiveCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (acb *ArchiveCreateBulk) ExecX(ctx context.Context) {
-	if err := acb.Exec(ctx); err != nil {
+func (_c *ArchiveCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

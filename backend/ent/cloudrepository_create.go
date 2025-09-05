@@ -22,90 +22,90 @@ type CloudRepositoryCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (crc *CloudRepositoryCreate) SetCreatedAt(t time.Time) *CloudRepositoryCreate {
-	crc.mutation.SetCreatedAt(t)
-	return crc
+func (_c *CloudRepositoryCreate) SetCreatedAt(v time.Time) *CloudRepositoryCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (crc *CloudRepositoryCreate) SetNillableCreatedAt(t *time.Time) *CloudRepositoryCreate {
-	if t != nil {
-		crc.SetCreatedAt(*t)
+func (_c *CloudRepositoryCreate) SetNillableCreatedAt(v *time.Time) *CloudRepositoryCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return crc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (crc *CloudRepositoryCreate) SetUpdatedAt(t time.Time) *CloudRepositoryCreate {
-	crc.mutation.SetUpdatedAt(t)
-	return crc
+func (_c *CloudRepositoryCreate) SetUpdatedAt(v time.Time) *CloudRepositoryCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (crc *CloudRepositoryCreate) SetNillableUpdatedAt(t *time.Time) *CloudRepositoryCreate {
-	if t != nil {
-		crc.SetUpdatedAt(*t)
+func (_c *CloudRepositoryCreate) SetNillableUpdatedAt(v *time.Time) *CloudRepositoryCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return crc
+	return _c
 }
 
 // SetCloudID sets the "cloud_id" field.
-func (crc *CloudRepositoryCreate) SetCloudID(s string) *CloudRepositoryCreate {
-	crc.mutation.SetCloudID(s)
-	return crc
+func (_c *CloudRepositoryCreate) SetCloudID(v string) *CloudRepositoryCreate {
+	_c.mutation.SetCloudID(v)
+	return _c
 }
 
 // SetStorageUsedBytes sets the "storage_used_bytes" field.
-func (crc *CloudRepositoryCreate) SetStorageUsedBytes(i int64) *CloudRepositoryCreate {
-	crc.mutation.SetStorageUsedBytes(i)
-	return crc
+func (_c *CloudRepositoryCreate) SetStorageUsedBytes(v int64) *CloudRepositoryCreate {
+	_c.mutation.SetStorageUsedBytes(v)
+	return _c
 }
 
 // SetNillableStorageUsedBytes sets the "storage_used_bytes" field if the given value is not nil.
-func (crc *CloudRepositoryCreate) SetNillableStorageUsedBytes(i *int64) *CloudRepositoryCreate {
-	if i != nil {
-		crc.SetStorageUsedBytes(*i)
+func (_c *CloudRepositoryCreate) SetNillableStorageUsedBytes(v *int64) *CloudRepositoryCreate {
+	if v != nil {
+		_c.SetStorageUsedBytes(*v)
 	}
-	return crc
+	return _c
 }
 
 // SetLocation sets the "location" field.
-func (crc *CloudRepositoryCreate) SetLocation(c cloudrepository.Location) *CloudRepositoryCreate {
-	crc.mutation.SetLocation(c)
-	return crc
+func (_c *CloudRepositoryCreate) SetLocation(v cloudrepository.Location) *CloudRepositoryCreate {
+	_c.mutation.SetLocation(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (crc *CloudRepositoryCreate) SetID(i int) *CloudRepositoryCreate {
-	crc.mutation.SetID(i)
-	return crc
+func (_c *CloudRepositoryCreate) SetID(v int) *CloudRepositoryCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (crc *CloudRepositoryCreate) SetRepositoryID(id int) *CloudRepositoryCreate {
-	crc.mutation.SetRepositoryID(id)
-	return crc
+func (_c *CloudRepositoryCreate) SetRepositoryID(id int) *CloudRepositoryCreate {
+	_c.mutation.SetRepositoryID(id)
+	return _c
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (crc *CloudRepositoryCreate) SetRepository(r *Repository) *CloudRepositoryCreate {
-	return crc.SetRepositoryID(r.ID)
+func (_c *CloudRepositoryCreate) SetRepository(v *Repository) *CloudRepositoryCreate {
+	return _c.SetRepositoryID(v.ID)
 }
 
 // Mutation returns the CloudRepositoryMutation object of the builder.
-func (crc *CloudRepositoryCreate) Mutation() *CloudRepositoryMutation {
-	return crc.mutation
+func (_c *CloudRepositoryCreate) Mutation() *CloudRepositoryMutation {
+	return _c.mutation
 }
 
 // Save creates the CloudRepository in the database.
-func (crc *CloudRepositoryCreate) Save(ctx context.Context) (*CloudRepository, error) {
-	crc.defaults()
-	return withHooks(ctx, crc.sqlSave, crc.mutation, crc.hooks)
+func (_c *CloudRepositoryCreate) Save(ctx context.Context) (*CloudRepository, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (crc *CloudRepositoryCreate) SaveX(ctx context.Context) *CloudRepository {
-	v, err := crc.Save(ctx)
+func (_c *CloudRepositoryCreate) SaveX(ctx context.Context) *CloudRepository {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -113,68 +113,68 @@ func (crc *CloudRepositoryCreate) SaveX(ctx context.Context) *CloudRepository {
 }
 
 // Exec executes the query.
-func (crc *CloudRepositoryCreate) Exec(ctx context.Context) error {
-	_, err := crc.Save(ctx)
+func (_c *CloudRepositoryCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crc *CloudRepositoryCreate) ExecX(ctx context.Context) {
-	if err := crc.Exec(ctx); err != nil {
+func (_c *CloudRepositoryCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (crc *CloudRepositoryCreate) defaults() {
-	if _, ok := crc.mutation.CreatedAt(); !ok {
+func (_c *CloudRepositoryCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := cloudrepository.DefaultCreatedAt()
-		crc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := crc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := cloudrepository.DefaultUpdatedAt()
-		crc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := crc.mutation.StorageUsedBytes(); !ok {
+	if _, ok := _c.mutation.StorageUsedBytes(); !ok {
 		v := cloudrepository.DefaultStorageUsedBytes
-		crc.mutation.SetStorageUsedBytes(v)
+		_c.mutation.SetStorageUsedBytes(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (crc *CloudRepositoryCreate) check() error {
-	if _, ok := crc.mutation.CreatedAt(); !ok {
+func (_c *CloudRepositoryCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CloudRepository.created_at"`)}
 	}
-	if _, ok := crc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "CloudRepository.updated_at"`)}
 	}
-	if _, ok := crc.mutation.CloudID(); !ok {
+	if _, ok := _c.mutation.CloudID(); !ok {
 		return &ValidationError{Name: "cloud_id", err: errors.New(`ent: missing required field "CloudRepository.cloud_id"`)}
 	}
-	if _, ok := crc.mutation.StorageUsedBytes(); !ok {
+	if _, ok := _c.mutation.StorageUsedBytes(); !ok {
 		return &ValidationError{Name: "storage_used_bytes", err: errors.New(`ent: missing required field "CloudRepository.storage_used_bytes"`)}
 	}
-	if _, ok := crc.mutation.Location(); !ok {
+	if _, ok := _c.mutation.Location(); !ok {
 		return &ValidationError{Name: "location", err: errors.New(`ent: missing required field "CloudRepository.location"`)}
 	}
-	if v, ok := crc.mutation.Location(); ok {
+	if v, ok := _c.mutation.Location(); ok {
 		if err := cloudrepository.LocationValidator(v); err != nil {
 			return &ValidationError{Name: "location", err: fmt.Errorf(`ent: validator failed for field "CloudRepository.location": %w`, err)}
 		}
 	}
-	if len(crc.mutation.RepositoryIDs()) == 0 {
+	if len(_c.mutation.RepositoryIDs()) == 0 {
 		return &ValidationError{Name: "repository", err: errors.New(`ent: missing required edge "CloudRepository.repository"`)}
 	}
 	return nil
 }
 
-func (crc *CloudRepositoryCreate) sqlSave(ctx context.Context) (*CloudRepository, error) {
-	if err := crc.check(); err != nil {
+func (_c *CloudRepositoryCreate) sqlSave(ctx context.Context) (*CloudRepository, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := crc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, crc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -184,41 +184,41 @@ func (crc *CloudRepositoryCreate) sqlSave(ctx context.Context) (*CloudRepository
 		id := _spec.ID.Value.(int64)
 		_node.ID = int(id)
 	}
-	crc.mutation.id = &_node.ID
-	crc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (crc *CloudRepositoryCreate) createSpec() (*CloudRepository, *sqlgraph.CreateSpec) {
+func (_c *CloudRepositoryCreate) createSpec() (*CloudRepository, *sqlgraph.CreateSpec) {
 	var (
-		_node = &CloudRepository{config: crc.config}
+		_node = &CloudRepository{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(cloudrepository.Table, sqlgraph.NewFieldSpec(cloudrepository.FieldID, field.TypeInt))
 	)
-	if id, ok := crc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := crc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(cloudrepository.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := crc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(cloudrepository.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := crc.mutation.CloudID(); ok {
+	if value, ok := _c.mutation.CloudID(); ok {
 		_spec.SetField(cloudrepository.FieldCloudID, field.TypeString, value)
 		_node.CloudID = value
 	}
-	if value, ok := crc.mutation.StorageUsedBytes(); ok {
+	if value, ok := _c.mutation.StorageUsedBytes(); ok {
 		_spec.SetField(cloudrepository.FieldStorageUsedBytes, field.TypeInt64, value)
 		_node.StorageUsedBytes = value
 	}
-	if value, ok := crc.mutation.Location(); ok {
+	if value, ok := _c.mutation.Location(); ok {
 		_spec.SetField(cloudrepository.FieldLocation, field.TypeEnum, value)
 		_node.Location = value
 	}
-	if nodes := crc.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -245,16 +245,16 @@ type CloudRepositoryCreateBulk struct {
 }
 
 // Save creates the CloudRepository entities in the database.
-func (crcb *CloudRepositoryCreateBulk) Save(ctx context.Context) ([]*CloudRepository, error) {
-	if crcb.err != nil {
-		return nil, crcb.err
+func (_c *CloudRepositoryCreateBulk) Save(ctx context.Context) ([]*CloudRepository, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(crcb.builders))
-	nodes := make([]*CloudRepository, len(crcb.builders))
-	mutators := make([]Mutator, len(crcb.builders))
-	for i := range crcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*CloudRepository, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := crcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CloudRepositoryMutation)
@@ -268,11 +268,11 @@ func (crcb *CloudRepositoryCreateBulk) Save(ctx context.Context) ([]*CloudReposi
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, crcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, crcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -296,7 +296,7 @@ func (crcb *CloudRepositoryCreateBulk) Save(ctx context.Context) ([]*CloudReposi
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, crcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -304,8 +304,8 @@ func (crcb *CloudRepositoryCreateBulk) Save(ctx context.Context) ([]*CloudReposi
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (crcb *CloudRepositoryCreateBulk) SaveX(ctx context.Context) []*CloudRepository {
-	v, err := crcb.Save(ctx)
+func (_c *CloudRepositoryCreateBulk) SaveX(ctx context.Context) []*CloudRepository {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -313,14 +313,14 @@ func (crcb *CloudRepositoryCreateBulk) SaveX(ctx context.Context) []*CloudReposi
 }
 
 // Exec executes the query.
-func (crcb *CloudRepositoryCreateBulk) Exec(ctx context.Context) error {
-	_, err := crcb.Save(ctx)
+func (_c *CloudRepositoryCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crcb *CloudRepositoryCreateBulk) ExecX(ctx context.Context) {
-	if err := crcb.Exec(ctx); err != nil {
+func (_c *CloudRepositoryCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

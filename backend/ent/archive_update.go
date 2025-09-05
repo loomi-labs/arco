@@ -26,136 +26,136 @@ type ArchiveUpdate struct {
 }
 
 // Where appends a list predicates to the ArchiveUpdate builder.
-func (au *ArchiveUpdate) Where(ps ...predicate.Archive) *ArchiveUpdate {
-	au.mutation.Where(ps...)
-	return au
+func (_u *ArchiveUpdate) Where(ps ...predicate.Archive) *ArchiveUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (au *ArchiveUpdate) SetUpdatedAt(t time.Time) *ArchiveUpdate {
-	au.mutation.SetUpdatedAt(t)
-	return au
+func (_u *ArchiveUpdate) SetUpdatedAt(v time.Time) *ArchiveUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (au *ArchiveUpdate) SetName(s string) *ArchiveUpdate {
-	au.mutation.SetName(s)
-	return au
+func (_u *ArchiveUpdate) SetName(v string) *ArchiveUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableName(s *string) *ArchiveUpdate {
-	if s != nil {
-		au.SetName(*s)
+func (_u *ArchiveUpdate) SetNillableName(v *string) *ArchiveUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return au
+	return _u
 }
 
 // SetDuration sets the "duration" field.
-func (au *ArchiveUpdate) SetDuration(f float64) *ArchiveUpdate {
-	au.mutation.ResetDuration()
-	au.mutation.SetDuration(f)
-	return au
+func (_u *ArchiveUpdate) SetDuration(v float64) *ArchiveUpdate {
+	_u.mutation.ResetDuration()
+	_u.mutation.SetDuration(v)
+	return _u
 }
 
 // SetNillableDuration sets the "duration" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableDuration(f *float64) *ArchiveUpdate {
-	if f != nil {
-		au.SetDuration(*f)
+func (_u *ArchiveUpdate) SetNillableDuration(v *float64) *ArchiveUpdate {
+	if v != nil {
+		_u.SetDuration(*v)
 	}
-	return au
+	return _u
 }
 
-// AddDuration adds f to the "duration" field.
-func (au *ArchiveUpdate) AddDuration(f float64) *ArchiveUpdate {
-	au.mutation.AddDuration(f)
-	return au
+// AddDuration adds value to the "duration" field.
+func (_u *ArchiveUpdate) AddDuration(v float64) *ArchiveUpdate {
+	_u.mutation.AddDuration(v)
+	return _u
 }
 
 // SetBorgID sets the "borg_id" field.
-func (au *ArchiveUpdate) SetBorgID(s string) *ArchiveUpdate {
-	au.mutation.SetBorgID(s)
-	return au
+func (_u *ArchiveUpdate) SetBorgID(v string) *ArchiveUpdate {
+	_u.mutation.SetBorgID(v)
+	return _u
 }
 
 // SetNillableBorgID sets the "borg_id" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableBorgID(s *string) *ArchiveUpdate {
-	if s != nil {
-		au.SetBorgID(*s)
+func (_u *ArchiveUpdate) SetNillableBorgID(v *string) *ArchiveUpdate {
+	if v != nil {
+		_u.SetBorgID(*v)
 	}
-	return au
+	return _u
 }
 
 // SetWillBePruned sets the "will_be_pruned" field.
-func (au *ArchiveUpdate) SetWillBePruned(b bool) *ArchiveUpdate {
-	au.mutation.SetWillBePruned(b)
-	return au
+func (_u *ArchiveUpdate) SetWillBePruned(v bool) *ArchiveUpdate {
+	_u.mutation.SetWillBePruned(v)
+	return _u
 }
 
 // SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableWillBePruned(b *bool) *ArchiveUpdate {
-	if b != nil {
-		au.SetWillBePruned(*b)
+func (_u *ArchiveUpdate) SetNillableWillBePruned(v *bool) *ArchiveUpdate {
+	if v != nil {
+		_u.SetWillBePruned(*v)
 	}
-	return au
+	return _u
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (au *ArchiveUpdate) SetRepositoryID(id int) *ArchiveUpdate {
-	au.mutation.SetRepositoryID(id)
-	return au
+func (_u *ArchiveUpdate) SetRepositoryID(id int) *ArchiveUpdate {
+	_u.mutation.SetRepositoryID(id)
+	return _u
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (au *ArchiveUpdate) SetRepository(r *Repository) *ArchiveUpdate {
-	return au.SetRepositoryID(r.ID)
+func (_u *ArchiveUpdate) SetRepository(v *Repository) *ArchiveUpdate {
+	return _u.SetRepositoryID(v.ID)
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (au *ArchiveUpdate) SetBackupProfileID(id int) *ArchiveUpdate {
-	au.mutation.SetBackupProfileID(id)
-	return au
+func (_u *ArchiveUpdate) SetBackupProfileID(id int) *ArchiveUpdate {
+	_u.mutation.SetBackupProfileID(id)
+	return _u
 }
 
 // SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
-func (au *ArchiveUpdate) SetNillableBackupProfileID(id *int) *ArchiveUpdate {
+func (_u *ArchiveUpdate) SetNillableBackupProfileID(id *int) *ArchiveUpdate {
 	if id != nil {
-		au = au.SetBackupProfileID(*id)
+		_u = _u.SetBackupProfileID(*id)
 	}
-	return au
+	return _u
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (au *ArchiveUpdate) SetBackupProfile(b *BackupProfile) *ArchiveUpdate {
-	return au.SetBackupProfileID(b.ID)
+func (_u *ArchiveUpdate) SetBackupProfile(v *BackupProfile) *ArchiveUpdate {
+	return _u.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the ArchiveMutation object of the builder.
-func (au *ArchiveUpdate) Mutation() *ArchiveMutation {
-	return au.mutation
+func (_u *ArchiveUpdate) Mutation() *ArchiveMutation {
+	return _u.mutation
 }
 
 // ClearRepository clears the "repository" edge to the Repository entity.
-func (au *ArchiveUpdate) ClearRepository() *ArchiveUpdate {
-	au.mutation.ClearRepository()
-	return au
+func (_u *ArchiveUpdate) ClearRepository() *ArchiveUpdate {
+	_u.mutation.ClearRepository()
+	return _u
 }
 
 // ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
-func (au *ArchiveUpdate) ClearBackupProfile() *ArchiveUpdate {
-	au.mutation.ClearBackupProfile()
-	return au
+func (_u *ArchiveUpdate) ClearBackupProfile() *ArchiveUpdate {
+	_u.mutation.ClearBackupProfile()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (au *ArchiveUpdate) Save(ctx context.Context) (int, error) {
-	au.defaults()
-	return withHooks(ctx, au.sqlSave, au.mutation, au.hooks)
+func (_u *ArchiveUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (au *ArchiveUpdate) SaveX(ctx context.Context) int {
-	affected, err := au.Save(ctx)
+func (_u *ArchiveUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -163,71 +163,71 @@ func (au *ArchiveUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (au *ArchiveUpdate) Exec(ctx context.Context) error {
-	_, err := au.Save(ctx)
+func (_u *ArchiveUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (au *ArchiveUpdate) ExecX(ctx context.Context) {
-	if err := au.Exec(ctx); err != nil {
+func (_u *ArchiveUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (au *ArchiveUpdate) defaults() {
-	if _, ok := au.mutation.UpdatedAt(); !ok {
+func (_u *ArchiveUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := archive.UpdateDefaultUpdatedAt()
-		au.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (au *ArchiveUpdate) check() error {
-	if au.mutation.RepositoryCleared() && len(au.mutation.RepositoryIDs()) > 0 {
+func (_u *ArchiveUpdate) check() error {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Archive.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (au *ArchiveUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdate {
-	au.modifiers = append(au.modifiers, modifiers...)
-	return au
+func (_u *ArchiveUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := au.check(); err != nil {
-		return n, err
+func (_u *ArchiveUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(archive.Table, archive.Columns, sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt))
-	if ps := au.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := au.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := au.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(archive.FieldName, field.TypeString, value)
 	}
-	if value, ok := au.mutation.Duration(); ok {
+	if value, ok := _u.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
 	}
-	if value, ok := au.mutation.AddedDuration(); ok {
+	if value, ok := _u.mutation.AddedDuration(); ok {
 		_spec.AddField(archive.FieldDuration, field.TypeFloat64, value)
 	}
-	if value, ok := au.mutation.BorgID(); ok {
+	if value, ok := _u.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
 	}
-	if value, ok := au.mutation.WillBePruned(); ok {
+	if value, ok := _u.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 	}
-	if au.mutation.RepositoryCleared() {
+	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -240,7 +240,7 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -256,7 +256,7 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if au.mutation.BackupProfileCleared() {
+	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -269,7 +269,7 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -285,8 +285,8 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(au.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{archive.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -294,8 +294,8 @@ func (au *ArchiveUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	au.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ArchiveUpdateOne is the builder for updating a single Archive entity.
@@ -308,143 +308,143 @@ type ArchiveUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (auo *ArchiveUpdateOne) SetUpdatedAt(t time.Time) *ArchiveUpdateOne {
-	auo.mutation.SetUpdatedAt(t)
-	return auo
+func (_u *ArchiveUpdateOne) SetUpdatedAt(v time.Time) *ArchiveUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (auo *ArchiveUpdateOne) SetName(s string) *ArchiveUpdateOne {
-	auo.mutation.SetName(s)
-	return auo
+func (_u *ArchiveUpdateOne) SetName(v string) *ArchiveUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableName(s *string) *ArchiveUpdateOne {
-	if s != nil {
-		auo.SetName(*s)
+func (_u *ArchiveUpdateOne) SetNillableName(v *string) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return auo
+	return _u
 }
 
 // SetDuration sets the "duration" field.
-func (auo *ArchiveUpdateOne) SetDuration(f float64) *ArchiveUpdateOne {
-	auo.mutation.ResetDuration()
-	auo.mutation.SetDuration(f)
-	return auo
+func (_u *ArchiveUpdateOne) SetDuration(v float64) *ArchiveUpdateOne {
+	_u.mutation.ResetDuration()
+	_u.mutation.SetDuration(v)
+	return _u
 }
 
 // SetNillableDuration sets the "duration" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableDuration(f *float64) *ArchiveUpdateOne {
-	if f != nil {
-		auo.SetDuration(*f)
+func (_u *ArchiveUpdateOne) SetNillableDuration(v *float64) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetDuration(*v)
 	}
-	return auo
+	return _u
 }
 
-// AddDuration adds f to the "duration" field.
-func (auo *ArchiveUpdateOne) AddDuration(f float64) *ArchiveUpdateOne {
-	auo.mutation.AddDuration(f)
-	return auo
+// AddDuration adds value to the "duration" field.
+func (_u *ArchiveUpdateOne) AddDuration(v float64) *ArchiveUpdateOne {
+	_u.mutation.AddDuration(v)
+	return _u
 }
 
 // SetBorgID sets the "borg_id" field.
-func (auo *ArchiveUpdateOne) SetBorgID(s string) *ArchiveUpdateOne {
-	auo.mutation.SetBorgID(s)
-	return auo
+func (_u *ArchiveUpdateOne) SetBorgID(v string) *ArchiveUpdateOne {
+	_u.mutation.SetBorgID(v)
+	return _u
 }
 
 // SetNillableBorgID sets the "borg_id" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableBorgID(s *string) *ArchiveUpdateOne {
-	if s != nil {
-		auo.SetBorgID(*s)
+func (_u *ArchiveUpdateOne) SetNillableBorgID(v *string) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetBorgID(*v)
 	}
-	return auo
+	return _u
 }
 
 // SetWillBePruned sets the "will_be_pruned" field.
-func (auo *ArchiveUpdateOne) SetWillBePruned(b bool) *ArchiveUpdateOne {
-	auo.mutation.SetWillBePruned(b)
-	return auo
+func (_u *ArchiveUpdateOne) SetWillBePruned(v bool) *ArchiveUpdateOne {
+	_u.mutation.SetWillBePruned(v)
+	return _u
 }
 
 // SetNillableWillBePruned sets the "will_be_pruned" field if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableWillBePruned(b *bool) *ArchiveUpdateOne {
-	if b != nil {
-		auo.SetWillBePruned(*b)
+func (_u *ArchiveUpdateOne) SetNillableWillBePruned(v *bool) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetWillBePruned(*v)
 	}
-	return auo
+	return _u
 }
 
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
-func (auo *ArchiveUpdateOne) SetRepositoryID(id int) *ArchiveUpdateOne {
-	auo.mutation.SetRepositoryID(id)
-	return auo
+func (_u *ArchiveUpdateOne) SetRepositoryID(id int) *ArchiveUpdateOne {
+	_u.mutation.SetRepositoryID(id)
+	return _u
 }
 
 // SetRepository sets the "repository" edge to the Repository entity.
-func (auo *ArchiveUpdateOne) SetRepository(r *Repository) *ArchiveUpdateOne {
-	return auo.SetRepositoryID(r.ID)
+func (_u *ArchiveUpdateOne) SetRepository(v *Repository) *ArchiveUpdateOne {
+	return _u.SetRepositoryID(v.ID)
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (auo *ArchiveUpdateOne) SetBackupProfileID(id int) *ArchiveUpdateOne {
-	auo.mutation.SetBackupProfileID(id)
-	return auo
+func (_u *ArchiveUpdateOne) SetBackupProfileID(id int) *ArchiveUpdateOne {
+	_u.mutation.SetBackupProfileID(id)
+	return _u
 }
 
 // SetNillableBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID if the given value is not nil.
-func (auo *ArchiveUpdateOne) SetNillableBackupProfileID(id *int) *ArchiveUpdateOne {
+func (_u *ArchiveUpdateOne) SetNillableBackupProfileID(id *int) *ArchiveUpdateOne {
 	if id != nil {
-		auo = auo.SetBackupProfileID(*id)
+		_u = _u.SetBackupProfileID(*id)
 	}
-	return auo
+	return _u
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (auo *ArchiveUpdateOne) SetBackupProfile(b *BackupProfile) *ArchiveUpdateOne {
-	return auo.SetBackupProfileID(b.ID)
+func (_u *ArchiveUpdateOne) SetBackupProfile(v *BackupProfile) *ArchiveUpdateOne {
+	return _u.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the ArchiveMutation object of the builder.
-func (auo *ArchiveUpdateOne) Mutation() *ArchiveMutation {
-	return auo.mutation
+func (_u *ArchiveUpdateOne) Mutation() *ArchiveMutation {
+	return _u.mutation
 }
 
 // ClearRepository clears the "repository" edge to the Repository entity.
-func (auo *ArchiveUpdateOne) ClearRepository() *ArchiveUpdateOne {
-	auo.mutation.ClearRepository()
-	return auo
+func (_u *ArchiveUpdateOne) ClearRepository() *ArchiveUpdateOne {
+	_u.mutation.ClearRepository()
+	return _u
 }
 
 // ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
-func (auo *ArchiveUpdateOne) ClearBackupProfile() *ArchiveUpdateOne {
-	auo.mutation.ClearBackupProfile()
-	return auo
+func (_u *ArchiveUpdateOne) ClearBackupProfile() *ArchiveUpdateOne {
+	_u.mutation.ClearBackupProfile()
+	return _u
 }
 
 // Where appends a list predicates to the ArchiveUpdate builder.
-func (auo *ArchiveUpdateOne) Where(ps ...predicate.Archive) *ArchiveUpdateOne {
-	auo.mutation.Where(ps...)
-	return auo
+func (_u *ArchiveUpdateOne) Where(ps ...predicate.Archive) *ArchiveUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (auo *ArchiveUpdateOne) Select(field string, fields ...string) *ArchiveUpdateOne {
-	auo.fields = append([]string{field}, fields...)
-	return auo
+func (_u *ArchiveUpdateOne) Select(field string, fields ...string) *ArchiveUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Archive entity.
-func (auo *ArchiveUpdateOne) Save(ctx context.Context) (*Archive, error) {
-	auo.defaults()
-	return withHooks(ctx, auo.sqlSave, auo.mutation, auo.hooks)
+func (_u *ArchiveUpdateOne) Save(ctx context.Context) (*Archive, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (auo *ArchiveUpdateOne) SaveX(ctx context.Context) *Archive {
-	node, err := auo.Save(ctx)
+func (_u *ArchiveUpdateOne) SaveX(ctx context.Context) *Archive {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -452,51 +452,51 @@ func (auo *ArchiveUpdateOne) SaveX(ctx context.Context) *Archive {
 }
 
 // Exec executes the query on the entity.
-func (auo *ArchiveUpdateOne) Exec(ctx context.Context) error {
-	_, err := auo.Save(ctx)
+func (_u *ArchiveUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (auo *ArchiveUpdateOne) ExecX(ctx context.Context) {
-	if err := auo.Exec(ctx); err != nil {
+func (_u *ArchiveUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (auo *ArchiveUpdateOne) defaults() {
-	if _, ok := auo.mutation.UpdatedAt(); !ok {
+func (_u *ArchiveUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := archive.UpdateDefaultUpdatedAt()
-		auo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (auo *ArchiveUpdateOne) check() error {
-	if auo.mutation.RepositoryCleared() && len(auo.mutation.RepositoryIDs()) > 0 {
+func (_u *ArchiveUpdateOne) check() error {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Archive.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (auo *ArchiveUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdateOne {
-	auo.modifiers = append(auo.modifiers, modifiers...)
-	return auo
+func (_u *ArchiveUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ArchiveUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err error) {
-	if err := auo.check(); err != nil {
+func (_u *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(archive.Table, archive.Columns, sqlgraph.NewFieldSpec(archive.FieldID, field.TypeInt))
-	id, ok := auo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Archive.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := auo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, archive.FieldID)
 		for _, f := range fields {
@@ -508,32 +508,32 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 			}
 		}
 	}
-	if ps := auo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := auo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(archive.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := auo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(archive.FieldName, field.TypeString, value)
 	}
-	if value, ok := auo.mutation.Duration(); ok {
+	if value, ok := _u.mutation.Duration(); ok {
 		_spec.SetField(archive.FieldDuration, field.TypeFloat64, value)
 	}
-	if value, ok := auo.mutation.AddedDuration(); ok {
+	if value, ok := _u.mutation.AddedDuration(); ok {
 		_spec.AddField(archive.FieldDuration, field.TypeFloat64, value)
 	}
-	if value, ok := auo.mutation.BorgID(); ok {
+	if value, ok := _u.mutation.BorgID(); ok {
 		_spec.SetField(archive.FieldBorgID, field.TypeString, value)
 	}
-	if value, ok := auo.mutation.WillBePruned(); ok {
+	if value, ok := _u.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 	}
-	if auo.mutation.RepositoryCleared() {
+	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -546,7 +546,7 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.RepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -562,7 +562,7 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if auo.mutation.BackupProfileCleared() {
+	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -575,7 +575,7 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -591,11 +591,11 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(auo.modifiers...)
-	_node = &Archive{config: auo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Archive{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, auo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{archive.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -603,6 +603,6 @@ func (auo *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err e
 		}
 		return nil, err
 	}
-	auo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

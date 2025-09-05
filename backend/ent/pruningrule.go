@@ -93,7 +93,7 @@ func (*PruningRule) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the PruningRule fields.
-func (pr *PruningRule) assignValues(columns []string, values []any) error {
+func (_m *PruningRule) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -104,90 +104,90 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			pr.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case pruningrule.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case pruningrule.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				pr.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case pruningrule.FieldIsEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_enabled", values[i])
 			} else if value.Valid {
-				pr.IsEnabled = value.Bool
+				_m.IsEnabled = value.Bool
 			}
 		case pruningrule.FieldKeepHourly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_hourly", values[i])
 			} else if value.Valid {
-				pr.KeepHourly = int(value.Int64)
+				_m.KeepHourly = int(value.Int64)
 			}
 		case pruningrule.FieldKeepDaily:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_daily", values[i])
 			} else if value.Valid {
-				pr.KeepDaily = int(value.Int64)
+				_m.KeepDaily = int(value.Int64)
 			}
 		case pruningrule.FieldKeepWeekly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_weekly", values[i])
 			} else if value.Valid {
-				pr.KeepWeekly = int(value.Int64)
+				_m.KeepWeekly = int(value.Int64)
 			}
 		case pruningrule.FieldKeepMonthly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_monthly", values[i])
 			} else if value.Valid {
-				pr.KeepMonthly = int(value.Int64)
+				_m.KeepMonthly = int(value.Int64)
 			}
 		case pruningrule.FieldKeepYearly:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_yearly", values[i])
 			} else if value.Valid {
-				pr.KeepYearly = int(value.Int64)
+				_m.KeepYearly = int(value.Int64)
 			}
 		case pruningrule.FieldKeepWithinDays:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field keep_within_days", values[i])
 			} else if value.Valid {
-				pr.KeepWithinDays = int(value.Int64)
+				_m.KeepWithinDays = int(value.Int64)
 			}
 		case pruningrule.FieldNextRun:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field next_run", values[i])
 			} else if value.Valid {
-				pr.NextRun = value.Time
+				_m.NextRun = value.Time
 			}
 		case pruningrule.FieldLastRun:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_run", values[i])
 			} else if value.Valid {
-				pr.LastRun = new(time.Time)
-				*pr.LastRun = value.Time
+				_m.LastRun = new(time.Time)
+				*_m.LastRun = value.Time
 			}
 		case pruningrule.FieldLastRunStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field last_run_status", values[i])
 			} else if value.Valid {
-				pr.LastRunStatus = new(string)
-				*pr.LastRunStatus = value.String
+				_m.LastRunStatus = new(string)
+				*_m.LastRunStatus = value.String
 			}
 		case pruningrule.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field backup_profile_pruning_rule", value)
 			} else if value.Valid {
-				pr.backup_profile_pruning_rule = new(int)
-				*pr.backup_profile_pruning_rule = int(value.Int64)
+				_m.backup_profile_pruning_rule = new(int)
+				*_m.backup_profile_pruning_rule = int(value.Int64)
 			}
 		default:
-			pr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -195,74 +195,74 @@ func (pr *PruningRule) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the PruningRule.
 // This includes values selected through modifiers, order, etc.
-func (pr *PruningRule) Value(name string) (ent.Value, error) {
-	return pr.selectValues.Get(name)
+func (_m *PruningRule) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryBackupProfile queries the "backup_profile" edge of the PruningRule entity.
-func (pr *PruningRule) QueryBackupProfile() *BackupProfileQuery {
-	return NewPruningRuleClient(pr.config).QueryBackupProfile(pr)
+func (_m *PruningRule) QueryBackupProfile() *BackupProfileQuery {
+	return NewPruningRuleClient(_m.config).QueryBackupProfile(_m)
 }
 
 // Update returns a builder for updating this PruningRule.
 // Note that you need to call PruningRule.Unwrap() before calling this method if this PruningRule
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pr *PruningRule) Update() *PruningRuleUpdateOne {
-	return NewPruningRuleClient(pr.config).UpdateOne(pr)
+func (_m *PruningRule) Update() *PruningRuleUpdateOne {
+	return NewPruningRuleClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the PruningRule entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pr *PruningRule) Unwrap() *PruningRule {
-	_tx, ok := pr.config.driver.(*txDriver)
+func (_m *PruningRule) Unwrap() *PruningRule {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: PruningRule is not a transactional entity")
 	}
-	pr.config.driver = _tx.drv
-	return pr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pr *PruningRule) String() string {
+func (_m *PruningRule) String() string {
 	var builder strings.Builder
 	builder.WriteString("PruningRule(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("is_enabled=")
-	builder.WriteString(fmt.Sprintf("%v", pr.IsEnabled))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsEnabled))
 	builder.WriteString(", ")
 	builder.WriteString("keep_hourly=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepHourly))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepHourly))
 	builder.WriteString(", ")
 	builder.WriteString("keep_daily=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepDaily))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepDaily))
 	builder.WriteString(", ")
 	builder.WriteString("keep_weekly=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepWeekly))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepWeekly))
 	builder.WriteString(", ")
 	builder.WriteString("keep_monthly=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepMonthly))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepMonthly))
 	builder.WriteString(", ")
 	builder.WriteString("keep_yearly=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepYearly))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepYearly))
 	builder.WriteString(", ")
 	builder.WriteString("keep_within_days=")
-	builder.WriteString(fmt.Sprintf("%v", pr.KeepWithinDays))
+	builder.WriteString(fmt.Sprintf("%v", _m.KeepWithinDays))
 	builder.WriteString(", ")
 	builder.WriteString("next_run=")
-	builder.WriteString(pr.NextRun.Format(time.ANSIC))
+	builder.WriteString(_m.NextRun.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := pr.LastRun; v != nil {
+	if v := _m.LastRun; v != nil {
 		builder.WriteString("last_run=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := pr.LastRunStatus; v != nil {
+	if v := _m.LastRunStatus; v != nil {
 		builder.WriteString("last_run_status=")
 		builder.WriteString(*v)
 	}

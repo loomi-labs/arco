@@ -89,7 +89,7 @@ func (*BackupSchedule) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the BackupSchedule fields.
-func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
+func (_m *BackupSchedule) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -100,84 +100,84 @@ func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			bs.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case backupschedule.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				bs.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case backupschedule.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				bs.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case backupschedule.FieldMode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field mode", values[i])
 			} else if value.Valid {
-				bs.Mode = backupschedule.Mode(value.String)
+				_m.Mode = backupschedule.Mode(value.String)
 			}
 		case backupschedule.FieldDailyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field daily_at", values[i])
 			} else if value.Valid {
-				bs.DailyAt = value.Time
+				_m.DailyAt = value.Time
 			}
 		case backupschedule.FieldWeekday:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field weekday", values[i])
 			} else if value.Valid {
-				bs.Weekday = backupschedule.Weekday(value.String)
+				_m.Weekday = backupschedule.Weekday(value.String)
 			}
 		case backupschedule.FieldWeeklyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field weekly_at", values[i])
 			} else if value.Valid {
-				bs.WeeklyAt = value.Time
+				_m.WeeklyAt = value.Time
 			}
 		case backupschedule.FieldMonthday:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field monthday", values[i])
 			} else if value.Valid {
-				bs.Monthday = uint8(value.Int64)
+				_m.Monthday = uint8(value.Int64)
 			}
 		case backupschedule.FieldMonthlyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field monthly_at", values[i])
 			} else if value.Valid {
-				bs.MonthlyAt = value.Time
+				_m.MonthlyAt = value.Time
 			}
 		case backupschedule.FieldNextRun:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field next_run", values[i])
 			} else if value.Valid {
-				bs.NextRun = value.Time
+				_m.NextRun = value.Time
 			}
 		case backupschedule.FieldLastRun:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_run", values[i])
 			} else if value.Valid {
-				bs.LastRun = new(time.Time)
-				*bs.LastRun = value.Time
+				_m.LastRun = new(time.Time)
+				*_m.LastRun = value.Time
 			}
 		case backupschedule.FieldLastRunStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field last_run_status", values[i])
 			} else if value.Valid {
-				bs.LastRunStatus = new(string)
-				*bs.LastRunStatus = value.String
+				_m.LastRunStatus = new(string)
+				*_m.LastRunStatus = value.String
 			}
 		case backupschedule.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field backup_profile_backup_schedule", value)
 			} else if value.Valid {
-				bs.backup_profile_backup_schedule = new(int)
-				*bs.backup_profile_backup_schedule = int(value.Int64)
+				_m.backup_profile_backup_schedule = new(int)
+				*_m.backup_profile_backup_schedule = int(value.Int64)
 			}
 		default:
-			bs.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -185,71 +185,71 @@ func (bs *BackupSchedule) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the BackupSchedule.
 // This includes values selected through modifiers, order, etc.
-func (bs *BackupSchedule) Value(name string) (ent.Value, error) {
-	return bs.selectValues.Get(name)
+func (_m *BackupSchedule) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryBackupProfile queries the "backup_profile" edge of the BackupSchedule entity.
-func (bs *BackupSchedule) QueryBackupProfile() *BackupProfileQuery {
-	return NewBackupScheduleClient(bs.config).QueryBackupProfile(bs)
+func (_m *BackupSchedule) QueryBackupProfile() *BackupProfileQuery {
+	return NewBackupScheduleClient(_m.config).QueryBackupProfile(_m)
 }
 
 // Update returns a builder for updating this BackupSchedule.
 // Note that you need to call BackupSchedule.Unwrap() before calling this method if this BackupSchedule
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (bs *BackupSchedule) Update() *BackupScheduleUpdateOne {
-	return NewBackupScheduleClient(bs.config).UpdateOne(bs)
+func (_m *BackupSchedule) Update() *BackupScheduleUpdateOne {
+	return NewBackupScheduleClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the BackupSchedule entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (bs *BackupSchedule) Unwrap() *BackupSchedule {
-	_tx, ok := bs.config.driver.(*txDriver)
+func (_m *BackupSchedule) Unwrap() *BackupSchedule {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: BackupSchedule is not a transactional entity")
 	}
-	bs.config.driver = _tx.drv
-	return bs
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (bs *BackupSchedule) String() string {
+func (_m *BackupSchedule) String() string {
 	var builder strings.Builder
 	builder.WriteString("BackupSchedule(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", bs.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(bs.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(bs.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("mode=")
-	builder.WriteString(fmt.Sprintf("%v", bs.Mode))
+	builder.WriteString(fmt.Sprintf("%v", _m.Mode))
 	builder.WriteString(", ")
 	builder.WriteString("daily_at=")
-	builder.WriteString(bs.DailyAt.Format(time.ANSIC))
+	builder.WriteString(_m.DailyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("weekday=")
-	builder.WriteString(fmt.Sprintf("%v", bs.Weekday))
+	builder.WriteString(fmt.Sprintf("%v", _m.Weekday))
 	builder.WriteString(", ")
 	builder.WriteString("weekly_at=")
-	builder.WriteString(bs.WeeklyAt.Format(time.ANSIC))
+	builder.WriteString(_m.WeeklyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("monthday=")
-	builder.WriteString(fmt.Sprintf("%v", bs.Monthday))
+	builder.WriteString(fmt.Sprintf("%v", _m.Monthday))
 	builder.WriteString(", ")
 	builder.WriteString("monthly_at=")
-	builder.WriteString(bs.MonthlyAt.Format(time.ANSIC))
+	builder.WriteString(_m.MonthlyAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("next_run=")
-	builder.WriteString(bs.NextRun.Format(time.ANSIC))
+	builder.WriteString(_m.NextRun.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := bs.LastRun; v != nil {
+	if v := _m.LastRun; v != nil {
 		builder.WriteString("last_run=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := bs.LastRunStatus; v != nil {
+	if v := _m.LastRunStatus; v != nil {
 		builder.WriteString("last_run_status=")
 		builder.WriteString(*v)
 	}

@@ -139,7 +139,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
 		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
 		{Name: "notification_backup_profile", Type: field.TypeInt},

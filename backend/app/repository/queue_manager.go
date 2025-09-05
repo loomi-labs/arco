@@ -7,7 +7,11 @@ import (
 	"time"
 
 	"github.com/loomi-labs/arco/backend/app/statemachine"
+	"github.com/loomi-labs/arco/backend/borg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/notification"
+	"go.uber.org/zap"
 )
 
 // ============================================================================
@@ -16,8 +20,10 @@ import (
 
 // QueueManager manages operation queues for all repositories
 type QueueManager struct {
+	log          *zap.SugaredLogger
 	stateMachine *statemachine.RepositoryStateMachine
 	db           *ent.Client
+	borg         borg.Borg
 	queues       map[int]*RepositoryQueue // RepoID -> Queue
 	mu           sync.RWMutex
 
@@ -32,8 +38,9 @@ type QueueManager struct {
 }
 
 // NewQueueManager creates a new QueueManager with specified concurrency limits
-func NewQueueManager(stateMachine *statemachine.RepositoryStateMachine, maxHeavyOps int) *QueueManager {
+func NewQueueManager(log *zap.SugaredLogger, stateMachine *statemachine.RepositoryStateMachine, maxHeavyOps int) *QueueManager {
 	return &QueueManager{
+		log:              log,
 		stateMachine:     stateMachine,
 		queues:           make(map[int]*RepositoryQueue),
 		repositoryStates: make(map[int]statemachine.RepositoryState),
@@ -43,11 +50,12 @@ func NewQueueManager(stateMachine *statemachine.RepositoryStateMachine, maxHeavy
 	}
 }
 
-// SetDB sets the database client for the queue manager
-func (qm *QueueManager) SetDB(db *ent.Client) {
+// Init initializes the queue manager with database and borg clients
+func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg) {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	qm.db = db
+	qm.borg = borgClient
 }
 
 // GetRepositoryState returns the current state of a repository (defaults to idle if not set)
@@ -189,7 +197,87 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 	// Update repository state in memory
 	qm.setRepositoryState(repoID, targetState)
 
-	// TODO: Start actual operation execution
+	// Start actual operation execution in background goroutine
+	go func() {
+		// Get repository details from database
+		repository, err := qm.db.Repository.Get(ctx, repoID)
+		if err != nil {
+			// Handle database error - complete operation with failure
+			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("failed to get repository details: %v", err)); completeErr != nil {
+				// Log completion error (system issue, not user-facing)
+				qm.log.Warnw("Failed to complete operation after database error",
+					"repoID", repoID,
+					"operationID", operationID,
+					"databaseError", err.Error(),
+					"completionError", completeErr.Error())
+			}
+			return
+		}
+
+		// Create operation executor
+		executor := qm.newBorgOperationExecutor(repoID, operationID)
+
+		// Execute the operation
+		status := executor.Execute(ctx, op.Operation, repository)
+
+		if status.HasError() {
+			// 1. ERROR BRANCH - Enhanced with conditional notification creation
+			qm.log.Errorw("Borg operation failed",
+				"repoID", repoID,
+				"operationID", operationID,
+				"operationType", fmt.Sprintf("%T", op.Operation),
+				"error", status.Error.Message,
+				"category", status.Error.Category,
+				"exitCode", status.Error.ExitCode)
+
+			// Only create notifications for backup/prune operations
+			if qm.shouldCreateNotification(op.Operation) {
+				qm.createErrorNotification(ctx, repoID, operationID, status, op.Operation)
+			}
+
+			// Complete operation with failure
+			if completeErr := qm.CompleteOperation(repoID, operationID, false, status.Error.Message); completeErr != nil {
+				// Log completion error (system issue, not user-facing)
+				qm.log.Warnw("Failed to complete failed operation",
+					"repoID", repoID,
+					"operationID", operationID,
+					"completionError", completeErr.Error())
+			}
+
+		} else if status.IsCompletedWithSuccess() {
+			// 2. SUCCESS BRANCH - Combined warning + pure success handling
+			if status.HasWarning() {
+				// Log as warning and create notifications for warnings
+				qm.log.Warnw("Borg operation completed with warning",
+					"repoID", repoID,
+					"operationID", operationID,
+					"operationType", fmt.Sprintf("%T", op.Operation),
+					"warning", status.Warning.Message,
+					"category", status.Warning.Category,
+					"exitCode", status.Warning.ExitCode)
+
+				// Only create notifications for certain operations
+				if qm.shouldCreateNotification(op.Operation) {
+					qm.createWarningNotification(ctx, repoID, operationID, status, op.Operation)
+				}
+			} else {
+				// Log as info for pure success
+				qm.log.Infow("Borg operation completed successfully",
+					"repoID", repoID,
+					"operationID", operationID,
+					"operationType", fmt.Sprintf("%T", op.Operation))
+			}
+
+			// Complete operation with success
+			if completeErr := qm.CompleteOperation(repoID, operationID, true, ""); completeErr != nil {
+				// Log completion error (system issue, not user-facing)
+				qm.log.Warnw("Failed to complete successful operation",
+					"repoID", repoID,
+					"operationID", operationID,
+					"completionError", completeErr.Error())
+			}
+		}
+	}()
 
 	return nil
 }
@@ -418,8 +506,11 @@ func (qm *QueueManager) processQueue(repoID int) {
 	err := qm.StartOperation(context.Background(), repoID, nextOp.ID)
 	if err != nil {
 		// Log error but don't crash
-		// TODO: Add proper logging
-		_ = err
+		qm.log.Warnw("Failed to start queued operation",
+			"repoID", repoID,
+			"operationID", nextOp.ID,
+			"operationType", fmt.Sprintf("%T", nextOp.Operation),
+			"error", err)
 	}
 }
 
@@ -495,4 +586,332 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int) (statemachin
 
 	// No more operations, return to idle
 	return statemachine.CreateIdleState(), nil
+}
+
+// createErrorNotification creates an error notification in the database for a failed borg operation
+func (qm *QueueManager) createErrorNotification(ctx context.Context, repoID int, operationID string, status *borgtypes.Status, operation statemachine.Operation) {
+	// Determine notification type based on operation
+	notificationType := qm.getErrorNotificationType(operation)
+
+	// Get backup profile ID from operation
+	backupProfileID := qm.getBackupProfileIDFromOperation(operation)
+
+	// Create rich error message with borg details
+	message := fmt.Sprintf("Operation %s failed: %s (Exit Code: %d, Category: %s)",
+		operationID, status.Error.Message, status.Error.ExitCode, status.Error.Category)
+
+	// Create notification in database
+	_, err := qm.db.Notification.Create().
+		SetMessage(message).
+		SetType(notificationType).
+		SetRepositoryID(repoID).
+		SetBackupProfileID(backupProfileID).
+		Save(ctx)
+
+	if err != nil {
+		qm.log.Errorw("Failed to create error notification",
+			"error", err.Error(),
+			"repoID", repoID,
+			"operationID", operationID,
+			"borgError", status.Error.Message)
+	} else {
+		qm.log.Infow("Created error notification in database",
+			"repoID", repoID,
+			"operationID", operationID,
+			"notificationType", notificationType,
+			"errorCategory", status.Error.Category,
+			"exitCode", status.Error.ExitCode)
+	}
+}
+
+// createWarningNotification creates a warning notification in the database for a borg operation with warnings
+func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID int, operationID string, status *borgtypes.Status, operation statemachine.Operation) {
+	// Determine notification type based on operation
+	notificationType := qm.getWarningNotificationType(operation)
+
+	// Get backup profile ID from operation
+	backupProfileID := qm.getBackupProfileIDFromOperation(operation)
+
+	// Create rich warning message with borg details
+	message := fmt.Sprintf("Operation %s completed with warning: %s (Exit Code: %d, Category: %s)",
+		operationID, status.Warning.Message, status.Warning.ExitCode, status.Warning.Category)
+
+	// Create notification in database
+	_, err := qm.db.Notification.Create().
+		SetMessage(message).
+		SetType(notificationType).
+		SetRepositoryID(repoID).
+		SetBackupProfileID(backupProfileID).
+		Save(ctx)
+
+	if err != nil {
+		qm.log.Warnw("Failed to create warning notification",
+			"error", err.Error(),
+			"repoID", repoID,
+			"operationID", operationID,
+			"borgWarning", status.Warning.Message)
+	} else {
+		qm.log.Infow("Created warning notification in database",
+			"repoID", repoID,
+			"operationID", operationID,
+			"notificationType", notificationType,
+			"warningCategory", status.Warning.Category,
+			"exitCode", status.Warning.ExitCode)
+	}
+}
+
+// getErrorNotificationType determines the notification type for error cases based on operation type
+// This method should only be called for backup and prune operations
+func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operation) notification.Type {
+	switch operation.(type) {
+	case statemachine.BackupVariant:
+		return notification.TypeFailedBackupRun
+	case statemachine.PruneVariant:
+		return notification.TypeFailedPruningRun
+	default:
+		// This should never happen if shouldCreateNotification is used correctly
+		qm.log.Errorw("Unexpected operation type for error notification",
+			"operationType", fmt.Sprintf("%T", operation))
+		return notification.TypeFailedBackupRun // Fallback for safety
+	}
+}
+
+// getWarningNotificationType determines the notification type for warning cases based on operation type
+// This method should only be called for backup and prune operations
+func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operation) notification.Type {
+	switch operation.(type) {
+	case statemachine.BackupVariant:
+		return notification.TypeWarningBackupRun
+	case statemachine.PruneVariant:
+		return notification.TypeWarningPruningRun
+	default:
+		// This should never happen if shouldCreateNotification is used correctly
+		qm.log.Errorw("Unexpected operation type for warning notification",
+			"operationType", fmt.Sprintf("%T", operation))
+		return notification.TypeWarningBackupRun // Fallback for safety
+	}
+}
+
+// getBackupProfileIDFromOperation extracts the backup profile ID from operation data
+func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.Operation) int {
+	switch op := operation.(type) {
+	case statemachine.BackupVariant:
+		backupData := op()
+		return backupData.BackupID.BackupProfileId
+	case statemachine.PruneVariant:
+		pruneData := op()
+		return pruneData.BackupID.BackupProfileId
+	default:
+		// This should never happen if shouldCreateNotification is used correctly
+		qm.log.Errorw("Unexpected operation type for backup profile",
+			"operationType", fmt.Sprintf("%T", op))
+		return 0
+	}
+}
+
+// shouldCreateNotification determines if error/warning notifications should be created for this operation type
+func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
+	switch operation.(type) {
+	case statemachine.BackupVariant, statemachine.PruneVariant:
+		return true
+	default:
+		return false
+	}
+}
+
+// ============================================================================
+// OPERATION EXECUTOR
+// ============================================================================
+
+// OperationExecutor handles the actual execution of repository operations
+type OperationExecutor interface {
+	Execute(ctx context.Context, operation statemachine.Operation, repo *ent.Repository) *borgtypes.Status
+}
+
+// borgOperationExecutor implements OperationExecutor using borg commands
+type borgOperationExecutor struct {
+	borgClient  borg.Borg
+	qm          *QueueManager
+	repoID      int
+	operationID string
+}
+
+// newBorgOperationExecutor creates a new borg operation executor
+func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string) OperationExecutor {
+	return &borgOperationExecutor{
+		borgClient:  qm.borg,
+		qm:          qm,
+		repoID:      repoID,
+		operationID: operationID,
+	}
+}
+
+// Execute implements OperationExecutor.Execute
+func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemachine.Operation, repo *ent.Repository) *borgtypes.Status {
+	switch v := operation.(type) {
+	case statemachine.BackupVariant:
+		return e.executeBackup(ctx, v, repo)
+	case statemachine.PruneVariant:
+		return e.executePrune(ctx, v, repo)
+	case statemachine.DeleteVariant:
+		return e.executeRepositoryDelete(ctx, v, repo)
+	case statemachine.ArchiveDeleteVariant:
+		return e.executeArchiveDelete(ctx, v, repo)
+	case statemachine.ArchiveRefreshVariant:
+		return e.executeArchiveRefresh(ctx, v, repo)
+	case statemachine.ArchiveRenameVariant:
+		return e.executeArchiveRename(ctx, v, repo)
+	default:
+		// TODO: log as error because this should never happen
+		// Create a Status for unsupported operation type
+		return &borgtypes.Status{
+			Error: &borgtypes.BorgError{
+				Message:    fmt.Sprintf("unsupported operation type: %T", operation),
+				Category:   borgtypes.CategoryGeneral,
+				ExitCode:   1,
+				Underlying: fmt.Errorf("unsupported operation type: %T", operation),
+			},
+		}
+	}
+}
+
+// executeBackup performs a borg backup operation
+func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp statemachine.BackupVariant, repo *ent.Repository) *borgtypes.Status {
+	backupData := backupOp()
+
+	// TODO: Get backup paths and exclude paths from BackupId (requires database lookup for backup profile)
+	// For now, using placeholder values
+	backupPaths := []string{"/tmp"}   // This should come from backup profile
+	excludePaths := make([]string, 0) // This should come from backup profile
+	prefix := "arco-"                 // This should come from backup profile
+
+	// Create progress channel
+	progressCh := make(chan borgtypes.BackupProgress, 100)
+
+	// Start progress monitoring in background
+	go e.monitorBackupProgress(ctx, progressCh)
+
+	// Execute borg create command
+	archiveName, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
+
+	// Close progress channel
+	close(progressCh)
+
+	// Return status directly (preserves rich error information)
+	_ = archiveName // Archive name for logging/database update
+	_ = backupData  // Use backupData to avoid unused variable warning
+
+	return status
+}
+
+// monitorBackupProgress monitors backup progress and updates operation status
+func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progressCh <-chan borgtypes.BackupProgress) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case progress, ok := <-progressCh:
+			if !ok {
+				return // Channel closed
+			}
+			// TODO: Update operation status with progress information
+			// For now, just ignore progress updates
+			_ = progress
+		}
+	}
+}
+
+// executePrune performs a borg prune operation
+func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant, repo *ent.Repository) *borgtypes.Status {
+	pruneData := pruneOp()
+
+	// TODO: Get prune options from BackupId (requires database lookup for backup profile)
+	prefix := "arco-"                                             // This should come from backup profile
+	pruneOptions := []string{"--keep-daily=7", "--keep-weekly=4"} // This should come from backup profile
+	isDryRun := false                                             // This could be a parameter
+
+	// Create progress channel for prune results
+	progressCh := make(chan borgtypes.PruneResult, 100)
+	defer close(progressCh)
+
+	// Start progress monitoring in background
+	go e.monitorPruneProgress(ctx, progressCh)
+
+	// Execute borg prune command
+	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, progressCh)
+
+	// Return status directly (preserves rich error information)
+	_ = pruneData // Use pruneData to avoid unused variable warning
+	return status
+}
+
+// executeRepositoryDelete performs a borg repository delete operation
+func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, deleteOp statemachine.DeleteVariant, repo *ent.Repository) *borgtypes.Status {
+	_ = deleteOp // Use deleteOp to avoid unused variable warning
+
+	// Execute borg delete repository command
+	status := e.borgClient.DeleteRepository(ctx, repo.URL, repo.Password)
+
+	// Return status directly (preserves rich error information)
+	return status
+}
+
+// executeArchiveDelete performs a borg archive delete operation
+func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, deleteOp statemachine.ArchiveDeleteVariant, repo *ent.Repository) *borgtypes.Status {
+	deleteData := deleteOp()
+
+	// TODO: Get archive name from archiveID (requires database lookup)
+	archiveName := fmt.Sprintf("archive-%d", deleteData.ArchiveID) // This should come from database
+
+	// Execute borg delete archive command
+	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, repo.Password)
+
+	// Return status directly (preserves rich error information)
+	return status
+}
+
+// executeArchiveRefresh performs a borg list operation to refresh archive information
+func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refreshOp statemachine.ArchiveRefreshVariant, repo *ent.Repository) *borgtypes.Status {
+	_ = refreshOp // Use refreshOp to avoid unused variable warning
+
+	// Execute borg list command to refresh archive information
+	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password)
+
+	// TODO: Update database with refreshed archive information
+	_ = listResponse // Use listResponse to avoid unused variable warning
+
+	// Return status directly (preserves rich error information)
+	return status
+}
+
+// executeArchiveRename performs a borg rename operation
+func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant, repo *ent.Repository) *borgtypes.Status {
+	renameData := renameOp()
+
+	// TODO: Get current archive name from archiveID (requires database lookup)
+	currentArchiveName := fmt.Sprintf("archive-%d", renameData.ArchiveID) // This should come from database
+	newArchiveName := fmt.Sprintf("%s%s", renameData.Prefix, renameData.Name)
+
+	// Execute borg rename command
+	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, repo.Password, newArchiveName)
+
+	// Return status directly (preserves rich error information)
+	return status
+}
+
+// monitorPruneProgress monitors prune progress and updates operation status
+func (e *borgOperationExecutor) monitorPruneProgress(ctx context.Context, progressCh <-chan borgtypes.PruneResult) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case progress, ok := <-progressCh:
+			if !ok {
+				return // Channel closed
+			}
+			// TODO: Update operation status with prune progress information
+			// For now, just ignore progress updates
+			_ = progress
+		}
+	}
 }
