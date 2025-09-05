@@ -18,11 +18,11 @@ type OpPrune struct {
 }
 
 type OpDelete struct {
-	// Repository delete - no additional params
+	RepositoryID int `json:"repositoryId"`
 }
 
 type OpArchiveRefresh struct {
-	// Archive refresh - no additional params
+	RepositoryID int `json:"repositoryId"`
 }
 
 type OpArchiveDelete struct {
@@ -47,14 +47,14 @@ type ArchiveDeleteVariant adtenum.OneVariantValue[OpArchiveDelete]
 type ArchiveRenameVariant adtenum.OneVariantValue[OpArchiveRename]
 
 // Operation constructors
-var NewOpBackup func(OpBackup) BackupVariant = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
-var NewOpPrune func(OpPrune) PruneVariant = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
-var NewOpDelete func(OpDelete) DeleteVariant = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
-var NewOpArchiveRefresh func(OpArchiveRefresh) ArchiveRefreshVariant = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
-var NewOpArchiveDelete func(OpArchiveDelete) ArchiveDeleteVariant = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
-var NewOpArchiveRename func(OpArchiveRename) ArchiveRenameVariant = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
+var NewOpBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
+var NewOpPrune = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
+var NewOpDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
+var NewOpArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
+var NewOpArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
+var NewOpArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
 
-// Implement EnumType for operation variants
+// EnumType for operation variants
 func (v BackupVariant) EnumType() Operation         { return v }
 func (v PruneVariant) EnumType() Operation          { return v }
 func (v DeleteVariant) EnumType() Operation         { return v }

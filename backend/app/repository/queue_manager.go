@@ -10,6 +10,8 @@ import (
 	"github.com/loomi-labs/arco/backend/borg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"go.uber.org/zap"
 )
@@ -199,26 +201,29 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 
 	// Start actual operation execution in background goroutine
 	go func() {
-		// Get repository details from database
-		repository, err := qm.db.Repository.Get(ctx, repoID)
-		if err != nil {
-			// Handle database error - complete operation with failure
-			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("failed to get repository details: %v", err)); completeErr != nil {
-				// Log completion error (system issue, not user-facing)
-				qm.log.Warnw("Failed to complete operation after database error",
-					"repoID", repoID,
-					"operationID", operationID,
-					"databaseError", err.Error(),
-					"completionError", completeErr.Error())
-			}
-			return
-		}
-
 		// Create operation executor
 		executor := qm.newBorgOperationExecutor(repoID, operationID)
 
 		// Execute the operation
-		status := executor.Execute(ctx, op.Operation, repository)
+		status, err := executor.Execute(ctx, op.Operation)
+		if err != nil {
+			// System error (e.g., backup profile not found)
+			qm.log.Errorw("System error during operation execution",
+				"repoID", repoID,
+				"operationID", operationID,
+				"operationType", fmt.Sprintf("%T", op.Operation),
+				"error", err.Error())
+
+			// Complete operation with system error
+			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("System error: %v", err)); completeErr != nil {
+				qm.log.Warnw("Failed to complete operation after system error",
+					"repoID", repoID,
+					"operationID", operationID,
+					"systemError", err.Error(),
+					"completionError", completeErr.Error())
+			}
+			return
+		}
 
 		if status.HasError() {
 			// 1. ERROR BRANCH - Enhanced with conditional notification creation
@@ -511,7 +516,8 @@ func (qm *QueueManager) processQueue(repoID int) {
 	}
 
 	// Start the operation
-	err := qm.StartOperation(context.Background(), repoID, nextOp.ID)
+	// TODO: pass correct context
+	err := qm.StartOperation(context.TODO(), repoID, nextOp.ID)
 	if err != nil {
 		// Log error but don't crash
 		qm.log.Warnw("Failed to start queued operation",
@@ -548,30 +554,31 @@ func (qm *QueueManager) expireOldOperations() {
 // HELPER FUNCTIONS
 // ============================================================================
 
+// TODO: pass correct context
 // getTargetStateForOperation maps an operation to its corresponding active state
 func (qm *QueueManager) getTargetStateForOperation(op *QueuedOperation) (statemachine.RepositoryState, error) {
 	switch v := op.Operation.(type) {
 	case statemachine.BackupVariant:
 		backupData := v()
-		return statemachine.CreateBackingUpState(context.Background(), backupData.BackupID), nil
+		return statemachine.CreateBackingUpState(context.TODO(), backupData.BackupID), nil
 
 	case statemachine.PruneVariant:
 		pruneData := v()
-		return statemachine.CreatePruningState(context.Background(), pruneData.BackupID), nil
+		return statemachine.CreatePruningState(context.TODO(), pruneData.BackupID), nil
 
 	case statemachine.DeleteVariant:
-		return statemachine.CreateDeletingState(context.Background(), 0), nil // Repository delete, no specific archive
+		return statemachine.CreateDeletingState(context.TODO(), 0), nil // Repository delete, no specific archive
 
 	case statemachine.ArchiveRefreshVariant:
-		return statemachine.CreateRefreshingState(context.Background()), nil
+		return statemachine.CreateRefreshingState(context.TODO()), nil
 
 	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
-		return statemachine.CreateDeletingState(context.Background(), deleteData.ArchiveID), nil
+		return statemachine.CreateDeletingState(context.TODO(), deleteData.ArchiveID), nil
 
 	case statemachine.ArchiveRenameVariant:
 		// Archive rename is a lightweight operation, treat as refreshing
-		return statemachine.CreateRefreshingState(context.Background()), nil
+		return statemachine.CreateRefreshingState(context.TODO()), nil
 
 	default:
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
@@ -733,12 +740,13 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 
 // OperationExecutor handles the actual execution of repository operations
 type OperationExecutor interface {
-	Execute(ctx context.Context, operation statemachine.Operation, repo *ent.Repository) *borgtypes.Status
+	Execute(ctx context.Context, operation statemachine.Operation) (*borgtypes.Status, error)
 }
 
 // borgOperationExecutor implements OperationExecutor using borg commands
 type borgOperationExecutor struct {
 	borgClient  borg.Borg
+	db          *ent.Client
 	qm          *QueueManager
 	repoID      int
 	operationID string
@@ -748,6 +756,7 @@ type borgOperationExecutor struct {
 func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string) OperationExecutor {
 	return &borgOperationExecutor{
 		borgClient:  qm.borg,
+		db:          qm.db,
 		qm:          qm,
 		repoID:      repoID,
 		operationID: operationID,
@@ -755,43 +764,48 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 }
 
 // Execute implements OperationExecutor.Execute
-func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemachine.Operation, repo *ent.Repository) *borgtypes.Status {
+func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemachine.Operation) (*borgtypes.Status, error) {
 	switch v := operation.(type) {
 	case statemachine.BackupVariant:
-		return e.executeBackup(ctx, v, repo)
+		return e.executeBackup(ctx, v)
 	case statemachine.PruneVariant:
-		return e.executePrune(ctx, v, repo)
+		return e.executePrune(ctx, v)
 	case statemachine.DeleteVariant:
-		return e.executeRepositoryDelete(ctx, v, repo)
+		return e.executeRepositoryDelete(ctx, v)
 	case statemachine.ArchiveDeleteVariant:
-		return e.executeArchiveDelete(ctx, v, repo)
+		return e.executeArchiveDelete(ctx, v)
 	case statemachine.ArchiveRefreshVariant:
-		return e.executeArchiveRefresh(ctx, v, repo)
+		return e.executeArchiveRefresh(ctx, v)
 	case statemachine.ArchiveRenameVariant:
-		return e.executeArchiveRename(ctx, v, repo)
+		return e.executeArchiveRename(ctx, v)
 	default:
-		// TODO: log as error because this should never happen
-		// Create a Status for unsupported operation type
-		return &borgtypes.Status{
-			Error: &borgtypes.BorgError{
-				Message:    fmt.Sprintf("unsupported operation type: %T", operation),
-				Category:   borgtypes.CategoryGeneral,
-				ExitCode:   1,
-				Underlying: fmt.Errorf("unsupported operation type: %T", operation),
-			},
-		}
+		// System error: unsupported operation type (programming error)
+		return nil, fmt.Errorf("unsupported operation type: %T", operation)
 	}
 }
 
 // executeBackup performs a borg backup operation
-func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp statemachine.BackupVariant, repo *ent.Repository) *borgtypes.Status {
+func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp statemachine.BackupVariant) (*borgtypes.Status, error) {
 	backupData := backupOp()
 
-	// TODO: Get backup paths and exclude paths from BackupId (requires database lookup for backup profile)
-	// For now, using placeholder values
-	backupPaths := []string{"/tmp"}   // This should come from backup profile
-	excludePaths := make([]string, 0) // This should come from backup profile
-	prefix := "arco-"                 // This should come from backup profile
+	// Get backup profile with repository data in a single query
+	profile, err := e.db.BackupProfile.Query().
+		Where(backupprofile.ID(backupData.BackupID.BackupProfileId)).
+		WithRepositories().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("backup profile %d not found: %w", backupData.BackupID.BackupProfileId, err)
+	}
+
+	// Get repository from backup profile relationship
+	if len(profile.Edges.Repositories) == 0 {
+		return nil, fmt.Errorf("backup profile %d has no associated repository", backupData.BackupID.BackupProfileId)
+	}
+	repo := profile.Edges.Repositories[0] // Backup profiles should have exactly one repository
+
+	backupPaths := profile.BackupPaths
+	excludePaths := profile.ExcludePaths
+	prefix := profile.Prefix
 
 	// Create progress channel
 	progressCh := make(chan borgtypes.BackupProgress, 100)
@@ -808,8 +822,9 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	// Return status directly (preserves rich error information)
 	_ = archiveName // Archive name for logging/database update
 	_ = backupData  // Use backupData to avoid unused variable warning
+	//TODO: refresh the archive here
 
-	return status
+	return status, nil
 }
 
 // monitorBackupProgress monitors backup progress and updates operation status
@@ -830,8 +845,14 @@ func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progr
 }
 
 // executePrune performs a borg prune operation
-func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant, repo *ent.Repository) *borgtypes.Status {
+func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant) (*borgtypes.Status, error) {
 	pruneData := pruneOp()
+
+	// Get repository from database using BackupID.RepositoryId
+	repo, err := e.db.Repository.Get(ctx, pruneData.BackupID.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("repository %d not found: %w", pruneData.BackupID.RepositoryId, err)
+	}
 
 	// TODO: Get prune options from BackupId (requires database lookup for backup profile)
 	prefix := "arco-"                                             // This should come from backup profile
@@ -850,37 +871,63 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 
 	// Return status directly (preserves rich error information)
 	_ = pruneData // Use pruneData to avoid unused variable warning
-	return status
+	return status, nil
 }
 
 // executeRepositoryDelete performs a borg repository delete operation
-func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, deleteOp statemachine.DeleteVariant, repo *ent.Repository) *borgtypes.Status {
-	_ = deleteOp // Use deleteOp to avoid unused variable warning
+func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, deleteOp statemachine.DeleteVariant) (*borgtypes.Status, error) {
+	deleteData := deleteOp()
+
+	// Get repository from database using RepositoryID
+	repo, err := e.db.Repository.Get(ctx, deleteData.RepositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("repository %d not found: %w", deleteData.RepositoryID, err)
+	}
 
 	// Execute borg delete repository command
 	status := e.borgClient.DeleteRepository(ctx, repo.URL, repo.Password)
 
 	// Return status directly (preserves rich error information)
-	return status
+	return status, nil
 }
 
 // executeArchiveDelete performs a borg archive delete operation
-func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, deleteOp statemachine.ArchiveDeleteVariant, repo *ent.Repository) *borgtypes.Status {
+func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, deleteOp statemachine.ArchiveDeleteVariant) (*borgtypes.Status, error) {
 	deleteData := deleteOp()
 
-	// TODO: Get archive name from archiveID (requires database lookup)
-	archiveName := fmt.Sprintf("archive-%d", deleteData.ArchiveID) // This should come from database
+	// Get archive from database to get repository information
+	archiveEntity, err := e.db.Archive.Query().
+		Where(archive.ID(deleteData.ArchiveID)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithRepositories()
+		}).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("archive %d not found: %w", deleteData.ArchiveID, err)
+	}
+
+	// Get repository from archive's backup profile
+	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0] // Assumes one repository per backup profile
+
+	// Use archive name from database
+	archiveName := archiveEntity.Name
 
 	// Execute borg delete archive command
 	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, repo.Password)
 
 	// Return status directly (preserves rich error information)
-	return status
+	return status, nil
 }
 
 // executeArchiveRefresh performs a borg list operation to refresh archive information
-func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refreshOp statemachine.ArchiveRefreshVariant, repo *ent.Repository) *borgtypes.Status {
-	_ = refreshOp // Use refreshOp to avoid unused variable warning
+func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refreshOp statemachine.ArchiveRefreshVariant) (*borgtypes.Status, error) {
+	refreshData := refreshOp()
+
+	// Get repository from database using RepositoryID
+	repo, err := e.db.Repository.Get(ctx, refreshData.RepositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("repository %d not found: %w", refreshData.RepositoryID, err)
+	}
 
 	// Execute borg list command to refresh archive information
 	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password)
@@ -889,22 +936,36 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	_ = listResponse // Use listResponse to avoid unused variable warning
 
 	// Return status directly (preserves rich error information)
-	return status
+	return status, nil
 }
 
 // executeArchiveRename performs a borg rename operation
-func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant, repo *ent.Repository) *borgtypes.Status {
+func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant) (*borgtypes.Status, error) {
 	renameData := renameOp()
 
-	// TODO: Get current archive name from archiveID (requires database lookup)
-	currentArchiveName := fmt.Sprintf("archive-%d", renameData.ArchiveID) // This should come from database
+	// Get archive from database to get repository and current name
+	archiveEntity, err := e.db.Archive.Query().
+		Where(archive.ID(renameData.ArchiveID)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithRepositories()
+		}).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("archive %d not found: %w", renameData.ArchiveID, err)
+	}
+
+	// Get repository from archive's backup profile
+	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0] // Assumes one repository per backup profile
+
+	// Get current archive name from database
+	currentArchiveName := archiveEntity.Name
 	newArchiveName := fmt.Sprintf("%s%s", renameData.Prefix, renameData.Name)
 
 	// Execute borg rename command
 	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, repo.Password, newArchiveName)
 
 	// Return status directly (preserves rich error information)
-	return status
+	return status, nil
 }
 
 // monitorPruneProgress monitors prune progress and updates operation status
