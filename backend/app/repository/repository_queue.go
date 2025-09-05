@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -27,82 +29,217 @@ type RepositoryQueue struct {
 
 // NewRepositoryQueue creates a new queue for a repository
 func NewRepositoryQueue(repoID int) *RepositoryQueue {
-	// TODO: Implement constructor
-	return nil
+	return &RepositoryQueue{
+		repoID:        repoID,
+		operations:    make(map[string]*QueuedOperation),
+		operationList: make([]string, 0),
+		active:        nil,
+		activeBackups: make(map[types.BackupId]string),
+		activeDeletes: make(map[int]string),
+		hasRepoDelete: false,
+	}
 }
 
 // AddOperation adds an operation to the queue with deduplication
 func (q *RepositoryQueue) AddOperation(op *QueuedOperation) (string, error) {
-	// TODO: Implement operation addition with:
-	// 1. Check for existing operation (idempotency)
-	// 2. If exists, return existing operation ID
-	// 3. If new, add to queue and tracking maps
-	// 4. Update operation positions
-	// 5. Return operation ID
-	return "", nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check for existing operation (idempotency)
+	canAdd, existingOpID := q.canAddOperationLocked(op.Operation)
+	if !canAdd {
+		return existingOpID, nil // Return existing operation ID
+	}
+
+	// Add to operations map
+	q.operations[op.ID] = op
+
+	// Add to ordered list
+	q.operationList = append(q.operationList, op.ID)
+
+	// Update tracking maps
+	q.addToTrackingMaps(op)
+
+	// Update positions for all queued operations
+	q.updatePositions()
+
+	return op.ID, nil
 }
 
 // GetOperations returns all operations in the queue (including active)
 func (q *RepositoryQueue) GetOperations() []*QueuedOperation {
-	// TODO: Implement operation retrieval
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	var ops []*QueuedOperation
+
+	// Add active operation first
+	if q.active != nil {
+		ops = append(ops, q.active)
+	}
+
+	// Add queued operations in order
+	for _, operationID := range q.operationList {
+		if op, exists := q.operations[operationID]; exists {
+			ops = append(ops, op)
+		}
+	}
+
+	return ops
 }
 
 // GetActive returns the currently active operation
 func (q *RepositoryQueue) GetActive() *QueuedOperation {
-	// TODO: Implement active operation retrieval
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return q.active
 }
 
 // GetNext returns the next operation to be processed (first in queue)
 func (q *RepositoryQueue) GetNext() *QueuedOperation {
-	// TODO: Implement next operation retrieval
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(q.operationList) == 0 {
+		return nil
+	}
+
+	firstOperationID := q.operationList[0]
+	return q.operations[firstOperationID]
 }
 
 // RemoveOperation removes an operation from the queue
 func (q *RepositoryQueue) RemoveOperation(operationID string) error {
-	// TODO: Implement operation removal with:
-	// 1. Find operation in queue or active
-	// 2. Remove from tracking maps
-	// 3. Update operation positions
-	// 4. Clean up references
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check if it's the active operation
+	if q.active != nil && q.active.ID == operationID {
+		q.removeFromTrackingMaps(q.active)
+		q.active = nil
+		return nil
+	}
+
+	// Find in queued operations
+	if op, exists := q.operations[operationID]; exists {
+		// Remove from tracking maps
+		q.removeFromTrackingMaps(op)
+
+		// Remove from operations map
+		delete(q.operations, operationID)
+
+		// Remove from ordered list
+		for i, id := range q.operationList {
+			if id == operationID {
+				q.operationList = append(q.operationList[:i], q.operationList[i+1:]...)
+				break
+			}
+		}
+
+		// Update positions
+		q.updatePositions()
+
+		return nil
+	}
+
+	return fmt.Errorf("operation %s not found in repository %d queue", operationID, q.repoID)
 }
 
 // MoveToActive moves an operation from queue to active status
 func (q *RepositoryQueue) MoveToActive(operationID string) error {
-	// TODO: Implement queue to active transition:
-	// 1. Find operation in queue
-	// 2. Remove from queue
-	// 3. Set as active
-	// 4. Update status to running
-	// 5. Update positions for remaining operations
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Find operation in queue
+	op, exists := q.operations[operationID]
+	if !exists {
+		return fmt.Errorf("operation %s not found in repository %d queue", operationID, q.repoID)
+	}
+
+	// Remove from queue list
+	for i, id := range q.operationList {
+		if id == operationID {
+			q.operationList = append(q.operationList[:i], q.operationList[i+1:]...)
+			break
+		}
+	}
+
+	// Remove from operations map
+	delete(q.operations, operationID)
+
+	// Set as active
+	q.active = op
+
+	// Update status to running
+	q.active.Status = NewStatusRunning(StatusRunning{
+		StartedAt: time.Now(),
+		Progress:  nil,
+	})
+
+	// Update positions for remaining operations
+	q.updatePositions()
+
 	return nil
 }
 
 // CompleteActive completes the active operation and clears it
 func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
-	// TODO: Implement active operation completion:
-	// 1. Update operation status
-	// 2. Remove from tracking maps
-	// 3. Clear active operation
-	// 4. Archive completed operation or remove it
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.active == nil {
+		return fmt.Errorf("no active operation to complete for repository %d", q.repoID)
+	}
+
+	// Update operation status
+	if success {
+		q.active.Status = NewStatusCompleted(StatusCompleted{
+			CompletedAt: time.Now(),
+		})
+	} else {
+		q.active.Status = NewStatusFailed(StatusFailed{
+			Error:    errorMsg,
+			FailedAt: time.Now(),
+			CanRetry: true, // TODO: Determine retry logic based on operation type
+		})
+	}
+
+	// Remove from tracking maps
+	q.removeFromTrackingMaps(q.active)
+
+	// Clear active operation (could archive it here if needed)
+	q.active = nil
+
 	return nil
 }
 
 // FindOperation searches for an operation by type and returns its ID
 func (q *RepositoryQueue) FindOperation(opType Operation) string {
-	// TODO: Implement operation search by type:
-	// 1. Check active operation
-	// 2. Search queued operations
-	// 3. Return first matching operation ID
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check active operation first
+	if q.active != nil && reflect.TypeOf(q.active.Operation) == reflect.TypeOf(opType) {
+		return q.active.ID
+	}
+
+	// Search queued operations
+	for _, operationID := range q.operationList {
+		if op, exists := q.operations[operationID]; exists {
+			if reflect.TypeOf(op.Operation) == reflect.TypeOf(opType) {
+				return operationID
+			}
+		}
+	}
+
 	return ""
 }
 
 // FindBackupOperation finds an existing backup operation for a BackupID
 func (q *RepositoryQueue) FindBackupOperation(backupId types.BackupId) string {
-	// TODO: Implement backup operation lookup
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	if operationId, exists := q.activeBackups[backupId]; exists {
 		return operationId
 	}
@@ -111,7 +248,9 @@ func (q *RepositoryQueue) FindBackupOperation(backupId types.BackupId) string {
 
 // FindArchiveDeleteOperation finds an existing archive delete operation
 func (q *RepositoryQueue) FindArchiveDeleteOperation(archiveId int) string {
-	// TODO: Implement archive delete operation lookup
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	if operationId, exists := q.activeDeletes[archiveId]; exists {
 		return operationId
 	}
@@ -120,99 +259,265 @@ func (q *RepositoryQueue) FindArchiveDeleteOperation(archiveId int) string {
 
 // HasRepoDeleteOperation checks if there's already a repository delete operation
 func (q *RepositoryQueue) HasRepoDeleteOperation() bool {
-	// TODO: Implement repo delete check
+	q.mu.Lock()
+	defer q.mu.Unlock()
 	return q.hasRepoDelete
 }
 
 // CanAddOperation checks if an operation can be added (deduplication check)
 func (q *RepositoryQueue) CanAddOperation(op Operation) (bool, string) {
-	// TODO: Implement operation conflict checking:
-	// 1. Check based on operation type
-	// 2. For backups: check activeBackups map
-	// 3. For archive deletes: check activeDeletes map
-	// 4. For repo delete: check hasRepoDelete flag
-	// 5. Return (canAdd bool, existingOperationID string)
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	switch v := op.(type) {
+	case BackupVariant:
+		backupData := v()
+		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
+			return false, existingOpID
+		}
+	case ArchiveDeleteVariant:
+		deleteData := v()
+		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
+			return false, existingOpID
+		}
+	case DeleteVariant:
+		if q.hasRepoDelete {
+			// Find the repository delete operation ID
+			for _, operationID := range q.operationList {
+				if opData, exists := q.operations[operationID]; exists {
+					if _, isDelete := opData.Operation.(DeleteVariant); isDelete {
+						return false, operationID
+					}
+				}
+			}
+			// Check active operation
+			if q.active != nil {
+				if _, isDelete := q.active.Operation.(DeleteVariant); isDelete {
+					return false, q.active.ID
+				}
+			}
+		}
+	}
+
 	return true, ""
 }
 
 // GetOperationByID retrieves a specific operation by ID
 func (q *RepositoryQueue) GetOperationByID(operationID string) *QueuedOperation {
-	// TODO: Implement operation lookup by ID
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check active operation first
+	if q.active != nil && q.active.ID == operationID {
+		return q.active
+	}
+
+	// Check queued operations
+	return q.operations[operationID]
 }
 
 // GetOperationsByStatus returns operations filtered by status
 func (q *RepositoryQueue) GetOperationsByStatus(status OperationStatus) []*QueuedOperation {
-	// TODO: Implement status-filtered operation retrieval
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	var result []*QueuedOperation
+
+	// Check active operation
+	if q.active != nil && isSameStatusType(q.active.Status, status) {
+		result = append(result, q.active)
+	}
+
+	// Check queued operations
+	for _, operationID := range q.operationList {
+		if op, exists := q.operations[operationID]; exists {
+			if isSameStatusType(op.Status, status) {
+				result = append(result, op)
+			}
+		}
+	}
+
+	return result
 }
 
 // UpdateOperationStatus updates the status of an operation
 func (q *RepositoryQueue) UpdateOperationStatus(operationID string, status OperationStatus) error {
-	// TODO: Implement status update
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check active operation first
+	if q.active != nil && q.active.ID == operationID {
+		q.active.Status = status
+		return nil
+	}
+
+	// Check queued operations
+	if op, exists := q.operations[operationID]; exists {
+		op.Status = status
+		return nil
+	}
+
+	return fmt.Errorf("operation %s not found in repository %d queue", operationID, q.repoID)
 }
 
 // GetQueueLength returns the number of queued operations (excluding active)
 func (q *RepositoryQueue) GetQueueLength() int {
-	// TODO: Implement queue length calculation
-	return 0
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return len(q.operationList)
 }
 
 // IsEmpty returns true if the queue has no operations
 func (q *RepositoryQueue) IsEmpty() bool {
-	// TODO: Implement empty check (no active and no queued)
-	return true
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return q.active == nil && len(q.operationList) == 0
 }
 
 // HasActiveOperation returns true if there's an active operation
 func (q *RepositoryQueue) HasActiveOperation() bool {
-	// TODO: Implement active operation check
-	return false
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return q.active != nil
 }
 
 // GetNextOperationType returns the type of the next operation in queue
 func (q *RepositoryQueue) GetNextOperationType() Operation {
-	// TODO: Implement next operation type retrieval
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(q.operationList) == 0 {
+		return nil
+	}
+
+	firstOperationID := q.operationList[0]
+	if op, exists := q.operations[firstOperationID]; exists {
+		return op.Operation
+	}
+
 	return nil
 }
 
 // ExpireOldOperations removes operations that have passed their ValidUntil time
 func (q *RepositoryQueue) ExpireOldOperations(now time.Time) []string {
-	// TODO: Implement operation expiration:
-	// 1. Find operations with ValidUntil < now
-	// 2. Remove expired operations from queue
-	// 3. Update tracking maps
-	// 4. Return list of expired operation IDs
-	return nil
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	var expiredIDs []string
+
+	// Check queued operations (don't expire active operations)
+	for i := len(q.operationList) - 1; i >= 0; i-- {
+		operationID := q.operationList[i]
+		if op, exists := q.operations[operationID]; exists {
+			if op.ValidUntil.Before(now) {
+				// Mark as expired
+				op.Status = NewStatusExpired(StatusExpired{
+					ExpiredAt: now,
+				})
+
+				// Remove from tracking maps
+				q.removeFromTrackingMaps(op)
+
+				// Remove from operations and list
+				delete(q.operations, operationID)
+				q.operationList = append(q.operationList[:i], q.operationList[i+1:]...)
+
+				expiredIDs = append(expiredIDs, operationID)
+			}
+		}
+	}
+
+	// Update positions if any operations were removed
+	if len(expiredIDs) > 0 {
+		q.updatePositions()
+	}
+
+	return expiredIDs
 }
 
-// UpdatePositions recalculates position numbers for all queued operations
+// updatePositions recalculates position numbers for all queued operations
 func (q *RepositoryQueue) updatePositions() {
-	// TODO: Implement position updates:
-	// 1. Iterate through operationList
-	// 2. Update each operation's status with correct position
+	// Iterate through operationList and update positions
+	for i, operationID := range q.operationList {
+		if op, exists := q.operations[operationID]; exists {
+			// Only update if status is currently queued
+			if _, isQueued := op.Status.(QueuedStatusVariant); isQueued {
+				op.Status = NewStatusQueued(StatusQueued{
+					Position: i + 1, // 1-based position
+				})
+			}
+		}
+	}
 }
 
 // addToTrackingMaps adds operation to appropriate deduplication tracking
 func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
-	// TODO: Implement tracking map updates based on operation type:
-	// 1. For backup operations: add to activeBackups
-	// 2. For archive delete operations: add to activeDeletes
-	// 3. For repo delete operations: set hasRepoDelete flag
+	switch v := op.Operation.(type) {
+	case BackupVariant:
+		backupData := v()
+		q.activeBackups[backupData.BackupID] = op.ID
+	case ArchiveDeleteVariant:
+		deleteData := v()
+		q.activeDeletes[deleteData.ArchiveID] = op.ID
+	case DeleteVariant:
+		q.hasRepoDelete = true
+	}
 }
 
 // removeFromTrackingMaps removes operation from deduplication tracking
 func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
-	// TODO: Implement tracking map cleanup based on operation type
+	switch v := op.Operation.(type) {
+	case BackupVariant:
+		backupData := v()
+		delete(q.activeBackups, backupData.BackupID)
+	case ArchiveDeleteVariant:
+		deleteData := v()
+		delete(q.activeDeletes, deleteData.ArchiveID)
+	case DeleteVariant:
+		q.hasRepoDelete = false
+	}
 }
 
-// getStats returns queue statistics for monitoring
-func (q *RepositoryQueue) getStats() map[string]interface{} {
-	// TODO: Implement statistics collection:
-	// - Queue length
-	// - Active operation info
-	// - Operation type distribution
-	// - Average wait time
-	return nil
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// isSameStatusType checks if two OperationStatus values have the same underlying type
+func isSameStatusType(status1, status2 OperationStatus) bool {
+	return reflect.TypeOf(status1) == reflect.TypeOf(status2)
+}
+
+// canAddOperationLocked checks if an operation can be added (assumes caller holds mutex)
+func (q *RepositoryQueue) canAddOperationLocked(op Operation) (bool, string) {
+	switch v := op.(type) {
+	case BackupVariant:
+		backupData := v()
+		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
+			return false, existingOpID
+		}
+	case ArchiveDeleteVariant:
+		deleteData := v()
+		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
+			return false, existingOpID
+		}
+	case DeleteVariant:
+		if q.hasRepoDelete {
+			// Find the repository delete operation ID
+			for _, operationID := range q.operationList {
+				if opData, exists := q.operations[operationID]; exists {
+					if _, isDelete := opData.Operation.(DeleteVariant); isDelete {
+						return false, operationID
+					}
+				}
+			}
+			// Check active operation
+			if q.active != nil {
+				if _, isDelete := q.active.Operation.(DeleteVariant); isDelete {
+					return false, q.active.ID
+				}
+			}
+		}
+	}
+
+	return true, ""
 }
