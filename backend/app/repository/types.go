@@ -1,12 +1,11 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/chris-tomich/adtenum"
+	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
-	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 )
 
@@ -25,8 +24,8 @@ type Repository struct {
 	IsCloud bool   `json:"isCloud"`
 	CloudID string `json:"cloudId,omitempty"`
 
-	// Current state (ADT enum)
-	State RepositoryState `json:"state"`
+	// Current state (ADT enum from statemachine package)
+	State statemachine.RepositoryState `json:"state"`
 
 	// Metadata
 	ArchiveCount    int        `json:"archiveCount"`
@@ -35,133 +34,22 @@ type Repository struct {
 	StorageUsed     int64      `json:"storageUsed"`
 }
 
+// GetState implements the statemachine.Repository interface
+func (r *Repository) GetState() statemachine.RepositoryState {
+	return r.State
+}
+
+// GetID implements the statemachine.Repository interface
+func (r *Repository) GetID() int {
+	return r.ID
+}
+
 // RepositoryWithQueue extends Repository with queue information for frontend
 type RepositoryWithQueue struct {
 	Repository       `json:",inline"`
 	QueuedOperations []QueuedOperation `json:"queuedOperations"`
 	ActiveOperation  *QueuedOperation  `json:"activeOperation,omitempty"`
 }
-
-// ============================================================================
-// STATE ADT (ALGEBRAIC DATA TYPE)
-// ============================================================================
-
-// cancelCtx holds context and cancel function for cancellable operations
-type cancelCtx struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-}
-
-// State variant structs (our custom data)
-type StateIdle struct{}
-
-type StateQueued struct {
-	NextOperation Operation `json:"nextOperation"`
-	QueueLength   int       `json:"queueLength"`
-}
-
-type StateBackingUp struct {
-	BackupID  types.BackupId            `json:"backupId"`
-	Progress  *borgtypes.BackupProgress `json:"progress,omitempty"`
-	StartedAt time.Time                 `json:"startedAt"`
-	cancelCtx cancelCtx                 // private context and cancel function
-}
-
-type StatePruning struct {
-	BackupID  types.BackupId `json:"backupId"`
-	StartedAt time.Time      `json:"startedAt"`
-	cancelCtx cancelCtx      // private context and cancel function
-}
-
-type StateDeleting struct {
-	ArchiveID int       `json:"archiveId"`
-	StartedAt time.Time `json:"startedAt"`
-	cancelCtx cancelCtx // private context and cancel function
-}
-
-type StateRefreshing struct {
-	StartedAt time.Time `json:"startedAt"`
-	cancelCtx cancelCtx // private context and cancel function
-}
-
-type StateMounted struct {
-	MountType     MountType         `json:"mountType"`
-	ArchiveID     *int              `json:"archiveId,omitempty"`
-	MountPath     string            `json:"mountPath"`
-	ArchiveMounts map[int]MountInfo `json:"archiveMounts"`
-}
-
-type StateError struct {
-	ErrorType  ErrorType   `json:"errorType"`
-	Message    string      `json:"message"`
-	Action     ErrorAction `json:"action"`
-	OccurredAt time.Time   `json:"occurredAt"`
-}
-
-// MountType defines the type of mount
-type MountType string
-
-const (
-	MountTypeRepository MountType = "repository"
-	MountTypeArchive    MountType = "archive"
-)
-
-// MountInfo contains mount information for archives
-type MountInfo struct {
-	ArchiveID int    `json:"archiveId"`
-	MountPath string `json:"mountPath"`
-}
-
-// Error types for repository operations
-type ErrorType string
-
-const (
-	ErrorTypeSSHKey     ErrorType = "sshKey"
-	ErrorTypePassphrase ErrorType = "passphrase"
-	ErrorTypeLocked     ErrorType = "locked"
-)
-
-// Actions that can be taken to resolve errors
-type ErrorAction string
-
-const (
-	ErrorActionNone          ErrorAction = "none"
-	ErrorActionRegenerateSSH ErrorAction = "regenerateSSH"
-	ErrorActionBreakLock     ErrorAction = "breakLock"
-)
-
-// ADT enum definition
-type RepositoryState adtenum.Enum[RepositoryState]
-
-// Variant wrappers using adtenum types
-type IdleVariant adtenum.OneVariantValue[StateIdle]
-type QueuedVariant adtenum.OneVariantValue[StateQueued]
-type BackingUpVariant adtenum.OneVariantValue[StateBackingUp]
-type PruningVariant adtenum.OneVariantValue[StatePruning]
-type DeletingVariant adtenum.OneVariantValue[StateDeleting]
-type RefreshingVariant adtenum.OneVariantValue[StateRefreshing]
-type MountedVariant adtenum.OneVariantValue[StateMounted]
-type ErrorVariant adtenum.OneVariantValue[StateError]
-
-// Constructors
-var NewStateIdle func(StateIdle) IdleVariant = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
-var NewStateQueued func(StateQueued) QueuedVariant = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
-var NewStateBackingUp func(StateBackingUp) BackingUpVariant = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
-var NewStatePruning func(StatePruning) PruningVariant = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
-var NewStateDeleting func(StateDeleting) DeletingVariant = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
-var NewStateRefreshing func(StateRefreshing) RefreshingVariant = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
-var NewStateMounted func(StateMounted) MountedVariant = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
-var NewStateError func(StateError) ErrorVariant = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
-
-// Implement EnumType for each variant
-func (v IdleVariant) EnumType() RepositoryState       { return v }
-func (v QueuedVariant) EnumType() RepositoryState     { return v }
-func (v BackingUpVariant) EnumType() RepositoryState  { return v }
-func (v PruningVariant) EnumType() RepositoryState    { return v }
-func (v DeletingVariant) EnumType() RepositoryState   { return v }
-func (v RefreshingVariant) EnumType() RepositoryState { return v }
-func (v MountedVariant) EnumType() RepositoryState    { return v }
-func (v ErrorVariant) EnumType() RepositoryState      { return v }
 
 // ============================================================================
 // OPERATION ADT
@@ -286,9 +174,9 @@ func (v ExpiredStatusVariant) EnumType() OperationStatus   { return v }
 
 // QueuedOperation represents a queued repository operation
 type QueuedOperation struct {
-	ID         string          `json:"id"`        // Unique operation ID (UUID) - enables idempotency and deduplication
-	Operation  Operation       `json:"operation"` // ADT containing type and parameters
-	Status     OperationStatus `json:"status"`    // ADT containing status, progress, error
+	ID         string          `json:"id"`         // Unique operation ID (UUID) - enables idempotency and deduplication
+	Operation  Operation       `json:"operation"`  // ADT containing type and parameters
+	Status     OperationStatus `json:"status"`     // ADT containing status, progress, error
 	RepoID     int             `json:"repoId"`
 	CreatedAt  time.Time       `json:"createdAt"`
 	ValidUntil time.Time       `json:"validUntil"` // Auto-expire if not started
