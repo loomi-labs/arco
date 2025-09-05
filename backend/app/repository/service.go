@@ -38,12 +38,13 @@ type ServiceInternal struct {
 // NewService creates a new repository service instance
 func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 	var maxHeavyOperations = 1
+	var queueManager = NewQueueManager(maxHeavyOperations)
 
 	return &ServiceInternal{
 		Service: &Service{
 			log:          log,
-			queueManager: NewQueueManager(maxHeavyOperations),
-			stateMachine: statemachine.NewRepositoryStateMachine(),
+			queueManager: queueManager,
+			stateMachine: statemachine.NewRepositoryStateMachine(queueManager),
 			config:       config,
 		},
 	}
@@ -365,7 +366,7 @@ func (s *Service) IsBorgRepository(path string) bool {
 // ============================================================================
 
 // transitionState transitions a repository to a new state
-func (s *Service) transitionState(ctx context.Context, repoId int, newState RepositoryState) error {
+func (s *Service) transitionState(ctx context.Context, repoId int, newState statemachine.RepositoryState) error {
 	// TODO: Implement state transition:
 	// 1. Get current repository
 	// 2. Validate transition via state machine
@@ -375,7 +376,7 @@ func (s *Service) transitionState(ctx context.Context, repoId int, newState Repo
 }
 
 // emitStateChangeEvent emits an event for repository state changes
-func (s *Service) emitStateChangeEvent(repoId int, newState RepositoryState) {
+func (s *Service) emitStateChangeEvent(repoId int, newState statemachine.RepositoryState) {
 	// TODO: Implement event emission
 }
 
