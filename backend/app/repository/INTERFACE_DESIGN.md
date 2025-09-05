@@ -14,7 +14,7 @@ type Repository struct {
     IsCloud     bool      `json:"isCloud"`
     CloudID     string    `json:"cloudId,omitempty"`
     
-    // State (ADT enum)
+    // Current state (ADT enum)
     State       RepositoryState `json:"state"`
     
     // Metadata
@@ -22,10 +22,13 @@ type Repository struct {
     LastBackupTime     *time.Time  `json:"lastBackupTime,omitempty"`
     LastBackupError    string      `json:"lastBackupError,omitempty"`
     StorageUsed        int64       `json:"storageUsed"`
-    
-    // Operations
-    QueuedOperations   []QueuedOperation `json:"queuedOperations"`
-    ActiveOperation    *QueuedOperation  `json:"activeOperation,omitempty"`
+}
+
+// Extended struct for when frontend needs queue information
+type RepositoryWithQueue struct {
+    Repository       `json:",inline"`
+    QueuedOperations []QueuedOperation `json:"queuedOperations"`
+    ActiveOperation  *QueuedOperation  `json:"activeOperation,omitempty"`
 }
 ```
 
@@ -153,10 +156,6 @@ type OpBackup struct {
     BackupID types.BackupId
 }
 
-type OpBackups struct {
-    BackupIDs []types.BackupId
-}
-
 type OpPrune struct {
     BackupID types.BackupId
 }
@@ -184,7 +183,6 @@ type Operation adtenum.Enum[Operation]
 
 // Operation variant wrappers
 type BackupVariant adtenum.OneVariantValue[OpBackup]
-type BackupsVariant adtenum.OneVariantValue[OpBackups]
 type PruneVariant adtenum.OneVariantValue[OpPrune]
 type DeleteVariant adtenum.OneVariantValue[OpDelete]
 type ArchiveRefreshVariant adtenum.OneVariantValue[OpArchiveRefresh]
@@ -193,7 +191,6 @@ type ArchiveRenameVariant adtenum.OneVariantValue[OpArchiveRename]
 
 // Operation constructors
 var NewOpBackup func(OpBackup) BackupVariant = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
-var NewOpBackups func(OpBackups) BackupsVariant = adtenum.CreateOneVariantValueConstructor[BackupsVariant]()
 var NewOpPrune func(OpPrune) PruneVariant = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
 var NewOpDelete func(OpDelete) DeleteVariant = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
 var NewOpArchiveRefresh func(OpArchiveRefresh) ArchiveRefreshVariant = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
@@ -202,7 +199,6 @@ var NewOpArchiveRename func(OpArchiveRename) ArchiveRenameVariant = adtenum.Crea
 
 // Implement EnumType for operation variants
 func (v BackupVariant) EnumType() Operation { return v }
-func (v BackupsVariant) EnumType() Operation { return v }
 func (v PruneVariant) EnumType() Operation { return v }
 func (v DeleteVariant) EnumType() Operation { return v }
 func (v ArchiveRefreshVariant) EnumType() Operation { return v }
@@ -259,7 +255,7 @@ func (v ExpiredStatusVariant) EnumType() OperationStatus { return v }
 
 // Simplified QueuedOperation struct
 type QueuedOperation struct {
-    ID         string          // Unique operation ID
+    ID         string          // Unique operation ID (UUID) - enables idempotency and deduplication
     Operation  Operation       // ADT containing type and parameters
     Status     OperationStatus // ADT containing status, progress, error
     RepoID     int
@@ -268,12 +264,108 @@ type QueuedOperation struct {
 }
 ```
 
+### Queue Management
+```go
+type QueueManager struct {
+    queues        map[int]*RepositoryQueue  // RepoID -> Queue
+    mu            sync.RWMutex
+    
+    // Cross-repository concurrency control
+    maxHeavyOps   int                       // Max heavy operations across all repositories
+    activeHeavy   map[int]*QueuedOperation  // RepoID -> active heavy operation
+    activeLight   map[int]*QueuedOperation  // RepoID -> active light operation
+}
+
+// Operation weight classification
+type OperationWeight int
+
+const (
+    WeightLight OperationWeight = iota  // Quick operations (refresh, rename, single archive delete)
+    WeightHeavy                         // Resource-intensive operations (backup, prune, repo delete)
+)
+
+// Determine operation weight for concurrency control
+func GetOperationWeight(op Operation) OperationWeight {
+    switch op.(type) {
+    case BackupVariant, PruneVariant, DeleteVariant:
+        return WeightHeavy
+    case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant:
+        return WeightLight
+    default:
+        return WeightLight
+    }
+}
+
+type RepositoryQueue struct {
+    repoID        int
+    operations    map[string]*QueuedOperation  // By operation ID
+    operationList []string                     // Ordered operation IDs (FIFO)
+    active        *QueuedOperation              // ONE active operation per repository
+    mu            sync.Mutex
+    
+    // Deduplication tracking
+    activeBackups map[types.BackupId]string   // BackupID -> OperationID
+    activeDeletes map[int]string              // ArchiveID -> OperationID
+    hasRepoDelete bool                        // Only one repo delete allowed
+}
+
+// Queue operations
+func (qm *QueueManager) GetQueue(repoID int) *RepositoryQueue
+func (qm *QueueManager) GetCurrentState(repoID int) RepositoryState
+func (q *RepositoryQueue) AddOperation(op *QueuedOperation) error
+func (q *RepositoryQueue) GetOperations() []*QueuedOperation
+func (q *RepositoryQueue) GetActive() *QueuedOperation
+func (q *RepositoryQueue) FindOperation(opType Operation) string  // Returns existing operation ID
+```
+
+## Operation Uniqueness and Idempotency
+
+### Duplicate Operation Handling
+Operations are identified by their content to prevent duplicates:
+
+- **Backup Operations**: Same BackupID cannot be queued multiple times
+- **Delete Operations**: Only one delete per repository/archive allowed at a time
+- **Archive Refresh**: Can be queued multiple times (beneficial after operations)
+- **Archive Rename**: Same ArchiveID with different name/prefix creates new operation
+
+### Idempotent Behavior
+```go
+// First call - creates new operation
+opId1, _ := QueueBackup(ctx, backupId)  // Returns "uuid-1234"
+
+// Second call - returns existing operation ID
+opId2, _ := QueueBackup(ctx, backupId)  // Returns "uuid-1234" (same!)
+
+// Check operation status
+op, _ := GetOperation(ctx, opId1)
+```
+
+### Queue Conflict Resolution
+```go
+type RepositoryQueue struct {
+    operations    map[string]*QueuedOperation // By operation ID
+    activeBackups map[types.BackupId]string   // BackupID -> OperationID  
+    activeDeletes map[int]string              // ArchiveID -> OperationID
+    hasRepoDelete bool                        // Only one repo delete allowed
+}
+
+// Example: Check for existing backup before creating new operation
+func (q *RepositoryQueue) FindBackupOperation(backupId types.BackupId) string {
+    if operationId, exists := q.activeBackups[backupId]; exists {
+        return operationId // Return existing operation ID
+    }
+    return "" // No existing operation
+}
+```
+
 ## Service Methods
 
 ### Core Repository
 ```go
 Get(ctx, repoId int) (*Repository, error)
+GetWithQueue(ctx, repoId int) (*RepositoryWithQueue, error)
 All(ctx) ([]*Repository, error)
+AllWithQueue(ctx) ([]*RepositoryWithQueue, error)
 GetByBackupId(ctx, bId types.BackupId) (*Repository, error)
 Create(ctx, name, location, password string, noPassword bool) (*Repository, error)
 CreateCloudRepository(ctx, name, password string, location arcov1.RepositoryLocation) (*Repository, error)
@@ -282,17 +374,33 @@ Remove(ctx, id int) error // DB only
 ```
 
 ### Queued Operations
+All queue methods return operation IDs and are idempotent:
 ```go
-QueueDelete(ctx, id int) error
+QueueDelete(ctx, id int) (operationId string, error)
 
 QueueBackup(ctx, backupId types.BackupId) (operationId string, error)
-QueueBackups(ctx, backupIds []types.BackupId) (operationIds []string, error)
+QueueBackups(ctx, backupIds []types.BackupId) (operationIds []string, error)  // Convenience method - queues multiple individual backup operations
 
 QueuePrune(ctx, backupId types.BackupId) (operationId string, error)
 
 QueueArchiveRefresh(ctx, repoId int) (operationId string, error)
 QueueArchiveDelete(ctx, archiveId int) (operationId string, error)
 QueueArchiveRename(ctx, archiveId int, prefix, name string) (operationId string, error)
+```
+
+### Operation Management
+```go
+// Get operation by ID
+GetOperation(ctx, operationId string) (*QueuedOperation, error)
+
+// Cancel queued or running operation
+CancelOperation(ctx, operationId string) error
+
+// Get all operations for a repository
+GetQueuedOperations(ctx, repoId int) ([]*QueuedOperation, error)
+
+// Get operations by status
+GetOperationsByStatus(ctx, repoId int, status OperationStatus) ([]*QueuedOperation, error)
 ```
 
 ### Immediate Operations
@@ -337,10 +445,31 @@ IsBorgRepository(path string) bool
 
 ## Queue Implementation Notes
 
-- Each repository has its own queue
-- Operations expire if not started before `ValidUntil`
-- Worker goroutines process queues sequentially per repository
-- State transitions are validated before execution
+- **Separate QueueManager**: Manages all repository queues independently from repository data
+- **Per-Repository Sequential**: Each repository processes operations one at a time (FIFO)
+- **Cross-Repository Parallel**: Multiple repositories can run operations simultaneously
+- **Operation Weight Control**: Heavy operations (backup, prune, delete) limited by `maxHeavyOps`
+- **Light Operations**: Quick operations (refresh, rename) can always run
+- **Operation Expiry**: Operations expire if not started before `ValidUntil`
+- **State Coordination**: QueueManager coordinates with StateMachine for state transitions
+- **Idempotent Operations**: Duplicate operations return existing operation ID
+- **Deduplication**: Active operation tracking prevents conflicts (e.g., only one backup per BackupID)
+
+### Concurrency Examples
+
+**Low-end system (maxHeavyOps = 1)**:
+- Repo A starts backup (heavy) → runs
+- Repo B wants backup → waits in queue
+- Repo C wants refresh (light) → runs immediately
+- When Repo A backup finishes, Repo B backup starts
+
+**Powerful system (maxHeavyOps = 4)**:
+- Repo A, B, C, D start backups → all run in parallel
+- Repo E wants backup → waits (limit reached)
+- Repo F wants refresh → runs immediately
+
+### Future Enhancements
+- **Dynamic Limits**: Adjust `maxHeavyOps` based on system load
 
 ## Removed Methods
 The following methods are consolidated into the Repository struct or removed:
