@@ -34,29 +34,29 @@ import * as platform$0 from "../../platform/models.js";
 import * as $models from "./models.js";
 
 export function AbortBackupJob(id: types$0.BackupId): $CancellablePromise<void> {
-    return $Call.ByID(2116880553, id);
+    return $Call.ByID(3571784831, id);
 }
 
 export function AbortBackupJobs(bIds: types$0.BackupId[]): $CancellablePromise<void> {
-    return $Call.ByID(2061823790, bIds);
+    return $Call.ByID(816522980, bIds);
 }
 
 export function All(): $CancellablePromise<(ent$0.Repository | null)[]> {
-    return $Call.ByID(593256237).then(($result: any) => {
+    return $Call.ByID(3856180219).then(($result: any) => {
         return $$createType2($result);
     });
 }
 
 export function BreakLock(id: number): $CancellablePromise<void> {
-    return $Call.ByID(4281482770, id);
+    return $Call.ByID(4154443424, id);
 }
 
 export function ChangePassword(repoId: number, password: string): $CancellablePromise<void> {
-    return $Call.ByID(2850019591, repoId, password);
+    return $Call.ByID(4017714233, repoId, password);
 }
 
 export function Create(name: string, location: string, password: string, noPassword: boolean): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(3296679418, name, location, password, noPassword).then(($result: any) => {
+    return $Call.ByID(2087752412, name, location, password, noPassword).then(($result: any) => {
         return $$createType1($result);
     });
 }
@@ -65,7 +65,7 @@ export function Create(name: string, location: string, password: string, noPassw
  * CreateCloudRepository creates a new ArcoCloud repository
  */
 export function CreateCloudRepository(name: string, password: string, location: arcov1$0.RepositoryLocation): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(2968644739, name, password, location).then(($result: any) => {
+    return $Call.ByID(2732947493, name, password, location).then(($result: any) => {
         return $$createType1($result);
     });
 }
@@ -75,152 +75,152 @@ export function CreateCloudRepository(name: string, password: string, location: 
  * It also deletes the physical repository on disk or cloud
  */
 export function Delete(id: number): $CancellablePromise<void> {
-    return $Call.ByID(1592048265, id);
+    return $Call.ByID(1315454819, id);
 }
 
 export function DeleteArchive(id: number): $CancellablePromise<void> {
-    return $Call.ByID(2710326337, id);
+    return $Call.ByID(2583702267, id);
 }
 
 export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<types$0.ExaminePruningResult[]> {
-    return $Call.ByID(166629156, backupProfileId, pruningRule, saveResults).then(($result: any) => {
+    return $Call.ByID(1748452314, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType4($result);
     });
 }
 
 export function Get(repoId: number): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(2350435594, repoId).then(($result: any) => {
+    return $Call.ByID(1765610980, repoId).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 export function GetArchive(id: number): $CancellablePromise<ent$0.Archive | null> {
-    return $Call.ByID(3790326640, id).then(($result: any) => {
+    return $Call.ByID(731009914, id).then(($result: any) => {
         return $$createType6($result);
     });
 }
 
 export function GetArchiveMountStates(repoId: number): $CancellablePromise<{ [_: `${number}`]: platform$0.MountState }> {
-    return $Call.ByID(1005351287, repoId).then(($result: any) => {
+    return $Call.ByID(872714797, repoId).then(($result: any) => {
         return $$createType8($result);
     });
 }
 
 export function GetBackupButtonStatus(bIds: types$0.BackupId[]): $CancellablePromise<state$0.BackupButtonStatus> {
-    return $Call.ByID(1281128506, bIds);
+    return $Call.ByID(3872890060, bIds);
 }
 
 /**
  * GetBackupProfilesThatHaveOnlyRepo returns all backup profiles that only have the given repository
  */
 export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
-    return $Call.ByID(2432944859, repoId).then(($result: any) => {
+    return $Call.ByID(3928548141, repoId).then(($result: any) => {
         return $$createType11($result);
     });
 }
 
 export function GetBackupState(bId: types$0.BackupId): $CancellablePromise<state$0.BackupState> {
-    return $Call.ByID(2620182497, bId).then(($result: any) => {
+    return $Call.ByID(3112221775, bId).then(($result: any) => {
         return $$createType12($result);
     });
 }
 
 export function GetByBackupId(bId: types$0.BackupId): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(1062575188, bId).then(($result: any) => {
+    return $Call.ByID(4106782590, bId).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 export function GetCombinedBackupProgress(bIds: types$0.BackupId[]): $CancellablePromise<types$1.BackupProgress | null> {
-    return $Call.ByID(3581877548, bIds).then(($result: any) => {
+    return $Call.ByID(1684624602, bIds).then(($result: any) => {
         return $$createType14($result);
     });
 }
 
 export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
-    return $Call.ByID(423138286).then(($result: any) => {
+    return $Call.ByID(4007433704).then(($result: any) => {
         return $$createType15($result);
     });
 }
 
 export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $CancellablePromise<ent$0.Archive | null> {
-    return $Call.ByID(2844713878, backupId).then(($result: any) => {
+    return $Call.ByID(2360629540, backupId).then(($result: any) => {
         return $$createType6($result);
     });
 }
 
 export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$0.Archive | null> {
-    return $Call.ByID(3556071828, repoId).then(($result: any) => {
+    return $Call.ByID(3676465958, repoId).then(($result: any) => {
         return $$createType6($result);
     });
 }
 
 export function GetLastBackupErrorMsg(repoId: number): $CancellablePromise<string> {
-    return $Call.ByID(2621487963, repoId);
+    return $Call.ByID(2883860469, repoId);
 }
 
 export function GetLastBackupErrorMsgByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(4136556109, bId);
+    return $Call.ByID(1996917111, bId);
 }
 
 export function GetLocked(): $CancellablePromise<(ent$0.Repository | null)[]> {
-    return $Call.ByID(1830241644).then(($result: any) => {
+    return $Call.ByID(2777371626).then(($result: any) => {
         return $$createType2($result);
     });
 }
 
 export function GetNbrOfArchives(repoId: number): $CancellablePromise<number> {
-    return $Call.ByID(17058278, repoId);
+    return $Call.ByID(679620168, repoId);
 }
 
 export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<$models.PaginatedArchivesResponse | null> {
-    return $Call.ByID(3644900762, req).then(($result: any) => {
+    return $Call.ByID(98627984, req).then(($result: any) => {
         return $$createType17($result);
     });
 }
 
 export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$models.PruningDates> {
-    return $Call.ByID(2102076250, archiveIds).then(($result: any) => {
+    return $Call.ByID(255069008, archiveIds).then(($result: any) => {
         return $$createType18($result);
     });
 }
 
 export function GetRepoMountState(repoId: number): $CancellablePromise<platform$0.MountState> {
-    return $Call.ByID(2042207536, repoId).then(($result: any) => {
+    return $Call.ByID(4105855054, repoId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function GetState(id: number): $CancellablePromise<state$0.RepoState> {
-    return $Call.ByID(3151631583, id).then(($result: any) => {
+    return $Call.ByID(3753695897, id).then(($result: any) => {
         return $$createType19($result);
     });
 }
 
 export function GetWithActiveMounts(): $CancellablePromise<(ent$0.Repository | null)[]> {
-    return $Call.ByID(518029914).then(($result: any) => {
+    return $Call.ByID(2419498644).then(($result: any) => {
         return $$createType2($result);
     });
 }
 
 export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
-    return $Call.ByID(101129870, path);
+    return $Call.ByID(1588354504, path);
 }
 
 export function MountArchive(archiveId: number): $CancellablePromise<platform$0.MountState> {
-    return $Call.ByID(1226599023, archiveId).then(($result: any) => {
+    return $Call.ByID(3629366181, archiveId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function MountRepository(repoId: number): $CancellablePromise<platform$0.MountState> {
-    return $Call.ByID(3803510467, repoId).then(($result: any) => {
+    return $Call.ByID(1628991477, repoId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function RefreshArchives(repoId: number): $CancellablePromise<(ent$0.Archive | null)[]> {
-    return $Call.ByID(812894242, repoId).then(($result: any) => {
+    return $Call.ByID(2370357240, repoId).then(($result: any) => {
         return $$createType20($result);
     });
 }
@@ -229,7 +229,7 @@ export function RefreshArchives(repoId: number): $CancellablePromise<(ent$0.Arch
  * RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
  */
 export function RegenerateSSHKey(): $CancellablePromise<void> {
-    return $Call.ByID(3683576253);
+    return $Call.ByID(2889558523);
 }
 
 /**
@@ -237,62 +237,62 @@ export function RegenerateSSHKey(): $CancellablePromise<void> {
  * It does not delete the physical repository on disk
  */
 export function Remove(id: number): $CancellablePromise<void> {
-    return $Call.ByID(2560302714, id);
+    return $Call.ByID(735524320, id);
 }
 
 /**
  * RenameArchive requires access to validation client
  */
 export function RenameArchive(id: number, prefix: string, name: string): $CancellablePromise<void> {
-    return $Call.ByID(1548605398, id, prefix, name);
+    return $Call.ByID(1805646144, id, prefix, name);
 }
 
 export function RunBorgDelete(bId: types$0.BackupId, location: string, password: string, prefix: string): $CancellablePromise<types$0.DeleteResult> {
-    return $Call.ByID(2228910016, bId, location, password, prefix);
+    return $Call.ByID(802771302, bId, location, password, prefix);
 }
 
 export function SaveIntegrityCheckSettings(repoId: number, enabled: boolean): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(2401324943, repoId, enabled).then(($result: any) => {
+    return $Call.ByID(2513339337, repoId, enabled).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 export function StartBackupJob(bId: types$0.BackupId): $CancellablePromise<void> {
-    return $Call.ByID(324865163, bId);
+    return $Call.ByID(497978813, bId);
 }
 
 export function StartBackupJobs(bIds: types$0.BackupId[]): $CancellablePromise<void> {
-    return $Call.ByID(1937468008, bIds);
+    return $Call.ByID(2278112074, bIds);
 }
 
 export function StartPruneJob(bId: types$0.BackupId): $CancellablePromise<void> {
-    return $Call.ByID(889384509, bId);
+    return $Call.ByID(3271049111, bId);
 }
 
 export function TestRepoConnection(path: string, password: string): $CancellablePromise<$models.TestRepoConnectionResult> {
-    return $Call.ByID(1151269054, path, password).then(($result: any) => {
+    return $Call.ByID(1682953056, path, password).then(($result: any) => {
         return $$createType21($result);
     });
 }
 
 export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<void> {
-    return $Call.ByID(1105783937, repoIds);
+    return $Call.ByID(2028989399, repoIds);
 }
 
 export function UnmountArchive(archiveId: number): $CancellablePromise<platform$0.MountState> {
-    return $Call.ByID(2999465112, archiveId).then(($result: any) => {
+    return $Call.ByID(1722009978, archiveId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function UnmountRepository(repoId: number): $CancellablePromise<platform$0.MountState> {
-    return $Call.ByID(2002243586, repoId).then(($result: any) => {
+    return $Call.ByID(851934984, repoId).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function Update(repository: ent$0.Repository | null): $CancellablePromise<ent$0.Repository | null> {
-    return $Call.ByID(3450666087, repository).then(($result: any) => {
+    return $Call.ByID(1664842649, repository).then(($result: any) => {
         return $$createType1($result);
     });
 }
@@ -302,7 +302,7 @@ export function Update(repository: ent$0.Repository | null): $CancellablePromise
  * The rules are not enforced by the database because we import them from borg repositories which have different rules.
  */
 export function ValidateArchiveName(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(392924285, archiveId, prefix, name);
+    return $Call.ByID(180251175, archiveId, prefix, name);
 }
 
 /**
@@ -310,14 +310,14 @@ export function ValidateArchiveName(archiveId: number, prefix: string, name: str
  * The rules are enforced by the database.
  */
 export function ValidateRepoName(name: string): $CancellablePromise<string> {
-    return $Call.ByID(3060066791, name);
+    return $Call.ByID(2441982329, name);
 }
 
 /**
  * ValidateRepoPath validates the path of a repository.
  */
 export function ValidateRepoPath(path: string, isLocal: boolean): $CancellablePromise<string> {
-    return $Call.ByID(2882211019, path, isLocal);
+    return $Call.ByID(1987805649, path, isLocal);
 }
 
 // Private type creation functions

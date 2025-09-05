@@ -41,7 +41,6 @@ tasks:
     cmds:
       - go generate ./...
 
-
   clean:
     desc: Clean build artifacts
     cmds:

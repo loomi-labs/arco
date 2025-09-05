@@ -9,7 +9,7 @@ import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import type {
   CreateCheckoutSessionResponse,
   Plan,

@@ -6,7 +6,7 @@ import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 
 

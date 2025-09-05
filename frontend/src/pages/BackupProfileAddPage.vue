@@ -16,7 +16,7 @@ import { useToast } from "vue-toastification";
 import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";

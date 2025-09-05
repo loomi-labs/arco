@@ -8,7 +8,7 @@ import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import * as zod from "zod";
 import { object } from "zod";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";

@@ -15,7 +15,7 @@ import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
 import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import {Events} from "@wailsio/runtime";

@@ -8,7 +8,7 @@ import { Page, withId } from "../router";
 import { repoStateChangedEvent } from "../common/events";
 import { getRepoType, RepoType } from "../common/repository";
 import { toRepoTypeBadge } from "../common/badge";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import {Events} from "@wailsio/runtime";
