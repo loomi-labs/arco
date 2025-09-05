@@ -4,7 +4,10 @@ import (
 	"context"
 
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	"github.com/loomi-labs/arco/backend/app/state"
+	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
 	"go.uber.org/zap"
@@ -18,29 +21,48 @@ import (
 type Service struct {
 	log          *zap.SugaredLogger
 	queueManager *QueueManager
+	stateMachine *statemachine.RepositoryStateMachine
 
-	// Dependencies to be set via SetDb()
-	db *ent.Client
+	// Dependencies to be set via Init()
+	db              *ent.Client
+	state           *state.State
+	eventEmitter    types.EventEmitter
+	borgClient      borg.Borg
+	cloudRepoClient *CloudRepositoryClient
+	config          *types.Config
+}
 
-	// TODO: Add other dependencies like:
-	// - state manager
-	// - event emitter
-	// - borg client
-	// - cloud repository client
+// ServiceInternal provides backend-only methods that should not be exposed to frontend
+type ServiceInternal struct {
+	*Service
 }
 
 // NewService creates a new repository service instance
-func NewService(log *zap.SugaredLogger, maxHeavyOps int) *Service {
+func NewService(log *zap.SugaredLogger, maxHeavyOps int) *ServiceInternal {
 	// TODO: Implement service constructor with:
 	// 1. Initialize QueueManager
-	// 2. Set up logging
-	// 3. Initialize other components
-	return nil
+	// 2. Initialize StateMachine
+	// 3. Set up logging
+	// 4. Initialize other components
+	return &ServiceInternal{
+		Service: &Service{
+			log:          log,
+			queueManager: nil, // TODO: NewQueueManager(maxHeavyOps)
+			stateMachine: nil, // TODO: statemachine.NewRepositoryStateMachine()
+		},
+	}
 }
 
 // Init initializes the service with remaining dependencies
-func (s *Service) Init(db *ent.Client) {
-	s.db = db
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, state *state.State, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, config *types.Config) {
+	si.db = db
+	si.state = state
+	si.eventEmitter = eventEmitter
+	si.borgClient = borgClient
+	si.cloudRepoClient = cloudRepoClient
+	si.config = config
+	// TODO: Start periodic cleanup goroutine
+	// go si.startPeriodicCleanup(ctx)
 }
 
 // ============================================================================
