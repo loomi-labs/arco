@@ -19,12 +19,6 @@ type QueueManager interface {
 	HasQueuedOperations(repoID int) bool
 }
 
-// Repository interface for guard functions - will be implemented by repository.Repository
-type Repository interface {
-	GetState() RepositoryState // Returns RepositoryState ADT
-	GetID() int
-}
-
 // transitionKey uniquely identifies a state transition using type information
 type transitionKey struct {
 	fromType reflect.Type
@@ -33,16 +27,15 @@ type transitionKey struct {
 
 // RepositoryTransitionRule defines a repository state machine transition with optional guard
 type RepositoryTransitionRule struct {
-	From  RepositoryState       // Source state
-	To    RepositoryState       // Target state
-	Guard func(Repository) bool // Repository-specific validation
+	From  RepositoryState                              // Source state
+	To    RepositoryState                              // Target state
+	Guard func(repoId int, state RepositoryState) bool // Repository-specific validation
 }
 
 // NewRepositoryStateMachine creates a new repository state machine with all valid transitions
-func NewRepositoryStateMachine(queueManager QueueManager) *RepositoryStateMachine {
+func NewRepositoryStateMachine() *RepositoryStateMachine {
 	sm := &RepositoryStateMachine{
-		transitions:  make(map[transitionKey]RepositoryTransitionRule),
-		queueManager: queueManager,
+		transitions: make(map[transitionKey]RepositoryTransitionRule),
 	}
 
 	// Initialize all valid transitions
@@ -51,12 +44,15 @@ func NewRepositoryStateMachine(queueManager QueueManager) *RepositoryStateMachin
 	return sm
 }
 
+func (sm *RepositoryStateMachine) SetQueueManager(queueManager QueueManager) {
+	sm.queueManager = queueManager
+}
+
 // CanTransition checks if a transition from one repository state to another is valid
-func (sm *RepositoryStateMachine) CanTransition(repo Repository, toState RepositoryState) bool {
+func (sm *RepositoryStateMachine) CanTransition(repoId int, currentState RepositoryState, toState RepositoryState) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	currentState := repo.GetState()
 	key := sm.createTransitionKey(currentState, toState)
 
 	rule, exists := sm.transitions[key]
@@ -65,15 +61,14 @@ func (sm *RepositoryStateMachine) CanTransition(repo Repository, toState Reposit
 	}
 
 	// Execute guard
-	return rule.Guard(repo)
+	return rule.Guard(repoId, currentState)
 }
 
 // Transition performs a repository state transition with validation
-func (sm *RepositoryStateMachine) Transition(repo Repository, toState RepositoryState) error {
-	if !sm.CanTransition(repo, toState) {
-		currentState := repo.GetState()
+func (sm *RepositoryStateMachine) Transition(repoId int, currentState RepositoryState, toState RepositoryState) error {
+	if !sm.CanTransition(repoId, currentState, toState) {
 		return fmt.Errorf("invalid state transition for repository %d: %s -> %s",
-			repo.GetID(),
+			repoId,
 			GetStateTypeName(currentState),
 			GetStateTypeName(toState))
 	}
@@ -84,18 +79,17 @@ func (sm *RepositoryStateMachine) Transition(repo Repository, toState Repository
 }
 
 // GetValidTransitions returns all valid transitions from the repository's current state
-func (sm *RepositoryStateMachine) GetValidTransitions(repo Repository) []RepositoryState {
+func (sm *RepositoryStateMachine) GetValidTransitions(repoId int, currentState RepositoryState) []RepositoryState {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	currentState := repo.GetState()
 	currentType := reflect.TypeOf(currentState)
 
 	var validStates []RepositoryState
 	for key, rule := range sm.transitions {
 		if key.fromType == currentType {
 			// Check guard if present
-			if rule.Guard(repo) {
+			if rule.Guard(repoId, currentState) {
 				validStates = append(validStates, rule.To)
 			}
 		}
@@ -108,7 +102,7 @@ func (sm *RepositoryStateMachine) GetValidTransitions(repo Repository) []Reposit
 type TransitionDef struct {
 	From  RepositoryState
 	To    RepositoryState
-	Guard func(Repository) bool
+	Guard func(repoId int, currentState RepositoryState) bool
 }
 
 // initializeTransitions sets up all valid state transitions using a map-based approach
@@ -124,13 +118,13 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 	errorState := NewStateError(StateError{})
 
 	// No guard needed for this transition
-	nop := func(Repository) bool {
+	nop := func(repoId int, currentState RepositoryState) bool {
 		return true
 	}
 
 	// Repository can not have a queued operation
-	hasQueuedOps := func(repo Repository) bool {
-		return sm.queueManager.HasQueuedOperations(repo.GetID())
+	hasQueuedOps := func(repoId int, state RepositoryState) bool {
+		return sm.queueManager.HasQueuedOperations(repoId)
 	}
 
 	// Define all transitions using ADT types directly
@@ -208,9 +202,9 @@ func (sm *RepositoryStateMachine) createTransitionKey(from, to RepositoryState) 
 // ============================================================================
 
 // CanTransitionToAny checks if any of the given states are valid transitions
-func (sm *RepositoryStateMachine) CanTransitionToAny(repo Repository, states ...RepositoryState) bool {
+func (sm *RepositoryStateMachine) CanTransitionToAny(repoId int, currentState RepositoryState, states ...RepositoryState) bool {
 	for _, state := range states {
-		if sm.CanTransition(repo, state) {
+		if sm.CanTransition(repoId, currentState, state) {
 			return true
 		}
 	}
@@ -238,8 +232,7 @@ func (sm *RepositoryStateMachine) getStateTypeName(state RepositoryState) string
 }
 
 // validateStateTransition performs comprehensive validation
-func (sm *RepositoryStateMachine) validateStateTransition(repo Repository, to RepositoryState) error {
-	currentState := repo.GetState()
+func (sm *RepositoryStateMachine) validateStateTransition(repoId int, currentState RepositoryState, to RepositoryState) error {
 	key := sm.createTransitionKey(currentState, to)
 
 	sm.mu.RLock()
@@ -252,8 +245,8 @@ func (sm *RepositoryStateMachine) validateStateTransition(repo Repository, to Re
 			GetStateTypeName(to))
 	}
 
-	// Execute guard function if present
-	if !rule.Guard(repo) {
+	// Execute guard function
+	if !rule.Guard(repoId, currentState) {
 		return fmt.Errorf("guard condition failed for transition %s -> %s",
 			GetStateTypeName(currentState),
 			GetStateTypeName(to))

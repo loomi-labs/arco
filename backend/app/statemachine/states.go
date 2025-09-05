@@ -23,8 +23,8 @@ type cancelCtx struct {
 type StateIdle struct{}
 
 type StateQueued struct {
-	NextOperation interface{} `json:"nextOperation"` // Operation from repository package (avoiding circular import)
-	QueueLength   int         `json:"queueLength"`
+	NextOperation Operation `json:"nextOperation"`
+	QueueLength   int       `json:"queueLength"`
 }
 
 type StateBackingUp struct {
@@ -119,14 +119,14 @@ type MountedVariant adtenum.OneVariantValue[StateMounted]
 type ErrorVariant adtenum.OneVariantValue[StateError]
 
 // Constructors
-var NewStateIdle func(StateIdle) IdleVariant = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
-var NewStateQueued func(StateQueued) QueuedVariant = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
-var NewStateBackingUp func(StateBackingUp) BackingUpVariant = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
-var NewStatePruning func(StatePruning) PruningVariant = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
-var NewStateDeleting func(StateDeleting) DeletingVariant = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
-var NewStateRefreshing func(StateRefreshing) RefreshingVariant = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
-var NewStateMounted func(StateMounted) MountedVariant = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
-var NewStateError func(StateError) ErrorVariant = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
+var NewStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
+var NewStateQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
+var NewStateBackingUp = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
+var NewStatePruning = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
+var NewStateDeleting = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
+var NewStateRefreshing = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
+var NewStateMounted = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
+var NewStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
 
 // Implement EnumType for each variant
 func (v IdleVariant) EnumType() RepositoryState       { return v }
@@ -239,7 +239,7 @@ func CreateIdleState() RepositoryState {
 }
 
 // CreateQueuedState creates a new queued state with operation info
-func CreateQueuedState(nextOperation interface{}, queueLength int) RepositoryState {
+func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState {
 	return NewStateQueued(StateQueued{
 		NextOperation: nextOperation,
 		QueueLength:   queueLength,
@@ -247,7 +247,7 @@ func CreateQueuedState(nextOperation interface{}, queueLength int) RepositorySta
 }
 
 // CreateBackingUpState creates a new backing up state with context
-func CreateBackingUpState(backupId types.BackupId, ctx context.Context) RepositoryState {
+func CreateBackingUpState(ctx context.Context, backupId types.BackupId) RepositoryState {
 	return NewStateBackingUp(StateBackingUp{
 		BackupID:  backupId,
 		Progress:  nil,
@@ -257,7 +257,7 @@ func CreateBackingUpState(backupId types.BackupId, ctx context.Context) Reposito
 }
 
 // CreatePruningState creates a new pruning state with context
-func CreatePruningState(backupId types.BackupId, ctx context.Context) RepositoryState {
+func CreatePruningState(ctx context.Context, backupId types.BackupId) RepositoryState {
 	return NewStatePruning(StatePruning{
 		BackupID:  backupId,
 		StartedAt: time.Now(),
@@ -266,7 +266,7 @@ func CreatePruningState(backupId types.BackupId, ctx context.Context) Repository
 }
 
 // CreateDeletingState creates a new deleting state with context
-func CreateDeletingState(archiveId int, ctx context.Context) RepositoryState {
+func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 	return NewStateDeleting(StateDeleting{
 		ArchiveID: archiveId,
 		StartedAt: time.Now(),

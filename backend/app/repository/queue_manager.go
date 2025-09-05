@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/loomi-labs/arco/backend/app/statemachine"
+	"github.com/loomi-labs/arco/backend/ent"
 )
 
 // ============================================================================
@@ -13,8 +16,14 @@ import (
 
 // QueueManager manages operation queues for all repositories
 type QueueManager struct {
-	queues map[int]*RepositoryQueue // RepoID -> Queue
-	mu     sync.RWMutex
+	stateMachine *statemachine.RepositoryStateMachine
+	db           *ent.Client
+	queues       map[int]*RepositoryQueue // RepoID -> Queue
+	mu           sync.RWMutex
+
+	// In-memory state tracking
+	repositoryStates map[int]statemachine.RepositoryState // RepoID -> Current State
+	statesMu         sync.RWMutex                         // Separate mutex for states
 
 	// Cross-repository concurrency control
 	maxHeavyOps int                      // Max heavy operations across all repositories
@@ -23,13 +32,42 @@ type QueueManager struct {
 }
 
 // NewQueueManager creates a new QueueManager with specified concurrency limits
-func NewQueueManager(maxHeavyOps int) *QueueManager {
+func NewQueueManager(stateMachine *statemachine.RepositoryStateMachine, maxHeavyOps int) *QueueManager {
 	return &QueueManager{
-		queues:      make(map[int]*RepositoryQueue),
-		maxHeavyOps: maxHeavyOps,
-		activeHeavy: make(map[int]*QueuedOperation),
-		activeLight: make(map[int]*QueuedOperation),
+		stateMachine:     stateMachine,
+		queues:           make(map[int]*RepositoryQueue),
+		repositoryStates: make(map[int]statemachine.RepositoryState),
+		maxHeavyOps:      maxHeavyOps,
+		activeHeavy:      make(map[int]*QueuedOperation),
+		activeLight:      make(map[int]*QueuedOperation),
 	}
+}
+
+// SetDB sets the database client for the queue manager
+func (qm *QueueManager) SetDB(db *ent.Client) {
+	qm.mu.Lock()
+	defer qm.mu.Unlock()
+	qm.db = db
+}
+
+// GetRepositoryState returns the current state of a repository (defaults to idle if not set)
+func (qm *QueueManager) GetRepositoryState(repoID int) statemachine.RepositoryState {
+	qm.statesMu.RLock()
+	defer qm.statesMu.RUnlock()
+
+	if state, exists := qm.repositoryStates[repoID]; exists {
+		return state
+	}
+
+	// Default to idle state for new repositories
+	return statemachine.NewStateIdle(statemachine.StateIdle{})
+}
+
+// setRepositoryState updates the current state of a repository in memory
+func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.RepositoryState) {
+	qm.statesMu.Lock()
+	defer qm.statesMu.Unlock()
+	qm.repositoryStates[repoID] = state
 }
 
 // GetQueue returns the queue for a specific repository, creating it if it doesn't exist
@@ -90,8 +128,8 @@ func (qm *QueueManager) CanStartOperation(repoID int, op *QueuedOperation) bool 
 	}
 
 	// Check operation weight and global limits
-	weight := GetOperationWeight(op.Operation)
-	if weight == WeightHeavy {
+	weight := statemachine.GetOperationWeight(op.Operation)
+	if weight == statemachine.WeightHeavy {
 		// Check global heavy operation limit
 		return len(qm.activeHeavy) < qm.maxHeavyOps
 	}
@@ -102,6 +140,7 @@ func (qm *QueueManager) CanStartOperation(repoID int, op *QueuedOperation) bool 
 
 // StartOperation marks an operation as active and updates state
 func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operationID string) error {
+	_ = ctx // Suppress unused parameter warning
 	queue := qm.GetQueue(repoID)
 
 	// Get operation before moving
@@ -123,15 +162,33 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 
 	// Update concurrency tracking
 	qm.mu.Lock()
-	weight := GetOperationWeight(op.Operation)
-	if weight == WeightHeavy {
+	weight := statemachine.GetOperationWeight(op.Operation)
+	if weight == statemachine.WeightHeavy {
 		qm.activeHeavy[repoID] = op
 	} else {
 		qm.activeLight[repoID] = op
 	}
 	qm.mu.Unlock()
 
-	// TODO: Transition repository state via state machine
+	// Transition repository state via state machine
+	// Get current state from in-memory tracking
+	currentState := qm.GetRepositoryState(repoID)
+
+	// Get target state for this operation
+	targetState, err := qm.getTargetStateForOperation(op)
+	if err != nil {
+		return fmt.Errorf("failed to determine target state for operation: %w", err)
+	}
+
+	// Validate state transition
+	err = qm.stateMachine.Transition(repoID, currentState, targetState)
+	if err != nil {
+		return fmt.Errorf("failed to transition repository %d from %T to %T: %w", repoID, currentState, targetState, err)
+	}
+
+	// Update repository state in memory
+	qm.setRepositoryState(repoID, targetState)
+
 	// TODO: Start actual operation execution
 
 	return nil
@@ -147,11 +204,11 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 		return fmt.Errorf("operation %s is not currently active for repository %d", operationID, repoID)
 	}
 
-	weight := GetOperationWeight(activeOp.Operation)
+	weight := statemachine.GetOperationWeight(activeOp.Operation)
 
 	// Remove from active tracking
 	qm.mu.Lock()
-	if weight == WeightHeavy {
+	if weight == statemachine.WeightHeavy {
 		delete(qm.activeHeavy, repoID)
 	} else {
 		delete(qm.activeLight, repoID)
@@ -164,13 +221,38 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 		return fmt.Errorf("failed to complete operation: %w", err)
 	}
 
-	// TODO: Transition repository state via state machine
+	// Transition repository state via state machine
+	// Get current state from in-memory tracking
+	currentState := qm.GetRepositoryState(repoID)
+
+	// Determine target state based on completion and queue status
+	var targetState statemachine.RepositoryState
+
+	if !success {
+		// On failure, transition to error state
+		targetState = statemachine.CreateErrorState(statemachine.ErrorTypeSSHKey, errorMsg, statemachine.ErrorActionNone)
+	} else {
+		// On success, determine next state based on queue status
+		targetState, err = qm.getCompletionStateForRepository(repoID)
+		if err != nil {
+			return fmt.Errorf("failed to determine completion state: %w", err)
+		}
+	}
+
+	// Validate state transition
+	err = qm.stateMachine.Transition(repoID, currentState, targetState)
+	if err != nil {
+		return fmt.Errorf("failed to transition repository %d from %T to %T: %w", repoID, currentState, targetState, err)
+	}
+
+	// Update repository state in memory
+	qm.setRepositoryState(repoID, targetState)
 
 	// Attempt to start next queued operation for this repo
 	qm.processQueue(repoID)
 
 	// If we completed a heavy operation, try to start waiting heavy operations on other repos
-	if weight == WeightHeavy {
+	if weight == statemachine.WeightHeavy {
 		for otherRepoID := range qm.queues {
 			if otherRepoID != repoID {
 				qm.processQueue(otherRepoID)
@@ -189,11 +271,11 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 	activeOp := queue.GetActive()
 	if activeOp != nil && activeOp.ID == operationID {
 		// Cancel active operation
-		weight := GetOperationWeight(activeOp.Operation)
+		weight := statemachine.GetOperationWeight(activeOp.Operation)
 
 		// Remove from active tracking
 		qm.mu.Lock()
-		if weight == WeightHeavy {
+		if weight == statemachine.WeightHeavy {
 			delete(qm.activeHeavy, repoID)
 		} else {
 			delete(qm.activeLight, repoID)
@@ -361,4 +443,56 @@ func (qm *QueueManager) expireOldOperations() {
 			qm.processQueue(repoID)
 		}
 	}
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// getTargetStateForOperation maps an operation to its corresponding active state
+func (qm *QueueManager) getTargetStateForOperation(op *QueuedOperation) (statemachine.RepositoryState, error) {
+	switch v := op.Operation.(type) {
+	case statemachine.BackupVariant:
+		backupData := v()
+		return statemachine.CreateBackingUpState(context.Background(), backupData.BackupID), nil
+
+	case statemachine.PruneVariant:
+		pruneData := v()
+		return statemachine.CreatePruningState(context.Background(), pruneData.BackupID), nil
+
+	case statemachine.DeleteVariant:
+		return statemachine.CreateDeletingState(context.Background(), 0), nil // Repository delete, no specific archive
+
+	case statemachine.ArchiveRefreshVariant:
+		return statemachine.CreateRefreshingState(context.Background()), nil
+
+	case statemachine.ArchiveDeleteVariant:
+		deleteData := v()
+		return statemachine.CreateDeletingState(context.Background(), deleteData.ArchiveID), nil
+
+	case statemachine.ArchiveRenameVariant:
+		// Archive rename is a lightweight operation, treat as refreshing
+		return statemachine.CreateRefreshingState(context.Background()), nil
+
+	default:
+		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
+	}
+}
+
+// getCompletionStateForRepository determines the target state when an operation completes successfully
+func (qm *QueueManager) getCompletionStateForRepository(repoID int) (statemachine.RepositoryState, error) {
+	// Check if there are more operations queued
+	if qm.HasQueuedOperations(repoID) {
+		// Get queue info for state data
+		queue := qm.GetQueue(repoID)
+		nextOp := queue.GetNext()
+		queueLength := queue.GetQueueLength()
+
+		if nextOp != nil {
+			return statemachine.CreateQueuedState(nextOp.Operation, queueLength), nil
+		}
+	}
+
+	// No more operations, return to idle
+	return statemachine.CreateIdleState(), nil
 }

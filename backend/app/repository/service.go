@@ -38,14 +38,16 @@ type ServiceInternal struct {
 // NewService creates a new repository service instance
 func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 	var maxHeavyOperations = 1
-	var queueManager = NewQueueManager(maxHeavyOperations)
+	var stateMachine = statemachine.NewRepositoryStateMachine()
+	var queueManager = NewQueueManager(stateMachine, maxHeavyOperations)
+	stateMachine.SetQueueManager(queueManager)
 
 	return &ServiceInternal{
 		Service: &Service{
 			log:          log,
-			queueManager: queueManager,
-			stateMachine: statemachine.NewRepositoryStateMachine(queueManager),
 			config:       config,
+			queueManager: queueManager,
+			stateMachine: stateMachine,
 		},
 	}
 }
@@ -56,6 +58,10 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
+
+	// Set database client on queue manager
+	si.queueManager.SetDB(db)
+
 	// TODO: Start periodic cleanup goroutine
 	// go si.startPeriodicCleanup(ctx)
 }
