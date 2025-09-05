@@ -370,7 +370,15 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 		}
 		qm.mu.Unlock()
 
-		// TODO: Cancel operation context if running
+		// Cancel operation context if running
+		currentState := qm.GetRepositoryState(repoID)
+		if cancel, hasCancel := statemachine.GetCancel(currentState); hasCancel {
+			qm.log.Infow("Cancelling operation",
+				"repoID", repoID,
+				"operationID", operationID,
+				"stateType", fmt.Sprintf("%T", currentState))
+			cancel()
+		}
 
 		// Complete with cancelled status
 		err := queue.CompleteActive(false, "Operation cancelled by user")

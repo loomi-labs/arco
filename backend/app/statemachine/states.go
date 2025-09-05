@@ -200,23 +200,23 @@ func IsErrorState(state RepositoryState) bool {
 	return ok
 }
 
-// GetCancelContext extracts cancel context from active states
-func GetCancelContext(state RepositoryState) (context.Context, context.CancelFunc, bool) {
+// GetCancel extracts cancel context from active states
+func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	switch s := state.(type) {
 	case BackingUpVariant:
 		data := s()
-		return data.cancelCtx.ctx, data.cancelCtx.cancel, true
+		return data.cancelCtx.cancel, true
 	case PruningVariant:
 		data := s()
-		return data.cancelCtx.ctx, data.cancelCtx.cancel, true
+		return data.cancelCtx.cancel, true
 	case DeletingVariant:
 		data := s()
-		return data.cancelCtx.ctx, data.cancelCtx.cancel, true
+		return data.cancelCtx.cancel, true
 	case RefreshingVariant:
 		data := s()
-		return data.cancelCtx.ctx, data.cancelCtx.cancel, true
+		return data.cancelCtx.cancel, true
 	default:
-		return nil, nil, false
+		return nil, false
 	}
 }
 
