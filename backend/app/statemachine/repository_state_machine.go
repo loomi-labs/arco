@@ -2,210 +2,263 @@ package statemachine
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 )
 
 // RepositoryStateMachine manages state transitions for repositories
 // This is a concrete implementation that will work with the repository ADT types
 type RepositoryStateMachine struct {
-	transitions map[string]TransitionRule[interface{}]
-	mu          sync.RWMutex
+	transitions  map[transitionKey]RepositoryTransitionRule
+	mu           sync.RWMutex
+	queueManager QueueManager
+}
+
+type QueueManager interface {
+	// HasQueuedOperations checks if a repository has pending operations
+	HasQueuedOperations(repoID int) bool
 }
 
 // Repository interface for guard functions - will be implemented by repository.Repository
 type Repository interface {
-	GetState() interface{} // Returns RepositoryState ADT
+	GetState() RepositoryState // Returns RepositoryState ADT
 	GetID() int
 }
 
-// TransitionRule for repository state machine with repository-specific guard
+// transitionKey uniquely identifies a state transition using type information
+type transitionKey struct {
+	fromType reflect.Type
+	toType   reflect.Type
+}
+
+// RepositoryTransitionRule defines a repository state machine transition with optional guard
 type RepositoryTransitionRule struct {
-	From  string                // State type name (e.g., "Idle", "Queued")
-	To    string                // State type name
+	From  RepositoryState       // Source state
+	To    RepositoryState       // Target state
 	Guard func(Repository) bool // Repository-specific validation
 }
 
 // NewRepositoryStateMachine creates a new repository state machine with all valid transitions
-func NewRepositoryStateMachine() *RepositoryStateMachine {
+func NewRepositoryStateMachine(queueManager QueueManager) *RepositoryStateMachine {
 	sm := &RepositoryStateMachine{
-		transitions: make(map[string]TransitionRule[interface{}]),
+		transitions:  make(map[transitionKey]RepositoryTransitionRule),
+		queueManager: queueManager,
 	}
 
-	// Initialize all valid transitions based on STATEMACHINE_DESIGN.md
+	// Initialize all valid transitions
 	sm.initializeTransitions()
 
 	return sm
 }
 
 // CanTransition checks if a transition from one repository state to another is valid
-func (sm *RepositoryStateMachine) CanTransition(repo Repository, toState interface{}) bool {
-	// TODO: Implement repository state transition validation:
-	// 1. Get current state from repository
-	// 2. Determine state type names from ADT variants
-	// 3. Look up transition rule
-	// 4. Execute guard function if present
-	// 5. Return validation result
-	return false
+func (sm *RepositoryStateMachine) CanTransition(repo Repository, toState RepositoryState) bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	currentState := repo.GetState()
+	key := sm.createTransitionKey(currentState, toState)
+
+	rule, exists := sm.transitions[key]
+	if !exists {
+		return false
+	}
+
+	// Execute guard
+	return rule.Guard(repo)
 }
 
 // Transition performs a repository state transition with validation
-func (sm *RepositoryStateMachine) Transition(repo Repository, toState interface{}) error {
-	// TODO: Implement repository state transition:
-	// 1. Validate transition is allowed via CanTransition
-	// 2. Perform any pre-transition actions
-	// 3. Update repository state (will be done by service layer)
-	// 4. Execute any post-transition actions
-	// 5. Emit state change events (will be done by service layer)
-
+func (sm *RepositoryStateMachine) Transition(repo Repository, toState RepositoryState) error {
 	if !sm.CanTransition(repo, toState) {
-		return fmt.Errorf("invalid state transition for repository %d", repo.GetID())
+		currentState := repo.GetState()
+		return fmt.Errorf("invalid state transition for repository %d: %s -> %s",
+			repo.GetID(),
+			GetStateTypeName(currentState),
+			GetStateTypeName(toState))
 	}
 
+	// Transition is valid - actual state update will be done by service layer
+	// This method validates and can perform pre/post transition hooks
 	return nil
 }
 
 // GetValidTransitions returns all valid transitions from the repository's current state
-func (sm *RepositoryStateMachine) GetValidTransitions(repo Repository) []string {
-	// TODO: Implement valid transition lookup:
-	// 1. Get current state from repository
-	// 2. Find all transitions with matching 'from' state
-	// 3. Check guards for each transition
-	// 4. Return list of valid target state names
-	return nil
-}
+func (sm *RepositoryStateMachine) GetValidTransitions(repo Repository) []RepositoryState {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-// initializeTransitions sets up all valid state transitions
-func (sm *RepositoryStateMachine) initializeTransitions() {
-	// TODO: Initialize all transitions based on STATEMACHINE_DESIGN.md
+	currentState := repo.GetState()
+	currentType := reflect.TypeOf(currentState)
 
-	// From Idle
-	sm.addTransition("Idle", "Queued", sm.canQueue)
-	sm.addTransition("Idle", "BackingUp", sm.canStartBackup)
-	sm.addTransition("Idle", "Pruning", sm.canStartBackup)
-	sm.addTransition("Idle", "Deleting", sm.canStartOperation)
-	sm.addTransition("Idle", "Refreshing", sm.canStartOperation)
-	sm.addTransition("Idle", "Mounted", sm.canMount)
-	sm.addTransition("Idle", "Error", nil) // Always allowed for unexpected errors
-
-	// From Queued
-	sm.addTransition("Queued", "BackingUp", sm.canStartBackup)
-	sm.addTransition("Queued", "Pruning", sm.canStartBackup)
-	sm.addTransition("Queued", "Deleting", sm.canStartOperation)
-	sm.addTransition("Queued", "Refreshing", sm.canStartOperation)
-	sm.addTransition("Queued", "Idle", nil)  // Queue cleared/expired
-	sm.addTransition("Queued", "Error", nil) // Queue processing error
-
-	// From Active States (BackingUp, Pruning, Deleting, Refreshing)
-	activeStates := []string{"BackingUp", "Pruning", "Deleting", "Refreshing"}
-	for _, state := range activeStates {
-		sm.addTransition(state, "Idle", nil)                      // Operation completed
-		sm.addTransition(state, "Error", nil)                     // Operation failed
-		sm.addTransition(state, "Queued", sm.hasQueuedOperations) // Operation cancelled, queue not empty
-	}
-
-	// From Mounted
-	sm.addTransition("Mounted", "Idle", nil)  // Unmounted
-	sm.addTransition("Mounted", "Error", nil) // Mount error
-
-	// From Error
-	sm.addTransition("Error", "Idle", nil) // Error cleared/resolved
-}
-
-// addTransition adds a transition rule with optional guard
-func (sm *RepositoryStateMachine) addTransition(from, to string, guard func(Repository) bool) {
-	key := sm.transitionKey(from, to)
-
-	// Convert guard to interface{} compatible function
-	var genericGuard func(interface{}) bool
-	if guard != nil {
-		genericGuard = func(entity interface{}) bool {
-			if repo, ok := entity.(Repository); ok {
-				return guard(repo)
+	var validStates []RepositoryState
+	for key, rule := range sm.transitions {
+		if key.fromType == currentType {
+			// Check guard if present
+			if rule.Guard(repo) {
+				validStates = append(validStates, rule.To)
 			}
-			return false
 		}
 	}
 
-	sm.transitions[key] = TransitionRule[interface{}]{
-		From:  from,
-		To:    to,
-		Guard: genericGuard,
+	return validStates
+}
+
+// TransitionDef defines a single transition with ADT types
+type TransitionDef struct {
+	From  RepositoryState
+	To    RepositoryState
+	Guard func(Repository) bool
+}
+
+// initializeTransitions sets up all valid state transitions using a map-based approach
+func (sm *RepositoryStateMachine) initializeTransitions() {
+	// Create state instances once
+	idle := NewStateIdle(StateIdle{})
+	queued := NewStateQueued(StateQueued{})
+	backingUp := NewStateBackingUp(StateBackingUp{})
+	pruning := NewStatePruning(StatePruning{})
+	deleting := NewStateDeleting(StateDeleting{})
+	refreshing := NewStateRefreshing(StateRefreshing{})
+	mounted := NewStateMounted(StateMounted{})
+	errorState := NewStateError(StateError{})
+
+	// No guard needed for this transition
+	nop := func(Repository) bool {
+		return true
+	}
+
+	// Repository can not have a queued operation
+	hasQueuedOps := func(repo Repository) bool {
+		return sm.queueManager.HasQueuedOperations(repo.GetID())
+	}
+
+	// Define all transitions using ADT types directly
+	transitions := []TransitionDef{
+		// From Idle
+		{From: idle, To: queued, Guard: nop},     // New operation added to queue when repo is idle
+		{From: idle, To: backingUp, Guard: nop},  // Start backup immediately (no queue)
+		{From: idle, To: pruning, Guard: nop},    // Start prune immediately (no queue)
+		{From: idle, To: deleting, Guard: nop},   // Start repository delete operation
+		{From: idle, To: refreshing, Guard: nop}, // Start refreshing archive list
+		{From: idle, To: mounted, Guard: nop},    // Mount repository or archive for browsing
+		{From: idle, To: errorState, Guard: nop}, // Unexpected error (e.g., repository locked)
+
+		// From Queued
+		{From: queued, To: backingUp, Guard: nop},  // Backup operation starts from queue
+		{From: queued, To: pruning, Guard: nop},    // Prune operation starts from queue
+		{From: queued, To: deleting, Guard: nop},   // Delete operation starts from queue
+		{From: queued, To: refreshing, Guard: nop}, // Refresh operation starts from queue
+		{From: queued, To: idle, Guard: nop},       // Queue cleared or all operations expired
+		{From: queued, To: errorState, Guard: nop}, // Queue processing error
+
+		// From BackingUp
+		{From: backingUp, To: idle, Guard: nop},            // Backup completed successfully
+		{From: backingUp, To: errorState, Guard: nop},      // Backup failed with error
+		{From: backingUp, To: queued, Guard: hasQueuedOps}, // Backup cancelled, more operations waiting
+
+		// From Pruning
+		{From: pruning, To: idle, Guard: nop},            // Prune completed successfully
+		{From: pruning, To: errorState, Guard: nop},      // Prune failed with error
+		{From: pruning, To: queued, Guard: hasQueuedOps}, // Prune cancelled, more operations waiting
+
+		// From Deleting
+		{From: deleting, To: idle, Guard: nop},            // Delete completed successfully
+		{From: deleting, To: errorState, Guard: nop},      // Delete failed with error
+		{From: deleting, To: queued, Guard: hasQueuedOps}, // Delete cancelled, more operations waiting
+
+		// From Refreshing
+		{From: refreshing, To: idle, Guard: nop},            // Refresh completed successfully
+		{From: refreshing, To: errorState, Guard: nop},      // Refresh failed with error
+		{From: refreshing, To: queued, Guard: hasQueuedOps}, // Refresh cancelled, more operations waiting
+
+		// From Mounted
+		{From: mounted, To: idle, Guard: nop},       // Repository/archive unmounted
+		{From: mounted, To: errorState, Guard: nop}, // Mount error (e.g., filesystem issue)
+
+		// From Error
+		{From: errorState, To: idle, Guard: nop}, // Error resolved/cleared by user action
+	}
+
+	// Build the transitions map
+	for _, def := range transitions {
+		key := transitionKey{
+			fromType: reflect.TypeOf(def.From),
+			toType:   reflect.TypeOf(def.To),
+		}
+
+		sm.transitions[key] = RepositoryTransitionRule{
+			From:  def.From,
+			To:    def.To,
+			Guard: def.Guard,
+		}
 	}
 }
 
-// transitionKey generates a unique key for a state transition
-func (sm *RepositoryStateMachine) transitionKey(from, to string) string {
-	return fmt.Sprintf("%s->%s", from, to)
-}
-
-// ============================================================================
-// GUARD CONDITIONS
-// ============================================================================
-
-// canStartBackup checks if a backup operation can start
-func (sm *RepositoryStateMachine) canStartBackup(repo Repository) bool {
-	// TODO: Implement guard condition:
-	// 1. Get current state from repository
-	// 2. Check state is not Mounted and not Error
-	// 3. Check repository is accessible
-	return false
-}
-
-// canMount checks if repository can be mounted
-func (sm *RepositoryStateMachine) canMount(repo Repository) bool {
-	// TODO: Implement guard condition:
-	// 1. Get current state from repository
-	// 2. Check state is Idle
-	// 3. Check repository is not already mounted
-	return false
-}
-
-// canQueue checks if operations can be queued
-func (sm *RepositoryStateMachine) canQueue(repo Repository) bool {
-	// TODO: Implement guard condition:
-	// 1. Get current state from repository
-	// 2. Check state is Idle or Queued
-	// 3. Check repository is accessible
-	return false
-}
-
-// canStartOperation checks if a general operation can start
-func (sm *RepositoryStateMachine) canStartOperation(repo Repository) bool {
-	// TODO: Implement guard condition:
-	// 1. Get current state from repository
-	// 2. Check state allows new operations
-	// 3. Check repository is accessible
-	return false
-}
-
-// hasQueuedOperations checks if repository has queued operations
-func (sm *RepositoryStateMachine) hasQueuedOperations(repo Repository) bool {
-	// TODO: Implement guard condition:
-	// 1. Check if repository has operations in queue
-	// 2. This will require access to QueueManager
-	return false
+// createTransitionKey generates a transition key from state instances
+func (sm *RepositoryStateMachine) createTransitionKey(from, to RepositoryState) transitionKey {
+	return transitionKey{
+		fromType: reflect.TypeOf(from),
+		toType:   reflect.TypeOf(to),
+	}
 }
 
 // ============================================================================
 // UTILITY METHODS
 // ============================================================================
 
-// getStateTypeName extracts the state type name from an ADT variant
-func (sm *RepositoryStateMachine) getStateTypeName(state interface{}) string {
-	// TODO: Implement state type extraction from ADT:
-	// 1. Use type assertion or reflection to determine variant type
-	// 2. Return corresponding state name (e.g., "Idle", "Queued", etc.)
-	// 3. Handle all repository state variants
-	return "Unknown"
+// CanTransitionToAny checks if any of the given states are valid transitions
+func (sm *RepositoryStateMachine) CanTransitionToAny(repo Repository, states ...RepositoryState) bool {
+	for _, state := range states {
+		if sm.CanTransition(repo, state) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetAllPossibleStates returns all possible states that can be transitioned to from any state
+func (sm *RepositoryStateMachine) GetAllPossibleStates() []RepositoryState {
+	return []RepositoryState{
+		NewStateIdle(StateIdle{}),
+		NewStateQueued(StateQueued{}),
+		NewStateBackingUp(StateBackingUp{}),
+		NewStatePruning(StatePruning{}),
+		NewStateDeleting(StateDeleting{}),
+		NewStateRefreshing(StateRefreshing{}),
+		NewStateMounted(StateMounted{}),
+		NewStateError(StateError{}),
+	}
+}
+
+// GetStateTypeName is now provided by the states.go file
+// This method is kept for backward compatibility
+func (sm *RepositoryStateMachine) getStateTypeName(state RepositoryState) string {
+	return GetStateTypeName(state)
 }
 
 // validateStateTransition performs comprehensive validation
-func (sm *RepositoryStateMachine) validateStateTransition(repo Repository, from, to string) error {
-	// TODO: Implement comprehensive validation:
-	// 1. Check if transition rule exists
-	// 2. Execute guard function if present
-	// 3. Perform any additional business logic validation
-	// 4. Return detailed error if validation fails
+func (sm *RepositoryStateMachine) validateStateTransition(repo Repository, to RepositoryState) error {
+	currentState := repo.GetState()
+	key := sm.createTransitionKey(currentState, to)
+
+	sm.mu.RLock()
+	rule, exists := sm.transitions[key]
+	sm.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("no transition rule found for %s -> %s",
+			GetStateTypeName(currentState),
+			GetStateTypeName(to))
+	}
+
+	// Execute guard function if present
+	if !rule.Guard(repo) {
+		return fmt.Errorf("guard condition failed for transition %s -> %s",
+			GetStateTypeName(currentState),
+			GetStateTypeName(to))
+	}
+
 	return nil
 }
 
@@ -216,12 +269,7 @@ func (sm *RepositoryStateMachine) GetTransitionRules() []RepositoryTransitionRul
 
 	var rules []RepositoryTransitionRule
 	for _, rule := range sm.transitions {
-		// TODO: Convert internal rules to external format
-		rules = append(rules, RepositoryTransitionRule{
-			From: rule.From.(string),
-			To:   rule.To.(string),
-			// Guard function conversion would be complex, leave nil for now
-		})
+		rules = append(rules, rule)
 	}
 
 	return rules
