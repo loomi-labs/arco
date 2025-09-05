@@ -201,7 +201,6 @@ func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
 		q.active.Status = NewStatusFailed(StatusFailed{
 			Error:    errorMsg,
 			FailedAt: time.Now(),
-			CanRetry: true, // TODO: Determine retry logic based on operation type
 		})
 	}
 

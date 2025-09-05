@@ -55,7 +55,6 @@ type RepositoryWithQueue struct {
 // OPERATION STATUS ADT
 // ============================================================================
 
-// Status variant structs (type-safe status information)
 type StatusQueued struct {
 	Position int `json:"position"` // Position in queue
 }
@@ -72,7 +71,6 @@ type StatusCompleted struct {
 type StatusFailed struct {
 	Error    string    `json:"error"`
 	FailedAt time.Time `json:"failedAt"`
-	CanRetry bool      `json:"canRetry"`
 }
 
 type StatusExpired struct {
