@@ -33,10 +33,10 @@ func (qm *QueueManager) GetQueue(repoID int) *RepositoryQueue {
 }
 
 // GetCurrentState returns the current repository state based on queue status
-func (qm *QueueManager) GetCurrentState(repoID int) RepositoryState {
-	// TODO: Implement state calculation based on queue status
-	return NewStateIdle(StateIdle{})
-}
+//func (qm *QueueManager) GetCurrentState(repoID int) statemachine.RepositoryState {
+//	// TODO: Implement state calculation based on queue status
+//	return statemachine.CreateIdleState()
+//}
 
 // AddOperation adds an operation to the specified repository queue
 func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, error) {
@@ -124,6 +124,18 @@ func (qm *QueueManager) GetActiveOperations() map[int]*QueuedOperation {
 func (qm *QueueManager) GetHeavyOperationCount() int {
 	// TODO: Implement heavy operation counting
 	return 0
+}
+
+// HasQueuedOperations checks if a repository has pending operations
+func (qm *QueueManager) HasQueuedOperations(repoID int) bool {
+	queue := qm.GetQueue(repoID)
+	if queue == nil {
+		return false
+	}
+	// Check if there are any queued operations
+	// This will be properly implemented when the queue structure is complete
+	// For now, return false as a safe default
+	return false
 }
 
 // SetMaxHeavyOps updates the maximum number of concurrent heavy operations
