@@ -844,20 +844,77 @@ func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progr
 	}
 }
 
+// buildPruneOptions converts PruningRule database fields into borg prune command options
+func buildPruneOptions(rule *ent.PruningRule) []string {
+	var options []string
+	
+	if rule.KeepHourly > 0 {
+		options = append(options, fmt.Sprintf("--keep-hourly=%d", rule.KeepHourly))
+	}
+	if rule.KeepDaily > 0 {
+		options = append(options, fmt.Sprintf("--keep-daily=%d", rule.KeepDaily))
+	}
+	if rule.KeepWeekly > 0 {
+		options = append(options, fmt.Sprintf("--keep-weekly=%d", rule.KeepWeekly))
+	}
+	if rule.KeepMonthly > 0 {
+		options = append(options, fmt.Sprintf("--keep-monthly=%d", rule.KeepMonthly))
+	}
+	if rule.KeepYearly > 0 {
+		options = append(options, fmt.Sprintf("--keep-yearly=%d", rule.KeepYearly))
+	}
+	if rule.KeepWithinDays > 0 {
+		options = append(options, fmt.Sprintf("--keep-within=%dd", rule.KeepWithinDays))
+	}
+	
+	// If no options were configured, provide a sensible default
+	if len(options) == 0 {
+		options = []string{"--keep-daily=7", "--keep-weekly=4", "--keep-monthly=6"}
+	}
+	
+	return options
+}
+
 // executePrune performs a borg prune operation
 func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant) (*borgtypes.Status, error) {
 	pruneData := pruneOp()
 
-	// Get repository from database using BackupID.RepositoryId
-	repo, err := e.db.Repository.Get(ctx, pruneData.BackupID.RepositoryId)
+	// Get backup profile with repository and pruning rule data in a single query
+	profile, err := e.db.BackupProfile.Query().
+		Where(backupprofile.ID(pruneData.BackupID.BackupProfileId)).
+		WithRepositories().
+		WithPruningRule().
+		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("repository %d not found: %w", pruneData.BackupID.RepositoryId, err)
+		return nil, fmt.Errorf("backup profile %d not found: %w", pruneData.BackupID.BackupProfileId, err)
 	}
 
-	// TODO: Get prune options from BackupId (requires database lookup for backup profile)
-	prefix := "arco-"                                             // This should come from backup profile
-	pruneOptions := []string{"--keep-daily=7", "--keep-weekly=4"} // This should come from backup profile
-	isDryRun := false                                             // This could be a parameter
+	// Get repository from backup profile relationship
+	if len(profile.Edges.Repositories) == 0 {
+		return nil, fmt.Errorf("backup profile %d has no associated repository", pruneData.BackupID.BackupProfileId)
+	}
+	repo := profile.Edges.Repositories[0] // Backup profiles should have exactly one repository
+
+	// Get pruning configuration from database
+	prefix := profile.Prefix
+	
+	// Handle pruning rule configuration
+	var pruneOptions []string
+	// Ensure pruning rule exists and is enabled
+	if profile.Edges.PruningRule == nil {
+		return nil, fmt.Errorf("backup profile %d has no pruning rule defined", pruneData.BackupID.BackupProfileId)
+	}
+	if !profile.Edges.PruningRule.IsEnabled {
+		return nil, fmt.Errorf("backup profile %d has pruning rule disabled", pruneData.BackupID.BackupProfileId)
+	}
+	
+	// Get pruning options from enabled pruning rule
+	pruneOptions = buildPruneOptions(profile.Edges.PruningRule)
+	e.qm.log.Infow("Using database pruning rule configuration",
+		"repoID", e.repoID,
+		"operationID", e.operationID,
+		"backupProfileID", pruneData.BackupID.BackupProfileId,
+		"pruneOptions", pruneOptions)
 
 	// Create progress channel for prune results
 	progressCh := make(chan borgtypes.PruneResult, 100)
@@ -867,7 +924,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 	go e.monitorPruneProgress(ctx, progressCh)
 
 	// Execute borg prune command
-	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, progressCh)
+	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, false, progressCh)
 
 	// Return status directly (preserves rich error information)
 	_ = pruneData // Use pruneData to avoid unused variable warning
