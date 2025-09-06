@@ -816,16 +816,23 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	go e.monitorBackupProgress(ctx, progressCh)
 
 	// Execute borg create command
-	archiveName, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
+	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
 
 	// Close progress channel
 	close(progressCh)
 
-	// Return status directly (preserves rich error information)
-	_ = archiveName // Archive name for logging/database update
-	_ = backupData  // Use backupData to avoid unused variable warning
-	//TODO: refresh the archive here
+	// Refresh the newly created archive in database
+	err = e.refreshNewArchive(ctx, repo, archivePath)
+	if err != nil {
+		e.qm.log.Warnw("Failed to refresh archive after backup",
+			"archivePath", archivePath,
+			"repoID", e.repoID,
+			"error", err.Error())
+		// Don't fail backup operation for refresh errors
+	}
 
+	// Return status directly (preserves rich error information)
+	_ = backupData // Use backupData to avoid unused variable warning
 	return status, nil
 }
 
@@ -1138,4 +1145,98 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 	}
 
 	return nil
+}
+
+// syncSingleArchiveToDatabase adds or updates a single archive in the database
+// This method does NOT delete any existing archives - it only adds/updates
+func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context, repositoryID int, archiveData borgtypes.ArchiveList) error {
+	// Get repository with backup profiles for prefix matching
+	repo, err := e.db.Repository.Query().
+		Where(repository.ID(repositoryID)).
+		WithBackupProfiles().
+		Only(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query repository %d: %w", repositoryID, err)
+	}
+
+	// Calculate duration from start to end time
+	startTime := time.Time(archiveData.Start)
+	endTime := time.Time(archiveData.End)
+	duration := endTime.Sub(startTime)
+
+	// Check if archive already exists by borg ID
+	existingArchive, err := e.db.Archive.Query().
+		Where(
+			archive.And(
+				archive.HasRepositoryWith(repository.ID(repositoryID)),
+				archive.BorgID(archiveData.ID),
+			),
+		).
+		Only(ctx)
+
+	if err != nil && !ent.IsNotFound(err) {
+		return fmt.Errorf("failed to check for existing archive %s: %w", archiveData.Name, err)
+	}
+
+	if existingArchive != nil {
+		// Update existing archive
+		_, err := existingArchive.Update().
+			SetName(archiveData.Name).
+			SetDuration(duration.Seconds()).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to update archive %s: %w", archiveData.Name, err)
+		}
+
+		e.qm.log.Infow("Updated existing archive",
+			"archiveName", archiveData.Name,
+			"borgId", archiveData.ID,
+			"repositoryID", repositoryID)
+	} else {
+		// Create new archive
+		createQuery := e.db.Archive.Create().
+			SetBorgID(archiveData.ID).
+			SetName(archiveData.Name).
+			SetCreatedAt(startTime).
+			SetDuration(duration.Seconds()).
+			SetRepositoryID(repositoryID)
+
+		// Find matching backup profile by prefix
+		for _, backupProfile := range repo.Edges.BackupProfiles {
+			if strings.HasPrefix(archiveData.Name, backupProfile.Prefix) {
+				createQuery = createQuery.SetBackupProfileID(backupProfile.ID)
+				break
+			}
+		}
+
+		// Save the new archive
+		_, err := createQuery.Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create archive %s: %w", archiveData.Name, err)
+		}
+
+		e.qm.log.Infow("Created new archive",
+			"archiveName", archiveData.Name,
+			"borgId", archiveData.ID,
+			"repositoryID", repositoryID)
+	}
+
+	return nil
+}
+
+// refreshNewArchive refreshes a single newly created archive in the database
+func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string) error {
+	// Use repository::archive syntax to list only the specific archive
+	listResponse, status := e.borgClient.List(ctx, archivePath, repo.Password)
+
+	if status.HasError() {
+		return fmt.Errorf("failed to list archive %s: %w", archivePath, status.Error)
+	}
+
+	if len(listResponse.Archives) == 0 {
+		return fmt.Errorf("archive %s not found in borg repository", archivePath)
+	}
+
+	// Sync only the single archive (no deletions)
+	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0])
 }
