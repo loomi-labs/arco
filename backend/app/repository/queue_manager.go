@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/repository"
 	"go.uber.org/zap"
 )
 
@@ -989,8 +991,11 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	// Execute borg list command to refresh archive information
 	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password)
 
-	// TODO: Update database with refreshed archive information
-	_ = listResponse // Use listResponse to avoid unused variable warning
+	// Update database with refreshed archive information
+	err = e.syncArchivesToDatabase(ctx, refreshData.RepositoryID, listResponse.Archives)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync archives to database: %w", err)
+	}
 
 	// Return status directly (preserves rich error information)
 	return status, nil
@@ -1040,4 +1045,97 @@ func (e *borgOperationExecutor) monitorPruneProgress(ctx context.Context, progre
 			_ = progress
 		}
 	}
+}
+
+// syncArchivesToDatabase synchronizes borg archives with the database
+// It deletes archives that no longer exist in borg and creates new ones
+func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repositoryID int, archives []borgtypes.ArchiveList) error {
+	// Get repository with backup profiles for prefix matching
+	repo, err := e.db.Repository.Query().
+		Where(repository.ID(repositoryID)).
+		WithBackupProfiles().
+		Only(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query repository %d: %w", repositoryID, err)
+	}
+
+	// Extract all borg IDs from the response
+	borgIds := make([]string, len(archives))
+	for i, arch := range archives {
+		borgIds[i] = arch.ID
+	}
+
+	// Delete archives that no longer exist in borg
+	deletedCount, err := e.db.Archive.Delete().
+		Where(
+			archive.And(
+				archive.HasRepositoryWith(repository.ID(repositoryID)),
+				archive.BorgIDNotIn(borgIds...),
+			),
+		).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete orphaned archives: %w", err)
+	}
+
+	if deletedCount > 0 {
+		e.qm.log.Infow("Deleted orphaned archives", "count", deletedCount, "repositoryID", repositoryID)
+	}
+
+	// Query existing archives to identify which ones are already saved
+	existingArchives, err := e.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repositoryID))).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query existing archives: %w", err)
+	}
+
+	// Create map of existing borg IDs for faster lookup
+	existingBorgIds := make(map[string]bool)
+	for _, arch := range existingArchives {
+		existingBorgIds[arch.BorgID] = true
+	}
+
+	// Create new archives for those not already in database
+	newArchiveCount := 0
+	for _, arch := range archives {
+		if existingBorgIds[arch.ID] {
+			continue // Archive already exists, skip
+		}
+
+		// Calculate duration from start to end time
+		startTime := time.Time(arch.Start)
+		endTime := time.Time(arch.End)
+		duration := endTime.Sub(startTime)
+
+		// Create base archive creation query
+		createQuery := e.db.Archive.Create().
+			SetBorgID(arch.ID).
+			SetName(arch.Name).
+			SetCreatedAt(startTime).
+			SetDuration(duration.Seconds()).
+			SetRepositoryID(repositoryID)
+
+		// Find matching backup profile by prefix
+		for _, backupProfile := range repo.Edges.BackupProfiles {
+			if strings.HasPrefix(arch.Name, backupProfile.Prefix) {
+				createQuery = createQuery.SetBackupProfileID(backupProfile.ID)
+				break
+			}
+		}
+
+		// Save the new archive
+		_, err := createQuery.Save(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create archive %s: %w", arch.Name, err)
+		}
+
+		newArchiveCount++
+	}
+
+	if newArchiveCount > 0 {
+		e.qm.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
+	}
+
+	return nil
 }
