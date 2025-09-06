@@ -847,7 +847,7 @@ func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progr
 // buildPruneOptions converts PruningRule database fields into borg prune command options
 func buildPruneOptions(rule *ent.PruningRule) []string {
 	var options []string
-	
+
 	if rule.KeepHourly > 0 {
 		options = append(options, fmt.Sprintf("--keep-hourly=%d", rule.KeepHourly))
 	}
@@ -866,12 +866,12 @@ func buildPruneOptions(rule *ent.PruningRule) []string {
 	if rule.KeepWithinDays > 0 {
 		options = append(options, fmt.Sprintf("--keep-within=%dd", rule.KeepWithinDays))
 	}
-	
+
 	// If no options were configured, provide a sensible default
 	if len(options) == 0 {
 		options = []string{"--keep-daily=7", "--keep-weekly=4", "--keep-monthly=6"}
 	}
-	
+
 	return options
 }
 
@@ -897,7 +897,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 
 	// Get pruning configuration from database
 	prefix := profile.Prefix
-	
+
 	// Handle pruning rule configuration
 	var pruneOptions []string
 	// Ensure pruning rule exists and is enabled
@@ -907,7 +907,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 	if !profile.Edges.PruningRule.IsEnabled {
 		return nil, fmt.Errorf("backup profile %d has pruning rule disabled", pruneData.BackupID.BackupProfileId)
 	}
-	
+
 	// Get pruning options from enabled pruning rule
 	pruneOptions = buildPruneOptions(profile.Edges.PruningRule)
 	e.qm.log.Infow("Using database pruning rule configuration",

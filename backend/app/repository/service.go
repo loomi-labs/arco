@@ -97,9 +97,9 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 
 	// 3. Create Repository struct with basic fields
 	repo := &Repository{
-		ID:   repoEntity.ID,
-		Name: repoEntity.Name,
-		URL:  repoEntity.URL,
+		ID:    repoEntity.ID,
+		Name:  repoEntity.Name,
+		URL:   repoEntity.URL,
 		State: currentState,
 	}
 
@@ -115,7 +115,7 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 	// 5. Populate metadata from loaded archives
 	archives := repoEntity.Edges.Archives
 	repo.ArchiveCount = len(archives)
-	
+
 	// Get last backup time from most recent archive
 	if len(archives) > 0 {
 		// Archives are already ordered by creation time descending
