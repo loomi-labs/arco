@@ -28,10 +28,11 @@ type Repository struct {
 	State statemachine.RepositoryState `json:"state"`
 
 	// Metadata
-	ArchiveCount    int        `json:"archiveCount"`
-	LastBackupTime  *time.Time `json:"lastBackupTime,omitempty"`
-	LastBackupError string     `json:"lastBackupError,omitempty"`
-	StorageUsed     int64      `json:"storageUsed"`
+	ArchiveCount      int        `json:"archiveCount"`
+	LastBackupTime    *time.Time `json:"lastBackupTime,omitempty"`
+	LastBackupError   string     `json:"lastBackupError,omitempty"`
+	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
+	StorageUsed       int64      `json:"storageUsed"`
 }
 
 // GetState implements the statemachine.Repository interface

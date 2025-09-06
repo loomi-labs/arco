@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
@@ -95,47 +96,44 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 	// 2. Calculate current state from queue manager
 	currentState := s.queueManager.GetRepositoryState(repoId)
 
-	// 3. Create Repository struct with basic fields
-	repo := &Repository{
-		ID:    repoEntity.ID,
-		Name:  repoEntity.Name,
-		URL:   repoEntity.URL,
-		State: currentState,
+	// 3. Extract cloud information
+	var isCloud = repoEntity.Edges.CloudRepository != nil
+	var cloudID = ""
+	if isCloud {
+		cloudID = repoEntity.Edges.CloudRepository.CloudID
 	}
 
-	// 4. Populate cloud information if available
-	if repoEntity.Edges.CloudRepository != nil {
-		repo.IsCloud = true
-		repo.CloudID = repoEntity.Edges.CloudRepository.CloudID
-	} else {
-		repo.IsCloud = false
-		repo.CloudID = ""
-	}
-
-	// 5. Populate metadata from loaded archives
+	// 4. Extract archive metadata
 	archives := repoEntity.Edges.Archives
-	repo.ArchiveCount = len(archives)
+	archiveCount := len(archives)
 
-	// Get last backup time from most recent archive
+	var lastBackupTime *time.Time
 	if len(archives) > 0 {
 		// Archives are already ordered by creation time descending
-		lastBackupTime := archives[0].CreatedAt
-		repo.LastBackupTime = &lastBackupTime
+		lastBackupTime = &archives[0].CreatedAt
 	}
 
-	// 6. Calculate storage used from repository statistics
-	repo.StorageUsed = int64(repoEntity.StatsUniqueSize)
+	// 5. Calculate storage used from repository statistics
+	storageUsed := int64(repoEntity.StatsUniqueSize)
 
-	// 7. Populate last backup error using existing helper
-	err = s.populateLastBackupError(ctx, repo)
-	if err != nil {
-		s.log.Warnw("Failed to populate last backup error",
-			"repoID", repoId,
-			"error", err.Error())
-		// Don't fail the whole request for this non-critical error
-	}
+	// 6. Get last backup error and warning messages
+	lastBackupError := s.getLastError(ctx, repoId)
+	lastBackupWarning := s.getLastWarning(ctx, repoId)
 
-	return repo, nil
+	// 7. Create complete Repository struct with all fields
+	return &Repository{
+		ID:                repoEntity.ID,
+		Name:              repoEntity.Name,
+		URL:               repoEntity.URL,
+		IsCloud:           isCloud,
+		CloudID:           cloudID,
+		State:             currentState,
+		ArchiveCount:      archiveCount,
+		LastBackupTime:    lastBackupTime,
+		LastBackupError:   lastBackupError,
+		LastBackupWarning: lastBackupWarning,
+		StorageUsed:       storageUsed,
+	}, nil
 }
 
 // GetWithQueue retrieves a repository with queue information
@@ -457,16 +455,62 @@ func (s *Service) startPeriodicCleanup(ctx context.Context) {
 	// 2. Handle context cancellation for graceful shutdown
 }
 
-// populateLastBackupError populates the LastBackupError field from the latest error/warning notifications
-func (s *Service) populateLastBackupError(ctx context.Context, repo *Repository) error {
-	// Query latest error or warning notification for this repository
-	// Include both error and warning types to show the most recent issue
-	notification, err := s.db.Notification.Query().
+// getLastError returns the latest backup error message for a repository
+func (s *Service) getLastError(ctx context.Context, repoID int) string {
+	// Query latest error notification for this repository
+	notificationEnt, err := s.db.Notification.Query().
 		Where(
-			notification.HasRepositoryWith(repository.ID(repo.ID)),
+			notification.HasRepositoryWith(repository.ID(repoID)),
 			notification.TypeIn(
 				notification.TypeFailedBackupRun,
 				notification.TypeFailedPruningRun,
+			),
+		).
+		Order(ent.Desc("created_at")).
+		First(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			// No error notifications found
+			return ""
+		}
+		s.log.Errorw("Failed to query error notifications",
+			"repoID", repoID,
+			"error", err.Error())
+		return ""
+	}
+
+	// Check if there's a newer successful archive since this notification
+	// If there is, don't show the old error
+	hasNewerArchive, err := s.db.Archive.Query().
+		Where(
+			archive.HasRepositoryWith(repository.ID(repoID)),
+			archive.CreatedAtGT(notificationEnt.CreatedAt),
+		).
+		Exist(ctx)
+	if err != nil {
+		s.log.Errorw("Failed to check for newer archives",
+			"repoID", repoID,
+			"error", err.Error())
+		return ""
+	}
+
+	if hasNewerArchive {
+		// There's a newer archive, so clear the old error
+		return ""
+	} else {
+		// Show the error message
+		return notificationEnt.Message
+	}
+}
+
+// getLastWarning returns the latest backup warning message for a repository
+func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
+	// Query latest warning notification for this repository
+	notificationEnt, err := s.db.Notification.Query().
+		Where(
+			notification.HasRepositoryWith(repository.ID(repoID)),
+			notification.TypeIn(
 				notification.TypeWarningBackupRun,
 				notification.TypeWarningPruningRun,
 			),
@@ -476,33 +520,35 @@ func (s *Service) populateLastBackupError(ctx context.Context, repo *Repository)
 
 	if err != nil {
 		if ent.IsNotFound(err) {
-			// No error/warning notifications found - clear any existing error
-			repo.LastBackupError = ""
-			return nil
+			// No warning notifications found
+			return ""
 		}
-		return err
+		s.log.Errorw("Failed to query warning notifications",
+			"repoID", repoID,
+			"error", err.Error())
+		return ""
 	}
 
 	// Check if there's a newer successful archive since this notification
-	// If there is, don't show the old error/warning
+	// If there is, don't show the old warning
 	hasNewerArchive, err := s.db.Archive.Query().
 		Where(
-			archive.HasRepositoryWith(repository.ID(repo.ID)),
-			archive.CreatedAtGT(notification.CreatedAt),
+			archive.HasRepositoryWith(repository.ID(repoID)),
+			archive.CreatedAtGT(notificationEnt.CreatedAt),
 		).
 		Exist(ctx)
-
 	if err != nil {
-		return err
+		s.log.Errorw("Failed to check for newer archives",
+			"repoID", repoID,
+			"error", err.Error())
+		return ""
 	}
 
 	if hasNewerArchive {
-		// There's a newer archive, so clear the old error
-		repo.LastBackupError = ""
+		// There's a newer archive, so clear the old warning
+		return ""
 	} else {
-		// Show the error/warning message
-		repo.LastBackupError = notification.Message
+		// Show the warning message
+		return notificationEnt.Message
 	}
-
-	return nil
 }
