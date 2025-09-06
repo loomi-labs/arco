@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
@@ -75,12 +76,66 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 
 // Get retrieves a repository by ID
 func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
-	// TODO: Implement repository retrieval:
-	// 1. Query database for repository
-	// 2. Calculate current state from queue
-	// 3. Populate metadata (archive count, last backup, etc.)
-	// 4. Return Repository struct
-	return nil, nil
+	// 1. Query database for repository with eager loading
+	repoEntity, err := s.db.Repository.Query().
+		Where(repository.ID(repoId)).
+		WithArchives(func(aq *ent.ArchiveQuery) {
+			// Order by creation time descending to get most recent first
+			aq.Order(ent.Desc(archive.FieldCreatedAt))
+		}).
+		WithCloudRepository().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("repository with ID %d not found", repoId)
+		}
+		return nil, fmt.Errorf("failed to query repository %d: %w", repoId, err)
+	}
+
+	// 2. Calculate current state from queue manager
+	currentState := s.queueManager.GetRepositoryState(repoId)
+
+	// 3. Create Repository struct with basic fields
+	repo := &Repository{
+		ID:   repoEntity.ID,
+		Name: repoEntity.Name,
+		URL:  repoEntity.URL,
+		State: currentState,
+	}
+
+	// 4. Populate cloud information if available
+	if repoEntity.Edges.CloudRepository != nil {
+		repo.IsCloud = true
+		repo.CloudID = repoEntity.Edges.CloudRepository.ID
+	} else {
+		repo.IsCloud = false
+		repo.CloudID = ""
+	}
+
+	// 5. Populate metadata from loaded archives
+	archives := repoEntity.Edges.Archives
+	repo.ArchiveCount = len(archives)
+	
+	// Get last backup time from most recent archive
+	if len(archives) > 0 {
+		// Archives are already ordered by creation time descending
+		lastBackupTime := archives[0].CreatedAt
+		repo.LastBackupTime = &lastBackupTime
+	}
+
+	// 6. Calculate storage used from repository statistics
+	repo.StorageUsed = int64(repoEntity.StatsUniqueSize)
+
+	// 7. Populate last backup error using existing helper
+	err = s.populateLastBackupError(ctx, repo)
+	if err != nil {
+		s.log.Warnw("Failed to populate last backup error",
+			"repoID", repoId,
+			"error", err.Error())
+		// Don't fail the whole request for this non-critical error
+	}
+
+	return repo, nil
 }
 
 // GetWithQueue retrieves a repository with queue information
