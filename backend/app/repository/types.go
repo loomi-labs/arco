@@ -48,8 +48,8 @@ func (r *Repository) GetID() int {
 // RepositoryWithQueue extends Repository with queue information for frontend
 type RepositoryWithQueue struct {
 	Repository       `json:",inline"`
-	QueuedOperations []QueuedOperation `json:"queuedOperations"`
-	ActiveOperation  *QueuedOperation  `json:"activeOperation,omitempty"`
+	QueuedOperations []*QueuedOperation `json:"queuedOperations"`
+	ActiveOperation  *QueuedOperation   `json:"activeOperation,omitempty"`
 }
 
 // ============================================================================

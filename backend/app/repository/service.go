@@ -138,12 +138,28 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 
 // GetWithQueue retrieves a repository with queue information
 func (s *Service) GetWithQueue(ctx context.Context, repoId int) (*RepositoryWithQueue, error) {
-	// TODO: Implement repository with queue retrieval:
 	// 1. Get base repository
+	baseRepo, err := s.Get(ctx, repoId)
+	if err != nil {
+		return nil, err // Critical error - repository doesn't exist or can't be retrieved
+	}
+
 	// 2. Get queued operations from QueueManager
-	// 3. Get active operation
-	// 4. Return RepositoryWithQueue struct
-	return nil, nil
+	queuedOps, err := s.queueManager.GetQueuedOperations(repoId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Get active operation from repository queue
+	queue := s.queueManager.GetQueue(repoId)
+	activeOp := queue.GetActive() // Can be nil if no operation is active
+
+	// 4. Create and return RepositoryWithQueue struct
+	return &RepositoryWithQueue{
+		Repository:       *baseRepo,
+		QueuedOperations: queuedOps,
+		ActiveOperation:  activeOp,
+	}, nil
 }
 
 // All retrieves all repositories
