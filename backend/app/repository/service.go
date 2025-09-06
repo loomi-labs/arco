@@ -106,7 +106,7 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 	// 4. Populate cloud information if available
 	if repoEntity.Edges.CloudRepository != nil {
 		repo.IsCloud = true
-		repo.CloudID = repoEntity.Edges.CloudRepository.ID
+		repo.CloudID = repoEntity.Edges.CloudRepository.CloudID
 	} else {
 		repo.IsCloud = false
 		repo.CloudID = ""
