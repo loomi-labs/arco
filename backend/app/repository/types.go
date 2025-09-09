@@ -20,11 +20,10 @@ type Repository struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 
-	// Cloud info
-	IsCloud bool   `json:"isCloud"`
-	CloudID string `json:"cloudId,omitempty"`
+	// Repository type with associated data
+	Type LocationUnion `json:"type"`
 
-	// Current state (union type for Wails3 serialization)
+	// Current state
 	State statemachine.RepositoryStateUnion `json:"state"`
 
 	// Metadata
@@ -33,11 +32,6 @@ type Repository struct {
 	LastBackupError   string     `json:"lastBackupError,omitempty"`
 	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
 	StorageUsed       int64      `json:"storageUsed"`
-}
-
-// GetState implements the statemachine.Repository interface
-func (r *Repository) GetState() statemachine.RepositoryState {
-	return r.State.ToRepositoryState()
 }
 
 // GetID implements the statemachine.Repository interface
@@ -51,6 +45,25 @@ type RepositoryWithQueue struct {
 	QueuedOperations []*QueuedOperation `json:"queuedOperations"`
 	ActiveOperation  *QueuedOperation   `json:"activeOperation,omitempty"`
 }
+
+// ============================================================================
+// REPOSITORY TYPE ADT
+// ============================================================================
+
+// Repository type variants
+type Local struct{}
+type Remote struct{}
+type ArcoCloud struct {
+	CloudID string `json:"cloudId"`
+}
+
+// Location ADT definition
+type Location adtenum.Enum[Location]
+
+// Implement adtVariant marker interface for all type structs
+func (Local) isADTVariant() Location     { var zero Location; return zero }
+func (Remote) isADTVariant() Location    { var zero Location; return zero }
+func (ArcoCloud) isADTVariant() Location { var zero Location; return zero }
 
 // ============================================================================
 // OPERATION STATUS ADT

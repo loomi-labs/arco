@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -75,9 +77,41 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 // CORE REPOSITORY METHODS
 // ============================================================================
 
+// All retrieves all repositories
+func (s *Service) All(ctx context.Context) ([]*Repository, error) {
+	// Query database for all repositories with eager loading
+	repoEntities, err := s.db.Repository.Query().
+		WithArchives(func(aq *ent.ArchiveQuery) {
+			// Order by creation time descending to get most recent first
+			aq.Order(ent.Desc(archive.FieldCreatedAt))
+		}).
+		WithCloudRepository().
+		Order(func(sel *sql.Selector) {
+			// Order by name, case-insensitive
+			sel.OrderExpr(sql.Expr(fmt.Sprintf("%s COLLATE NOCASE", repository.FieldName)))
+		}).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query repositories: %w", err)
+	}
+
+	// Transform each entity to Repository struct using helper method
+	repositories := make([]*Repository, len(repoEntities))
+	for i, repoEntity := range repoEntities {
+		repositories[i] = s.entityToRepository(ctx, repoEntity)
+	}
+
+	return repositories, nil
+}
+
+// AllWithQueue retrieves all repositories with queue information
+func (s *Service) AllWithQueue(ctx context.Context) ([]*RepositoryWithQueue, error) {
+	// TODO: Implement all repositories with queue retrieval
+	return nil, nil
+}
+
 // Get retrieves a repository by ID
 func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
-	// 1. Query database for repository with eager loading
 	repoEntity, err := s.db.Repository.Query().
 		Where(repository.ID(repoId)).
 		WithArchives(func(aq *ent.ArchiveQuery) {
@@ -93,47 +127,7 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 		return nil, fmt.Errorf("failed to query repository %d: %w", repoId, err)
 	}
 
-	// 2. Calculate current state from queue manager
-	currentState := s.queueManager.GetRepositoryState(repoId)
-
-	// 3. Extract cloud information
-	var isCloud = repoEntity.Edges.CloudRepository != nil
-	var cloudID = ""
-	if isCloud {
-		cloudID = repoEntity.Edges.CloudRepository.CloudID
-	}
-
-	// 4. Extract archive metadata
-	archives := repoEntity.Edges.Archives
-	archiveCount := len(archives)
-
-	var lastBackupTime *time.Time
-	if len(archives) > 0 {
-		// Archives are already ordered by creation time descending
-		lastBackupTime = &archives[0].CreatedAt
-	}
-
-	// 5. Calculate storage used from repository statistics
-	storageUsed := int64(repoEntity.StatsUniqueSize)
-
-	// 6. Get last backup error and warning messages
-	lastBackupError := s.getLastError(ctx, repoId)
-	lastBackupWarning := s.getLastWarning(ctx, repoId)
-
-	// 7. Create complete Repository struct with all fields
-	return &Repository{
-		ID:                repoEntity.ID,
-		Name:              repoEntity.Name,
-		URL:               repoEntity.URL,
-		IsCloud:           isCloud,
-		CloudID:           cloudID,
-		State:             statemachine.ToRepositoryStateUnion(currentState),
-		ArchiveCount:      archiveCount,
-		LastBackupTime:    lastBackupTime,
-		LastBackupError:   lastBackupError,
-		LastBackupWarning: lastBackupWarning,
-		StorageUsed:       storageUsed,
-	}, nil
+	return s.entityToRepository(ctx, repoEntity), nil
 }
 
 // GetWithQueue retrieves a repository with queue information
@@ -162,16 +156,56 @@ func (s *Service) GetWithQueue(ctx context.Context, repoId int) (*RepositoryWith
 	}, nil
 }
 
-// All retrieves all repositories
-func (s *Service) All(ctx context.Context) ([]*Repository, error) {
-	// TODO: Implement all repositories retrieval
-	return nil, nil
-}
+// entityToRepository converts an ent.Repository entity to a Repository struct
+// Expects the entity to have Archives and CloudRepository edges loaded
+func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Repository) *Repository {
+	// Calculate current state from queue manager
+	currentState := s.queueManager.GetRepositoryState(repoEntity.ID)
 
-// AllWithQueue retrieves all repositories with queue information
-func (s *Service) AllWithQueue(ctx context.Context) ([]*RepositoryWithQueue, error) {
-	// TODO: Implement all repositories with queue retrieval
-	return nil, nil
+	// Determine repository type based on repository properties
+	var repoType Location
+	if repoEntity.Edges.CloudRepository != nil {
+		// ArcoCloud repository
+		repoType = NewLocationArcoCloud(ArcoCloud{
+			CloudID: repoEntity.Edges.CloudRepository.CloudID,
+		})
+	} else if strings.HasPrefix(repoEntity.URL, "/") {
+		// Local repository (path starts with /)
+		repoType = NewLocationLocal(Local{})
+	} else {
+		// Remote repository (SSH)
+		repoType = NewLocationRemote(Remote{})
+	}
+
+	// Extract archive metadata
+	archives := repoEntity.Edges.Archives
+	archiveCount := len(archives)
+
+	var lastBackupTime *time.Time
+	if len(archives) > 0 {
+		// Archives are already ordered by creation time descending
+		lastBackupTime = &archives[0].CreatedAt
+	}
+
+	// Calculate storage used from repository statistics
+	storageUsed := int64(repoEntity.StatsUniqueSize)
+
+	// Get last backup error and warning messages
+	lastBackupError := s.getLastError(ctx, repoEntity.ID)
+	lastBackupWarning := s.getLastWarning(ctx, repoEntity.ID)
+
+	return &Repository{
+		ID:                repoEntity.ID,
+		Name:              repoEntity.Name,
+		URL:               repoEntity.URL,
+		Type:              ToLocationUnion(repoType),
+		State:             statemachine.ToRepositoryStateUnion(currentState),
+		ArchiveCount:      archiveCount,
+		LastBackupTime:    lastBackupTime,
+		LastBackupError:   lastBackupError,
+		LastBackupWarning: lastBackupWarning,
+		StorageUsed:       storageUsed,
+	}
 }
 
 // GetByBackupId retrieves a repository by backup ID
@@ -290,7 +324,7 @@ func (s *Service) GetQueuedOperations(ctx context.Context, repoId int) ([]*Queue
 }
 
 // GetOperationsByStatus returns operations filtered by status for a repository
-func (s *Service) GetOperationsByStatus(ctx context.Context, repoId int, status OperationStatus) ([]*QueuedOperation, error) {
+func (s *Service) GetOperationsByStatus(ctx context.Context, repoId int, status OperationStatusType) ([]*QueuedOperation, error) {
 	// TODO: Implement status-filtered operations retrieval
 	return nil, nil
 }
