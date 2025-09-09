@@ -7,102 +7,6 @@ import (
 	"github.com/chris-tomich/adtenum"
 )
 
-// OperationType is the discriminator enum for Operation
-type OperationType string
-
-const (
-	OperationTypeOpArchiveDelete OperationType = "OpArchiveDelete"
-	OperationTypeOpArchiveRefresh OperationType = "OpArchiveRefresh"
-	OperationTypeOpArchiveRename OperationType = "OpArchiveRename"
-	OperationTypeOpBackup OperationType = "OpBackup"
-	OperationTypeOpDelete OperationType = "OpDelete"
-	OperationTypeOpPrune OperationType = "OpPrune"
-)
-
-// Operation variant wrappers
-type OpArchiveDeleteVariant adtenum.OneVariantValue[OpArchiveDelete]
-type OpArchiveRefreshVariant adtenum.OneVariantValue[OpArchiveRefresh]
-type OpArchiveRenameVariant adtenum.OneVariantValue[OpArchiveRename]
-type OpBackupVariant adtenum.OneVariantValue[OpBackup]
-type OpDeleteVariant adtenum.OneVariantValue[OpDelete]
-type OpPruneVariant adtenum.OneVariantValue[OpPrune]
-
-// Operation constructors
-var NewOperationOpArchiveDelete = adtenum.CreateOneVariantValueConstructor[OpArchiveDeleteVariant]()
-var NewOperationOpArchiveRefresh = adtenum.CreateOneVariantValueConstructor[OpArchiveRefreshVariant]()
-var NewOperationOpArchiveRename = adtenum.CreateOneVariantValueConstructor[OpArchiveRenameVariant]()
-var NewOperationOpBackup = adtenum.CreateOneVariantValueConstructor[OpBackupVariant]()
-var NewOperationOpDelete = adtenum.CreateOneVariantValueConstructor[OpDeleteVariant]()
-var NewOperationOpPrune = adtenum.CreateOneVariantValueConstructor[OpPruneVariant]()
-
-// EnumType methods for Operation variants
-func (v OpArchiveDeleteVariant) EnumType() Operation { return v }
-func (v OpArchiveRefreshVariant) EnumType() Operation { return v }
-func (v OpArchiveRenameVariant) EnumType() Operation { return v }
-func (v OpBackupVariant) EnumType() Operation { return v }
-func (v OpDeleteVariant) EnumType() Operation { return v }
-func (v OpPruneVariant) EnumType() Operation { return v }
-
-// OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type OperationUnion struct {
-	Type OperationType `json:"type"` // Discriminator field
-
-	// Variant fields - only one will be non-nil
-	OpBackup *OpBackup `json:"opBackup,omitempty"`
-	OpPrune *OpPrune `json:"opPrune,omitempty"`
-	OpDelete *OpDelete `json:"opDelete,omitempty"`
-	OpArchiveRefresh *OpArchiveRefresh `json:"opArchiveRefresh,omitempty"`
-	OpArchiveDelete *OpArchiveDelete `json:"opArchiveDelete,omitempty"`
-	OpArchiveRename *OpArchiveRename `json:"opArchiveRename,omitempty"`
-}
-
-// ToOperationUnion converts an ADT Operation to an OperationUnion
-func ToOperationUnion(r Operation) OperationUnion {
-	switch i := r.(type) {
-	case OpBackupVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpBackup,
-			OpBackup: &data,
-		}
-	case OpPruneVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpPrune,
-			OpPrune: &data,
-		}
-	case OpDeleteVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpDelete,
-			OpDelete: &data,
-		}
-	case OpArchiveRefreshVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpArchiveRefresh,
-			OpArchiveRefresh: &data,
-		}
-	case OpArchiveDeleteVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpArchiveDelete,
-			OpArchiveDelete: &data,
-		}
-	case OpArchiveRenameVariant:
-		data := i()
-		return OperationUnion{
-			Type: OperationTypeOpArchiveRename,
-			OpArchiveRename: &data,
-		}
-	default:
-		return OperationUnion{
-			Type: OperationTypeOpArchiveDelete,
-			OpArchiveDelete: &OpArchiveDelete{},
-		}
-	}
-}
-
 // RepositoryStateType is the discriminator enum for RepositoryState
 type RepositoryStateType string
 
@@ -217,6 +121,102 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 		return RepositoryStateUnion{
 			Type: RepositoryStateTypeStateBackingUp,
 			StateBackingUp: &StateBackingUp{},
+		}
+	}
+}
+
+// OperationType is the discriminator enum for Operation
+type OperationType string
+
+const (
+	OperationTypeOpArchiveDelete OperationType = "OpArchiveDelete"
+	OperationTypeOpArchiveRefresh OperationType = "OpArchiveRefresh"
+	OperationTypeOpArchiveRename OperationType = "OpArchiveRename"
+	OperationTypeOpBackup OperationType = "OpBackup"
+	OperationTypeOpDelete OperationType = "OpDelete"
+	OperationTypeOpPrune OperationType = "OpPrune"
+)
+
+// Operation variant wrappers
+type OpArchiveDeleteVariant adtenum.OneVariantValue[OpArchiveDelete]
+type OpArchiveRefreshVariant adtenum.OneVariantValue[OpArchiveRefresh]
+type OpArchiveRenameVariant adtenum.OneVariantValue[OpArchiveRename]
+type OpBackupVariant adtenum.OneVariantValue[OpBackup]
+type OpDeleteVariant adtenum.OneVariantValue[OpDelete]
+type OpPruneVariant adtenum.OneVariantValue[OpPrune]
+
+// Operation constructors
+var NewOperationOpArchiveDelete = adtenum.CreateOneVariantValueConstructor[OpArchiveDeleteVariant]()
+var NewOperationOpArchiveRefresh = adtenum.CreateOneVariantValueConstructor[OpArchiveRefreshVariant]()
+var NewOperationOpArchiveRename = adtenum.CreateOneVariantValueConstructor[OpArchiveRenameVariant]()
+var NewOperationOpBackup = adtenum.CreateOneVariantValueConstructor[OpBackupVariant]()
+var NewOperationOpDelete = adtenum.CreateOneVariantValueConstructor[OpDeleteVariant]()
+var NewOperationOpPrune = adtenum.CreateOneVariantValueConstructor[OpPruneVariant]()
+
+// EnumType methods for Operation variants
+func (v OpArchiveDeleteVariant) EnumType() Operation { return v }
+func (v OpArchiveRefreshVariant) EnumType() Operation { return v }
+func (v OpArchiveRenameVariant) EnumType() Operation { return v }
+func (v OpBackupVariant) EnumType() Operation { return v }
+func (v OpDeleteVariant) EnumType() Operation { return v }
+func (v OpPruneVariant) EnumType() Operation { return v }
+
+// OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type OperationUnion struct {
+	Type OperationType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	OpBackup *OpBackup `json:"opBackup,omitempty"`
+	OpPrune *OpPrune `json:"opPrune,omitempty"`
+	OpDelete *OpDelete `json:"opDelete,omitempty"`
+	OpArchiveRefresh *OpArchiveRefresh `json:"opArchiveRefresh,omitempty"`
+	OpArchiveDelete *OpArchiveDelete `json:"opArchiveDelete,omitempty"`
+	OpArchiveRename *OpArchiveRename `json:"opArchiveRename,omitempty"`
+}
+
+// ToOperationUnion converts an ADT Operation to an OperationUnion
+func ToOperationUnion(r Operation) OperationUnion {
+	switch i := r.(type) {
+	case OpBackupVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpBackup,
+			OpBackup: &data,
+		}
+	case OpPruneVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpPrune,
+			OpPrune: &data,
+		}
+	case OpDeleteVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpDelete,
+			OpDelete: &data,
+		}
+	case OpArchiveRefreshVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpArchiveRefresh,
+			OpArchiveRefresh: &data,
+		}
+	case OpArchiveDeleteVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpArchiveDelete,
+			OpArchiveDelete: &data,
+		}
+	case OpArchiveRenameVariant:
+		data := i()
+		return OperationUnion{
+			Type: OperationTypeOpArchiveRename,
+			OpArchiveRename: &data,
+		}
+	default:
+		return OperationUnion{
+			Type: OperationTypeOpArchiveDelete,
+			OpArchiveDelete: &OpArchiveDelete{},
 		}
 	}
 }

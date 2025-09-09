@@ -7,87 +7,151 @@ import (
 	"github.com/chris-tomich/adtenum"
 )
 
+// LocationType is the discriminator enum for Location
+type LocationType string
+
+const (
+	LocationTypeArcoCloud LocationType = "ArcoCloud"
+	LocationTypeLocal LocationType = "Local"
+	LocationTypeRemote LocationType = "Remote"
+)
+
+// Location variant wrappers
+type ArcoCloudVariant adtenum.OneVariantValue[ArcoCloud]
+type LocalVariant adtenum.OneVariantValue[Local]
+type RemoteVariant adtenum.OneVariantValue[Remote]
+
+// Location constructors
+var NewLocationArcoCloud = adtenum.CreateOneVariantValueConstructor[ArcoCloudVariant]()
+var NewLocationLocal = adtenum.CreateOneVariantValueConstructor[LocalVariant]()
+var NewLocationRemote = adtenum.CreateOneVariantValueConstructor[RemoteVariant]()
+
+// EnumType methods for Location variants
+func (v ArcoCloudVariant) EnumType() Location { return v }
+func (v LocalVariant) EnumType() Location { return v }
+func (v RemoteVariant) EnumType() Location { return v }
+
+// LocationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type LocationUnion struct {
+	Type LocationType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	Local *Local `json:"local,omitempty"`
+	Remote *Remote `json:"remote,omitempty"`
+	ArcoCloud *ArcoCloud `json:"arcoCloud,omitempty"`
+}
+
+// ToLocationUnion converts an ADT Location to an LocationUnion
+func ToLocationUnion(r Location) LocationUnion {
+	switch i := r.(type) {
+	case LocalVariant:
+		data := i()
+		return LocationUnion{
+			Type: LocationTypeLocal,
+			Local: &data,
+		}
+	case RemoteVariant:
+		data := i()
+		return LocationUnion{
+			Type: LocationTypeRemote,
+			Remote: &data,
+		}
+	case ArcoCloudVariant:
+		data := i()
+		return LocationUnion{
+			Type: LocationTypeArcoCloud,
+			ArcoCloud: &data,
+		}
+	default:
+		return LocationUnion{
+			Type: LocationTypeArcoCloud,
+			ArcoCloud: &ArcoCloud{},
+		}
+	}
+}
+
 // OperationStatusType is the discriminator enum for OperationStatus
 type OperationStatusType string
 
 const (
-	OperationStatusTypeCompleted OperationStatusType = "Completed"
-	OperationStatusTypeExpired   OperationStatusType = "Expired"
-	OperationStatusTypeFailed    OperationStatusType = "Failed"
-	OperationStatusTypeQueued    OperationStatusType = "Queued"
-	OperationStatusTypeRunning   OperationStatusType = "Running"
+	OperationStatusTypeStatusCompleted OperationStatusType = "StatusCompleted"
+	OperationStatusTypeStatusExpired OperationStatusType = "StatusExpired"
+	OperationStatusTypeStatusFailed OperationStatusType = "StatusFailed"
+	OperationStatusTypeStatusQueued OperationStatusType = "StatusQueued"
+	OperationStatusTypeStatusRunning OperationStatusType = "StatusRunning"
 )
 
 // OperationStatus variant wrappers
-type CompletedVariant adtenum.OneVariantValue[StatusCompleted]
-type ExpiredVariant adtenum.OneVariantValue[StatusExpired]
-type FailedVariant adtenum.OneVariantValue[StatusFailed]
-type QueuedVariant adtenum.OneVariantValue[StatusQueued]
-type RunningVariant adtenum.OneVariantValue[StatusRunning]
+type StatusCompletedVariant adtenum.OneVariantValue[StatusCompleted]
+type StatusExpiredVariant adtenum.OneVariantValue[StatusExpired]
+type StatusFailedVariant adtenum.OneVariantValue[StatusFailed]
+type StatusQueuedVariant adtenum.OneVariantValue[StatusQueued]
+type StatusRunningVariant adtenum.OneVariantValue[StatusRunning]
 
 // OperationStatus constructors
-var NewOperationStatusCompleted = adtenum.CreateOneVariantValueConstructor[CompletedVariant]()
-var NewOperationStatusExpired = adtenum.CreateOneVariantValueConstructor[ExpiredVariant]()
-var NewOperationStatusFailed = adtenum.CreateOneVariantValueConstructor[FailedVariant]()
-var NewOperationStatusQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
-var NewOperationStatusRunning = adtenum.CreateOneVariantValueConstructor[RunningVariant]()
+var NewOperationStatusStatusCompleted = adtenum.CreateOneVariantValueConstructor[StatusCompletedVariant]()
+var NewOperationStatusStatusExpired = adtenum.CreateOneVariantValueConstructor[StatusExpiredVariant]()
+var NewOperationStatusStatusFailed = adtenum.CreateOneVariantValueConstructor[StatusFailedVariant]()
+var NewOperationStatusStatusQueued = adtenum.CreateOneVariantValueConstructor[StatusQueuedVariant]()
+var NewOperationStatusStatusRunning = adtenum.CreateOneVariantValueConstructor[StatusRunningVariant]()
 
 // EnumType methods for OperationStatus variants
-func (v CompletedVariant) EnumType() OperationStatus { return v }
-func (v ExpiredVariant) EnumType() OperationStatus   { return v }
-func (v FailedVariant) EnumType() OperationStatus    { return v }
-func (v QueuedVariant) EnumType() OperationStatus    { return v }
-func (v RunningVariant) EnumType() OperationStatus   { return v }
+func (v StatusCompletedVariant) EnumType() OperationStatus { return v }
+func (v StatusExpiredVariant) EnumType() OperationStatus { return v }
+func (v StatusFailedVariant) EnumType() OperationStatus { return v }
+func (v StatusQueuedVariant) EnumType() OperationStatus { return v }
+func (v StatusRunningVariant) EnumType() OperationStatus { return v }
 
 // OperationStatusUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationStatusUnion struct {
 	Type OperationStatusType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	Queued    *StatusQueued    `json:"queued,omitempty"`
-	Running   *StatusRunning   `json:"running,omitempty"`
-	Completed *StatusCompleted `json:"completed,omitempty"`
-	Failed    *StatusFailed    `json:"failed,omitempty"`
-	Expired   *StatusExpired   `json:"expired,omitempty"`
+	StatusQueued *StatusQueued `json:"statusQueued,omitempty"`
+	StatusRunning *StatusRunning `json:"statusRunning,omitempty"`
+	StatusCompleted *StatusCompleted `json:"statusCompleted,omitempty"`
+	StatusFailed *StatusFailed `json:"statusFailed,omitempty"`
+	StatusExpired *StatusExpired `json:"statusExpired,omitempty"`
 }
 
 // ToOperationStatusUnion converts an ADT OperationStatus to an OperationStatusUnion
 func ToOperationStatusUnion(r OperationStatus) OperationStatusUnion {
 	switch i := r.(type) {
-	case QueuedVariant:
+	case StatusQueuedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type:   OperationStatusTypeQueued,
-			Queued: &data,
+			Type: OperationStatusTypeStatusQueued,
+			StatusQueued: &data,
 		}
-	case RunningVariant:
+	case StatusRunningVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type:    OperationStatusTypeRunning,
-			Running: &data,
+			Type: OperationStatusTypeStatusRunning,
+			StatusRunning: &data,
 		}
-	case CompletedVariant:
+	case StatusCompletedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type:      OperationStatusTypeCompleted,
-			Completed: &data,
+			Type: OperationStatusTypeStatusCompleted,
+			StatusCompleted: &data,
 		}
-	case FailedVariant:
+	case StatusFailedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type:   OperationStatusTypeFailed,
-			Failed: &data,
+			Type: OperationStatusTypeStatusFailed,
+			StatusFailed: &data,
 		}
-	case ExpiredVariant:
+	case StatusExpiredVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type:    OperationStatusTypeExpired,
-			Expired: &data,
+			Type: OperationStatusTypeStatusExpired,
+			StatusExpired: &data,
 		}
 	default:
 		return OperationStatusUnion{
-			Type:      OperationStatusTypeCompleted,
-			Completed: &StatusCompleted{},
+			Type: OperationStatusTypeStatusCompleted,
+			StatusCompleted: &StatusCompleted{},
 		}
 	}
 }
+
