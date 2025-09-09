@@ -36,13 +36,15 @@ const (
 	BackendRootDir  = "./backend"
 	TestSuffix      = "_test"
 	HiddenDirPrefix = "."
+
+	// Code generation naming patterns
+	VariantSuffix     = "Variant"
+	UnionSuffix       = "Union"
+	TypeSuffix        = "Type"
+	ConstructorPrefix = "New"
+	ConversionPrefix  = "To"
 )
 
-// Configurable variables
-var (
-	// Common struct name patterns for variant detection
-	CommonStructPrefixes = []string{"State", "Op", "Status", "Event", "Action"}
-)
 
 // Code generation templates
 var (
@@ -200,7 +202,7 @@ func generateAdtSubpackage(pkg PackageInfo) {
 	// Generate all code grouped by enum type
 	for _, enum := range pkg.Enums {
 		// Generate enum discriminator type and constants
-		enumTypeName := enum.Name + "Type"
+		enumTypeName := enum.Name + TypeSuffix
 
 		var constants string
 		for _, variant := range enum.Variants {
@@ -213,7 +215,7 @@ func generateAdtSubpackage(pkg PackageInfo) {
 		// Generate variant type definitions using discovered state structs
 		var variantWrappers string
 		for _, variant := range enum.Variants {
-			variantTypeName := variant + "Variant"
+			variantTypeName := variant + VariantSuffix
 			stateStructName := "struct{}"
 
 			// Find the matching state struct from the discovered structs
@@ -233,8 +235,8 @@ func generateAdtSubpackage(pkg PackageInfo) {
 		// Generate constructors
 		var constructors string
 		for _, variant := range enum.Variants {
-			variantTypeName := variant + "Variant"
-			constructorName := "New" + enum.Name + variant
+			variantTypeName := variant + VariantSuffix
+			constructorName := ConstructorPrefix + enum.Name + variant
 			constructors += fmt.Sprintf("var %s = adtenum.CreateOneVariantValueConstructor[%s]()\n", constructorName, variantTypeName)
 		}
 
@@ -243,7 +245,7 @@ func generateAdtSubpackage(pkg PackageInfo) {
 		// Generate EnumType methods
 		var enumMethods string
 		for _, variant := range enum.Variants {
-			variantTypeName := variant + "Variant"
+			variantTypeName := variant + VariantSuffix
 			enumMethods += fmt.Sprintf("func (v %s) EnumType() %s { return v }\n", variantTypeName, enum.Name)
 		}
 
@@ -343,15 +345,13 @@ func findAdtEnumsByMarkerMethods(packagePath string) []EnumInfo {
 				structNames = append(structNames, state.Name)
 			}
 
-			// Extract variant names using generic algorithm
+			// Use struct names directly as variant names
 			var variants []string
 			for i, state := range stateStructs {
-				variantName := extractVariantNameGeneric(state.Name, structNames)
-				if variantName != "" {
-					stateStructs[i].Variant = variantName
-					stateStructs[i].JsonField = variantToJsonField(variantName)
-					variants = append(variants, variantName)
-				}
+				variantName := state.Name // Use struct name directly
+				stateStructs[i].Variant = variantName
+				stateStructs[i].JsonField = variantToJsonField(variantName)
+				variants = append(variants, variantName)
 			}
 
 			if len(variants) > 0 {
@@ -369,70 +369,7 @@ func findAdtEnumsByMarkerMethods(packagePath string) []EnumInfo {
 	return enums
 }
 
-// extractVariantNameGeneric extracts the variant name from a struct name using generic pattern detection
-func extractVariantNameGeneric(structName string, allStructsForADT []string) string {
-	// Find the longest common prefix among all structs for this ADT
-	commonPrefix := findLongestCommonPrefix(allStructsForADT)
 
-	// Remove the common prefix to get the variant name
-	if commonPrefix != "" && strings.HasPrefix(structName, commonPrefix) {
-		variant := strings.TrimPrefix(structName, commonPrefix)
-		if variant != "" && variant != structName {
-			return variant
-		}
-	}
-
-	// Fallback: try common naming patterns
-	for _, prefix := range CommonStructPrefixes {
-		if strings.HasPrefix(structName, prefix) {
-			variant := strings.TrimPrefix(structName, prefix)
-			if variant != "" && variant != structName {
-				return variant
-			}
-		}
-	}
-
-	return ""
-}
-
-// findLongestCommonPrefix finds the longest common prefix among a slice of strings
-func findLongestCommonPrefix(strings []string) string {
-	if len(strings) == 0 {
-		return ""
-	}
-	if len(strings) == 1 {
-		return ""
-	}
-
-	// Start with the first string as the candidate prefix
-	prefix := strings[0]
-
-	// Compare with all other strings and reduce the prefix
-	for i := 1; i < len(strings); i++ {
-		prefix = commonPrefix(prefix, strings[i])
-		if prefix == "" {
-			break
-		}
-	}
-
-	return prefix
-}
-
-// commonPrefix finds the common prefix between two strings
-func commonPrefix(a, b string) string {
-	minLen := len(a)
-	if len(b) < minLen {
-		minLen = len(b)
-	}
-
-	for i := 0; i < minLen; i++ {
-		if a[i] != b[i] {
-			return a[:i]
-		}
-	}
-
-	return a[:minLen]
-}
 
 // getPackageImportPath converts a file path to a Go import path
 func getPackageImportPath(packagePath string) string {
@@ -475,8 +412,8 @@ func getEnumNames(enums []EnumInfo) []string {
 
 // generateUnionType generates the Union struct definition for an ADT enum
 func generateUnionType(enum EnumInfo) string {
-	enumTypeName := enum.Name + "Type"
-	unionTypeName := enum.Name + "Union"
+	enumTypeName := enum.Name + TypeSuffix
+	unionTypeName := enum.Name + UnionSuffix
 
 	// Build variant fields string
 	var variantFields string
@@ -491,16 +428,16 @@ func generateUnionType(enum EnumInfo) string {
 
 // generateFromConversion generates the To{EnumName}Union function that converts ADT to Union
 func generateFromConversion(enum EnumInfo) string {
-	unionTypeName := enum.Name + "Union"
-	enumTypeName := enum.Name + "Type"
-	functionName := "To" + enum.Name + "Union"
+	unionTypeName := enum.Name + UnionSuffix
+	enumTypeName := enum.Name + TypeSuffix
+	functionName := ConversionPrefix + enum.Name + UnionSuffix
 	defaultVariant := getDefaultVariant(enum.Variants)
 
 	// Build switch cases string
 	var switchCases string
 	for _, state := range enum.StateStructs {
 		if state.Variant != "" {
-			variantTypeName := state.Variant + "Variant"
+			variantTypeName := state.Variant + VariantSuffix
 			enumConstant := enumTypeName + state.Variant
 			switchCases += fmt.Sprintf("\tcase %s:\n", variantTypeName)
 			switchCases += "\t\tdata := i()\n"
