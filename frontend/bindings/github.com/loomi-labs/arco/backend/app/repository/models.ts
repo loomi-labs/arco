@@ -18,6 +18,27 @@ import * as ent$0 from "../../ent/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
 
+export class ArcoCloud {
+    "cloudId": string;
+
+    /** Creates a new ArcoCloud instance. */
+    constructor($$source: Partial<ArcoCloud> = {}) {
+        if (!("cloudId" in $$source)) {
+            this["cloudId"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArcoCloud instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArcoCloud {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArcoCloud($$parsedSource as Partial<ArcoCloud>);
+    }
+}
+
 /**
  * ExaminePruningResult represents the result of examining pruning operations
  */
@@ -56,9 +77,105 @@ export class ExaminePruningResult {
 }
 
 /**
+ * Repository type variants
+ */
+export class Local {
+
+    /** Creates a new Local instance. */
+    constructor($$source: Partial<Local> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Local instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Local {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Local($$parsedSource as Partial<Local>);
+    }
+}
+
+/**
+ * LocationType is the discriminator enum for Location
+ */
+export enum LocationType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LocationTypeArcoCloud = "ArcoCloud",
+    LocationTypeLocal = "Local",
+    LocationTypeRemote = "Remote",
+};
+
+/**
+ * LocationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class LocationUnion {
+    /**
+     * Discriminator field
+     */
+    "type": LocationType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "local"?: Local | null;
+    "remote"?: Remote | null;
+    "arcoCloud"?: ArcoCloud | null;
+
+    /** Creates a new LocationUnion instance. */
+    constructor($$source: Partial<LocationUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = LocationType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LocationUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LocationUnion {
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType4;
+        const $$createField3_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("local" in $$parsedSource) {
+            $$parsedSource["local"] = $$createField1_0($$parsedSource["local"]);
+        }
+        if ("remote" in $$parsedSource) {
+            $$parsedSource["remote"] = $$createField2_0($$parsedSource["remote"]);
+        }
+        if ("arcoCloud" in $$parsedSource) {
+            $$parsedSource["arcoCloud"] = $$createField3_0($$parsedSource["arcoCloud"]);
+        }
+        return new LocationUnion($$parsedSource as Partial<LocationUnion>);
+    }
+}
+
+/**
  * OperationStatus ADT definition
  */
 export type OperationStatus = any;
+
+/**
+ * OperationStatusType is the discriminator enum for OperationStatus
+ */
+export enum OperationStatusType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    OperationStatusTypeStatusCompleted = "StatusCompleted",
+    OperationStatusTypeStatusExpired = "StatusExpired",
+    OperationStatusTypeStatusFailed = "StatusFailed",
+    OperationStatusTypeStatusQueued = "StatusQueued",
+    OperationStatusTypeStatusRunning = "StatusRunning",
+};
 
 /**
  * PaginatedArchivesRequest represents a request for paginated archives
@@ -118,7 +235,7 @@ export class PaginatedArchivesResponse {
      * Creates a new PaginatedArchivesResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType3;
+        const $$createField0_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("archives" in $$parsedSource) {
             $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
@@ -174,7 +291,7 @@ export class PruningDates {
      * Creates a new PruningDates instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("dates" in $$parsedSource) {
             $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
@@ -242,6 +359,23 @@ export class QueuedOperation {
     }
 }
 
+export class Remote {
+
+    /** Creates a new Remote instance. */
+    constructor($$source: Partial<Remote> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Remote instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Remote {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Remote($$parsedSource as Partial<Remote>);
+    }
+}
+
 /**
  * Repository represents the consolidated repository data structure
  */
@@ -254,13 +388,12 @@ export class Repository {
     "url": string;
 
     /**
-     * Cloud info
+     * Repository type with associated data
      */
-    "isCloud": boolean;
-    "cloudId"?: string;
+    "type": LocationUnion;
 
     /**
-     * Current state (union type for Wails3 serialization)
+     * Current state
      */
     "state": statemachine$0.RepositoryStateUnion;
 
@@ -284,8 +417,8 @@ export class Repository {
         if (!("url" in $$source)) {
             this["url"] = "";
         }
-        if (!("isCloud" in $$source)) {
-            this["isCloud"] = false;
+        if (!("type" in $$source)) {
+            this["type"] = (new LocationUnion());
         }
         if (!("state" in $$source)) {
             this["state"] = (new statemachine$0.RepositoryStateUnion());
@@ -304,10 +437,14 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField5_0 = $$createType6;
+        const $$createField3_0 = $$createType12;
+        const $$createField4_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("type" in $$parsedSource) {
+            $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
+        }
         if ("state" in $$parsedSource) {
-            $$parsedSource["state"] = $$createField5_0($$parsedSource["state"]);
+            $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }
@@ -325,13 +462,12 @@ export class RepositoryWithQueue {
     "url": string;
 
     /**
-     * Cloud info
+     * Repository type with associated data
      */
-    "isCloud": boolean;
-    "cloudId"?: string;
+    "type": LocationUnion;
 
     /**
-     * Current state (union type for Wails3 serialization)
+     * Current state
      */
     "state": statemachine$0.RepositoryStateUnion;
 
@@ -357,8 +493,8 @@ export class RepositoryWithQueue {
         if (!("url" in $$source)) {
             this["url"] = "";
         }
-        if (!("isCloud" in $$source)) {
-            this["isCloud"] = false;
+        if (!("type" in $$source)) {
+            this["type"] = (new LocationUnion());
         }
         if (!("state" in $$source)) {
             this["state"] = (new statemachine$0.RepositoryStateUnion());
@@ -380,18 +516,22 @@ export class RepositoryWithQueue {
      * Creates a new RepositoryWithQueue instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryWithQueue {
-        const $$createField5_0 = $$createType6;
-        const $$createField11_0 = $$createType9;
-        const $$createField12_0 = $$createType8;
+        const $$createField3_0 = $$createType12;
+        const $$createField4_0 = $$createType13;
+        const $$createField10_0 = $$createType16;
+        const $$createField11_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("type" in $$parsedSource) {
+            $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
+        }
         if ("state" in $$parsedSource) {
-            $$parsedSource["state"] = $$createField5_0($$parsedSource["state"]);
+            $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField11_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField10_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField12_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField11_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
@@ -435,12 +575,19 @@ export class TestRepoConnectionResult {
 
 // Private type creation functions
 const $$createType0 = types$0.BackupId.createFrom;
-const $$createType1 = ent$0.Archive.createFrom;
+const $$createType1 = Local.createFrom;
 const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = PruningDate.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType7 = QueuedOperation.createFrom;
+const $$createType3 = Remote.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);
+const $$createType5 = ArcoCloud.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = ent$0.Archive.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
 const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = PruningDate.createFrom;
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = LocationUnion.createFrom;
+const $$createType13 = statemachine$0.RepositoryStateUnion.createFrom;
+const $$createType14 = QueuedOperation.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = $Create.Array($$createType15);

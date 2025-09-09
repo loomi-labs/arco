@@ -98,14 +98,14 @@ export enum RepositoryStateType {
      */
     $zero = "",
 
-    RepositoryStateTypeBackingUp = "BackingUp",
-    RepositoryStateTypeDeleting = "Deleting",
-    RepositoryStateTypeError = "Error",
-    RepositoryStateTypeIdle = "Idle",
-    RepositoryStateTypeMounted = "Mounted",
-    RepositoryStateTypePruning = "Pruning",
-    RepositoryStateTypeQueued = "Queued",
-    RepositoryStateTypeRefreshing = "Refreshing",
+    RepositoryStateTypeStateBackingUp = "StateBackingUp",
+    RepositoryStateTypeStateDeleting = "StateDeleting",
+    RepositoryStateTypeStateError = "StateError",
+    RepositoryStateTypeStateIdle = "StateIdle",
+    RepositoryStateTypeStateMounted = "StateMounted",
+    RepositoryStateTypeStatePruning = "StatePruning",
+    RepositoryStateTypeStateQueued = "StateQueued",
+    RepositoryStateTypeStateRefreshing = "StateRefreshing",
 };
 
 /**
@@ -120,14 +120,14 @@ export class RepositoryStateUnion {
     /**
      * Variant fields - only one will be non-nil
      */
-    "idle"?: StateIdle | null;
-    "queued"?: StateQueued | null;
-    "backingUp"?: StateBackingUp | null;
-    "pruning"?: StatePruning | null;
-    "deleting"?: StateDeleting | null;
-    "refreshing"?: StateRefreshing | null;
-    "mounted"?: StateMounted | null;
-    "error"?: StateError | null;
+    "stateIdle"?: StateIdle | null;
+    "stateQueued"?: StateQueued | null;
+    "stateBackingUp"?: StateBackingUp | null;
+    "statePruning"?: StatePruning | null;
+    "stateDeleting"?: StateDeleting | null;
+    "stateRefreshing"?: StateRefreshing | null;
+    "stateMounted"?: StateMounted | null;
+    "stateError"?: StateError | null;
 
     /** Creates a new RepositoryStateUnion instance. */
     constructor($$source: Partial<RepositoryStateUnion> = {}) {
@@ -151,29 +151,29 @@ export class RepositoryStateUnion {
         const $$createField7_0 = $$createType13;
         const $$createField8_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("idle" in $$parsedSource) {
-            $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
+        if ("stateIdle" in $$parsedSource) {
+            $$parsedSource["stateIdle"] = $$createField1_0($$parsedSource["stateIdle"]);
         }
-        if ("queued" in $$parsedSource) {
-            $$parsedSource["queued"] = $$createField2_0($$parsedSource["queued"]);
+        if ("stateQueued" in $$parsedSource) {
+            $$parsedSource["stateQueued"] = $$createField2_0($$parsedSource["stateQueued"]);
         }
-        if ("backingUp" in $$parsedSource) {
-            $$parsedSource["backingUp"] = $$createField3_0($$parsedSource["backingUp"]);
+        if ("stateBackingUp" in $$parsedSource) {
+            $$parsedSource["stateBackingUp"] = $$createField3_0($$parsedSource["stateBackingUp"]);
         }
-        if ("pruning" in $$parsedSource) {
-            $$parsedSource["pruning"] = $$createField4_0($$parsedSource["pruning"]);
+        if ("statePruning" in $$parsedSource) {
+            $$parsedSource["statePruning"] = $$createField4_0($$parsedSource["statePruning"]);
         }
-        if ("deleting" in $$parsedSource) {
-            $$parsedSource["deleting"] = $$createField5_0($$parsedSource["deleting"]);
+        if ("stateDeleting" in $$parsedSource) {
+            $$parsedSource["stateDeleting"] = $$createField5_0($$parsedSource["stateDeleting"]);
         }
-        if ("refreshing" in $$parsedSource) {
-            $$parsedSource["refreshing"] = $$createField6_0($$parsedSource["refreshing"]);
+        if ("stateRefreshing" in $$parsedSource) {
+            $$parsedSource["stateRefreshing"] = $$createField6_0($$parsedSource["stateRefreshing"]);
         }
-        if ("mounted" in $$parsedSource) {
-            $$parsedSource["mounted"] = $$createField7_0($$parsedSource["mounted"]);
+        if ("stateMounted" in $$parsedSource) {
+            $$parsedSource["stateMounted"] = $$createField7_0($$parsedSource["stateMounted"]);
         }
-        if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField8_0($$parsedSource["error"]);
+        if ("stateError" in $$parsedSource) {
+            $$parsedSource["stateError"] = $$createField8_0($$parsedSource["stateError"]);
         }
         return new RepositoryStateUnion($$parsedSource as Partial<RepositoryStateUnion>);
     }

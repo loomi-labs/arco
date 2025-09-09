@@ -7,12 +7,18 @@ export {
 };
 
 export {
+    ArcoCloud,
     ExaminePruningResult,
+    Local,
+    LocationType,
+    LocationUnion,
+    OperationStatusType,
     PaginatedArchivesRequest,
     PaginatedArchivesResponse,
     PruningDate,
     PruningDates,
     QueuedOperation,
+    Remote,
     Repository,
     RepositoryWithQueue,
     TestRepoConnectionResult

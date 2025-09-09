@@ -146,7 +146,7 @@ export function GetOperation(operationId: string): $CancellablePromise<$models.Q
 /**
  * GetOperationsByStatus returns operations filtered by status for a repository
  */
-export function GetOperationsByStatus(repoId: number, status: $models.OperationStatus): $CancellablePromise<($models.QueuedOperation | null)[]> {
+export function GetOperationsByStatus(repoId: number, status: $models.OperationStatusType): $CancellablePromise<($models.QueuedOperation | null)[]> {
     return $Call.ByID(2513578131, repoId, status).then(($result: any) => {
         return $$createType12($result);
     });
