@@ -14,7 +14,8 @@ import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
-import { getRepoType, RepoType, toHumanReadableSize } from "../common/repository";
+import { toHumanReadableSize } from "../common/repository";
+import { LocationType, type LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
@@ -26,7 +27,16 @@ const repo = ref<ent.Repository>(ent.Repository.createFrom());
 const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
 const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const loading = ref(true);
-const repoType = ref<RepoType>(RepoType.Local);
+const repoType = ref<LocationUnion>(getLocationUnionFromUrl("/"));
+
+// Helper function to convert old repository URL to LocationUnion for badge styling
+function getLocationUnionFromUrl(url: string): LocationUnion {
+  if (url.startsWith("/")) {
+    return { type: LocationType.LocationTypeLocal, local: {}, remote: null, arcoCloud: null };
+  } else {
+    return { type: LocationType.LocationTypeRemote, local: null, remote: {}, arcoCloud: null };
+  }
+}
 const nbrOfArchives = ref<number>(0);
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
@@ -80,7 +90,7 @@ async function getData() {
       (await repoService.Get(repoId)) ?? ent.Repository.createFrom();
     name.value = repo.value.name;
 
-    repoType.value = getRepoType(repo.value.url);
+    repoType.value = getLocationUnionFromUrl(repo.value.url);
     isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
 
     deletableBackupProfiles.value =
@@ -346,7 +356,11 @@ onUnmounted(() => {
             <span class='font-medium'>{{ $t("location") }}</span>
             <div class='flex items-center gap-2'>
               <span class='text-sm opacity-70 break-all'>{{ repo.url }}</span>
-              <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
+              <span :class='toRepoTypeBadge(repoType)'>{{ 
+                repoType.type === LocationType.LocationTypeLocal ? $t("local") : 
+                repoType.type === LocationType.LocationTypeArcoCloud ? $t("arcoCloud") : 
+                $t("remote") 
+              }}</span>
             </div>
           </div>
         </div>

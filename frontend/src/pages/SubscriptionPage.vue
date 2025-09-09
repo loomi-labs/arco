@@ -253,6 +253,11 @@ async function loadSubscriptionPlans() {
 }
 
 async function loadSubscription() {
+  if (!isAuthenticated.value) {
+    subscription.value = null
+    return
+  }
+
   currentPageState.value = PageState.LOADING;
   errorMessage.value = undefined;
 
