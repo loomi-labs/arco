@@ -72,7 +72,7 @@ func (qm *QueueManager) GetRepositoryState(repoID int) statemachine.RepositorySt
 	}
 
 	// Default to idle state for new repositories
-	return statemachine.NewRepositoryStateIdle(statemachine.StateIdle{})
+	return statemachine.NewRepositoryStateStateIdle(statemachine.StateIdle{})
 }
 
 // setRepositoryState updates the current state of a repository in memory
@@ -560,25 +560,25 @@ func (qm *QueueManager) expireOldOperations() {
 // getTargetStateForOperation maps an operation to its corresponding active state
 func (qm *QueueManager) getTargetStateForOperation(op *QueuedOperation) (statemachine.RepositoryState, error) {
 	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := v()
 		return statemachine.CreateBackingUpState(context.TODO(), backupData.BackupID), nil
 
-	case statemachine.PruneVariant:
+	case statemachine.OpPruneVariant:
 		pruneData := v()
 		return statemachine.CreatePruningState(context.TODO(), pruneData.BackupID), nil
 
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		return statemachine.CreateDeletingState(context.TODO(), 0), nil // Repository delete, no specific archive
 
-	case statemachine.ArchiveRefreshVariant:
+	case statemachine.OpArchiveRefreshVariant:
 		return statemachine.CreateRefreshingState(context.TODO()), nil
 
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		deleteData := v()
 		return statemachine.CreateDeletingState(context.TODO(), deleteData.ArchiveID), nil
 
-	case statemachine.ArchiveRenameVariant:
+	case statemachine.OpArchiveRenameVariant:
 		// Archive rename is a lightweight operation, treat as refreshing
 		return statemachine.CreateRefreshingState(context.TODO()), nil
 
@@ -681,9 +681,9 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 // This method should only be called for backup and prune operations
 func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operation) notification.Type {
 	switch operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		return notification.TypeFailedBackupRun
-	case statemachine.PruneVariant:
+	case statemachine.OpPruneVariant:
 		return notification.TypeFailedPruningRun
 	default:
 		// This should never happen if shouldCreateNotification is used correctly
@@ -697,9 +697,9 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 // This method should only be called for backup and prune operations
 func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operation) notification.Type {
 	switch operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		return notification.TypeWarningBackupRun
-	case statemachine.PruneVariant:
+	case statemachine.OpPruneVariant:
 		return notification.TypeWarningPruningRun
 	default:
 		// This should never happen if shouldCreateNotification is used correctly
@@ -712,10 +712,10 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 // getBackupProfileIDFromOperation extracts the backup profile ID from operation data
 func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.Operation) int {
 	switch op := operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := op()
 		return backupData.BackupID.BackupProfileId
-	case statemachine.PruneVariant:
+	case statemachine.OpPruneVariant:
 		pruneData := op()
 		return pruneData.BackupID.BackupProfileId
 	default:
@@ -729,7 +729,7 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 // shouldCreateNotification determines if error/warning notifications should be created for this operation type
 func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
 	switch operation.(type) {
-	case statemachine.BackupVariant, statemachine.PruneVariant:
+	case statemachine.OpBackupVariant, statemachine.OpPruneVariant:
 		return true
 	default:
 		return false
@@ -768,17 +768,17 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 // Execute implements OperationExecutor.Execute
 func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemachine.Operation) (*borgtypes.Status, error) {
 	switch v := operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		return e.executeBackup(ctx, v)
-	case statemachine.PruneVariant:
+	case statemachine.OpPruneVariant:
 		return e.executePrune(ctx, v)
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		return e.executeRepositoryDelete(ctx, v)
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		return e.executeArchiveDelete(ctx, v)
-	case statemachine.ArchiveRefreshVariant:
+	case statemachine.OpArchiveRefreshVariant:
 		return e.executeArchiveRefresh(ctx, v)
-	case statemachine.ArchiveRenameVariant:
+	case statemachine.OpArchiveRenameVariant:
 		return e.executeArchiveRename(ctx, v)
 	default:
 		// System error: unsupported operation type (programming error)
@@ -787,7 +787,7 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 }
 
 // executeBackup performs a borg backup operation
-func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp statemachine.BackupVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp statemachine.OpBackupVariant) (*borgtypes.Status, error) {
 	backupData := backupOp()
 
 	// Get backup profile with repository data in a single query
@@ -885,7 +885,7 @@ func buildPruneOptions(rule *ent.PruningRule) []string {
 }
 
 // executePrune performs a borg prune operation
-func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.OpPruneVariant) (*borgtypes.Status, error) {
 	pruneData := pruneOp()
 
 	// Get backup profile with repository and pruning rule data in a single query
@@ -941,7 +941,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 }
 
 // executeRepositoryDelete performs a borg repository delete operation
-func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, deleteOp statemachine.DeleteVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, deleteOp statemachine.OpDeleteVariant) (*borgtypes.Status, error) {
 	deleteData := deleteOp()
 
 	// Get repository from database using RepositoryID
@@ -958,7 +958,7 @@ func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, del
 }
 
 // executeArchiveDelete performs a borg archive delete operation
-func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, deleteOp statemachine.ArchiveDeleteVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, deleteOp statemachine.OpArchiveDeleteVariant) (*borgtypes.Status, error) {
 	deleteData := deleteOp()
 
 	// Get archive from database to get repository information
@@ -986,7 +986,7 @@ func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, delete
 }
 
 // executeArchiveRefresh performs a borg list operation to refresh archive information
-func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refreshOp statemachine.ArchiveRefreshVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refreshOp statemachine.OpArchiveRefreshVariant) (*borgtypes.Status, error) {
 	refreshData := refreshOp()
 
 	// Get repository from database using RepositoryID
@@ -1009,7 +1009,7 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 }
 
 // executeArchiveRename performs a borg rename operation
-func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant) (*borgtypes.Status, error) {
+func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.OpArchiveRenameVariant) (*borgtypes.Status, error) {
 	renameData := renameOp()
 
 	// Get archive from database to get repository and current name

@@ -172,7 +172,7 @@ func (q *RepositoryQueue) MoveToActive(operationID string) error {
 	q.active = op
 
 	// Update status to running
-	q.active.Status = NewOperationStatusRunning(StatusRunning{
+	q.active.Status = NewOperationStatusStatusRunning(StatusRunning{
 		StartedAt: time.Now(),
 		Progress:  nil,
 	})
@@ -194,11 +194,11 @@ func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
 
 	// Update operation status
 	if success {
-		q.active.Status = NewOperationStatusCompleted(StatusCompleted{
+		q.active.Status = NewOperationStatusStatusCompleted(StatusCompleted{
 			CompletedAt: time.Now(),
 		})
 	} else {
-		q.active.Status = NewOperationStatusFailed(StatusFailed{
+		q.active.Status = NewOperationStatusStatusFailed(StatusFailed{
 			Error:    errorMsg,
 			FailedAt: time.Now(),
 		})
@@ -270,29 +270,29 @@ func (q *RepositoryQueue) CanAddOperation(op statemachine.Operation) (bool, stri
 	defer q.mu.Unlock()
 
 	switch v := op.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := v()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		deleteData := v()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
+					if _, isDelete := opData.Operation.(statemachine.OpDeleteVariant); isDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
+				if _, isDelete := q.active.Operation.(statemachine.OpDeleteVariant); isDelete {
 					return false, q.active.ID
 				}
 			}
@@ -411,7 +411,7 @@ func (q *RepositoryQueue) ExpireOldOperations(now time.Time) []string {
 		if op, exists := q.operations[operationID]; exists {
 			if op.ValidUntil.Before(now) {
 				// Mark as expired
-				op.Status = NewOperationStatusExpired(StatusExpired{
+				op.Status = NewOperationStatusStatusExpired(StatusExpired{
 					ExpiredAt: now,
 				})
 
@@ -441,8 +441,8 @@ func (q *RepositoryQueue) updatePositions() {
 	for i, operationID := range q.operationList {
 		if op, exists := q.operations[operationID]; exists {
 			// Only update if status is currently queued
-			if _, isQueued := op.Status.(QueuedVariant); isQueued {
-				op.Status = NewOperationStatusQueued(StatusQueued{
+			if _, isQueued := op.Status.(StatusQueuedVariant); isQueued {
+				op.Status = NewOperationStatusStatusQueued(StatusQueued{
 					Position: i + 1, // 1-based position
 				})
 			}
@@ -453,13 +453,13 @@ func (q *RepositoryQueue) updatePositions() {
 // addToTrackingMaps adds operation to appropriate deduplication tracking
 func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := v()
 		q.activeBackups[backupData.BackupID] = op.ID
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		deleteData := v()
 		q.activeDeletes[deleteData.ArchiveID] = op.ID
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		q.hasRepoDelete = true
 	}
 }
@@ -467,13 +467,13 @@ func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 // removeFromTrackingMaps removes operation from deduplication tracking
 func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
 	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := v()
 		delete(q.activeBackups, backupData.BackupID)
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		deleteData := v()
 		delete(q.activeDeletes, deleteData.ArchiveID)
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		q.hasRepoDelete = false
 	}
 }
@@ -490,29 +490,29 @@ func isSameStatusType(status1, status2 OperationStatus) bool {
 // canAddOperationLocked checks if an operation can be added (assumes caller holds mutex)
 func (q *RepositoryQueue) canAddOperationLocked(op statemachine.Operation) (bool, string) {
 	switch v := op.(type) {
-	case statemachine.BackupVariant:
+	case statemachine.OpBackupVariant:
 		backupData := v()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.ArchiveDeleteVariant:
+	case statemachine.OpArchiveDeleteVariant:
 		deleteData := v()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.DeleteVariant:
+	case statemachine.OpDeleteVariant:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
+					if _, isDelete := opData.Operation.(statemachine.OpDeleteVariant); isDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
+				if _, isDelete := q.active.Operation.(statemachine.OpDeleteVariant); isDelete {
 					return false, q.active.ID
 				}
 			}

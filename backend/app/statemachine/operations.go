@@ -61,9 +61,9 @@ const (
 // GetOperationWeight determines operation weight for concurrency control
 func GetOperationWeight(op Operation) OperationWeight {
 	switch op.(type) {
-	case BackupVariant, PruneVariant, DeleteVariant:
+	case OpBackupVariant, OpPruneVariant, OpDeleteVariant:
 		return WeightHeavy
-	case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant:
+	case OpArchiveRefreshVariant, OpArchiveDeleteVariant, OpArchiveRenameVariant:
 		return WeightLight
 	default:
 		return WeightLight

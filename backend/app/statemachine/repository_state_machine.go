@@ -108,14 +108,14 @@ type TransitionDef struct {
 // initializeTransitions sets up all valid state transitions using a map-based approach
 func (sm *RepositoryStateMachine) initializeTransitions() {
 	// Create state instances once
-	idle := NewRepositoryStateIdle(StateIdle{})
-	queued := NewRepositoryStateQueued(StateQueued{})
-	backingUp := NewRepositoryStateBackingUp(StateBackingUp{})
-	pruning := NewRepositoryStatePruning(StatePruning{})
-	deleting := NewRepositoryStateDeleting(StateDeleting{})
-	refreshing := NewRepositoryStateRefreshing(StateRefreshing{})
-	mounted := NewRepositoryStateMounted(StateMounted{})
-	errorState := NewRepositoryStateError(StateError{})
+	idle := NewRepositoryStateStateIdle(StateIdle{})
+	queued := NewRepositoryStateStateQueued(StateQueued{})
+	backingUp := NewRepositoryStateStateBackingUp(StateBackingUp{})
+	pruning := NewRepositoryStateStatePruning(StatePruning{})
+	deleting := NewRepositoryStateStateDeleting(StateDeleting{})
+	refreshing := NewRepositoryStateStateRefreshing(StateRefreshing{})
+	mounted := NewRepositoryStateStateMounted(StateMounted{})
+	errorState := NewRepositoryStateStateError(StateError{})
 
 	// No guard needed for this transition
 	nop := func(repoId int, currentState RepositoryState) bool {
@@ -214,14 +214,14 @@ func (sm *RepositoryStateMachine) CanTransitionToAny(repoId int, currentState Re
 // GetAllPossibleStates returns all possible states that can be transitioned to from any state
 func (sm *RepositoryStateMachine) GetAllPossibleStates() []RepositoryState {
 	return []RepositoryState{
-		NewRepositoryStateIdle(StateIdle{}),
-		NewRepositoryStateQueued(StateQueued{}),
-		NewRepositoryStateBackingUp(StateBackingUp{}),
-		NewRepositoryStatePruning(StatePruning{}),
-		NewRepositoryStateDeleting(StateDeleting{}),
-		NewRepositoryStateRefreshing(StateRefreshing{}),
-		NewRepositoryStateMounted(StateMounted{}),
-		NewRepositoryStateError(StateError{}),
+		NewRepositoryStateStateIdle(StateIdle{}),
+		NewRepositoryStateStateQueued(StateQueued{}),
+		NewRepositoryStateStateBackingUp(StateBackingUp{}),
+		NewRepositoryStateStatePruning(StatePruning{}),
+		NewRepositoryStateStateDeleting(StateDeleting{}),
+		NewRepositoryStateStateRefreshing(StateRefreshing{}),
+		NewRepositoryStateStateMounted(StateMounted{}),
+		NewRepositoryStateStateError(StateError{}),
 	}
 }
 

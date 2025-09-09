@@ -125,21 +125,21 @@ const (
 // GetStateTypeName returns a string representation of the state type for debugging
 func GetStateTypeName(state RepositoryState) string {
 	switch state.(type) {
-	case IdleVariant:
+	case StateIdleVariant:
 		return "Idle"
-	case QueuedVariant:
+	case StateQueuedVariant:
 		return "Queued"
-	case BackingUpVariant:
+	case StateBackingUpVariant:
 		return "BackingUp"
-	case PruningVariant:
+	case StatePruningVariant:
 		return "Pruning"
-	case DeletingVariant:
+	case StateDeletingVariant:
 		return "Deleting"
-	case RefreshingVariant:
+	case StateRefreshingVariant:
 		return "Refreshing"
-	case MountedVariant:
+	case StateMountedVariant:
 		return "Mounted"
-	case ErrorVariant:
+	case StateErrorVariant:
 		return "Error"
 	default:
 		return "Unknown"
@@ -149,7 +149,7 @@ func GetStateTypeName(state RepositoryState) string {
 // IsActiveState returns true if the state represents an active operation
 func IsActiveState(state RepositoryState) bool {
 	switch state.(type) {
-	case BackingUpVariant, PruningVariant, DeletingVariant, RefreshingVariant:
+	case StateBackingUpVariant, StatePruningVariant, StateDeletingVariant, StateRefreshingVariant:
 		return true
 	default:
 		return false
@@ -158,41 +158,41 @@ func IsActiveState(state RepositoryState) bool {
 
 // IsIdleState returns true if the repository is idle
 func IsIdleState(state RepositoryState) bool {
-	_, ok := state.(IdleVariant)
+	_, ok := state.(StateIdleVariant)
 	return ok
 }
 
 // IsQueuedState returns true if the repository has queued operations
 func IsQueuedState(state RepositoryState) bool {
-	_, ok := state.(QueuedVariant)
+	_, ok := state.(StateQueuedVariant)
 	return ok
 }
 
 // IsMountedState returns true if the repository is mounted
 func IsMountedState(state RepositoryState) bool {
-	_, ok := state.(MountedVariant)
+	_, ok := state.(StateMountedVariant)
 	return ok
 }
 
 // IsErrorState returns true if the repository is in error state
 func IsErrorState(state RepositoryState) bool {
-	_, ok := state.(ErrorVariant)
+	_, ok := state.(StateErrorVariant)
 	return ok
 }
 
 // GetCancel extracts cancel context from active states
 func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	switch s := state.(type) {
-	case BackingUpVariant:
+	case StateBackingUpVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case PruningVariant:
+	case StatePruningVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case DeletingVariant:
+	case StateDeletingVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case RefreshingVariant:
+	case StateRefreshingVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
 	default:
@@ -215,12 +215,12 @@ func CreateCancelContext(parent context.Context) cancelCtx {
 
 // CreateIdleState creates a new idle state
 func CreateIdleState() RepositoryState {
-	return NewRepositoryStateIdle(StateIdle{})
+	return NewRepositoryStateStateIdle(StateIdle{})
 }
 
 // CreateQueuedState creates a new queued state with operation info
 func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState {
-	return NewRepositoryStateQueued(StateQueued{
+	return NewRepositoryStateStateQueued(StateQueued{
 		NextOperation: nextOperation,
 		QueueLength:   queueLength,
 	})
@@ -228,7 +228,7 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 
 // CreateBackingUpState creates a new backing up state with context
 func CreateBackingUpState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewRepositoryStateBackingUp(StateBackingUp{
+	return NewRepositoryStateStateBackingUp(StateBackingUp{
 		BackupID:  backupId,
 		Progress:  nil,
 		StartedAt: time.Now(),
@@ -238,7 +238,7 @@ func CreateBackingUpState(ctx context.Context, backupId types.BackupId) Reposito
 
 // CreatePruningState creates a new pruning state with context
 func CreatePruningState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewRepositoryStatePruning(StatePruning{
+	return NewRepositoryStateStatePruning(StatePruning{
 		BackupID:  backupId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -247,7 +247,7 @@ func CreatePruningState(ctx context.Context, backupId types.BackupId) Repository
 
 // CreateDeletingState creates a new deleting state with context
 func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
-	return NewRepositoryStateDeleting(StateDeleting{
+	return NewRepositoryStateStateDeleting(StateDeleting{
 		ArchiveID: archiveId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -256,7 +256,7 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 
 // CreateRefreshingState creates a new refreshing state with context
 func CreateRefreshingState(ctx context.Context) RepositoryState {
-	return NewRepositoryStateRefreshing(StateRefreshing{
+	return NewRepositoryStateStateRefreshing(StateRefreshing{
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
 	})
@@ -264,7 +264,7 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 
 // CreateMountedState creates a new mounted state
 func CreateMountedState(mountType MountType, mountPath string, archiveId *int, archiveMounts map[int]MountInfo) RepositoryState {
-	return NewRepositoryStateMounted(StateMounted{
+	return NewRepositoryStateStateMounted(StateMounted{
 		MountType:     mountType,
 		ArchiveID:     archiveId,
 		MountPath:     mountPath,
@@ -274,7 +274,7 @@ func CreateMountedState(mountType MountType, mountPath string, archiveId *int, a
 
 // CreateErrorState creates a new error state
 func CreateErrorState(errorType ErrorType, message string, action ErrorAction) RepositoryState {
-	return NewRepositoryStateError(StateError{
+	return NewRepositoryStateStateError(StateError{
 		ErrorType:  errorType,
 		Message:    message,
 		Action:     action,
