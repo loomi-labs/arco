@@ -9,7 +9,7 @@ import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type {
   CreateCheckoutSessionResponse,
   Plan,
@@ -19,7 +19,7 @@ import { RepositoryLocation } from "../../bindings/github.com/loomi-labs/arco/ba
 import { Browser, Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 import { logError, showAndLogError } from "../common/logger";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -28,7 +28,7 @@ import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent
 interface Emits {
   (event: "close"): void;
 
-  (event: "repo-created", repo: ent.Repository): void;
+  (event: "repo-created", repo: Repository): void;
 }
 
 enum ComponentState {

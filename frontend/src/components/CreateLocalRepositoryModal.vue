@@ -7,8 +7,8 @@ import { formInputClass } from "../common/form";
 import { CheckCircleIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 
@@ -17,7 +17,7 @@ import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/b
  ************/
 
 interface Emits {
-  (event: typeof emitCreateRepoStr, repo: ent.Repository): void;
+  (event: typeof emitCreateRepoStr, repo: Repository): void;
 }
 
 /************
@@ -63,6 +63,7 @@ const isValid = computed(() =>
  * Functions
  ************/
 
+
 function showModal() {
   dialog.value?.showModal();
 }
@@ -92,8 +93,10 @@ async function createRepo() {
       location.value!,
       password.value!,
       noPassword
-    ) ?? ent.Repository.createFrom();
-    emit(emitCreateRepoStr, repo);
+    );
+    if (repo) {
+      emit(emitCreateRepoStr, repo);
+    }
     toast.success("Repository created");
     dialog.value?.close();
   } catch (error: unknown) {

@@ -6,8 +6,9 @@ import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as oldRepoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 
 /************
@@ -15,7 +16,7 @@ import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
  ************/
 
 interface Emits {
-  (event: typeof emitCreateRepoStr, repo: ent.Repository): void;
+  (event: typeof emitCreateRepoStr, repo: Repository): void;
 }
 
 /************
@@ -95,8 +96,10 @@ async function createRepo() {
       location.value!,
       password.value!,
       noPassword
-    ) ?? ent.Repository.createFrom();
-    emit(emitCreateRepoStr, repo);
+    );
+    if (repo) {
+      emit(emitCreateRepoStr, repo);
+    }
     toast.success("Repository created");
     dialog.value?.close();
   } catch (error: unknown) {
@@ -194,7 +197,7 @@ async function fullValidate(force = false) {
 
 async function getConnectedRemoteHosts() {
   try {
-    hosts.value = await repoService.GetConnectedRemoteHosts();
+    hosts.value = await oldRepoService.GetConnectedRemoteHosts();
   } catch (error: unknown) {
     await showAndLogError("Failed to get connected remote hosts", error);
   }
