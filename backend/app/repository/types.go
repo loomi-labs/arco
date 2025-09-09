@@ -24,8 +24,8 @@ type Repository struct {
 	IsCloud bool   `json:"isCloud"`
 	CloudID string `json:"cloudId,omitempty"`
 
-	// Current state (ADT enum from statemachine package)
-	State statemachine.RepositoryState `json:"state"`
+	// Current state (union type for Wails3 serialization)
+	State statemachine.RepositoryStateUnion `json:"state"`
 
 	// Metadata
 	ArchiveCount      int        `json:"archiveCount"`
@@ -37,7 +37,7 @@ type Repository struct {
 
 // GetState implements the statemachine.Repository interface
 func (r *Repository) GetState() statemachine.RepositoryState {
-	return r.State
+	return r.State.ToRepositoryState()
 }
 
 // GetID implements the statemachine.Repository interface
@@ -88,26 +88,12 @@ type Progress struct {
 // OperationStatus ADT definition
 type OperationStatus adtenum.Enum[OperationStatus]
 
-// Status variant wrappers
-type QueuedStatusVariant adtenum.OneVariantValue[StatusQueued]
-type RunningStatusVariant adtenum.OneVariantValue[StatusRunning]
-type CompletedStatusVariant adtenum.OneVariantValue[StatusCompleted]
-type FailedStatusVariant adtenum.OneVariantValue[StatusFailed]
-type ExpiredStatusVariant adtenum.OneVariantValue[StatusExpired]
-
-// Status constructors
-var NewStatusQueued func(StatusQueued) QueuedStatusVariant = adtenum.CreateOneVariantValueConstructor[QueuedStatusVariant]()
-var NewStatusRunning func(StatusRunning) RunningStatusVariant = adtenum.CreateOneVariantValueConstructor[RunningStatusVariant]()
-var NewStatusCompleted func(StatusCompleted) CompletedStatusVariant = adtenum.CreateOneVariantValueConstructor[CompletedStatusVariant]()
-var NewStatusFailed func(StatusFailed) FailedStatusVariant = adtenum.CreateOneVariantValueConstructor[FailedStatusVariant]()
-var NewStatusExpired func(StatusExpired) ExpiredStatusVariant = adtenum.CreateOneVariantValueConstructor[ExpiredStatusVariant]()
-
-// Implement EnumType for status variants
-func (v QueuedStatusVariant) EnumType() OperationStatus    { return v }
-func (v RunningStatusVariant) EnumType() OperationStatus   { return v }
-func (v CompletedStatusVariant) EnumType() OperationStatus { return v }
-func (v FailedStatusVariant) EnumType() OperationStatus    { return v }
-func (v ExpiredStatusVariant) EnumType() OperationStatus   { return v }
+// Implement adtVariant marker interface for all status structs
+func (StatusQueued) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
+func (StatusRunning) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
+func (StatusCompleted) isADTVariant() OperationStatus { var zero OperationStatus; return zero }
+func (StatusFailed) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
+func (StatusExpired) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
 
 // ============================================================================
 // QUEUED OPERATION

@@ -38,29 +38,13 @@ type OpArchiveRename struct {
 // Operation ADT definition
 type Operation adtenum.Enum[Operation]
 
-// Operation variant wrappers
-type BackupVariant adtenum.OneVariantValue[OpBackup]
-type PruneVariant adtenum.OneVariantValue[OpPrune]
-type DeleteVariant adtenum.OneVariantValue[OpDelete]
-type ArchiveRefreshVariant adtenum.OneVariantValue[OpArchiveRefresh]
-type ArchiveDeleteVariant adtenum.OneVariantValue[OpArchiveDelete]
-type ArchiveRenameVariant adtenum.OneVariantValue[OpArchiveRename]
-
-// Operation constructors
-var NewOpBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
-var NewOpPrune = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
-var NewOpDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
-var NewOpArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
-var NewOpArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
-var NewOpArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
-
-// EnumType for operation variants
-func (v BackupVariant) EnumType() Operation         { return v }
-func (v PruneVariant) EnumType() Operation          { return v }
-func (v DeleteVariant) EnumType() Operation         { return v }
-func (v ArchiveRefreshVariant) EnumType() Operation { return v }
-func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
-func (v ArchiveRenameVariant) EnumType() Operation  { return v }
+// Implement adtVariant marker interface for all operation structs
+func (OpBackup) isADTVariant() Operation         { var zero Operation; return zero }
+func (OpPrune) isADTVariant() Operation          { var zero Operation; return zero }
+func (OpDelete) isADTVariant() Operation         { var zero Operation; return zero }
+func (OpArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
+func (OpArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
+func (OpArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT

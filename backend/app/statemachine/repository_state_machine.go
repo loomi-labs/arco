@@ -108,14 +108,14 @@ type TransitionDef struct {
 // initializeTransitions sets up all valid state transitions using a map-based approach
 func (sm *RepositoryStateMachine) initializeTransitions() {
 	// Create state instances once
-	idle := NewStateIdle(StateIdle{})
-	queued := NewStateQueued(StateQueued{})
-	backingUp := NewStateBackingUp(StateBackingUp{})
-	pruning := NewStatePruning(StatePruning{})
-	deleting := NewStateDeleting(StateDeleting{})
-	refreshing := NewStateRefreshing(StateRefreshing{})
-	mounted := NewStateMounted(StateMounted{})
-	errorState := NewStateError(StateError{})
+	idle := NewRepositoryStateIdle(StateIdle{})
+	queued := NewRepositoryStateQueued(StateQueued{})
+	backingUp := NewRepositoryStateBackingUp(StateBackingUp{})
+	pruning := NewRepositoryStatePruning(StatePruning{})
+	deleting := NewRepositoryStateDeleting(StateDeleting{})
+	refreshing := NewRepositoryStateRefreshing(StateRefreshing{})
+	mounted := NewRepositoryStateMounted(StateMounted{})
+	errorState := NewRepositoryStateError(StateError{})
 
 	// No guard needed for this transition
 	nop := func(repoId int, currentState RepositoryState) bool {
@@ -214,14 +214,14 @@ func (sm *RepositoryStateMachine) CanTransitionToAny(repoId int, currentState Re
 // GetAllPossibleStates returns all possible states that can be transitioned to from any state
 func (sm *RepositoryStateMachine) GetAllPossibleStates() []RepositoryState {
 	return []RepositoryState{
-		NewStateIdle(StateIdle{}),
-		NewStateQueued(StateQueued{}),
-		NewStateBackingUp(StateBackingUp{}),
-		NewStatePruning(StatePruning{}),
-		NewStateDeleting(StateDeleting{}),
-		NewStateRefreshing(StateRefreshing{}),
-		NewStateMounted(StateMounted{}),
-		NewStateError(StateError{}),
+		NewRepositoryStateIdle(StateIdle{}),
+		NewRepositoryStateQueued(StateQueued{}),
+		NewRepositoryStateBackingUp(StateBackingUp{}),
+		NewRepositoryStatePruning(StatePruning{}),
+		NewRepositoryStateDeleting(StateDeleting{}),
+		NewRepositoryStateRefreshing(StateRefreshing{}),
+		NewRepositoryStateMounted(StateMounted{}),
+		NewRepositoryStateError(StateError{}),
 	}
 }
 
@@ -253,17 +253,4 @@ func (sm *RepositoryStateMachine) validateStateTransition(repoId int, currentSta
 	}
 
 	return nil
-}
-
-// GetTransitionRules returns all registered transition rules for inspection
-func (sm *RepositoryStateMachine) GetTransitionRules() []RepositoryTransitionRule {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-
-	var rules []RepositoryTransitionRule
-	for _, rule := range sm.transitions {
-		rules = append(rules, rule)
-	}
-
-	return rules
 }

@@ -172,7 +172,7 @@ func (q *RepositoryQueue) MoveToActive(operationID string) error {
 	q.active = op
 
 	// Update status to running
-	q.active.Status = NewStatusRunning(StatusRunning{
+	q.active.Status = NewOperationStatusRunning(StatusRunning{
 		StartedAt: time.Now(),
 		Progress:  nil,
 	})
@@ -194,11 +194,11 @@ func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
 
 	// Update operation status
 	if success {
-		q.active.Status = NewStatusCompleted(StatusCompleted{
+		q.active.Status = NewOperationStatusCompleted(StatusCompleted{
 			CompletedAt: time.Now(),
 		})
 	} else {
-		q.active.Status = NewStatusFailed(StatusFailed{
+		q.active.Status = NewOperationStatusFailed(StatusFailed{
 			Error:    errorMsg,
 			FailedAt: time.Now(),
 		})
@@ -411,7 +411,7 @@ func (q *RepositoryQueue) ExpireOldOperations(now time.Time) []string {
 		if op, exists := q.operations[operationID]; exists {
 			if op.ValidUntil.Before(now) {
 				// Mark as expired
-				op.Status = NewStatusExpired(StatusExpired{
+				op.Status = NewOperationStatusExpired(StatusExpired{
 					ExpiredAt: now,
 				})
 
@@ -441,8 +441,8 @@ func (q *RepositoryQueue) updatePositions() {
 	for i, operationID := range q.operationList {
 		if op, exists := q.operations[operationID]; exists {
 			// Only update if status is currently queued
-			if _, isQueued := op.Status.(QueuedStatusVariant); isQueued {
-				op.Status = NewStatusQueued(StatusQueued{
+			if _, isQueued := op.Status.(QueuedVariant); isQueued {
+				op.Status = NewOperationStatusQueued(StatusQueued{
 					Position: i + 1, // 1-based position
 				})
 			}

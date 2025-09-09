@@ -105,6 +105,10 @@ func (a *App) RepositoryService() *repository_old.Service {
 	return a.repositoryService.Service
 }
 
+func (a *App) RepositoryServiceN() *repository.Service {
+	return a.repositoryServiceN.Service
+}
+
 func (a *App) AuthService() *auth.Service {
 	return a.authService.Service
 }

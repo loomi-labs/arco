@@ -19,7 +19,7 @@ type cancelCtx struct {
 	cancel context.CancelFunc
 }
 
-// State variant structs (our custom data)
+// State variant structs
 type StateIdle struct{}
 
 type StateQueued struct {
@@ -65,6 +65,19 @@ type StateError struct {
 	OccurredAt time.Time   `json:"occurredAt"`
 }
 
+// RepositoryState ADT definition
+type RepositoryState adtenum.Enum[RepositoryState]
+
+// Implement adtVariant marker interface for all state structs
+func (StateIdle) isADTVariant() RepositoryState       { var zero RepositoryState; return zero }
+func (StateQueued) isADTVariant() RepositoryState     { var zero RepositoryState; return zero }
+func (StateBackingUp) isADTVariant() RepositoryState  { var zero RepositoryState; return zero }
+func (StatePruning) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
+func (StateDeleting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
+func (StateRefreshing) isADTVariant() RepositoryState { var zero RepositoryState; return zero }
+func (StateMounted) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
+func (StateError) isADTVariant() RepositoryState      { var zero RepositoryState; return zero }
+
 // ============================================================================
 // SUPPORTING TYPES
 // ============================================================================
@@ -104,39 +117,6 @@ const (
 // ============================================================================
 // ADT ENUM DEFINITION
 // ============================================================================
-
-// RepositoryState ADT definition
-type RepositoryState adtenum.Enum[RepositoryState]
-
-// Variant wrappers using adtenum types
-type IdleVariant adtenum.OneVariantValue[StateIdle]
-type QueuedVariant adtenum.OneVariantValue[StateQueued]
-type BackingUpVariant adtenum.OneVariantValue[StateBackingUp]
-type PruningVariant adtenum.OneVariantValue[StatePruning]
-type DeletingVariant adtenum.OneVariantValue[StateDeleting]
-type RefreshingVariant adtenum.OneVariantValue[StateRefreshing]
-type MountedVariant adtenum.OneVariantValue[StateMounted]
-type ErrorVariant adtenum.OneVariantValue[StateError]
-
-// Constructors
-var NewStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
-var NewStateQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
-var NewStateBackingUp = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
-var NewStatePruning = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
-var NewStateDeleting = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
-var NewStateRefreshing = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
-var NewStateMounted = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
-var NewStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
-
-// Implement EnumType for each variant
-func (v IdleVariant) EnumType() RepositoryState       { return v }
-func (v QueuedVariant) EnumType() RepositoryState     { return v }
-func (v BackingUpVariant) EnumType() RepositoryState  { return v }
-func (v PruningVariant) EnumType() RepositoryState    { return v }
-func (v DeletingVariant) EnumType() RepositoryState   { return v }
-func (v RefreshingVariant) EnumType() RepositoryState { return v }
-func (v MountedVariant) EnumType() RepositoryState    { return v }
-func (v ErrorVariant) EnumType() RepositoryState      { return v }
 
 // ============================================================================
 // STATE UTILITY FUNCTIONS
@@ -235,12 +215,12 @@ func CreateCancelContext(parent context.Context) cancelCtx {
 
 // CreateIdleState creates a new idle state
 func CreateIdleState() RepositoryState {
-	return NewStateIdle(StateIdle{})
+	return NewRepositoryStateIdle(StateIdle{})
 }
 
 // CreateQueuedState creates a new queued state with operation info
 func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState {
-	return NewStateQueued(StateQueued{
+	return NewRepositoryStateQueued(StateQueued{
 		NextOperation: nextOperation,
 		QueueLength:   queueLength,
 	})
@@ -248,7 +228,7 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 
 // CreateBackingUpState creates a new backing up state with context
 func CreateBackingUpState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewStateBackingUp(StateBackingUp{
+	return NewRepositoryStateBackingUp(StateBackingUp{
 		BackupID:  backupId,
 		Progress:  nil,
 		StartedAt: time.Now(),
@@ -258,7 +238,7 @@ func CreateBackingUpState(ctx context.Context, backupId types.BackupId) Reposito
 
 // CreatePruningState creates a new pruning state with context
 func CreatePruningState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewStatePruning(StatePruning{
+	return NewRepositoryStatePruning(StatePruning{
 		BackupID:  backupId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -267,7 +247,7 @@ func CreatePruningState(ctx context.Context, backupId types.BackupId) Repository
 
 // CreateDeletingState creates a new deleting state with context
 func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
-	return NewStateDeleting(StateDeleting{
+	return NewRepositoryStateDeleting(StateDeleting{
 		ArchiveID: archiveId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -276,7 +256,7 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 
 // CreateRefreshingState creates a new refreshing state with context
 func CreateRefreshingState(ctx context.Context) RepositoryState {
-	return NewStateRefreshing(StateRefreshing{
+	return NewRepositoryStateRefreshing(StateRefreshing{
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
 	})
@@ -284,7 +264,7 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 
 // CreateMountedState creates a new mounted state
 func CreateMountedState(mountType MountType, mountPath string, archiveId *int, archiveMounts map[int]MountInfo) RepositoryState {
-	return NewStateMounted(StateMounted{
+	return NewRepositoryStateMounted(StateMounted{
 		MountType:     mountType,
 		ArchiveID:     archiveId,
 		MountPath:     mountPath,
@@ -294,7 +274,7 @@ func CreateMountedState(mountType MountType, mountPath string, archiveId *int, a
 
 // CreateErrorState creates a new error state
 func CreateErrorState(errorType ErrorType, message string, action ErrorAction) RepositoryState {
-	return NewStateError(StateError{
+	return NewRepositoryStateError(StateError{
 		ErrorType:  errorType,
 		Message:    message,
 		Action:     action,

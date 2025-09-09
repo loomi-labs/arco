@@ -127,7 +127,7 @@ func (s *Service) Get(ctx context.Context, repoId int) (*Repository, error) {
 		URL:               repoEntity.URL,
 		IsCloud:           isCloud,
 		CloudID:           cloudID,
-		State:             currentState,
+		State:             statemachine.ToRepositoryStateUnion(currentState),
 		ArchiveCount:      archiveCount,
 		LastBackupTime:    lastBackupTime,
 		LastBackupError:   lastBackupError,
