@@ -1,6 +1,7 @@
 import { diffDays, diffHours, offset, removeOffset } from "@formkit/tempo";
-import { RepoType } from "./repository";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import type { LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /**
  * Returns the style for a badge based on the difference between the current date and the given date.
@@ -43,14 +44,15 @@ export function toCreationTimeBadge(date: Date | undefined): string {
  * Returns the style for a badge based on the given repository type.
  * @param type The repository type.
  */
-export function toRepoTypeBadge(type: RepoType): string {
-  switch (type) {
-    case RepoType.Local:
+export function toRepoTypeBadge(type: LocationUnion): string {
+  switch (type.type) {
+    case LocationType.LocationTypeLocal:
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
-    case RepoType.Remote:
+    case LocationType.LocationTypeRemote:
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
-    case RepoType.ArcoCloud:
+    case LocationType.LocationTypeArcoCloud:
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
+    case LocationType.$zero:
     default:
       return "badge border-arco-purple-500 text-arco-purple-500 bg-transparent truncate";
   }

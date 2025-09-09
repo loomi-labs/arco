@@ -1,13 +1,3 @@
-export enum RepoType {
-  Local = "local",
-  Remote = "remote",
-  ArcoCloud = "arco-cloud",
-}
-
-export function getRepoType(locationStr: string): RepoType {
-  return locationStr.startsWith("/") ? RepoType.Local : RepoType.Remote;
-}
-
 export function toHumanReadableSize(size: number): string {
   if (size < 0) {
     return "Invalid size";
