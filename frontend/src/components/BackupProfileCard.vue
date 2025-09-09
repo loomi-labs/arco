@@ -13,7 +13,7 @@ import { repoStateChangedEvent } from "../common/events";
 import { debounce } from "lodash";
 import type { Icon } from "../common/icons";
 import { getIcon } from "../common/icons";
-import { getRepoType } from "../common/repository";
+import { LocationType, type LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -39,6 +39,16 @@ const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string>("");
 const icon = ref<Icon>(getIcon(props.backup.icon));
+
+// Helper function to convert old repository to LocationUnion for badge styling
+// TODO: refactor this
+function getLocationUnionFromUrl(url: string): LocationUnion {
+  if (url.startsWith("/")) {
+    return { type: LocationType.LocationTypeLocal, local: {}, remote: null, arcoCloud: null };
+  } else {
+    return { type: LocationType.LocationTypeRemote, local: null, remote: {}, arcoCloud: null };
+  }
+}
 
 const bIds = props.backup.edges?.repositories?.filter((r) => r !== null)
   .map((r) => {
@@ -155,7 +165,7 @@ onUnmounted(() => {
           <ul class='text-right'>
             <li v-for='repo in props.backup.edges?.repositories?.filter(r => r !== null) ?? []' :key='repo.id'
                 class='mx-1'
-                :class='`${toRepoTypeBadge(getRepoType(repo.url))}`'
+                :class='`${toRepoTypeBadge(getLocationUnionFromUrl(repo.url))}`'
             >
               {{ repo.name }}
             </li>
