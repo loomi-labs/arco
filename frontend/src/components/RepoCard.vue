@@ -6,16 +6,18 @@ import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toCreationTimeBadge, toErrorStateBadge, toWarningStateBadge } from "../common/badge";
+import { toCreationTimeBadge } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
 import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import {Events} from "@wailsio/runtime";
 
 /************
@@ -32,7 +34,7 @@ interface Props {
 }
 
 interface Emits {
-  (event: typeof emitRepoStatus, status: state.RepoStatus): void;
+  (event: typeof emitRepoStatus, status: statemachine.RepositoryStateType): void;
 
   (event: typeof emitClick): void;
 
@@ -51,14 +53,12 @@ const emitClick = "click";
 const emitRemoveRepo = "remove-repo";
 
 const router = useRouter();
-const repo = ref<ent.Repository>(ent.Repository.createFrom());
+const repo = ref<repoModels.Repository>(repoModels.Repository.createFrom());
 const backupId = types.BackupId.createFrom();
 backupId.backupProfileId = props.backupProfileId;
 backupId.repositoryId = props.repoId;
 const lastArchive = ref<ent.Archive | undefined>(undefined);
-const failedBackupRun = ref<string | undefined>(undefined);
 
-const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const backupState = ref<state.BackupState>(state.BackupState.createFrom());
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
@@ -79,10 +79,11 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getRepo() {
   try {
-    repo.value = await repoService.GetByBackupId(backupId) ?? ent.Repository.createFrom();
-    totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
-    sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
-    failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
+    repo.value = await repoService.Get(props.repoId) ?? repoModels.Repository.createFrom();
+    if (repo.value) {
+      totalSize.value = toHumanReadableSize(repo.value.storageUsed);
+      sizeOnDisk.value = toHumanReadableSize(repo.value.storageUsed); // Using storageUsed for both for now
+    }
 
     const archive = await repoService.GetLastArchiveByBackupId(backupId) ?? undefined;
     // Only set lastArchive if it has a valid ID (id > 0)
@@ -92,17 +93,13 @@ async function getRepo() {
   }
 }
 
-async function getRepoState() {
-  try {
-    repoState.value = await repoService.GetState(backupId.repositoryId);
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get repository state", error);
-  }
-}
 
 async function getBackupState() {
   try {
-    backupState.value = await repoService.GetBackupState(backupId);
+    const backupStateResult = await repoService.GetBackupState(backupId);
+    if (backupStateResult) {
+      backupState.value = backupStateResult;
+    }
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup state", error);
   }
@@ -134,7 +131,6 @@ function showRemoveRepoModal() {
  ************/
 
 getRepo();
-getRepoState();
 getBackupState();
 
 watch(backupState, async (newState, oldState) => {
@@ -147,22 +143,22 @@ watch(backupState, async (newState, oldState) => {
   await getBackupButtonStatus();
 });
 
-// emit repo status
-watch(repoState, async (newState, oldState) => {
+// emit repo status when repo state changes
+watch(() => repo.value?.state?.type, async (newType, oldType) => {
   // We only care about status changes
-  if (newState.status === oldState.status) {
+  if (newType === oldType || !newType) {
     return;
   }
 
-  // status changed
-  emits(emitRepoStatus, newState.status);
+  // status changed - emit the state type directly
+  emits(emitRepoStatus, newType);
 
   // update button state
   await getBackupButtonStatus();
 });
 
 cleanupFunctions.push(Events.On(backupStateChangedEvent(backupId), async () => await getBackupState()));
-cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), async () => await getRepoState()));
+cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), async () => await getRepo()));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -175,9 +171,9 @@ onUnmounted(() => {
        :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "ac-card-hover": showHover && !props.highlight }'
        @click='emits(emitClick)'>
     <div class='flex flex-col'>
-      <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
+      <h3 class='text-lg font-semibold'>{{ repo?.name || '' }}</h3>
       <p>{{ $t("last_backup") }}:
-        <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
+        <span v-if='repo.lastBackupError' class='tooltip tooltip-error' :data-tip='repo.lastBackupError'>
           <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent'>{{ $t("failed") }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
@@ -185,16 +181,14 @@ onUnmounted(() => {
         </span>
         <span v-else>-</span>
         <!-- Error Badge -->
-        <span v-if='toErrorStateBadge(repoState)' 
-              :class='toErrorStateBadge(repoState)'
-              class='ml-1'
+        <span v-if='repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError'
+              class='badge badge-error dark:border-error dark:bg-transparent dark:text-error truncate cursor-pointer ml-1'
               @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
           Error
         </span>
         <!-- Warning Badge -->
-        <span v-if='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))' 
-              :class='toWarningStateBadge(repoState, dismissedWarnings.has(props.repoId))'
-              class='ml-1'
+        <span v-if='repo.lastBackupWarning && !dismissedWarnings.has(props.repoId)'
+              class='badge badge-warning dark:border-warning dark:bg-transparent dark:text-warning truncate cursor-pointer ml-1'
               @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
           Warning
         </span>
@@ -207,13 +201,13 @@ onUnmounted(() => {
     <div class='flex flex-col items-end gap-2'>
       <div class='flex gap-2'>
         <button v-if='isPruningShown' class='btn btn-ghost btn-circle'
-                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
+                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeStateIdle'
                 @click.stop='prune'
         >
           <ScissorsIcon class='size-6' />
         </button>
         <button v-if='isDeleteShown' class='btn btn-ghost btn-circle'
-                :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
+                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeStateIdle'
                 @click.stop='showRemoveRepoModal'>
           <TrashIcon class='size-6' />
         </button>
