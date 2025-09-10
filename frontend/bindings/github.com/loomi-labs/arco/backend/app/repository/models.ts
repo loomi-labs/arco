@@ -40,6 +40,39 @@ export class ArcoCloud {
 }
 
 /**
+ * BackupProfileFilter represents filters for backup profiles
+ */
+export class BackupProfileFilter {
+    "id"?: number;
+    "name": string;
+    "isAllFilter": boolean;
+    "isUnknownFilter": boolean;
+
+    /** Creates a new BackupProfileFilter instance. */
+    constructor($$source: Partial<BackupProfileFilter> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("isAllFilter" in $$source)) {
+            this["isAllFilter"] = false;
+        }
+        if (!("isUnknownFilter" in $$source)) {
+            this["isUnknownFilter"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BackupProfileFilter instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BackupProfileFilter {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BackupProfileFilter($$parsedSource as Partial<BackupProfileFilter>);
+    }
+}
+
+/**
  * ExaminePruningResult represents the result of examining pruning operations
  */
 export class ExaminePruningResult {
@@ -188,6 +221,14 @@ export class PaginatedArchivesRequest {
     "page": number;
     "pageSize": number;
 
+    /**
+     * Optional
+     */
+    "backupProfileFilter"?: BackupProfileFilter | null;
+    "search"?: string;
+    "startDate"?: time$0.Time;
+    "endDate"?: time$0.Time;
+
     /** Creates a new PaginatedArchivesRequest instance. */
     constructor($$source: Partial<PaginatedArchivesRequest> = {}) {
         if (!("repositoryId" in $$source)) {
@@ -207,7 +248,11 @@ export class PaginatedArchivesRequest {
      * Creates a new PaginatedArchivesRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesRequest {
+        const $$createField3_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupProfileFilter" in $$parsedSource) {
+            $$parsedSource["backupProfileFilter"] = $$createField3_0($$parsedSource["backupProfileFilter"]);
+        }
         return new PaginatedArchivesRequest($$parsedSource as Partial<PaginatedArchivesRequest>);
     }
 }
@@ -235,7 +280,7 @@ export class PaginatedArchivesResponse {
      * Creates a new PaginatedArchivesResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType9;
+        const $$createField0_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("archives" in $$parsedSource) {
             $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
@@ -291,7 +336,7 @@ export class PruningDates {
      * Creates a new PruningDates instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType11;
+        const $$createField0_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("dates" in $$parsedSource) {
             $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
@@ -437,8 +482,8 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField3_0 = $$createType12;
-        const $$createField4_0 = $$createType13;
+        const $$createField3_0 = $$createType14;
+        const $$createField4_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -516,10 +561,10 @@ export class RepositoryWithQueue {
      * Creates a new RepositoryWithQueue instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryWithQueue {
-        const $$createField3_0 = $$createType12;
-        const $$createField4_0 = $$createType13;
-        const $$createField10_0 = $$createType16;
-        const $$createField11_0 = $$createType15;
+        const $$createField3_0 = $$createType14;
+        const $$createField4_0 = $$createType15;
+        const $$createField10_0 = $$createType18;
+        const $$createField11_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -605,13 +650,15 @@ const $$createType3 = Remote.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
 const $$createType5 = ArcoCloud.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = ent$0.Archive.createFrom;
+const $$createType7 = BackupProfileFilter.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = PruningDate.createFrom;
+const $$createType9 = ent$0.Archive.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
 const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = LocationUnion.createFrom;
-const $$createType13 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType14 = QueuedOperation.createFrom;
-const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = $Create.Array($$createType15);
+const $$createType12 = PruningDate.createFrom;
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = LocationUnion.createFrom;
+const $$createType15 = statemachine$0.RepositoryStateUnion.createFrom;
+const $$createType16 = QueuedOperation.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);
+const $$createType18 = $Create.Array($$createType17);

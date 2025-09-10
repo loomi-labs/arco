@@ -23,14 +23,14 @@ import { archivesChanged } from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
-import type * as platform from "../../bindings/github.com/loomi-labs/arco/backend/platform";
+import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import {
   PaginatedArchivesRequest,
   PaginatedArchivesResponse,
-  PruningDates, Repository
+  PruningDates
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
@@ -61,7 +61,6 @@ const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const deletedArchive = ref<number | undefined>(undefined);
-const archiveMountStates = ref<Map<number, platform.MountState>>(new Map()); // Map<archiveId, MountState>
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -99,6 +98,77 @@ const formatter = ref({
 const isBackupProfileFilterVisible = computed<boolean>(
   () => backupProfileFilterOptions.value.length > 1
 );
+
+// Repository state access
+const repositoryState = computed(() => props.repo.state);
+
+// Check if repository is in mounted state
+const isMounted = computed(() => 
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted
+);
+
+// Get mounted state details if available
+const mountedState = computed(() => 
+  isMounted.value ? repositoryState.value.stateMounted : null
+);
+
+// Get mounts array from repository state
+const mounts = computed(() => 
+  mountedState.value?.mounts ?? []
+);
+
+// Helper function to check if a specific archive is mounted
+const isArchiveMounted = (archiveId: number) => {
+  return mounts.value.some(mount => 
+    mount.mountType === statemachine.MountType.MountTypeArchive && 
+    mount.archiveId === archiveId
+  );
+};
+
+// Helper function to get mount info for a specific archive
+const getArchiveMountInfo = (archiveId: number) => {
+  return mounts.value.find(mount => 
+    mount.mountType === statemachine.MountType.MountTypeArchive && 
+    mount.archiveId === archiveId
+  ) ?? null;
+};
+
+// Helper computed to check if repository itself is mounted (via repository mount, not archive mounts)
+const hasRepositoryMount = computed(() => {
+  return mounts.value.some(mount => 
+    mount.mountType === statemachine.MountType.MountTypeRepository
+  );
+});
+
+// Helper computed to get repository mount info
+const getRepositoryMountInfo = computed(() => {
+  return mounts.value.find(mount => 
+    mount.mountType === statemachine.MountType.MountTypeRepository
+  ) ?? null;
+});
+
+// Check if repository is idle (can perform operations)
+const isRepositoryIdle = computed(() => 
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateIdle
+);
+
+// Check if repository is in mounted state (allows some operations)
+const isRepositoryInMountedState = computed(() => 
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted
+);
+
+// Check if repository can perform operations (idle or mounted)
+const canPerformOperations = computed(() => 
+  isRepositoryIdle.value || isRepositoryInMountedState.value
+);
+
+// Mount status overview computed properties
+const repositoryMountInfo = computed(() => getRepositoryMountInfo.value);
+const hasRepositoryMountActive = computed(() => hasRepositoryMount.value);
+const archiveMountCount = computed(() => 
+  mounts.value.filter(mount => mount.mountType === statemachine.MountType.MountTypeArchive).length
+);
+const totalMountCount = computed(() => mounts.value.length);
 
 /************
  * Functions
@@ -188,22 +258,11 @@ function markArchiveAndFadeOut(archiveId: number) {
   }, 2000); // Adjust the timeout as needed for the fade-out effect
 }
 
-async function getArchiveMountStates() {
-  try {
-    const result = await repoService.GetArchiveMountStates(props.repo.id);
-    archiveMountStates.value = new Map(
-      Object.entries(result).map(([k, v]) => [Number(k), v])
-    );
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get archive mount states", error);
-  }
-}
 
 async function mountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Browsing archive";
-    const archiveMountState = await repoService.MountArchive(archiveId);
-    archiveMountStates.value.set(archiveId, archiveMountState);
+    await repoService.MountArchive(archiveId);
   } catch (error: unknown) {
     await showAndLogError("Failed to mount archive", error);
   } finally {
@@ -214,10 +273,31 @@ async function mountArchive(archiveId: number) {
 async function unmountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Unmounting archive";
-    const archiveMountState = await repoService.UnmountArchive(archiveId);
-    archiveMountStates.value.set(archiveId, archiveMountState);
+    await repoService.UnmountArchive(archiveId);
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount archive", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
+async function mountRepository() {
+  try {
+    progressSpinnerText.value = "Mounting repository";
+    await repoService.Mount(props.repo.id);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to mount repository", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
+async function unmountRepository() {
+  try {
+    progressSpinnerText.value = "Unmounting repository";
+    await repoService.Unmount(props.repo.id);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to unmount repository", error);
   } finally {
     progressSpinnerText.value = undefined;
   }
@@ -266,14 +346,14 @@ async function getPruningDates() {
 }
 
 function getPruningText(archiveId: number) {
-  const nextRun = pruningDates.value.dates.find(
+  const pruningDate = pruningDates.value.dates.find(
     (p) => p.archiveId === archiveId
-  )?.nextRun;
-  if (!nextRun || isInPast(nextRun, true)) {
+  )?.date;
+  if (!pruningDate || isInPast(pruningDate, true)) {
     return "This archive will be deleted";
   }
 
-  return `This archive will be deleted ${toRelativeTimeString(nextRun, true)}`;
+  return `This archive will be deleted ${toRelativeTimeString(pruningDate, true)}`;
 }
 
 async function rename(archive: ent.Archive) {
@@ -361,7 +441,8 @@ async function deleteSelectedArchives() {
     const archiveIds = Array.from(selectedArchives.value);
 
     for (const archiveId of archiveIds) {
-      await repoService.DeleteArchive(archiveId);
+      // TODO: handle queued state -> show in UI
+      await repoService.QueueArchiveDelete(archiveId);
       markArchiveAndFadeOut(archiveId);
     }
 
@@ -446,12 +527,10 @@ const customDateRangeShortcuts = () => {
  ************/
 
 getPaginatedArchives();
-getArchiveMountStates();
 getBackupProfileFilterOptions();
 
-watch([() => props.repoStatus, () => props.repo], async () => {
+watch([() => props.repo], async () => {
   await getPaginatedArchives();
-  await getArchiveMountStates();
   await getBackupProfileFilterOptions();
   selectedArchives.value.clear();
   isAllSelected.value = false;
@@ -482,7 +561,46 @@ onUnmounted(() => {
             <h4 v-if='showName' class='text-base font-semibold mb-4'>{{ repo.name }}</h4>
           </th>
           <th class='text-right'>
-            <div class='flex justify-end gap-2'>
+            <div class='flex justify-end gap-2 items-center'>
+              <!-- Mount Status Indicator -->
+              <div v-if='totalMountCount > 0' class='flex items-center gap-1 text-sm'>
+                <span v-if='hasRepositoryMountActive' 
+                      class='tooltip tooltip-info' 
+                      data-tip='Repository is mounted - browse entire repository'>
+                  <span class='badge badge-primary gap-1'>
+                    <DocumentMagnifyingGlassIcon class='size-3' />
+                    Repository
+                  </span>
+                </span>
+                <span v-if='archiveMountCount > 0' 
+                      class='tooltip tooltip-info' 
+                      :data-tip='`${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""} mounted`'>
+                  <span class='badge badge-secondary gap-1'>
+                    <CloudArrowDownIcon class='size-3' />
+                    {{ archiveMountCount }}
+                  </span>
+                </span>
+              </div>
+              
+              <!-- Repository Mount Actions -->
+              <span v-if='hasRepositoryMountActive' 
+                    class='tooltip tooltip-info' 
+                    :data-tip='`Unmount repository from ${repositoryMountInfo?.mountPath}`'>
+                <button class='btn btn-sm btn-ghost btn-circle btn-success'
+                        :disabled='!canPerformOperations'
+                        @click='unmountRepository()'>
+                  <DocumentMagnifyingGlassIcon class='size-4 text-success' />
+                </button>
+              </span>
+              <span v-else-if='archiveMountCount === 0 && isRepositoryIdle' 
+                    class='tooltip tooltip-info' 
+                    data-tip='Browse entire repository'>
+                <button class='btn btn-sm btn-ghost btn-circle btn-primary'
+                        @click='mountRepository()'>
+                  <DocumentMagnifyingGlassIcon class='size-4' />
+                </button>
+              </span>
+              
               <button class='btn btn-sm btn-error'
                       :class='{ invisible: selectedArchives.size === 0 }'
                       @click='confirmDeleteMultipleModal?.showModal()'>
@@ -490,7 +608,7 @@ onUnmounted(() => {
                 {{ $t("delete") }} ({{ selectedArchives.size }})
               </button>
               <button class='btn btn-ghost btn-circle btn-info'
-                      :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
+                      :disabled='!isRepositoryIdle'
                       @click='refreshArchives'>
                 <ArrowPathIcon class='size-6' />
               </button>
@@ -568,7 +686,7 @@ onUnmounted(() => {
                    class='checkbox checkbox-sm'
                    :checked='selectedArchives.has(archive.id)'
                    @change='toggleArchiveSelection(archive.id)'
-                   :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle' />
+                   :disabled='!canPerformOperations' />
           </td>
           <!-- Name -->
           <td class='flex flex-col'>
@@ -579,7 +697,7 @@ onUnmounted(() => {
                      v-model='inputValues[archive.id]'
                      @input='validateName(archive.id)'
                      @change='rename(archive)'
-                     :disabled='inputRenameInProgress[archive.id] || props.repoStatus !== state.RepoStatus.RepoStatusIdle' />
+                     :disabled='inputRenameInProgress[archive.id] || !canPerformOperations' />
               <span class='loading loading-xs' :class='{ invisible: !inputRenameInProgress[archive.id] }' />
 
               <span class='tooltip tooltip-info mr-2'
@@ -608,22 +726,35 @@ onUnmounted(() => {
           </td>
           <!-- Action -->
           <td class='flex items-center gap-2'>
-            <span class='tooltip'
-                  :class='{ invisible: !archiveMountStates.get(archive.id)?.isMounted }'
-                  :data-tip='`Click to unmount archive at ${archiveMountStates.get(archive.id)?.mountPath}`'>
-              <button class='btn btn-sm btn-ghost btn-circle btn-info' @click='unmountArchive(archive.id)'>
-                <CloudArrowDownIcon class='size-4 text-info' />
+            <!-- Archive Mount Status Indicator -->
+            <span v-if='isArchiveMounted(archive.id)' 
+                  class='tooltip tooltip-info'
+                  :data-tip='`Archive mounted at ${getArchiveMountInfo(archive.id)?.mountPath}`'>
+              <button class='btn btn-sm btn-ghost btn-circle btn-success' @click='unmountArchive(archive.id)'>
+                <CloudArrowDownIcon class='size-4 text-success' />
               </button>
             </span>
-            <span class='tooltip tooltip-info' data-tip='Browse files in this archive'>
+            
+            <!-- Repository Mount Access -->
+            <span v-else-if='hasRepositoryMountActive' 
+                  class='tooltip tooltip-info' 
+                  data-tip='Archive accessible via repository mount'>
+              <span class='btn btn-sm btn-ghost btn-circle btn-disabled'>
+                <DocumentMagnifyingGlassIcon class='size-4 text-primary' />
+              </span>
+            </span>
+            
+            <!-- Mount Archive Action -->
+            <span v-else class='tooltip tooltip-info' data-tip='Browse files in this archive'>
               <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content'
-                      :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle && props.repoStatus !== state.RepoStatus.RepoStatusMounted'
+                      :disabled='!canPerformOperations'
                       @click='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4' />
               </button>
             </span>
+            
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral'
-                    :disabled='props.repoStatus !== state.RepoStatus.RepoStatusIdle'
+                    :disabled='!isRepositoryIdle'
                     @click='() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); }'>
               <TrashIcon class='size-4' />
             </button>

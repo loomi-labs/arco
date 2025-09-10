@@ -11,13 +11,13 @@ import (
 type RepositoryStateType string
 
 const (
-	RepositoryStateTypeStateBackingUp RepositoryStateType = "StateBackingUp"
-	RepositoryStateTypeStateDeleting RepositoryStateType = "StateDeleting"
-	RepositoryStateTypeStateError RepositoryStateType = "StateError"
-	RepositoryStateTypeStateIdle RepositoryStateType = "StateIdle"
-	RepositoryStateTypeStateMounted RepositoryStateType = "StateMounted"
-	RepositoryStateTypeStatePruning RepositoryStateType = "StatePruning"
-	RepositoryStateTypeStateQueued RepositoryStateType = "StateQueued"
+	RepositoryStateTypeStateBackingUp  RepositoryStateType = "StateBackingUp"
+	RepositoryStateTypeStateDeleting   RepositoryStateType = "StateDeleting"
+	RepositoryStateTypeStateError      RepositoryStateType = "StateError"
+	RepositoryStateTypeStateIdle       RepositoryStateType = "StateIdle"
+	RepositoryStateTypeStateMounted    RepositoryStateType = "StateMounted"
+	RepositoryStateTypeStatePruning    RepositoryStateType = "StatePruning"
+	RepositoryStateTypeStateQueued     RepositoryStateType = "StateQueued"
 	RepositoryStateTypeStateRefreshing RepositoryStateType = "StateRefreshing"
 )
 
@@ -42,13 +42,13 @@ var NewRepositoryStateStateQueued = adtenum.CreateOneVariantValueConstructor[Sta
 var NewRepositoryStateStateRefreshing = adtenum.CreateOneVariantValueConstructor[StateRefreshingVariant]()
 
 // EnumType methods for RepositoryState variants
-func (v StateBackingUpVariant) EnumType() RepositoryState { return v }
-func (v StateDeletingVariant) EnumType() RepositoryState { return v }
-func (v StateErrorVariant) EnumType() RepositoryState { return v }
-func (v StateIdleVariant) EnumType() RepositoryState { return v }
-func (v StateMountedVariant) EnumType() RepositoryState { return v }
-func (v StatePruningVariant) EnumType() RepositoryState { return v }
-func (v StateQueuedVariant) EnumType() RepositoryState { return v }
+func (v StateBackingUpVariant) EnumType() RepositoryState  { return v }
+func (v StateDeletingVariant) EnumType() RepositoryState   { return v }
+func (v StateErrorVariant) EnumType() RepositoryState      { return v }
+func (v StateIdleVariant) EnumType() RepositoryState       { return v }
+func (v StateMountedVariant) EnumType() RepositoryState    { return v }
+func (v StatePruningVariant) EnumType() RepositoryState    { return v }
+func (v StateQueuedVariant) EnumType() RepositoryState     { return v }
 func (v StateRefreshingVariant) EnumType() RepositoryState { return v }
 
 // RepositoryStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
@@ -56,14 +56,14 @@ type RepositoryStateUnion struct {
 	Type RepositoryStateType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	StateIdle *StateIdle `json:"stateIdle,omitempty"`
-	StateQueued *StateQueued `json:"stateQueued,omitempty"`
-	StateBackingUp *StateBackingUp `json:"stateBackingUp,omitempty"`
-	StatePruning *StatePruning `json:"statePruning,omitempty"`
-	StateDeleting *StateDeleting `json:"stateDeleting,omitempty"`
+	StateIdle       *StateIdle       `json:"stateIdle,omitempty"`
+	StateQueued     *StateQueued     `json:"stateQueued,omitempty"`
+	StateBackingUp  *StateBackingUp  `json:"stateBackingUp,omitempty"`
+	StatePruning    *StatePruning    `json:"statePruning,omitempty"`
+	StateDeleting   *StateDeleting   `json:"stateDeleting,omitempty"`
 	StateRefreshing *StateRefreshing `json:"stateRefreshing,omitempty"`
-	StateMounted *StateMounted `json:"stateMounted,omitempty"`
-	StateError *StateError `json:"stateError,omitempty"`
+	StateMounted    *StateMounted    `json:"stateMounted,omitempty"`
+	StateError      *StateError      `json:"stateError,omitempty"`
 }
 
 // ToRepositoryStateUnion converts an ADT RepositoryState to an RepositoryStateUnion
@@ -72,54 +72,54 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 	case StateIdleVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateIdle,
+			Type:      RepositoryStateTypeStateIdle,
 			StateIdle: &data,
 		}
 	case StateQueuedVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateQueued,
+			Type:        RepositoryStateTypeStateQueued,
 			StateQueued: &data,
 		}
 	case StateBackingUpVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateBackingUp,
+			Type:           RepositoryStateTypeStateBackingUp,
 			StateBackingUp: &data,
 		}
 	case StatePruningVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStatePruning,
+			Type:         RepositoryStateTypeStatePruning,
 			StatePruning: &data,
 		}
 	case StateDeletingVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateDeleting,
+			Type:          RepositoryStateTypeStateDeleting,
 			StateDeleting: &data,
 		}
 	case StateRefreshingVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateRefreshing,
+			Type:            RepositoryStateTypeStateRefreshing,
 			StateRefreshing: &data,
 		}
 	case StateMountedVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateMounted,
+			Type:         RepositoryStateTypeStateMounted,
 			StateMounted: &data,
 		}
 	case StateErrorVariant:
 		data := i()
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateError,
+			Type:       RepositoryStateTypeStateError,
 			StateError: &data,
 		}
 	default:
 		return RepositoryStateUnion{
-			Type: RepositoryStateTypeStateBackingUp,
+			Type:           RepositoryStateTypeStateBackingUp,
 			StateBackingUp: &StateBackingUp{},
 		}
 	}
@@ -129,12 +129,12 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 type OperationType string
 
 const (
-	OperationTypeOpArchiveDelete OperationType = "OpArchiveDelete"
+	OperationTypeOpArchiveDelete  OperationType = "OpArchiveDelete"
 	OperationTypeOpArchiveRefresh OperationType = "OpArchiveRefresh"
-	OperationTypeOpArchiveRename OperationType = "OpArchiveRename"
-	OperationTypeOpBackup OperationType = "OpBackup"
-	OperationTypeOpDelete OperationType = "OpDelete"
-	OperationTypeOpPrune OperationType = "OpPrune"
+	OperationTypeOpArchiveRename  OperationType = "OpArchiveRename"
+	OperationTypeOpBackup         OperationType = "OpBackup"
+	OperationTypeOpDelete         OperationType = "OpDelete"
+	OperationTypeOpPrune          OperationType = "OpPrune"
 )
 
 // Operation variant wrappers
@@ -154,24 +154,24 @@ var NewOperationOpDelete = adtenum.CreateOneVariantValueConstructor[OpDeleteVari
 var NewOperationOpPrune = adtenum.CreateOneVariantValueConstructor[OpPruneVariant]()
 
 // EnumType methods for Operation variants
-func (v OpArchiveDeleteVariant) EnumType() Operation { return v }
+func (v OpArchiveDeleteVariant) EnumType() Operation  { return v }
 func (v OpArchiveRefreshVariant) EnumType() Operation { return v }
-func (v OpArchiveRenameVariant) EnumType() Operation { return v }
-func (v OpBackupVariant) EnumType() Operation { return v }
-func (v OpDeleteVariant) EnumType() Operation { return v }
-func (v OpPruneVariant) EnumType() Operation { return v }
+func (v OpArchiveRenameVariant) EnumType() Operation  { return v }
+func (v OpBackupVariant) EnumType() Operation         { return v }
+func (v OpDeleteVariant) EnumType() Operation         { return v }
+func (v OpPruneVariant) EnumType() Operation          { return v }
 
 // OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationUnion struct {
 	Type OperationType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	OpBackup *OpBackup `json:"opBackup,omitempty"`
-	OpPrune *OpPrune `json:"opPrune,omitempty"`
-	OpDelete *OpDelete `json:"opDelete,omitempty"`
+	OpBackup         *OpBackup         `json:"opBackup,omitempty"`
+	OpPrune          *OpPrune          `json:"opPrune,omitempty"`
+	OpDelete         *OpDelete         `json:"opDelete,omitempty"`
 	OpArchiveRefresh *OpArchiveRefresh `json:"opArchiveRefresh,omitempty"`
-	OpArchiveDelete *OpArchiveDelete `json:"opArchiveDelete,omitempty"`
-	OpArchiveRename *OpArchiveRename `json:"opArchiveRename,omitempty"`
+	OpArchiveDelete  *OpArchiveDelete  `json:"opArchiveDelete,omitempty"`
+	OpArchiveRename  *OpArchiveRename  `json:"opArchiveRename,omitempty"`
 }
 
 // ToOperationUnion converts an ADT Operation to an OperationUnion
@@ -180,44 +180,43 @@ func ToOperationUnion(r Operation) OperationUnion {
 	case OpBackupVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpBackup,
+			Type:     OperationTypeOpBackup,
 			OpBackup: &data,
 		}
 	case OpPruneVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpPrune,
+			Type:    OperationTypeOpPrune,
 			OpPrune: &data,
 		}
 	case OpDeleteVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpDelete,
+			Type:     OperationTypeOpDelete,
 			OpDelete: &data,
 		}
 	case OpArchiveRefreshVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpArchiveRefresh,
+			Type:             OperationTypeOpArchiveRefresh,
 			OpArchiveRefresh: &data,
 		}
 	case OpArchiveDeleteVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpArchiveDelete,
+			Type:            OperationTypeOpArchiveDelete,
 			OpArchiveDelete: &data,
 		}
 	case OpArchiveRenameVariant:
 		data := i()
 		return OperationUnion{
-			Type: OperationTypeOpArchiveRename,
+			Type:            OperationTypeOpArchiveRename,
 			OpArchiveRename: &data,
 		}
 	default:
 		return OperationUnion{
-			Type: OperationTypeOpArchiveDelete,
+			Type:            OperationTypeOpArchiveDelete,
 			OpArchiveDelete: &OpArchiveDelete{},
 		}
 	}
 }
-

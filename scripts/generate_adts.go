@@ -45,7 +45,6 @@ const (
 	ConversionPrefix  = "To"
 )
 
-
 // Code generation templates
 var (
 	// File header template for generated adt.go files
@@ -368,8 +367,6 @@ func findAdtEnumsByMarkerMethods(packagePath string) []EnumInfo {
 
 	return enums
 }
-
-
 
 // getPackageImportPath converts a file path to a Go import path
 func getPackageImportPath(packagePath string) string {

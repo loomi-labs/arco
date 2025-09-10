@@ -52,10 +52,7 @@ type StateRefreshing struct {
 }
 
 type StateMounted struct {
-	MountType     MountType         `json:"mountType"`
-	ArchiveID     *int              `json:"archiveId,omitempty"`
-	MountPath     string            `json:"mountPath"`
-	ArchiveMounts map[int]MountInfo `json:"archiveMounts"`
+	Mounts []MountInfo `json:"mounts"`
 }
 
 type StateError struct {
@@ -90,10 +87,11 @@ const (
 	MountTypeArchive    MountType = "archive"
 )
 
-// MountInfo contains mount information for archives
+// MountInfo contains mount information for archives and repositories
 type MountInfo struct {
-	ArchiveID int    `json:"archiveId"`
-	MountPath string `json:"mountPath"`
+	MountType MountType `json:"mountType"`
+	ArchiveID *int      `json:"archiveId,omitempty"`
+	MountPath string    `json:"mountPath"`
 }
 
 // Error types for repository operations
@@ -262,13 +260,10 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 	})
 }
 
-// CreateMountedState creates a new mounted state
-func CreateMountedState(mountType MountType, mountPath string, archiveId *int, archiveMounts map[int]MountInfo) RepositoryState {
+// CreateMountedState creates a new mounted state with the given mounts
+func CreateMountedState(mounts []MountInfo) RepositoryState {
 	return NewRepositoryStateStateMounted(StateMounted{
-		MountType:     mountType,
-		ArchiveID:     archiveId,
-		MountPath:     mountPath,
-		ArchiveMounts: archiveMounts,
+		Mounts: mounts,
 	})
 }
 

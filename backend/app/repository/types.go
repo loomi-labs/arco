@@ -142,13 +142,25 @@ type TestRepoConnectionResult struct {
 	IsBorgRepo      bool `json:"isBorgRepo"`
 }
 
+// BackupProfileFilter represents filters for backup profiles
+type BackupProfileFilter struct {
+	Id              int    `json:"id,omitempty"`
+	Name            string `json:"name"`
+	IsAllFilter     bool   `json:"isAllFilter"`
+	IsUnknownFilter bool   `json:"isUnknownFilter"`
+}
+
 // PaginatedArchivesRequest represents a request for paginated archives
 type PaginatedArchivesRequest struct {
 	// Required
 	RepositoryId int `json:"repositoryId"`
 	Page         int `json:"page"`
 	PageSize     int `json:"pageSize"`
-	// Optional filters can be added here
+	// Optional
+	BackupProfileFilter *BackupProfileFilter `json:"backupProfileFilter,omitempty"`
+	Search              string               `json:"search,omitempty"`
+	StartDate           time.Time            `json:"startDate,omitempty"`
+	EndDate             time.Time            `json:"endDate,omitempty"`
 }
 
 // PaginatedArchivesResponse represents the response for paginated archives

@@ -115,10 +115,10 @@ export function CreateCloudRepository(name: string, password: string, location: 
 }
 
 /**
- * Delete is an alias for QueueDelete
+ * Delete deletes a repository completely. This cancels all other operations
  */
-export function Delete(repoId: number): $CancellablePromise<string> {
-    return $Call.ByID(1592048265, repoId);
+export function Delete(id: number): $CancellablePromise<void> {
+    return $Call.ByID(1592048265, id);
 }
 
 /**
@@ -376,24 +376,10 @@ export function QueueBackups(backupIds: types$0.BackupId[]): $CancellablePromise
 }
 
 /**
- * QueueDelete queues a repository deletion operation
- */
-export function QueueDelete(id: number): $CancellablePromise<string> {
-    return $Call.ByID(124146734, id);
-}
-
-/**
  * QueuePrune queues a prune operation
  */
 export function QueuePrune(backupId: types$0.BackupId): $CancellablePromise<string> {
     return $Call.ByID(295202139, backupId);
-}
-
-/**
- * QueueRemove queues a repository removal operation
- */
-export function QueueRemove(repoId: number): $CancellablePromise<string> {
-    return $Call.ByID(2452972121, repoId);
 }
 
 /**

@@ -44,16 +44,17 @@ export enum ErrorType {
 };
 
 /**
- * MountInfo contains mount information for archives
+ * MountInfo contains mount information for archives and repositories
  */
 export class MountInfo {
-    "archiveId": number;
+    "mountType": MountType;
+    "archiveId"?: number | null;
     "mountPath": string;
 
     /** Creates a new MountInfo instance. */
     constructor($$source: Partial<MountInfo> = {}) {
-        if (!("archiveId" in $$source)) {
-            this["archiveId"] = 0;
+        if (!("mountType" in $$source)) {
+            this["mountType"] = MountType.$zero;
         }
         if (!("mountPath" in $$source)) {
             this["mountPath"] = "";
@@ -297,21 +298,12 @@ export class StateIdle {
 }
 
 export class StateMounted {
-    "mountType": MountType;
-    "archiveId"?: number | null;
-    "mountPath": string;
-    "archiveMounts": { [_: `${number}`]: MountInfo };
+    "mounts": MountInfo[];
 
     /** Creates a new StateMounted instance. */
     constructor($$source: Partial<StateMounted> = {}) {
-        if (!("mountType" in $$source)) {
-            this["mountType"] = MountType.$zero;
-        }
-        if (!("mountPath" in $$source)) {
-            this["mountPath"] = "";
-        }
-        if (!("archiveMounts" in $$source)) {
-            this["archiveMounts"] = {};
+        if (!("mounts" in $$source)) {
+            this["mounts"] = [];
         }
 
         Object.assign(this, $$source);
@@ -321,10 +313,10 @@ export class StateMounted {
      * Creates a new StateMounted instance from a string or object.
      */
     static createFrom($$source: any = {}): StateMounted {
-        const $$createField3_0 = $$createType20;
+        const $$createField0_0 = $$createType20;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("archiveMounts" in $$parsedSource) {
-            $$parsedSource["archiveMounts"] = $$createField3_0($$parsedSource["archiveMounts"]);
+        if ("mounts" in $$parsedSource) {
+            $$parsedSource["mounts"] = $$createField0_0($$parsedSource["mounts"]);
         }
         return new StateMounted($$parsedSource as Partial<StateMounted>);
     }
@@ -426,4 +418,4 @@ const $$createType16 = types$0.BackupId.createFrom;
 const $$createType17 = types$1.BackupProgress.createFrom;
 const $$createType18 = $Create.Nullable($$createType17);
 const $$createType19 = MountInfo.createFrom;
-const $$createType20 = $Create.Map($Create.Any, $$createType19);
+const $$createType20 = $Create.Array($$createType19);

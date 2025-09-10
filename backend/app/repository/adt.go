@@ -12,8 +12,8 @@ type LocationType string
 
 const (
 	LocationTypeArcoCloud LocationType = "ArcoCloud"
-	LocationTypeLocal LocationType = "Local"
-	LocationTypeRemote LocationType = "Remote"
+	LocationTypeLocal     LocationType = "Local"
+	LocationTypeRemote    LocationType = "Remote"
 )
 
 // Location variant wrappers
@@ -28,16 +28,16 @@ var NewLocationRemote = adtenum.CreateOneVariantValueConstructor[RemoteVariant](
 
 // EnumType methods for Location variants
 func (v ArcoCloudVariant) EnumType() Location { return v }
-func (v LocalVariant) EnumType() Location { return v }
-func (v RemoteVariant) EnumType() Location { return v }
+func (v LocalVariant) EnumType() Location     { return v }
+func (v RemoteVariant) EnumType() Location    { return v }
 
 // LocationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type LocationUnion struct {
 	Type LocationType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	Local *Local `json:"local,omitempty"`
-	Remote *Remote `json:"remote,omitempty"`
+	Local     *Local     `json:"local,omitempty"`
+	Remote    *Remote    `json:"remote,omitempty"`
 	ArcoCloud *ArcoCloud `json:"arcoCloud,omitempty"`
 }
 
@@ -47,24 +47,24 @@ func ToLocationUnion(r Location) LocationUnion {
 	case LocalVariant:
 		data := i()
 		return LocationUnion{
-			Type: LocationTypeLocal,
+			Type:  LocationTypeLocal,
 			Local: &data,
 		}
 	case RemoteVariant:
 		data := i()
 		return LocationUnion{
-			Type: LocationTypeRemote,
+			Type:   LocationTypeRemote,
 			Remote: &data,
 		}
 	case ArcoCloudVariant:
 		data := i()
 		return LocationUnion{
-			Type: LocationTypeArcoCloud,
+			Type:      LocationTypeArcoCloud,
 			ArcoCloud: &data,
 		}
 	default:
 		return LocationUnion{
-			Type: LocationTypeArcoCloud,
+			Type:      LocationTypeArcoCloud,
 			ArcoCloud: &ArcoCloud{},
 		}
 	}
@@ -75,10 +75,10 @@ type OperationStatusType string
 
 const (
 	OperationStatusTypeStatusCompleted OperationStatusType = "StatusCompleted"
-	OperationStatusTypeStatusExpired OperationStatusType = "StatusExpired"
-	OperationStatusTypeStatusFailed OperationStatusType = "StatusFailed"
-	OperationStatusTypeStatusQueued OperationStatusType = "StatusQueued"
-	OperationStatusTypeStatusRunning OperationStatusType = "StatusRunning"
+	OperationStatusTypeStatusExpired   OperationStatusType = "StatusExpired"
+	OperationStatusTypeStatusFailed    OperationStatusType = "StatusFailed"
+	OperationStatusTypeStatusQueued    OperationStatusType = "StatusQueued"
+	OperationStatusTypeStatusRunning   OperationStatusType = "StatusRunning"
 )
 
 // OperationStatus variant wrappers
@@ -97,21 +97,21 @@ var NewOperationStatusStatusRunning = adtenum.CreateOneVariantValueConstructor[S
 
 // EnumType methods for OperationStatus variants
 func (v StatusCompletedVariant) EnumType() OperationStatus { return v }
-func (v StatusExpiredVariant) EnumType() OperationStatus { return v }
-func (v StatusFailedVariant) EnumType() OperationStatus { return v }
-func (v StatusQueuedVariant) EnumType() OperationStatus { return v }
-func (v StatusRunningVariant) EnumType() OperationStatus { return v }
+func (v StatusExpiredVariant) EnumType() OperationStatus   { return v }
+func (v StatusFailedVariant) EnumType() OperationStatus    { return v }
+func (v StatusQueuedVariant) EnumType() OperationStatus    { return v }
+func (v StatusRunningVariant) EnumType() OperationStatus   { return v }
 
 // OperationStatusUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationStatusUnion struct {
 	Type OperationStatusType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	StatusQueued *StatusQueued `json:"statusQueued,omitempty"`
-	StatusRunning *StatusRunning `json:"statusRunning,omitempty"`
+	StatusQueued    *StatusQueued    `json:"statusQueued,omitempty"`
+	StatusRunning   *StatusRunning   `json:"statusRunning,omitempty"`
 	StatusCompleted *StatusCompleted `json:"statusCompleted,omitempty"`
-	StatusFailed *StatusFailed `json:"statusFailed,omitempty"`
-	StatusExpired *StatusExpired `json:"statusExpired,omitempty"`
+	StatusFailed    *StatusFailed    `json:"statusFailed,omitempty"`
+	StatusExpired   *StatusExpired   `json:"statusExpired,omitempty"`
 }
 
 // ToOperationStatusUnion converts an ADT OperationStatus to an OperationStatusUnion
@@ -120,38 +120,37 @@ func ToOperationStatusUnion(r OperationStatus) OperationStatusUnion {
 	case StatusQueuedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusQueued,
+			Type:         OperationStatusTypeStatusQueued,
 			StatusQueued: &data,
 		}
 	case StatusRunningVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusRunning,
+			Type:          OperationStatusTypeStatusRunning,
 			StatusRunning: &data,
 		}
 	case StatusCompletedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusCompleted,
+			Type:            OperationStatusTypeStatusCompleted,
 			StatusCompleted: &data,
 		}
 	case StatusFailedVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusFailed,
+			Type:         OperationStatusTypeStatusFailed,
 			StatusFailed: &data,
 		}
 	case StatusExpiredVariant:
 		data := i()
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusExpired,
+			Type:          OperationStatusTypeStatusExpired,
 			StatusExpired: &data,
 		}
 	default:
 		return OperationStatusUnion{
-			Type: OperationStatusTypeStatusCompleted,
+			Type:            OperationStatusTypeStatusCompleted,
 			StatusCompleted: &StatusCompleted{},
 		}
 	}
 }
-
