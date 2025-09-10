@@ -7,7 +7,6 @@ import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import * as oldRepoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 
@@ -197,7 +196,7 @@ async function fullValidate(force = false) {
 
 async function getConnectedRemoteHosts() {
   try {
-    hosts.value = await oldRepoService.GetConnectedRemoteHosts();
+    hosts.value = await repoService.GetConnectedRemoteHosts();
   } catch (error: unknown) {
     await showAndLogError("Failed to get connected remote hosts", error);
   }

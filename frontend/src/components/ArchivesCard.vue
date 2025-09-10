@@ -21,7 +21,7 @@ import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import { archivesChanged } from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as platform from "../../bindings/github.com/loomi-labs/arco/backend/platform";
@@ -30,8 +30,8 @@ import { Events } from "@wailsio/runtime";
 import {
   PaginatedArchivesRequest,
   PaginatedArchivesResponse,
-  PruningDates
-} from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old";
+  PruningDates, Repository
+} from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -44,9 +44,8 @@ type Pagination = {
 };
 
 interface Props {
-  repo: ent.Repository;
+  repo: Repository;
   backupProfileId?: number;
-  repoStatus: state.RepoStatus;
   highlight: boolean;
   showName?: boolean;
   showBackupProfileColumn?: boolean;

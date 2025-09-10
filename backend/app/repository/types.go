@@ -167,3 +167,8 @@ type PruningDate struct {
 	ArchiveId int       `json:"archiveId"`
 	Date      time.Time `json:"date"`
 }
+
+// UpdateRequest represents fields that can be updated for a repository
+type UpdateRequest struct {
+	Name string `json:"name,omitempty"` // Repository name
+}

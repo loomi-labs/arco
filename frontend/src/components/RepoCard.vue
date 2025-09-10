@@ -12,7 +12,7 @@ import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events
 import { toHumanReadableSize } from "../common/repository";
 import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";

@@ -90,6 +90,11 @@ export enum MountType {
 export type Operation = any;
 
 /**
+ * RepositoryState ADT definition
+ */
+export type RepositoryState = any;
+
+/**
  * RepositoryStateType is the discriminator enum for RepositoryState
  */
 export enum RepositoryStateType {

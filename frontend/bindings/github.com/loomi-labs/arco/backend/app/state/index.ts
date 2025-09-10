@@ -8,10 +8,6 @@ export {
     BackupStatus,
     CheckoutResult,
     CheckoutResultStatus,
-    RepoErrorAction,
-    RepoErrorType,
-    RepoState,
-    RepoStatus,
     StartupState,
     StartupStatus
 } from "./models.js";

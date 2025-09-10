@@ -573,6 +573,30 @@ export class TestRepoConnectionResult {
     }
 }
 
+/**
+ * UpdateRequest represents fields that can be updated for a repository
+ */
+export class UpdateRequest {
+    /**
+     * Repository name
+     */
+    "name"?: string;
+
+    /** Creates a new UpdateRequest instance. */
+    constructor($$source: Partial<UpdateRequest> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpdateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UpdateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new UpdateRequest($$parsedSource as Partial<UpdateRequest>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = types$0.BackupId.createFrom;
 const $$createType1 = Local.createFrom;

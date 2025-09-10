@@ -21,7 +21,8 @@ export {
     Remote,
     Repository,
     RepositoryWithQueue,
-    TestRepoConnectionResult
+    TestRepoConnectionResult,
+    UpdateRequest
 } from "./models.js";
 
 export type {

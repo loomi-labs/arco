@@ -11,6 +11,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/notification"
@@ -232,9 +233,25 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 }
 
 // Update updates a repository with provided changes
-func (s *Service) Update(ctx context.Context, repoId int, updates map[string]interface{}) (*Repository, error) {
-	// TODO: Implement repository update
-	return nil, nil
+func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateRequest) (*Repository, error) {
+	// Update the repository in the database
+	updateQuery := s.db.Repository.UpdateOneID(repoId)
+
+	// Apply updates based on provided fields
+	if updateReq.Name != "" {
+		updateQuery = updateQuery.SetName(updateReq.Name)
+	}
+
+	// Execute the update
+	_, err := updateQuery.Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("repository with ID %d not found", repoId)
+		}
+		return nil, fmt.Errorf("failed to update repository %d: %w", repoId, err)
+	}
+
+	return s.Get(ctx, repoId)
 }
 
 // Remove removes a repository from database only (does not delete physical repo)
@@ -247,20 +264,24 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 	return nil
 }
 
+// Delete deletes a repository completely. This cancels all other operations
+func (s *Service) Delete(ctx context.Context, id int) error {
+	// TODO: Implement delete operation queueing:
+	// 1. Validate repository exists
+	// 2. Cancel all other operations
+	// 3. Delete repository
+	return nil
+}
+
+// GetBackupProfilesThatHaveOnlyRepo gets backup profiles that only have this repo
+func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId int) ([]*ent.BackupProfile, error) {
+	// TODO: Implement proper backup profiles retrieval that only have this repository
+	return []*ent.BackupProfile{}, nil
+}
+
 // ============================================================================
 // QUEUED OPERATIONS
 // ============================================================================
-
-// QueueDelete queues a repository deletion operation
-func (s *Service) QueueDelete(ctx context.Context, id int) (string, error) {
-	// TODO: Implement delete operation queueing:
-	// 1. Validate repository exists
-	// 2. Check for existing delete operation (idempotency)
-	// 3. Create QueuedOperation with DeleteVariant
-	// 4. Add to queue via QueueManager -> cancel all other operations since the repository is deleted anyway
-	// 5. Return operation ID
-	return "", nil
-}
 
 // QueueBackup queues a backup operation
 func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (string, error) {
@@ -422,6 +443,21 @@ func (s *Service) BreakLock(ctx context.Context, repoId int) error {
 func (s *Service) GetArchive(ctx context.Context, id int) (*ent.Archive, error) {
 	// TODO: Implement archive retrieval
 	return nil, nil
+}
+
+// GetLastArchiveByRepoId gets last archive for repository
+func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.Archive, error) {
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoId))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to query last archive for repository %d: %w", repoId, err)
+	}
+	return archiveEntity, nil
 }
 
 // GetPaginatedArchives retrieves paginated archives for a repository

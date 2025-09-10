@@ -14,7 +14,7 @@ import { debounce } from "lodash";
 import type { Icon } from "../common/icons";
 import { getIcon } from "../common/icons";
 import { LocationType, type LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository_old/service";
+import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
