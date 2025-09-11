@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
@@ -255,9 +256,17 @@ func generateAdtSubpackage(pkg PackageInfo) {
 		output += generateFromConversion(enum)
 	}
 
+	// Format the generated code
+	formattedOutput, err := format.Source([]byte(output))
+	if err != nil {
+		fmt.Printf("Warning: Failed to format generated code for package %s: %v\n", pkg.Name, err)
+		fmt.Println("Writing unformatted code...")
+		formattedOutput = []byte(output)
+	}
+
 	// Write to the package directory
 	outputPath := filepath.Join(pkg.Path, GeneratedFileName)
-	err := os.WriteFile(outputPath, []byte(output), FilePermissions)
+	err = os.WriteFile(outputPath, formattedOutput, FilePermissions)
 	if err != nil {
 		panic(err)
 	}
