@@ -197,14 +197,14 @@ onUnmounted(() => {
         <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
           <li>
             <button @click='confirmRemoveModal?.showModal()'
-                    :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeStateIdle'
+                    :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Remove Repository
             </button>
           </li>
           <li>
             <button @click='confirmDeleteModal?.showModal()'
-                    :disabled='repo.state.type  !== RepositoryStateType.RepositoryStateTypeStateIdle'
+                    :disabled='repo.state.type  !== RepositoryStateType.RepositoryStateTypeIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Delete Permanently
             </button>
@@ -215,7 +215,7 @@ onUnmounted(() => {
 
     <!-- Error Alert Banner -->
     <div
-      v-if='repo.state.type === RepositoryStateType.RepositoryStateTypeStateError && repo.state.stateError !== null'
+      v-if='repo.state.type === RepositoryStateType.RepositoryStateTypeError && repo.state.error !== null'
       role='alert'
       class='alert alert-error mb-4'>
       <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none' viewBox='0 0 24 24'>
@@ -224,10 +224,10 @@ onUnmounted(() => {
       </svg>
       <div class='flex-1'>
         <div class='font-bold'>Repository Error</div>
-        <div class='text-sm'>{{ repo.state.stateError?.message }}</div>
+        <div class='text-sm'>{{ repo.state.error?.message }}</div>
       </div>
       <!-- SSH Regeneration Button for Cloud Repositories -->
-      <div v-if='repo.state.stateError?.action === ErrorAction.ErrorActionRegenerateSSH' class='flex-none'>
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionRegenerateSSH' class='flex-none'>
         <button class='btn btn-sm btn-outline btn-error-content'
                 :disabled='isRegeneratingSSH'
                 @click='regenerateSSHKey'>

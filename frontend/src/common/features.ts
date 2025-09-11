@@ -1,4 +1,4 @@
-import { Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
+import type { Plan } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 
 /************
  * Types

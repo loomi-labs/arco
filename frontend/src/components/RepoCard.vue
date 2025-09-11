@@ -181,7 +181,7 @@ onUnmounted(() => {
         </span>
         <span v-else>-</span>
         <!-- Error Badge -->
-        <span v-if='repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError'
+        <span v-if='repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError'
               class='badge badge-error dark:border-error dark:bg-transparent dark:text-error truncate cursor-pointer ml-1'
               @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
           Error
@@ -201,13 +201,13 @@ onUnmounted(() => {
     <div class='flex flex-col items-end gap-2'>
       <div class='flex gap-2'>
         <button v-if='isPruningShown' class='btn btn-ghost btn-circle'
-                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeStateIdle'
+                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeIdle'
                 @click.stop='prune'
         >
           <ScissorsIcon class='size-6' />
         </button>
         <button v-if='isDeleteShown' class='btn btn-ghost btn-circle'
-                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeStateIdle'
+                :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeIdle'
                 @click.stop='showRemoveRepoModal'>
           <TrashIcon class='size-6' />
         </button>

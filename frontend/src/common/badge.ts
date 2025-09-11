@@ -1,7 +1,6 @@
 import { diffDays, diffHours, offset, removeOffset } from "@formkit/tempo";
 import type { LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
 /**
  * Returns the style for a badge based on the difference between the current date and the given date.

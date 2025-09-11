@@ -104,12 +104,12 @@ const repositoryState = computed(() => props.repo.state);
 
 // Check if repository is in mounted state
 const isMounted = computed(() => 
-  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted
 );
 
 // Get mounted state details if available
 const mountedState = computed(() => 
-  isMounted.value ? repositoryState.value.stateMounted : null
+  isMounted.value ? repositoryState.value.mounted : null
 );
 
 // Get mounts array from repository state
@@ -149,12 +149,12 @@ const getRepositoryMountInfo = computed(() => {
 
 // Check if repository is idle (can perform operations)
 const isRepositoryIdle = computed(() => 
-  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateIdle
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeIdle
 );
 
 // Check if repository is in mounted state (allows some operations)
 const isRepositoryInMountedState = computed(() => 
-  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted
 );
 
 // Check if repository can perform operations (idle or mounted)

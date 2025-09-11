@@ -56,7 +56,7 @@ const hasRepositoryErrors = computed(() => {
   // Use forEach instead of for...of to avoid iteration issues
   let hasErrors = false;
   repos.value.forEach((repo) => {
-    if (repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError) {
+    if (repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
       hasErrors = true;
     }
   });
@@ -76,7 +76,7 @@ const repositoryWithErrorId = computed(() => {
   let errorRepoId: number | null = null;
   repos.value.forEach((repo, repoId) => {
     if (!errorRepoId && 
-        repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError) {
+        repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
       errorRepoId = repoId;
     }
   });
@@ -207,13 +207,13 @@ async function getRepositories() {
     
     // Filter repositories that are mounted and belong to our backup IDs
     reposWithMounts.value = Array.from(repos.value.values())
-      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted)
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted)
       .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
       
     // Filter repositories that are locked and belong to our backup IDs
     lockedRepos.value = Array.from(repos.value.values())
-      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError)
-      .filter(repo => repo.state.stateError?.errorType === statemachine.ErrorType.ErrorTypeLocked)
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError)
+      .filter(repo => repo.state.error?.errorType === statemachine.ErrorType.ErrorTypeLocked)
       .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository states", error);
