@@ -270,29 +270,29 @@ func (q *RepositoryQueue) CanAddOperation(op statemachine.Operation) (bool, stri
 	defer q.mu.Unlock()
 
 	switch v := op.(type) {
-	case statemachine.OpBackupVariant:
+	case statemachine.BackupVariant:
 		backupData := v()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.OpArchiveDeleteVariant:
+	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.OpDeleteVariant:
+	case statemachine.DeleteVariant:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.OpDeleteVariant); isDelete {
+					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.OpDeleteVariant); isDelete {
+				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
 					return false, q.active.ID
 				}
 			}
@@ -453,13 +453,13 @@ func (q *RepositoryQueue) updatePositions() {
 // addToTrackingMaps adds operation to appropriate deduplication tracking
 func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 	switch v := op.Operation.(type) {
-	case statemachine.OpBackupVariant:
+	case statemachine.BackupVariant:
 		backupData := v()
 		q.activeBackups[backupData.BackupID] = op.ID
-	case statemachine.OpArchiveDeleteVariant:
+	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
 		q.activeDeletes[deleteData.ArchiveID] = op.ID
-	case statemachine.OpDeleteVariant:
+	case statemachine.DeleteVariant:
 		q.hasRepoDelete = true
 	}
 }
@@ -467,13 +467,13 @@ func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 // removeFromTrackingMaps removes operation from deduplication tracking
 func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
 	switch v := op.Operation.(type) {
-	case statemachine.OpBackupVariant:
+	case statemachine.BackupVariant:
 		backupData := v()
 		delete(q.activeBackups, backupData.BackupID)
-	case statemachine.OpArchiveDeleteVariant:
+	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
 		delete(q.activeDeletes, deleteData.ArchiveID)
-	case statemachine.OpDeleteVariant:
+	case statemachine.DeleteVariant:
 		q.hasRepoDelete = false
 	}
 }
@@ -490,29 +490,29 @@ func isSameStatusType(status1, status2 OperationStatus) bool {
 // canAddOperationLocked checks if an operation can be added (assumes caller holds mutex)
 func (q *RepositoryQueue) canAddOperationLocked(op statemachine.Operation) (bool, string) {
 	switch v := op.(type) {
-	case statemachine.OpBackupVariant:
+	case statemachine.BackupVariant:
 		backupData := v()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.OpArchiveDeleteVariant:
+	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.OpDeleteVariant:
+	case statemachine.DeleteVariant:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.OpDeleteVariant); isDelete {
+					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.OpDeleteVariant); isDelete {
+				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
 					return false, q.active.ID
 				}
 			}

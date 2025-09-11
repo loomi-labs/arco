@@ -9,27 +9,27 @@ import (
 // OPERATION ADT
 // ============================================================================
 
-type OpBackup struct {
+type Backup struct {
 	BackupID types.BackupId `json:"backupId"`
 }
 
-type OpPrune struct {
+type Prune struct {
 	BackupID types.BackupId `json:"backupId"`
 }
 
-type OpDelete struct {
+type Delete struct {
 	RepositoryID int `json:"repositoryId"`
 }
 
-type OpArchiveRefresh struct {
+type ArchiveRefresh struct {
 	RepositoryID int `json:"repositoryId"`
 }
 
-type OpArchiveDelete struct {
+type ArchiveDelete struct {
 	ArchiveID int `json:"archiveId"`
 }
 
-type OpArchiveRename struct {
+type ArchiveRename struct {
 	ArchiveID int    `json:"archiveId"`
 	Prefix    string `json:"prefix"`
 	Name      string `json:"name"`
@@ -39,12 +39,12 @@ type OpArchiveRename struct {
 type Operation adtenum.Enum[Operation]
 
 // Implement adtVariant marker interface for all operation structs
-func (OpBackup) isADTVariant() Operation         { var zero Operation; return zero }
-func (OpPrune) isADTVariant() Operation          { var zero Operation; return zero }
-func (OpDelete) isADTVariant() Operation         { var zero Operation; return zero }
-func (OpArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
-func (OpArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
-func (OpArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
+func (Backup) isADTVariant() Operation         { var zero Operation; return zero }
+func (Prune) isADTVariant() Operation          { var zero Operation; return zero }
+func (Delete) isADTVariant() Operation         { var zero Operation; return zero }
+func (ArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
+func (ArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
+func (ArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT
@@ -61,9 +61,9 @@ const (
 // GetOperationWeight determines operation weight for concurrency control
 func GetOperationWeight(op Operation) OperationWeight {
 	switch op.(type) {
-	case OpBackupVariant, OpPruneVariant, OpDeleteVariant:
+	case BackupVariant, PruneVariant, DeleteVariant:
 		return WeightHeavy
-	case OpArchiveRefreshVariant, OpArchiveDeleteVariant, OpArchiveRenameVariant:
+	case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant:
 		return WeightLight
 	default:
 		return WeightLight

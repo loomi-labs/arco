@@ -353,6 +353,8 @@ export class QueuedOperation {
      * Unique operation ID (UUID) - enables idempotency and deduplication
      */
     "id": string;
+    "repoId": number;
+    "backupProfileId": number | null;
 
     /**
      * ADT containing type and parameters
@@ -363,8 +365,6 @@ export class QueuedOperation {
      * ADT containing status, progress, error
      */
     "status": OperationStatus;
-    "repoId": number;
-    "backupProfileId": number | null;
     "createdAt": time$0.Time;
 
     /**
@@ -377,17 +377,17 @@ export class QueuedOperation {
         if (!("id" in $$source)) {
             this["id"] = "";
         }
-        if (!("operation" in $$source)) {
-            this["operation"] = null;
-        }
-        if (!("status" in $$source)) {
-            this["status"] = null;
-        }
         if (!("repoId" in $$source)) {
             this["repoId"] = 0;
         }
         if (!("backupProfileId" in $$source)) {
             this["backupProfileId"] = null;
+        }
+        if (!("operation" in $$source)) {
+            this["operation"] = null;
+        }
+        if (!("status" in $$source)) {
+            this["status"] = null;
         }
         if (!("createdAt" in $$source)) {
             this["createdAt"] = null;
