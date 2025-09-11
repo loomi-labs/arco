@@ -9,10 +9,11 @@ import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import type * as borgtypes from "../../bindings/github.com/loomi-labs/arco/backend/borg/types";
+import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import {Events} from "@wailsio/runtime";
 
 /************
@@ -35,9 +36,9 @@ const router = useRouter();
 const showProgressSpinner = ref(false);
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borgtypes.BackupProgress | undefined>(undefined);
-const lockedRepos = ref<ent.Repository[]>([]);
-const reposWithMounts = ref<ent.Repository[]>([]);
-const repoStates = ref<Map<number, state.RepoState>>(new Map());
+const lockedRepos = ref<repoModels.Repository[]>([]);
+const reposWithMounts = ref<repoModels.Repository[]>([]);
+const repos = ref<Map<number, repoModels.Repository>>(new Map());
 
 const confirmUnmountModalKey = useId();
 const confirmUnmountModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmUnmountModalKey);
@@ -54,9 +55,8 @@ const cleanupFunctions: (() => void)[] = [];
 const hasRepositoryErrors = computed(() => {
   // Use forEach instead of for...of to avoid iteration issues
   let hasErrors = false;
-  repoStates.value.forEach((repoState) => {
-    if (repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && 
-        repoState.errorType !== state.RepoErrorType.$zero) {
+  repos.value.forEach((repo) => {
+    if (repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError) {
       hasErrors = true;
     }
   });
@@ -74,10 +74,9 @@ const errorTooltipText = computed(() => {
 const repositoryWithErrorId = computed(() => {
   // Find the first repository ID that has an error
   let errorRepoId: number | null = null;
-  repoStates.value.forEach((repoState, repoId) => {
+  repos.value.forEach((repo, repoId) => {
     if (!errorRepoId && 
-        repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && 
-        repoState.errorType !== state.RepoErrorType.$zero) {
+        repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError) {
       errorRepoId = repoId;
     }
   });
@@ -199,30 +198,23 @@ async function getBackupProgress() {
   }
 }
 
-async function getLockedRepos() {
-  try {
-    const result = (await repoService.GetLocked()).filter(r => r !== null) ?? [];
-    lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get locked repositories", error);
-  }
-}
-
-async function getReposWithMounts() {
-  try {
-    const result = (await repoService.GetWithActiveMounts()).filter(r => r !== null) ?? [];
-    reposWithMounts.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get mounted repositories", error);
-  }
-}
-
-async function getRepoStates() {
+async function getRepositories() {
   try {
     for (const backupId of props.backupIds) {
-      const repoState = await repoService.GetState(backupId.repositoryId);
-      repoStates.value.set(backupId.repositoryId, repoState);
+      const repo = await repoService.Get(backupId.repositoryId) ?? repoModels.Repository.createFrom();
+      repos.value.set(backupId.repositoryId, repo);
     }
+    
+    // Filter repositories that are mounted and belong to our backup IDs
+    reposWithMounts.value = Array.from(repos.value.values())
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateMounted)
+      .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
+      
+    // Filter repositories that are locked and belong to our backup IDs
+    lockedRepos.value = Array.from(repos.value.values())
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeStateError)
+      .filter(repo => repo.state.stateError?.errorType === statemachine.ErrorType.ErrorTypeLocked)
+      .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository states", error);
   }
@@ -295,9 +287,7 @@ async function unmountAllAndRunBackups() {
 
 getButtonStatus();
 getBackupProgress();
-getLockedRepos();
-getReposWithMounts();
-getRepoStates();
+getRepositories();
 
 for (const backupId of props.backupIds) {
   const handleBackupStateChanged = debounce(async () => {
@@ -308,9 +298,7 @@ for (const backupId of props.backupIds) {
 
   const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
-    await getLockedRepos();
-    await getReposWithMounts();
-    await getRepoStates();
+    await getRepositories();
   }, 200);
 
   cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
