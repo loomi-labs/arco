@@ -20,42 +20,42 @@ type cancelCtx struct {
 }
 
 // State variant structs
-type StateIdle struct{}
+type Idle struct{}
 
-type StateQueued struct {
+type Queued struct {
 	NextOperation Operation `json:"nextOperation"`
 	QueueLength   int       `json:"queueLength"`
 }
 
-type StateBackingUp struct {
+type BackingUp struct {
 	BackupID  types.BackupId            `json:"backupId"`
 	Progress  *borgtypes.BackupProgress `json:"progress,omitempty"`
 	StartedAt time.Time                 `json:"startedAt"`
 	cancelCtx cancelCtx                 // private context and cancel function
 }
 
-type StatePruning struct {
+type Pruning struct {
 	BackupID  types.BackupId `json:"backupId"`
 	StartedAt time.Time      `json:"startedAt"`
 	cancelCtx cancelCtx      // private context and cancel function
 }
 
-type StateDeleting struct {
+type Deleting struct {
 	ArchiveID int       `json:"archiveId"`
 	StartedAt time.Time `json:"startedAt"`
 	cancelCtx cancelCtx // private context and cancel function
 }
 
-type StateRefreshing struct {
+type Refreshing struct {
 	StartedAt time.Time `json:"startedAt"`
 	cancelCtx cancelCtx // private context and cancel function
 }
 
-type StateMounted struct {
+type Mounted struct {
 	Mounts []MountInfo `json:"mounts"`
 }
 
-type StateError struct {
+type Error struct {
 	ErrorType  ErrorType   `json:"errorType"`
 	Message    string      `json:"message"`
 	Action     ErrorAction `json:"action"`
@@ -66,14 +66,14 @@ type StateError struct {
 type RepositoryState adtenum.Enum[RepositoryState]
 
 // Implement adtVariant marker interface for all state structs
-func (StateIdle) isADTVariant() RepositoryState       { var zero RepositoryState; return zero }
-func (StateQueued) isADTVariant() RepositoryState     { var zero RepositoryState; return zero }
-func (StateBackingUp) isADTVariant() RepositoryState  { var zero RepositoryState; return zero }
-func (StatePruning) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
-func (StateDeleting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
-func (StateRefreshing) isADTVariant() RepositoryState { var zero RepositoryState; return zero }
-func (StateMounted) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
-func (StateError) isADTVariant() RepositoryState      { var zero RepositoryState; return zero }
+func (Idle) isADTVariant() RepositoryState       { var zero RepositoryState; return zero }
+func (Queued) isADTVariant() RepositoryState     { var zero RepositoryState; return zero }
+func (BackingUp) isADTVariant() RepositoryState  { var zero RepositoryState; return zero }
+func (Pruning) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
+func (Deleting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
+func (Refreshing) isADTVariant() RepositoryState { var zero RepositoryState; return zero }
+func (Mounted) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
+func (Error) isADTVariant() RepositoryState      { var zero RepositoryState; return zero }
 
 // ============================================================================
 // SUPPORTING TYPES
@@ -123,21 +123,19 @@ const (
 // GetStateTypeName returns a string representation of the state type for debugging
 func GetStateTypeName(state RepositoryState) string {
 	switch state.(type) {
-	case StateIdleVariant:
+	case IdleVariant:
 		return "Idle"
-	case StateQueuedVariant:
-		return "Queued"
-	case StateBackingUpVariant:
+	case BackingUpVariant:
 		return "BackingUp"
-	case StatePruningVariant:
+	case PruningVariant:
 		return "Pruning"
-	case StateDeletingVariant:
+	case DeletingVariant:
 		return "Deleting"
-	case StateRefreshingVariant:
+	case RefreshingVariant:
 		return "Refreshing"
-	case StateMountedVariant:
+	case MountedVariant:
 		return "Mounted"
-	case StateErrorVariant:
+	case ErrorVariant:
 		return "Error"
 	default:
 		return "Unknown"
@@ -147,7 +145,7 @@ func GetStateTypeName(state RepositoryState) string {
 // IsActiveState returns true if the state represents an active operation
 func IsActiveState(state RepositoryState) bool {
 	switch state.(type) {
-	case StateBackingUpVariant, StatePruningVariant, StateDeletingVariant, StateRefreshingVariant:
+	case BackingUpVariant, PruningVariant, DeletingVariant, RefreshingVariant:
 		return true
 	default:
 		return false
@@ -156,41 +154,41 @@ func IsActiveState(state RepositoryState) bool {
 
 // IsIdleState returns true if the repository is idle
 func IsIdleState(state RepositoryState) bool {
-	_, ok := state.(StateIdleVariant)
+	_, ok := state.(IdleVariant)
 	return ok
 }
 
 // IsQueuedState returns true if the repository has queued operations
 func IsQueuedState(state RepositoryState) bool {
-	_, ok := state.(StateQueuedVariant)
+	_, ok := state.(QueuedVariant)
 	return ok
 }
 
 // IsMountedState returns true if the repository is mounted
 func IsMountedState(state RepositoryState) bool {
-	_, ok := state.(StateMountedVariant)
+	_, ok := state.(MountedVariant)
 	return ok
 }
 
 // IsErrorState returns true if the repository is in error state
 func IsErrorState(state RepositoryState) bool {
-	_, ok := state.(StateErrorVariant)
+	_, ok := state.(ErrorVariant)
 	return ok
 }
 
 // GetCancel extracts cancel context from active states
 func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	switch s := state.(type) {
-	case StateBackingUpVariant:
+	case BackingUpVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case StatePruningVariant:
+	case PruningVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case StateDeletingVariant:
+	case DeletingVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
-	case StateRefreshingVariant:
+	case RefreshingVariant:
 		data := s()
 		return data.cancelCtx.cancel, true
 	default:
@@ -213,12 +211,12 @@ func CreateCancelContext(parent context.Context) cancelCtx {
 
 // CreateIdleState creates a new idle state
 func CreateIdleState() RepositoryState {
-	return NewRepositoryStateStateIdle(StateIdle{})
+	return NewRepositoryStateIdle(Idle{})
 }
 
 // CreateQueuedState creates a new queued state with operation info
 func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState {
-	return NewRepositoryStateStateQueued(StateQueued{
+	return NewRepositoryStateQueued(Queued{
 		NextOperation: nextOperation,
 		QueueLength:   queueLength,
 	})
@@ -226,7 +224,7 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 
 // CreateBackingUpState creates a new backing up state with context
 func CreateBackingUpState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewRepositoryStateStateBackingUp(StateBackingUp{
+	return NewRepositoryStateBackingUp(BackingUp{
 		BackupID:  backupId,
 		Progress:  nil,
 		StartedAt: time.Now(),
@@ -236,7 +234,7 @@ func CreateBackingUpState(ctx context.Context, backupId types.BackupId) Reposito
 
 // CreatePruningState creates a new pruning state with context
 func CreatePruningState(ctx context.Context, backupId types.BackupId) RepositoryState {
-	return NewRepositoryStateStatePruning(StatePruning{
+	return NewRepositoryStatePruning(Pruning{
 		BackupID:  backupId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -245,7 +243,7 @@ func CreatePruningState(ctx context.Context, backupId types.BackupId) Repository
 
 // CreateDeletingState creates a new deleting state with context
 func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
-	return NewRepositoryStateStateDeleting(StateDeleting{
+	return NewRepositoryStateDeleting(Deleting{
 		ArchiveID: archiveId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
@@ -254,7 +252,7 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 
 // CreateRefreshingState creates a new refreshing state with context
 func CreateRefreshingState(ctx context.Context) RepositoryState {
-	return NewRepositoryStateStateRefreshing(StateRefreshing{
+	return NewRepositoryStateRefreshing(Refreshing{
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
 	})
@@ -262,14 +260,14 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 
 // CreateMountedState creates a new mounted state with the given mounts
 func CreateMountedState(mounts []MountInfo) RepositoryState {
-	return NewRepositoryStateStateMounted(StateMounted{
+	return NewRepositoryStateMounted(Mounted{
 		Mounts: mounts,
 	})
 }
 
 // CreateErrorState creates a new error state
 func CreateErrorState(errorType ErrorType, message string, action ErrorAction) RepositoryState {
-	return NewRepositoryStateStateError(StateError{
+	return NewRepositoryStateError(Error{
 		ErrorType:  errorType,
 		Message:    message,
 		Action:     action,

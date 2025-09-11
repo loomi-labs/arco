@@ -7,13 +7,105 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../types/models.js";
+import * as types$0 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../../borg/types/models.js";
+import * as types$1 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
+
+export class BackingUp {
+    "backupId": types$0.BackupId;
+    "progress"?: types$1.BackupProgress | null;
+    "startedAt": time$0.Time;
+
+    /** Creates a new BackingUp instance. */
+    constructor($$source: Partial<BackingUp> = {}) {
+        if (!("backupId" in $$source)) {
+            this["backupId"] = (new types$0.BackupId());
+        }
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BackingUp instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BackingUp {
+        const $$createField0_0 = $$createType0;
+        const $$createField1_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupId" in $$parsedSource) {
+            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
+        if ("progress" in $$parsedSource) {
+            $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
+        }
+        return new BackingUp($$parsedSource as Partial<BackingUp>);
+    }
+}
+
+export class Deleting {
+    "archiveId": number;
+    "startedAt": time$0.Time;
+
+    /** Creates a new Deleting instance. */
+    constructor($$source: Partial<Deleting> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Deleting instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Deleting {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Deleting($$parsedSource as Partial<Deleting>);
+    }
+}
+
+export class Error {
+    "errorType": ErrorType;
+    "message": string;
+    "action": ErrorAction;
+    "occurredAt": time$0.Time;
+
+    /** Creates a new Error instance. */
+    constructor($$source: Partial<Error> = {}) {
+        if (!("errorType" in $$source)) {
+            this["errorType"] = ErrorType.$zero;
+        }
+        if (!("message" in $$source)) {
+            this["message"] = "";
+        }
+        if (!("action" in $$source)) {
+            this["action"] = ErrorAction.$zero;
+        }
+        if (!("occurredAt" in $$source)) {
+            this["occurredAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Error instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Error {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Error($$parsedSource as Partial<Error>);
+    }
+}
 
 /**
  * Actions that can be taken to resolve errors
@@ -42,6 +134,26 @@ export enum ErrorType {
     ErrorTypePassphrase = "passphrase",
     ErrorTypeLocked = "locked",
 };
+
+/**
+ * State variant structs
+ */
+export class Idle {
+
+    /** Creates a new Idle instance. */
+    constructor($$source: Partial<Idle> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Idle instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Idle {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Idle($$parsedSource as Partial<Idle>);
+    }
+}
 
 /**
  * MountInfo contains mount information for archives and repositories
@@ -85,10 +197,115 @@ export enum MountType {
     MountTypeArchive = "archive",
 };
 
+export class Mounted {
+    "mounts": MountInfo[];
+
+    /** Creates a new Mounted instance. */
+    constructor($$source: Partial<Mounted> = {}) {
+        if (!("mounts" in $$source)) {
+            this["mounts"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Mounted instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Mounted {
+        const $$createField0_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("mounts" in $$parsedSource) {
+            $$parsedSource["mounts"] = $$createField0_0($$parsedSource["mounts"]);
+        }
+        return new Mounted($$parsedSource as Partial<Mounted>);
+    }
+}
+
 /**
  * Operation ADT definition
  */
 export type Operation = any;
+
+export class Pruning {
+    "backupId": types$0.BackupId;
+    "startedAt": time$0.Time;
+
+    /** Creates a new Pruning instance. */
+    constructor($$source: Partial<Pruning> = {}) {
+        if (!("backupId" in $$source)) {
+            this["backupId"] = (new types$0.BackupId());
+        }
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Pruning instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Pruning {
+        const $$createField0_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupId" in $$parsedSource) {
+            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
+        return new Pruning($$parsedSource as Partial<Pruning>);
+    }
+}
+
+export class Queued {
+    "nextOperation": Operation;
+    "queueLength": number;
+
+    /** Creates a new Queued instance. */
+    constructor($$source: Partial<Queued> = {}) {
+        if (!("nextOperation" in $$source)) {
+            this["nextOperation"] = null;
+        }
+        if (!("queueLength" in $$source)) {
+            this["queueLength"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Queued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Queued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Queued($$parsedSource as Partial<Queued>);
+    }
+}
+
+export class Refreshing {
+    "startedAt": time$0.Time;
+
+    /** Creates a new Refreshing instance. */
+    constructor($$source: Partial<Refreshing> = {}) {
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Refreshing instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Refreshing {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Refreshing($$parsedSource as Partial<Refreshing>);
+    }
+}
+
+/**
+ * RepositoryState ADT definition
+ */
+export type RepositoryState = any;
 
 /**
  * RepositoryStateType is the discriminator enum for RepositoryState
@@ -99,14 +316,14 @@ export enum RepositoryStateType {
      */
     $zero = "",
 
-    RepositoryStateTypeStateBackingUp = "StateBackingUp",
-    RepositoryStateTypeStateDeleting = "StateDeleting",
-    RepositoryStateTypeStateError = "StateError",
-    RepositoryStateTypeStateIdle = "StateIdle",
-    RepositoryStateTypeStateMounted = "StateMounted",
-    RepositoryStateTypeStatePruning = "StatePruning",
-    RepositoryStateTypeStateQueued = "StateQueued",
-    RepositoryStateTypeStateRefreshing = "StateRefreshing",
+    RepositoryStateTypeBackingUp = "BackingUp",
+    RepositoryStateTypeDeleting = "Deleting",
+    RepositoryStateTypeError = "Error",
+    RepositoryStateTypeIdle = "Idle",
+    RepositoryStateTypeMounted = "Mounted",
+    RepositoryStateTypePruning = "Pruning",
+    RepositoryStateTypeQueued = "Queued",
+    RepositoryStateTypeRefreshing = "Refreshing",
 };
 
 /**
@@ -121,14 +338,14 @@ export class RepositoryStateUnion {
     /**
      * Variant fields - only one will be non-nil
      */
-    "stateIdle"?: StateIdle | null;
-    "stateQueued"?: StateQueued | null;
-    "stateBackingUp"?: StateBackingUp | null;
-    "statePruning"?: StatePruning | null;
-    "stateDeleting"?: StateDeleting | null;
-    "stateRefreshing"?: StateRefreshing | null;
-    "stateMounted"?: StateMounted | null;
-    "stateError"?: StateError | null;
+    "idle"?: Idle | null;
+    "queued"?: Queued | null;
+    "backingUp"?: BackingUp | null;
+    "pruning"?: Pruning | null;
+    "deleting"?: Deleting | null;
+    "refreshing"?: Refreshing | null;
+    "mounted"?: Mounted | null;
+    "error"?: Error | null;
 
     /** Creates a new RepositoryStateUnion instance. */
     constructor($$source: Partial<RepositoryStateUnion> = {}) {
@@ -143,274 +360,62 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType1;
-        const $$createField2_0 = $$createType3;
-        const $$createField3_0 = $$createType5;
-        const $$createField4_0 = $$createType7;
-        const $$createField5_0 = $$createType9;
-        const $$createField6_0 = $$createType11;
-        const $$createField7_0 = $$createType13;
-        const $$createField8_0 = $$createType15;
+        const $$createField1_0 = $$createType6;
+        const $$createField2_0 = $$createType8;
+        const $$createField3_0 = $$createType10;
+        const $$createField4_0 = $$createType12;
+        const $$createField5_0 = $$createType14;
+        const $$createField6_0 = $$createType16;
+        const $$createField7_0 = $$createType18;
+        const $$createField8_0 = $$createType20;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("stateIdle" in $$parsedSource) {
-            $$parsedSource["stateIdle"] = $$createField1_0($$parsedSource["stateIdle"]);
+        if ("idle" in $$parsedSource) {
+            $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
         }
-        if ("stateQueued" in $$parsedSource) {
-            $$parsedSource["stateQueued"] = $$createField2_0($$parsedSource["stateQueued"]);
+        if ("queued" in $$parsedSource) {
+            $$parsedSource["queued"] = $$createField2_0($$parsedSource["queued"]);
         }
-        if ("stateBackingUp" in $$parsedSource) {
-            $$parsedSource["stateBackingUp"] = $$createField3_0($$parsedSource["stateBackingUp"]);
+        if ("backingUp" in $$parsedSource) {
+            $$parsedSource["backingUp"] = $$createField3_0($$parsedSource["backingUp"]);
         }
-        if ("statePruning" in $$parsedSource) {
-            $$parsedSource["statePruning"] = $$createField4_0($$parsedSource["statePruning"]);
+        if ("pruning" in $$parsedSource) {
+            $$parsedSource["pruning"] = $$createField4_0($$parsedSource["pruning"]);
         }
-        if ("stateDeleting" in $$parsedSource) {
-            $$parsedSource["stateDeleting"] = $$createField5_0($$parsedSource["stateDeleting"]);
+        if ("deleting" in $$parsedSource) {
+            $$parsedSource["deleting"] = $$createField5_0($$parsedSource["deleting"]);
         }
-        if ("stateRefreshing" in $$parsedSource) {
-            $$parsedSource["stateRefreshing"] = $$createField6_0($$parsedSource["stateRefreshing"]);
+        if ("refreshing" in $$parsedSource) {
+            $$parsedSource["refreshing"] = $$createField6_0($$parsedSource["refreshing"]);
         }
-        if ("stateMounted" in $$parsedSource) {
-            $$parsedSource["stateMounted"] = $$createField7_0($$parsedSource["stateMounted"]);
+        if ("mounted" in $$parsedSource) {
+            $$parsedSource["mounted"] = $$createField7_0($$parsedSource["mounted"]);
         }
-        if ("stateError" in $$parsedSource) {
-            $$parsedSource["stateError"] = $$createField8_0($$parsedSource["stateError"]);
+        if ("error" in $$parsedSource) {
+            $$parsedSource["error"] = $$createField8_0($$parsedSource["error"]);
         }
         return new RepositoryStateUnion($$parsedSource as Partial<RepositoryStateUnion>);
     }
 }
 
-export class StateBackingUp {
-    "backupId": types$1.BackupId;
-    "progress"?: types$0.BackupProgress | null;
-    "startedAt": time$0.Time;
-
-    /** Creates a new StateBackingUp instance. */
-    constructor($$source: Partial<StateBackingUp> = {}) {
-        if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
-        }
-        if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateBackingUp instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateBackingUp {
-        const $$createField0_0 = $$createType16;
-        const $$createField1_0 = $$createType18;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("backupId" in $$parsedSource) {
-            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
-        }
-        if ("progress" in $$parsedSource) {
-            $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
-        }
-        return new StateBackingUp($$parsedSource as Partial<StateBackingUp>);
-    }
-}
-
-export class StateDeleting {
-    "archiveId": number;
-    "startedAt": time$0.Time;
-
-    /** Creates a new StateDeleting instance. */
-    constructor($$source: Partial<StateDeleting> = {}) {
-        if (!("archiveId" in $$source)) {
-            this["archiveId"] = 0;
-        }
-        if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateDeleting instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateDeleting {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StateDeleting($$parsedSource as Partial<StateDeleting>);
-    }
-}
-
-export class StateError {
-    "errorType": ErrorType;
-    "message": string;
-    "action": ErrorAction;
-    "occurredAt": time$0.Time;
-
-    /** Creates a new StateError instance. */
-    constructor($$source: Partial<StateError> = {}) {
-        if (!("errorType" in $$source)) {
-            this["errorType"] = ErrorType.$zero;
-        }
-        if (!("message" in $$source)) {
-            this["message"] = "";
-        }
-        if (!("action" in $$source)) {
-            this["action"] = ErrorAction.$zero;
-        }
-        if (!("occurredAt" in $$source)) {
-            this["occurredAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateError instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateError {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StateError($$parsedSource as Partial<StateError>);
-    }
-}
-
-/**
- * State variant structs
- */
-export class StateIdle {
-
-    /** Creates a new StateIdle instance. */
-    constructor($$source: Partial<StateIdle> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateIdle instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateIdle {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StateIdle($$parsedSource as Partial<StateIdle>);
-    }
-}
-
-export class StateMounted {
-    "mounts": MountInfo[];
-
-    /** Creates a new StateMounted instance. */
-    constructor($$source: Partial<StateMounted> = {}) {
-        if (!("mounts" in $$source)) {
-            this["mounts"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateMounted instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateMounted {
-        const $$createField0_0 = $$createType20;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("mounts" in $$parsedSource) {
-            $$parsedSource["mounts"] = $$createField0_0($$parsedSource["mounts"]);
-        }
-        return new StateMounted($$parsedSource as Partial<StateMounted>);
-    }
-}
-
-export class StatePruning {
-    "backupId": types$1.BackupId;
-    "startedAt": time$0.Time;
-
-    /** Creates a new StatePruning instance. */
-    constructor($$source: Partial<StatePruning> = {}) {
-        if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
-        }
-        if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StatePruning instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StatePruning {
-        const $$createField0_0 = $$createType16;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("backupId" in $$parsedSource) {
-            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
-        }
-        return new StatePruning($$parsedSource as Partial<StatePruning>);
-    }
-}
-
-export class StateQueued {
-    "nextOperation": Operation;
-    "queueLength": number;
-
-    /** Creates a new StateQueued instance. */
-    constructor($$source: Partial<StateQueued> = {}) {
-        if (!("nextOperation" in $$source)) {
-            this["nextOperation"] = null;
-        }
-        if (!("queueLength" in $$source)) {
-            this["queueLength"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateQueued instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateQueued {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StateQueued($$parsedSource as Partial<StateQueued>);
-    }
-}
-
-export class StateRefreshing {
-    "startedAt": time$0.Time;
-
-    /** Creates a new StateRefreshing instance. */
-    constructor($$source: Partial<StateRefreshing> = {}) {
-        if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new StateRefreshing instance from a string or object.
-     */
-    static createFrom($$source: any = {}): StateRefreshing {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StateRefreshing($$parsedSource as Partial<StateRefreshing>);
-    }
-}
-
 // Private type creation functions
-const $$createType0 = StateIdle.createFrom;
-const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = StateQueued.createFrom;
-const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = StateBackingUp.createFrom;
-const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = StatePruning.createFrom;
-const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = StateDeleting.createFrom;
-const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = StateRefreshing.createFrom;
-const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = StateMounted.createFrom;
-const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = StateError.createFrom;
-const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = types$1.BackupId.createFrom;
-const $$createType17 = types$0.BackupProgress.createFrom;
+const $$createType0 = types$0.BackupId.createFrom;
+const $$createType1 = types$1.BackupProgress.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = MountInfo.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = Idle.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = Queued.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = BackingUp.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = Pruning.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = Deleting.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = Refreshing.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);
+const $$createType17 = Mounted.createFrom;
 const $$createType18 = $Create.Nullable($$createType17);
-const $$createType19 = MountInfo.createFrom;
-const $$createType20 = $Create.Array($$createType19);
+const $$createType19 = Error.createFrom;
+const $$createType20 = $Create.Nullable($$createType19);

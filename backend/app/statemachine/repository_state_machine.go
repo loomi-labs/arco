@@ -108,14 +108,14 @@ type TransitionDef struct {
 // initializeTransitions sets up all valid state transitions using a map-based approach
 func (sm *RepositoryStateMachine) initializeTransitions() {
 	// Create state instances once
-	idle := NewRepositoryStateStateIdle(StateIdle{})
-	queued := NewRepositoryStateStateQueued(StateQueued{})
-	backingUp := NewRepositoryStateStateBackingUp(StateBackingUp{})
-	pruning := NewRepositoryStateStatePruning(StatePruning{})
-	deleting := NewRepositoryStateStateDeleting(StateDeleting{})
-	refreshing := NewRepositoryStateStateRefreshing(StateRefreshing{})
-	mounted := NewRepositoryStateStateMounted(StateMounted{})
-	errorState := NewRepositoryStateStateError(StateError{})
+	idle := NewRepositoryStateIdle(Idle{})
+	queued := NewRepositoryStateQueued(Queued{})
+	backingUp := NewRepositoryStateBackingUp(BackingUp{})
+	pruning := NewRepositoryStatePruning(Pruning{})
+	deleting := NewRepositoryStateDeleting(Deleting{})
+	refreshing := NewRepositoryStateRefreshing(Refreshing{})
+	mounted := NewRepositoryStateMounted(Mounted{})
+	errorState := NewRepositoryStateError(Error{})
 
 	// No guard needed for this transition
 	nop := func(repoId int, currentState RepositoryState) bool {
@@ -214,14 +214,14 @@ func (sm *RepositoryStateMachine) CanTransitionToAny(repoId int, currentState Re
 // GetAllPossibleStates returns all possible states that can be transitioned to from any state
 func (sm *RepositoryStateMachine) GetAllPossibleStates() []RepositoryState {
 	return []RepositoryState{
-		NewRepositoryStateStateIdle(StateIdle{}),
-		NewRepositoryStateStateQueued(StateQueued{}),
-		NewRepositoryStateStateBackingUp(StateBackingUp{}),
-		NewRepositoryStateStatePruning(StatePruning{}),
-		NewRepositoryStateStateDeleting(StateDeleting{}),
-		NewRepositoryStateStateRefreshing(StateRefreshing{}),
-		NewRepositoryStateStateMounted(StateMounted{}),
-		NewRepositoryStateStateError(StateError{}),
+		NewRepositoryStateIdle(Idle{}),
+		NewRepositoryStateQueued(Queued{}),
+		NewRepositoryStateBackingUp(BackingUp{}),
+		NewRepositoryStatePruning(Pruning{}),
+		NewRepositoryStateDeleting(Deleting{}),
+		NewRepositoryStateRefreshing(Refreshing{}),
+		NewRepositoryStateMounted(Mounted{}),
+		NewRepositoryStateError(Error{}),
 	}
 }
 

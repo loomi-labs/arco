@@ -72,7 +72,7 @@ func (qm *QueueManager) GetRepositoryState(repoID int) statemachine.RepositorySt
 	}
 
 	// Default to idle state for new repositories
-	return statemachine.NewRepositoryStateStateIdle(statemachine.StateIdle{})
+	return statemachine.NewRepositoryStateIdle(statemachine.Idle{})
 }
 
 // setRepositoryState updates the current state of a repository in memory
