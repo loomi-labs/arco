@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -409,7 +410,7 @@ func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) error {
 }
 
 // ExaminePrunes analyzes what would be pruned with given rules
-func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule) ([]ExaminePruningResult, error) {
+func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
 	// TODO: Implement prune examination
 	return nil, nil
 }

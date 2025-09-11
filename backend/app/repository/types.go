@@ -69,25 +69,25 @@ func (ArcoCloud) isADTVariant() Location { var zero Location; return zero }
 // OPERATION STATUS ADT
 // ============================================================================
 
-type StatusQueued struct {
+type Queued struct {
 	Position int `json:"position"` // Position in queue
 }
 
-type StatusRunning struct {
+type Running struct {
 	Progress  *Progress `json:"progress,omitempty"`
 	StartedAt time.Time `json:"startedAt"`
 }
 
-type StatusCompleted struct {
+type Completed struct {
 	CompletedAt time.Time `json:"completedAt"`
 }
 
-type StatusFailed struct {
+type Failed struct {
 	Error    string    `json:"error"`
 	FailedAt time.Time `json:"failedAt"`
 }
 
-type StatusExpired struct {
+type Expired struct {
 	ExpiredAt time.Time `json:"expiredAt"`
 }
 
@@ -102,11 +102,11 @@ type Progress struct {
 type OperationStatus adtenum.Enum[OperationStatus]
 
 // Implement adtVariant marker interface for all status structs
-func (StatusQueued) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
-func (StatusRunning) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
-func (StatusCompleted) isADTVariant() OperationStatus { var zero OperationStatus; return zero }
-func (StatusFailed) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
-func (StatusExpired) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
+func (Queued) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
+func (Running) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
+func (Completed) isADTVariant() OperationStatus { var zero OperationStatus; return zero }
+func (Failed) isADTVariant() OperationStatus    { var zero OperationStatus; return zero }
+func (Expired) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
 
 // ============================================================================
 // QUEUED OPERATION
@@ -114,12 +114,13 @@ func (StatusExpired) isADTVariant() OperationStatus   { var zero OperationStatus
 
 // QueuedOperation represents a queued repository operation
 type QueuedOperation struct {
-	ID         string                 `json:"id"`        // Unique operation ID (UUID) - enables idempotency and deduplication
-	Operation  statemachine.Operation `json:"operation"` // ADT containing type and parameters
-	Status     OperationStatus        `json:"status"`    // ADT containing status, progress, error
-	RepoID     int                    `json:"repoId"`
-	CreatedAt  time.Time              `json:"createdAt"`
-	ValidUntil time.Time              `json:"validUntil"` // Auto-expire if not started
+	ID              string                 `json:"id"` // Unique operation ID (UUID) - enables idempotency and deduplication
+	RepoID          int                    `json:"repoId"`
+	BackupProfileID *int                   `json:"backupProfileId"`
+	Operation       statemachine.Operation `json:"operation"` // ADT containing type and parameters
+	Status          OperationStatus        `json:"status"`    // ADT containing status, progress, error
+	CreatedAt       time.Time              `json:"createdAt"`
+	ValidUntil      time.Time              `json:"validUntil"` // Auto-expire if not started
 }
 
 // ============================================================================

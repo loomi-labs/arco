@@ -203,11 +203,11 @@ export enum OperationStatusType {
      */
     $zero = "",
 
-    OperationStatusTypeStatusCompleted = "StatusCompleted",
-    OperationStatusTypeStatusExpired = "StatusExpired",
-    OperationStatusTypeStatusFailed = "StatusFailed",
-    OperationStatusTypeStatusQueued = "StatusQueued",
-    OperationStatusTypeStatusRunning = "StatusRunning",
+    OperationStatusTypeCompleted = "Completed",
+    OperationStatusTypeExpired = "Expired",
+    OperationStatusTypeFailed = "Failed",
+    OperationStatusTypeQueued = "Queued",
+    OperationStatusTypeRunning = "Running",
 };
 
 /**
@@ -364,6 +364,7 @@ export class QueuedOperation {
      */
     "status": OperationStatus;
     "repoId": number;
+    "backupProfileId": number | null;
     "createdAt": time$0.Time;
 
     /**
@@ -384,6 +385,9 @@ export class QueuedOperation {
         }
         if (!("repoId" in $$source)) {
             this["repoId"] = 0;
+        }
+        if (!("backupProfileId" in $$source)) {
+            this["backupProfileId"] = null;
         }
         if (!("createdAt" in $$source)) {
             this["createdAt"] = null;
