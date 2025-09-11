@@ -19,6 +19,5 @@ export {
 } from "./models.js";
 
 export type {
-    Operation,
-    RepositoryState
+    Operation
 } from "./models.js";

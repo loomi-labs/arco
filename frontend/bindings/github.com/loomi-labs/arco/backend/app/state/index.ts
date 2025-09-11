@@ -3,9 +3,6 @@
 
 export {
     AuthState,
-    BackupButtonStatus,
-    BackupState,
-    BackupStatus,
     CheckoutResult,
     CheckoutResultStatus,
     StartupState,

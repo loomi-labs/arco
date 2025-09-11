@@ -7,10 +7,10 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../types/models.js";
+import * as types$1 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../../borg/types/models.js";
+import * as types$0 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
@@ -89,11 +89,6 @@ export enum MountType {
  * Operation ADT definition
  */
 export type Operation = any;
-
-/**
- * RepositoryState ADT definition
- */
-export type RepositoryState = any;
 
 /**
  * RepositoryStateType is the discriminator enum for RepositoryState
@@ -186,14 +181,14 @@ export class RepositoryStateUnion {
 }
 
 export class StateBackingUp {
-    "backupId": types$0.BackupId;
-    "progress"?: types$1.BackupProgress | null;
+    "backupId": types$1.BackupId;
+    "progress"?: types$0.BackupProgress | null;
     "startedAt": time$0.Time;
 
     /** Creates a new StateBackingUp instance. */
     constructor($$source: Partial<StateBackingUp> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
         if (!("startedAt" in $$source)) {
             this["startedAt"] = null;
@@ -323,13 +318,13 @@ export class StateMounted {
 }
 
 export class StatePruning {
-    "backupId": types$0.BackupId;
+    "backupId": types$1.BackupId;
     "startedAt": time$0.Time;
 
     /** Creates a new StatePruning instance. */
     constructor($$source: Partial<StatePruning> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
         if (!("startedAt" in $$source)) {
             this["startedAt"] = null;
@@ -414,8 +409,8 @@ const $$createType12 = StateMounted.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
 const $$createType14 = StateError.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = types$0.BackupId.createFrom;
-const $$createType17 = types$1.BackupProgress.createFrom;
+const $$createType16 = types$1.BackupId.createFrom;
+const $$createType17 = types$0.BackupProgress.createFrom;
 const $$createType18 = $Create.Nullable($$createType17);
 const $$createType19 = MountInfo.createFrom;
 const $$createType20 = $Create.Array($$createType19);
