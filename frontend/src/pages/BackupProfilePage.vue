@@ -10,7 +10,6 @@ import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backe
 import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { RepoStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
@@ -26,6 +25,7 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { format } from "@formkit/tempo";
+import type { RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
 /************
  * Variables
@@ -36,7 +36,7 @@ const toast = useToast();
 
 const backupProfile = ref<BackupProfile>(BackupProfile.createFrom());
 const selectedRepo = ref<Repository | ent.Repository | undefined>(undefined);
-const repoStatuses = ref<Map<number, RepoStatus>>(new Map());
+const repoStatuses = ref<Map<number, RepositoryStateType>>(new Map());
 const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
@@ -125,10 +125,11 @@ async function getData() {
       // TODO: fix this
       // selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] as any ?? undefined;
     }
-    for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
-      // Set all repo statuses to idle
-      repoStatuses.value.set(repo.id, RepoStatus.RepoStatusIdle);
-    }
+    // TODO: fix this
+    // for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
+    //   // Set all repo statuses to idle
+    //   repoStatuses.value.set(repo.id, RepoStatus.RepoStatusIdle);
+    // }
 
     // Get existing repositories
     existingRepos.value = (await repoService.All()).filter(r => r !== null) ;

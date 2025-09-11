@@ -122,7 +122,7 @@ async function removeRepo() {
 
 async function deleteRepo() {
   try {
-    await repoService.QueueDelete(repoId);
+    await repoService.Delete(repoId);
     toast.success("Repository deleted");
     await router.replace({
       path: Page.Dashboard,

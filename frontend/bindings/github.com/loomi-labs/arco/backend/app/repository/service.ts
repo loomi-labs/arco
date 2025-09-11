@@ -131,8 +131,8 @@ export function DeleteArchive(archiveId: number): $CancellablePromise<string> {
 /**
  * ExaminePrunes analyzes what would be pruned with given rules
  */
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null): $CancellablePromise<$models.ExaminePruningResult[]> {
-    return $Call.ByID(166629156, backupProfileId, pruningRule).then(($result: any) => {
+export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+    return $Call.ByID(166629156, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType7($result);
     });
 }

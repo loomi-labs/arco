@@ -11,7 +11,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import type { PruningOption } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import type { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import type { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 
 /************
@@ -163,17 +163,17 @@ function toArchiveText(cnt: number) {
 
 function toCleanupImpact(result: Array<ExaminePruningResult>): CleanupImpact {
   const rows: CleanupImpactRow[] = result.map((r) => {
-    if (r.Error) {
-      return { RepositoryName: r.RepositoryName, Impact: "unknown" };
+    if (r.error) {
+      return { RepositoryName: r.repositoryName, Impact: "unknown" };
     }
-    if (r.CntArchivesToBeDeleted === 0) {
-      return { RepositoryName: r.RepositoryName, Impact: "no archives will be deleted" };
+    if (r.cntArchivesToBeDeleted === 0) {
+      return { RepositoryName: r.repositoryName, Impact: "no archives will be deleted" };
     }
-    return { RepositoryName: r.RepositoryName, Impact: `${toArchiveText(r.CntArchivesToBeDeleted)} will be deleted` };
+    return { RepositoryName: r.repositoryName, Impact: `${toArchiveText(r.cntArchivesToBeDeleted)} will be deleted` };
   });
 
-  const total = result.map((r) => r.CntArchivesToBeDeleted).reduce((a, b) => a + b, 0);
-  const hasErrors = result.map((r) => r.Error).some((e) => e);
+  const total = result.map((r) => r.cntArchivesToBeDeleted).reduce((a, b) => a + b, 0);
+  const hasErrors = result.map((r) => r.error).some((e) => e);
 
   let summary: string;
   let warning = true;
@@ -271,7 +271,8 @@ defineExpose({
 <template>
   <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Delete old archives after some time. You can set the rules for when to delete old archives here.'>
+      <TooltipTextIcon
+        text='Delete old archives after some time. You can set the rules for when to delete old archives here.'>
         <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
