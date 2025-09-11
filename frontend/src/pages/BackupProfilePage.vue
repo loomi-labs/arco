@@ -122,7 +122,8 @@ async function getData() {
     // but selectedRepo and existingRepos use new Repository type
     if (!selectedRepo.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepo.value?.id)) {
       // Select the first repo by default
-      selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] as any ?? undefined;
+      // TODO: fix this
+      // selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] as any ?? undefined;
     }
     for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
       // Set all repo statuses to idle

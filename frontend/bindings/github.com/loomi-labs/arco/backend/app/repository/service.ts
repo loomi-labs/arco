@@ -234,6 +234,10 @@ export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$
     });
 }
 
+export function GetLastBackupErrorMsgByBackupId(backupId: types$0.BackupId): $CancellablePromise<string> {
+    return $Call.ByID(4136556109, backupId);
+}
+
 /**
  * GetLocked gets locked repositories
  */
