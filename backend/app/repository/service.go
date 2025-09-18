@@ -419,17 +419,52 @@ func (s *Service) GetOperationsByStatus(ctx context.Context, repoId int, status 
 
 // AbortBackup immediately aborts a running backup operation
 func (s *Service) AbortBackup(ctx context.Context, backupId types.BackupId) error {
-	// TODO: Implement backup abortion:
-	// 1. Find active backup operation
-	// 2. Cancel operation context
-	// 3. Update operation status to cancelled
-	// 4. Transition repository state
+	// Find the operation ID for this backup
+	operationID, err := s.findOperationIDByBackupID(backupId)
+	if err != nil {
+		return fmt.Errorf("cannot abort backup: %w", err)
+	}
+
+	// Cancel the operation using the queue manager
+	err = s.queueManager.CancelOperation(backupId.RepositoryId, operationID)
+	if err != nil {
+		return fmt.Errorf("failed to cancel backup operation: %w", err)
+	}
+
+	s.log.Infow("Backup operation aborted",
+		"backupId", backupId.String(),
+		"operationId", operationID,
+		"repositoryId", backupId.RepositoryId)
+
 	return nil
 }
 
 // AbortBackups aborts multiple running backup operations
 func (s *Service) AbortBackups(ctx context.Context, backupIds []types.BackupId) error {
-	// TODO: Implement multiple backup abortion
+	var errs []string
+	var abortedCount int
+
+	for _, backupId := range backupIds {
+		err := s.AbortBackup(ctx, backupId)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("backup %s: %v", backupId.String(), err))
+		} else {
+			abortedCount++
+		}
+	}
+
+	// Log summary
+	s.log.Infow("Bulk backup abortion completed",
+		"totalRequested", len(backupIds),
+		"aborted", abortedCount,
+		"failed", len(errs))
+
+	// Return combined error if any operations failed
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to abort %d out of %d backups: %s",
+			len(errs), len(backupIds), strings.Join(errs, "; "))
+	}
+
 	return nil
 }
 
@@ -856,13 +891,24 @@ func (s *Service) GetCombinedBackupProgress(ctx context.Context, backupIds []typ
 //}
 
 // GetBackupState gets backup state for given backup ID
-func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*state.BackupState, error) {
-	// TODO: Implement proper backup state retrieval
-	return &state.BackupState{
-		Status:   state.BackupStatusIdle,
-		Progress: nil,
-		Error:    "",
-	}, nil
+func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*statemachine.Backup, error) {
+	// Get active operations from queue manager
+	activeOperations := s.queueManager.GetActiveOperations()
+
+	// Search through active operations for matching backup ID
+	for _, operation := range activeOperations {
+		// Check if this operation is a backup operation
+		if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			// Check if this backup operation matches our target backup ID
+			if backupData.BackupID.String() == backupId.String() {
+				return &backupData, nil
+			}
+		}
+	}
+
+	// No active backup found for this backup ID
+	return nil, nil
 }
 
 // GetArchiveMountStates gets archive mount states for a repository

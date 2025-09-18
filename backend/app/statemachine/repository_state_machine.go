@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+
+	"github.com/negrel/assert"
 )
 
 // RepositoryStateMachine manages state transitions for repositories
@@ -124,6 +126,7 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 
 	// Repository can not have a queued operation
 	hasQueuedOps := func(repoId int, state RepositoryState) bool {
+		assert.NotNil(sm.queueManager, "queueManager must be initialized before use - this is a programming error")
 		return sm.queueManager.HasQueuedOperations(repoId)
 	}
 

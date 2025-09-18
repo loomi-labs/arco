@@ -16,6 +16,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
 
@@ -155,7 +156,6 @@ func (qm *QueueManager) CanStartOperation(repoID int, op *QueuedOperation) bool 
 
 // StartOperation marks an operation as active and updates state
 func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operationID string) error {
-	_ = ctx // Suppress unused parameter warning
 	queue := qm.GetQueue(repoID)
 
 	// Get operation before moving
@@ -210,7 +210,8 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 		executor := qm.newBorgOperationExecutor(repoID, operationID)
 
 		// Execute the operation
-		status, err := executor.Execute(ctx, op.Operation)
+		operationCtx := statemachine.GetCancelCtxOrDefault(application.Get().Context(), targetState)
+		status, err := executor.Execute(operationCtx, op.Operation)
 		if err != nil {
 			// System error (e.g., backup profile not found)
 			qm.log.Errorw("System error during operation execution",
@@ -396,6 +397,33 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 			return fmt.Errorf("failed to cancel active operation: %w", err)
 		}
 
+		// Transition repository state after cancellation
+		// Get current state from in-memory tracking
+		currentState = qm.GetRepositoryState(repoID)
+		var targetState statemachine.RepositoryState
+
+		// Determine next state after cancellation
+		if qm.HasQueuedOperations(repoID) {
+			nextOp := queue.GetNext()
+			queueLength := queue.GetQueueLength()
+			if nextOp != nil {
+				targetState = statemachine.CreateQueuedState(nextOp.Operation, queueLength)
+			} else {
+				targetState = statemachine.CreateIdleState()
+			}
+		} else {
+			targetState = statemachine.CreateIdleState()
+		}
+
+		// Validate and perform state transition
+		err = qm.stateMachine.Transition(repoID, currentState, targetState)
+		if err != nil {
+			return fmt.Errorf("failed to transition state after cancel: %w", err)
+		}
+
+		// Update repository state in memory
+		qm.setRepositoryState(repoID, targetState)
+
 		// Attempt to start next operation
 		qm.processQueue(repoID)
 
@@ -406,6 +434,18 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 	err := queue.RemoveOperation(operationID)
 	if err != nil {
 		return fmt.Errorf("failed to cancel queued operation: %w", err)
+	}
+
+	// Check if this was the last queued operation and update state if needed
+	if !queue.HasActiveOperation() && queue.GetQueueLength() == 0 {
+		currentState := qm.GetRepositoryState(repoID)
+		if _, isQueued := currentState.(statemachine.QueuedVariant); isQueued {
+			targetState := statemachine.CreateIdleState()
+			err := qm.stateMachine.Transition(repoID, currentState, targetState)
+			if err == nil {
+				qm.setRepositoryState(repoID, targetState)
+			}
+		}
 	}
 
 	return nil
@@ -552,8 +592,7 @@ func (qm *QueueManager) processQueue(repoID int) {
 	}
 
 	// Start the operation
-	// TODO: pass correct context
-	err := qm.StartOperation(context.TODO(), repoID, nextOp.ID)
+	err := qm.StartOperation(application.Get().Context(), repoID, nextOp.ID)
 	if err != nil {
 		// Log error but don't crash
 		qm.log.Warnw("Failed to start queued operation",

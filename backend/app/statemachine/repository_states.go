@@ -171,6 +171,26 @@ func IsErrorState(state RepositoryState) bool {
 	return ok
 }
 
+// GetCancelCtxOrDefault gets the context of a cancellable active state of return the provided context
+func GetCancelCtxOrDefault(defaultContext context.Context, state RepositoryState) context.Context {
+	switch s := state.(type) {
+	case BackingUpVariant:
+		data := s()
+		return data.cancelCtx.ctx
+	case PruningVariant:
+		data := s()
+		return data.cancelCtx.ctx
+	case DeletingVariant:
+		data := s()
+		return data.cancelCtx.ctx
+	case RefreshingVariant:
+		data := s()
+		return data.cancelCtx.ctx
+	default:
+		return defaultContext
+	}
+}
+
 // GetCancel extracts cancel context from active states
 func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	switch s := state.(type) {
@@ -191,8 +211,8 @@ func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	}
 }
 
-// CreateCancelContext creates a new cancel context for active operations
-func CreateCancelContext(parent context.Context) cancelCtx {
+// createCancelContext creates a new cancel context for active operations
+func createCancelContext(parent context.Context) cancelCtx {
 	ctx, cancel := context.WithCancel(parent)
 	return cancelCtx{
 		ctx:    ctx,
@@ -221,7 +241,7 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 func CreateBackingUpState(ctx context.Context, data Backup) RepositoryState {
 	return NewRepositoryStateBackingUp(BackingUp{
 		Data:      data,
-		cancelCtx: CreateCancelContext(ctx),
+		cancelCtx: createCancelContext(ctx),
 	})
 }
 
@@ -229,7 +249,7 @@ func CreateBackingUpState(ctx context.Context, data Backup) RepositoryState {
 func CreatePruningState(ctx context.Context) RepositoryState {
 	return NewRepositoryStatePruning(Pruning{
 		StartedAt: time.Now(),
-		cancelCtx: CreateCancelContext(ctx),
+		cancelCtx: createCancelContext(ctx),
 	})
 }
 
@@ -238,7 +258,7 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 	return NewRepositoryStateDeleting(Deleting{
 		ArchiveID: archiveId,
 		StartedAt: time.Now(),
-		cancelCtx: CreateCancelContext(ctx),
+		cancelCtx: createCancelContext(ctx),
 	})
 }
 
@@ -246,7 +266,7 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 func CreateRefreshingState(ctx context.Context) RepositoryState {
 	return NewRepositoryStateRefreshing(Refreshing{
 		StartedAt: time.Now(),
-		cancelCtx: CreateCancelContext(ctx),
+		cancelCtx: createCancelContext(ctx),
 	})
 }
 

@@ -183,7 +183,7 @@ export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellableP
 /**
  * GetBackupState gets backup state for given backup ID
  */
-export function GetBackupState(backupId: types$0.BackupId): $CancellablePromise<state$0.BackupState | null> {
+export function GetBackupState(backupId: types$0.BackupId): $CancellablePromise<statemachine$0.Backup | null> {
     return $Call.ByID(2620182497, backupId).then(($result: any) => {
         return $$createType17($result);
     });
@@ -502,7 +502,7 @@ const $$createType12 = $Create.Map($Create.Any, $$createType11);
 const $$createType13 = ent$0.BackupProfile.createFrom;
 const $$createType14 = $Create.Nullable($$createType13);
 const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = state$0.BackupState.createFrom;
+const $$createType16 = statemachine$0.Backup.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
 const $$createType18 = types$1.BackupProgress.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
