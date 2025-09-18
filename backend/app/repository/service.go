@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	"github.com/loomi-labs/arco/backend/app/database"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -17,7 +18,10 @@ import (
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
+	"github.com/loomi-labs/arco/backend/ent/cloudrepository"
 	"github.com/loomi-labs/arco/backend/ent/notification"
+	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
@@ -731,10 +735,10 @@ func (s *Service) BreakLock(ctx context.Context, repoId int) error {
 // ============================================================================
 
 // GetArchive retrieves an archive by ID
-func (s *Service) GetArchive(ctx context.Context, id int) (*ent.Archive, error) {
-	// TODO: Implement archive retrieval
-	return nil, nil
-}
+//func (s *Service) GetArchive(ctx context.Context, id int) (*ent.Archive, error) {
+//	// TODO: Implement archive retrieval
+//	return nil, nil
+//}
 
 // GetLastArchiveByRepoId gets last archive for repository
 func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.Archive, error) {
@@ -753,14 +757,104 @@ func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.
 
 // GetPaginatedArchives retrieves paginated archives for a repository
 func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
-	// TODO: Implement paginated archives retrieval
-	return nil, nil
+	if req.RepositoryId <= 0 {
+		return nil, fmt.Errorf("repositoryId is required")
+	}
+	if req.Page <= 0 {
+		return nil, fmt.Errorf("page is required")
+	}
+	if req.PageSize <= 0 {
+		return nil, fmt.Errorf("pageSize is required")
+	}
+
+	// Filter by repository
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
+	}
+
+	// If a backup profile filter is specified, filter by it
+	if req.BackupProfileFilter != nil {
+		if req.BackupProfileFilter.Id != 0 {
+			// First filter by BackupProfile.ID
+			archivePredicates = append(archivePredicates, archive.HasBackupProfileWith(backupprofile.ID(req.BackupProfileFilter.Id)))
+		} else if req.BackupProfileFilter.IsUnknownFilter {
+			// If the unknown filter is specified, filter by archives that don't have a backup profile
+			archivePredicates = append(archivePredicates, archive.Not(archive.HasBackupProfile()))
+		}
+		// Filter by BackupProfile.Name does not have to be supported
+		// Filter all is implicit
+	}
+
+	// If a search term is specified, filter by it
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+	}
+
+	// If start date is specified, filter by it
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	// If end date is specified, filter by it
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
+	}
+
+	total, err := s.db.Archive.
+		Query().
+		Where(archive.And(archivePredicates...)).
+		Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	archives, err := s.db.Archive.
+		Query().
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.Select(backupprofile.FieldName)
+			q.Select(backupprofile.FieldPrefix)
+		}).
+		Where(archive.And(archivePredicates...)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		Offset((req.Page - 1) * req.PageSize).
+		Limit(req.PageSize).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedArchivesResponse{
+		Archives: archives,
+		Total:    total,
+	}, nil
 }
 
 // GetPruningDates retrieves pruning dates for specified archives
 func (s *Service) GetPruningDates(ctx context.Context, archiveIds []int) (PruningDates, error) {
-	// TODO: Implement pruning dates calculation
-	return PruningDates{}, nil
+	var pruningDates PruningDates
+	archives, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.IDIn(archiveIds...),
+			archive.HasBackupProfile(),
+			archive.WillBePruned(true),
+		)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithPruningRule()
+		}).
+		All(ctx)
+	if err != nil {
+		return pruningDates, err
+	}
+	for _, arch := range archives {
+		if arch.Edges.BackupProfile.Edges.PruningRule != nil {
+			pruningDates.Dates = append(pruningDates.Dates, PruningDate{
+				ArchiveId: arch.ID,
+				Date:      arch.Edges.BackupProfile.Edges.PruningRule.NextRun,
+			})
+		}
+	}
+	return pruningDates, nil
 }
 
 // ============================================================================

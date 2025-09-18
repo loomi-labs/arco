@@ -147,20 +147,11 @@ export function Get(repoId: number): $CancellablePromise<$models.Repository | nu
 }
 
 /**
- * GetArchive retrieves an archive by ID
- */
-export function GetArchive(id: number): $CancellablePromise<ent$0.Archive | null> {
-    return $Call.ByID(3790326640, id).then(($result: any) => {
-        return $$createType9($result);
-    });
-}
-
-/**
  * GetArchiveMountStates gets archive mount states for a repository
  */
 export function GetArchiveMountStates(repoId: number): $CancellablePromise<{ [_: `${number}`]: platform$0.MountState | null }> {
     return $Call.ByID(1005351287, repoId).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType10($result);
     });
 }
 
@@ -176,7 +167,7 @@ export function GetBackupButtonStatus(backupIds: types$0.BackupId[]): $Cancellab
  */
 export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
     return $Call.ByID(2432944859, repoId).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType13($result);
     });
 }
 
@@ -185,7 +176,7 @@ export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellableP
  */
 export function GetBackupState(backupId: types$0.BackupId): $CancellablePromise<statemachine$0.Backup | null> {
     return $Call.ByID(2620182497, backupId).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType15($result);
     });
 }
 
@@ -203,7 +194,7 @@ export function GetByBackupId(bId: types$0.BackupId): $CancellablePromise<$model
  */
 export function GetCombinedBackupProgress(backupIds: types$0.BackupId[]): $CancellablePromise<types$1.BackupProgress | null> {
     return $Call.ByID(3581877548, backupIds).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType17($result);
     });
 }
 
@@ -212,7 +203,7 @@ export function GetCombinedBackupProgress(backupIds: types$0.BackupId[]): $Cance
  */
 export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
     return $Call.ByID(423138286).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType18($result);
     });
 }
 
@@ -221,7 +212,7 @@ export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
  */
 export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(2844713878, backupId).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType20($result);
     });
 }
 
@@ -230,7 +221,7 @@ export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $Cancellab
  */
 export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(3556071828, repoId).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType20($result);
     });
 }
 
@@ -311,7 +302,7 @@ export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
  */
 export function Mount(repoId: number): $CancellablePromise<platform$0.MountState | null> {
     return $Call.ByID(967190463, repoId).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType9($result);
     });
 }
 
@@ -320,7 +311,7 @@ export function Mount(repoId: number): $CancellablePromise<platform$0.MountState
  */
 export function MountArchive(archiveId: number): $CancellablePromise<platform$0.MountState | null> {
     return $Call.ByID(1226599023, archiveId).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType9($result);
     });
 }
 
@@ -357,7 +348,7 @@ export function QueueBackup(backupId: types$0.BackupId): $CancellablePromise<str
  */
 export function QueueBackups(backupIds: types$0.BackupId[]): $CancellablePromise<string[]> {
     return $Call.ByID(1401293560, backupIds).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType18($result);
     });
 }
 
@@ -410,7 +401,7 @@ export function SaveIntegrityCheckSettings(repoId: number, enabled: boolean): $C
  */
 export function StartBackupJobs(backupIds: types$0.BackupId[]): $CancellablePromise<string[]> {
     return $Call.ByID(1937468008, backupIds).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType18($result);
     });
 }
 
@@ -435,7 +426,7 @@ export function TestRepoConnection(path: string, password: string): $Cancellable
  */
 export function Unmount(repoId: number): $CancellablePromise<platform$0.MountState | null> {
     return $Call.ByID(3507624802, repoId).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType9($result);
     });
 }
 
@@ -451,7 +442,7 @@ export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<void>
  */
 export function UnmountArchive(archiveId: number): $CancellablePromise<platform$0.MountState | null> {
     return $Call.ByID(2999465112, archiveId).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType9($result);
     });
 }
 
@@ -494,19 +485,19 @@ const $$createType4 = $Create.Nullable($$createType3);
 const $$createType5 = $Create.Array($$createType4);
 const $$createType6 = $models.ExaminePruningResult.createFrom;
 const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = ent$0.Archive.createFrom;
+const $$createType8 = platform$0.MountState.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = platform$0.MountState.createFrom;
-const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = $Create.Map($Create.Any, $$createType11);
-const $$createType13 = ent$0.BackupProfile.createFrom;
-const $$createType14 = $Create.Nullable($$createType13);
-const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = statemachine$0.Backup.createFrom;
+const $$createType10 = $Create.Map($Create.Any, $$createType9);
+const $$createType11 = ent$0.BackupProfile.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = statemachine$0.Backup.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = types$1.BackupProgress.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = types$1.BackupProgress.createFrom;
-const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = $Create.Array($Create.Any);
+const $$createType18 = $Create.Array($Create.Any);
+const $$createType19 = ent$0.Archive.createFrom;
+const $$createType20 = $Create.Nullable($$createType19);
 const $$createType21 = $models.QueuedOperation.createFrom;
 const $$createType22 = $Create.Nullable($$createType21);
 const $$createType23 = $Create.Array($$createType22);
