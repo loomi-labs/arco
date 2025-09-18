@@ -88,6 +88,16 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 
 	// Emit event for state change
 	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+
+	// Emit additional events for specific states
+	switch s := state.(type) {
+	case statemachine.BackingUpVariant:
+		data := s()
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventBackupStateChangedString(data.Data.BackupID))
+	case statemachine.PruningVariant:
+		// TODO: Emit EventPruneStateChanged when Pruning state includes BackupID information
+		// Currently the Pruning state doesn't contain backup ID, but it should for proper event emission
+	}
 }
 
 // GetQueue returns the queue for a specific repository, creating it if it doesn't exist
