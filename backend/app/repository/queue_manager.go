@@ -187,7 +187,7 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 	currentState := qm.GetRepositoryState(repoID)
 
 	// Get target state for this operation
-	targetState, err := qm.getTargetStateForOperation(op)
+	targetState, err := qm.getTargetStateForOperation(ctx, op)
 	if err != nil {
 		return fmt.Errorf("failed to determine target state for operation: %w", err)
 	}
@@ -556,31 +556,29 @@ func (qm *QueueManager) expireOldOperations() {
 // HELPER FUNCTIONS
 // ============================================================================
 
-// TODO: pass correct context
 // getTargetStateForOperation maps an operation to its corresponding active state
-func (qm *QueueManager) getTargetStateForOperation(op *QueuedOperation) (statemachine.RepositoryState, error) {
+func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *QueuedOperation) (statemachine.RepositoryState, error) {
 	switch v := op.Operation.(type) {
 	case statemachine.BackupVariant:
 		backupData := v()
-		return statemachine.CreateBackingUpState(context.TODO(), backupData.BackupID), nil
+		return statemachine.CreateBackingUpState(ctx, backupData), nil
 
 	case statemachine.PruneVariant:
-		pruneData := v()
-		return statemachine.CreatePruningState(context.TODO(), pruneData.BackupID), nil
+		return statemachine.CreatePruningState(ctx), nil
 
 	case statemachine.DeleteVariant:
-		return statemachine.CreateDeletingState(context.TODO(), 0), nil // Repository delete, no specific archive
+		return statemachine.CreateDeletingState(ctx, 0), nil // Repository delete, no specific archive
 
 	case statemachine.ArchiveRefreshVariant:
-		return statemachine.CreateRefreshingState(context.TODO()), nil
+		return statemachine.CreateRefreshingState(ctx), nil
 
 	case statemachine.ArchiveDeleteVariant:
 		deleteData := v()
-		return statemachine.CreateDeletingState(context.TODO(), deleteData.ArchiveID), nil
+		return statemachine.CreateDeletingState(ctx, deleteData.ArchiveID), nil
 
 	case statemachine.ArchiveRenameVariant:
 		// Archive rename is a lightweight operation, treat as refreshing
-		return statemachine.CreateRefreshingState(context.TODO()), nil
+		return statemachine.CreateRefreshingState(ctx), nil
 
 	default:
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)

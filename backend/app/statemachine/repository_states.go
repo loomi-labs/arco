@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chris-tomich/adtenum"
-	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 )
 
@@ -28,16 +27,14 @@ type Queued struct {
 }
 
 type BackingUp struct {
-	BackupID  types.BackupId            `json:"backupId"`
+	Data      Backup
 	Progress  *borgtypes.BackupProgress `json:"progress,omitempty"`
-	StartedAt time.Time                 `json:"startedAt"`
 	cancelCtx cancelCtx                 // private context and cancel function
 }
 
 type Pruning struct {
-	BackupID  types.BackupId `json:"backupId"`
-	StartedAt time.Time      `json:"startedAt"`
-	cancelCtx cancelCtx      // private context and cancel function
+	StartedAt time.Time `json:"startedAt"`
+	cancelCtx cancelCtx // private context and cancel function
 }
 
 type Deleting struct {
@@ -223,19 +220,17 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 }
 
 // CreateBackingUpState creates a new backing up state with context
-func CreateBackingUpState(ctx context.Context, backupId types.BackupId) RepositoryState {
+func CreateBackingUpState(ctx context.Context, data Backup) RepositoryState {
 	return NewRepositoryStateBackingUp(BackingUp{
-		BackupID:  backupId,
+		Data:      data,
 		Progress:  nil,
-		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
 	})
 }
 
 // CreatePruningState creates a new pruning state with context
-func CreatePruningState(ctx context.Context, backupId types.BackupId) RepositoryState {
+func CreatePruningState(ctx context.Context) RepositoryState {
 	return NewRepositoryStatePruning(Pruning{
-		BackupID:  backupId,
 		StartedAt: time.Now(),
 		cancelCtx: CreateCancelContext(ctx),
 	})
