@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
@@ -18,6 +20,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/platform"
+	"github.com/loomi-labs/arco/backend/util"
 	"go.uber.org/zap"
 )
 
@@ -69,7 +72,7 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 	si.cloudRepoClient = cloudRepoClient
 
 	// Initialize queue manager with database and borg clients
-	si.queueManager.Init(db, si.borgClient)
+	si.queueManager.Init(db, si.borgClient, si.eventEmitter)
 
 	// TODO: Start periodic cleanup goroutine
 	// go si.startPeriodicCleanup(ctx)

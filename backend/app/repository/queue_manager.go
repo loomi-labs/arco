@@ -28,6 +28,7 @@ type QueueManager struct {
 	stateMachine *statemachine.RepositoryStateMachine
 	db           *ent.Client
 	borg         borg.Borg
+	eventEmitter types.EventEmitter
 	queues       map[int]*RepositoryQueue // RepoID -> Queue
 	mu           sync.RWMutex
 
@@ -55,11 +56,12 @@ func NewQueueManager(log *zap.SugaredLogger, stateMachine *statemachine.Reposito
 }
 
 // Init initializes the queue manager with database and borg clients
-func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg) {
+func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter) {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	qm.db = db
 	qm.borg = borgClient
+	qm.eventEmitter = eventEmitter
 }
 
 // GetRepositoryState returns the current state of a repository (defaults to idle if not set)
@@ -745,21 +747,23 @@ type OperationExecutor interface {
 
 // borgOperationExecutor implements OperationExecutor using borg commands
 type borgOperationExecutor struct {
-	borgClient  borg.Borg
-	db          *ent.Client
-	qm          *QueueManager
-	repoID      int
-	operationID string
+	log          *zap.SugaredLogger
+	db           *ent.Client
+	borgClient   borg.Borg
+	eventEmitter types.EventEmitter
+	repoID       int
+	operationID  string
 }
 
 // newBorgOperationExecutor creates a new borg operation executor
 func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string) OperationExecutor {
 	return &borgOperationExecutor{
-		borgClient:  qm.borg,
-		db:          qm.db,
-		qm:          qm,
-		repoID:      repoID,
-		operationID: operationID,
+		borgClient:   qm.borg,
+		db:           qm.db,
+		log:          qm.log,
+		eventEmitter: qm.eventEmitter,
+		repoID:       repoID,
+		operationID:  operationID,
 	}
 }
 
@@ -822,7 +826,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	// Refresh the newly created archive in database
 	err = e.refreshNewArchive(ctx, repo, archivePath)
 	if err != nil {
-		e.qm.log.Warnw("Failed to refresh archive after backup",
+		e.log.Errorw("Failed to refresh archive after backup",
 			"archivePath", archivePath,
 			"repoID", e.repoID,
 			"error", err.Error())
@@ -917,7 +921,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 
 	// Get pruning options from enabled pruning rule
 	pruneOptions = buildPruneOptions(profile.Edges.PruningRule)
-	e.qm.log.Infow("Using database pruning rule configuration",
+	e.log.Infow("Using database pruning rule configuration",
 		"repoID", e.repoID,
 		"operationID", e.operationID,
 		"backupProfileID", pruneData.BackupID.BackupProfileId,
@@ -1084,7 +1088,7 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 	}
 
 	if deletedCount > 0 {
-		e.qm.log.Infow("Deleted orphaned archives", "count", deletedCount, "repositoryID", repositoryID)
+		e.log.Infow("Deleted orphaned archives", "count", deletedCount, "repositoryID", repositoryID)
 	}
 
 	// Query existing archives to identify which ones are already saved
@@ -1139,7 +1143,7 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 	}
 
 	if newArchiveCount > 0 {
-		e.qm.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
+		e.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
 	}
 
 	return nil
@@ -1186,7 +1190,7 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			return fmt.Errorf("failed to update archive %s: %w", archiveData.Name, err)
 		}
 
-		e.qm.log.Infow("Updated existing archive",
+		e.log.Infow("Updated existing archive",
 			"archiveName", archiveData.Name,
 			"borgId", archiveData.ID,
 			"repositoryID", repositoryID)
@@ -1213,7 +1217,7 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			return fmt.Errorf("failed to create archive %s: %w", archiveData.Name, err)
 		}
 
-		e.qm.log.Infow("Created new archive",
+		e.log.Infow("Created new archive",
 			"archiveName", archiveData.Name,
 			"borgId", archiveData.ID,
 			"repositoryID", repositoryID)
