@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -221,7 +222,7 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 				"error", err.Error())
 
 			// Complete operation with system error
-			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("System error: %v", err)); completeErr != nil {
+			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("System error: %v", err), statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone); completeErr != nil {
 				qm.log.Warnw("Failed to complete operation after system error",
 					"repoID", repoID,
 					"operationID", operationID,
@@ -246,8 +247,9 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 				qm.createErrorNotification(ctx, repoID, operationID, status, op.Operation)
 			}
 
-			// Complete operation with failure
-			if completeErr := qm.CompleteOperation(repoID, operationID, false, status.Error.Message); completeErr != nil {
+			// Complete operation with failure using borg error mapping
+			errorType, errorAction := qm.mapBorgErrorToErrorType(ctx, status.Error, repoID)
+			if completeErr := qm.CompleteOperation(repoID, operationID, false, status.Error.Message, errorType, errorAction); completeErr != nil {
 				// Log completion error (system issue, not user-facing)
 				qm.log.Warnw("Failed to complete failed operation",
 					"repoID", repoID,
@@ -280,7 +282,7 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 			}
 
 			// Complete operation with success
-			if completeErr := qm.CompleteOperation(repoID, operationID, true, ""); completeErr != nil {
+			if completeErr := qm.CompleteOperation(repoID, operationID, true, "", statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone); completeErr != nil {
 				// Log completion error (system issue, not user-facing)
 				qm.log.Warnw("Failed to complete successful operation",
 					"repoID", repoID,
@@ -294,7 +296,7 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 }
 
 // CompleteOperation marks an operation as completed
-func (qm *QueueManager) CompleteOperation(repoID int, operationID string, success bool, errorMsg string) error {
+func (qm *QueueManager) CompleteOperation(repoID int, operationID string, success bool, errorMsg string, errorType statemachine.ErrorType, errorAction statemachine.ErrorAction) error {
 	queue := qm.GetQueue(repoID)
 
 	// Get active operation to determine weight
@@ -329,7 +331,7 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 
 	if !success {
 		// On failure, transition to error state
-		targetState = statemachine.CreateErrorState(statemachine.ErrorTypeSSHKey, errorMsg, statemachine.ErrorActionNone)
+		targetState = statemachine.CreateErrorState(errorType, errorMsg, errorAction)
 	} else {
 		// On success, determine next state based on queue status
 		targetState, err = qm.getCompletionStateForRepository(repoID)
@@ -1329,4 +1331,46 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 
 	// Sync only the single archive (no deletions)
 	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0])
+}
+
+// isCloudRepository checks if a repository is an ArcoCloud repository
+func (qm *QueueManager) isCloudRepository(ctx context.Context, repoID int) bool {
+	exists, err := qm.db.Repository.Query().
+		Where(repository.And(
+			repository.IDEQ(repoID),
+			repository.HasCloudRepository(),
+		)).
+		Exist(ctx)
+	if err != nil {
+		qm.log.Errorw("IsCloudRepository query error", "error", err)
+	}
+	return exists
+}
+
+// mapBorgErrorToErrorType maps borg errors to state machine error types and actions
+func (qm *QueueManager) mapBorgErrorToErrorType(ctx context.Context, borgError *borgtypes.BorgError, repoID int) (statemachine.ErrorType, statemachine.ErrorAction) {
+	// Check for SSH connection errors
+	if errors.Is(borgError, borgtypes.ErrorConnectionClosedWithHint) {
+		// SSH key authentication failed
+		// Only suggest regenerating SSH key for cloud repositories
+		if qm.isCloudRepository(ctx, repoID) {
+			return statemachine.ErrorTypeSSHKey, statemachine.ErrorActionRegenerateSSH
+		}
+		return statemachine.ErrorTypeSSHKey, statemachine.ErrorActionNone
+	}
+
+	// Check for passphrase errors
+	if errors.Is(borgError, borgtypes.ErrorPassphraseWrong) {
+		// Incorrect passphrase - no automatic action possible
+		return statemachine.ErrorTypePassphrase, statemachine.ErrorActionNone
+	}
+
+	// Check for lock timeout errors
+	if errors.Is(borgError, borgtypes.ErrorLockTimeout) {
+		// Repository is locked - can break lock for any repo type
+		return statemachine.ErrorTypeLocked, statemachine.ErrorActionBreakLock
+	}
+
+	// Default fallback for all other errors
+	return statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone
 }

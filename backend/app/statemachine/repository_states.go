@@ -27,23 +27,23 @@ type Queued struct {
 
 type BackingUp struct {
 	Data      Backup
-	cancelCtx cancelCtx // private context and cancel function
+	cancelCtx cancelCtx
 }
 
 type Pruning struct {
 	StartedAt time.Time `json:"startedAt"`
-	cancelCtx cancelCtx // private context and cancel function
+	cancelCtx cancelCtx
 }
 
 type Deleting struct {
 	ArchiveID int       `json:"archiveId"`
 	StartedAt time.Time `json:"startedAt"`
-	cancelCtx cancelCtx // private context and cancel function
+	cancelCtx cancelCtx
 }
 
 type Refreshing struct {
 	StartedAt time.Time `json:"startedAt"`
-	cancelCtx cancelCtx // private context and cancel function
+	cancelCtx cancelCtx
 }
 
 type Mounted struct {
@@ -93,6 +93,7 @@ type MountInfo struct {
 type ErrorType string
 
 const (
+	ErrorTypeGeneral    ErrorType = "general"
 	ErrorTypeSSHKey     ErrorType = "sshKey"
 	ErrorTypePassphrase ErrorType = "passphrase"
 	ErrorTypeLocked     ErrorType = "locked"
