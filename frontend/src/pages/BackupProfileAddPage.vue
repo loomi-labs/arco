@@ -156,11 +156,9 @@ async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupProfileService.GetPrefixSuggestion(backupProfile.value.name);
     backupProfile.value.edges = backupProfile.value.edges ?? {};
-    // TODO: fix this
-    // backupProfile.value.edges.repositories = connectedRepos.value;
     const savedBackupProfile = await backupProfileService.CreateBackupProfile(
       backupProfile.value,
-      (backupProfile.value.edges.repositories ?? []).filter((r) => r !== null).map((r) => r.id)
+      (connectedRepos.value ?? []).filter((r) => r !== null).map((r) => r.id)
     ) ?? BackupProfile.createFrom();
 
     if (backupProfile.value.edges.backupSchedule) {
