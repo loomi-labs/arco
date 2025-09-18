@@ -821,7 +821,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	// Execute borg create command
 	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
 	if !status.IsCompletedWithSuccess() {
-		return nil, fmt.Errorf("backup profile %d has failed: %w", backupData.BackupID.BackupProfileId, err)
+		return status, nil
 	}
 
 	// Close progress channel
