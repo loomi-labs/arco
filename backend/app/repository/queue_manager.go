@@ -426,6 +426,37 @@ func (qm *QueueManager) GetOperation(operationID string) (*QueuedOperation, erro
 	return nil, fmt.Errorf("operation %s not found in any queue", operationID)
 }
 
+// UpdateBackupProgress updates the progress of a backup operation
+func (qm *QueueManager) UpdateBackupProgress(ctx context.Context, operationID string, progress borgtypes.BackupProgress) error {
+	qm.mu.Lock()
+	defer qm.mu.Unlock()
+
+	// Search across all repository queues
+	for _, queue := range qm.queues {
+		op := queue.GetOperationByID(operationID)
+		if op != nil {
+			// Check if this is a backup operation
+			if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
+
+				// Update the operation's backup data with new progress
+				backupData := backupVariant()
+				backupData.Progress = &progress
+
+				// Create a new BackupVariant with updated data
+				updatedOperation := statemachine.NewOperationBackup(backupData)
+				op.Operation = updatedOperation
+
+				qm.eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(backupData.BackupID))
+
+				return nil
+			}
+			return fmt.Errorf("operation %s is not a backup operation", operationID)
+		}
+	}
+
+	return fmt.Errorf("operation %s not found in any queue", operationID)
+}
+
 // GetQueuedOperations returns all operations for a repository
 func (qm *QueueManager) GetQueuedOperations(repoID int) ([]*QueuedOperation, error) {
 	queue := qm.GetQueue(repoID)
@@ -746,25 +777,29 @@ type OperationExecutor interface {
 	Execute(ctx context.Context, operation statemachine.Operation) (*borgtypes.Status, error)
 }
 
+type progressUpdater interface {
+	UpdateBackupProgress(ctx context.Context, operationID string, progress borgtypes.BackupProgress) error
+}
+
 // borgOperationExecutor implements OperationExecutor using borg commands
 type borgOperationExecutor struct {
-	log          *zap.SugaredLogger
-	db           *ent.Client
-	borgClient   borg.Borg
-	eventEmitter types.EventEmitter
-	repoID       int
-	operationID  string
+	log             *zap.SugaredLogger
+	db              *ent.Client
+	borgClient      borg.Borg
+	repoID          int
+	operationID     string
+	progressUpdater progressUpdater
 }
 
 // newBorgOperationExecutor creates a new borg operation executor
 func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string) OperationExecutor {
 	return &borgOperationExecutor{
-		borgClient:   qm.borg,
-		db:           qm.db,
-		log:          qm.log,
-		eventEmitter: qm.eventEmitter,
-		repoID:       repoID,
-		operationID:  operationID,
+		borgClient:      qm.borg,
+		db:              qm.db,
+		log:             qm.log,
+		repoID:          repoID,
+		operationID:     operationID,
+		progressUpdater: qm,
 	}
 }
 
@@ -816,7 +851,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	progressCh := make(chan borgtypes.BackupProgress, 100)
 
 	// Start progress monitoring in background
-	go e.monitorBackupProgress(ctx, progressCh, backupData, e.eventEmitter)
+	go e.monitorBackupProgress(ctx, progressCh)
 
 	// Execute borg create command
 	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
@@ -843,7 +878,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 }
 
 // monitorBackupProgress monitors backup progress and updates operation status
-func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progressCh <-chan borgtypes.BackupProgress, data statemachine.Backup, eventEmitter types.EventEmitter) {
+func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progressCh <-chan borgtypes.BackupProgress) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -852,9 +887,10 @@ func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progr
 			if !ok {
 				return // Channel closed
 			}
-			data.Progress = &progress
-			eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(data.BackupID))
-			e.log.Debugf("Backup progress changed for %d", data.BackupID)
+			err := e.progressUpdater.UpdateBackupProgress(ctx, e.operationID, progress)
+			if err != nil {
+				e.log.Errorw("Failed to update operation progress", "operationID", e.operationID, "error", err.Error())
+			}
 		}
 	}
 }
