@@ -15,10 +15,10 @@ import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import type * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
-import {Events} from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 
 /************
  * Types
@@ -59,7 +59,7 @@ backupId.backupProfileId = props.backupProfileId;
 backupId.repositoryId = props.repoId;
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 
-const backupState = ref<state.BackupState>(state.BackupState.createFrom());
+const backupState = ref<statemachine.Backup>(statemachine.Backup.createFrom());
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
@@ -133,12 +133,7 @@ function showRemoveRepoModal() {
 getRepo();
 getBackupState();
 
-watch(backupState, async (newState, oldState) => {
-  // We only care about status changes
-  if (newState.status === oldState.status) {
-    return;
-  }
-
+watch(backupState, async () => {
   await getRepo();
   await getBackupButtonStatus();
 });
@@ -171,13 +166,17 @@ onUnmounted(() => {
        :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "ac-card-hover": showHover && !props.highlight }'
        @click='emits(emitClick)'>
     <div class='flex flex-col'>
-      <h3 class='text-lg font-semibold'>{{ repo?.name || '' }}</h3>
+      <h3 class='text-lg font-semibold'>{{ repo?.name || "" }}</h3>
       <p>{{ $t("last_backup") }}:
         <span v-if='repo.lastBackupError' class='tooltip tooltip-error' :data-tip='repo.lastBackupError'>
-          <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent'>{{ $t("failed") }}</span>
+          <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent'>{{
+              $t("failed")
+            }}</span>
         </span>
         <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
+              toRelativeTimeString(lastArchive.createdAt)
+            }}</span>
         </span>
         <span v-else>-</span>
         <!-- Error Badge -->
