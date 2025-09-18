@@ -221,13 +221,35 @@ func (s *Service) GetByBackupId(ctx context.Context, bId types.BackupId) (*Repos
 
 // Create creates a new repository
 func (s *Service) Create(ctx context.Context, name, location, password string, noPassword bool) (*Repository, error) {
-	// TODO: Implement repository creation:
-	// 1. Validate repository name and path
-	// 2. Create borg repository
-	// 3. Store in database
-	// 4. Initialize with Idle state
-	// 5. Return Repository struct
-	return nil, nil
+	s.log.Debugf("Creating repository %s at %s", name, location)
+
+	// Test repository connection first
+	result, err := s.TestRepoConnection(ctx, location, password)
+	if err != nil {
+		return nil, err
+	}
+
+	if !result.Success && !result.IsBorgRepo {
+		// Create the repository if it does not exist
+		status := s.borgClient.Init(ctx, util.ExpandPath(location), password, noPassword)
+		if status != nil && status.HasError() {
+			return nil, fmt.Errorf("failed to initialize repository: %s", status.GetError())
+		}
+	} else if !result.Success {
+		return nil, fmt.Errorf("could not connect to repository")
+	}
+
+	// Create a new repository entity in the database
+	repoEntity, err := s.db.Repository.
+		Create().
+		SetName(name).
+		SetURL(location).
+		SetPassword(password).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repository in database: %w", err)
+	}
+	return s.entityToRepository(ctx, repoEntity), nil
 }
 
 // CreateCloudRepository creates a new ArcoCloud repository
@@ -289,17 +311,54 @@ func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId 
 
 // QueueBackup queues a backup operation
 func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (string, error) {
-	// TODO: Implement backup operation queueing
-	return "", nil
+	// Generate unique operation ID
+	operationID := uuid.New().String()
+
+	// Create backup operation
+	backupOp := statemachine.NewOperationBackup(statemachine.Backup{
+		BackupID: backupId,
+	})
+
+	// Create initial status (queued with position 0)
+	initialStatus := NewOperationStatusQueued(Queued{
+		Position: 0,
+	})
+
+	// Create the queued operation
+	queuedOp := &QueuedOperation{
+		ID:              operationID,
+		RepoID:          backupId.RepositoryId,
+		BackupProfileID: &backupId.BackupProfileId,
+		Operation:       backupOp,
+		Status:          initialStatus,
+		CreatedAt:       time.Now(),
+		ValidUntil:      time.Now().Add(24 * time.Hour), // 24 hour TTL
+	}
+
+	// Queue the operation
+	resultID, err := s.queueManager.AddOperation(backupId.RepositoryId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue backup operation: %w", err)
+	}
+
+	return resultID, nil
 }
 
 // QueueBackups queues multiple backup operations (convenience method)
 func (s *Service) QueueBackups(ctx context.Context, backupIds []types.BackupId) ([]string, error) {
-	// TODO: Implement multiple backup queueing:
-	// 1. Iterate through backup IDs
-	// 2. Queue each backup individually
-	// 3. Return slice of operation IDs
-	return nil, nil
+	// Initialize result slice
+	operationIDs := make([]string, 0, len(backupIds))
+
+	// Iterate through backup IDs and queue each one
+	for _, backupId := range backupIds {
+		operationID, err := s.QueueBackup(ctx, backupId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to queue backup for backupId %s: %w", backupId.String(), err)
+		}
+		operationIDs = append(operationIDs, operationID)
+	}
+
+	return operationIDs, nil
 }
 
 // QueuePrune queues a prune operation
