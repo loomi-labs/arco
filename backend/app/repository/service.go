@@ -282,27 +282,147 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 
 // Remove removes a repository from database only (does not delete physical repo)
 func (s *Service) Remove(ctx context.Context, id int) error {
-	// TODO: Implement repository removal:
-	// 1. Cancel any active operations
-	// 2. Remove from database
-	// 3. Clean up queue
-	// 4. Remove backup profiles if they only belong to this repo
-	return nil
+	s.log.Debugw("Removing repository", "id", id)
+
+	// 1. Cancel any active/queued operations for this repository
+	queue := s.queueManager.GetQueue(id)
+	operations := queue.GetOperations()
+	for _, op := range operations {
+		err := s.queueManager.CancelOperation(id, op.ID)
+		if err != nil {
+			s.log.Warnw("Failed to cancel operation during repository removal", "repoID", id, "operationID", op.ID, "error", err)
+		}
+	}
+
+	// 2. Get backup profiles that only belong to this repository
+	backupProfiles, err := s.GetBackupProfilesThatHaveOnlyRepo(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get backup profiles for repository %d: %w", id, err)
+	}
+
+	// 3. Remove repository and backup profiles in a transaction
+	return database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+		// Delete backup profiles that only have this repository
+		if len(backupProfiles) > 0 {
+			bpIds := make([]int, 0, len(backupProfiles))
+			for _, bp := range backupProfiles {
+				bpIds = append(bpIds, bp.ID)
+			}
+
+			_, err = tx.BackupProfile.Delete().
+				Where(backupprofile.IDIn(bpIds...)).
+				Exec(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to delete backup profiles: %w", err)
+			}
+		}
+
+		// Delete the repository
+		err = tx.Repository.
+			DeleteOneID(id).
+			Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to delete repository: %w", err)
+		}
+
+		return nil
+	})
 }
 
 // Delete deletes a repository completely. This cancels all other operations
 func (s *Service) Delete(ctx context.Context, id int) error {
-	// TODO: Implement delete operation queueing:
-	// 1. Validate repository exists
-	// 2. Cancel all other operations
-	// 3. Delete repository
+	s.log.Debugw("Deleting repository", "id", id)
+
+	// 1. Validate repository exists and get cloud repository info if needed
+	repoEntity, err := s.db.Repository.Query().
+		Where(repository.ID(id)).
+		WithCloudRepository().
+		Only(ctx)
+	if err != nil {
+		return fmt.Errorf("repository %d not found: %w", id, err)
+	}
+
+	// 2. Cancel all queued operations for this repository
+	queue := s.queueManager.GetQueue(id)
+	operations := queue.GetOperations()
+	for _, op := range operations {
+		err := s.queueManager.CancelOperation(id, op.ID)
+		if err != nil {
+			s.log.Warnw("Failed to cancel operation during repository deletion", "repoID", id, "operationID", op.ID, "error", err)
+		}
+	}
+
+	// 3. Check if this is a cloud repository and handle accordingly
+	if repoEntity.Edges.CloudRepository != nil {
+		// For cloud repositories, delete directly via cloud service
+		return s.cloudRepoClient.DeleteCloudRepository(ctx, repoEntity.Edges.CloudRepository.CloudID)
+	}
+
+	// 4. For local repositories, queue a delete operation
+	operationID := uuid.New().String()
+
+	// Create delete operation
+	deleteOp := statemachine.NewOperationDelete(statemachine.Delete{
+		RepositoryID: id,
+	})
+
+	// Create initial status (queued with position 0)
+	initialStatus := NewOperationStatusQueued(Queued{
+		Position: 0,
+	})
+
+	// Create the queued operation
+	queuedOp := &QueuedOperation{
+		ID:         operationID,
+		RepoID:     id,
+		Operation:  deleteOp,
+		Status:     initialStatus,
+		CreatedAt:  time.Now(),
+		ValidUntil: time.Now().Add(24 * time.Hour), // 24 hour TTL
+	}
+
+	// Queue the delete operation
+	_, err = s.queueManager.AddOperation(id, queuedOp)
+	if err != nil {
+		return fmt.Errorf("failed to queue delete operation: %w", err)
+	}
+
 	return nil
+}
+
+// isCloudRepository checks if a repository is an ArcoCloud repository
+func (s *Service) isCloudRepository(ctx context.Context, repoID int) bool {
+	exists, err := s.db.Repository.Query().
+		Where(repository.And(
+			repository.IDEQ(repoID),
+			repository.HasCloudRepository(),
+		)).
+		Exist(ctx)
+	if err != nil {
+		s.log.Errorw("IsCloudRepository query error", "error", err)
+	}
+	return exists
 }
 
 // GetBackupProfilesThatHaveOnlyRepo gets backup profiles that only have this repo
 func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId int) ([]*ent.BackupProfile, error) {
-	// TODO: Implement proper backup profiles retrieval that only have this repository
-	return []*ent.BackupProfile{}, nil
+	backupProfiles, err := s.db.BackupProfile.
+		Query().
+		Where(backupprofile.And(
+			backupprofile.HasRepositoriesWith(repository.ID(repoId)),
+		)).
+		WithRepositories().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var result []*ent.BackupProfile
+	for _, bp := range backupProfiles {
+		if len(bp.Edges.Repositories) == 1 {
+			result = append(result, bp)
+		}
+	}
+	return result, nil
 }
 
 // ============================================================================
