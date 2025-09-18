@@ -254,8 +254,62 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 
 // CreateCloudRepository creates a new ArcoCloud repository
 func (s *Service) CreateCloudRepository(ctx context.Context, name, password string, location arcov1.RepositoryLocation) (*Repository, error) {
-	// TODO: Implement cloud repository creation
-	return nil, nil
+	// List existing cloud repositories to check if one already exists
+	cloudRepos, err := s.cloudRepoClient.ListCloudRepositories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if repository already exists
+	var repo *arcov1.Repository
+	for _, cloudRepo := range cloudRepos {
+		if cloudRepo.Name == name {
+			repo = cloudRepo
+			s.log.Warnf("Repository '%s' already exists in ArcoCloud, proceeding with existing repository", name)
+			break
+		}
+	}
+
+	// If repository doesn't exist, create it
+	if repo == nil {
+		repo, err = s.cloudRepoClient.AddCloudRepository(ctx, name, location)
+		if err != nil {
+			return nil, err
+		}
+
+		status := s.borgClient.Init(ctx, repo.RepoUrl, password, false)
+		if status != nil && status.HasError() {
+			s.log.Errorf("Failed to initialize repository during initialization: %s", status.GetError())
+			return nil, fmt.Errorf("failed to initialize repository: %s", status.GetError())
+		}
+	}
+
+	entRepo, err := database.WithTxData(ctx, s.db, func(tx *ent.Tx) (*ent.Repository, error) {
+		// Create new local repository with cloud association
+		entRepo, txErr := tx.Repository.
+			Create().
+			SetName(name).
+			SetURL(repo.RepoUrl).
+			SetPassword(password).
+			Save(ctx)
+		if txErr != nil {
+			return nil, txErr
+		}
+		_, txErr = tx.CloudRepository.
+			Create().
+			SetCloudID(repo.Id).
+			SetLocation(s.getLocationEnum(location)).
+			SetRepository(entRepo).
+			Save(ctx)
+		if txErr != nil {
+			return nil, txErr
+		}
+		return entRepo, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repository in database: %w", err)
+	}
+	return s.entityToRepository(ctx, entRepo), nil
 }
 
 // Update updates a repository with provided changes
@@ -387,7 +441,8 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 		return fmt.Errorf("failed to queue delete operation: %w", err)
 	}
 
-	return nil
+	// Remove repository from database after successfully queuing the delete operation
+	return s.Remove(ctx, id)
 }
 
 // isCloudRepository checks if a repository is an ArcoCloud repository
@@ -402,6 +457,19 @@ func (s *Service) isCloudRepository(ctx context.Context, repoID int) bool {
 		s.log.Errorw("IsCloudRepository query error", "error", err)
 	}
 	return exists
+}
+
+// getLocationEnum converts arcov1.RepositoryLocation to cloudrepository.Location
+func (s *Service) getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
+	switch location {
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_EU:
+		return cloudrepository.LocationEU
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_US:
+		return cloudrepository.LocationUS
+	case arcov1.RepositoryLocation_REPOSITORY_LOCATION_UNSPECIFIED:
+	}
+	s.log.Errorw("Unknown repository location, defaulting to EU", "location", location)
+	return cloudrepository.LocationEU
 }
 
 // GetBackupProfilesThatHaveOnlyRepo gets backup profiles that only have this repo
@@ -437,8 +505,13 @@ func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (str
 	// Create backup operation
 	backupOp := statemachine.NewOperationBackup(statemachine.Backup{
 		BackupID: backupId,
+		Progress: &borgtypes.BackupProgress{
+			TotalFiles:     0,
+			ProcessedFiles: 0,
+		},
 	})
 
+	// TODO: I think this is wrong. What if there is already something in the queue?
 	// Create initial status (queued with position 0)
 	initialStatus := NewOperationStatusQueued(Queued{
 		Position: 0,
