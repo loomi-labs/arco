@@ -325,7 +325,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Archives Section -->
-    <ArchivesCard :repo='repo'
+    <ArchivesCard :repo-id='repo.id'
                   :highlight='false'
                   :show-backup-profile-column='true' />
 

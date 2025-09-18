@@ -19,18 +19,18 @@ import { toCreationTimeBadge } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
-import { archivesChanged } from "../common/events";
+import { archivesChanged, repoStateChangedEvent } from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
-import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import {
   PaginatedArchivesRequest,
   PaginatedArchivesResponse,
-  PruningDates
+  PruningDates,
+  Repository
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
@@ -44,7 +44,7 @@ type Pagination = {
 };
 
 interface Props {
-  repo: Repository;
+  repoId: number;
   backupProfileId?: number;
   highlight: boolean;
   showName?: boolean;
@@ -57,6 +57,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const repo = ref<Repository>(Repository.createFrom());
 const archives = ref<ent.Archive[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
@@ -100,72 +101,72 @@ const isBackupProfileFilterVisible = computed<boolean>(
 );
 
 // Repository state access
-const repositoryState = computed(() => props.repo.state);
+const repositoryState = computed(() => repo.value.state);
 
 // Check if repository is in mounted state
-const isMounted = computed(() => 
+const isMounted = computed(() =>
   repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted
 );
 
 // Get mounted state details if available
-const mountedState = computed(() => 
+const mountedState = computed(() =>
   isMounted.value ? repositoryState.value.mounted : null
 );
 
 // Get mounts array from repository state
-const mounts = computed(() => 
+const mounts = computed(() =>
   mountedState.value?.mounts ?? []
 );
 
 // Helper function to check if a specific archive is mounted
 const isArchiveMounted = (archiveId: number) => {
-  return mounts.value.some(mount => 
-    mount.mountType === statemachine.MountType.MountTypeArchive && 
+  return mounts.value.some(mount =>
+    mount.mountType === statemachine.MountType.MountTypeArchive &&
     mount.archiveId === archiveId
   );
 };
 
 // Helper function to get mount info for a specific archive
 const getArchiveMountInfo = (archiveId: number) => {
-  return mounts.value.find(mount => 
-    mount.mountType === statemachine.MountType.MountTypeArchive && 
+  return mounts.value.find(mount =>
+    mount.mountType === statemachine.MountType.MountTypeArchive &&
     mount.archiveId === archiveId
   ) ?? null;
 };
 
 // Helper computed to check if repository itself is mounted (via repository mount, not archive mounts)
 const hasRepositoryMount = computed(() => {
-  return mounts.value.some(mount => 
+  return mounts.value.some(mount =>
     mount.mountType === statemachine.MountType.MountTypeRepository
   );
 });
 
 // Helper computed to get repository mount info
 const getRepositoryMountInfo = computed(() => {
-  return mounts.value.find(mount => 
+  return mounts.value.find(mount =>
     mount.mountType === statemachine.MountType.MountTypeRepository
   ) ?? null;
 });
 
 // Check if repository is idle (can perform operations)
-const isRepositoryIdle = computed(() => 
+const isRepositoryIdle = computed(() =>
   repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeIdle
 );
 
 // Check if repository is in mounted state (allows some operations)
-const isRepositoryInMountedState = computed(() => 
+const isRepositoryInMountedState = computed(() =>
   repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted
 );
 
 // Check if repository can perform operations (idle or mounted)
-const canPerformOperations = computed(() => 
+const canPerformOperations = computed(() =>
   isRepositoryIdle.value || isRepositoryInMountedState.value
 );
 
 // Mount status overview computed properties
 const repositoryMountInfo = computed(() => getRepositoryMountInfo.value);
 const hasRepositoryMountActive = computed(() => hasRepositoryMount.value);
-const archiveMountCount = computed(() => 
+const archiveMountCount = computed(() =>
   mounts.value.filter(mount => mount.mountType === statemachine.MountType.MountTypeArchive).length
 );
 const totalMountCount = computed(() => mounts.value.length);
@@ -174,13 +175,24 @@ const totalMountCount = computed(() => mounts.value.length);
  * Functions
  ************/
 
+async function getRepository() {
+  try {
+    const fetchedRepo = await repoService.Get(props.repoId);
+    if (fetchedRepo) {
+      repo.value = fetchedRepo;
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to get repository", error);
+  }
+}
+
 async function getPaginatedArchives() {
   try {
     isLoading.value = true;
     const request = PaginatedArchivesRequest.createFrom();
 
     // Required
-    request.repositoryId = props.repo.id;
+    request.repositoryId = props.repoId;
     request.page = pagination.value.page;
     request.pageSize = pagination.value.pageSize;
 
@@ -284,7 +296,7 @@ async function unmountArchive(archiveId: number) {
 async function mountRepository() {
   try {
     progressSpinnerText.value = "Mounting repository";
-    await repoService.Mount(props.repo.id);
+    await repoService.Mount(props.repoId);
   } catch (error: unknown) {
     await showAndLogError("Failed to mount repository", error);
   } finally {
@@ -295,7 +307,7 @@ async function mountRepository() {
 async function unmountRepository() {
   try {
     progressSpinnerText.value = "Unmounting repository";
-    await repoService.Unmount(props.repo.id);
+    await repoService.Unmount(props.repoId);
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount repository", error);
   } finally {
@@ -310,8 +322,7 @@ async function getBackupProfileFilterOptions() {
   }
 
   try {
-    backupProfileFilterOptions.value =
-      await backupProfileService.GetBackupProfileFilterOptions(props.repo.id);
+    backupProfileFilterOptions.value = await backupProfileService.GetBackupProfileFilterOptions(props.repoId);
 
     if (
       backupProfileFilter.value === undefined &&
@@ -327,7 +338,7 @@ async function getBackupProfileFilterOptions() {
 async function refreshArchives() {
   try {
     progressSpinnerText.value = "Refreshing archives";
-    await repoService.RefreshArchives(props.repo.id);
+    await repoService.RefreshArchives(props.repoId);
   } catch (error: unknown) {
     await showAndLogError("Failed to refresh archives", error);
   } finally {
@@ -526,10 +537,12 @@ const customDateRangeShortcuts = () => {
  * Lifecycle
  ************/
 
+getRepository();
 getPaginatedArchives();
 getBackupProfileFilterOptions();
 
-watch([() => props.repo], async () => {
+watch([() => props.repoId], async () => {
+  await getRepository();
   await getPaginatedArchives();
   await getBackupProfileFilterOptions();
   selectedArchives.value.clear();
@@ -543,7 +556,11 @@ watch([backupProfileFilter, search, dateRange], async () => {
 });
 
 cleanupFunctions.push(
-  Events.On(archivesChanged(props.repo.id), getPaginatedArchives)
+  Events.On(archivesChanged(props.repoId), getPaginatedArchives)
+);
+
+cleanupFunctions.push(
+  Events.On(repoStateChangedEvent(props.repoId), getRepository)
 );
 
 onUnmounted(() => {
@@ -564,16 +581,16 @@ onUnmounted(() => {
             <div class='flex justify-end gap-2 items-center'>
               <!-- Mount Status Indicator -->
               <div v-if='totalMountCount > 0' class='flex items-center gap-1 text-sm'>
-                <span v-if='hasRepositoryMountActive' 
-                      class='tooltip tooltip-info' 
+                <span v-if='hasRepositoryMountActive'
+                      class='tooltip tooltip-info'
                       data-tip='Repository is mounted - browse entire repository'>
                   <span class='badge badge-primary gap-1'>
                     <DocumentMagnifyingGlassIcon class='size-3' />
                     Repository
                   </span>
                 </span>
-                <span v-if='archiveMountCount > 0' 
-                      class='tooltip tooltip-info' 
+                <span v-if='archiveMountCount > 0'
+                      class='tooltip tooltip-info'
                       :data-tip='`${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""} mounted`'>
                   <span class='badge badge-secondary gap-1'>
                     <CloudArrowDownIcon class='size-3' />
@@ -581,10 +598,10 @@ onUnmounted(() => {
                   </span>
                 </span>
               </div>
-              
+
               <!-- Repository Mount Actions -->
-              <span v-if='hasRepositoryMountActive' 
-                    class='tooltip tooltip-info' 
+              <span v-if='hasRepositoryMountActive'
+                    class='tooltip tooltip-info'
                     :data-tip='`Unmount repository from ${repositoryMountInfo?.mountPath}`'>
                 <button class='btn btn-sm btn-ghost btn-circle btn-success'
                         :disabled='!canPerformOperations'
@@ -592,15 +609,15 @@ onUnmounted(() => {
                   <DocumentMagnifyingGlassIcon class='size-4 text-success' />
                 </button>
               </span>
-              <span v-else-if='archiveMountCount === 0 && isRepositoryIdle' 
-                    class='tooltip tooltip-info' 
+              <span v-else-if='archiveMountCount === 0 && isRepositoryIdle'
+                    class='tooltip tooltip-info'
                     data-tip='Browse entire repository'>
                 <button class='btn btn-sm btn-ghost btn-circle btn-primary'
                         @click='mountRepository()'>
                   <DocumentMagnifyingGlassIcon class='size-4' />
                 </button>
               </span>
-              
+
               <button class='btn btn-sm btn-error'
                       :class='{ invisible: selectedArchives.size === 0 }'
                       @click='confirmDeleteMultipleModal?.showModal()'>
@@ -727,23 +744,23 @@ onUnmounted(() => {
           <!-- Action -->
           <td class='flex items-center gap-2'>
             <!-- Archive Mount Status Indicator -->
-            <span v-if='isArchiveMounted(archive.id)' 
+            <span v-if='isArchiveMounted(archive.id)'
                   class='tooltip tooltip-info'
                   :data-tip='`Archive mounted at ${getArchiveMountInfo(archive.id)?.mountPath}`'>
               <button class='btn btn-sm btn-ghost btn-circle btn-success' @click='unmountArchive(archive.id)'>
                 <CloudArrowDownIcon class='size-4 text-success' />
               </button>
             </span>
-            
+
             <!-- Repository Mount Access -->
-            <span v-else-if='hasRepositoryMountActive' 
-                  class='tooltip tooltip-info' 
+            <span v-else-if='hasRepositoryMountActive'
+                  class='tooltip tooltip-info'
                   data-tip='Archive accessible via repository mount'>
               <span class='btn btn-sm btn-ghost btn-circle btn-disabled'>
                 <DocumentMagnifyingGlassIcon class='size-4 text-primary' />
               </span>
             </span>
-            
+
             <!-- Mount Archive Action -->
             <span v-else class='tooltip tooltip-info' data-tip='Browse files in this archive'>
               <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content'
@@ -752,7 +769,7 @@ onUnmounted(() => {
                 <DocumentMagnifyingGlassIcon class='size-4' />
               </button>
             </span>
-            
+
             <button class='btn btn-sm btn-ghost btn-circle btn-neutral'
                     :disabled='!isRepositoryIdle'
                     @click='() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); }'>

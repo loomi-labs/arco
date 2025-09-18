@@ -35,8 +35,7 @@ const router = useRouter();
 const toast = useToast();
 
 const backupProfile = ref<BackupProfile>(BackupProfile.createFrom());
-const selectedRepo = ref<Repository | ent.Repository | undefined>(undefined);
-const repoStatuses = ref<Map<number, RepositoryStateType>>(new Map());
+const selectedRepoId = ref<number | undefined>(undefined);
 const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
@@ -118,18 +117,10 @@ async function getData() {
     backupProfile.value = await backupProfileService.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string)) ?? BackupProfile.createFrom();
     name.value = backupProfile.value.name;
 
-    // TODO: Fix Repository type conflicts - backupProfile.edges.repositories contains old ent.Repository
-    // but selectedRepo and existingRepos use new Repository type
-    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepo.value?.id)) {
+    if (!selectedRepoId.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepoId.value)) {
       // Select the first repo by default
-      // TODO: fix this
-      // selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] as any ?? undefined;
+      selectedRepoId.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0].id
     }
-    // TODO: fix this
-    // for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
-    //   // Set all repo statuses to idle
-    //   repoStatuses.value.set(repo.id, RepoStatus.RepoStatusIdle);
-    // }
 
     // Get existing repositories
     existingRepos.value = (await repoService.All()).filter(r => r !== null) ;
@@ -387,12 +378,11 @@ watch(loading, async () => {
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
-            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepoId'
             :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
             :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
             :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
-            @click='() => selectedRepo = repo as any'
-            @repo:status='(event) => repoStatuses.set(repo.id, event)'
+            @click='() => selectedRepoId = repo.id'
             @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
           >
           </RepoCard>
@@ -450,11 +440,9 @@ watch(loading, async () => {
           </form>
         </dialog>
       </div>
-      <!-- TODO: Fix Repository type conflicts before re-enabling ArchivesCard -->
-      <ArchivesCard v-if='selectedRepo'
+      <ArchivesCard v-if='selectedRepoId'
                     :backup-profile-id='backupProfile.id'
-                    :repo='selectedRepo! as any'
-                    :repo-status='repoStatuses.get(selectedRepo.id)!'
+                    :repo-id='selectedRepoId'
                     :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
                     :show-name='true'>
       </ArchivesCard>
