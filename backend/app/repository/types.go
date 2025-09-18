@@ -143,6 +143,13 @@ type TestRepoConnectionResult struct {
 	IsBorgRepo      bool `json:"isBorgRepo"`
 }
 
+// testRepoConnectionResult represents the internal result of testing repository connection
+type testRepoConnectionResult struct {
+	Success         bool
+	IsPasswordValid bool
+	IsBorgRepo      bool
+}
+
 // BackupProfileFilter represents filters for backup profiles
 type BackupProfileFilter struct {
 	Id              int    `json:"id,omitempty"`

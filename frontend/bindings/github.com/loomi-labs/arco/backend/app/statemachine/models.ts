@@ -7,10 +7,10 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../types/models.js";
+import * as types$0 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../../borg/types/models.js";
+import * as types$1 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
@@ -41,13 +41,13 @@ export class BackingUp {
 }
 
 export class Backup {
-    "backupId": types$1.BackupId;
-    "progress"?: types$0.BackupProgress | null;
+    "backupId": types$0.BackupId;
+    "progress"?: types$1.BackupProgress | null;
 
     /** Creates a new Backup instance. */
     constructor($$source: Partial<Backup> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
+            this["backupId"] = (new types$0.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -412,8 +412,8 @@ export class RepositoryStateUnion {
 
 // Private type creation functions
 const $$createType0 = Backup.createFrom;
-const $$createType1 = types$1.BackupId.createFrom;
-const $$createType2 = types$0.BackupProgress.createFrom;
+const $$createType1 = types$0.BackupId.createFrom;
+const $$createType2 = types$1.BackupProgress.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = MountInfo.createFrom;
 const $$createType5 = $Create.Array($$createType4);

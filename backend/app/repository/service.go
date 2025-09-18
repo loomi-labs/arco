@@ -560,10 +560,74 @@ func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, prefix
 	return "", nil
 }
 
+// testRepoConnection performs the actual repository connection test
+func (s *Service) testRepoConnection(ctx context.Context, path, password string) (testRepoConnectionResult, error) {
+	s.log.Debugf("Testing repository connection to %s", path)
+	result := testRepoConnectionResult{
+		Success:         false,
+		IsPasswordValid: false,
+		IsBorgRepo:      false,
+	}
+
+	_, status := s.borgClient.Info(ctx, path, password)
+	if status == nil {
+		result.Success = true
+		result.IsPasswordValid = true
+		result.IsBorgRepo = true
+		return result, nil
+	}
+
+	if !status.IsCompletedWithSuccess() {
+		if status.HasBeenCanceled {
+			return result, fmt.Errorf("repository info retrieval was cancelled")
+		}
+		if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
+			result.IsBorgRepo = true
+			return result, nil
+		}
+		if errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) || errors.Is(status.Error, borgtypes.ErrorRepositoryInvalidRepository) {
+			return result, nil
+		}
+		return result, fmt.Errorf("info command failed: %s", status.GetError())
+	}
+
+	if status.HasWarning() {
+		s.log.Warnf("Repository info retrieval completed with warning: %s", status.GetWarning())
+	}
+	result.Success = true
+	result.IsPasswordValid = true
+	result.IsBorgRepo = true
+	return result, nil
+}
+
 // TestRepoConnection tests connection to a repository
 func (s *Service) TestRepoConnection(ctx context.Context, path, password string) (TestRepoConnectionResult, error) {
-	// TODO: Implement repository connection testing
-	return TestRepoConnectionResult{}, nil
+	toTestRepoConnectionResult := func(t testRepoConnectionResult, err error, needsPassword bool) (TestRepoConnectionResult, error) {
+		if err != nil {
+			return TestRepoConnectionResult{}, err
+		}
+		result := TestRepoConnectionResult{}
+		result.Success = t.Success
+		result.IsPasswordValid = t.IsPasswordValid
+		result.IsBorgRepo = t.IsBorgRepo
+		result.NeedsPassword = needsPassword
+		return result, nil
+	}
+
+	// First test with a random password
+	// If the test is successful, we know that the repository is not password protected
+	randPassword := uuid.New().String()
+	tr, err := s.testRepoConnection(ctx, path, randPassword)
+	if err != nil || tr.Success || !tr.IsBorgRepo {
+		return toTestRepoConnectionResult(tr, err, false)
+	}
+
+	// If we are here it means we need a password
+	if password != "" {
+		tr, err = s.testRepoConnection(ctx, path, password)
+		return toTestRepoConnectionResult(tr, err, true)
+	}
+	return toTestRepoConnectionResult(tr, nil, true)
 }
 
 // IsBorgRepository checks if a path contains a borg repository
@@ -700,4 +764,158 @@ func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
 		// Show the warning message
 		return notificationEnt.Message
 	}
+}
+
+// ============================================================================
+// TEMPORARY STUB IMPLEMENTATIONS FOR MIGRATION COMPATIBILITY
+// ============================================================================
+// These methods are temporary stubs to make the app compile during migration
+// from repository_old to repository service. They should be properly implemented
+// or removed once the migration is complete.
+// ============================================================================
+
+// HIGH PRIORITY METHODS (Used in multiple components)
+
+// GetState returns the current state of a repository
+func (s *Service) GetState(ctx context.Context, repositoryId int) (*statemachine.RepositoryState, error) {
+	// TODO: Implement proper state retrieval from queue manager
+	repoState := s.queueManager.GetRepositoryState(repositoryId)
+	return &repoState, nil
+}
+
+// GetLastArchiveByBackupId gets last archive for backup profile
+func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
+	// TODO: Implement proper archive retrieval for backup profile
+	return nil, nil
+}
+
+// GetConnectedRemoteHosts gets connected remote hosts
+func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error) {
+	// TODO: Implement proper remote hosts retrieval
+	return []string{}, nil
+}
+
+// MEDIUM PRIORITY METHODS
+
+// GetBackupButtonStatus gets backup button status for given backup IDs
+func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
+	// TODO: Implement proper backup button status retrieval
+	// For now, return a default status
+	return state.BackupButtonStatusRunBackup, nil
+}
+
+// GetCombinedBackupProgress gets backup progress for given backup IDs
+func (s *Service) GetCombinedBackupProgress(ctx context.Context, backupIds []types.BackupId) (*borgtypes.BackupProgress, error) {
+	// Get all active operations from queue manager
+	activeOperations := s.queueManager.GetActiveOperations()
+
+	var totalFiles, processedFiles int
+	found := false
+
+	// Iterate through provided backup IDs
+	for _, targetBackupId := range backupIds {
+		// Check active operations for matching backup operations
+		for _, operation := range activeOperations {
+			// Check if this operation is a backup operation
+			if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
+				backupData := backupVariant()
+				// Check if this backup operation matches our target backup ID
+				if backupData.BackupID.String() == targetBackupId.String() {
+					// Check if the operation has progress data
+					if backupData.Progress != nil {
+						found = true
+						totalFiles += backupData.Progress.TotalFiles
+						processedFiles += backupData.Progress.ProcessedFiles
+					}
+				}
+			}
+		}
+	}
+
+	// Return combined progress if any was found, otherwise nil
+	if !found {
+		return nil, nil
+	}
+
+	return &borgtypes.BackupProgress{
+		TotalFiles:     totalFiles,
+		ProcessedFiles: processedFiles,
+	}, nil
+}
+
+//// GetLocked gets locked repositories
+//func (s *Service) GetLocked(ctx context.Context) ([]*ent.Repository, error) {
+//	// TODO: Implement proper locked repositories retrieval
+//	return []*ent.Repository{}, nil
+//}
+//
+//// GetWithActiveMounts gets repositories with active mounts
+//func (s *Service) GetWithActiveMounts(ctx context.Context) ([]*ent.Repository, error) {
+//	// TODO: Implement proper repositories with active mounts retrieval
+//	return []*ent.Repository{}, nil
+//}
+
+// GetBackupState gets backup state for given backup ID
+func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*state.BackupState, error) {
+	// TODO: Implement proper backup state retrieval
+	return &state.BackupState{
+		Status:   state.BackupStatusIdle,
+		Progress: nil,
+		Error:    "",
+	}, nil
+}
+
+// GetArchiveMountStates gets archive mount states for a repository
+func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (map[int]*platform.MountState, error) {
+	// TODO: Implement proper archive mount states retrieval
+	return make(map[int]*platform.MountState), nil
+}
+
+// LOW PRIORITY METHODS
+
+// SaveIntegrityCheckSettings saves integrity check settings
+func (s *Service) SaveIntegrityCheckSettings(ctx context.Context, repoId int, enabled bool) (*ent.Repository, error) {
+	// TODO: Implement proper integrity check settings save
+	// For now, just return the repository as-is
+	repo, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository %d: %w", repoId, err)
+	}
+	return repo, nil
+}
+
+func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, backupId types.BackupId) (string, error) {
+	return "", nil
+}
+
+// RENAMED METHOD ALIASES (for backward compatibility)
+
+// StartBackupJobs is an alias for QueueBackups
+func (s *Service) StartBackupJobs(ctx context.Context, backupIds []types.BackupId) ([]string, error) {
+	return s.QueueBackups(ctx, backupIds)
+}
+
+// AbortBackupJobs is an alias for AbortBackups
+func (s *Service) AbortBackupJobs(ctx context.Context, backupIds []types.BackupId) error {
+	return s.AbortBackups(ctx, backupIds)
+}
+
+// DeleteArchive is an alias for QueueArchiveDelete
+func (s *Service) DeleteArchive(ctx context.Context, archiveId int) (string, error) {
+	return s.QueueArchiveDelete(ctx, archiveId)
+}
+
+// RefreshArchives is an alias for QueueArchiveRefresh
+func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, error) {
+	return s.QueueArchiveRefresh(ctx, repoId)
+}
+
+// RenameArchive is an alias for QueueArchiveRename
+func (s *Service) RenameArchive(ctx context.Context, archiveId int, prefix, name string) (string, error) {
+	return s.QueueArchiveRename(ctx, archiveId, prefix, name)
+}
+
+// StartPruneJob is an alias for QueuePrune
+func (s *Service) StartPruneJob(ctx context.Context, backupId types.BackupId) (string, error) {
+	return s.QueuePrune(ctx, backupId)
 }
