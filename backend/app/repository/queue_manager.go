@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/loomi-labs/arco/backend/app/statemachine"
+	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -815,10 +816,13 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	progressCh := make(chan borgtypes.BackupProgress, 100)
 
 	// Start progress monitoring in background
-	go e.monitorBackupProgress(ctx, progressCh)
+	go e.monitorBackupProgress(ctx, progressCh, backupData, e.eventEmitter)
 
 	// Execute borg create command
 	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, progressCh)
+	if !status.IsCompletedWithSuccess() {
+		return nil, fmt.Errorf("backup profile %d has failed: %w", backupData.BackupID.BackupProfileId, err)
+	}
 
 	// Close progress channel
 	close(progressCh)
@@ -839,7 +843,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 }
 
 // monitorBackupProgress monitors backup progress and updates operation status
-func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progressCh <-chan borgtypes.BackupProgress) {
+func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progressCh <-chan borgtypes.BackupProgress, data statemachine.Backup, eventEmitter types.EventEmitter) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -848,9 +852,9 @@ func (e *borgOperationExecutor) monitorBackupProgress(ctx context.Context, progr
 			if !ok {
 				return // Channel closed
 			}
-			// TODO: Update operation status with progress information
-			// For now, just ignore progress updates
-			_ = progress
+			data.Progress = &progress
+			eventEmitter.EmitEvent(ctx, types.EventBackupStateChangedString(data.BackupID))
+			e.log.Debugf("Backup progress changed for %d", data.BackupID)
 		}
 	}
 }
@@ -998,7 +1002,7 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	}
 
 	// Execute borg list command to refresh archive information
-	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password)
+	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password, "")
 
 	// Update database with refreshed archive information
 	err = e.syncArchivesToDatabase(ctx, refreshData.RepositoryID, listResponse.Archives)
@@ -1228,15 +1232,24 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 
 // refreshNewArchive refreshes a single newly created archive in the database
 func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string) error {
-	// Use repository::archive syntax to list only the specific archive
-	listResponse, status := e.borgClient.List(ctx, archivePath, repo.Password)
+	// Parse archivePath to extract repository and archive name
+	// archivePath format: "repository::archiveName"
+	parts := strings.SplitN(archivePath, "::", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid archive path format: %s", archivePath)
+	}
+	repoPath := parts[0]
+	archiveName := parts[1]
+
+	// Use repository path with archive glob pattern to list only the specific archive
+	listResponse, status := e.borgClient.List(ctx, repoPath, repo.Password, archiveName)
 
 	if status.HasError() {
-		return fmt.Errorf("failed to list archive %s: %w", archivePath, status.Error)
+		return fmt.Errorf("failed to list archive %s: %w", archiveName, status.Error)
 	}
 
 	if len(listResponse.Archives) == 0 {
-		return fmt.Errorf("archive %s not found in borg repository", archivePath)
+		return fmt.Errorf("archive %s not found in borg repository", archiveName)
 	}
 
 	// Sync only the single archive (no deletions)

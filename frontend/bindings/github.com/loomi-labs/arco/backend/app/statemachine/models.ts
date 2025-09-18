@@ -17,7 +17,6 @@ import * as time$0 from "../../../../../../time/models.js";
 
 export class BackingUp {
     "Data": Backup;
-    "progress"?: types$0.BackupProgress | null;
 
     /** Creates a new BackingUp instance. */
     constructor($$source: Partial<BackingUp> = {}) {
@@ -33,13 +32,9 @@ export class BackingUp {
      */
     static createFrom($$source: any = {}): BackingUp {
         const $$createField0_0 = $$createType0;
-        const $$createField1_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("Data" in $$parsedSource) {
             $$parsedSource["Data"] = $$createField0_0($$parsedSource["Data"]);
-        }
-        if ("progress" in $$parsedSource) {
-            $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
         }
         return new BackingUp($$parsedSource as Partial<BackingUp>);
     }
@@ -47,6 +42,7 @@ export class BackingUp {
 
 export class Backup {
     "backupId": types$1.BackupId;
+    "progress"?: types$0.BackupProgress | null;
 
     /** Creates a new Backup instance. */
     constructor($$source: Partial<Backup> = {}) {
@@ -61,10 +57,14 @@ export class Backup {
      * Creates a new Backup instance from a string or object.
      */
     static createFrom($$source: any = {}): Backup {
-        const $$createField0_0 = $$createType3;
+        const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupId" in $$parsedSource) {
             $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
+        if ("progress" in $$parsedSource) {
+            $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
         }
         return new Backup($$parsedSource as Partial<Backup>);
     }
@@ -412,9 +412,9 @@ export class RepositoryStateUnion {
 
 // Private type creation functions
 const $$createType0 = Backup.createFrom;
-const $$createType1 = types$0.BackupProgress.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = types$1.BackupId.createFrom;
+const $$createType1 = types$1.BackupId.createFrom;
+const $$createType2 = types$0.BackupProgress.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = MountInfo.createFrom;
 const $$createType5 = $Create.Array($$createType4);
 const $$createType6 = Idle.createFrom;

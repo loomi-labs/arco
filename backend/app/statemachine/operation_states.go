@@ -3,6 +3,7 @@ package statemachine
 import (
 	"github.com/chris-tomich/adtenum"
 	"github.com/loomi-labs/arco/backend/app/types"
+	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 )
 
 // ============================================================================
@@ -10,7 +11,8 @@ import (
 // ============================================================================
 
 type Backup struct {
-	BackupID types.BackupId `json:"backupId"`
+	BackupID types.BackupId            `json:"backupId"`
+	Progress *borgtypes.BackupProgress `json:"progress,omitempty"`
 }
 
 type Prune struct {

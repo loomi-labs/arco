@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chris-tomich/adtenum"
-	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 )
 
 // ============================================================================
@@ -28,8 +27,7 @@ type Queued struct {
 
 type BackingUp struct {
 	Data      Backup
-	Progress  *borgtypes.BackupProgress `json:"progress,omitempty"`
-	cancelCtx cancelCtx                 // private context and cancel function
+	cancelCtx cancelCtx // private context and cancel function
 }
 
 type Pruning struct {
@@ -223,7 +221,6 @@ func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState
 func CreateBackingUpState(ctx context.Context, data Backup) RepositoryState {
 	return NewRepositoryStateBackingUp(BackingUp{
 		Data:      data,
-		Progress:  nil,
 		cancelCtx: CreateCancelContext(ctx),
 	})
 }

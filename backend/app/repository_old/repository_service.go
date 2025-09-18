@@ -964,7 +964,7 @@ func (s *Service) refreshArchivesWithoutLock(ctx context.Context, repoId int) ([
 	s.state.SetRepoStatus(ctx, repoId, state.RepoStatusPerformingOperation)
 	defer s.state.SetRepoStatus(ctx, repoId, state.RepoStatusIdle)
 
-	listResponse, status := s.borg.List(ctx, repo.URL, repo.Password)
+	listResponse, status := s.borg.List(ctx, repo.URL, repo.Password, "")
 	if err := s.handleBorgStatus(ctx, repo, status, "get archives"); err != nil {
 		return nil, err
 	}
