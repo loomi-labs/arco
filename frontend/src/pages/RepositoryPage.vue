@@ -197,14 +197,12 @@ onUnmounted(() => {
         <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
           <li>
             <button @click='confirmRemoveModal?.showModal()'
-                    :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Remove Repository
             </button>
           </li>
           <li>
             <button @click='confirmDeleteModal?.showModal()'
-                    :disabled='repo.state.type  !== RepositoryStateType.RepositoryStateTypeIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Delete Permanently
             </button>
