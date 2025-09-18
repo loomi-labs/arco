@@ -85,6 +85,9 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 	qm.statesMu.Lock()
 	defer qm.statesMu.Unlock()
 	qm.repositoryStates[repoID] = state
+
+	// Emit event for state change
+	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
 }
 
 // GetQueue returns the queue for a specific repository, creating it if it doesn't exist
@@ -827,6 +830,7 @@ type borgOperationExecutor struct {
 	log             *zap.SugaredLogger
 	db              *ent.Client
 	borgClient      borg.Borg
+	eventEmitter    types.EventEmitter
 	repoID          int
 	operationID     string
 	progressUpdater progressUpdater
@@ -838,6 +842,7 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 		borgClient:      qm.borg,
 		db:              qm.db,
 		log:             qm.log,
+		eventEmitter:    qm.eventEmitter,
 		repoID:          repoID,
 		operationID:     operationID,
 		progressUpdater: qm,
@@ -1018,8 +1023,20 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 	// Execute borg prune command
 	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, false, progressCh)
 
-	// Return status directly (preserves rich error information)
-	_ = pruneData // Use pruneData to avoid unused variable warning
+	// Refresh archives after successful prune operation (archives may have been deleted)
+	if status.IsCompletedWithSuccess() {
+		// Get updated archive list from repository
+		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+		if listStatus.IsCompletedWithSuccess() {
+			// Update database with refreshed archive information
+			err := e.syncArchivesToDatabase(ctx, repo.ID, listResponse.Archives)
+			if err != nil {
+				e.log.Warnw("Failed to refresh archives after prune", "repoID", e.repoID, "error", err)
+			}
+		} else {
+			e.log.Warnw("Failed to list archives after prune", "repoID", e.repoID, "error", listStatus.Error)
+		}
+	}
 	return status, nil
 }
 
@@ -1064,7 +1081,21 @@ func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, delete
 	// Execute borg delete archive command
 	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, repo.Password)
 
-	// Return status directly (preserves rich error information)
+	// If deletion was successful, also delete from database and emit event
+	if status.IsCompletedWithSuccess() {
+		// Delete archive from database
+		_, dbErr := e.db.Archive.Delete().Where(archive.ID(deleteData.ArchiveID)).Exec(ctx)
+		if dbErr != nil {
+			e.log.Errorw("Failed to delete archive from database",
+				"archiveID", deleteData.ArchiveID,
+				"archiveName", archiveName,
+				"error", dbErr.Error())
+		} else {
+			// Emit event for archive change
+			e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repo.ID))
+		}
+	}
+
 	return status, nil
 }
 
@@ -1227,6 +1258,11 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 		e.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
 	}
 
+	// Emit event if any archives were changed (deleted or created)
+	if deletedCount > 0 || newArchiveCount > 0 {
+		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repositoryID))
+	}
+
 	return nil
 }
 
@@ -1303,6 +1339,9 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			"borgId", archiveData.ID,
 			"repositoryID", repositoryID)
 	}
+
+	// Emit event for archive change (always emit since this method always changes something)
+	e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repositoryID))
 
 	return nil
 }

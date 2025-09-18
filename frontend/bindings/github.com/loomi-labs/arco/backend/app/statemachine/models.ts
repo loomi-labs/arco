@@ -151,6 +151,7 @@ export enum ErrorType {
      */
     $zero = "",
 
+    ErrorTypeGeneral = "general",
     ErrorTypeSSHKey = "sshKey",
     ErrorTypePassphrase = "passphrase",
     ErrorTypeLocked = "locked",
