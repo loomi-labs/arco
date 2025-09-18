@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chris-tomich/adtenum"
+	"github.com/loomi-labs/arco/backend/app/types"
 )
 
 // ============================================================================
@@ -31,7 +32,7 @@ type BackingUp struct {
 }
 
 type Pruning struct {
-	StartedAt time.Time `json:"startedAt"`
+	BackupID  types.BackupId `json:"backupId"`
 	cancelCtx cancelCtx
 }
 
@@ -246,10 +247,10 @@ func CreateBackingUpState(ctx context.Context, data Backup) RepositoryState {
 	})
 }
 
-// CreatePruningState creates a new pruning state with context
-func CreatePruningState(ctx context.Context) RepositoryState {
+// CreatePruningState creates a new pruning state with context and backup ID
+func CreatePruningState(ctx context.Context, backupID types.BackupId) RepositoryState {
 	return NewRepositoryStatePruning(Pruning{
-		StartedAt: time.Now(),
+		BackupID:  backupID,
 		cancelCtx: createCancelContext(ctx),
 	})
 }

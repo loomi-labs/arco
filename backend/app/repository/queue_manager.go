@@ -95,8 +95,8 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 		data := s()
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventBackupStateChangedString(data.Data.BackupID))
 	case statemachine.PruningVariant:
-		// TODO: Emit EventPruneStateChanged when Pruning state includes BackupID information
-		// Currently the Pruning state doesn't contain backup ID, but it should for proper event emission
+		data := s()
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventPruneStateChangedString(data.BackupID))
 	}
 }
 
@@ -652,7 +652,8 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 		return statemachine.CreateBackingUpState(ctx, backupData), nil
 
 	case statemachine.PruneVariant:
-		return statemachine.CreatePruningState(ctx), nil
+		pruneData := v()
+		return statemachine.CreatePruningState(ctx, pruneData.BackupID), nil
 
 	case statemachine.DeleteVariant:
 		return statemachine.CreateDeletingState(ctx, 0), nil // Repository delete, no specific archive
@@ -905,6 +906,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 
 	// Create progress channel
 	progressCh := make(chan borgtypes.BackupProgress, 100)
+	defer close(progressCh)
 
 	// Start progress monitoring in background
 	go e.monitorBackupProgress(ctx, progressCh)
@@ -914,9 +916,6 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}
-
-	// Close progress channel
-	close(progressCh)
 
 	// Refresh the newly created archive in database
 	err = e.refreshNewArchive(ctx, repo, archivePath)
@@ -1023,15 +1022,32 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 		"backupProfileID", pruneData.BackupID.BackupProfileId,
 		"pruneOptions", pruneOptions)
 
-	// Create progress channel for prune results
-	progressCh := make(chan borgtypes.PruneResult, 100)
-	defer close(progressCh)
-
-	// Start progress monitoring in background
-	go e.monitorPruneProgress(ctx, progressCh)
+	// Create result channel for prune results
+	resultCh := make(chan borgtypes.PruneResult, 1)
 
 	// Execute borg prune command
-	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, false, progressCh)
+	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, false, resultCh)
+	close(resultCh)
+
+	// Wait for prune result with timeout (like the old implementation)
+	select {
+	case pruneResult := <-resultCh:
+		// Prune job completed successfully - log the result
+		e.log.Infow("Prune operation completed",
+			"repoID", e.repoID,
+			"operationID", e.operationID,
+			"isDryRun", pruneResult.IsDryRun,
+			"prunedCount", len(pruneResult.PruneArchives),
+			"keptCount", len(pruneResult.KeepArchives))
+
+		// TODO: If this was a dry-run, we could store the PruneArchives list
+		// for display purposes to show what would be pruned in a future real run
+
+	case <-time.After(30 * time.Second):
+		e.log.Warnw("Timeout waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+	case <-ctx.Done():
+		e.log.Warnw("Context canceled waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+	}
 
 	// Refresh archives after successful prune operation (archives may have been deleted)
 	if status.IsCompletedWithSuccess() {
@@ -1159,23 +1175,6 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 
 	// Return status directly (preserves rich error information)
 	return status, nil
-}
-
-// monitorPruneProgress monitors prune progress and updates operation status
-func (e *borgOperationExecutor) monitorPruneProgress(ctx context.Context, progressCh <-chan borgtypes.PruneResult) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case progress, ok := <-progressCh:
-			if !ok {
-				return // Channel closed
-			}
-			// TODO: Update operation status with prune progress information
-			// For now, just ignore progress updates
-			_ = progress
-		}
-	}
 }
 
 // syncArchivesToDatabase synchronizes borg archives with the database

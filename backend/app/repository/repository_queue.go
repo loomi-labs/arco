@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 )
@@ -38,6 +39,18 @@ func NewRepositoryQueue(repoID int) *RepositoryQueue {
 		activeBackups: make(map[types.BackupId]string),
 		activeDeletes: make(map[int]string),
 		hasRepoDelete: false,
+	}
+}
+
+func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation, repoID int, backupProfileID *int, validUntil time.Time) *QueuedOperation {
+	return &QueuedOperation{
+		ID:              uuid.New().String(),
+		RepoID:          repoID,
+		BackupProfileID: backupProfileID,
+		Operation:       operation,
+		Status:          NewOperationStatusQueued(Queued{Position: 0}), // Placeholder - will be corrected by updatePositions
+		CreatedAt:       time.Now(),
+		ValidUntil:      validUntil,
 	}
 }
 

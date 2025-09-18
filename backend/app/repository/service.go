@@ -503,9 +503,6 @@ func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId 
 
 // QueueBackup queues a backup operation
 func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (string, error) {
-	// Generate unique operation ID
-	operationID := uuid.New().String()
-
 	// Create backup operation
 	backupOp := statemachine.NewOperationBackup(statemachine.Backup{
 		BackupID: backupId,
@@ -515,30 +512,22 @@ func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (str
 		},
 	})
 
-	// TODO: I think this is wrong. What if there is already something in the queue?
-	// Create initial status (queued with position 0)
-	initialStatus := NewOperationStatusQueued(Queued{
-		Position: 0,
-	})
+	// Create queued operation
+	queue := s.queueManager.GetQueue(backupId.RepositoryId)
+	queuedOp := queue.CreateQueuedOperation(
+		backupOp,
+		backupId.RepositoryId,
+		&backupId.BackupProfileId,
+		time.Now().Add(24*time.Hour), // 24-hour TTL
+	)
 
-	// Create the queued operation
-	queuedOp := &QueuedOperation{
-		ID:              operationID,
-		RepoID:          backupId.RepositoryId,
-		BackupProfileID: &backupId.BackupProfileId,
-		Operation:       backupOp,
-		Status:          initialStatus,
-		CreatedAt:       time.Now(),
-		ValidUntil:      time.Now().Add(24 * time.Hour), // 24 hour TTL
-	}
-
-	// Queue the operation
-	resultID, err := s.queueManager.AddOperation(backupId.RepositoryId, queuedOp)
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(backupId.RepositoryId, queuedOp)
 	if err != nil {
 		return "", fmt.Errorf("failed to queue backup operation: %w", err)
 	}
 
-	return resultID, nil
+	return operationID, nil
 }
 
 // QueueBackups queues multiple backup operations (convenience method)
@@ -560,8 +549,27 @@ func (s *Service) QueueBackups(ctx context.Context, backupIds []types.BackupId) 
 
 // QueuePrune queues a prune operation
 func (s *Service) QueuePrune(ctx context.Context, backupId types.BackupId) (string, error) {
-	// TODO: Implement prune operation queueing
-	return "", nil
+	// Create prune operation
+	pruneOp := statemachine.NewOperationPrune(statemachine.Prune{
+		BackupID: backupId,
+	})
+
+	// Create queued operation using factory method
+	queue := s.queueManager.GetQueue(backupId.RepositoryId)
+	queuedOp := queue.CreateQueuedOperation(
+		pruneOp,
+		backupId.RepositoryId,
+		&backupId.BackupProfileId,
+		time.Now().Add(24*time.Hour), // 24-hour TTL
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(backupId.RepositoryId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue prune operation: %w", err)
+	}
+
+	return operationID, nil
 }
 
 // QueueArchiveRefresh queues an archive refresh operation

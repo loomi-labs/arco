@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	gocmd "github.com/go-cmd/cmd"
-	"github.com/loomi-labs/arco/backend/borg/types"
 	"strings"
 	"time"
+
+	gocmd "github.com/go-cmd/cmd"
+	"github.com/loomi-labs/arco/backend/borg/types"
 )
 
 func (b *borg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status {
@@ -76,8 +77,6 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.
 func decodePruneOutput(cmd *gocmd.Cmd, isDryRun bool, ch chan types.PruneResult) {
-	defer close(ch)
-
 	var prunedArchives []*types.PruneArchive
 	var keptArchives []*types.KeepArchive
 

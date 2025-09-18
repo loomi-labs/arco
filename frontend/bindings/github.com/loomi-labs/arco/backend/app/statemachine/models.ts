@@ -250,12 +250,12 @@ export class Mounted {
 export type Operation = any;
 
 export class Pruning {
-    "startedAt": time$0.Time;
+    "backupId": types$0.BackupId;
 
     /** Creates a new Pruning instance. */
     constructor($$source: Partial<Pruning> = {}) {
-        if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
+        if (!("backupId" in $$source)) {
+            this["backupId"] = (new types$0.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -265,7 +265,11 @@ export class Pruning {
      * Creates a new Pruning instance from a string or object.
      */
     static createFrom($$source: any = {}): Pruning {
+        const $$createField0_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupId" in $$parsedSource) {
+            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
         return new Pruning($$parsedSource as Partial<Pruning>);
     }
 }
