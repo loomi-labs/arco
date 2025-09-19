@@ -4,6 +4,7 @@ import (
 	"github.com/chris-tomich/adtenum"
 	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/negrel/assert"
 )
 
 // ============================================================================
@@ -86,12 +87,13 @@ const (
 
 // GetOperationWeight determines operation weight for concurrency control
 func GetOperationWeight(op Operation) OperationWeight {
-	switch op.(type) {
-	case BackupVariant, PruneVariant, DeleteVariant:
+	switch GetOperationType(op) {
+	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete:
 		return WeightHeavy
-	case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant, MountVariant, MountArchiveVariant, UnmountVariant, UnmountArchiveVariant:
+	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive:
 		return WeightLight
 	default:
+		assert.Fail("Unhandled OperationType in GetOperationWeight")
 		return WeightLight
 	}
 }

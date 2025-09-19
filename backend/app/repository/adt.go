@@ -5,6 +5,7 @@ package repository
 
 import (
 	"github.com/chris-tomich/adtenum"
+	"github.com/negrel/assert"
 )
 
 // LocationType is the discriminator enum for Location
@@ -30,6 +31,21 @@ var NewLocationRemote = adtenum.CreateOneVariantValueConstructor[RemoteVariant](
 func (v ArcoCloudVariant) EnumType() Location { return v }
 func (v LocalVariant) EnumType() Location     { return v }
 func (v RemoteVariant) EnumType() Location    { return v }
+
+// GetLocationType returns the discriminator type for exhaustive switch checking
+func GetLocationType(enum Location) LocationType {
+	switch enum.(type) {
+	case LocalVariant:
+		return LocationTypeLocal
+	case RemoteVariant:
+		return LocationTypeRemote
+	case ArcoCloudVariant:
+		return LocationTypeArcoCloud
+	default:
+		assert.Fail("Unhandled Location variant in GetLocationType")
+		return LocationTypeArcoCloud
+	}
+}
 
 // LocationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type LocationUnion struct {
@@ -101,6 +117,25 @@ func (v ExpiredVariant) EnumType() OperationStatus   { return v }
 func (v FailedVariant) EnumType() OperationStatus    { return v }
 func (v QueuedVariant) EnumType() OperationStatus    { return v }
 func (v RunningVariant) EnumType() OperationStatus   { return v }
+
+// GetOperationStatusType returns the discriminator type for exhaustive switch checking
+func GetOperationStatusType(enum OperationStatus) OperationStatusType {
+	switch enum.(type) {
+	case QueuedVariant:
+		return OperationStatusTypeQueued
+	case RunningVariant:
+		return OperationStatusTypeRunning
+	case CompletedVariant:
+		return OperationStatusTypeCompleted
+	case FailedVariant:
+		return OperationStatusTypeFailed
+	case ExpiredVariant:
+		return OperationStatusTypeExpired
+	default:
+		assert.Fail("Unhandled OperationStatus variant in GetOperationStatusType")
+		return OperationStatusTypeCompleted
+	}
+}
 
 // OperationStatusUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationStatusUnion struct {

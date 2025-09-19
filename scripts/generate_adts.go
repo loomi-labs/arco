@@ -56,6 +56,7 @@ package %s
 
 import (
 	"` + AdtEnumImport + `"
+	"github.com/negrel/assert"
 )
 
 `
@@ -82,6 +83,18 @@ const (
 	// EnumType methods section template
 	EnumMethodTemplate = `// EnumType methods for %s variants
 %s
+`
+
+	// Type function template for exhaustive checking
+	TypeFunctionTemplate = `// Get%sType returns the discriminator type for exhaustive switch checking
+func Get%sType(enum %s) %s {
+	switch enum.(type) {
+%s	default:
+		assert.Fail("Unhandled %s variant in Get%sType")
+		return %s
+	}
+}
+
 `
 
 	// Union struct template
@@ -250,6 +263,9 @@ func generateAdtSubpackage(pkg PackageInfo) {
 		}
 
 		output += fmt.Sprintf(EnumMethodTemplate, enum.Name, enumMethods)
+
+		// Generate Type function for exhaustive checking
+		output += generateTypeFunction(enum)
 
 		// Generate Union type and conversion function
 		output += generateUnionType(enum)
@@ -472,4 +488,28 @@ func generateFromConversion(enum EnumInfo) string {
 		switchCases,                        // Switch cases
 		unionTypeName, defaultEnumConstant, // Default case return struct
 		defaultVariant, defaultStateStruct) // Default case field assignment
+}
+
+// generateTypeFunction generates the Get{Name}Type function for exhaustive switch checking
+func generateTypeFunction(enum EnumInfo) string {
+	enumTypeName := enum.Name + TypeSuffix
+	defaultVariant := getDefaultVariant(enum.Variants)
+	defaultEnumConstant := enumTypeName + defaultVariant
+
+	// Build switch cases string
+	var switchCases string
+	for _, state := range enum.StateStructs {
+		if state.Variant != "" {
+			variantTypeName := state.Variant + VariantSuffix
+			enumConstant := enumTypeName + state.Variant
+			switchCases += fmt.Sprintf("\tcase %s:\n", variantTypeName)
+			switchCases += fmt.Sprintf("\t\treturn %s\n", enumConstant)
+		}
+	}
+
+	return fmt.Sprintf(TypeFunctionTemplate,
+		enum.Name, enum.Name, enum.Name, enumTypeName, // Function name and signature
+		switchCases,          // Switch cases
+		enum.Name, enum.Name, // Assert message parameters
+		defaultEnumConstant) // Default case
 }

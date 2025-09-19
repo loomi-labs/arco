@@ -5,6 +5,7 @@ package statemachine
 
 import (
 	"github.com/chris-tomich/adtenum"
+	"github.com/negrel/assert"
 )
 
 // OperationType is the discriminator enum for Operation
@@ -59,6 +60,35 @@ func (v PruneVariant) EnumType() Operation          { return v }
 func (v UnmountVariant) EnumType() Operation        { return v }
 func (v UnmountArchiveVariant) EnumType() Operation { return v }
 
+// GetOperationType returns the discriminator type for exhaustive switch checking
+func GetOperationType(enum Operation) OperationType {
+	switch enum.(type) {
+	case BackupVariant:
+		return OperationTypeBackup
+	case PruneVariant:
+		return OperationTypePrune
+	case DeleteVariant:
+		return OperationTypeDelete
+	case ArchiveRefreshVariant:
+		return OperationTypeArchiveRefresh
+	case ArchiveDeleteVariant:
+		return OperationTypeArchiveDelete
+	case ArchiveRenameVariant:
+		return OperationTypeArchiveRename
+	case MountVariant:
+		return OperationTypeMount
+	case MountArchiveVariant:
+		return OperationTypeMountArchive
+	case UnmountVariant:
+		return OperationTypeUnmount
+	case UnmountArchiveVariant:
+		return OperationTypeUnmountArchive
+	default:
+		assert.Fail("Unhandled Operation variant in GetOperationType")
+		return OperationTypeArchiveDelete
+	}
+}
+
 // OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationUnion struct {
 	Type OperationType `json:"type"` // Discriminator field
@@ -67,13 +97,13 @@ type OperationUnion struct {
 	Backup         *Backup         `json:"backup,omitempty"`
 	Prune          *Prune          `json:"prune,omitempty"`
 	Delete         *Delete         `json:"delete,omitempty"`
+	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
+	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
+	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
 	Mount          *Mount          `json:"mount,omitempty"`
 	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
 	Unmount        *Unmount        `json:"unmount,omitempty"`
 	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
-	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
-	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
-	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
 }
 
 // ToOperationUnion converts an ADT Operation to an OperationUnion
@@ -96,6 +126,24 @@ func ToOperationUnion(r Operation) OperationUnion {
 		return OperationUnion{
 			Type:   OperationTypeDelete,
 			Delete: &data,
+		}
+	case ArchiveRefreshVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeArchiveRefresh,
+			ArchiveRefresh: &data,
+		}
+	case ArchiveDeleteVariant:
+		data := i()
+		return OperationUnion{
+			Type:          OperationTypeArchiveDelete,
+			ArchiveDelete: &data,
+		}
+	case ArchiveRenameVariant:
+		data := i()
+		return OperationUnion{
+			Type:          OperationTypeArchiveRename,
+			ArchiveRename: &data,
 		}
 	case MountVariant:
 		data := i()
@@ -120,24 +168,6 @@ func ToOperationUnion(r Operation) OperationUnion {
 		return OperationUnion{
 			Type:           OperationTypeUnmountArchive,
 			UnmountArchive: &data,
-		}
-	case ArchiveRefreshVariant:
-		data := i()
-		return OperationUnion{
-			Type:           OperationTypeArchiveRefresh,
-			ArchiveRefresh: &data,
-		}
-	case ArchiveDeleteVariant:
-		data := i()
-		return OperationUnion{
-			Type:          OperationTypeArchiveDelete,
-			ArchiveDelete: &data,
-		}
-	case ArchiveRenameVariant:
-		data := i()
-		return OperationUnion{
-			Type:          OperationTypeArchiveRename,
-			ArchiveRename: &data,
 		}
 	default:
 		return OperationUnion{
@@ -194,6 +224,33 @@ func (v MountingVariant) EnumType() RepositoryState   { return v }
 func (v PruningVariant) EnumType() RepositoryState    { return v }
 func (v QueuedVariant) EnumType() RepositoryState     { return v }
 func (v RefreshingVariant) EnumType() RepositoryState { return v }
+
+// GetRepositoryStateType returns the discriminator type for exhaustive switch checking
+func GetRepositoryStateType(enum RepositoryState) RepositoryStateType {
+	switch enum.(type) {
+	case IdleVariant:
+		return RepositoryStateTypeIdle
+	case QueuedVariant:
+		return RepositoryStateTypeQueued
+	case BackingUpVariant:
+		return RepositoryStateTypeBackingUp
+	case PruningVariant:
+		return RepositoryStateTypePruning
+	case DeletingVariant:
+		return RepositoryStateTypeDeleting
+	case RefreshingVariant:
+		return RepositoryStateTypeRefreshing
+	case MountingVariant:
+		return RepositoryStateTypeMounting
+	case MountedVariant:
+		return RepositoryStateTypeMounted
+	case ErrorVariant:
+		return RepositoryStateTypeError
+	default:
+		assert.Fail("Unhandled RepositoryState variant in GetRepositoryStateType")
+		return RepositoryStateTypeBackingUp
+	}
+}
 
 // RepositoryStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type RepositoryStateUnion struct {
