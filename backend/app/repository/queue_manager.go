@@ -149,9 +149,7 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	}
 
 	// Attempt to start operation if possible
-	qm.processQueue(repoID)
-
-	return operationID, nil
+	return operationID, qm.processQueue(repoID)
 }
 
 // RemoveOperation removes an operation from tracking
@@ -407,13 +405,19 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 	qm.setRepositoryState(repoID, targetState)
 
 	// Attempt to start next queued operation for this repo
-	qm.processQueue(repoID)
+	err = qm.processQueue(repoID)
+	if err != nil {
+		return err
+	}
 
 	// If we completed a heavy operation, try to start waiting heavy operations on other repos
 	if weight == statemachine.WeightHeavy {
 		for otherRepoID := range qm.queues {
 			if otherRepoID != repoID {
-				qm.processQueue(otherRepoID)
+				err = qm.processQueue(otherRepoID)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -611,43 +615,24 @@ func (qm *QueueManager) HasQueuedOperations(repoID int) bool {
 	return queue.GetQueueLength() > 0
 }
 
-// SetMaxHeavyOps updates the maximum number of concurrent heavy operations
-func (qm *QueueManager) SetMaxHeavyOps(maxOps int) {
-	qm.mu.Lock()
-	defer qm.mu.Unlock()
-
-	oldLimit := qm.maxHeavyOps
-	qm.maxHeavyOps = maxOps
-
-	// If new limit is higher, try to start waiting heavy operations
-	if maxOps > oldLimit {
-		for repoID := range qm.queues {
-			// Release lock temporarily to avoid deadlock
-			qm.mu.Unlock()
-			qm.processQueue(repoID)
-			qm.mu.Lock()
-		}
-	}
-}
-
 // processQueue attempts to start the next operation in a repository queue
-func (qm *QueueManager) processQueue(repoID int) {
+func (qm *QueueManager) processQueue(repoID int) error {
 	queue := qm.GetQueue(repoID)
 
 	// Check if repository already has an active operation
 	if queue.HasActiveOperation() {
-		return
+		return fmt.Errorf("repository has already an active operation")
 	}
 
 	// Get next operation from queue
 	nextOp := queue.GetNext()
 	if nextOp == nil {
-		return // No operations in queue
+		return fmt.Errorf("queue has no next operation")
 	}
 
 	// Check concurrency limits
 	if !qm.CanStartOperation(repoID, nextOp) {
-		return // Cannot start due to concurrency limits
+		return fmt.Errorf("repository has already an active operation")
 	}
 
 	// Start the operation
@@ -661,8 +646,8 @@ func (qm *QueueManager) processQueue(repoID int) {
 			"error", err)
 
 		// Mark the operation as failed and remove it from queue
-		err = queue.RemoveOperation(nextOp.ID)
-		if err != nil {
+		removeErr := qm.RemoveOperation(repoID, nextOp.ID)
+		if removeErr != nil {
 			qm.log.Errorw("Failed to remove operation",
 				"repoID", repoID, "operationID",
 				nextOp.ID, "operationType",
@@ -670,6 +655,7 @@ func (qm *QueueManager) processQueue(repoID int) {
 				"error", err)
 		}
 	}
+	return err
 }
 
 // expireOldOperations removes expired operations from all queues
