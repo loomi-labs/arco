@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/negrel/assert"
 )
 
 // ============================================================================
@@ -283,34 +284,46 @@ func (q *RepositoryQueue) CanAddOperation(op statemachine.Operation) (bool, stri
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	switch v := op.(type) {
-	case statemachine.BackupVariant:
-		backupData := v()
+	switch statemachine.GetOperationType(op) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := op.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.ArchiveDeleteVariant:
-		deleteData := v()
+	case statemachine.OperationTypeArchiveDelete:
+		deleteVariant := op.(statemachine.ArchiveDeleteVariant)
+		deleteData := deleteVariant()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.DeleteVariant:
+	case statemachine.OperationTypeDelete:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
+					if statemachine.GetOperationType(opData.Operation) == statemachine.OperationTypeDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
+				if statemachine.GetOperationType(q.active.Operation) == statemachine.OperationTypeDelete {
 					return false, q.active.ID
 				}
 			}
 		}
+	case statemachine.OperationTypePrune,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		// No deduplication needed for these operations
+	default:
+		assert.Fail("Unhandled OperationType in CanAddOperation")
 	}
 
 	return true, ""
@@ -466,29 +479,53 @@ func (q *RepositoryQueue) updatePositions() {
 
 // addToTrackingMaps adds operation to appropriate deduplication tracking
 func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
-	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
-		backupData := v()
+	switch statemachine.GetOperationType(op.Operation) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := op.Operation.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		q.activeBackups[backupData.BackupID] = op.ID
-	case statemachine.ArchiveDeleteVariant:
-		deleteData := v()
+	case statemachine.OperationTypeArchiveDelete:
+		deleteVariant := op.Operation.(statemachine.ArchiveDeleteVariant)
+		deleteData := deleteVariant()
 		q.activeDeletes[deleteData.ArchiveID] = op.ID
-	case statemachine.DeleteVariant:
+	case statemachine.OperationTypeDelete:
 		q.hasRepoDelete = true
+	case statemachine.OperationTypePrune,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		// No tracking needed for these operations
+	default:
+		assert.Fail("Unhandled OperationType in addToTrackingMaps")
 	}
 }
 
 // removeFromTrackingMaps removes operation from deduplication tracking
 func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
-	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
-		backupData := v()
+	switch statemachine.GetOperationType(op.Operation) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := op.Operation.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		delete(q.activeBackups, backupData.BackupID)
-	case statemachine.ArchiveDeleteVariant:
-		deleteData := v()
+	case statemachine.OperationTypeArchiveDelete:
+		deleteVariant := op.Operation.(statemachine.ArchiveDeleteVariant)
+		deleteData := deleteVariant()
 		delete(q.activeDeletes, deleteData.ArchiveID)
-	case statemachine.DeleteVariant:
+	case statemachine.OperationTypeDelete:
 		q.hasRepoDelete = false
+	case statemachine.OperationTypePrune,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		// No tracking to remove for these operations
+	default:
+		assert.Fail("Unhandled OperationType in removeFromTrackingMaps")
 	}
 }
 
@@ -503,34 +540,46 @@ func isSameStatusType(status1, status2 OperationStatus) bool {
 
 // canAddOperationLocked checks if an operation can be added (assumes caller holds mutex)
 func (q *RepositoryQueue) canAddOperationLocked(op statemachine.Operation) (bool, string) {
-	switch v := op.(type) {
-	case statemachine.BackupVariant:
-		backupData := v()
+	switch statemachine.GetOperationType(op) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := op.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		if existingOpID, exists := q.activeBackups[backupData.BackupID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.ArchiveDeleteVariant:
-		deleteData := v()
+	case statemachine.OperationTypeArchiveDelete:
+		deleteVariant := op.(statemachine.ArchiveDeleteVariant)
+		deleteData := deleteVariant()
 		if existingOpID, exists := q.activeDeletes[deleteData.ArchiveID]; exists {
 			return false, existingOpID
 		}
-	case statemachine.DeleteVariant:
+	case statemachine.OperationTypeDelete:
 		if q.hasRepoDelete {
 			// Find the repository delete operation ID
 			for _, operationID := range q.operationList {
 				if opData, exists := q.operations[operationID]; exists {
-					if _, isDelete := opData.Operation.(statemachine.DeleteVariant); isDelete {
+					if statemachine.GetOperationType(opData.Operation) == statemachine.OperationTypeDelete {
 						return false, operationID
 					}
 				}
 			}
 			// Check active operation
 			if q.active != nil {
-				if _, isDelete := q.active.Operation.(statemachine.DeleteVariant); isDelete {
+				if statemachine.GetOperationType(q.active.Operation) == statemachine.OperationTypeDelete {
 					return false, q.active.ID
 				}
 			}
 		}
+	case statemachine.OperationTypePrune,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		// No deduplication needed for these operations
+	default:
+		assert.Fail("Unhandled OperationType in canAddOperationLocked")
 	}
 
 	return true, ""

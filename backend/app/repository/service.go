@@ -26,6 +26,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/negrel/assert"
 	"go.uber.org/zap"
 )
 
@@ -1381,34 +1382,38 @@ func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId type
 	repositoryState := s.queueManager.GetRepositoryState(backupId.RepositoryId)
 
 	// Check repository state type
-	switch repositoryState.(type) {
-	case statemachine.ErrorVariant:
+	switch statemachine.GetRepositoryStateType(repositoryState) {
+	case statemachine.RepositoryStateTypeError:
 		return state.BackupButtonStatusLocked, nil
-	case statemachine.MountedVariant:
+	case statemachine.RepositoryStateTypeMounted:
 		return state.BackupButtonStatusUnmount, nil
-	case statemachine.QueuedVariant:
+	case statemachine.RepositoryStateTypeQueued:
 		// Check if this specific backup is queued
 		if s.isBackupInQueue(backupId) {
 			return state.BackupButtonStatusWaiting, nil
 		}
 		// Repository is busy with another operation
 		return state.BackupButtonStatusBusy, nil
-	case statemachine.BackingUpVariant:
+	case statemachine.RepositoryStateTypeBackingUp:
 		// Check if this is our backup that's running
-		backingUpData := repositoryState.(statemachine.BackingUpVariant)()
+		backingUpVariant := repositoryState.(statemachine.BackingUpVariant)
+		backingUpData := backingUpVariant()
 		if backingUpData.Data.BackupID.String() == backupId.String() {
 			return state.BackupButtonStatusAbort, nil
 		}
 		// Repository is busy with another backup
 		return state.BackupButtonStatusBusy, nil
-	case statemachine.PruningVariant, statemachine.DeletingVariant, statemachine.RefreshingVariant:
+	case statemachine.RepositoryStateTypePruning,
+		statemachine.RepositoryStateTypeDeleting,
+		statemachine.RepositoryStateTypeRefreshing,
+		statemachine.RepositoryStateTypeMounting:
 		// Repository is busy with other operations
 		return state.BackupButtonStatusBusy, nil
-	case statemachine.IdleVariant:
+	case statemachine.RepositoryStateTypeIdle:
 		// Repository is idle, can run backup
 		return state.BackupButtonStatusRunBackup, nil
 	default:
-		// Unknown state, default to run backup
+		assert.Fail("Unhandled RepositoryStateType in getSingleBackupButtonStatus")
 		return state.BackupButtonStatusRunBackup, nil
 	}
 }

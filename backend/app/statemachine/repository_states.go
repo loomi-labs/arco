@@ -6,6 +6,7 @@ import (
 
 	"github.com/chris-tomich/adtenum"
 	"github.com/loomi-labs/arco/backend/app/types"
+	"github.com/negrel/assert"
 )
 
 // ============================================================================
@@ -125,34 +126,40 @@ const (
 
 // GetStateTypeName returns a string representation of the state type for debugging
 func GetStateTypeName(state RepositoryState) string {
-	switch state.(type) {
-	case IdleVariant:
+	switch GetRepositoryStateType(state) {
+	case RepositoryStateTypeIdle:
 		return "Idle"
-	case BackingUpVariant:
+	case RepositoryStateTypeBackingUp:
 		return "BackingUp"
-	case PruningVariant:
+	case RepositoryStateTypePruning:
 		return "Pruning"
-	case DeletingVariant:
+	case RepositoryStateTypeDeleting:
 		return "Deleting"
-	case RefreshingVariant:
+	case RepositoryStateTypeRefreshing:
 		return "Refreshing"
-	case MountingVariant:
+	case RepositoryStateTypeMounting:
 		return "Mounting"
-	case MountedVariant:
+	case RepositoryStateTypeMounted:
 		return "Mounted"
-	case ErrorVariant:
+	case RepositoryStateTypeQueued:
+		return "Queued"
+	case RepositoryStateTypeError:
 		return "Error"
 	default:
+		assert.Fail("Unhandled RepositoryStateType in GetStateTypeName")
 		return "Unknown"
 	}
 }
 
 // IsActiveState returns true if the state represents an active operation
 func IsActiveState(state RepositoryState) bool {
-	switch state.(type) {
-	case BackingUpVariant, PruningVariant, DeletingVariant, RefreshingVariant, MountingVariant:
+	switch GetRepositoryStateType(state) {
+	case RepositoryStateTypeBackingUp, RepositoryStateTypePruning, RepositoryStateTypeDeleting, RepositoryStateTypeRefreshing, RepositoryStateTypeMounting:
 		return true
+	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeError:
+		return false
 	default:
+		assert.Fail("Unhandled RepositoryStateType in IsActiveState")
 		return false
 	}
 }
@@ -189,40 +196,54 @@ func IsErrorState(state RepositoryState) bool {
 
 // GetCancelCtxOrDefault gets the context of a cancellable active state of return the provided context
 func GetCancelCtxOrDefault(defaultContext context.Context, state RepositoryState) context.Context {
-	switch s := state.(type) {
-	case BackingUpVariant:
-		data := s()
+	switch GetRepositoryStateType(state) {
+	case RepositoryStateTypeBackingUp:
+		backingUpVariant := state.(BackingUpVariant)
+		data := backingUpVariant()
 		return data.cancelCtx.ctx
-	case PruningVariant:
-		data := s()
+	case RepositoryStateTypePruning:
+		pruningVariant := state.(PruningVariant)
+		data := pruningVariant()
 		return data.cancelCtx.ctx
-	case DeletingVariant:
-		data := s()
+	case RepositoryStateTypeDeleting:
+		deletingVariant := state.(DeletingVariant)
+		data := deletingVariant()
 		return data.cancelCtx.ctx
-	case RefreshingVariant:
-		data := s()
+	case RepositoryStateTypeRefreshing:
+		refreshingVariant := state.(RefreshingVariant)
+		data := refreshingVariant()
 		return data.cancelCtx.ctx
+	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeMounting, RepositoryStateTypeError:
+		return defaultContext
 	default:
+		assert.Fail("Unhandled RepositoryStateType in GetCancelCtxOrDefault")
 		return defaultContext
 	}
 }
 
 // GetCancel extracts cancel context from active states
 func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
-	switch s := state.(type) {
-	case BackingUpVariant:
-		data := s()
+	switch GetRepositoryStateType(state) {
+	case RepositoryStateTypeBackingUp:
+		backingUpVariant := state.(BackingUpVariant)
+		data := backingUpVariant()
 		return data.cancelCtx.cancel, true
-	case PruningVariant:
-		data := s()
+	case RepositoryStateTypePruning:
+		pruningVariant := state.(PruningVariant)
+		data := pruningVariant()
 		return data.cancelCtx.cancel, true
-	case DeletingVariant:
-		data := s()
+	case RepositoryStateTypeDeleting:
+		deletingVariant := state.(DeletingVariant)
+		data := deletingVariant()
 		return data.cancelCtx.cancel, true
-	case RefreshingVariant:
-		data := s()
+	case RepositoryStateTypeRefreshing:
+		refreshingVariant := state.(RefreshingVariant)
+		data := refreshingVariant()
 		return data.cancelCtx.cancel, true
+	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeMounting, RepositoryStateTypeError:
+		return nil, false
 	default:
+		assert.Fail("Unhandled RepositoryStateType in GetCancel")
 		return nil, false
 	}
 }

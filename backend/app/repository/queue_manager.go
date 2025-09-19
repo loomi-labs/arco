@@ -23,6 +23,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/platform"
+	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
@@ -686,45 +687,50 @@ func (qm *QueueManager) expireOldOperations() {
 
 // getTargetStateForOperation maps an operation to its corresponding active state
 func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *QueuedOperation) (statemachine.RepositoryState, error) {
-	switch v := op.Operation.(type) {
-	case statemachine.BackupVariant:
-		backupData := v()
+	switch statemachine.GetOperationType(op.Operation) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := op.Operation.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		return statemachine.CreateBackingUpState(ctx, backupData), nil
 
-	case statemachine.PruneVariant:
-		pruneData := v()
+	case statemachine.OperationTypePrune:
+		pruneVariant := op.Operation.(statemachine.PruneVariant)
+		pruneData := pruneVariant()
 		return statemachine.CreatePruningState(ctx, pruneData.BackupID), nil
 
-	case statemachine.DeleteVariant:
+	case statemachine.OperationTypeDelete:
 		return statemachine.CreateDeletingState(ctx, 0), nil // Repository delete, no specific archive
 
-	case statemachine.ArchiveRefreshVariant:
+	case statemachine.OperationTypeArchiveRefresh:
 		return statemachine.CreateRefreshingState(ctx), nil
 
-	case statemachine.ArchiveDeleteVariant:
-		deleteData := v()
+	case statemachine.OperationTypeArchiveDelete:
+		deleteVariant := op.Operation.(statemachine.ArchiveDeleteVariant)
+		deleteData := deleteVariant()
 		return statemachine.CreateDeletingState(ctx, deleteData.ArchiveID), nil
 
-	case statemachine.ArchiveRenameVariant:
+	case statemachine.OperationTypeArchiveRename:
 		// Archive rename is a lightweight operation, treat as refreshing
 		return statemachine.CreateRefreshingState(ctx), nil
 
-	case statemachine.MountVariant:
+	case statemachine.OperationTypeMount:
 		return statemachine.CreateMountingState(nil), nil
 
-	case statemachine.MountArchiveVariant:
-		mountData := v()
+	case statemachine.OperationTypeMountArchive:
+		mountVariant := op.Operation.(statemachine.MountArchiveVariant)
+		mountData := mountVariant()
 		return statemachine.CreateMountingState(&mountData.ArchiveID), nil
 
-	case statemachine.UnmountVariant:
+	case statemachine.OperationTypeUnmount:
 		// Unmount operations transition through refreshing state temporarily
 		return statemachine.CreateRefreshingState(ctx), nil
 
-	case statemachine.UnmountArchiveVariant:
+	case statemachine.OperationTypeUnmountArchive:
 		// Unmount archive operations transition through refreshing state temporarily
 		return statemachine.CreateRefreshingState(ctx), nil
 
 	default:
+		assert.Fail("Unhandled OperationType in getTargetStateForOperation")
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
 	}
 }
@@ -744,10 +750,11 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 	}
 
 	// No more operations - determine final state based on completed operation
-	switch completedOp.Operation.(type) {
-	case statemachine.MountVariant:
+	switch statemachine.GetOperationType(completedOp.Operation) {
+	case statemachine.OperationTypeMount:
 		// Mount operations transition to Mounted state
-		mountData := completedOp.Operation.(statemachine.MountVariant)()
+		mountVariant := completedOp.Operation.(statemachine.MountVariant)
+		mountData := mountVariant()
 		return statemachine.CreateMountedState([]statemachine.MountInfo{
 			{
 				MountType: statemachine.MountTypeRepository,
@@ -755,9 +762,10 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 			},
 		}), nil
 
-	case statemachine.MountArchiveVariant:
+	case statemachine.OperationTypeMountArchive:
 		// Mount archive operations transition to Mounted state
-		mountData := completedOp.Operation.(statemachine.MountArchiveVariant)()
+		mountVariant := completedOp.Operation.(statemachine.MountArchiveVariant)
+		mountData := mountVariant()
 		return statemachine.CreateMountedState([]statemachine.MountInfo{
 			{
 				MountType: statemachine.MountTypeArchive,
@@ -766,8 +774,19 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 			},
 		}), nil
 
-	default:
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypePrune,
+		statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
 		// All other operations return to idle
+		return statemachine.CreateIdleState(), nil
+
+	default:
+		assert.Fail("Unhandled OperationType in getCompletionStateForRepository")
 		return statemachine.CreateIdleState(), nil
 	}
 }
@@ -847,15 +866,18 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 // getErrorNotificationType determines the notification type for error cases based on operation type
 // This method should only be called for backup and prune operations
 func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operation) notification.Type {
-	switch operation.(type) {
-	case statemachine.BackupVariant:
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup:
 		return notification.TypeFailedBackupRun
-	case statemachine.PruneVariant:
+	case statemachine.OperationTypePrune:
 		return notification.TypeFailedPruningRun
-	default:
+	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for error notification",
 			"operationType", fmt.Sprintf("%T", operation))
+		return notification.TypeFailedBackupRun // Fallback for safety
+	default:
+		assert.Fail("Unhandled OperationType in getErrorNotificationType")
 		return notification.TypeFailedBackupRun // Fallback for safety
 	}
 }
@@ -863,42 +885,53 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 // getWarningNotificationType determines the notification type for warning cases based on operation type
 // This method should only be called for backup and prune operations
 func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operation) notification.Type {
-	switch operation.(type) {
-	case statemachine.BackupVariant:
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup:
 		return notification.TypeWarningBackupRun
-	case statemachine.PruneVariant:
+	case statemachine.OperationTypePrune:
 		return notification.TypeWarningPruningRun
-	default:
+	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for warning notification",
 			"operationType", fmt.Sprintf("%T", operation))
+		return notification.TypeWarningBackupRun // Fallback for safety
+	default:
+		assert.Fail("Unhandled OperationType in getWarningNotificationType")
 		return notification.TypeWarningBackupRun // Fallback for safety
 	}
 }
 
 // getBackupProfileIDFromOperation extracts the backup profile ID from operation data
 func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.Operation) int {
-	switch op := operation.(type) {
-	case statemachine.BackupVariant:
-		backupData := op()
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup:
+		backupVariant := operation.(statemachine.BackupVariant)
+		backupData := backupVariant()
 		return backupData.BackupID.BackupProfileId
-	case statemachine.PruneVariant:
-		pruneData := op()
+	case statemachine.OperationTypePrune:
+		pruneVariant := operation.(statemachine.PruneVariant)
+		pruneData := pruneVariant()
 		return pruneData.BackupID.BackupProfileId
-	default:
+	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for backup profile",
-			"operationType", fmt.Sprintf("%T", op))
+			"operationType", fmt.Sprintf("%T", operation))
+		return 0
+	default:
+		assert.Fail("Unhandled OperationType in getBackupProfileIDFromOperation")
 		return 0
 	}
 }
 
 // shouldCreateNotification determines if error/warning notifications should be created for this operation type
 func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
-	switch operation.(type) {
-	case statemachine.BackupVariant, statemachine.PruneVariant:
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
 		return true
+	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
+		return false
 	default:
+		assert.Fail("Unhandled OperationType in shouldCreateNotification")
 		return false
 	}
 }
@@ -942,29 +975,29 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 
 // Execute implements OperationExecutor.Execute
 func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemachine.Operation) (*borgtypes.Status, error) {
-	switch v := operation.(type) {
-	case statemachine.BackupVariant:
-		return e.executeBackup(ctx, v)
-	case statemachine.PruneVariant:
-		return e.executePrune(ctx, v)
-	case statemachine.DeleteVariant:
-		return e.executeRepositoryDelete(ctx, v)
-	case statemachine.ArchiveDeleteVariant:
-		return e.executeArchiveDelete(ctx, v)
-	case statemachine.ArchiveRefreshVariant:
-		return e.executeArchiveRefresh(ctx, v)
-	case statemachine.ArchiveRenameVariant:
-		return e.executeArchiveRename(ctx, v)
-	case statemachine.MountVariant:
-		return e.executeMount(ctx, v)
-	case statemachine.MountArchiveVariant:
-		return e.executeMountArchive(ctx, v)
-	case statemachine.UnmountVariant:
-		return e.executeUnmount(ctx, v)
-	case statemachine.UnmountArchiveVariant:
-		return e.executeUnmountArchive(ctx, v)
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup:
+		return e.executeBackup(ctx, operation.(statemachine.BackupVariant))
+	case statemachine.OperationTypePrune:
+		return e.executePrune(ctx, operation.(statemachine.PruneVariant))
+	case statemachine.OperationTypeDelete:
+		return e.executeRepositoryDelete(ctx, operation.(statemachine.DeleteVariant))
+	case statemachine.OperationTypeArchiveDelete:
+		return e.executeArchiveDelete(ctx, operation.(statemachine.ArchiveDeleteVariant))
+	case statemachine.OperationTypeArchiveRefresh:
+		return e.executeArchiveRefresh(ctx, operation.(statemachine.ArchiveRefreshVariant))
+	case statemachine.OperationTypeArchiveRename:
+		return e.executeArchiveRename(ctx, operation.(statemachine.ArchiveRenameVariant))
+	case statemachine.OperationTypeMount:
+		return e.executeMount(ctx, operation.(statemachine.MountVariant))
+	case statemachine.OperationTypeMountArchive:
+		return e.executeMountArchive(ctx, operation.(statemachine.MountArchiveVariant))
+	case statemachine.OperationTypeUnmount:
+		return e.executeUnmount(ctx, operation.(statemachine.UnmountVariant))
+	case statemachine.OperationTypeUnmountArchive:
+		return e.executeUnmountArchive(ctx, operation.(statemachine.UnmountArchiveVariant))
 	default:
-		// System error: unsupported operation type (programming error)
+		assert.Fail("Unhandled OperationType in borgOperationExecutor.Execute")
 		return nil, fmt.Errorf("unsupported operation type: %T", operation)
 	}
 }
