@@ -436,7 +436,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 		Operation:  deleteOp,
 		Status:     initialStatus,
 		CreatedAt:  time.Now(),
-		ValidUntil: time.Now().Add(24 * time.Hour), // 24 hour TTL
+		ValidUntil: nil, // no expiration
 	}
 
 	// Queue the delete operation
@@ -518,8 +518,8 @@ func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (str
 		backupOp,
 		backupId.RepositoryId,
 		&backupId.BackupProfileId,
-		time.Now().Add(24*time.Hour), // 24-hour TTL
-		false,                        // immediate = false (can be queued)
+		nil,   // no expiration
+		false, // will be queued
 	)
 
 	// Add to queue
@@ -561,8 +561,8 @@ func (s *Service) QueuePrune(ctx context.Context, backupId types.BackupId) (stri
 		pruneOp,
 		backupId.RepositoryId,
 		&backupId.BackupProfileId,
-		time.Now().Add(24*time.Hour), // 24-hour TTL
-		false,                        // immediate = false (can be queued)
+		nil,   // no expiration
+		false, // will be queued
 	)
 
 	// Add to queue
@@ -687,9 +687,9 @@ func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
 	queuedOp := queue.CreateQueuedOperation(
 		mountOp,
 		repoId,
-		nil,                         // No backup profile for mount operations
-		time.Now().Add(1*time.Hour), // 1-hour TTL
-		true,                        // will start immediately or fail
+		nil,  // No backup profile for mount operations
+		nil,  // no expiration
+		true, // will start immediately or fail
 	)
 
 	// Add to queue
@@ -720,9 +720,9 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 	queuedOp := queue.CreateQueuedOperation(
 		mountOp,
 		repoId,
-		nil,                         // No backup profile for mount operations
-		time.Now().Add(1*time.Hour), // 1-hour TTL
-		true,                        // immediate = true
+		nil,  // No backup profile for mount operations
+		nil,  // no expiration
+		true, // will start immediately or fail
 	)
 
 	// Add to queue (will start immediately or fail)
@@ -754,9 +754,9 @@ func (s *Service) Unmount(ctx context.Context, repoId int) (string, error) {
 	queuedOp := queue.CreateQueuedOperation(
 		unmountOp,
 		repoId,
-		nil,                         // No backup profile for unmount operations
-		time.Now().Add(1*time.Hour), // 1-hour TTL
-		true,                        // immediate = true
+		nil,  // No backup profile for unmount operations
+		nil,  // no expiration
+		true, // will start immediately or fail
 	)
 
 	// Add to queue (will start immediately or fail)
@@ -794,9 +794,9 @@ func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (string, er
 	queuedOp := queue.CreateQueuedOperation(
 		unmountOp,
 		repoId,
-		nil,                         // No backup profile for unmount operations
-		time.Now().Add(1*time.Hour), // 1-hour TTL
-		true,                        // immediate = true
+		nil,  // No backup profile for unmount operations
+		nil,  // no expiration
+		true, // will start immediately or fail
 	)
 
 	// Add to queue (will start immediately or fail)

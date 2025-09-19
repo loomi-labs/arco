@@ -120,7 +120,7 @@ type QueuedOperation struct {
 	Operation       statemachine.Operation `json:"operation"` // ADT containing type and parameters
 	Status          OperationStatus        `json:"status"`    // ADT containing status, progress, error
 	CreatedAt       time.Time              `json:"createdAt"`
-	ValidUntil      time.Time              `json:"validUntil"` // Auto-expire if not started
+	ValidUntil      *time.Time             `json:"validUntil"` // Auto-expire if not started
 	Immediate       bool                   `json:"immediate"`  // Must start immediately or fail
 }
 

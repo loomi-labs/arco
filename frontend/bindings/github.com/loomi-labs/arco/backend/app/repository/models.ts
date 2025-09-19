@@ -370,7 +370,7 @@ export class QueuedOperation {
     /**
      * Auto-expire if not started
      */
-    "validUntil": time$0.Time;
+    "validUntil": time$0.Time | null;
 
     /**
      * Must start immediately or fail

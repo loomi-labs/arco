@@ -42,7 +42,7 @@ func NewRepositoryQueue(repoID int) *RepositoryQueue {
 	}
 }
 
-func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation, repoID int, backupProfileID *int, validUntil time.Time, immediate bool) *QueuedOperation {
+func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation, repoID int, backupProfileID *int, validUntil *time.Time, immediate bool) *QueuedOperation {
 	return &QueuedOperation{
 		ID:              uuid.New().String(),
 		RepoID:          repoID,
@@ -423,7 +423,7 @@ func (q *RepositoryQueue) ExpireOldOperations(now time.Time) []string {
 	for i := len(q.operationList) - 1; i >= 0; i-- {
 		operationID := q.operationList[i]
 		if op, exists := q.operations[operationID]; exists {
-			if op.ValidUntil.Before(now) {
+			if op.ValidUntil != nil && op.ValidUntil.Before(now) {
 				// Mark as expired
 				op.Status = NewOperationStatusExpired(Expired{
 					ExpiredAt: now,
