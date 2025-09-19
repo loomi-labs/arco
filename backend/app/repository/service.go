@@ -515,6 +515,32 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return s.Remove(ctx, id)
 }
 
+// RefreshArchives refreshes all archives of a repository
+func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, error) {
+	// Create archive refresh operation
+	archiveRefreshOp := statemachine.NewOperationArchiveRefresh(statemachine.ArchiveRefresh{
+		RepositoryID: repoId,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		archiveRefreshOp,
+		repoId,
+		nil,  // No backup profile for archive refresh (repository-wide operation)
+		nil,  // no expiration
+		true, // will start immediately or fail
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue archive refresh operation: %w", err)
+	}
+
+	return operationID, nil
+}
+
 // isCloudRepository checks if a repository is an ArcoCloud repository
 func (s *Service) isCloudRepository(ctx context.Context, repoID int) bool {
 	exists, err := s.db.Repository.Query().
