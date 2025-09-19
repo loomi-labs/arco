@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -741,6 +742,24 @@ func (s *Service) AbortBackups(ctx context.Context, backupIds []types.BackupId) 
 
 // Mount mounts a repository
 func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
+	// Check if repository is already mounted
+	repoState := s.queueManager.GetRepositoryState(repoId)
+	repoStateUnion := statemachine.ToRepositoryStateUnion(repoState)
+
+	if repoStateUnion.Type == statemachine.RepositoryStateTypeMounted {
+		// Repository is already mounted, find the repository mount and open file manager
+		if repoStateUnion.Mounted != nil {
+			for _, mount := range repoStateUnion.Mounted.Mounts {
+				if mount.MountType == statemachine.MountTypeRepository {
+					// Found repository mount, open file manager
+					go openFileManager(mount.MountPath, s.log)
+					return "", nil
+				}
+			}
+		}
+		return "", fmt.Errorf("repository is mounted but no repository mount found")
+	}
+
 	// Create mount operation with mount path
 	mountOp := statemachine.NewOperationMount(statemachine.Mount{
 		RepositoryID: repoId,
@@ -773,6 +792,34 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 
 	// Get repository ID
 	repoId := archiveEntity.Edges.Repository.ID
+
+	// Check if repository is already mounted and this archive is mounted
+	repoState := s.queueManager.GetRepositoryState(repoId)
+	repoStateUnion := statemachine.ToRepositoryStateUnion(repoState)
+
+	if repoStateUnion.Type == statemachine.RepositoryStateTypeMounted {
+		// Repository is mounted, check if this specific archive is mounted
+		if repoStateUnion.Mounted != nil {
+			for _, mount := range repoStateUnion.Mounted.Mounts {
+				if mount.MountType == statemachine.MountTypeArchive && mount.ArchiveID != nil && *mount.ArchiveID == archiveId {
+					// Found archive mount, open file manager
+					go openFileManager(mount.MountPath, s.log)
+					return "", nil
+				}
+			}
+
+			// If archive not separately mounted, check for repository mount
+			for _, mount := range repoStateUnion.Mounted.Mounts {
+				if mount.MountType == statemachine.MountTypeRepository {
+					// Archive accessible via repository mount, open archive path within repository
+					archivePath := filepath.Join(mount.MountPath, archiveEntity.Name)
+					go openFileManager(archivePath, s.log)
+					return "", nil
+				}
+			}
+		}
+		return "", fmt.Errorf("repository is mounted but no mounts found")
+	}
 
 	// Create mount archive operation with mount path
 	mountOp := statemachine.NewOperationMountArchive(statemachine.MountArchive{

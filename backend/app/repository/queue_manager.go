@@ -1289,7 +1289,7 @@ func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statem
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
-		go e.openFileManager(mountPath)
+		go openFileManager(mountPath, e.log)
 	}
 
 	return status, nil
@@ -1328,7 +1328,7 @@ func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
-		go e.openFileManager(mountPath)
+		go openFileManager(mountPath, e.log)
 	}
 
 	return status, nil
@@ -1611,16 +1611,16 @@ func (qm *QueueManager) mapBorgErrorToErrorType(ctx context.Context, borgError *
 // ============================================================================
 
 // openFileManager opens the file manager for the given path
-func (e *borgOperationExecutor) openFileManager(path string) {
+func openFileManager(path string, log *zap.SugaredLogger) {
 	openCmd, err := platform.GetOpenFileManagerCmd()
 	if err != nil {
-		e.log.Error("Error getting open file manager command: ", err)
+		log.Error("Error getting open file manager command: ", err)
 		return
 	}
 	cmd := exec.Command(openCmd, path)
 	err = cmd.Run()
 	if err != nil {
-		e.log.Error("Error opening file manager: ", err)
+		log.Error("Error opening file manager: ", err)
 	}
 }
 

@@ -169,7 +169,11 @@ const hasRepositoryMountActive = computed(() => hasRepositoryMount.value);
 const archiveMountCount = computed(() =>
   mounts.value.filter(mount => mount.mountType === statemachine.MountType.MountTypeArchive).length
 );
-const totalMountCount = computed(() => mounts.value.length);
+
+// Check if a new archive can be mounted (mutual exclusion logic)
+const canMountNewArchive = computed(() =>
+  !hasRepositoryMountActive.value && archiveMountCount.value === 0 && canPerformOperations.value
+);
 
 /************
  * Functions
@@ -310,6 +314,17 @@ async function unmountRepository() {
     await repoService.Unmount(props.repoId);
   } catch (error: unknown) {
     await showAndLogError("Failed to unmount repository", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
+}
+
+async function unmountAll() {
+  try {
+    progressSpinnerText.value = "Unmounting";
+    await repoService.UnmountAllForRepos([props.repoId]);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to unmount", error);
   } finally {
     progressSpinnerText.value = undefined;
   }
@@ -579,51 +594,53 @@ onUnmounted(() => {
           </th>
           <th class='text-right'>
             <div class='flex justify-end gap-2 items-center'>
-              <!-- Mount Status Indicator -->
-              <div v-if='totalMountCount > 0' class='flex items-center gap-1 text-sm'>
-                <span v-if='hasRepositoryMountActive'
-                      class='tooltip tooltip-info'
-                      data-tip='Repository is mounted - browse entire repository'>
-                  <span class='badge badge-primary gap-1'>
-                    <DocumentMagnifyingGlassIcon class='size-3' />
-                    Repository
-                  </span>
-                </span>
-                <span v-if='archiveMountCount > 0'
-                      class='tooltip tooltip-info'
-                      :data-tip='`${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""} mounted`'>
-                  <span class='badge badge-secondary gap-1'>
-                    <CloudArrowDownIcon class='size-3' />
-                    {{ archiveMountCount }}
-                  </span>
-                </span>
-              </div>
-
-              <!-- Repository Mount Actions -->
-              <span v-if='hasRepositoryMountActive'
-                    class='tooltip tooltip-info'
-                    :data-tip='`Unmount repository from ${repositoryMountInfo?.mountPath}`'>
-                <button class='btn btn-sm btn-ghost btn-circle btn-success'
-                        :disabled='!canPerformOperations'
-                        @click='unmountRepository()'>
-                  <DocumentMagnifyingGlassIcon class='size-4 text-success' />
-                </button>
-              </span>
-              <span v-else-if='archiveMountCount === 0 && isRepositoryIdle'
-                    class='tooltip tooltip-info'
-                    data-tip='Browse entire repository'>
-                <button class='btn btn-sm btn-ghost btn-circle btn-primary'
-                        @click='mountRepository()'>
-                  <DocumentMagnifyingGlassIcon class='size-4' />
-                </button>
-              </span>
-
+              <!-- Delete Multiple Button (moved to left) -->
               <button class='btn btn-sm btn-error'
                       :class='{ invisible: selectedArchives.size === 0 }'
                       @click='confirmDeleteMultipleModal?.showModal()'>
                 <TrashIcon class='size-4' />
                 {{ $t("delete") }} ({{ selectedArchives.size }})
               </button>
+
+              <!-- Mount Status Indicator -->
+              <div v-if='archiveMountCount > 0' class='flex items-center gap-1 text-sm'>
+                <span v-if='archiveMountCount > 0'
+                      class='tooltip tooltip-info'
+                      :data-tip='`Unmount ${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""}`'>
+                  <button class='btn btn-sm btn-info btn-outline text-info rounded-full'
+                          :disabled='!canPerformOperations'
+                          @click='unmountAll()'>
+                    <CloudArrowDownIcon class='size-4' />
+                    <span class='text-xs'>{{ archiveMountCount }}</span>
+                  </button>
+                </span>
+              </div>
+
+              <!-- Repository Browse and Mount Actions -->
+              <!-- Unmount Repository Button (only when mounted) -->
+              <span v-if='hasRepositoryMountActive'
+                    class='tooltip tooltip-info'
+                    :data-tip='`Unmount repository from ${repositoryMountInfo?.mountPath}`'>
+                <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+                        :disabled='!canPerformOperations'
+                        @click='unmountRepository()'>
+                  <CloudArrowDownIcon class='size-4' />
+                </button>
+              </span>
+
+              <!-- Browse Repository Button (always visible) -->
+              <span class='tooltip tooltip-info'
+                    :data-tip='hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository"'>
+                <button :class="{
+                          'btn btn-sm btn-info btn-circle btn-outline': true,
+                          'text-info': !(!canPerformOperations || archiveMountCount > 0)
+                        }"
+                        :disabled='!canPerformOperations || archiveMountCount > 0'
+                        @click='mountRepository()'>
+                  <DocumentMagnifyingGlassIcon class='size-4' />
+                </button>
+              </span>
+
               <button class='btn btn-ghost btn-circle btn-info'
                       :disabled='!isRepositoryIdle'
                       @click='refreshArchives'>
@@ -688,7 +705,7 @@ onUnmounted(() => {
           <th v-if='showBackupProfileColumn'>Backup profile</th>
           <th class='min-w-40 lg:min-w-48'>Creation time</th>
           <th class='text-right'>Duration</th>
-          <th class='w-40 pl-12'>{{ $t("action") }}</th>
+          <th class='w-40 text-right'>{{ $t("action") }}</th>
         </tr>
         </thead>
         <tbody>
@@ -742,29 +759,25 @@ onUnmounted(() => {
             <p class='text-right'>{{ toDurationString(archive.duration) }}</p>
           </td>
           <!-- Action -->
-          <td class='flex items-center gap-2'>
-            <!-- Archive Mount Status Indicator -->
+          <td class='flex items-center gap-2 justify-end'>
+            <!-- Unmount Archive Button (only when this archive is mounted) -->
             <span v-if='isArchiveMounted(archive.id)'
                   class='tooltip tooltip-info'
-                  :data-tip='`Archive mounted at ${getArchiveMountInfo(archive.id)?.mountPath}`'>
-              <button class='btn btn-sm btn-ghost btn-circle btn-success' @click='unmountArchive(archive.id)'>
-                <CloudArrowDownIcon class='size-4 text-success' />
+                  :data-tip='`Unmount archive from ${getArchiveMountInfo(archive.id)?.mountPath}`'>
+              <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+                      @click='unmountArchive(archive.id)'>
+                <CloudArrowDownIcon class='size-4' />
               </button>
             </span>
 
-            <!-- Repository Mount Access -->
-            <span v-else-if='hasRepositoryMountActive'
-                  class='tooltip tooltip-info'
-                  data-tip='Archive accessible via repository mount'>
-              <span class='btn btn-sm btn-ghost btn-circle btn-disabled'>
-                <DocumentMagnifyingGlassIcon class='size-4 text-primary' />
-              </span>
-            </span>
-
-            <!-- Mount Archive Action -->
-            <span v-else class='tooltip tooltip-info' data-tip='Browse files in this archive'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline text-info hover:text-info-content'
-                      :disabled='!canPerformOperations'
+            <!-- Browse Archive Button (always visible) -->
+            <span class='tooltip tooltip-info'
+                  :data-tip='isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive"'>
+              <button :class="{
+                        'btn btn-sm btn-info btn-circle btn-outline': true,
+                        'text-info': !(!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive))
+                      }"
+                      :disabled='!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive)'
                       @click='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4' />
               </button>
