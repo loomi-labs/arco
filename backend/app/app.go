@@ -207,7 +207,7 @@ func (a *App) Startup(ctx context.Context) {
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
-	a.repositoryServiceN.Init(a.db, a.eventEmitter, a.borg, cloudRepositoryService)
+	a.repositoryServiceN.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService)
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)

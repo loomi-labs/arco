@@ -69,7 +69,7 @@ func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient) {
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
@@ -78,8 +78,72 @@ func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter,
 	// Initialize queue manager with database and borg clients
 	si.queueManager.Init(db, si.borgClient, si.eventEmitter)
 
+	// Initialize mount states
+	si.InitMountStates(ctx)
+
 	// TODO: Start periodic cleanup goroutine
 	// go si.startPeriodicCleanup(ctx)
+}
+
+// InitMountStates initializes the mount states of all repositories and archives at startup
+// This method is called during app startup and restores mount states if things are mounted
+func (si *ServiceInternal) InitMountStates(ctx context.Context) {
+	// Get all mounted repositories and archives in a single system call
+	mountedRepos, mountedArchives, err := platform.GetArcoMounts()
+	if err != nil {
+		si.log.Errorw("Error getting Arco mount states", "error", err)
+		return
+	}
+
+	// Process mounted repositories
+	for repoID, mountState := range mountedRepos {
+		mountInfo := statemachine.MountInfo{
+			MountType: statemachine.MountTypeRepository,
+			MountPath: mountState.MountPath,
+		}
+		mountedState := statemachine.CreateMountedState([]statemachine.MountInfo{mountInfo})
+		si.queueManager.setRepositoryState(repoID, mountedState)
+		si.log.Infow("Restored repository mount state", "repoID", repoID, "mountPath", mountState.MountPath)
+	}
+
+	// Process mounted archives - group by repository for efficiency
+	archivesByRepo := make(map[int][]statemachine.MountInfo)
+	for archiveID, mountState := range mountedArchives {
+		// Get repository ID for this archive
+		archiveEntity, err := si.db.Archive.Query().
+			Where(archive.ID(archiveID)).
+			WithRepository().
+			Only(ctx)
+		if err != nil {
+			si.log.Errorw("Error getting repository for mounted archive", "archiveID", archiveID, "error", err)
+			continue
+		}
+
+		repoID := archiveEntity.Edges.Repository.ID
+		mountInfo := statemachine.MountInfo{
+			MountType: statemachine.MountTypeArchive,
+			MountPath: mountState.MountPath,
+			ArchiveID: &archiveID,
+		}
+
+		archivesByRepo[repoID] = append(archivesByRepo[repoID], mountInfo)
+	}
+
+	// Update repository states for repositories with mounted archives
+	for repoID, archiveMounts := range archivesByRepo {
+		// Check if repository itself is not already mounted (to avoid overriding repo mounts)
+		if _, repoIsMounted := mountedRepos[repoID]; !repoIsMounted {
+			mountedState := statemachine.CreateMountedState(archiveMounts)
+			si.queueManager.setRepositoryState(repoID, mountedState)
+			si.log.Infow("Restored archive mount states", "repoID", repoID, "mountedArchiveCount", len(archiveMounts))
+		}
+	}
+
+	// Log summary
+	si.log.Infow("Mount state initialization completed",
+		"mountedRepos", len(mountedRepos),
+		"mountedArchives", len(mountedArchives),
+		"affectedRepositories", len(archivesByRepo)+len(mountedRepos))
 }
 
 // ============================================================================
