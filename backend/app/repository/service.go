@@ -4,11 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
-	"os/user"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -682,22 +677,9 @@ func (s *Service) AbortBackups(ctx context.Context, backupIds []types.BackupId) 
 
 // Mount mounts a repository
 func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
-	// Get repository to calculate mount path
-	repoEntity, err := s.db.Repository.Get(ctx, repoId)
-	if err != nil {
-		return "", fmt.Errorf("failed to get repository: %w", err)
-	}
-
-	// Calculate mount path
-	mountPath, err := getRepoMountPath(repoEntity)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mount path: %w", err)
-	}
-
 	// Create mount operation with mount path
 	mountOp := statemachine.NewOperationMount(statemachine.Mount{
 		RepositoryID: repoId,
-		MountPath:    mountPath,
 	})
 
 	// Create queued operation with immediate flag

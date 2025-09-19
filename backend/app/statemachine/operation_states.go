@@ -38,13 +38,11 @@ type ArchiveRename struct {
 }
 
 type Mount struct {
-	RepositoryID int    `json:"repositoryId"`
-	MountPath    string `json:"mountPath"`
+	RepositoryID int `json:"repositoryId"`
 }
 
 type MountArchive struct {
-	ArchiveID int    `json:"archiveId"`
-	MountPath string `json:"mountPath"`
+	ArchiveID int `json:"archiveId"`
 }
 
 type Unmount struct {

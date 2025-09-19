@@ -4,7 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -720,12 +724,11 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 		return statemachine.CreateRefreshingState(ctx), nil
 
 	case statemachine.MountVariant:
-		mountData := v()
-		return statemachine.CreateMountingState(statemachine.MountTypeRepository, mountData.MountPath, nil), nil
+		return statemachine.CreateMountingState(nil), nil
 
 	case statemachine.MountArchiveVariant:
 		mountData := v()
-		return statemachine.CreateMountingState(statemachine.MountTypeArchive, mountData.MountPath, &mountData.ArchiveID), nil
+		return statemachine.CreateMountingState(&mountData.ArchiveID), nil
 
 	case statemachine.UnmountVariant:
 		// Unmount operations transition through refreshing state temporarily
@@ -758,11 +761,9 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 	switch completedOp.Operation.(type) {
 	case statemachine.MountVariant:
 		// Mount operations transition to Mounted state
-		mountData := completedOp.Operation.(statemachine.MountVariant)()
 		return statemachine.CreateMountedState([]statemachine.MountInfo{
 			{
 				MountType: statemachine.MountTypeRepository,
-				MountPath: mountData.MountPath,
 			},
 		}), nil
 
@@ -772,7 +773,7 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		return statemachine.CreateMountedState([]statemachine.MountInfo{
 			{
 				MountType: statemachine.MountTypeArchive,
-				MountPath: mountData.MountPath,
+				ArchiveID: &mountData.ArchiveID,
 			},
 		}), nil
 
@@ -1285,8 +1286,13 @@ func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statem
 		return nil, fmt.Errorf("failed to get repository: %w", err)
 	}
 
-	// Use stored mount path and ensure it exists
-	mountPath := mountData.MountPath
+	// Calculate mount path
+	mountPath, err := getRepoMountPath(repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get mount path: %w", err)
+	}
+
+	// Make sure the mount path exists
 	err = ensurePathExists(mountPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mount path: %w", err)
@@ -1310,19 +1316,22 @@ func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp
 	// Get archive from database
 	archiveEntity, err := e.db.Archive.Query().
 		Where(archive.ID(mountData.ArchiveID)).
-		WithBackupProfile(func(q *ent.BackupProfileQuery) {
-			q.WithRepositories()
-		}).
+		WithRepository().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("archive %d not found: %w", mountData.ArchiveID, err)
 	}
 
 	// Get repository from archive's backup profile
-	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0]
+	repo := archiveEntity.Edges.Repository
 
-	// Use stored mount path and ensure it exists
-	mountPath := mountData.MountPath
+	// Calculate mount path for the archive
+	mountPath, err := getArchiveMountPath(archiveEntity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get archive mount path: %w", err)
+	}
+
+	// Make sure the mount path exists
 	err = ensurePathExists(mountPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create archive mount path: %w", err)
@@ -1363,20 +1372,6 @@ func (e *borgOperationExecutor) executeUnmountArchive(ctx context.Context, unmou
 	status := e.borgClient.Umount(ctx, mountPath)
 
 	return status, nil
-}
-
-// openFileManager opens the file manager for the given path
-func (e *borgOperationExecutor) openFileManager(path string) {
-	openCmd, err := platform.GetOpenFileManagerCmd()
-	if err != nil {
-		e.log.Error("Error getting open file manager command: ", err)
-		return
-	}
-	cmd := exec.Command(openCmd, path)
-	err = cmd.Run()
-	if err != nil {
-		e.log.Error("Error opening file manager: ", err)
-	}
 }
 
 // syncArchivesToDatabase synchronizes borg archives with the database
@@ -1623,4 +1618,50 @@ func (qm *QueueManager) mapBorgErrorToErrorType(ctx context.Context, borgError *
 
 	// Default fallback for all other errors
 	return statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone
+}
+
+// ============================================================================
+// MOUNT UTILITY FUNCTIONS
+// ============================================================================
+
+// openFileManager opens the file manager for the given path
+func (e *borgOperationExecutor) openFileManager(path string) {
+	openCmd, err := platform.GetOpenFileManagerCmd()
+	if err != nil {
+		e.log.Error("Error getting open file manager command: ", err)
+		return
+	}
+	cmd := exec.Command(openCmd, path)
+	err = cmd.Run()
+	if err != nil {
+		e.log.Error("Error opening file manager: ", err)
+	}
+}
+
+// getMountPath returns the base mount path for the current user
+func getMountPath(name string) (string, error) {
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	mountPath, err := platform.GetMountPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(mountPath, currentUser.Uid, "arco", name), nil
+}
+
+func getRepoMountPath(repo *ent.Repository) (string, error) {
+	return getMountPath("repo-" + strconv.Itoa(repo.ID))
+}
+
+func getArchiveMountPath(archive *ent.Archive) (string, error) {
+	return getMountPath("archive-" + strconv.Itoa(archive.ID))
+}
+
+func ensurePathExists(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, 0755)
+	}
+	return nil
 }

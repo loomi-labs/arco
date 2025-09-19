@@ -50,7 +50,6 @@ type Refreshing struct {
 type Mounting struct {
 	MountType MountType `json:"mountType"`
 	ArchiveID *int      `json:"archiveId,omitempty"`
-	MountPath string    `json:"mountPath"`
 }
 
 type Mounted struct {
@@ -288,11 +287,14 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 }
 
 // CreateMountingState creates a new mounting state
-func CreateMountingState(mountType MountType, mountPath string, archiveID *int) RepositoryState {
+func CreateMountingState(archiveID *int) RepositoryState {
+	mountType := MountTypeRepository
+	if archiveID != nil {
+		mountType = MountTypeArchive
+	}
 	return NewRepositoryStateMounting(Mounting{
 		MountType: mountType,
 		ArchiveID: archiveID,
-		MountPath: mountPath,
 	})
 }
 
