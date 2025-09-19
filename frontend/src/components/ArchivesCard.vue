@@ -606,7 +606,7 @@ onUnmounted(() => {
               <div v-if='archiveMountCount > 0' class='flex items-center gap-1 text-sm'>
                 <span v-if='archiveMountCount > 0'
                       class='tooltip tooltip-info'
-                      :data-tip='`Unmount ${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""}`'>
+                      :data-tip='canPerformOperations ? `Unmount ${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""}` : ""'>
                   <button class='btn btn-sm btn-info btn-outline text-info rounded-full'
                           :disabled='!canPerformOperations'
                           @click='unmountAll()'>
@@ -620,7 +620,7 @@ onUnmounted(() => {
               <!-- Unmount Repository Button (only when mounted) -->
               <span v-if='hasRepositoryMountActive'
                     class='tooltip tooltip-info'
-                    :data-tip='`Unmount repository from ${repositoryMountInfo?.mountPath}`'>
+                    :data-tip='canPerformOperations ? `Unmount repository from ${repositoryMountInfo?.mountPath}` : ""'>
                 <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
                         :disabled='!canPerformOperations'
                         @click='unmountRepository()'>
@@ -630,7 +630,7 @@ onUnmounted(() => {
 
               <!-- Browse Repository Button (always visible) -->
               <span class='tooltip tooltip-info'
-                    :data-tip='hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository"'>
+                    :data-tip='canPerformOperations && archiveMountCount === 0 ? (hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository") : ""'>
                 <button :class="{
                           'btn btn-sm btn-info btn-circle btn-outline': true,
                           'text-info': !(!canPerformOperations || archiveMountCount > 0)
@@ -772,7 +772,7 @@ onUnmounted(() => {
 
             <!-- Browse Archive Button (always visible) -->
             <span class='tooltip tooltip-info'
-                  :data-tip='isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive"'>
+                  :data-tip='canPerformOperations && (isArchiveMounted(archive.id) || hasRepositoryMountActive || canMountNewArchive) ? (isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive") : ""'>
               <button :class="{
                         'btn btn-sm btn-info btn-circle btn-outline': true,
                         'text-info': !(!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive))
