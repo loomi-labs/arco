@@ -7,10 +7,10 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../types/models.js";
+import * as types$1 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../../borg/types/models.js";
+import * as types$0 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
@@ -41,13 +41,13 @@ export class BackingUp {
 }
 
 export class Backup {
-    "backupId": types$0.BackupId;
-    "progress"?: types$1.BackupProgress | null;
+    "backupId": types$1.BackupId;
+    "progress"?: types$0.BackupProgress | null;
 
     /** Creates a new Backup instance. */
     constructor($$source: Partial<Backup> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -244,18 +244,44 @@ export class Mounted {
     }
 }
 
+export class Mounting {
+    "mountType": MountType;
+    "archiveId"?: number | null;
+    "mountPath": string;
+
+    /** Creates a new Mounting instance. */
+    constructor($$source: Partial<Mounting> = {}) {
+        if (!("mountType" in $$source)) {
+            this["mountType"] = MountType.$zero;
+        }
+        if (!("mountPath" in $$source)) {
+            this["mountPath"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Mounting instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Mounting {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Mounting($$parsedSource as Partial<Mounting>);
+    }
+}
+
 /**
  * Operation ADT definition
  */
 export type Operation = any;
 
 export class Pruning {
-    "backupId": types$0.BackupId;
+    "backupId": types$1.BackupId;
 
     /** Creates a new Pruning instance. */
     constructor($$source: Partial<Pruning> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -339,6 +365,7 @@ export enum RepositoryStateType {
     RepositoryStateTypeError = "Error",
     RepositoryStateTypeIdle = "Idle",
     RepositoryStateTypeMounted = "Mounted",
+    RepositoryStateTypeMounting = "Mounting",
     RepositoryStateTypePruning = "Pruning",
     RepositoryStateTypeQueued = "Queued",
     RepositoryStateTypeRefreshing = "Refreshing",
@@ -362,6 +389,7 @@ export class RepositoryStateUnion {
     "pruning"?: Pruning | null;
     "deleting"?: Deleting | null;
     "refreshing"?: Refreshing | null;
+    "mounting"?: Mounting | null;
     "mounted"?: Mounted | null;
     "error"?: Error | null;
 
@@ -386,6 +414,7 @@ export class RepositoryStateUnion {
         const $$createField6_0 = $$createType17;
         const $$createField7_0 = $$createType19;
         const $$createField8_0 = $$createType21;
+        const $$createField9_0 = $$createType23;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -405,11 +434,14 @@ export class RepositoryStateUnion {
         if ("refreshing" in $$parsedSource) {
             $$parsedSource["refreshing"] = $$createField6_0($$parsedSource["refreshing"]);
         }
+        if ("mounting" in $$parsedSource) {
+            $$parsedSource["mounting"] = $$createField7_0($$parsedSource["mounting"]);
+        }
         if ("mounted" in $$parsedSource) {
-            $$parsedSource["mounted"] = $$createField7_0($$parsedSource["mounted"]);
+            $$parsedSource["mounted"] = $$createField8_0($$parsedSource["mounted"]);
         }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField8_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField9_0($$parsedSource["error"]);
         }
         return new RepositoryStateUnion($$parsedSource as Partial<RepositoryStateUnion>);
     }
@@ -417,8 +449,8 @@ export class RepositoryStateUnion {
 
 // Private type creation functions
 const $$createType0 = Backup.createFrom;
-const $$createType1 = types$0.BackupId.createFrom;
-const $$createType2 = types$1.BackupProgress.createFrom;
+const $$createType1 = types$1.BackupId.createFrom;
+const $$createType2 = types$0.BackupProgress.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = MountInfo.createFrom;
 const $$createType5 = $Create.Array($$createType4);
@@ -434,7 +466,9 @@ const $$createType14 = Deleting.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
 const $$createType16 = Refreshing.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = Mounted.createFrom;
+const $$createType18 = Mounting.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = Error.createFrom;
+const $$createType20 = Mounted.createFrom;
 const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = Error.createFrom;
+const $$createType23 = $Create.Nullable($$createType22);

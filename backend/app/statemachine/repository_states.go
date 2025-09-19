@@ -47,6 +47,12 @@ type Refreshing struct {
 	cancelCtx cancelCtx
 }
 
+type Mounting struct {
+	MountType MountType `json:"mountType"`
+	ArchiveID *int      `json:"archiveId,omitempty"`
+	MountPath string    `json:"mountPath"`
+}
+
 type Mounted struct {
 	Mounts []MountInfo `json:"mounts"`
 }
@@ -68,6 +74,7 @@ func (BackingUp) isADTVariant() RepositoryState  { var zero RepositoryState; ret
 func (Pruning) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
 func (Deleting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
 func (Refreshing) isADTVariant() RepositoryState { var zero RepositoryState; return zero }
+func (Mounting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
 func (Mounted) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
 func (Error) isADTVariant() RepositoryState      { var zero RepositoryState; return zero }
 
@@ -130,6 +137,8 @@ func GetStateTypeName(state RepositoryState) string {
 		return "Deleting"
 	case RefreshingVariant:
 		return "Refreshing"
+	case MountingVariant:
+		return "Mounting"
 	case MountedVariant:
 		return "Mounted"
 	case ErrorVariant:
@@ -142,7 +151,7 @@ func GetStateTypeName(state RepositoryState) string {
 // IsActiveState returns true if the state represents an active operation
 func IsActiveState(state RepositoryState) bool {
 	switch state.(type) {
-	case BackingUpVariant, PruningVariant, DeletingVariant, RefreshingVariant:
+	case BackingUpVariant, PruningVariant, DeletingVariant, RefreshingVariant, MountingVariant:
 		return true
 	default:
 		return false
@@ -158,6 +167,12 @@ func IsIdleState(state RepositoryState) bool {
 // IsQueuedState returns true if the repository has queued operations
 func IsQueuedState(state RepositoryState) bool {
 	_, ok := state.(QueuedVariant)
+	return ok
+}
+
+// IsMountingState returns true if the repository is mounting
+func IsMountingState(state RepositoryState) bool {
+	_, ok := state.(MountingVariant)
 	return ok
 }
 
@@ -269,6 +284,15 @@ func CreateRefreshingState(ctx context.Context) RepositoryState {
 	return NewRepositoryStateRefreshing(Refreshing{
 		StartedAt: time.Now(),
 		cancelCtx: createCancelContext(ctx),
+	})
+}
+
+// CreateMountingState creates a new mounting state
+func CreateMountingState(mountType MountType, mountPath string, archiveID *int) RepositoryState {
+	return NewRepositoryStateMounting(Mounting{
+		MountType: mountType,
+		ArchiveID: archiveID,
+		MountPath: mountPath,
 	})
 }
 

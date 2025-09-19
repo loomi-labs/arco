@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -519,6 +524,7 @@ func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (str
 		backupId.RepositoryId,
 		&backupId.BackupProfileId,
 		time.Now().Add(24*time.Hour), // 24-hour TTL
+		false,                        // immediate = false (can be queued)
 	)
 
 	// Add to queue
@@ -561,6 +567,7 @@ func (s *Service) QueuePrune(ctx context.Context, backupId types.BackupId) (stri
 		backupId.RepositoryId,
 		&backupId.BackupProfileId,
 		time.Now().Add(24*time.Hour), // 24-hour TTL
+		false,                        // immediate = false (can be queued)
 	)
 
 	// Add to queue
@@ -674,41 +681,163 @@ func (s *Service) AbortBackups(ctx context.Context, backupIds []types.BackupId) 
 }
 
 // Mount mounts a repository
-func (s *Service) Mount(ctx context.Context, repoId int) (*platform.MountState, error) {
-	// TODO: Implement repository mounting:
-	// 1. Validate repository state (must be Idle)
-	// 2. Mount repository using borg/platform
-	// 3. Transition state to Mounted
-	// 4. Return mount state
-	return nil, nil
+func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
+	// Get repository to calculate mount path
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Calculate mount path
+	mountPath, err := getRepoMountPath(repoEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get mount path: %w", err)
+	}
+
+	// Create mount operation with mount path
+	mountOp := statemachine.NewOperationMount(statemachine.Mount{
+		RepositoryID: repoId,
+		MountPath:    mountPath,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		mountOp,
+		repoId,
+		nil,                         // No backup profile for mount operations
+		time.Now().Add(1*time.Hour), // 1-hour TTL
+		true,                        // will start immediately or fail
+	)
+
+	// Add to queue
+	return s.queueManager.AddOperation(repoId, queuedOp)
 }
 
 // MountArchive mounts a specific archive
-func (s *Service) MountArchive(ctx context.Context, archiveId int) (*platform.MountState, error) {
-	// TODO: Implement archive mounting
-	return nil, nil
+func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, error) {
+	// Get archive to determine repository ID and calculate mount path
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Get repository ID
+	repoId := archiveEntity.Edges.Repository.ID
+
+	// Calculate mount path for the archive
+	mountPath, err := getArchiveMountPath(archiveEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get archive mount path: %w", err)
+	}
+
+	// Create mount archive operation with mount path
+	mountOp := statemachine.NewOperationMountArchive(statemachine.MountArchive{
+		ArchiveID: archiveId,
+		MountPath: mountPath,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		mountOp,
+		repoId,
+		nil,                         // No backup profile for mount operations
+		time.Now().Add(1*time.Hour), // 1-hour TTL
+		true,                        // immediate = true
+	)
+
+	// Add to queue (will start immediately or fail)
+	return s.queueManager.AddOperation(repoId, queuedOp)
 }
 
 // Unmount unmounts a repository
-func (s *Service) Unmount(ctx context.Context, repoId int) (*platform.MountState, error) {
-	// TODO: Implement repository unmounting:
-	// 1. Validate repository is mounted
-	// 2. Unmount repository
-	// 3. Transition state to Idle
-	// 4. Return mount state
-	return nil, nil
+func (s *Service) Unmount(ctx context.Context, repoId int) (string, error) {
+	// Get repository to calculate mount path
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Calculate mount path
+	mountPath, err := getRepoMountPath(repoEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get mount path: %w", err)
+	}
+
+	// Create unmount operation with mount path
+	unmountOp := statemachine.NewOperationUnmount(statemachine.Unmount{
+		RepositoryID: repoId,
+		MountPath:    mountPath,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		unmountOp,
+		repoId,
+		nil,                         // No backup profile for unmount operations
+		time.Now().Add(1*time.Hour), // 1-hour TTL
+		true,                        // immediate = true
+	)
+
+	// Add to queue (will start immediately or fail)
+	return s.queueManager.AddOperation(repoId, queuedOp)
 }
 
 // UnmountArchive unmounts a specific archive
-func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (*platform.MountState, error) {
-	// TODO: Implement archive unmounting
-	return nil, nil
+func (s *Service) UnmountArchive(ctx context.Context, archiveId int) (string, error) {
+	// Get archive to determine repository ID and calculate mount path
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Get repository ID
+	repoId := archiveEntity.Edges.Repository.ID
+
+	// Calculate mount path for the archive
+	mountPath, err := getArchiveMountPath(archiveEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get archive mount path: %w", err)
+	}
+
+	// Create unmount archive operation with mount path
+	unmountOp := statemachine.NewOperationUnmountArchive(statemachine.UnmountArchive{
+		ArchiveID: archiveId,
+		MountPath: mountPath,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		unmountOp,
+		repoId,
+		nil,                         // No backup profile for unmount operations
+		time.Now().Add(1*time.Hour), // 1-hour TTL
+		true,                        // immediate = true
+	)
+
+	// Add to queue (will start immediately or fail)
+	return s.queueManager.AddOperation(repoId, queuedOp)
 }
 
 // UnmountAllForRepos unmounts all mounts for specified repositories
-func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) error {
-	// TODO: Implement bulk unmounting
-	return nil
+func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) []error {
+	var errorSlice []error
+	for _, repoId := range repoIds {
+		_, err := s.Unmount(ctx, repoId)
+		if err != nil {
+			errorSlice = append(errorSlice, fmt.Errorf("failed to unmount repository %d: %w", repoId, err))
+		}
+	}
+	return errorSlice
 }
 
 // ExaminePrunes analyzes what would be pruned with given rules

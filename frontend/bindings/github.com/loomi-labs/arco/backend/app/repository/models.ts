@@ -372,6 +372,11 @@ export class QueuedOperation {
      */
     "validUntil": time$0.Time;
 
+    /**
+     * Must start immediately or fail
+     */
+    "immediate": boolean;
+
     /** Creates a new QueuedOperation instance. */
     constructor($$source: Partial<QueuedOperation> = {}) {
         if (!("id" in $$source)) {
@@ -394,6 +399,9 @@ export class QueuedOperation {
         }
         if (!("validUntil" in $$source)) {
             this["validUntil"] = null;
+        }
+        if (!("immediate" in $$source)) {
+            this["immediate"] = false;
         }
 
         Object.assign(this, $$source);

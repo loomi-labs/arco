@@ -37,6 +37,26 @@ type ArchiveRename struct {
 	Name      string `json:"name"`
 }
 
+type Mount struct {
+	RepositoryID int    `json:"repositoryId"`
+	MountPath    string `json:"mountPath"`
+}
+
+type MountArchive struct {
+	ArchiveID int    `json:"archiveId"`
+	MountPath string `json:"mountPath"`
+}
+
+type Unmount struct {
+	RepositoryID int    `json:"repositoryId"`
+	MountPath    string `json:"mountPath"`
+}
+
+type UnmountArchive struct {
+	ArchiveID int    `json:"archiveId"`
+	MountPath string `json:"mountPath"`
+}
+
 // Operation ADT definition
 type Operation adtenum.Enum[Operation]
 
@@ -47,6 +67,10 @@ func (Delete) isADTVariant() Operation         { var zero Operation; return zero
 func (ArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
 func (ArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
 func (ArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
+func (Mount) isADTVariant() Operation          { var zero Operation; return zero }
+func (MountArchive) isADTVariant() Operation   { var zero Operation; return zero }
+func (Unmount) isADTVariant() Operation        { var zero Operation; return zero }
+func (UnmountArchive) isADTVariant() Operation { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT
@@ -65,7 +89,7 @@ func GetOperationWeight(op Operation) OperationWeight {
 	switch op.(type) {
 	case BackupVariant, PruneVariant, DeleteVariant:
 		return WeightHeavy
-	case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant:
+	case ArchiveRefreshVariant, ArchiveDeleteVariant, ArchiveRenameVariant, MountVariant, MountArchiveVariant, UnmountVariant, UnmountArchiveVariant:
 		return WeightLight
 	default:
 		return WeightLight

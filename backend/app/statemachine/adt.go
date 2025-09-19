@@ -16,7 +16,11 @@ const (
 	OperationTypeArchiveRename  OperationType = "ArchiveRename"
 	OperationTypeBackup         OperationType = "Backup"
 	OperationTypeDelete         OperationType = "Delete"
+	OperationTypeMount          OperationType = "Mount"
+	OperationTypeMountArchive   OperationType = "MountArchive"
 	OperationTypePrune          OperationType = "Prune"
+	OperationTypeUnmount        OperationType = "Unmount"
+	OperationTypeUnmountArchive OperationType = "UnmountArchive"
 )
 
 // Operation variant wrappers
@@ -25,7 +29,11 @@ type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
 type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
 type BackupVariant adtenum.OneVariantValue[Backup]
 type DeleteVariant adtenum.OneVariantValue[Delete]
+type MountVariant adtenum.OneVariantValue[Mount]
+type MountArchiveVariant adtenum.OneVariantValue[MountArchive]
 type PruneVariant adtenum.OneVariantValue[Prune]
+type UnmountVariant adtenum.OneVariantValue[Unmount]
+type UnmountArchiveVariant adtenum.OneVariantValue[UnmountArchive]
 
 // Operation constructors
 var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
@@ -33,7 +41,11 @@ var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[Archiv
 var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
 var NewOperationBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
 var NewOperationDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
+var NewOperationMount = adtenum.CreateOneVariantValueConstructor[MountVariant]()
+var NewOperationMountArchive = adtenum.CreateOneVariantValueConstructor[MountArchiveVariant]()
 var NewOperationPrune = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
+var NewOperationUnmount = adtenum.CreateOneVariantValueConstructor[UnmountVariant]()
+var NewOperationUnmountArchive = adtenum.CreateOneVariantValueConstructor[UnmountArchiveVariant]()
 
 // EnumType methods for Operation variants
 func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
@@ -41,7 +53,11 @@ func (v ArchiveRefreshVariant) EnumType() Operation { return v }
 func (v ArchiveRenameVariant) EnumType() Operation  { return v }
 func (v BackupVariant) EnumType() Operation         { return v }
 func (v DeleteVariant) EnumType() Operation         { return v }
+func (v MountVariant) EnumType() Operation          { return v }
+func (v MountArchiveVariant) EnumType() Operation   { return v }
 func (v PruneVariant) EnumType() Operation          { return v }
+func (v UnmountVariant) EnumType() Operation        { return v }
+func (v UnmountArchiveVariant) EnumType() Operation { return v }
 
 // OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
 type OperationUnion struct {
@@ -51,6 +67,10 @@ type OperationUnion struct {
 	Backup         *Backup         `json:"backup,omitempty"`
 	Prune          *Prune          `json:"prune,omitempty"`
 	Delete         *Delete         `json:"delete,omitempty"`
+	Mount          *Mount          `json:"mount,omitempty"`
+	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
+	Unmount        *Unmount        `json:"unmount,omitempty"`
+	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
 	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
 	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
 	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
@@ -76,6 +96,30 @@ func ToOperationUnion(r Operation) OperationUnion {
 		return OperationUnion{
 			Type:   OperationTypeDelete,
 			Delete: &data,
+		}
+	case MountVariant:
+		data := i()
+		return OperationUnion{
+			Type:  OperationTypeMount,
+			Mount: &data,
+		}
+	case MountArchiveVariant:
+		data := i()
+		return OperationUnion{
+			Type:         OperationTypeMountArchive,
+			MountArchive: &data,
+		}
+	case UnmountVariant:
+		data := i()
+		return OperationUnion{
+			Type:    OperationTypeUnmount,
+			Unmount: &data,
+		}
+	case UnmountArchiveVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeUnmountArchive,
+			UnmountArchive: &data,
 		}
 	case ArchiveRefreshVariant:
 		data := i()
@@ -112,6 +156,7 @@ const (
 	RepositoryStateTypeError      RepositoryStateType = "Error"
 	RepositoryStateTypeIdle       RepositoryStateType = "Idle"
 	RepositoryStateTypeMounted    RepositoryStateType = "Mounted"
+	RepositoryStateTypeMounting   RepositoryStateType = "Mounting"
 	RepositoryStateTypePruning    RepositoryStateType = "Pruning"
 	RepositoryStateTypeQueued     RepositoryStateType = "Queued"
 	RepositoryStateTypeRefreshing RepositoryStateType = "Refreshing"
@@ -123,6 +168,7 @@ type DeletingVariant adtenum.OneVariantValue[Deleting]
 type ErrorVariant adtenum.OneVariantValue[Error]
 type IdleVariant adtenum.OneVariantValue[Idle]
 type MountedVariant adtenum.OneVariantValue[Mounted]
+type MountingVariant adtenum.OneVariantValue[Mounting]
 type PruningVariant adtenum.OneVariantValue[Pruning]
 type QueuedVariant adtenum.OneVariantValue[Queued]
 type RefreshingVariant adtenum.OneVariantValue[Refreshing]
@@ -133,6 +179,7 @@ var NewRepositoryStateDeleting = adtenum.CreateOneVariantValueConstructor[Deleti
 var NewRepositoryStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
 var NewRepositoryStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
 var NewRepositoryStateMounted = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
+var NewRepositoryStateMounting = adtenum.CreateOneVariantValueConstructor[MountingVariant]()
 var NewRepositoryStatePruning = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
 var NewRepositoryStateQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
 var NewRepositoryStateRefreshing = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
@@ -143,6 +190,7 @@ func (v DeletingVariant) EnumType() RepositoryState   { return v }
 func (v ErrorVariant) EnumType() RepositoryState      { return v }
 func (v IdleVariant) EnumType() RepositoryState       { return v }
 func (v MountedVariant) EnumType() RepositoryState    { return v }
+func (v MountingVariant) EnumType() RepositoryState   { return v }
 func (v PruningVariant) EnumType() RepositoryState    { return v }
 func (v QueuedVariant) EnumType() RepositoryState     { return v }
 func (v RefreshingVariant) EnumType() RepositoryState { return v }
@@ -158,6 +206,7 @@ type RepositoryStateUnion struct {
 	Pruning    *Pruning    `json:"pruning,omitempty"`
 	Deleting   *Deleting   `json:"deleting,omitempty"`
 	Refreshing *Refreshing `json:"refreshing,omitempty"`
+	Mounting   *Mounting   `json:"mounting,omitempty"`
 	Mounted    *Mounted    `json:"mounted,omitempty"`
 	Error      *Error      `json:"error,omitempty"`
 }
@@ -200,6 +249,12 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 		return RepositoryStateUnion{
 			Type:       RepositoryStateTypeRefreshing,
 			Refreshing: &data,
+		}
+	case MountingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:     RepositoryStateTypeMounting,
+			Mounting: &data,
 		}
 	case MountedVariant:
 		data := i()

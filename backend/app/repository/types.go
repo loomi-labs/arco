@@ -121,6 +121,7 @@ type QueuedOperation struct {
 	Status          OperationStatus        `json:"status"`    // ADT containing status, progress, error
 	CreatedAt       time.Time              `json:"createdAt"`
 	ValidUntil      time.Time              `json:"validUntil"` // Auto-expire if not started
+	Immediate       bool                   `json:"immediate"`  // Must start immediately or fail
 }
 
 // ============================================================================

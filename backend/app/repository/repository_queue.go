@@ -42,7 +42,7 @@ func NewRepositoryQueue(repoID int) *RepositoryQueue {
 	}
 }
 
-func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation, repoID int, backupProfileID *int, validUntil time.Time) *QueuedOperation {
+func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation, repoID int, backupProfileID *int, validUntil time.Time, immediate bool) *QueuedOperation {
 	return &QueuedOperation{
 		ID:              uuid.New().String(),
 		RepoID:          repoID,
@@ -51,6 +51,7 @@ func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation
 		Status:          NewOperationStatusQueued(Queued{Position: 0}), // Placeholder - will be corrected by updatePositions
 		CreatedAt:       time.Now(),
 		ValidUntil:      validUntil,
+		Immediate:       immediate,
 	}
 }
 

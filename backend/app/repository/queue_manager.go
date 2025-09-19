@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
@@ -123,8 +125,18 @@ func (qm *QueueManager) GetQueue(repoID int) *RepositoryQueue {
 
 // AddOperation adds an operation to the specified repository queue
 func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, error) {
-	// Get or create repository queue
+	// Get repository queue
 	queue := qm.GetQueue(repoID)
+
+	// Check immediate flag requirements
+	if op.Immediate {
+		if qm.HasQueuedOperations(repoID) || queue.HasActiveOperation() {
+			return "", fmt.Errorf("cannot start immediate operation: repository has active or queued operations")
+		}
+		if !qm.CanStartOperation(repoID, op) {
+			return "", fmt.Errorf("cannot start immediate operation: concurrency limits exceeded")
+		}
+	}
 
 	// Add operation to queue (handles idempotency internally)
 	operationID, err := queue.AddOperation(op)
@@ -141,6 +153,34 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 // RemoveOperation removes an operation from tracking
 func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	queue := qm.GetQueue(repoID)
+
+	// Get operation details before removing it
+	operation := queue.GetOperationByID(operationID)
+	if operation == nil {
+		// Operation doesn't exist, nothing to remove
+		return nil
+	}
+
+	// Check if this is the active operation and clean up global tracking
+	activeOp := queue.GetActive()
+	if activeOp != nil && activeOp.ID == operationID {
+		// This is an active operation, remove from global tracking maps
+		weight := statemachine.GetOperationWeight(operation.Operation)
+
+		qm.mu.Lock()
+		if weight == statemachine.WeightHeavy {
+			delete(qm.activeHeavy, repoID)
+			qm.log.Debugw("Removed operation from activeHeavy tracking",
+				"repoID", repoID, "operationID", operationID, "operationType", fmt.Sprintf("%T", operation.Operation))
+		} else {
+			delete(qm.activeLight, repoID)
+			qm.log.Debugw("Removed operation from activeLight tracking",
+				"repoID", repoID, "operationID", operationID, "operationType", fmt.Sprintf("%T", operation.Operation))
+		}
+		qm.mu.Unlock()
+	}
+
+	// Remove from repository queue
 	return queue.RemoveOperation(operationID)
 }
 
@@ -346,8 +386,8 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 		// On failure, transition to error state
 		targetState = statemachine.CreateErrorState(errorType, errorMsg, errorAction)
 	} else {
-		// On success, determine next state based on queue status
-		targetState, err = qm.getCompletionStateForRepository(repoID)
+		// On success, determine next state based on queue status and completed operation
+		targetState, err = qm.getCompletionStateForRepository(repoID, activeOp)
 		if err != nil {
 			return fmt.Errorf("failed to determine completion state: %w", err)
 		}
@@ -609,12 +649,22 @@ func (qm *QueueManager) processQueue(repoID int) {
 	// Start the operation
 	err := qm.StartOperation(application.Get().Context(), repoID, nextOp.ID)
 	if err != nil {
-		// Log error but don't crash
+		// Log error and mark operation as failed
 		qm.log.Warnw("Failed to start queued operation",
 			"repoID", repoID,
 			"operationID", nextOp.ID,
 			"operationType", fmt.Sprintf("%T", nextOp.Operation),
 			"error", err)
+
+		// Mark the operation as failed and remove it from queue
+		err = queue.RemoveOperation(nextOp.ID)
+		if err != nil {
+			qm.log.Errorw("Failed to remove operation",
+				"repoID", repoID, "operationID",
+				nextOp.ID, "operationType",
+				fmt.Sprintf("%T", nextOp.Operation),
+				"error", err)
+		}
 	}
 }
 
@@ -669,13 +719,29 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 		// Archive rename is a lightweight operation, treat as refreshing
 		return statemachine.CreateRefreshingState(ctx), nil
 
+	case statemachine.MountVariant:
+		mountData := v()
+		return statemachine.CreateMountingState(statemachine.MountTypeRepository, mountData.MountPath, nil), nil
+
+	case statemachine.MountArchiveVariant:
+		mountData := v()
+		return statemachine.CreateMountingState(statemachine.MountTypeArchive, mountData.MountPath, &mountData.ArchiveID), nil
+
+	case statemachine.UnmountVariant:
+		// Unmount operations transition through refreshing state temporarily
+		return statemachine.CreateRefreshingState(ctx), nil
+
+	case statemachine.UnmountArchiveVariant:
+		// Unmount archive operations transition through refreshing state temporarily
+		return statemachine.CreateRefreshingState(ctx), nil
+
 	default:
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
 	}
 }
 
 // getCompletionStateForRepository determines the target state when an operation completes successfully
-func (qm *QueueManager) getCompletionStateForRepository(repoID int) (statemachine.RepositoryState, error) {
+func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp *QueuedOperation) (statemachine.RepositoryState, error) {
 	// Check if there are more operations queued
 	if qm.HasQueuedOperations(repoID) {
 		// Get queue info for state data
@@ -688,8 +754,32 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int) (statemachin
 		}
 	}
 
-	// No more operations, return to idle
-	return statemachine.CreateIdleState(), nil
+	// No more operations - determine final state based on completed operation
+	switch completedOp.Operation.(type) {
+	case statemachine.MountVariant:
+		// Mount operations transition to Mounted state
+		mountData := completedOp.Operation.(statemachine.MountVariant)()
+		return statemachine.CreateMountedState([]statemachine.MountInfo{
+			{
+				MountType: statemachine.MountTypeRepository,
+				MountPath: mountData.MountPath,
+			},
+		}), nil
+
+	case statemachine.MountArchiveVariant:
+		// Mount archive operations transition to Mounted state
+		mountData := completedOp.Operation.(statemachine.MountArchiveVariant)()
+		return statemachine.CreateMountedState([]statemachine.MountInfo{
+			{
+				MountType: statemachine.MountTypeArchive,
+				MountPath: mountData.MountPath,
+			},
+		}), nil
+
+	default:
+		// All other operations return to idle
+		return statemachine.CreateIdleState(), nil
+	}
 }
 
 // createErrorNotification creates an error notification in the database for a failed borg operation
@@ -875,6 +965,14 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 		return e.executeArchiveRefresh(ctx, v)
 	case statemachine.ArchiveRenameVariant:
 		return e.executeArchiveRename(ctx, v)
+	case statemachine.MountVariant:
+		return e.executeMount(ctx, v)
+	case statemachine.MountArchiveVariant:
+		return e.executeMountArchive(ctx, v)
+	case statemachine.UnmountVariant:
+		return e.executeUnmount(ctx, v)
+	case statemachine.UnmountArchiveVariant:
+		return e.executeUnmountArchive(ctx, v)
 	default:
 		// System error: unsupported operation type (programming error)
 		return nil, fmt.Errorf("unsupported operation type: %T", operation)
@@ -1175,6 +1273,110 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 
 	// Return status directly (preserves rich error information)
 	return status, nil
+}
+
+// executeMount performs a borg mount operation for a repository
+func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statemachine.MountVariant) (*borgtypes.Status, error) {
+	mountData := mountOp()
+
+	// Get repository from database
+	repo, err := e.db.Repository.Get(ctx, mountData.RepositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Use stored mount path and ensure it exists
+	mountPath := mountData.MountPath
+	err = ensurePathExists(mountPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mount path: %w", err)
+	}
+
+	// Execute borg mount
+	status := e.borgClient.MountRepository(ctx, repo.URL, repo.Password, mountPath)
+
+	// On success, open file manager
+	if status == nil || !status.HasError() {
+		go e.openFileManager(mountPath)
+	}
+
+	return status, nil
+}
+
+// executeMountArchive performs a borg mount operation for a specific archive
+func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp statemachine.MountArchiveVariant) (*borgtypes.Status, error) {
+	mountData := mountOp()
+
+	// Get archive from database
+	archiveEntity, err := e.db.Archive.Query().
+		Where(archive.ID(mountData.ArchiveID)).
+		WithBackupProfile(func(q *ent.BackupProfileQuery) {
+			q.WithRepositories()
+		}).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("archive %d not found: %w", mountData.ArchiveID, err)
+	}
+
+	// Get repository from archive's backup profile
+	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0]
+
+	// Use stored mount path and ensure it exists
+	mountPath := mountData.MountPath
+	err = ensurePathExists(mountPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create archive mount path: %w", err)
+	}
+
+	// Execute borg mount
+	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, repo.Password, mountPath)
+
+	// On success, open file manager
+	if status == nil || !status.HasError() {
+		go e.openFileManager(mountPath)
+	}
+
+	return status, nil
+}
+
+// executeUnmount performs a borg unmount operation for a repository
+func (e *borgOperationExecutor) executeUnmount(ctx context.Context, unmountOp statemachine.UnmountVariant) (*borgtypes.Status, error) {
+	unmountData := unmountOp()
+
+	// Use stored mount path
+	mountPath := unmountData.MountPath
+
+	// Execute borg umount
+	status := e.borgClient.Umount(ctx, mountPath)
+
+	return status, nil
+}
+
+// executeUnmountArchive performs a borg unmount operation for a specific archive
+func (e *borgOperationExecutor) executeUnmountArchive(ctx context.Context, unmountOp statemachine.UnmountArchiveVariant) (*borgtypes.Status, error) {
+	unmountData := unmountOp()
+
+	// Use stored mount path
+	mountPath := unmountData.MountPath
+
+	// Execute borg umount
+	status := e.borgClient.Umount(ctx, mountPath)
+
+	return status, nil
+}
+
+// openFileManager opens the file manager for the given path
+func (e *borgOperationExecutor) openFileManager(path string) {
+	openCmd, err := platform.GetOpenFileManagerCmd()
+	if err != nil {
+		e.log.Error("Error getting open file manager command: ", err)
+		return
+	}
+	cmd := exec.Command(openCmd, path)
+	err = cmd.Run()
+	if err != nil {
+		e.log.Error("Error opening file manager: ", err)
+	}
 }
 
 // syncArchivesToDatabase synchronizes borg archives with the database

@@ -12,6 +12,7 @@ export {
     MountInfo,
     MountType,
     Mounted,
+    Mounting,
     Pruning,
     Queued,
     Refreshing,

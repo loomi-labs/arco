@@ -300,19 +300,15 @@ export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
 /**
  * Mount mounts a repository
  */
-export function Mount(repoId: number): $CancellablePromise<platform$0.MountState | null> {
-    return $Call.ByID(967190463, repoId).then(($result: any) => {
-        return $$createType9($result);
-    });
+export function Mount(repoId: number): $CancellablePromise<string> {
+    return $Call.ByID(967190463, repoId);
 }
 
 /**
  * MountArchive mounts a specific archive
  */
-export function MountArchive(archiveId: number): $CancellablePromise<platform$0.MountState | null> {
-    return $Call.ByID(1226599023, archiveId).then(($result: any) => {
-        return $$createType9($result);
-    });
+export function MountArchive(archiveId: number): $CancellablePromise<string> {
+    return $Call.ByID(1226599023, archiveId);
 }
 
 /**
@@ -424,26 +420,24 @@ export function TestRepoConnection(path: string, password: string): $Cancellable
 /**
  * Unmount unmounts a repository
  */
-export function Unmount(repoId: number): $CancellablePromise<platform$0.MountState | null> {
-    return $Call.ByID(3507624802, repoId).then(($result: any) => {
-        return $$createType9($result);
-    });
+export function Unmount(repoId: number): $CancellablePromise<string> {
+    return $Call.ByID(3507624802, repoId);
 }
 
 /**
  * UnmountAllForRepos unmounts all mounts for specified repositories
  */
-export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<void> {
-    return $Call.ByID(1105783937, repoIds);
+export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<any[]> {
+    return $Call.ByID(1105783937, repoIds).then(($result: any) => {
+        return $$createType30($result);
+    });
 }
 
 /**
  * UnmountArchive unmounts a specific archive
  */
-export function UnmountArchive(archiveId: number): $CancellablePromise<platform$0.MountState | null> {
-    return $Call.ByID(2999465112, archiveId).then(($result: any) => {
-        return $$createType9($result);
-    });
+export function UnmountArchive(archiveId: number): $CancellablePromise<string> {
+    return $Call.ByID(2999465112, archiveId);
 }
 
 /**
@@ -507,3 +501,4 @@ const $$createType26 = $models.PruningDates.createFrom;
 const $$createType27 = ent$0.Repository.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
 const $$createType29 = $models.TestRepoConnectionResult.createFrom;
+const $$createType30 = $Create.Array($Create.Any);
