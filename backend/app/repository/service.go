@@ -710,16 +710,9 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 	// Get repository ID
 	repoId := archiveEntity.Edges.Repository.ID
 
-	// Calculate mount path for the archive
-	mountPath, err := getArchiveMountPath(archiveEntity)
-	if err != nil {
-		return "", fmt.Errorf("failed to get archive mount path: %w", err)
-	}
-
 	// Create mount archive operation with mount path
 	mountOp := statemachine.NewOperationMountArchive(statemachine.MountArchive{
 		ArchiveID: archiveId,
-		MountPath: mountPath,
 	})
 
 	// Create queued operation with immediate flag
