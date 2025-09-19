@@ -747,9 +747,11 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 	switch completedOp.Operation.(type) {
 	case statemachine.MountVariant:
 		// Mount operations transition to Mounted state
+		mountData := completedOp.Operation.(statemachine.MountVariant)()
 		return statemachine.CreateMountedState([]statemachine.MountInfo{
 			{
 				MountType: statemachine.MountTypeRepository,
+				MountPath: mountData.MountPath,
 			},
 		}), nil
 
@@ -760,6 +762,7 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 			{
 				MountType: statemachine.MountTypeArchive,
 				ArchiveID: &mountData.ArchiveID,
+				MountPath: mountData.MountPath,
 			},
 		}), nil
 
@@ -1272,24 +1275,18 @@ func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statem
 		return nil, fmt.Errorf("failed to get repository: %w", err)
 	}
 
-	// Calculate mount path
-	mountPath, err := getRepoMountPath(repo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get mount path: %w", err)
-	}
-
 	// Make sure the mount path exists
-	err = ensurePathExists(mountPath)
+	err = ensurePathExists(mountData.MountPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mount path: %w", err)
 	}
 
 	// Execute borg mount
-	status := e.borgClient.MountRepository(ctx, repo.URL, repo.Password, mountPath)
+	status := e.borgClient.MountRepository(ctx, repo.URL, repo.Password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
-		go openFileManager(mountPath, e.log)
+		go openFileManager(mountData.MountPath, e.log)
 	}
 
 	return status, nil
@@ -1311,24 +1308,18 @@ func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp
 	// Get repository from archive's backup profile
 	repo := archiveEntity.Edges.Repository
 
-	// Calculate mount path for the archive
-	mountPath, err := getArchiveMountPath(archiveEntity)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get archive mount path: %w", err)
-	}
-
 	// Make sure the mount path exists
-	err = ensurePathExists(mountPath)
+	err = ensurePathExists(mountData.MountPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create archive mount path: %w", err)
 	}
 
 	// Execute borg mount
-	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, repo.Password, mountPath)
+	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, repo.Password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
-		go openFileManager(mountPath, e.log)
+		go openFileManager(mountData.MountPath, e.log)
 	}
 
 	return status, nil

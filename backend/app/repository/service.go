@@ -760,9 +760,22 @@ func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
 		return "", fmt.Errorf("repository is mounted but no repository mount found")
 	}
 
+	// Get repository from database to calculate mount path
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Calculate mount path
+	mountPath, err := getRepoMountPath(repoEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get mount path: %w", err)
+	}
+
 	// Create mount operation with mount path
 	mountOp := statemachine.NewOperationMount(statemachine.Mount{
 		RepositoryID: repoId,
+		MountPath:    mountPath,
 	})
 
 	// Create queued operation with immediate flag
@@ -821,9 +834,16 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 		return "", fmt.Errorf("repository is mounted but no mounts found")
 	}
 
+	// Calculate mount path for the archive
+	mountPath, err := getArchiveMountPath(archiveEntity)
+	if err != nil {
+		return "", fmt.Errorf("failed to get archive mount path: %w", err)
+	}
+
 	// Create mount archive operation with mount path
 	mountOp := statemachine.NewOperationMountArchive(statemachine.MountArchive{
 		ArchiveID: archiveId,
+		MountPath: mountPath,
 	})
 
 	// Create queued operation with immediate flag
