@@ -561,10 +561,10 @@ func (qm *QueueManager) UpdateBackupProgress(ctx context.Context, operationID st
 	return fmt.Errorf("operation %s not found in any queue", operationID)
 }
 
-// GetQueuedOperations returns all operations for a repository
-func (qm *QueueManager) GetQueuedOperations(repoID int) ([]*QueuedOperation, error) {
+// GetQueuedOperations returns all operations for a repository (including the active one), optionally filtered by operation type
+func (qm *QueueManager) GetQueuedOperations(repoID int, operationType *statemachine.OperationType) ([]*QueuedOperation, error) {
 	queue := qm.GetQueue(repoID)
-	return queue.GetOperations(), nil
+	return queue.GetOperations(operationType), nil
 }
 
 // GetOperationsByStatus returns operations filtered by status for a repository
@@ -622,18 +622,18 @@ func (qm *QueueManager) processQueue(repoID int) error {
 
 	// Check if repository already has an active operation
 	if queue.HasActiveOperation() {
-		return fmt.Errorf("repository has already an active operation")
+		return nil
 	}
 
 	// Get next operation from queue
 	nextOp := queue.GetNext()
 	if nextOp == nil {
-		return fmt.Errorf("queue has no next operation")
+		return nil
 	}
 
 	// Check concurrency limits
 	if !qm.CanStartOperation(repoID, nextOp) {
-		return fmt.Errorf("repository has already an active operation")
+		return nil
 	}
 
 	// Start the operation
@@ -1211,16 +1211,14 @@ func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, delete
 	// Get archive from database to get repository information
 	archiveEntity, err := e.db.Archive.Query().
 		Where(archive.ID(deleteData.ArchiveID)).
-		WithBackupProfile(func(q *ent.BackupProfileQuery) {
-			q.WithRepositories()
-		}).
+		WithRepository().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("archive %d not found: %w", deleteData.ArchiveID, err)
 	}
 
 	// Get repository from archive's backup profile
-	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0] // Assumes one repository per backup profile
+	repo := archiveEntity.Edges.Repository
 
 	// Use archive name from database
 	archiveName := archiveEntity.Name
