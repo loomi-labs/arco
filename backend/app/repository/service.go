@@ -1941,6 +1941,36 @@ func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (
 
 // LOW PRIORITY METHODS
 
-func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, backupId types.BackupId) (string, error) {
+func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
+	// Get the last notification for the backup profile and repository
+	lastNotification, err := s.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := s.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
 	return "", nil
 }
