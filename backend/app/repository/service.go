@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
@@ -1308,16 +1310,68 @@ func (s *Service) GetPruningDates(ctx context.Context, archiveIds []int) (Prunin
 
 // ValidateRepoName validates a repository name
 func (s *Service) ValidateRepoName(ctx context.Context, name string) (string, error) {
-	// TODO: Implement repository name validation:
-	// 1. Check name format and length
-	// 2. Check for duplicates
-	// 3. Return validation error message or empty string if valid
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < schema.ValRepositoryMinNameLength {
+		return fmt.Sprintf("Name must be at least %d characters long", schema.ValRepositoryMinNameLength), nil
+	}
+	if len(name) > schema.ValRepositoryMaxNameLength {
+		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValRepositoryMaxNameLength), nil
+	}
+	matched := schema.ValRepositoryNamePattern.MatchString(name)
+	if !matched {
+		return "Name can only contain letters, numbers, hyphens, and underscores", nil
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.Name(name)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Repository name must be unique", nil
+	}
+
 	return "", nil
 }
 
 // ValidateRepoPath validates a repository path
 func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal bool) (string, error) {
-	// TODO: Implement repository path validation
+	if path == "" {
+		return "Path is required", nil
+	}
+	if isLocal {
+		if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "~") {
+			return "Path must start with / or ~", nil
+		}
+		expandedPath := util.ExpandPath(path)
+		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+			return "Path does not exist", nil
+		}
+		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
+			return "Path is not a folder", nil
+		}
+		if entries, err := os.ReadDir(expandedPath); err == nil && len(entries) > 0 {
+			if !s.IsBorgRepository(expandedPath) {
+				return "Folder must be empty", nil
+			}
+		}
+	}
+
+	exist, err := s.db.Repository.
+		Query().
+		Where(repository.URL(path)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Repository is already connected", nil
+	}
+
 	return "", nil
 }
 
