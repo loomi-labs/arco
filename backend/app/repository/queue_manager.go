@@ -29,6 +29,19 @@ import (
 )
 
 // ============================================================================
+// ERROR RESPONSE STRUCTURES
+// ============================================================================
+
+// OperationErrorResponse defines comprehensive error handling strategy for operations
+type OperationErrorResponse struct {
+	ErrorType                 statemachine.ErrorType
+	ErrorAction               statemachine.ErrorAction
+	ShouldEnterErrorState     bool // Whether repository should transition to error state
+	ShouldNotify              bool // Whether to send frontend notification
+	ShouldPersistNotification bool // Whether to save notification to database
+}
+
+// ============================================================================
 // QUEUE MANAGER
 // ============================================================================
 
@@ -289,7 +302,14 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 				"error", err.Error())
 
 			// Complete operation with system error
-			if completeErr := qm.CompleteOperation(repoID, operationID, false, fmt.Sprintf("System error: %v", err), statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone); completeErr != nil {
+			systemErrorResponse := &OperationErrorResponse{
+				ErrorType:                 statemachine.ErrorTypeGeneral,
+				ErrorAction:               statemachine.ErrorActionNone,
+				ShouldEnterErrorState:     true,
+				ShouldNotify:              true,
+				ShouldPersistNotification: true,
+			}
+			if completeErr := qm.CompleteOperation(application.Get().Context(), repoID, operationID, op.Operation, systemErrorResponse, fmt.Sprintf("System error: %v", err)); completeErr != nil {
 				qm.log.Warnw("Failed to complete operation after system error",
 					"repoID", repoID,
 					"operationID", operationID,
@@ -309,14 +329,9 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 				"category", status.Error.Category,
 				"exitCode", status.Error.ExitCode)
 
-			// Only create notifications for backup/prune operations
-			if qm.shouldCreateNotification(op.Operation) {
-				qm.createErrorNotification(ctx, repoID, operationID, status, op.Operation)
-			}
-
-			// Complete operation with failure using borg error mapping
-			errorType, errorAction := qm.mapBorgErrorToErrorType(ctx, status.Error, repoID)
-			if completeErr := qm.CompleteOperation(repoID, operationID, false, status.Error.Message, errorType, errorAction); completeErr != nil {
+			// Complete operation with failure using operation-aware error mapping
+			errorResponse := qm.mapOperationErrorResponse(ctx, status.Error, repoID, op.Operation)
+			if completeErr := qm.CompleteOperation(application.Get().Context(), repoID, operationID, op.Operation, &errorResponse, status.Error.Message); completeErr != nil {
 				// Log completion error (system issue, not user-facing)
 				qm.log.Warnw("Failed to complete failed operation",
 					"repoID", repoID,
@@ -349,7 +364,7 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 			}
 
 			// Complete operation with success
-			if completeErr := qm.CompleteOperation(repoID, operationID, true, "", statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone); completeErr != nil {
+			if completeErr := qm.CompleteOperation(application.Get().Context(), repoID, operationID, op.Operation, nil, ""); completeErr != nil {
 				// Log completion error (system issue, not user-facing)
 				qm.log.Warnw("Failed to complete successful operation",
 					"repoID", repoID,
@@ -362,8 +377,8 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 	return nil
 }
 
-// CompleteOperation marks an operation as completed
-func (qm *QueueManager) CompleteOperation(repoID int, operationID string, success bool, errorMsg string, errorType statemachine.ErrorType, errorAction statemachine.ErrorAction) error {
+// CompleteOperation marks an operation as completed with comprehensive error handling
+func (qm *QueueManager) CompleteOperation(ctx context.Context, repoID int, operationID string, operation statemachine.Operation, errorResponse *OperationErrorResponse, errorMsg string) error {
 	queue := qm.GetQueue(repoID)
 
 	// Get active operation to determine weight
@@ -373,6 +388,19 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 	}
 
 	weight := statemachine.GetOperationWeight(activeOp.Operation)
+
+	// Handle error notifications based on error response
+	if errorResponse != nil && errorResponse.ShouldNotify && errorMsg != "" {
+		if errorResponse.ShouldPersistNotification {
+			// Create persistent database notification (for backup/prune operations)
+			qm.createErrorNotification(ctx, repoID, operationID, &borgtypes.Status{
+				Error: &borgtypes.BorgError{Message: errorMsg},
+			}, operation)
+		} else {
+			// Send frontend-only notification (for rename/delete operations)
+			qm.sendFrontendNotification(ctx, repoID, operationID, errorMsg, operation)
+		}
+	}
 
 	// Remove from active tracking
 	qm.mu.Lock()
@@ -384,7 +412,7 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 	qm.mu.Unlock()
 
 	// Update operation status and complete in queue
-	err := queue.CompleteActive(success, errorMsg)
+	err := queue.CompleteActive(errorMsg)
 	if err != nil {
 		return fmt.Errorf("failed to complete operation: %w", err)
 	}
@@ -396,9 +424,9 @@ func (qm *QueueManager) CompleteOperation(repoID int, operationID string, succes
 	// Determine target state based on completion and queue status
 	var targetState statemachine.RepositoryState
 
-	if !success {
+	if errorResponse != nil && errorResponse.ShouldEnterErrorState {
 		// On failure, transition to error state
-		targetState = statemachine.CreateErrorState(errorType, errorMsg, errorAction)
+		targetState = statemachine.CreateErrorState(errorResponse.ErrorType, errorMsg, errorResponse.ErrorAction)
 	} else {
 		// On success, determine next state based on queue status and completed operation
 		targetState, err = qm.getCompletionStateForRepository(repoID, activeOp)
@@ -467,7 +495,7 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 		}
 
 		// Complete with cancelled status
-		err := queue.CompleteActive(false, "Operation cancelled by user")
+		err := queue.CompleteActive("")
 		if err != nil {
 			return fmt.Errorf("failed to cancel active operation: %w", err)
 		}
@@ -896,6 +924,43 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 	}
 }
 
+// sendFrontendNotification sends a frontend-only notification without database persistence
+func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int, operationID string, errorMsg string, operation statemachine.Operation) {
+	// Create user-friendly error message based on operation type
+	var message string
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeArchiveRename:
+		archiveRename := operation.(statemachine.ArchiveRenameVariant)()
+		archiveData := archiveRename
+		message = fmt.Sprintf("Failed to rename archive '%s': %s", archiveData.Name, errorMsg)
+	case statemachine.OperationTypeArchiveDelete:
+		archiveDelete := operation.(statemachine.ArchiveDeleteVariant)()
+		archiveData := archiveDelete
+		message = fmt.Sprintf("Failed to delete archive (ID %d): %s", archiveData.ArchiveID, errorMsg)
+	case statemachine.OperationTypeArchiveRefresh:
+		message = fmt.Sprintf("Failed to refresh archives: %s", errorMsg)
+
+	//	TODO: mabe we make this a bit better
+	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		message = fmt.Sprintf("Operation failed: %s", errorMsg)
+	default:
+		assert.Fail("Unhandled OperationType in sendFrontendNotification")
+	}
+
+	// Log the notification for debugging
+	qm.log.Infow("Sending frontend notification",
+		"repoID", repoID,
+		"operationID", operationID,
+		"operationType", statemachine.GetOperationType(operation),
+		"message", message)
+
+	qm.eventEmitter.EmitEvent(ctx, types.EventOperationErrorOccured.String(), message)
+}
+
 // getErrorNotificationType determines the notification type for error cases based on operation type
 // This method should only be called for backup and prune operations
 func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operation) notification.Type {
@@ -904,7 +969,14 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 		return notification.TypeFailedBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeFailedPruningRun
-	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
+	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for error notification",
 			"operationType", fmt.Sprintf("%T", operation))
@@ -923,7 +995,14 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		return notification.TypeWarningBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeWarningPruningRun
-	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
+	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for warning notification",
 			"operationType", fmt.Sprintf("%T", operation))
@@ -945,7 +1024,14 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 		pruneVariant := operation.(statemachine.PruneVariant)
 		pruneData := pruneVariant()
 		return pruneData.BackupID.BackupProfileId
-	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
+	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
 		// This should never happen if shouldCreateNotification is used correctly
 		qm.log.Errorw("Unexpected operation type for backup profile",
 			"operationType", fmt.Sprintf("%T", operation))
@@ -961,7 +1047,14 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 	switch statemachine.GetOperationType(operation) {
 	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
 		return true
-	case statemachine.OperationTypeDelete, statemachine.OperationTypeArchiveRefresh, statemachine.OperationTypeArchiveDelete, statemachine.OperationTypeArchiveRename, statemachine.OperationTypeMount, statemachine.OperationTypeMountArchive, statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
+	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
 		return false
 	default:
 		assert.Fail("Unhandled OperationType in shouldCreateNotification")
@@ -1325,6 +1418,17 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 	// Execute borg rename command
 	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, repo.Password, newArchiveName)
 
+	// If the operation was successful, update the archive name in the database
+	if status.IsCompletedWithSuccess() {
+		err := e.db.Archive.UpdateOneID(archiveEntity.ID).SetName(newArchiveName).Exec(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("borg rename succeeded but failed to update archive name in database: %w", err)
+		}
+
+		// Emit event for archive change
+		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repo.ID))
+	}
+
 	// Return status directly (preserves rich error information)
 	return status, nil
 }
@@ -1633,32 +1737,74 @@ func (qm *QueueManager) isCloudRepository(ctx context.Context, repoID int) bool 
 	return exists
 }
 
-// mapBorgErrorToErrorType maps borg errors to state machine error types and actions
-func (qm *QueueManager) mapBorgErrorToErrorType(ctx context.Context, borgError *borgtypes.BorgError, repoID int) (statemachine.ErrorType, statemachine.ErrorAction) {
+// mapOperationErrorResponse maps borg errors to comprehensive error handling strategy
+// based on both the error type and the operation type
+func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError *borgtypes.BorgError, repoID int, operation statemachine.Operation) OperationErrorResponse {
+	// First, determine base error type and action (existing logic)
+	var errorType statemachine.ErrorType
+	var errorAction statemachine.ErrorAction
+
 	// Check for SSH connection errors
 	if errors.Is(borgError, borgtypes.ErrorConnectionClosedWithHint) {
 		// SSH key authentication failed
 		// Only suggest regenerating SSH key for cloud repositories
 		if qm.isCloudRepository(ctx, repoID) {
-			return statemachine.ErrorTypeSSHKey, statemachine.ErrorActionRegenerateSSH
+			errorType, errorAction = statemachine.ErrorTypeSSHKey, statemachine.ErrorActionRegenerateSSH
+		} else {
+			errorType, errorAction = statemachine.ErrorTypeSSHKey, statemachine.ErrorActionNone
 		}
-		return statemachine.ErrorTypeSSHKey, statemachine.ErrorActionNone
-	}
-
-	// Check for passphrase errors
-	if errors.Is(borgError, borgtypes.ErrorPassphraseWrong) {
+	} else if errors.Is(borgError, borgtypes.ErrorPassphraseWrong) {
 		// Incorrect passphrase - no automatic action possible
-		return statemachine.ErrorTypePassphrase, statemachine.ErrorActionNone
-	}
-
-	// Check for lock timeout errors
-	if errors.Is(borgError, borgtypes.ErrorLockTimeout) {
+		errorType, errorAction = statemachine.ErrorTypePassphrase, statemachine.ErrorActionNone
+	} else if errors.Is(borgError, borgtypes.ErrorLockTimeout) {
 		// Repository is locked - can break lock for any repo type
-		return statemachine.ErrorTypeLocked, statemachine.ErrorActionBreakLock
+		errorType, errorAction = statemachine.ErrorTypeLocked, statemachine.ErrorActionBreakLock
+	} else {
+		// Default fallback for all other errors
+		errorType, errorAction = statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone
 	}
 
-	// Default fallback for all other errors
-	return statemachine.ErrorTypeGeneral, statemachine.ErrorActionNone
+	// Now determine operation-specific behavior
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
+		// Critical operations - full error handling with persistent notifications
+		return OperationErrorResponse{
+			ErrorType:                 errorType,
+			ErrorAction:               errorAction,
+			ShouldEnterErrorState:     errorAction != statemachine.ErrorActionNone,
+			ShouldNotify:              true,
+			ShouldPersistNotification: true,
+		}
+
+	case statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeDelete,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+
+		// Default is to notify but not enter error state and not persist the errors
+		return OperationErrorResponse{
+			ErrorType:                 errorType,
+			ErrorAction:               errorAction,
+			ShouldEnterErrorState:     errorAction != statemachine.ErrorActionNone, // Enter error state if error requires an action
+			ShouldNotify:              true,
+			ShouldPersistNotification: false,
+		}
+
+	default:
+		// Catch-all for any new operation types - fail with assertion to force explicit handling
+		assert.Fail("Unhandled OperationType in mapOperationErrorResponse")
+		return OperationErrorResponse{
+			ErrorType:                 statemachine.ErrorTypeGeneral,
+			ErrorAction:               statemachine.ErrorActionNone,
+			ShouldEnterErrorState:     true,
+			ShouldNotify:              true,
+			ShouldPersistNotification: false,
+		}
+	}
 }
 
 // ============================================================================

@@ -723,9 +723,47 @@ func (s *Service) QueueArchiveDelete(ctx context.Context, archiveId int) (string
 }
 
 // QueueArchiveRename queues an archive rename operation
-func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, prefix, name string) (string, error) {
-	// TODO: Implement archive rename queueing
-	return "", nil
+func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, name string) (string, error) {
+	// Get archive to determine repository ID and backup profile ID
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		WithBackupProfile().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Create archive rename operation
+	archiveRenameOp := statemachine.NewOperationArchiveRename(statemachine.ArchiveRename{
+		ArchiveID: archiveId,
+		Prefix:    archiveEntity.Edges.BackupProfile.Prefix,
+		Name:      name,
+	})
+
+	// Get backup profile ID if available
+	var backupProfileID *int
+	if archiveEntity.Edges.BackupProfile != nil {
+		backupProfileID = &archiveEntity.Edges.BackupProfile.ID
+	}
+
+	// Create queued operation using factory method
+	queue := s.queueManager.GetQueue(archiveEntity.Edges.Repository.ID)
+	queuedOp := queue.CreateQueuedOperation(
+		archiveRenameOp,
+		archiveEntity.Edges.Repository.ID,
+		backupProfileID,
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(archiveEntity.Edges.Repository.ID, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue archive rename operation: %w", err)
+	}
+
+	return operationID, nil
 }
 
 // ============================================================================
@@ -1706,11 +1744,6 @@ func (s *Service) StartBackupJobs(ctx context.Context, backupIds []types.BackupI
 // AbortBackupJobs is an alias for AbortBackups
 func (s *Service) AbortBackupJobs(ctx context.Context, backupIds []types.BackupId) error {
 	return s.AbortBackups(ctx, backupIds)
-}
-
-// RenameArchive is an alias for QueueArchiveRename
-func (s *Service) RenameArchive(ctx context.Context, archiveId int, prefix, name string) (string, error) {
-	return s.QueueArchiveRename(ctx, archiveId, prefix, name)
 }
 
 // StartPruneJob is an alias for QueuePrune

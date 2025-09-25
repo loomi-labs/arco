@@ -302,8 +302,8 @@ export function QueueArchiveDelete(archiveId: number): $CancellablePromise<strin
 /**
  * QueueArchiveRename queues an archive rename operation
  */
-export function QueueArchiveRename(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(4267028159, archiveId, prefix, name);
+export function QueueArchiveRename(archiveId: number, name: string): $CancellablePromise<string> {
+    return $Call.ByID(4267028159, archiveId, name);
 }
 
 /**
@@ -348,13 +348,6 @@ export function RegenerateSSHKey(): $CancellablePromise<void> {
  */
 export function Remove(id: number): $CancellablePromise<void> {
     return $Call.ByID(2560302714, id);
-}
-
-/**
- * RenameArchive is an alias for QueueArchiveRename
- */
-export function RenameArchive(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(1548605398, archiveId, prefix, name);
 }
 
 /**

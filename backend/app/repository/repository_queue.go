@@ -222,7 +222,7 @@ func (q *RepositoryQueue) MoveToActive(operationID string) error {
 }
 
 // CompleteActive completes the active operation and clears it
-func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
+func (q *RepositoryQueue) CompleteActive(errorMsg string) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -231,7 +231,7 @@ func (q *RepositoryQueue) CompleteActive(success bool, errorMsg string) error {
 	}
 
 	// Update operation status
-	if success {
+	if errorMsg == "" {
 		q.active.Status = NewOperationStatusCompleted(Completed{
 			CompletedAt: time.Now(),
 		})

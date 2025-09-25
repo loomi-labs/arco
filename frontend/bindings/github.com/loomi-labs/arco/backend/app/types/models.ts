@@ -47,6 +47,7 @@ export enum Event {
     EventCheckoutStateChanged = "checkoutStateChanged",
     EventSubscriptionAdded = "subscriptionAdded",
     EventSubscriptionCancelled = "subscriptionCancelled",
+    EventOperationErrorOccured = "operationErrorOccured",
 };
 
 /**

@@ -11,6 +11,7 @@ import {
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
   ScissorsIcon,
   TrashIcon,
   XMarkIcon
@@ -186,6 +187,10 @@ const canMountNewArchive = computed(() =>
 const queuedArchiveDeleteIds = ref<Set<number>>(new Set());
 const activeArchiveDeleteIds = ref<Set<number>>(new Set());
 
+// Archive rename tracking
+const queuedArchiveRenameIds = ref<Set<number>>(new Set());
+const activeArchiveRenameIds = ref<Set<number>>(new Set());
+
 // Function to fetch and update active archive delete IDs
 async function updateActiveArchiveDeletes() {
   try {
@@ -220,6 +225,40 @@ async function updateQueuedArchiveDeletes() {
   }
 }
 
+// Function to fetch and update active archive rename IDs
+async function updateActiveArchiveRenames() {
+  try {
+    const activeRenameOp = await repoService.GetActiveOperation(props.repoId, statemachine.OperationType.OperationTypeArchiveRename);
+    const renameIds = new Set<number>();
+
+    if (activeRenameOp?.operationUnion?.archiveRename?.archiveId) {
+      renameIds.add(activeRenameOp.operationUnion.archiveRename.archiveId);
+    }
+
+    activeArchiveRenameIds.value = renameIds;
+  } catch (error: unknown) {
+    await showAndLogError("Failed to get active archive rename operation", error);
+  }
+}
+
+// Function to fetch and update queued archive rename IDs
+async function updateQueuedArchiveRenames() {
+  try {
+    const archiveRenameOps = await repoService.GetQueuedOperations(props.repoId, statemachine.OperationType.OperationTypeArchiveRename);
+    const renameIds = new Set<number>();
+
+    for (const op of archiveRenameOps || []) {
+      if (op?.operationUnion?.archiveRename?.archiveId) {
+        renameIds.add(op.operationUnion.archiveRename.archiveId);
+      }
+    }
+
+    queuedArchiveRenameIds.value = renameIds;
+  } catch (error: unknown) {
+    await showAndLogError("Failed to get queued archive rename operations", error);
+  }
+}
+
 // Check if a specific archive is actively being deleted
 const isArchiveActivelyDeleting = (archiveId: number) => {
   return activeArchiveDeleteIds.value.has(archiveId);
@@ -235,10 +274,35 @@ const isArchiveBeingDeleted = (archiveId: number) => {
   return isArchiveActivelyDeleting(archiveId) || isArchiveQueuedForDeletion(archiveId);
 };
 
+// Check if a specific archive is actively being renamed
+const isArchiveActivelyRenaming = (archiveId: number) => {
+  return activeArchiveRenameIds.value.has(archiveId);
+};
+
+// Check if a specific archive is queued for rename (but not actively being renamed)
+const isArchiveQueuedForRename = (archiveId: number) => {
+  return queuedArchiveRenameIds.value.has(archiveId);
+};
+
+// Check if a specific archive is being renamed (either active or queued)
+const isArchiveBeingRenamed = (archiveId: number) => {
+  return isArchiveActivelyRenaming(archiveId) || isArchiveQueuedForRename(archiveId);
+};
+
 // Helper function to find the operation ID for a queued delete operation by archive ID
 const getQueuedDeleteOperationId = (archiveId: number): string | null => {
   for (const op of queuedOperations.value) {
     if (op?.operationUnion?.archiveDelete?.archiveId === archiveId) {
+      return op.id;
+    }
+  }
+  return null;
+};
+
+// Helper function to find the operation ID for a queued rename operation by archive ID
+const getQueuedRenameOperationId = (archiveId: number): string | null => {
+  for (const op of queuedOperations.value) {
+    if (op?.operationUnion?.archiveRename?.archiveId === archiveId) {
       return op.id;
     }
   }
@@ -349,6 +413,22 @@ async function cancelArchiveDelete(archiveId: number) {
     await updateActiveArchiveDeletes();
   } catch (error: unknown) {
     await showAndLogError("Failed to cancel archive deletion", error);
+  }
+}
+
+async function cancelArchiveRename(archiveId: number) {
+  try {
+    const operationId = getQueuedRenameOperationId(archiveId);
+    if (!operationId) {
+      await showAndLogError("Failed to cancel archive rename", "Operation not found");
+      return;
+    }
+
+    await repoService.CancelOperation(props.repoId, operationId);
+    await updateQueuedArchiveRenames();
+    await updateActiveArchiveRenames();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to cancel archive rename", error);
   }
 }
 
@@ -477,8 +557,8 @@ async function rename(archive: ent.Archive) {
   try {
     inputRenameInProgress.value[archive.id] = true;
     const name = inputValues.value[archive.id];
-    const prefix = prefixForBackupProfile(archive);
-    await repoService.RenameArchive(archive.id, prefix, name);
+    await repoService.QueueArchiveRename(archive.id, name);
+    await getPaginatedArchives();
   } catch (error: unknown) {
     await showAndLogError("Failed to rename archive", error);
   } finally {
@@ -647,6 +727,8 @@ getBackupProfileFilterOptions();
 getOperations();
 updateQueuedArchiveDeletes();
 updateActiveArchiveDeletes();
+updateQueuedArchiveRenames();
+updateActiveArchiveRenames();
 
 watch([() => props.repoId], async () => {
   await getRepository();
@@ -655,6 +737,8 @@ watch([() => props.repoId], async () => {
   await getOperations();
   await updateQueuedArchiveDeletes();
   await updateActiveArchiveDeletes();
+  await updateQueuedArchiveRenames();
+  await updateActiveArchiveRenames();
   selectedArchives.value.clear();
   isAllSelected.value = false;
 });
@@ -671,6 +755,8 @@ cleanupFunctions.push(
     await getOperations();
     await updateQueuedArchiveDeletes();
     await updateActiveArchiveDeletes();
+    await updateQueuedArchiveRenames();
+    await updateActiveArchiveRenames();
   })
 );
 
@@ -680,6 +766,8 @@ cleanupFunctions.push(
     await getOperations();
     await updateQueuedArchiveDeletes();
     await updateActiveArchiveDeletes();
+    await updateQueuedArchiveRenames();
+    await updateActiveArchiveRenames();
   })
 );
 
@@ -830,9 +918,9 @@ onUnmounted(() => {
             :key='index'
             class='cursor-pointer hover:bg-base-300'
             :class='{
-              "cursor-not-allowed": isArchiveBeingDeleted(archive.id)
+              "cursor-not-allowed": isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)
             }'
-            @click='!isArchiveBeingDeleted(archive.id) && toggleArchiveSelection(archive.id)'>
+            @click='!isArchiveBeingDeleted(archive.id) && !isArchiveBeingRenamed(archive.id) && toggleArchiveSelection(archive.id)'>
           <!-- Checkbox -->
           <td>
             <input type='checkbox'
@@ -841,7 +929,7 @@ onUnmounted(() => {
                    :checked='selectedArchives.has(archive.id)'
                    @change='toggleArchiveSelection(archive.id)'
                    @click.stop
-                   :disabled='isArchiveBeingDeleted(archive.id)' />
+                   :disabled='isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)' />
           </td>
           <!-- Name -->
           <td class='flex flex-col'>
@@ -853,7 +941,7 @@ onUnmounted(() => {
                      @input='validateName(archive.id)'
                      @change='rename(archive)'
                      @click.stop
-                     :disabled='inputRenameInProgress[archive.id] || !canPerformOperations || isArchiveBeingDeleted(archive.id)' />
+                     :disabled='inputRenameInProgress[archive.id] || isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)' />
               <span class='loading loading-xs' :class='{ invisible: !inputRenameInProgress[archive.id] }' />
 
               <!-- Active deletion indicator -->
@@ -868,6 +956,20 @@ onUnmounted(() => {
                     :class='{ invisible: !isArchiveQueuedForDeletion(archive.id) }'
                     data-tip='Queued for deletion'>
                 <TrashIcon class='size-4 text-error ml-2' />
+              </span>
+
+              <!-- Active rename indicator -->
+              <span class='tooltip tooltip-warning mr-2'
+                    :class='{ invisible: !isArchiveActivelyRenaming(archive.id) }'
+                    data-tip='This archive is being renamed'>
+                <PencilIcon class='size-4 text-warning ml-2 animate-pulse' />
+              </span>
+
+              <!-- Queued rename indicator -->
+              <span class='tooltip tooltip-warning mr-2'
+                    :class='{ invisible: !isArchiveQueuedForRename(archive.id) }'
+                    data-tip='Queued for rename'>
+                <PencilIcon class='size-4 text-warning ml-2' />
               </span>
 
               <span class='tooltip tooltip-info mr-2'
@@ -929,9 +1031,19 @@ onUnmounted(() => {
               </button>
             </span>
 
-            <button v-if='!isArchiveQueuedForDeletion(archive.id)'
+            <!-- Cancel Rename Button (only when archive is queued for rename) -->
+            <span v-if='isArchiveQueuedForRename(archive.id)'
+                  class='tooltip tooltip-warning'
+                  data-tip='Cancel rename'>
+              <button class='btn btn-sm btn-warning btn-circle btn-outline text-warning'
+                      @click.stop='cancelArchiveRename(archive.id)'>
+                <XMarkIcon class='size-4' />
+              </button>
+            </span>
+
+            <button v-if='!isArchiveQueuedForDeletion(archive.id) && !isArchiveQueuedForRename(archive.id)'
                     class='btn btn-sm btn-ghost btn-circle btn-neutral'
-                    :disabled='isArchiveActivelyDeleting(archive.id)'
+                    :disabled='isArchiveActivelyDeleting(archive.id) || isArchiveBeingRenamed(archive.id)'
                     @click.stop='() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); }'>
               <TrashIcon class='size-4' />
             </button>
