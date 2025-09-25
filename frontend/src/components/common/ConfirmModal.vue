@@ -25,6 +25,8 @@ interface Emits {
   (event: typeof emitConfirm, value: typeof props.confirmValue): void;
 
   (event: typeof emitSecondary, value: typeof props.secondaryOptionValue): void;
+
+  (event: typeof emitClose): void;
 }
 
 /************
@@ -37,6 +39,7 @@ const emit = defineEmits<Emits>();
 // Careful!!! Close event will be emitted whenever the dialog is closed (does not matter if by confirm, cancel or backdrop click)
 const emitConfirm = "confirm";
 const emitSecondary = "secondary";
+const emitClose = "close";
 
 const isOpen = ref<boolean>(false);
 
@@ -46,6 +49,7 @@ const isOpen = ref<boolean>(false);
 
 function close() {
   isOpen.value = false;
+  emit(emitClose);
 }
 
 function confirm() {
