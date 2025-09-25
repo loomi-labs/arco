@@ -7,9 +7,17 @@ export {
 };
 
 export {
+    ArchiveDeleteStateType,
+    ArchiveDeleteStateUnion,
+    ArchiveRenameStateType,
+    ArchiveRenameStateUnion,
+    ArchiveWithPendingChanges,
     ArcoCloud,
     BackupProfileFilter,
     Completed,
+    DeleteActive,
+    DeleteNone,
+    DeleteQueued,
     ExaminePruningResult,
     Expired,
     Failed,
@@ -25,6 +33,9 @@ export {
     PruningDates,
     Queued,
     Remote,
+    RenameActive,
+    RenameNone,
+    RenameQueued,
     Repository,
     RepositoryWithQueue,
     Running,

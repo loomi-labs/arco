@@ -24,17 +24,19 @@ import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/
 import { archivesChanged, repoStateChangedEvent } from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import { BackupProfileFilter } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
+import type { SerializableQueuedOperation ,
+  ArchiveWithPendingChanges} from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import {
+  ArchiveDeleteStateType,
+  ArchiveRenameStateType,
   PaginatedArchivesRequest,
   PaginatedArchivesResponse,
   PruningDates,
   Repository
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import type { SerializableQueuedOperation } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -61,7 +63,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const repo = ref<Repository>(Repository.createFrom());
-const archives = ref<ent.Archive[]>([]);
+const archives = ref<ArchiveWithPendingChanges[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
@@ -187,10 +189,6 @@ const canMountNewArchive = computed(() =>
 const queuedArchiveDeleteIds = ref<Set<number>>(new Set());
 const activeArchiveDeleteIds = ref<Set<number>>(new Set());
 
-// Archive rename tracking
-const queuedArchiveRenameIds = ref<Set<number>>(new Set());
-const activeArchiveRenameIds = ref<Set<number>>(new Set());
-
 // Function to fetch and update active archive delete IDs
 async function updateActiveArchiveDeletes() {
   try {
@@ -225,39 +223,6 @@ async function updateQueuedArchiveDeletes() {
   }
 }
 
-// Function to fetch and update active archive rename IDs
-async function updateActiveArchiveRenames() {
-  try {
-    const activeRenameOp = await repoService.GetActiveOperation(props.repoId, statemachine.OperationType.OperationTypeArchiveRename);
-    const renameIds = new Set<number>();
-
-    if (activeRenameOp?.operationUnion?.archiveRename?.archiveId) {
-      renameIds.add(activeRenameOp.operationUnion.archiveRename.archiveId);
-    }
-
-    activeArchiveRenameIds.value = renameIds;
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get active archive rename operation", error);
-  }
-}
-
-// Function to fetch and update queued archive rename IDs
-async function updateQueuedArchiveRenames() {
-  try {
-    const archiveRenameOps = await repoService.GetQueuedOperations(props.repoId, statemachine.OperationType.OperationTypeArchiveRename);
-    const renameIds = new Set<number>();
-
-    for (const op of archiveRenameOps || []) {
-      if (op?.operationUnion?.archiveRename?.archiveId) {
-        renameIds.add(op.operationUnion.archiveRename.archiveId);
-      }
-    }
-
-    queuedArchiveRenameIds.value = renameIds;
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get queued archive rename operations", error);
-  }
-}
 
 // Check if a specific archive is actively being deleted
 const isArchiveActivelyDeleting = (archiveId: number) => {
@@ -269,24 +234,32 @@ const isArchiveQueuedForDeletion = (archiveId: number) => {
   return queuedArchiveDeleteIds.value.has(archiveId);
 };
 
-// Check if a specific archive is being deleted (either active or queued)
-const isArchiveBeingDeleted = (archiveId: number) => {
-  return isArchiveActivelyDeleting(archiveId) || isArchiveQueuedForDeletion(archiveId);
+// Check if a specific archive is being renamed (uses backend-provided ADT state)
+const isArchiveBeingRenamed = (archive: ArchiveWithPendingChanges) => {
+  return archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive ||
+    archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameQueued;
 };
 
-// Check if a specific archive is actively being renamed
-const isArchiveActivelyRenaming = (archiveId: number) => {
-  return activeArchiveRenameIds.value.has(archiveId);
+// Check if a specific archive is being deleted (uses backend-provided ADT state)
+const isArchiveBeingDeleted = (archive: ArchiveWithPendingChanges) => {
+  return archive.deleteStateUnion.type === ArchiveDeleteStateType.ArchiveDeleteStateTypeDeleteActive ||
+    archive.deleteStateUnion.type === ArchiveDeleteStateType.ArchiveDeleteStateTypeDeleteQueued;
 };
 
-// Check if a specific archive is queued for rename (but not actively being renamed)
-const isArchiveQueuedForRename = (archiveId: number) => {
-  return queuedArchiveRenameIds.value.has(archiveId);
+// Check if a specific archive is actively being renamed (not queued)
+const isArchiveActivelyRenaming = (archive: ArchiveWithPendingChanges) => {
+  return archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive;
 };
 
-// Check if a specific archive is being renamed (either active or queued)
-const isArchiveBeingRenamed = (archiveId: number) => {
-  return isArchiveActivelyRenaming(archiveId) || isArchiveQueuedForRename(archiveId);
+// Get the pending new name for an archive being renamed
+const getPendingArchiveName = (archive: ArchiveWithPendingChanges): string | null => {
+  if (archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameQueued) {
+    return archive.renameStateUnion.renameQueued?.newName ?? null;
+  }
+  if (archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive) {
+    return archive.renameStateUnion.renameActive?.newName ?? null;
+  }
+  return null;
 };
 
 // Helper function to find the operation ID for a queued delete operation by archive ID
@@ -370,7 +343,7 @@ async function getPaginatedArchives() {
       await getPruningDates();
     }
 
-    // Reset input errors
+    // Reset input errors and initialize input values with current or pending names
     inputErrors.value = {};
     for (const archive of archives.value) {
       inputValues.value[archive.id] = archiveNameWithoutPrefix(archive);
@@ -425,8 +398,6 @@ async function cancelArchiveRename(archiveId: number) {
     }
 
     await repoService.CancelOperation(props.repoId, operationId);
-    await updateQueuedArchiveRenames();
-    await updateActiveArchiveRenames();
   } catch (error: unknown) {
     await showAndLogError("Failed to cancel archive rename", error);
   }
@@ -548,7 +519,7 @@ function getPruningText(archiveId: number) {
   return `This archive will be deleted ${toRelativeTimeString(pruningDate, true)}`;
 }
 
-async function rename(archive: ent.Archive) {
+async function rename(archive: ArchiveWithPendingChanges) {
   await validateName(archive.id);
   if (inputErrors.value[archive.id]) {
     return;
@@ -566,15 +537,18 @@ async function rename(archive: ent.Archive) {
   }
 }
 
-function prefixForBackupProfile(archive: ent.Archive): string {
-  return archive.edges.backupProfile?.prefix ?? "";
+function prefixForBackupProfile(archive: ArchiveWithPendingChanges): string {
+  return archive.edges?.backupProfile?.prefix ?? "";
 }
 
-function archiveNameWithoutPrefix(archive: ent.Archive): string {
-  if (archive.edges.backupProfile?.prefix) {
-    return archive.name.replace(archive.edges.backupProfile.prefix, "");
+function archiveNameWithoutPrefix(archive: ArchiveWithPendingChanges): string {
+  // Use pending name if available, otherwise use current name
+  const pendingName = getPendingArchiveName(archive);
+  const currentName = pendingName ?? archive.name;
+  if (archive.edges?.backupProfile?.prefix) {
+    return currentName.replace(archive.edges.backupProfile.prefix, "");
   }
-  return archive.name;
+  return currentName;
 }
 
 async function validateName(archiveId: number) {
@@ -586,8 +560,10 @@ async function validateName(archiveId: number) {
   const prefix = prefixForBackupProfile(archive);
   const fullName = `${prefix}${name}`;
 
-  // If the name is the same as the current name, clear the error
-  if (archive.name === fullName) {
+  // If the name is the same as the current or pending name, clear the error
+  const pendingName = getPendingArchiveName(archive);
+  const currentName = pendingName ?? archive.name;
+  if (currentName === fullName) {
     inputErrors.value[archiveId] = "";
     return;
   }
@@ -595,7 +571,6 @@ async function validateName(archiveId: number) {
   try {
     inputErrors.value[archiveId] = await repoService.ValidateArchiveName(
       archiveId,
-      prefix,
       name
     );
   } catch (error: unknown) {
@@ -727,8 +702,6 @@ getBackupProfileFilterOptions();
 getOperations();
 updateQueuedArchiveDeletes();
 updateActiveArchiveDeletes();
-updateQueuedArchiveRenames();
-updateActiveArchiveRenames();
 
 watch([() => props.repoId], async () => {
   await getRepository();
@@ -737,8 +710,6 @@ watch([() => props.repoId], async () => {
   await getOperations();
   await updateQueuedArchiveDeletes();
   await updateActiveArchiveDeletes();
-  await updateQueuedArchiveRenames();
-  await updateActiveArchiveRenames();
   selectedArchives.value.clear();
   isAllSelected.value = false;
 });
@@ -755,8 +726,6 @@ cleanupFunctions.push(
     await getOperations();
     await updateQueuedArchiveDeletes();
     await updateActiveArchiveDeletes();
-    await updateQueuedArchiveRenames();
-    await updateActiveArchiveRenames();
   })
 );
 
@@ -766,8 +735,6 @@ cleanupFunctions.push(
     await getOperations();
     await updateQueuedArchiveDeletes();
     await updateActiveArchiveDeletes();
-    await updateQueuedArchiveRenames();
-    await updateActiveArchiveRenames();
   })
 );
 
@@ -918,9 +885,9 @@ onUnmounted(() => {
             :key='index'
             class='cursor-pointer hover:bg-base-300'
             :class='{
-              "cursor-not-allowed": isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)
+              "cursor-not-allowed": isArchiveBeingDeleted(archive) || isArchiveBeingRenamed(archive)
             }'
-            @click='!isArchiveBeingDeleted(archive.id) && !isArchiveBeingRenamed(archive.id) && toggleArchiveSelection(archive.id)'>
+            @click='!isArchiveBeingDeleted(archive) && !isArchiveBeingRenamed(archive) && toggleArchiveSelection(archive.id)'>
           <!-- Checkbox -->
           <td>
             <input type='checkbox'
@@ -929,7 +896,7 @@ onUnmounted(() => {
                    :checked='selectedArchives.has(archive.id)'
                    @change='toggleArchiveSelection(archive.id)'
                    @click.stop
-                   :disabled='isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)' />
+                   :disabled='isArchiveBeingDeleted(archive) || isArchiveBeingRenamed(archive)' />
           </td>
           <!-- Name -->
           <td class='flex flex-col'>
@@ -941,35 +908,23 @@ onUnmounted(() => {
                      @input='validateName(archive.id)'
                      @change='rename(archive)'
                      @click.stop
-                     :disabled='inputRenameInProgress[archive.id] || isArchiveBeingDeleted(archive.id) || isArchiveBeingRenamed(archive.id)' />
+                     :disabled='inputRenameInProgress[archive.id] || isArchiveBeingDeleted(archive) || isArchiveBeingRenamed(archive)' />
               <span class='loading loading-xs' :class='{ invisible: !inputRenameInProgress[archive.id] }' />
 
-              <!-- Active deletion indicator -->
+              <!-- Deletion indicator (active or queued) -->
               <span class='tooltip tooltip-error mr-2'
-                    :class='{ invisible: !isArchiveActivelyDeleting(archive.id) }'
-                    data-tip='This archive is being deleted'>
-                <TrashIcon class='size-4 text-error ml-2 animate-pulse' />
+                    :class='{ invisible: !isArchiveBeingDeleted(archive) }'
+                    :data-tip='isArchiveActivelyDeleting(archive.id) ? "This archive is being deleted" : "Queued for deletion"'>
+                <TrashIcon class='size-4 text-error ml-2'
+                           :class='{ "animate-pulse": isArchiveActivelyDeleting(archive.id) }' />
               </span>
 
-              <!-- Queued deletion indicator -->
-              <span class='tooltip tooltip-error mr-2'
-                    :class='{ invisible: !isArchiveQueuedForDeletion(archive.id) }'
-                    data-tip='Queued for deletion'>
-                <TrashIcon class='size-4 text-error ml-2' />
-              </span>
-
-              <!-- Active rename indicator -->
+              <!-- Rename indicator (active or queued) -->
               <span class='tooltip tooltip-warning mr-2'
-                    :class='{ invisible: !isArchiveActivelyRenaming(archive.id) }'
-                    data-tip='This archive is being renamed'>
-                <PencilIcon class='size-4 text-warning ml-2 animate-pulse' />
-              </span>
-
-              <!-- Queued rename indicator -->
-              <span class='tooltip tooltip-warning mr-2'
-                    :class='{ invisible: !isArchiveQueuedForRename(archive.id) }'
-                    data-tip='Queued for rename'>
-                <PencilIcon class='size-4 text-warning ml-2' />
+                    :class='{ invisible: !isArchiveBeingRenamed(archive) }'
+                    data-tip='Archive rename in progress'>
+                <PencilIcon class='size-4 text-warning ml-2'
+                            :class='{ "animate-pulse": isArchiveActivelyRenaming(archive) }' />
               </span>
 
               <span class='tooltip tooltip-info mr-2'
@@ -1031,8 +986,8 @@ onUnmounted(() => {
               </button>
             </span>
 
-            <!-- Cancel Rename Button (only when archive is queued for rename) -->
-            <span v-if='isArchiveQueuedForRename(archive.id)'
+            <!-- Cancel Rename Button (only when archive is being renamed) -->
+            <span v-if='isArchiveBeingRenamed(archive)'
                   class='tooltip tooltip-warning'
                   data-tip='Cancel rename'>
               <button class='btn btn-sm btn-warning btn-circle btn-outline text-warning'
@@ -1041,9 +996,9 @@ onUnmounted(() => {
               </button>
             </span>
 
-            <button v-if='!isArchiveQueuedForDeletion(archive.id) && !isArchiveQueuedForRename(archive.id)'
+            <button v-if='!isArchiveQueuedForDeletion(archive.id) && !isArchiveBeingRenamed(archive)'
                     class='btn btn-sm btn-ghost btn-circle btn-neutral'
-                    :disabled='isArchiveActivelyDeleting(archive.id) || isArchiveBeingRenamed(archive.id)'
+                    :disabled='isArchiveActivelyDeleting(archive.id) || isArchiveBeingRenamed(archive)'
                     @click.stop='() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); }'>
               <TrashIcon class='size-4' />
             </button>

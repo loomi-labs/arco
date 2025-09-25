@@ -419,8 +419,8 @@ export function Update(repoId: number, updateReq: $models.UpdateRequest | null):
 /**
  * ValidateArchiveName validates an archive name
  */
-export function ValidateArchiveName(archiveId: number, prefix: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(392924285, archiveId, prefix, name);
+export function ValidateArchiveName(archiveId: number, name: string): $CancellablePromise<string> {
+    return $Call.ByID(392924285, archiveId, name);
 }
 
 /**
