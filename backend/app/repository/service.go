@@ -1305,6 +1305,278 @@ func (s *Service) GetPruningDates(ctx context.Context, archiveIds []int) (Prunin
 	return pruningDates, nil
 }
 
+// GetLastArchiveByBackupId gets last archive for backup profile
+func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
+	first, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.HasBackupProfileWith(backupprofile.ID(backupId.BackupProfileId)),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return &ent.Archive{}, nil
+	}
+	return first, err
+}
+
+// ============================================================================
+// BACKUP MANAGEMENT
+// ============================================================================
+
+// GetBackupButtonStatus gets backup button status for given backup IDs
+func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
+	if len(backupIds) == 0 {
+		return state.BackupButtonStatusRunBackup, nil
+	}
+
+	if len(backupIds) == 1 {
+		return s.getSingleBackupButtonStatus(ctx, backupIds[0])
+	}
+
+	return s.getCombinedBackupButtonStatus(ctx, backupIds)
+}
+
+// getSingleBackupButtonStatus gets backup button status for a single backup ID
+func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId types.BackupId) (state.BackupButtonStatus, error) {
+	// Check repository state first
+	repositoryState := s.queueManager.GetRepositoryState(backupId.RepositoryId)
+
+	// Check repository state type
+	switch statemachine.GetRepositoryStateType(repositoryState) {
+	case statemachine.RepositoryStateTypeError:
+		return state.BackupButtonStatusLocked, nil
+	case statemachine.RepositoryStateTypeMounted:
+		return state.BackupButtonStatusUnmount, nil
+	case statemachine.RepositoryStateTypeQueued:
+		// Check if this specific backup is queued
+		if s.isBackupInQueue(backupId) {
+			return state.BackupButtonStatusWaiting, nil
+		}
+		// Repository is busy with another operation
+		return state.BackupButtonStatusBusy, nil
+	case statemachine.RepositoryStateTypeBackingUp:
+		// Check if this is our backup that's running
+		backingUpVariant := repositoryState.(statemachine.BackingUpVariant)
+		backingUpData := backingUpVariant()
+		if backingUpData.Data.BackupID.String() == backupId.String() {
+			return state.BackupButtonStatusAbort, nil
+		}
+		// Repository is busy with another backup
+		return state.BackupButtonStatusBusy, nil
+	case statemachine.RepositoryStateTypePruning,
+		statemachine.RepositoryStateTypeDeleting,
+		statemachine.RepositoryStateTypeRefreshing,
+		statemachine.RepositoryStateTypeMounting:
+		// Repository is busy with other operations
+		return state.BackupButtonStatusBusy, nil
+	case statemachine.RepositoryStateTypeIdle:
+		// Repository is idle, can run backup
+		return state.BackupButtonStatusRunBackup, nil
+	default:
+		assert.Fail("Unhandled RepositoryStateType in getSingleBackupButtonStatus")
+		return state.BackupButtonStatusRunBackup, nil
+	}
+}
+
+// getCombinedBackupButtonStatus gets combined backup button status for multiple backup IDs
+func (s *Service) getCombinedBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
+	hasWaiting := false
+	hasRunning := false
+
+	for _, backupId := range backupIds {
+		status, err := s.getSingleBackupButtonStatus(ctx, backupId)
+		if err != nil {
+			return state.BackupButtonStatusRunBackup, err
+		}
+
+		// High priority statuses that should return immediately
+		switch status {
+		case state.BackupButtonStatusLocked:
+			return state.BackupButtonStatusLocked, nil
+		case state.BackupButtonStatusUnmount:
+			return state.BackupButtonStatusUnmount, nil
+		case state.BackupButtonStatusBusy:
+			return state.BackupButtonStatusBusy, nil
+		case state.BackupButtonStatusWaiting:
+			hasWaiting = true
+		case state.BackupButtonStatusAbort:
+			hasRunning = true
+		case state.BackupButtonStatusRunBackup:
+
+		}
+	}
+
+	// Return combined status based on what we found
+	if hasRunning {
+		return state.BackupButtonStatusAbort, nil
+	}
+	if hasWaiting {
+		return state.BackupButtonStatusWaiting, nil
+	}
+
+	// All backups are idle
+	return state.BackupButtonStatusRunBackup, nil
+}
+
+// isBackupInQueue checks if a backup operation is queued or active
+func (s *Service) isBackupInQueue(backupId types.BackupId) bool {
+	// Check active operations
+	activeOps := s.queueManager.GetActiveOperations()
+	for _, op := range activeOps {
+		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			if backupData.BackupID.String() == backupId.String() {
+				return true
+			}
+		}
+	}
+
+	// Check queued operations for the repository
+	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
+	if err != nil {
+		return false
+	}
+
+	for _, op := range queuedOps {
+		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			if backupData.BackupID.String() == backupId.String() {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// findOperationIDByBackupID finds the operation ID for a given backup ID
+func (s *Service) findOperationIDByBackupID(backupId types.BackupId) (string, error) {
+	// Check active operations first
+	activeOps := s.queueManager.GetActiveOperations()
+	for _, op := range activeOps {
+		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			if backupData.BackupID.String() == backupId.String() {
+				return op.ID, nil
+			}
+		}
+	}
+
+	// Check queued operations for the repository
+	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to get queued operations: %w", err)
+	}
+
+	for _, op := range queuedOps {
+		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			if backupData.BackupID.String() == backupId.String() {
+				return op.ID, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("backup operation not found for backup ID %s", backupId.String())
+}
+
+// GetCombinedBackupProgress gets backup progress for given backup IDs
+func (s *Service) GetCombinedBackupProgress(ctx context.Context, backupIds []types.BackupId) (*borgtypes.BackupProgress, error) {
+	// Get all active operations from queue manager
+	activeOperations := s.queueManager.GetActiveOperations()
+
+	var totalFiles, processedFiles int
+	found := false
+
+	// Iterate through provided backup IDs
+	for _, targetBackupId := range backupIds {
+		// Check active operations for matching backup operations
+		for _, operation := range activeOperations {
+			// Check if this operation is a backup operation
+			if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
+				backupData := backupVariant()
+				// Check if this backup operation matches our target backup ID
+				if backupData.BackupID.String() == targetBackupId.String() {
+					// Check if the operation has progress data
+					if backupData.Progress != nil {
+						found = true
+						totalFiles += backupData.Progress.TotalFiles
+						processedFiles += backupData.Progress.ProcessedFiles
+					}
+				}
+			}
+		}
+	}
+
+	// Return combined progress if any was found, otherwise nil
+	if !found {
+		return nil, nil
+	}
+
+	return &borgtypes.BackupProgress{
+		TotalFiles:     totalFiles,
+		ProcessedFiles: processedFiles,
+	}, nil
+}
+
+// GetBackupState gets backup state for given backup ID
+func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*statemachine.Backup, error) {
+	// Get active operations from queue manager
+	activeOperations := s.queueManager.GetActiveOperations()
+
+	// Search through active operations for matching backup ID
+	for _, operation := range activeOperations {
+		// Check if this operation is a backup operation
+		if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
+			backupData := backupVariant()
+			// Check if this backup operation matches our target backup ID
+			if backupData.BackupID.String() == backupId.String() {
+				return &backupData, nil
+			}
+		}
+	}
+
+	// No active backup found for this backup ID
+	return nil, nil
+}
+
+// GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
+func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
+	// Get the last notification for the backup profile and repository
+	lastNotification, err := s.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the error message
+		exist, err := s.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
+}
+
 // ============================================================================
 // VALIDATION METHODS
 // ============================================================================
@@ -1656,32 +1928,6 @@ func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
 	}
 }
 
-// ============================================================================
-// TEMPORARY STUB IMPLEMENTATIONS FOR MIGRATION COMPATIBILITY
-// ============================================================================
-// These methods are temporary stubs to make the app compile during migration
-// from repository_old to repository service. They should be properly implemented
-// or removed once the migration is complete.
-// ============================================================================
-
-// HIGH PRIORITY METHODS (Used in multiple components)
-
-// GetLastArchiveByBackupId gets last archive for backup profile
-func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
-	first, err := s.db.Archive.
-		Query().
-		Where(archive.And(
-			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
-			archive.HasBackupProfileWith(backupprofile.ID(backupId.BackupProfileId)),
-		)).
-		Order(ent.Desc(archive.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && ent.IsNotFound(err) {
-		return &ent.Archive{}, nil
-	}
-	return first, err
-}
-
 // GetConnectedRemoteHosts gets connected remote hosts
 func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error) {
 	repos, err := s.db.Repository.Query().
@@ -1718,259 +1964,4 @@ func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error)
 		result = append(result, host)
 	}
 	return result, nil
-}
-
-// MEDIUM PRIORITY METHODS
-
-// GetBackupButtonStatus gets backup button status for given backup IDs
-func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
-	if len(backupIds) == 0 {
-		return state.BackupButtonStatusRunBackup, nil
-	}
-
-	if len(backupIds) == 1 {
-		return s.getSingleBackupButtonStatus(ctx, backupIds[0])
-	}
-
-	return s.getCombinedBackupButtonStatus(ctx, backupIds)
-}
-
-// getSingleBackupButtonStatus gets backup button status for a single backup ID
-func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId types.BackupId) (state.BackupButtonStatus, error) {
-	// Check repository state first
-	repositoryState := s.queueManager.GetRepositoryState(backupId.RepositoryId)
-
-	// Check repository state type
-	switch statemachine.GetRepositoryStateType(repositoryState) {
-	case statemachine.RepositoryStateTypeError:
-		return state.BackupButtonStatusLocked, nil
-	case statemachine.RepositoryStateTypeMounted:
-		return state.BackupButtonStatusUnmount, nil
-	case statemachine.RepositoryStateTypeQueued:
-		// Check if this specific backup is queued
-		if s.isBackupInQueue(backupId) {
-			return state.BackupButtonStatusWaiting, nil
-		}
-		// Repository is busy with another operation
-		return state.BackupButtonStatusBusy, nil
-	case statemachine.RepositoryStateTypeBackingUp:
-		// Check if this is our backup that's running
-		backingUpVariant := repositoryState.(statemachine.BackingUpVariant)
-		backingUpData := backingUpVariant()
-		if backingUpData.Data.BackupID.String() == backupId.String() {
-			return state.BackupButtonStatusAbort, nil
-		}
-		// Repository is busy with another backup
-		return state.BackupButtonStatusBusy, nil
-	case statemachine.RepositoryStateTypePruning,
-		statemachine.RepositoryStateTypeDeleting,
-		statemachine.RepositoryStateTypeRefreshing,
-		statemachine.RepositoryStateTypeMounting:
-		// Repository is busy with other operations
-		return state.BackupButtonStatusBusy, nil
-	case statemachine.RepositoryStateTypeIdle:
-		// Repository is idle, can run backup
-		return state.BackupButtonStatusRunBackup, nil
-	default:
-		assert.Fail("Unhandled RepositoryStateType in getSingleBackupButtonStatus")
-		return state.BackupButtonStatusRunBackup, nil
-	}
-}
-
-// getCombinedBackupButtonStatus gets combined backup button status for multiple backup IDs
-func (s *Service) getCombinedBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
-	hasWaiting := false
-	hasRunning := false
-
-	for _, backupId := range backupIds {
-		status, err := s.getSingleBackupButtonStatus(ctx, backupId)
-		if err != nil {
-			return state.BackupButtonStatusRunBackup, err
-		}
-
-		// High priority statuses that should return immediately
-		switch status {
-		case state.BackupButtonStatusLocked:
-			return state.BackupButtonStatusLocked, nil
-		case state.BackupButtonStatusUnmount:
-			return state.BackupButtonStatusUnmount, nil
-		case state.BackupButtonStatusBusy:
-			return state.BackupButtonStatusBusy, nil
-		case state.BackupButtonStatusWaiting:
-			hasWaiting = true
-		case state.BackupButtonStatusAbort:
-			hasRunning = true
-		case state.BackupButtonStatusRunBackup:
-
-		}
-	}
-
-	// Return combined status based on what we found
-	if hasRunning {
-		return state.BackupButtonStatusAbort, nil
-	}
-	if hasWaiting {
-		return state.BackupButtonStatusWaiting, nil
-	}
-
-	// All backups are idle
-	return state.BackupButtonStatusRunBackup, nil
-}
-
-// isBackupInQueue checks if a backup operation is queued or active
-func (s *Service) isBackupInQueue(backupId types.BackupId) bool {
-	// Check active operations
-	activeOps := s.queueManager.GetActiveOperations()
-	for _, op := range activeOps {
-		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
-			backupData := backupVariant()
-			if backupData.BackupID.String() == backupId.String() {
-				return true
-			}
-		}
-	}
-
-	// Check queued operations for the repository
-	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
-	if err != nil {
-		return false
-	}
-
-	for _, op := range queuedOps {
-		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
-			backupData := backupVariant()
-			if backupData.BackupID.String() == backupId.String() {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// findOperationIDByBackupID finds the operation ID for a given backup ID
-func (s *Service) findOperationIDByBackupID(backupId types.BackupId) (string, error) {
-	// Check active operations first
-	activeOps := s.queueManager.GetActiveOperations()
-	for _, op := range activeOps {
-		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
-			backupData := backupVariant()
-			if backupData.BackupID.String() == backupId.String() {
-				return op.ID, nil
-			}
-		}
-	}
-
-	// Check queued operations for the repository
-	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to get queued operations: %w", err)
-	}
-
-	for _, op := range queuedOps {
-		if backupVariant, isBackup := op.Operation.(statemachine.BackupVariant); isBackup {
-			backupData := backupVariant()
-			if backupData.BackupID.String() == backupId.String() {
-				return op.ID, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("backup operation not found for backup ID %s", backupId.String())
-}
-
-// GetCombinedBackupProgress gets backup progress for given backup IDs
-func (s *Service) GetCombinedBackupProgress(ctx context.Context, backupIds []types.BackupId) (*borgtypes.BackupProgress, error) {
-	// Get all active operations from queue manager
-	activeOperations := s.queueManager.GetActiveOperations()
-
-	var totalFiles, processedFiles int
-	found := false
-
-	// Iterate through provided backup IDs
-	for _, targetBackupId := range backupIds {
-		// Check active operations for matching backup operations
-		for _, operation := range activeOperations {
-			// Check if this operation is a backup operation
-			if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
-				backupData := backupVariant()
-				// Check if this backup operation matches our target backup ID
-				if backupData.BackupID.String() == targetBackupId.String() {
-					// Check if the operation has progress data
-					if backupData.Progress != nil {
-						found = true
-						totalFiles += backupData.Progress.TotalFiles
-						processedFiles += backupData.Progress.ProcessedFiles
-					}
-				}
-			}
-		}
-	}
-
-	// Return combined progress if any was found, otherwise nil
-	if !found {
-		return nil, nil
-	}
-
-	return &borgtypes.BackupProgress{
-		TotalFiles:     totalFiles,
-		ProcessedFiles: processedFiles,
-	}, nil
-}
-
-// GetBackupState gets backup state for given backup ID
-func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*statemachine.Backup, error) {
-	// Get active operations from queue manager
-	activeOperations := s.queueManager.GetActiveOperations()
-
-	// Search through active operations for matching backup ID
-	for _, operation := range activeOperations {
-		// Check if this operation is a backup operation
-		if backupVariant, isBackup := operation.Operation.(statemachine.BackupVariant); isBackup {
-			backupData := backupVariant()
-			// Check if this backup operation matches our target backup ID
-			if backupData.BackupID.String() == backupId.String() {
-				return &backupData, nil
-			}
-		}
-	}
-
-	// No active backup found for this backup ID
-	return nil, nil
-}
-
-// LOW PRIORITY METHODS
-
-func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last notification for the backup profile and repository
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the error message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).
-			Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
 }
