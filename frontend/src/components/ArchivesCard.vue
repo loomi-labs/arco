@@ -498,10 +498,16 @@ async function unmountAll() {
 }
 
 async function unmountAllAndRename() {
+  // Store the user's input value before refreshing the state
+  const newName = archiveToBeRenamed.value ?
+    inputValues.value[archiveToBeRenamed.value.id] : undefined;
+  const archive = archiveToBeRenamed.value;
+
   await unmountAll();
   await getRepository(); // Refresh repository state
-  if (archiveToBeRenamed.value) {
-    await rename(archiveToBeRenamed.value);
+
+  if (archive && newName !== undefined) {
+    await rename(archive, newName);
     archiveToBeRenamed.value = undefined;
   }
 }
@@ -577,23 +583,28 @@ function getPruningText(archiveId: number) {
   return `This archive will be deleted ${toRelativeTimeString(pruningDate, true)}`;
 }
 
-async function rename(archive: ArchiveWithPendingChanges) {
-  await validateName(archive.id);
-  if (inputErrors.value[archive.id]) {
-    return;
-  }
+async function rename(archive: ArchiveWithPendingChanges, name?: string) {
+  // Use provided name or get from input values
+  const newName = name ?? inputValues.value[archive.id];
 
-  // Check if repository is mounted or mounting - show unmount modal proactively
-  if (isMountedOrMounting.value) {
-    archiveToBeRenamed.value = archive;
-    confirmUnmountRenameModal.value?.showModal();
-    return;
+  // Only validate if we're using input values (UI call)
+  if (name === undefined) {
+    await validateName(archive.id);
+    if (inputErrors.value[archive.id]) {
+      return;
+    }
+
+    // Check if repository is mounted or mounting - show unmount modal proactively
+    if (isMountedOrMounting.value) {
+      archiveToBeRenamed.value = archive;
+      confirmUnmountRenameModal.value?.showModal();
+      return;
+    }
   }
 
   try {
     inputRenameInProgress.value[archive.id] = true;
-    const name = inputValues.value[archive.id];
-    await repoService.QueueArchiveRename(archive.id, name);
+    await repoService.QueueArchiveRename(archive.id, newName);
     await getPaginatedArchives();
   } catch (error: unknown) {
     await showAndLogError("Failed to rename archive", error);
