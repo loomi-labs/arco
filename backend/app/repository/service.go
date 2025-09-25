@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1667,14 +1668,56 @@ func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
 
 // GetLastArchiveByBackupId gets last archive for backup profile
 func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
-	// TODO: Implement proper archive retrieval for backup profile
-	return nil, nil
+	first, err := s.db.Archive.
+		Query().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(backupId.RepositoryId)),
+			archive.HasBackupProfileWith(backupprofile.ID(backupId.BackupProfileId)),
+		)).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && ent.IsNotFound(err) {
+		return &ent.Archive{}, nil
+	}
+	return first, err
 }
 
 // GetConnectedRemoteHosts gets connected remote hosts
 func (s *Service) GetConnectedRemoteHosts(ctx context.Context) ([]string, error) {
-	// TODO: Implement proper remote hosts retrieval
-	return []string{}, nil
+	repos, err := s.db.Repository.Query().
+		Where(repository.And(
+			repository.URLContains("@"),
+			repository.Not(repository.HasCloudRepository()),
+		)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// user@host:~/path/to/repo -> user@host:port
+	// ssh://user@host:port/./path/to/repo -> user@host:port
+	hosts := make(map[string]struct{})
+	for _, repo := range repos {
+		// Extract user, host and port from location
+		parsedURL, err := url.Parse(repo.URL)
+		if err != nil {
+			continue
+		}
+		userInfo := ""
+		if parsedURL.User != nil {
+			userInfo = parsedURL.User.String() + "@"
+		}
+		host := parsedURL.Host
+		// Add host to map
+		hosts[userInfo+host] = struct{}{}
+	}
+
+	// Convert map to slice
+	result := make([]string, 0, len(hosts))
+	for host := range hosts {
+		result = append(result, host)
+	}
+	return result, nil
 }
 
 // MEDIUM PRIORITY METHODS
