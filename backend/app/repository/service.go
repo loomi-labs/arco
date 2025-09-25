@@ -1525,8 +1525,32 @@ func (s *Service) TestRepoConnection(ctx context.Context, path, password string)
 
 // IsBorgRepository checks if a path contains a borg repository
 func (s *Service) IsBorgRepository(path string) bool {
-	// TODO: Implement borg repository detection
-	return false
+	// Check if path has a README file with the string borg in it
+	fp := filepath.Join(path, "README")
+	_, err := os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err := os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+
+	if strings.Contains(string(contents), "borg") {
+		return true
+	}
+
+	// Otherwise check if we have a config file
+	fp = filepath.Join(path, "config")
+	_, err = os.Stat(fp)
+	if err != nil {
+		return false
+	}
+	contents, err = os.ReadFile(fp)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(contents), "[repository]")
 }
 
 // ============================================================================
