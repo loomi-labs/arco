@@ -570,6 +570,14 @@ func (s *Service) isCloudRepository(ctx context.Context, repoID int) bool {
 	return exists
 }
 
+// isRepositoryMountedOrMounting checks if a repository is in mounted or mounting state
+func (s *Service) isRepositoryMountedOrMounting(repositoryId int) bool {
+	repoState := s.queueManager.GetRepositoryState(repositoryId)
+	repoStateUnion := statemachine.ToRepositoryStateUnion(repoState)
+	return repoStateUnion.Type == statemachine.RepositoryStateTypeMounted ||
+		repoStateUnion.Type == statemachine.RepositoryStateTypeMounting
+}
+
 // getLocationEnum converts arcov1.RepositoryLocation to cloudrepository.Location
 func (s *Service) getLocationEnum(location arcov1.RepositoryLocation) cloudrepository.Location {
 	switch location {
@@ -610,6 +618,11 @@ func (s *Service) GetBackupProfilesThatHaveOnlyRepo(ctx context.Context, repoId 
 
 // QueueBackup queues a backup operation
 func (s *Service) QueueBackup(ctx context.Context, backupId types.BackupId) (string, error) {
+	// Check if repository is mounted or mounting - cannot start backup in this state
+	if s.isRepositoryMountedOrMounting(backupId.RepositoryId) {
+		return "", fmt.Errorf("cannot start backup while repository is mounted or mounting - please unmount the repository first")
+	}
+
 	// Create backup operation
 	backupOp := statemachine.NewOperationBackup(statemachine.Backup{
 		BackupID: backupId,
@@ -657,6 +670,11 @@ func (s *Service) QueueBackups(ctx context.Context, backupIds []types.BackupId) 
 
 // QueuePrune queues a prune operation
 func (s *Service) QueuePrune(ctx context.Context, backupId types.BackupId) (string, error) {
+	// Check if repository is mounted or mounting - cannot start prune in this state
+	if s.isRepositoryMountedOrMounting(backupId.RepositoryId) {
+		return "", fmt.Errorf("cannot start prune while repository is mounted or mounting - please unmount the repository first")
+	}
+
 	// Create prune operation
 	pruneOp := statemachine.NewOperationPrune(statemachine.Prune{
 		BackupID: backupId,
@@ -691,6 +709,11 @@ func (s *Service) QueueArchiveDelete(ctx context.Context, archiveId int) (string
 		Only(ctx)
 	if err != nil {
 		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Check if repository is mounted or mounting - cannot delete archives in this state
+	if s.isRepositoryMountedOrMounting(archiveEntity.Edges.Repository.ID) {
+		return "", fmt.Errorf("cannot delete archive while repository is mounted or mounting - please unmount the repository first")
 	}
 
 	// Create archive delete operation
@@ -733,6 +756,11 @@ func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, name st
 		Only(ctx)
 	if err != nil {
 		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Check if repository is mounted or mounting - cannot rename archives in this state
+	if s.isRepositoryMountedOrMounting(archiveEntity.Edges.Repository.ID) {
+		return "", fmt.Errorf("cannot rename archive while repository is mounted or mounting - please unmount the repository first")
 	}
 
 	// Create archive rename operation

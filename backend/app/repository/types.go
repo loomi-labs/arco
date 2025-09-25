@@ -116,7 +116,7 @@ func (Expired) isADTVariant() OperationStatus   { var zero OperationStatus; retu
 type RenameNone struct{}
 
 type RenameQueued struct {
-	NewName  string `json:"newName"`  // Full new name (prefix + name)
+	NewName string `json:"newName"` // Full new name (prefix + name)
 }
 
 type RenameActive struct {
@@ -126,7 +126,7 @@ type RenameActive struct {
 // Archive delete state variants
 type DeleteNone struct{}
 
-type DeleteQueued struct {}
+type DeleteQueued struct{}
 
 type DeleteActive struct{}
 
