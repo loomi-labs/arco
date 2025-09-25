@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1118,6 +1119,51 @@ func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.
 	return archiveEntity, nil
 }
 
+// getArchiveOperationStates returns maps of archive IDs to their operation states
+func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameState, map[int]ArchiveDeleteState) {
+	renameStates := make(map[int]ArchiveRenameState)
+	deleteStates := make(map[int]ArchiveDeleteState)
+
+	// Get the repository queue
+	queue := s.queueManager.GetQueue(repoID)
+
+	// Check active operation
+	if active := queue.GetActive(); active != nil {
+		switch statemachine.GetOperationType(active.Operation) {
+		case statemachine.OperationTypeArchiveRename:
+			renameOp := active.Operation.(statemachine.ArchiveRenameVariant)()
+			newName := renameOp.Prefix + renameOp.Name
+			renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameActive(RenameActive{
+				NewName: newName,
+			})
+		case statemachine.OperationTypeArchiveDelete:
+			deleteOp := active.Operation.(statemachine.ArchiveDeleteVariant)()
+			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
+		}
+	}
+
+	// Check queued rename operations
+	archiveRenameType := statemachine.OperationTypeArchiveRename
+	queuedRenames := queue.GetQueuedOperations(&archiveRenameType)
+	for _, queuedOp := range queuedRenames {
+		renameOp := queuedOp.Operation.(statemachine.ArchiveRenameVariant)()
+		newName := renameOp.Prefix + renameOp.Name
+		renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameQueued(RenameQueued{
+			NewName: newName,
+		})
+	}
+
+	// Check queued delete operations
+	archiveDeleteType := statemachine.OperationTypeArchiveDelete
+	queuedDeletes := queue.GetQueuedOperations(&archiveDeleteType)
+	for _, queuedOp := range queuedDeletes {
+		deleteOp := queuedOp.Operation.(statemachine.ArchiveDeleteVariant)()
+		deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteQueued(DeleteQueued{})
+	}
+
+	return renameStates, deleteStates
+}
+
 // GetPaginatedArchives retrieves paginated archives for a repository
 func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error) {
 	if req.RepositoryId <= 0 {
@@ -1186,8 +1232,37 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 		return nil, err
 	}
 
+	// Get pending operation states for this repository
+	renameStates, deleteStates := s.getArchiveOperationStates(req.RepositoryId)
+
+	// Convert archives to enhanced archives with pending changes
+	enhancedArchives := make([]*ArchiveWithPendingChanges, len(archives))
+	for i, archiveEntity := range archives {
+		enhancedArchive := &ArchiveWithPendingChanges{
+			Archive: archiveEntity,
+		}
+
+		// Set rename state (default to none if not found)
+		if renameState, exists := renameStates[archiveEntity.ID]; exists {
+			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(renameState)
+		} else {
+			noneState := NewArchiveRenameStateRenameNone(RenameNone{})
+			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(noneState)
+		}
+
+		// Set delete state (default to none if not found)
+		if deleteState, exists := deleteStates[archiveEntity.ID]; exists {
+			enhancedArchive.DeleteStateUnion = ToArchiveDeleteStateUnion(deleteState)
+		} else {
+			noneState := NewArchiveDeleteStateDeleteNone(DeleteNone{})
+			enhancedArchive.DeleteStateUnion = ToArchiveDeleteStateUnion(noneState)
+		}
+
+		enhancedArchives[i] = enhancedArchive
+	}
+
 	return &PaginatedArchivesResponse{
-		Archives: archives,
+		Archives: enhancedArchives,
 		Total:    total,
 	}, nil
 }
@@ -1240,8 +1315,80 @@ func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal boo
 }
 
 // ValidateArchiveName validates an archive name
-func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, prefix, name string) (string, error) {
-	// TODO: Implement archive name validation
+func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name string) (string, error) {
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < 3 {
+		return "Name must be at least 3 characters long", nil
+	}
+	if len(name) > 50 {
+		return "Name can not be longer than 50 characters", nil
+	}
+	pattern := `^[a-zA-Z0-9-_]+$`
+	matched, err := regexp.MatchString(pattern, name)
+	if err != nil {
+		return "", err
+	}
+	if !matched {
+		return "Name can only contain letters, numbers, hyphens, and underscores", nil
+	}
+
+	// Get archive with repository and backup profile edges
+	arch, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		WithBackupProfile().
+		Only(ctx)
+	if err != nil {
+		return "", err
+	}
+	assert.NotNil(arch.Edges.Repository, "archive must have a repository")
+
+	// Get prefix from backup profile
+	var prefix string
+	if arch.Edges.BackupProfile != nil {
+		prefix = arch.Edges.BackupProfile.Prefix
+	}
+
+	// Check prefix requirements
+	if arch.Edges.BackupProfile != nil {
+		// For archives with backup profiles, the name will be prefixed automatically
+		// so no additional validation needed for the prefix
+	} else {
+		if prefix != "" {
+			err = fmt.Errorf("the archive can not have a prefix if it is not connected to a backup profile")
+			assert.Error(err)
+			return "", err
+		}
+
+		// If it is not connected to a backup profile,
+		// it can not start with any prefix used by another backup profile of the repository
+		backupProfiles, err := arch.Edges.Repository.QueryBackupProfiles().All(ctx)
+		if err != nil {
+			return "", err
+		}
+		for _, bp := range backupProfiles {
+			prefixWithoutTrailingDash := strings.TrimSuffix(bp.Prefix, "-")
+			if strings.HasPrefix(name, prefixWithoutTrailingDash) {
+				return "The new name must not start with the prefix of another backup profile", nil
+			}
+		}
+	}
+
+	fullName := prefix + name
+	exist, err := s.db.Archive.
+		Query().
+		Where(archive.Name(fullName)).
+		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Archive name must be unique", nil
+	}
+
 	return "", nil
 }
 

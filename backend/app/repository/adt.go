@@ -189,3 +189,159 @@ func ToOperationStatusUnion(r OperationStatus) OperationStatusUnion {
 		}
 	}
 }
+
+// ArchiveRenameStateType is the discriminator enum for ArchiveRenameState
+type ArchiveRenameStateType string
+
+const (
+	ArchiveRenameStateTypeRenameActive ArchiveRenameStateType = "RenameActive"
+	ArchiveRenameStateTypeRenameNone   ArchiveRenameStateType = "RenameNone"
+	ArchiveRenameStateTypeRenameQueued ArchiveRenameStateType = "RenameQueued"
+)
+
+// ArchiveRenameState variant wrappers
+type RenameActiveVariant adtenum.OneVariantValue[RenameActive]
+type RenameNoneVariant adtenum.OneVariantValue[RenameNone]
+type RenameQueuedVariant adtenum.OneVariantValue[RenameQueued]
+
+// ArchiveRenameState constructors
+var NewArchiveRenameStateRenameActive = adtenum.CreateOneVariantValueConstructor[RenameActiveVariant]()
+var NewArchiveRenameStateRenameNone = adtenum.CreateOneVariantValueConstructor[RenameNoneVariant]()
+var NewArchiveRenameStateRenameQueued = adtenum.CreateOneVariantValueConstructor[RenameQueuedVariant]()
+
+// EnumType methods for ArchiveRenameState variants
+func (v RenameActiveVariant) EnumType() ArchiveRenameState { return v }
+func (v RenameNoneVariant) EnumType() ArchiveRenameState   { return v }
+func (v RenameQueuedVariant) EnumType() ArchiveRenameState { return v }
+
+// GetArchiveRenameStateType returns the discriminator type for exhaustive switch checking
+func GetArchiveRenameStateType(enum ArchiveRenameState) ArchiveRenameStateType {
+	switch enum.(type) {
+	case RenameNoneVariant:
+		return ArchiveRenameStateTypeRenameNone
+	case RenameQueuedVariant:
+		return ArchiveRenameStateTypeRenameQueued
+	case RenameActiveVariant:
+		return ArchiveRenameStateTypeRenameActive
+	default:
+		assert.Fail("Unhandled ArchiveRenameState variant in GetArchiveRenameStateType")
+		return ArchiveRenameStateTypeRenameActive
+	}
+}
+
+// ArchiveRenameStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type ArchiveRenameStateUnion struct {
+	Type ArchiveRenameStateType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	RenameNone   *RenameNone   `json:"renameNone,omitempty"`
+	RenameQueued *RenameQueued `json:"renameQueued,omitempty"`
+	RenameActive *RenameActive `json:"renameActive,omitempty"`
+}
+
+// ToArchiveRenameStateUnion converts an ADT ArchiveRenameState to an ArchiveRenameStateUnion
+func ToArchiveRenameStateUnion(r ArchiveRenameState) ArchiveRenameStateUnion {
+	switch i := r.(type) {
+	case RenameNoneVariant:
+		data := i()
+		return ArchiveRenameStateUnion{
+			Type:       ArchiveRenameStateTypeRenameNone,
+			RenameNone: &data,
+		}
+	case RenameQueuedVariant:
+		data := i()
+		return ArchiveRenameStateUnion{
+			Type:         ArchiveRenameStateTypeRenameQueued,
+			RenameQueued: &data,
+		}
+	case RenameActiveVariant:
+		data := i()
+		return ArchiveRenameStateUnion{
+			Type:         ArchiveRenameStateTypeRenameActive,
+			RenameActive: &data,
+		}
+	default:
+		return ArchiveRenameStateUnion{
+			Type:         ArchiveRenameStateTypeRenameActive,
+			RenameActive: &RenameActive{},
+		}
+	}
+}
+
+// ArchiveDeleteStateType is the discriminator enum for ArchiveDeleteState
+type ArchiveDeleteStateType string
+
+const (
+	ArchiveDeleteStateTypeDeleteActive ArchiveDeleteStateType = "DeleteActive"
+	ArchiveDeleteStateTypeDeleteNone   ArchiveDeleteStateType = "DeleteNone"
+	ArchiveDeleteStateTypeDeleteQueued ArchiveDeleteStateType = "DeleteQueued"
+)
+
+// ArchiveDeleteState variant wrappers
+type DeleteActiveVariant adtenum.OneVariantValue[DeleteActive]
+type DeleteNoneVariant adtenum.OneVariantValue[DeleteNone]
+type DeleteQueuedVariant adtenum.OneVariantValue[DeleteQueued]
+
+// ArchiveDeleteState constructors
+var NewArchiveDeleteStateDeleteActive = adtenum.CreateOneVariantValueConstructor[DeleteActiveVariant]()
+var NewArchiveDeleteStateDeleteNone = adtenum.CreateOneVariantValueConstructor[DeleteNoneVariant]()
+var NewArchiveDeleteStateDeleteQueued = adtenum.CreateOneVariantValueConstructor[DeleteQueuedVariant]()
+
+// EnumType methods for ArchiveDeleteState variants
+func (v DeleteActiveVariant) EnumType() ArchiveDeleteState { return v }
+func (v DeleteNoneVariant) EnumType() ArchiveDeleteState   { return v }
+func (v DeleteQueuedVariant) EnumType() ArchiveDeleteState { return v }
+
+// GetArchiveDeleteStateType returns the discriminator type for exhaustive switch checking
+func GetArchiveDeleteStateType(enum ArchiveDeleteState) ArchiveDeleteStateType {
+	switch enum.(type) {
+	case DeleteNoneVariant:
+		return ArchiveDeleteStateTypeDeleteNone
+	case DeleteQueuedVariant:
+		return ArchiveDeleteStateTypeDeleteQueued
+	case DeleteActiveVariant:
+		return ArchiveDeleteStateTypeDeleteActive
+	default:
+		assert.Fail("Unhandled ArchiveDeleteState variant in GetArchiveDeleteStateType")
+		return ArchiveDeleteStateTypeDeleteActive
+	}
+}
+
+// ArchiveDeleteStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type ArchiveDeleteStateUnion struct {
+	Type ArchiveDeleteStateType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	DeleteNone   *DeleteNone   `json:"deleteNone,omitempty"`
+	DeleteQueued *DeleteQueued `json:"deleteQueued,omitempty"`
+	DeleteActive *DeleteActive `json:"deleteActive,omitempty"`
+}
+
+// ToArchiveDeleteStateUnion converts an ADT ArchiveDeleteState to an ArchiveDeleteStateUnion
+func ToArchiveDeleteStateUnion(r ArchiveDeleteState) ArchiveDeleteStateUnion {
+	switch i := r.(type) {
+	case DeleteNoneVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:       ArchiveDeleteStateTypeDeleteNone,
+			DeleteNone: &data,
+		}
+	case DeleteQueuedVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteQueued,
+			DeleteQueued: &data,
+		}
+	case DeleteActiveVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteActive,
+			DeleteActive: &data,
+		}
+	default:
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteActive,
+			DeleteActive: &DeleteActive{},
+		}
+	}
+}

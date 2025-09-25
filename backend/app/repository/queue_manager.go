@@ -939,14 +939,20 @@ func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int
 		message = fmt.Sprintf("Failed to delete archive (ID %d): %s", archiveData.ArchiveID, errorMsg)
 	case statemachine.OperationTypeArchiveRefresh:
 		message = fmt.Sprintf("Failed to refresh archives: %s", errorMsg)
-
-	//	TODO: mabe we make this a bit better
-	case statemachine.OperationTypeDelete,
-		statemachine.OperationTypeMount,
-		statemachine.OperationTypeMountArchive,
-		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
-		message = fmt.Sprintf("Operation failed: %s", errorMsg)
+	case statemachine.OperationTypeBackup:
+		message = fmt.Sprintf("Failed to backup: %s", errorMsg)
+	case statemachine.OperationTypePrune:
+		message = fmt.Sprintf("Failed to prune repository: %s", errorMsg)
+	case statemachine.OperationTypeDelete:
+		message = fmt.Sprintf("Failed to delete repository: %s", errorMsg)
+	case statemachine.OperationTypeMount:
+		message = fmt.Sprintf("Failed to mount repository: %s", errorMsg)
+	case statemachine.OperationTypeMountArchive:
+		message = fmt.Sprintf("Failed to mount archive: %s", errorMsg)
+	case statemachine.OperationTypeUnmount:
+		message = fmt.Sprintf("Failed to unmount repository: %s", errorMsg)
+	case statemachine.OperationTypeUnmountArchive:
+		message = fmt.Sprintf("Failed to unmount archive: %s", errorMsg)
 	default:
 		assert.Fail("Unhandled OperationType in sendFrontendNotification")
 	}

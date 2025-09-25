@@ -109,6 +109,42 @@ func (Failed) isADTVariant() OperationStatus    { var zero OperationStatus; retu
 func (Expired) isADTVariant() OperationStatus   { var zero OperationStatus; return zero }
 
 // ============================================================================
+// ARCHIVE OPERATION STATE ADTS
+// ============================================================================
+
+// Archive rename state variants
+type RenameNone struct{}
+
+type RenameQueued struct {
+	NewName  string `json:"newName"`  // Full new name (prefix + name)
+}
+
+type RenameActive struct {
+	NewName string `json:"newName"` // Full new name (prefix + name)
+}
+
+// Archive delete state variants
+type DeleteNone struct{}
+
+type DeleteQueued struct {}
+
+type DeleteActive struct{}
+
+// ADT definitions
+type ArchiveRenameState adtenum.Enum[ArchiveRenameState]
+type ArchiveDeleteState adtenum.Enum[ArchiveDeleteState]
+
+// Implement adtVariant marker interface for rename states
+func (RenameNone) isADTVariant() ArchiveRenameState   { var zero ArchiveRenameState; return zero }
+func (RenameQueued) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
+func (RenameActive) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
+
+// Implement adtVariant marker interface for delete states
+func (DeleteNone) isADTVariant() ArchiveDeleteState   { var zero ArchiveDeleteState; return zero }
+func (DeleteQueued) isADTVariant() ArchiveDeleteState { var zero ArchiveDeleteState; return zero }
+func (DeleteActive) isADTVariant() ArchiveDeleteState { var zero ArchiveDeleteState; return zero }
+
+// ============================================================================
 // QUEUED OPERATION
 // ============================================================================
 
@@ -198,10 +234,17 @@ type PaginatedArchivesRequest struct {
 	EndDate             time.Time            `json:"endDate,omitempty"`
 }
 
+// ArchiveWithPendingChanges represents an archive with potential pending operations
+type ArchiveWithPendingChanges struct {
+	*ent.Archive
+	RenameStateUnion ArchiveRenameStateUnion `json:"renameStateUnion"` // Serializable rename operation state
+	DeleteStateUnion ArchiveDeleteStateUnion `json:"deleteStateUnion"` // Serializable delete operation state
+}
+
 // PaginatedArchivesResponse represents the response for paginated archives
 type PaginatedArchivesResponse struct {
-	Archives []*ent.Archive `json:"archives"`
-	Total    int            `json:"total"`
+	Archives []*ArchiveWithPendingChanges `json:"archives"`
+	Total    int                          `json:"total"`
 }
 
 // PruningDates represents pruning date information for archives
