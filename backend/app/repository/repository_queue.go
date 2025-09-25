@@ -83,7 +83,7 @@ func (q *RepositoryQueue) AddOperation(op *QueuedOperation) (string, error) {
 }
 
 // GetOperations returns all operations in the queue (including active)
-func (q *RepositoryQueue) GetOperations() []*QueuedOperation {
+func (q *RepositoryQueue) GetOperations(operationType *statemachine.OperationType) []*QueuedOperation {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -91,13 +91,36 @@ func (q *RepositoryQueue) GetOperations() []*QueuedOperation {
 
 	// Add active operation first
 	if q.active != nil {
-		ops = append(ops, q.active)
+		if operationType == nil || statemachine.GetOperationType(q.active.Operation) == *operationType {
+			ops = append(ops, q.active)
+		}
 	}
 
 	// Add queued operations in order
 	for _, operationID := range q.operationList {
 		if op, exists := q.operations[operationID]; exists {
-			ops = append(ops, op)
+			if operationType == nil || statemachine.GetOperationType(op.Operation) == *operationType {
+				ops = append(ops, op)
+			}
+		}
+	}
+
+	return ops
+}
+
+// GetQueuedOperations returns only queued operations (excluding active)
+func (q *RepositoryQueue) GetQueuedOperations(operationType *statemachine.OperationType) []*QueuedOperation {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	var ops []*QueuedOperation
+
+	// Add only queued operations in order (excluding active)
+	for _, operationID := range q.operationList {
+		if op, exists := q.operations[operationID]; exists {
+			if operationType == nil || statemachine.GetOperationType(op.Operation) == *operationType {
+				ops = append(ops, op)
+			}
 		}
 	}
 

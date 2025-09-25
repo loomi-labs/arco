@@ -97,13 +97,21 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
 
 	// Emit additional events for specific states
-	switch s := state.(type) {
-	case statemachine.BackingUpVariant:
-		data := s()
+	switch statemachine.GetRepositoryStateType(state) {
+	case statemachine.RepositoryStateTypeBackingUp:
+		data := state.(statemachine.BackingUpVariant)()
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventBackupStateChangedString(data.Data.BackupID))
-	case statemachine.PruningVariant:
-		data := s()
+	case statemachine.RepositoryStateTypePruning:
+		data := state.(statemachine.PruningVariant)()
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventPruneStateChangedString(data.BackupID))
+	case statemachine.RepositoryStateTypeRefreshing:
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
+	case statemachine.RepositoryStateTypeIdle,
+		statemachine.RepositoryStateTypeQueued,
+		statemachine.RepositoryStateTypeDeleting,
+		statemachine.RepositoryStateTypeMounting,
+		statemachine.RepositoryStateTypeMounted,
+		statemachine.RepositoryStateTypeError:
 	}
 }
 
@@ -148,6 +156,9 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	if err != nil {
 		return "", fmt.Errorf("failed to add operation to repository %d queue: %w", repoID, err)
 	}
+
+	// Emit repo changed event
+	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
 
 	// Attempt to start operation if possible
 	return operationID, qm.processQueue(repoID)
@@ -561,16 +572,38 @@ func (qm *QueueManager) UpdateBackupProgress(ctx context.Context, operationID st
 	return fmt.Errorf("operation %s not found in any queue", operationID)
 }
 
-// GetQueuedOperations returns all operations for a repository (including the active one), optionally filtered by operation type
+// GetQueuedOperations returns only queued operations for a repository (excluding active), optionally filtered by operation type
 func (qm *QueueManager) GetQueuedOperations(repoID int, operationType *statemachine.OperationType) ([]*QueuedOperation, error) {
 	queue := qm.GetQueue(repoID)
-	return queue.GetOperations(operationType), nil
+	return queue.GetQueuedOperations(operationType), nil
 }
 
 // GetOperationsByStatus returns operations filtered by status for a repository
 func (qm *QueueManager) GetOperationsByStatus(repoID int, status OperationStatus) ([]*QueuedOperation, error) {
 	queue := qm.GetQueue(repoID)
 	return queue.GetOperationsByStatus(status), nil
+}
+
+// GetActiveOperation returns the currently active operation for a repository, optionally filtered by operation type
+func (qm *QueueManager) GetActiveOperation(repoID int, operationType *statemachine.OperationType) *QueuedOperation {
+	qm.mu.RLock()
+	defer qm.mu.RUnlock()
+
+	// Check heavy operations first
+	if op, exists := qm.activeHeavy[repoID]; exists {
+		if operationType == nil || statemachine.GetOperationType(op.Operation) == *operationType {
+			return op
+		}
+	}
+
+	// Check light operations
+	if op, exists := qm.activeLight[repoID]; exists {
+		if operationType == nil || statemachine.GetOperationType(op.Operation) == *operationType {
+			return op
+		}
+	}
+
+	return nil
 }
 
 // GetActiveOperations returns currently active operations across all repositories

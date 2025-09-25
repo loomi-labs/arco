@@ -72,6 +72,27 @@ export class BackupProfileFilter {
     }
 }
 
+export class Completed {
+    "completedAt": time$0.Time;
+
+    /** Creates a new Completed instance. */
+    constructor($$source: Partial<Completed> = {}) {
+        if (!("completedAt" in $$source)) {
+            this["completedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Completed instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Completed {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Completed($$parsedSource as Partial<Completed>);
+    }
+}
+
 /**
  * ExaminePruningResult represents the result of examining pruning operations
  */
@@ -106,6 +127,52 @@ export class ExaminePruningResult {
             $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
         }
         return new ExaminePruningResult($$parsedSource as Partial<ExaminePruningResult>);
+    }
+}
+
+export class Expired {
+    "expiredAt": time$0.Time;
+
+    /** Creates a new Expired instance. */
+    constructor($$source: Partial<Expired> = {}) {
+        if (!("expiredAt" in $$source)) {
+            this["expiredAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Expired instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Expired {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Expired($$parsedSource as Partial<Expired>);
+    }
+}
+
+export class Failed {
+    "error": string;
+    "failedAt": time$0.Time;
+
+    /** Creates a new Failed instance. */
+    constructor($$source: Partial<Failed> = {}) {
+        if (!("error" in $$source)) {
+            this["error"] = "";
+        }
+        if (!("failedAt" in $$source)) {
+            this["failedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Failed instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Failed {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Failed($$parsedSource as Partial<Failed>);
     }
 }
 
@@ -190,11 +257,6 @@ export class LocationUnion {
 }
 
 /**
- * OperationStatus ADT definition
- */
-export type OperationStatus = any;
-
-/**
  * OperationStatusType is the discriminator enum for OperationStatus
  */
 export enum OperationStatusType {
@@ -209,6 +271,62 @@ export enum OperationStatusType {
     OperationStatusTypeQueued = "Queued",
     OperationStatusTypeRunning = "Running",
 };
+
+/**
+ * OperationStatusUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class OperationStatusUnion {
+    /**
+     * Discriminator field
+     */
+    "type": OperationStatusType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "queued"?: Queued | null;
+    "running"?: Running | null;
+    "completed"?: Completed | null;
+    "failed"?: Failed | null;
+    "expired"?: Expired | null;
+
+    /** Creates a new OperationStatusUnion instance. */
+    constructor($$source: Partial<OperationStatusUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = OperationStatusType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OperationStatusUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OperationStatusUnion {
+        const $$createField1_0 = $$createType8;
+        const $$createField2_0 = $$createType10;
+        const $$createField3_0 = $$createType12;
+        const $$createField4_0 = $$createType14;
+        const $$createField5_0 = $$createType16;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("queued" in $$parsedSource) {
+            $$parsedSource["queued"] = $$createField1_0($$parsedSource["queued"]);
+        }
+        if ("running" in $$parsedSource) {
+            $$parsedSource["running"] = $$createField2_0($$parsedSource["running"]);
+        }
+        if ("completed" in $$parsedSource) {
+            $$parsedSource["completed"] = $$createField3_0($$parsedSource["completed"]);
+        }
+        if ("failed" in $$parsedSource) {
+            $$parsedSource["failed"] = $$createField4_0($$parsedSource["failed"]);
+        }
+        if ("expired" in $$parsedSource) {
+            $$parsedSource["expired"] = $$createField5_0($$parsedSource["expired"]);
+        }
+        return new OperationStatusUnion($$parsedSource as Partial<OperationStatusUnion>);
+    }
+}
 
 /**
  * PaginatedArchivesRequest represents a request for paginated archives
@@ -248,7 +366,7 @@ export class PaginatedArchivesRequest {
      * Creates a new PaginatedArchivesRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesRequest {
-        const $$createField3_0 = $$createType8;
+        const $$createField3_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupProfileFilter" in $$parsedSource) {
             $$parsedSource["backupProfileFilter"] = $$createField3_0($$parsedSource["backupProfileFilter"]);
@@ -280,12 +398,41 @@ export class PaginatedArchivesResponse {
      * Creates a new PaginatedArchivesResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType11;
+        const $$createField0_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("archives" in $$parsedSource) {
             $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
         }
         return new PaginatedArchivesResponse($$parsedSource as Partial<PaginatedArchivesResponse>);
+    }
+}
+
+/**
+ * Progress represents generic progress information
+ */
+export class Progress {
+    "current": number;
+    "total": number;
+    "message"?: string;
+
+    /** Creates a new Progress instance. */
+    constructor($$source: Partial<Progress> = {}) {
+        if (!("current" in $$source)) {
+            this["current"] = 0;
+        }
+        if (!("total" in $$source)) {
+            this["total"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Progress instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Progress {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Progress($$parsedSource as Partial<Progress>);
     }
 }
 
@@ -336,7 +483,7 @@ export class PruningDates {
      * Creates a new PruningDates instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType13;
+        const $$createField0_0 = $$createType23;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("dates" in $$parsedSource) {
             $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
@@ -345,74 +492,27 @@ export class PruningDates {
     }
 }
 
-/**
- * QueuedOperation represents a queued repository operation
- */
-export class QueuedOperation {
+export class Queued {
     /**
-     * Unique operation ID (UUID) - enables idempotency and deduplication
+     * Position in queue
      */
-    "id": string;
-    "repoId": number;
-    "backupProfileId": number | null;
+    "position": number;
 
-    /**
-     * ADT containing type and parameters
-     */
-    "operation": statemachine$0.Operation;
-
-    /**
-     * ADT containing status, progress, error
-     */
-    "status": OperationStatus;
-    "createdAt": time$0.Time;
-
-    /**
-     * Auto-expire if not started
-     */
-    "validUntil": time$0.Time | null;
-
-    /**
-     * Must start immediately or fail
-     */
-    "immediate": boolean;
-
-    /** Creates a new QueuedOperation instance. */
-    constructor($$source: Partial<QueuedOperation> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = "";
-        }
-        if (!("repoId" in $$source)) {
-            this["repoId"] = 0;
-        }
-        if (!("backupProfileId" in $$source)) {
-            this["backupProfileId"] = null;
-        }
-        if (!("operation" in $$source)) {
-            this["operation"] = null;
-        }
-        if (!("status" in $$source)) {
-            this["status"] = null;
-        }
-        if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
-        }
-        if (!("validUntil" in $$source)) {
-            this["validUntil"] = null;
-        }
-        if (!("immediate" in $$source)) {
-            this["immediate"] = false;
+    /** Creates a new Queued instance. */
+    constructor($$source: Partial<Queued> = {}) {
+        if (!("position" in $$source)) {
+            this["position"] = 0;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new QueuedOperation instance from a string or object.
+     * Creates a new Queued instance from a string or object.
      */
-    static createFrom($$source: any = {}): QueuedOperation {
+    static createFrom($$source: any = {}): Queued {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new QueuedOperation($$parsedSource as Partial<QueuedOperation>);
+        return new Queued($$parsedSource as Partial<Queued>);
     }
 }
 
@@ -494,8 +594,8 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField3_0 = $$createType14;
-        const $$createField4_0 = $$createType15;
+        const $$createField3_0 = $$createType24;
+        const $$createField4_0 = $$createType25;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -536,8 +636,8 @@ export class RepositoryWithQueue {
     "lastBackupError"?: string;
     "lastBackupWarning"?: string;
     "storageUsed": number;
-    "queuedOperations": (QueuedOperation | null)[];
-    "activeOperation"?: QueuedOperation | null;
+    "queuedOperations": (SerializableQueuedOperation | null)[];
+    "activeOperation"?: SerializableQueuedOperation | null;
 
     /** Creates a new RepositoryWithQueue instance. */
     constructor($$source: Partial<RepositoryWithQueue> = {}) {
@@ -573,10 +673,10 @@ export class RepositoryWithQueue {
      * Creates a new RepositoryWithQueue instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryWithQueue {
-        const $$createField3_0 = $$createType14;
-        const $$createField4_0 = $$createType15;
-        const $$createField10_0 = $$createType18;
-        const $$createField11_0 = $$createType17;
+        const $$createField3_0 = $$createType24;
+        const $$createField4_0 = $$createType25;
+        const $$createField10_0 = $$createType28;
+        const $$createField11_0 = $$createType27;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -591,6 +691,111 @@ export class RepositoryWithQueue {
             $$parsedSource["activeOperation"] = $$createField11_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
+    }
+}
+
+export class Running {
+    "progress"?: Progress | null;
+    "startedAt": time$0.Time;
+
+    /** Creates a new Running instance. */
+    constructor($$source: Partial<Running> = {}) {
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Running instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Running {
+        const $$createField0_0 = $$createType30;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("progress" in $$parsedSource) {
+            $$parsedSource["progress"] = $$createField0_0($$parsedSource["progress"]);
+        }
+        return new Running($$parsedSource as Partial<Running>);
+    }
+}
+
+/**
+ * SerializableQueuedOperation represents a queued repository operation with JSON-serializable Union types
+ */
+export class SerializableQueuedOperation {
+    /**
+     * Unique operation ID (UUID) - enables idempotency and deduplication
+     */
+    "id": string;
+    "repoId": number;
+    "backupProfileId": number | null;
+
+    /**
+     * Serializable operation with type and parameters
+     */
+    "operationUnion": statemachine$0.OperationUnion;
+
+    /**
+     * Serializable status with progress, error
+     */
+    "statusUnion": OperationStatusUnion;
+    "createdAt": time$0.Time;
+
+    /**
+     * Auto-expire if not started
+     */
+    "validUntil": time$0.Time | null;
+
+    /**
+     * Must start immediately or fail
+     */
+    "immediate": boolean;
+
+    /** Creates a new SerializableQueuedOperation instance. */
+    constructor($$source: Partial<SerializableQueuedOperation> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("repoId" in $$source)) {
+            this["repoId"] = 0;
+        }
+        if (!("backupProfileId" in $$source)) {
+            this["backupProfileId"] = null;
+        }
+        if (!("operationUnion" in $$source)) {
+            this["operationUnion"] = (new statemachine$0.OperationUnion());
+        }
+        if (!("statusUnion" in $$source)) {
+            this["statusUnion"] = (new OperationStatusUnion());
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("validUntil" in $$source)) {
+            this["validUntil"] = null;
+        }
+        if (!("immediate" in $$source)) {
+            this["immediate"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SerializableQueuedOperation instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SerializableQueuedOperation {
+        const $$createField3_0 = $$createType31;
+        const $$createField4_0 = $$createType32;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("operationUnion" in $$parsedSource) {
+            $$parsedSource["operationUnion"] = $$createField3_0($$parsedSource["operationUnion"]);
+        }
+        if ("statusUnion" in $$parsedSource) {
+            $$parsedSource["statusUnion"] = $$createField4_0($$parsedSource["statusUnion"]);
+        }
+        return new SerializableQueuedOperation($$parsedSource as Partial<SerializableQueuedOperation>);
     }
 }
 
@@ -662,15 +867,29 @@ const $$createType3 = Remote.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
 const $$createType5 = ArcoCloud.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = BackupProfileFilter.createFrom;
+const $$createType7 = Queued.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = ent$0.Archive.createFrom;
+const $$createType9 = Running.createFrom;
 const $$createType10 = $Create.Nullable($$createType9);
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = PruningDate.createFrom;
-const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = LocationUnion.createFrom;
-const $$createType15 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType16 = QueuedOperation.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = $Create.Array($$createType17);
+const $$createType11 = Completed.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = Failed.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = Expired.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);
+const $$createType17 = BackupProfileFilter.createFrom;
+const $$createType18 = $Create.Nullable($$createType17);
+const $$createType19 = ent$0.Archive.createFrom;
+const $$createType20 = $Create.Nullable($$createType19);
+const $$createType21 = $Create.Array($$createType20);
+const $$createType22 = PruningDate.createFrom;
+const $$createType23 = $Create.Array($$createType22);
+const $$createType24 = LocationUnion.createFrom;
+const $$createType25 = statemachine$0.RepositoryStateUnion.createFrom;
+const $$createType26 = SerializableQueuedOperation.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = $Create.Array($$createType27);
+const $$createType29 = Progress.createFrom;
+const $$createType30 = $Create.Nullable($$createType29);
+const $$createType31 = statemachine$0.OperationUnion.createFrom;
+const $$createType32 = OperationStatusUnion.createFrom;

@@ -7,13 +7,84 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../types/models.js";
+import * as types$1 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../../borg/types/models.js";
+import * as types$0 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
+
+export class ArchiveDelete {
+    "archiveId": number;
+
+    /** Creates a new ArchiveDelete instance. */
+    constructor($$source: Partial<ArchiveDelete> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveDelete instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveDelete {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArchiveDelete($$parsedSource as Partial<ArchiveDelete>);
+    }
+}
+
+export class ArchiveRefresh {
+    "repositoryId": number;
+
+    /** Creates a new ArchiveRefresh instance. */
+    constructor($$source: Partial<ArchiveRefresh> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveRefresh instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveRefresh {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArchiveRefresh($$parsedSource as Partial<ArchiveRefresh>);
+    }
+}
+
+export class ArchiveRename {
+    "archiveId": number;
+    "prefix": string;
+    "name": string;
+
+    /** Creates a new ArchiveRename instance. */
+    constructor($$source: Partial<ArchiveRename> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("prefix" in $$source)) {
+            this["prefix"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveRename instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveRename {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArchiveRename($$parsedSource as Partial<ArchiveRename>);
+    }
+}
 
 export class BackingUp {
     "Data": Backup;
@@ -41,13 +112,13 @@ export class BackingUp {
 }
 
 export class Backup {
-    "backupId": types$0.BackupId;
-    "progress"?: types$1.BackupProgress | null;
+    "backupId": types$1.BackupId;
+    "progress"?: types$0.BackupProgress | null;
 
     /** Creates a new Backup instance. */
     constructor($$source: Partial<Backup> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -67,6 +138,27 @@ export class Backup {
             $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
         }
         return new Backup($$parsedSource as Partial<Backup>);
+    }
+}
+
+export class Delete {
+    "repositoryId": number;
+
+    /** Creates a new Delete instance. */
+    constructor($$source: Partial<Delete> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Delete instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Delete {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Delete($$parsedSource as Partial<Delete>);
     }
 }
 
@@ -177,6 +269,56 @@ export class Idle {
     }
 }
 
+export class Mount {
+    "repositoryId": number;
+    "mountPath": string;
+
+    /** Creates a new Mount instance. */
+    constructor($$source: Partial<Mount> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+        if (!("mountPath" in $$source)) {
+            this["mountPath"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Mount instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Mount {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Mount($$parsedSource as Partial<Mount>);
+    }
+}
+
+export class MountArchive {
+    "archiveId": number;
+    "mountPath": string;
+
+    /** Creates a new MountArchive instance. */
+    constructor($$source: Partial<MountArchive> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("mountPath" in $$source)) {
+            this["mountPath"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MountArchive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MountArchive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MountArchive($$parsedSource as Partial<MountArchive>);
+    }
+}
+
 /**
  * MountInfo contains mount information for archives and repositories
  */
@@ -271,13 +413,140 @@ export class Mounting {
  */
 export type Operation = any;
 
+/**
+ * OperationType is the discriminator enum for Operation
+ */
+export enum OperationType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    OperationTypeArchiveDelete = "ArchiveDelete",
+    OperationTypeArchiveRefresh = "ArchiveRefresh",
+    OperationTypeArchiveRename = "ArchiveRename",
+    OperationTypeBackup = "Backup",
+    OperationTypeDelete = "Delete",
+    OperationTypeMount = "Mount",
+    OperationTypeMountArchive = "MountArchive",
+    OperationTypePrune = "Prune",
+    OperationTypeUnmount = "Unmount",
+    OperationTypeUnmountArchive = "UnmountArchive",
+};
+
+/**
+ * OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class OperationUnion {
+    /**
+     * Discriminator field
+     */
+    "type": OperationType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "backup"?: Backup | null;
+    "prune"?: Prune | null;
+    "delete"?: Delete | null;
+    "archiveRefresh"?: ArchiveRefresh | null;
+    "archiveDelete"?: ArchiveDelete | null;
+    "archiveRename"?: ArchiveRename | null;
+    "mount"?: Mount | null;
+    "mountArchive"?: MountArchive | null;
+    "unmount"?: Unmount | null;
+    "unmountArchive"?: UnmountArchive | null;
+
+    /** Creates a new OperationUnion instance. */
+    constructor($$source: Partial<OperationUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = OperationType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OperationUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OperationUnion {
+        const $$createField1_0 = $$createType6;
+        const $$createField2_0 = $$createType8;
+        const $$createField3_0 = $$createType10;
+        const $$createField4_0 = $$createType12;
+        const $$createField5_0 = $$createType14;
+        const $$createField6_0 = $$createType16;
+        const $$createField7_0 = $$createType18;
+        const $$createField8_0 = $$createType20;
+        const $$createField9_0 = $$createType22;
+        const $$createField10_0 = $$createType24;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backup" in $$parsedSource) {
+            $$parsedSource["backup"] = $$createField1_0($$parsedSource["backup"]);
+        }
+        if ("prune" in $$parsedSource) {
+            $$parsedSource["prune"] = $$createField2_0($$parsedSource["prune"]);
+        }
+        if ("delete" in $$parsedSource) {
+            $$parsedSource["delete"] = $$createField3_0($$parsedSource["delete"]);
+        }
+        if ("archiveRefresh" in $$parsedSource) {
+            $$parsedSource["archiveRefresh"] = $$createField4_0($$parsedSource["archiveRefresh"]);
+        }
+        if ("archiveDelete" in $$parsedSource) {
+            $$parsedSource["archiveDelete"] = $$createField5_0($$parsedSource["archiveDelete"]);
+        }
+        if ("archiveRename" in $$parsedSource) {
+            $$parsedSource["archiveRename"] = $$createField6_0($$parsedSource["archiveRename"]);
+        }
+        if ("mount" in $$parsedSource) {
+            $$parsedSource["mount"] = $$createField7_0($$parsedSource["mount"]);
+        }
+        if ("mountArchive" in $$parsedSource) {
+            $$parsedSource["mountArchive"] = $$createField8_0($$parsedSource["mountArchive"]);
+        }
+        if ("unmount" in $$parsedSource) {
+            $$parsedSource["unmount"] = $$createField9_0($$parsedSource["unmount"]);
+        }
+        if ("unmountArchive" in $$parsedSource) {
+            $$parsedSource["unmountArchive"] = $$createField10_0($$parsedSource["unmountArchive"]);
+        }
+        return new OperationUnion($$parsedSource as Partial<OperationUnion>);
+    }
+}
+
+export class Prune {
+    "backupId": types$1.BackupId;
+
+    /** Creates a new Prune instance. */
+    constructor($$source: Partial<Prune> = {}) {
+        if (!("backupId" in $$source)) {
+            this["backupId"] = (new types$1.BackupId());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Prune instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Prune {
+        const $$createField0_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupId" in $$parsedSource) {
+            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
+        return new Prune($$parsedSource as Partial<Prune>);
+    }
+}
+
 export class Pruning {
-    "backupId": types$0.BackupId;
+    "backupId": types$1.BackupId;
 
     /** Creates a new Pruning instance. */
     constructor($$source: Partial<Pruning> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$0.BackupId());
+            this["backupId"] = (new types$1.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -402,15 +671,15 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType7;
-        const $$createField2_0 = $$createType9;
-        const $$createField3_0 = $$createType11;
-        const $$createField4_0 = $$createType13;
-        const $$createField5_0 = $$createType15;
-        const $$createField6_0 = $$createType17;
-        const $$createField7_0 = $$createType19;
-        const $$createField8_0 = $$createType21;
-        const $$createField9_0 = $$createType23;
+        const $$createField1_0 = $$createType26;
+        const $$createField2_0 = $$createType28;
+        const $$createField3_0 = $$createType30;
+        const $$createField4_0 = $$createType32;
+        const $$createField5_0 = $$createType34;
+        const $$createField6_0 = $$createType36;
+        const $$createField7_0 = $$createType38;
+        const $$createField8_0 = $$createType40;
+        const $$createField9_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -443,28 +712,97 @@ export class RepositoryStateUnion {
     }
 }
 
+export class Unmount {
+    "repositoryId": number;
+    "mountPath": string;
+
+    /** Creates a new Unmount instance. */
+    constructor($$source: Partial<Unmount> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+        if (!("mountPath" in $$source)) {
+            this["mountPath"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Unmount instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Unmount {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Unmount($$parsedSource as Partial<Unmount>);
+    }
+}
+
+export class UnmountArchive {
+    "archiveId": number;
+    "mountPath": string;
+
+    /** Creates a new UnmountArchive instance. */
+    constructor($$source: Partial<UnmountArchive> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("mountPath" in $$source)) {
+            this["mountPath"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UnmountArchive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UnmountArchive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new UnmountArchive($$parsedSource as Partial<UnmountArchive>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = Backup.createFrom;
-const $$createType1 = types$0.BackupId.createFrom;
-const $$createType2 = types$1.BackupProgress.createFrom;
+const $$createType1 = types$1.BackupId.createFrom;
+const $$createType2 = types$0.BackupProgress.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = MountInfo.createFrom;
 const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = Idle.createFrom;
-const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = Queued.createFrom;
-const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = BackingUp.createFrom;
-const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = Pruning.createFrom;
-const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = Deleting.createFrom;
-const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = Refreshing.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = Mounting.createFrom;
-const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = Mounted.createFrom;
-const $$createType21 = $Create.Nullable($$createType20);
-const $$createType22 = Error.createFrom;
-const $$createType23 = $Create.Nullable($$createType22);
+const $$createType6 = $Create.Nullable($$createType0);
+const $$createType7 = Prune.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = Delete.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = ArchiveRefresh.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = ArchiveDelete.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = ArchiveRename.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);
+const $$createType17 = Mount.createFrom;
+const $$createType18 = $Create.Nullable($$createType17);
+const $$createType19 = MountArchive.createFrom;
+const $$createType20 = $Create.Nullable($$createType19);
+const $$createType21 = Unmount.createFrom;
+const $$createType22 = $Create.Nullable($$createType21);
+const $$createType23 = UnmountArchive.createFrom;
+const $$createType24 = $Create.Nullable($$createType23);
+const $$createType25 = Idle.createFrom;
+const $$createType26 = $Create.Nullable($$createType25);
+const $$createType27 = Queued.createFrom;
+const $$createType28 = $Create.Nullable($$createType27);
+const $$createType29 = BackingUp.createFrom;
+const $$createType30 = $Create.Nullable($$createType29);
+const $$createType31 = Pruning.createFrom;
+const $$createType32 = $Create.Nullable($$createType31);
+const $$createType33 = Deleting.createFrom;
+const $$createType34 = $Create.Nullable($$createType33);
+const $$createType35 = Refreshing.createFrom;
+const $$createType36 = $Create.Nullable($$createType35);
+const $$createType37 = Mounting.createFrom;
+const $$createType38 = $Create.Nullable($$createType37);
+const $$createType39 = Mounted.createFrom;
+const $$createType40 = $Create.Nullable($$createType39);
+const $$createType41 = Error.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);

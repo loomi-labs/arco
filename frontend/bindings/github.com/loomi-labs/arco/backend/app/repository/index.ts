@@ -9,23 +9,26 @@ export {
 export {
     ArcoCloud,
     BackupProfileFilter,
+    Completed,
     ExaminePruningResult,
+    Expired,
+    Failed,
     Local,
     LocationType,
     LocationUnion,
     OperationStatusType,
+    OperationStatusUnion,
     PaginatedArchivesRequest,
     PaginatedArchivesResponse,
+    Progress,
     PruningDate,
     PruningDates,
-    QueuedOperation,
+    Queued,
     Remote,
     Repository,
     RepositoryWithQueue,
+    Running,
+    SerializableQueuedOperation,
     TestRepoConnectionResult,
     UpdateRequest
-} from "./models.js";
-
-export type {
-    OperationStatus
 } from "./models.js";

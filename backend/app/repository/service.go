@@ -213,21 +213,35 @@ func (s *Service) GetWithQueue(ctx context.Context, repoId int) (*RepositoryWith
 		return nil, err // Critical error - repository doesn't exist or can't be retrieved
 	}
 
-	// 2. Get queued operations from QueueManager
-	queuedOps, err := s.queueManager.GetQueuedOperations(repoId)
+	// 2. Get queued operations from QueueManager and convert to serializable format
+	queuedOps, err := s.queueManager.GetQueuedOperations(repoId, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. Get active operation from repository queue
+	var serializableQueuedOps []*SerializableQueuedOperation
+	for _, op := range queuedOps {
+		if op != nil {
+			serialized := toSerializableQueuedOperation(op)
+			serializableQueuedOps = append(serializableQueuedOps, &serialized)
+		}
+	}
+
+	// 3. Get active operation from repository queue and convert to serializable format
 	queue := s.queueManager.GetQueue(repoId)
 	activeOp := queue.GetActive() // Can be nil if no operation is active
+
+	var serializableActiveOp *SerializableQueuedOperation
+	if activeOp != nil {
+		serialized := toSerializableQueuedOperation(activeOp)
+		serializableActiveOp = &serialized
+	}
 
 	// 4. Create and return RepositoryWithQueue struct
 	return &RepositoryWithQueue{
 		Repository:       *baseRepo,
-		QueuedOperations: queuedOps,
-		ActiveOperation:  activeOp,
+		QueuedOperations: serializableQueuedOps,
+		ActiveOperation:  serializableActiveOp,
 	}, nil
 }
 
@@ -410,7 +424,7 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 
 	// 1. Cancel any active/queued operations for this repository
 	queue := s.queueManager.GetQueue(id)
-	operations := queue.GetOperations()
+	operations := queue.GetOperations(nil)
 	for _, op := range operations {
 		err := s.queueManager.CancelOperation(id, op.ID)
 		if err != nil {
@@ -468,7 +482,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 
 	// 2. Cancel all queued operations for this repository
 	queue := s.queueManager.GetQueue(id)
-	operations := queue.GetOperations()
+	operations := queue.GetOperations(nil)
 	for _, op := range operations {
 		err := s.queueManager.CancelOperation(id, op.ID)
 		if err != nil {
@@ -666,16 +680,46 @@ func (s *Service) QueuePrune(ctx context.Context, backupId types.BackupId) (stri
 	return operationID, nil
 }
 
-// QueueArchiveRefresh queues an archive refresh operation
-func (s *Service) QueueArchiveRefresh(ctx context.Context, repoId int) (string, error) {
-	// TODO: Implement archive refresh queueing
-	return "", nil
-}
-
 // QueueArchiveDelete queues an archive deletion operation
 func (s *Service) QueueArchiveDelete(ctx context.Context, archiveId int) (string, error) {
-	// TODO: Implement archive delete queueing
-	return "", nil
+	// Get archive to determine repository ID and backup profile ID
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		WithBackupProfile().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Create archive delete operation
+	archiveDeleteOp := statemachine.NewOperationArchiveDelete(statemachine.ArchiveDelete{
+		ArchiveID: archiveId,
+	})
+
+	// Get backup profile ID if available
+	var backupProfileID *int
+	if archiveEntity.Edges.BackupProfile != nil {
+		backupProfileID = &archiveEntity.Edges.BackupProfile.ID
+	}
+
+	// Create queued operation using factory method
+	queue := s.queueManager.GetQueue(archiveEntity.Edges.Repository.ID)
+	queuedOp := queue.CreateQueuedOperation(
+		archiveDeleteOp,
+		archiveEntity.Edges.Repository.ID,
+		backupProfileID,
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(archiveEntity.Edges.Repository.ID, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue archive delete operation: %w", err)
+	}
+
+	return operationID, nil
 }
 
 // QueueArchiveRename queues an archive rename operation
@@ -688,28 +732,39 @@ func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, prefix,
 // OPERATION MANAGEMENT
 // ============================================================================
 
-// GetOperation retrieves an operation by ID
-func (s *Service) GetOperation(ctx context.Context, operationId string) (*QueuedOperation, error) {
-	// TODO: Implement operation retrieval from QueueManager
-	return nil, nil
+func (s *Service) GetActiveOperation(ctx context.Context, repoId int, operationType *statemachine.OperationType) (*SerializableQueuedOperation, error) {
+	operation := s.queueManager.GetActiveOperation(repoId, operationType)
+	if operation == nil {
+		return nil, nil
+	}
+
+	// Convert to serializable format
+	serialized := toSerializableQueuedOperation(operation)
+	return &serialized, nil
 }
 
 // CancelOperation cancels a queued or running operation
-func (s *Service) CancelOperation(ctx context.Context, operationId string) error {
-	// TODO: Implement operation cancellation via QueueManager
-	return nil
+func (s *Service) CancelOperation(ctx context.Context, repositoryId int, operationId string) error {
+	return s.queueManager.CancelOperation(repositoryId, operationId)
 }
 
-// GetQueuedOperations returns all operations for a repository
-func (s *Service) GetQueuedOperations(ctx context.Context, repoId int) ([]*QueuedOperation, error) {
-	// TODO: Implement queued operations retrieval
-	return nil, nil
-}
+// GetQueuedOperations returns all operations for a repository, optionally filtered by operation type
+func (s *Service) GetQueuedOperations(ctx context.Context, repoId int, operationType *statemachine.OperationType) ([]*SerializableQueuedOperation, error) {
+	operations, err := s.queueManager.GetQueuedOperations(repoId, operationType)
+	if err != nil {
+		return nil, err
+	}
 
-// GetOperationsByStatus returns operations filtered by status for a repository
-func (s *Service) GetOperationsByStatus(ctx context.Context, repoId int, status OperationStatusType) ([]*QueuedOperation, error) {
-	// TODO: Implement status-filtered operations retrieval
-	return nil, nil
+	// Convert to serializable format
+	var serializableOps []*SerializableQueuedOperation
+	for _, op := range operations {
+		if op != nil {
+			serialized := toSerializableQueuedOperation(op)
+			serializableOps = append(serializableOps, &serialized)
+		}
+	}
+
+	return serializableOps, nil
 }
 
 // ============================================================================
@@ -1498,7 +1553,7 @@ func (s *Service) isBackupInQueue(backupId types.BackupId) bool {
 	}
 
 	// Check queued operations for the repository
-	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId)
+	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
 	if err != nil {
 		return false
 	}
@@ -1529,7 +1584,7 @@ func (s *Service) findOperationIDByBackupID(backupId types.BackupId) (string, er
 	}
 
 	// Check queued operations for the repository
-	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId)
+	queuedOps, err := s.queueManager.GetQueuedOperations(backupId.RepositoryId, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to get queued operations: %w", err)
 	}
@@ -1651,16 +1706,6 @@ func (s *Service) StartBackupJobs(ctx context.Context, backupIds []types.BackupI
 // AbortBackupJobs is an alias for AbortBackups
 func (s *Service) AbortBackupJobs(ctx context.Context, backupIds []types.BackupId) error {
 	return s.AbortBackups(ctx, backupIds)
-}
-
-// DeleteArchive is an alias for QueueArchiveDelete
-func (s *Service) DeleteArchive(ctx context.Context, archiveId int) (string, error) {
-	return s.QueueArchiveDelete(ctx, archiveId)
-}
-
-// RefreshArchives is an alias for QueueArchiveRefresh
-func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, error) {
-	return s.QueueArchiveRefresh(ctx, repoId)
 }
 
 // RenameArchive is an alias for QueueArchiveRename

@@ -42,8 +42,8 @@ func (r *Repository) GetID() int {
 // RepositoryWithQueue extends Repository with queue information for frontend
 type RepositoryWithQueue struct {
 	Repository       `json:",inline"`
-	QueuedOperations []*QueuedOperation `json:"queuedOperations"`
-	ActiveOperation  *QueuedOperation   `json:"activeOperation,omitempty"`
+	QueuedOperations []*SerializableQueuedOperation `json:"queuedOperations"`
+	ActiveOperation  *SerializableQueuedOperation   `json:"activeOperation,omitempty"`
 }
 
 // ============================================================================
@@ -122,6 +122,32 @@ type QueuedOperation struct {
 	CreatedAt       time.Time              `json:"createdAt"`
 	ValidUntil      *time.Time             `json:"validUntil"` // Auto-expire if not started
 	Immediate       bool                   `json:"immediate"`  // Must start immediately or fail
+}
+
+// SerializableQueuedOperation represents a queued repository operation with JSON-serializable Union types
+type SerializableQueuedOperation struct {
+	ID              string                      `json:"id"` // Unique operation ID (UUID) - enables idempotency and deduplication
+	RepoID          int                         `json:"repoId"`
+	BackupProfileID *int                        `json:"backupProfileId"`
+	OperationUnion  statemachine.OperationUnion `json:"operationUnion"` // Serializable operation with type and parameters
+	StatusUnion     OperationStatusUnion        `json:"statusUnion"`    // Serializable status with progress, error
+	CreatedAt       time.Time                   `json:"createdAt"`
+	ValidUntil      *time.Time                  `json:"validUntil"` // Auto-expire if not started
+	Immediate       bool                        `json:"immediate"`  // Must start immediately or fail
+}
+
+// toSerializableQueuedOperation converts a QueuedOperation to SerializableQueuedOperation
+func toSerializableQueuedOperation(op *QueuedOperation) SerializableQueuedOperation {
+	return SerializableQueuedOperation{
+		ID:              op.ID,
+		RepoID:          op.RepoID,
+		BackupProfileID: op.BackupProfileID,
+		OperationUnion:  statemachine.ToOperationUnion(op.Operation),
+		StatusUnion:     ToOperationStatusUnion(op.Status),
+		CreatedAt:       op.CreatedAt,
+		ValidUntil:      op.ValidUntil,
+		Immediate:       op.Immediate,
+	}
 }
 
 // ============================================================================

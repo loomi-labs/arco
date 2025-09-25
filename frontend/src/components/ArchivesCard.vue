@@ -182,8 +182,25 @@ const canMountNewArchive = computed(() =>
   !hasRepositoryMountActive.value && archiveMountCount.value === 0 && canPerformOperations.value
 );
 
-// Queued operations helpers
+// Archive deletion tracking
 const queuedArchiveDeleteIds = ref<Set<number>>(new Set());
+const activeArchiveDeleteIds = ref<Set<number>>(new Set());
+
+// Function to fetch and update active archive delete IDs
+async function updateActiveArchiveDeletes() {
+  try {
+    const activeDeleteOp = await repoService.GetActiveOperation(props.repoId, statemachine.OperationType.OperationTypeArchiveDelete);
+    const deleteIds = new Set<number>();
+
+    if (activeDeleteOp?.operationUnion?.archiveDelete?.archiveId) {
+      deleteIds.add(activeDeleteOp.operationUnion.archiveDelete.archiveId);
+    }
+
+    activeArchiveDeleteIds.value = deleteIds;
+  } catch (error: unknown) {
+    await showAndLogError("Failed to get active archive delete operation", error);
+  }
+}
 
 // Function to fetch and update queued archive delete IDs
 async function updateQueuedArchiveDeletes() {
@@ -203,9 +220,29 @@ async function updateQueuedArchiveDeletes() {
   }
 }
 
-// Check if a specific archive is queued for deletion
+// Check if a specific archive is actively being deleted
+const isArchiveActivelyDeleting = (archiveId: number) => {
+  return activeArchiveDeleteIds.value.has(archiveId);
+};
+
+// Check if a specific archive is queued for deletion (but not actively being deleted)
 const isArchiveQueuedForDeletion = (archiveId: number) => {
   return queuedArchiveDeleteIds.value.has(archiveId);
+};
+
+// Check if a specific archive is being deleted (either active or queued)
+const isArchiveBeingDeleted = (archiveId: number) => {
+  return isArchiveActivelyDeleting(archiveId) || isArchiveQueuedForDeletion(archiveId);
+};
+
+// Helper function to find the operation ID for a queued delete operation by archive ID
+const getQueuedDeleteOperationId = (archiveId: number): string | null => {
+  for (const op of queuedOperations.value) {
+    if (op?.operationUnion?.archiveDelete?.archiveId === archiveId) {
+      return op.id;
+    }
+  }
+  return null;
 };
 
 /************
@@ -290,7 +327,7 @@ async function deleteArchive() {
 
   try {
     progressSpinnerText.value = "Deleting archive";
-    await repoService.DeleteArchive(archiveId);
+    await repoService.QueueArchiveDelete(archiveId);
     await getPaginatedArchives();
   } catch (error: unknown) {
     await showAndLogError("Failed to delete archive", error);
@@ -299,7 +336,23 @@ async function deleteArchive() {
   }
 }
 
-async function getQueuedOperations() {
+async function cancelArchiveDelete(archiveId: number) {
+  try {
+    const operationId = getQueuedDeleteOperationId(archiveId);
+    if (!operationId) {
+      await showAndLogError("Failed to cancel archive deletion", "Operation not found");
+      return;
+    }
+
+    await repoService.CancelOperation(props.repoId, operationId);
+    await updateQueuedArchiveDeletes();
+    await updateActiveArchiveDeletes();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to cancel archive deletion", error);
+  }
+}
+
+async function getOperations() {
   try {
     const operations = await repoService.GetQueuedOperations(props.repoId, null);
     queuedOperations.value = operations?.filter(op => op !== null) ?? [];
@@ -307,7 +360,6 @@ async function getQueuedOperations() {
     await showAndLogError("Failed to get queued operations", error);
   }
 }
-
 
 async function mountArchive(archiveId: number) {
   try {
@@ -592,15 +644,17 @@ const customDateRangeShortcuts = () => {
 getRepository();
 getPaginatedArchives();
 getBackupProfileFilterOptions();
-getQueuedOperations();
+getOperations();
 updateQueuedArchiveDeletes();
+updateActiveArchiveDeletes();
 
 watch([() => props.repoId], async () => {
   await getRepository();
   await getPaginatedArchives();
   await getBackupProfileFilterOptions();
-  await getQueuedOperations();
+  await getOperations();
   await updateQueuedArchiveDeletes();
+  await updateActiveArchiveDeletes();
   selectedArchives.value.clear();
   isAllSelected.value = false;
 });
@@ -614,16 +668,18 @@ watch([backupProfileFilter, search, dateRange], async () => {
 cleanupFunctions.push(
   Events.On(archivesChanged(props.repoId), async () => {
     await getPaginatedArchives();
-    await getQueuedOperations();
+    await getOperations();
     await updateQueuedArchiveDeletes();
+    await updateActiveArchiveDeletes();
   })
 );
 
 cleanupFunctions.push(
   Events.On(repoStateChangedEvent(props.repoId), async () => {
     await getRepository();
-    await getQueuedOperations();
+    await getOperations();
     await updateQueuedArchiveDeletes();
+    await updateActiveArchiveDeletes();
   })
 );
 
@@ -646,6 +702,7 @@ onUnmounted(() => {
               <!-- Clear Selection Button -->
               <button class='btn btn-sm btn-ghost'
                       :class='{ invisible: selectedArchives.size === 0 }'
+                      :disabled='!canPerformOperations'
                       @click='clearSelection()'>
                 <XMarkIcon class='size-4' />
                 Clear
@@ -773,10 +830,9 @@ onUnmounted(() => {
             :key='index'
             class='cursor-pointer hover:bg-base-300'
             :class='{
-              "opacity-60": isArchiveQueuedForDeletion(archive.id),
-              "cursor-not-allowed": isArchiveQueuedForDeletion(archive.id)
+              "cursor-not-allowed": isArchiveBeingDeleted(archive.id)
             }'
-            @click='!isArchiveQueuedForDeletion(archive.id) && toggleArchiveSelection(archive.id)'>
+            @click='!isArchiveBeingDeleted(archive.id) && toggleArchiveSelection(archive.id)'>
           <!-- Checkbox -->
           <td>
             <input type='checkbox'
@@ -785,7 +841,7 @@ onUnmounted(() => {
                    :checked='selectedArchives.has(archive.id)'
                    @change='toggleArchiveSelection(archive.id)'
                    @click.stop
-                   :disabled='!canPerformOperations || isArchiveQueuedForDeletion(archive.id)' />
+                   :disabled='isArchiveBeingDeleted(archive.id)' />
           </td>
           <!-- Name -->
           <td class='flex flex-col'>
@@ -797,13 +853,21 @@ onUnmounted(() => {
                      @input='validateName(archive.id)'
                      @change='rename(archive)'
                      @click.stop
-                     :disabled='inputRenameInProgress[archive.id] || !canPerformOperations || isArchiveQueuedForDeletion(archive.id)' />
+                     :disabled='inputRenameInProgress[archive.id] || !canPerformOperations || isArchiveBeingDeleted(archive.id)' />
               <span class='loading loading-xs' :class='{ invisible: !inputRenameInProgress[archive.id] }' />
 
-              <span class='tooltip tooltip-warning mr-2'
+              <!-- Active deletion indicator -->
+              <span class='tooltip tooltip-error mr-2'
+                    :class='{ invisible: !isArchiveActivelyDeleting(archive.id) }'
+                    data-tip='This archive is being deleted'>
+                <TrashIcon class='size-4 text-error ml-2 animate-pulse' />
+              </span>
+
+              <!-- Queued deletion indicator -->
+              <span class='tooltip tooltip-error mr-2'
                     :class='{ invisible: !isArchiveQueuedForDeletion(archive.id) }'
-                    data-tip='This archive is queued for deletion'>
-                <ClockIcon class='size-4 text-warning ml-2' />
+                    data-tip='Queued for deletion'>
+                <TrashIcon class='size-4 text-error ml-2' />
               </span>
 
               <span class='tooltip tooltip-info mr-2'
@@ -855,8 +919,19 @@ onUnmounted(() => {
               </button>
             </span>
 
-            <button class='btn btn-sm btn-ghost btn-circle btn-neutral'
-                    :disabled='!isRepositoryIdle || isArchiveQueuedForDeletion(archive.id)'
+            <!-- Cancel Delete Button (only when archive is queued for deletion) -->
+            <span v-if='isArchiveQueuedForDeletion(archive.id)'
+                  class='tooltip tooltip-warning'
+                  data-tip='Cancel deletion'>
+              <button class='btn btn-sm btn-warning btn-circle btn-outline text-warning'
+                      @click.stop='cancelArchiveDelete(archive.id)'>
+                <ClockIcon class='size-4' />
+              </button>
+            </span>
+
+            <button v-if='!isArchiveQueuedForDeletion(archive.id)'
+                    class='btn btn-sm btn-ghost btn-circle btn-neutral'
+                    :disabled='isArchiveActivelyDeleting(archive.id)'
                     @click.stop='() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); }'>
               <TrashIcon class='size-4' />
             </button>
