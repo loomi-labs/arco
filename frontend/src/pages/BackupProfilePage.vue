@@ -25,7 +25,6 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { format } from "@formkit/tempo";
-import type { RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
 /************
  * Variables

@@ -66,6 +66,7 @@ const repo = ref<Repository>(Repository.createFrom());
 const archives = ref<ArchiveWithPendingChanges[]>([]);
 const pagination = ref<Pagination>({ page: 1, pageSize: 10, total: 0 });
 const archiveToBeDeleted = ref<number | undefined>(undefined);
+const archiveToBeRenamed = ref<ArchiveWithPendingChanges | undefined>(undefined);
 const progressSpinnerText = ref<string | undefined>(undefined); // Text to show in the progress spinner; undefined to hide it
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -77,6 +78,18 @@ const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
 >(confirmDeleteMultipleModalKey);
+const confirmUnmountRenameModalKey = useId();
+const confirmUnmountRenameModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
+  confirmUnmountRenameModalKey
+);
+const confirmUnmountDeleteModalKey = useId();
+const confirmUnmountDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
+  confirmUnmountDeleteModalKey
+);
+const confirmUnmountBulkDeleteModalKey = useId();
+const confirmUnmountBulkDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
+  confirmUnmountBulkDeleteModalKey
+);
 const backupProfileFilterOptions = ref<BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<BackupProfileFilter>();
 const search = ref<string>("");
@@ -111,6 +124,16 @@ const repositoryState = computed(() => repo.value.state);
 // Check if repository is in mounted state
 const isMounted = computed(() =>
   repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted
+);
+
+// Check if repository is in mounting state
+const isMounting = computed(() =>
+  repositoryState.value.type === statemachine.RepositoryStateType.RepositoryStateTypeMounting
+);
+
+// Check if repository is mounted or mounting (operations should be blocked)
+const isMountedOrMounting = computed(() =>
+  isMounted.value || isMounting.value
 );
 
 // Get mounted state details if available
@@ -359,6 +382,13 @@ async function deleteArchive() {
   if (!archiveToBeDeleted.value) {
     return;
   }
+
+  // Check if repository is mounted or mounting - show unmount modal proactively
+  if (isMountedOrMounting.value) {
+    confirmUnmountDeleteModal.value?.showModal();
+    return;
+  }
+
   const archiveId = archiveToBeDeleted.value;
   archiveToBeDeleted.value = undefined;
 
@@ -467,6 +497,34 @@ async function unmountAll() {
   }
 }
 
+async function unmountAllAndRename() {
+  await unmountAll();
+  await getRepository(); // Refresh repository state
+  if (archiveToBeRenamed.value) {
+    await rename(archiveToBeRenamed.value);
+    archiveToBeRenamed.value = undefined;
+  }
+}
+
+async function unmountAllAndDelete() {
+  await unmountAll();
+  await getRepository(); // Refresh repository state
+  await deleteArchive();
+}
+
+async function unmountAllAndDeleteSelected() {
+  await unmountAll();
+  await getRepository(); // Refresh repository state
+  await deleteSelectedArchives();
+}
+
+function handleUnmountRenameModalClose() {
+  if (archiveToBeRenamed.value) {
+    inputValues.value[archiveToBeRenamed.value.id] = archiveNameWithoutPrefix(archiveToBeRenamed.value);
+  }
+  archiveToBeRenamed.value = undefined;
+}
+
 async function getBackupProfileFilterOptions() {
   // We only need to get backup profile names if the backup profile column is visible
   if (!props.showBackupProfileColumn) {
@@ -522,6 +580,13 @@ function getPruningText(archiveId: number) {
 async function rename(archive: ArchiveWithPendingChanges) {
   await validateName(archive.id);
   if (inputErrors.value[archive.id]) {
+    return;
+  }
+
+  // Check if repository is mounted or mounting - show unmount modal proactively
+  if (isMountedOrMounting.value) {
+    archiveToBeRenamed.value = archive;
+    confirmUnmountRenameModal.value?.showModal();
     return;
   }
 
@@ -608,6 +673,12 @@ function toggleArchiveSelection(archiveId: number) {
 }
 
 async function deleteSelectedArchives() {
+  // Check if repository is mounted or mounting - show unmount modal proactively
+  if (isMountedOrMounting.value) {
+    confirmUnmountBulkDeleteModal.value?.showModal();
+    return;
+  }
+
   try {
     progressSpinnerText.value = "Deleting archives";
     const archiveIds = Array.from(selectedArchives.value);
@@ -922,7 +993,7 @@ onUnmounted(() => {
               <!-- Rename indicator (active or queued) -->
               <span class='tooltip tooltip-warning mr-2'
                     :class='{ invisible: !isArchiveBeingRenamed(archive) }'
-                    data-tip='Archive rename in progress'>
+                    :data-tip='isArchiveActivelyRenaming(archive) ? "Archive rename in progress" : "Queued for renaming"'>
                 <PencilIcon class='size-4 text-warning ml-2'
                             :class='{ "animate-pulse": isArchiveActivelyRenaming(archive) }' />
               </span>
@@ -1069,6 +1140,36 @@ onUnmounted(() => {
     <p>Are you sure you want to delete {{ selectedArchives.size }} selected
       archive{{ selectedArchives.size > 1 ? "s" : "" }}?</p>
     <p class='mt-2 text-sm text-error'>This action cannot be undone.</p>
+  </ConfirmModal>
+
+  <ConfirmModal :ref='confirmUnmountRenameModalKey'
+                title='Stop browsing'
+                confirm-text='Stop browsing and rename archive'
+                confirm-class='btn-info'
+                @confirm='unmountAllAndRename()'
+                @close='handleUnmountRenameModalClose'>
+    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p class='mb-4'>Do you want to stop browsing and rename the archive?</p>
+  </ConfirmModal>
+
+  <ConfirmModal :ref='confirmUnmountDeleteModalKey'
+                title='Stop browsing'
+                confirm-text='Stop browsing and delete archive'
+                confirm-class='btn-error'
+                @confirm='unmountAllAndDelete()'
+                @close='archiveToBeDeleted = undefined'>
+    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p class='mb-4'>Do you want to stop browsing and delete the archive?</p>
+  </ConfirmModal>
+
+  <ConfirmModal :ref='confirmUnmountBulkDeleteModalKey'
+                title='Stop browsing'
+                confirm-text='Stop browsing and delete archives'
+                confirm-class='btn-error'
+                @confirm='unmountAllAndDeleteSelected()'
+                @close='selectedArchives.clear()'>
+    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p class='mb-4'>Do you want to stop browsing and delete the {{ selectedArchives.size }} selected archive{{ selectedArchives.size > 1 ? "s" : "" }}?</p>
   </ConfirmModal>
 </template>
 
