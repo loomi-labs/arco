@@ -240,7 +240,7 @@ async function runButtonAction() {
 
 async function runBackups() {
   try {
-    await repoService.StartBackupJobs(props.backupIds);
+    await repoService.QueueBackups(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to run backup", error);
   }
@@ -248,7 +248,7 @@ async function runBackups() {
 
 async function abortBackups() {
   try {
-    await repoService.AbortBackupJobs(props.backupIds);
+    await repoService.AbortBackups(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to abort backup", error);
   }

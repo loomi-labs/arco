@@ -83,9 +83,6 @@ func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitte
 
 	// Initialize mount states
 	si.InitMountStates(ctx)
-
-	// TODO: Start periodic cleanup goroutine
-	// go si.startPeriodicCleanup(ctx)
 }
 
 // InitMountStates initializes the mount states of all repositories and archives at startup
@@ -178,12 +175,6 @@ func (s *Service) All(ctx context.Context) ([]*Repository, error) {
 	}
 
 	return repositories, nil
-}
-
-// AllWithQueue retrieves all repositories with queue information
-func (s *Service) AllWithQueue(ctx context.Context) ([]*RepositoryWithQueue, error) {
-	// TODO: Implement all repositories with queue retrieval
-	return nil, nil
 }
 
 // Get retrieves a repository by ID
@@ -296,12 +287,6 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		LastBackupWarning: lastBackupWarning,
 		StorageUsed:       storageUsed,
 	}
-}
-
-// GetByBackupId retrieves a repository by backup ID
-func (s *Service) GetByBackupId(ctx context.Context, bId types.BackupId) (*Repository, error) {
-	// TODO: Implement repository lookup by backup ID
-	return nil, nil
 }
 
 // Create creates a new repository
@@ -1126,12 +1111,6 @@ func (s *Service) BreakLock(ctx context.Context, repoId int) error {
 // ARCHIVE METHODS
 // ============================================================================
 
-// GetArchive retrieves an archive by ID
-//func (s *Service) GetArchive(ctx context.Context, id int) (*ent.Archive, error) {
-//	// TODO: Implement archive retrieval
-//	return nil, nil
-//}
-
 // GetLastArchiveByRepoId gets last archive for repository
 func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.Archive, error) {
 	archiveEntity, err := s.db.Archive.Query().
@@ -1500,34 +1479,6 @@ func (s *Service) IsBorgRepository(path string) bool {
 // INTERNAL HELPERS
 // ============================================================================
 
-// transitionState transitions a repository to a new state
-func (s *Service) transitionState(ctx context.Context, repoId int, newState statemachine.RepositoryState) error {
-	// TODO: Implement state transition:
-	// 1. Get current repository
-	// 2. Validate transition via state machine
-	// 3. Update repository state in database
-	// 4. Emit state change event
-	return nil
-}
-
-// emitStateChangeEvent emits an event for repository state changes
-func (s *Service) emitStateChangeEvent(repoId int, newState statemachine.RepositoryState) {
-	// TODO: Implement event emission
-}
-
-// createOperationID generates a unique operation ID
-func (s *Service) createOperationID() string {
-	// TODO: Implement UUID generation for operation IDs
-	return ""
-}
-
-// startPeriodicCleanup starts background cleanup of expired operations
-func (s *Service) startPeriodicCleanup(ctx context.Context) {
-	// TODO: Implement periodic cleanup:
-	// 1. Run goroutine that periodically calls QueueManager.expireOldOperations()
-	// 2. Handle context cancellation for graceful shutdown
-}
-
 // getLastError returns the latest backup error message for a repository
 func (s *Service) getLastError(ctx context.Context, repoID int) string {
 	// Query latest error notification for this repository
@@ -1635,13 +1586,6 @@ func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
 // ============================================================================
 
 // HIGH PRIORITY METHODS (Used in multiple components)
-
-// GetState returns the current state of a repository
-func (s *Service) GetState(ctx context.Context, repositoryId int) (*statemachine.RepositoryState, error) {
-	// TODO: Implement proper state retrieval from queue manager
-	repoState := s.queueManager.GetRepositoryState(repositoryId)
-	return &repoState, nil
-}
 
 // GetLastArchiveByBackupId gets last archive for backup profile
 func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.BackupId) (*ent.Archive, error) {
@@ -1853,18 +1797,6 @@ func (s *Service) GetCombinedBackupProgress(ctx context.Context, backupIds []typ
 	}, nil
 }
 
-//// GetLocked gets locked repositories
-//func (s *Service) GetLocked(ctx context.Context) ([]*ent.Repository, error) {
-//	// TODO: Implement proper locked repositories retrieval
-//	return []*ent.Repository{}, nil
-//}
-//
-//// GetWithActiveMounts gets repositories with active mounts
-//func (s *Service) GetWithActiveMounts(ctx context.Context) ([]*ent.Repository, error) {
-//	// TODO: Implement proper repositories with active mounts retrieval
-//	return []*ent.Repository{}, nil
-//}
-
 // GetBackupState gets backup state for given backup ID
 func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (*statemachine.Backup, error) {
 	// Get active operations from queue manager
@@ -1886,42 +1818,8 @@ func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (
 	return nil, nil
 }
 
-// GetArchiveMountStates gets archive mount states for a repository
-func (s *Service) GetArchiveMountStates(ctx context.Context, repoId int) (map[int]*platform.MountState, error) {
-	// TODO: Implement proper archive mount states retrieval
-	return make(map[int]*platform.MountState), nil
-}
-
 // LOW PRIORITY METHODS
-
-// SaveIntegrityCheckSettings saves integrity check settings
-func (s *Service) SaveIntegrityCheckSettings(ctx context.Context, repoId int, enabled bool) (*ent.Repository, error) {
-	// TODO: Implement proper integrity check settings save
-	// For now, just return the repository as-is
-	repo, err := s.db.Repository.Get(ctx, repoId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get repository %d: %w", repoId, err)
-	}
-	return repo, nil
-}
 
 func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, backupId types.BackupId) (string, error) {
 	return "", nil
-}
-
-// RENAMED METHOD ALIASES (for backward compatibility)
-
-// StartBackupJobs is an alias for QueueBackups
-func (s *Service) StartBackupJobs(ctx context.Context, backupIds []types.BackupId) ([]string, error) {
-	return s.QueueBackups(ctx, backupIds)
-}
-
-// AbortBackupJobs is an alias for AbortBackups
-func (s *Service) AbortBackupJobs(ctx context.Context, backupIds []types.BackupId) error {
-	return s.AbortBackups(ctx, backupIds)
-}
-
-// StartPruneJob is an alias for QueuePrune
-func (s *Service) StartPruneJob(ctx context.Context, backupId types.BackupId) (string, error) {
-	return s.QueuePrune(ctx, backupId)
 }

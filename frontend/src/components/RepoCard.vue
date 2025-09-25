@@ -115,7 +115,7 @@ async function getBackupButtonStatus() {
 
 async function prune() {
   try {
-    await repoService.StartPruneJob(backupId);
+    await repoService.QueuePrune(backupId);
   } catch (error: unknown) {
     await showAndLogError("Failed to prune repository", error);
   }
