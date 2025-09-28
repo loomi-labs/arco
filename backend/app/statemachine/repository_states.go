@@ -111,9 +111,10 @@ const (
 type ErrorAction string
 
 const (
-	ErrorActionNone          ErrorAction = "none"
-	ErrorActionRegenerateSSH ErrorAction = "regenerateSSH"
-	ErrorActionBreakLock     ErrorAction = "breakLock"
+	ErrorActionNone             ErrorAction = "none"
+	ErrorActionRegenerateSSH    ErrorAction = "regenerateSSH"
+	ErrorActionChangePassphrase ErrorAction = "changePassphrase"
+	ErrorActionBreakLock        ErrorAction = "breakLock"
 )
 
 // ============================================================================

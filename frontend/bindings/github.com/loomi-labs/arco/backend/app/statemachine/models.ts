@@ -231,6 +231,7 @@ export enum ErrorAction {
 
     ErrorActionNone = "none",
     ErrorActionRegenerateSSH = "regenerateSSH",
+    ErrorActionChangePassphrase = "changePassphrase",
     ErrorActionBreakLock = "breakLock",
 };
 

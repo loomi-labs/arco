@@ -1796,7 +1796,7 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 		}
 	} else if errors.Is(borgError, borgtypes.ErrorPassphraseWrong) {
 		// Incorrect passphrase - no automatic action possible
-		errorType, errorAction = statemachine.ErrorTypePassphrase, statemachine.ErrorActionNone
+		errorType, errorAction = statemachine.ErrorTypePassphrase, statemachine.ErrorActionChangePassphrase
 	} else if errors.Is(borgError, borgtypes.ErrorLockTimeout) {
 		// Repository is locked - can break lock for any repo type
 		errorType, errorAction = statemachine.ErrorTypeLocked, statemachine.ErrorActionBreakLock
