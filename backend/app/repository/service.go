@@ -1103,10 +1103,36 @@ func (s *Service) RegenerateSSHKey(ctx context.Context) error {
 
 // BreakLock breaks a repository lock
 func (s *Service) BreakLock(ctx context.Context, repoId int) error {
-	// TODO: Implement lock breaking:
-	// 1. Validate repository is in error state with locked error
-	// 2. Break borg repository lock
-	// 3. Transition state from Error to Idle
+	// Get repository from database
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return fmt.Errorf("failed to get repository %d: %w", repoId, err)
+	}
+
+	// Get current state
+	currentState := s.queueManager.GetRepositoryState(repoId)
+
+	// Validate repository is in error state
+	if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeError {
+		return fmt.Errorf("repository %d is not in error state, cannot break lock", repoId)
+	}
+
+	// Break borg repository lock
+	status := s.borgClient.BreakLock(ctx, repoEntity.URL, repoEntity.Password)
+	if !status.IsCompletedWithSuccess() {
+		return fmt.Errorf("failed to break lock for repository %d: %s", repoId, status.GetError())
+	}
+
+	// Transition state from Error to Idle
+	idleState := statemachine.NewRepositoryStateIdle(statemachine.Idle{})
+	err = s.stateMachine.Transition(repoId, currentState, idleState)
+	if err != nil {
+		return fmt.Errorf("failed to transition repository %d from error to idle state: %w", repoId, err)
+	}
+
+	// Update the repository state
+	s.queueManager.setRepositoryState(repoId, idleState)
+
 	return nil
 }
 
