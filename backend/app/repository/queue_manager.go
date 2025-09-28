@@ -1272,8 +1272,13 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 
 	// Get backup profile with repository and pruning rule data in a single query
 	profile, err := e.db.BackupProfile.Query().
-		Where(backupprofile.ID(pruneData.BackupID.BackupProfileId)).
-		WithRepositories().
+		Where(
+			backupprofile.ID(pruneData.BackupID.BackupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(pruneData.BackupID.RepositoryId)),
+		).
+		WithRepositories(func(q *ent.RepositoryQuery) {
+			q.Where(repository.ID(pruneData.BackupID.RepositoryId))
+		}).
 		WithPruningRule().
 		Only(ctx)
 	if err != nil {
@@ -1281,10 +1286,11 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 	}
 
 	// Get repository from backup profile relationship
-	if len(profile.Edges.Repositories) == 0 {
-		return nil, fmt.Errorf("backup profile %d has no associated repository", pruneData.BackupID.BackupProfileId)
+	if len(profile.Edges.Repositories) != 1 {
+		return nil, fmt.Errorf("expected exactly one repository for backup profile %d and repository %d, got %d",
+			pruneData.BackupID.BackupProfileId, pruneData.BackupID.RepositoryId, len(profile.Edges.Repositories))
 	}
-	repo := profile.Edges.Repositories[0] // Backup profiles should have exactly one repository
+	repo := profile.Edges.Repositories[0] // Should be exactly the repository we requested
 
 	// Get pruning configuration from database
 	prefix := profile.Prefix
@@ -1441,16 +1447,14 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 	// Get archive from database to get repository and current name
 	archiveEntity, err := e.db.Archive.Query().
 		Where(archive.ID(renameData.ArchiveID)).
-		WithBackupProfile(func(q *ent.BackupProfileQuery) {
-			q.WithRepositories()
-		}).
+		WithRepository().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("archive %d not found: %w", renameData.ArchiveID, err)
 	}
 
-	// Get repository from archive's backup profile
-	repo := archiveEntity.Edges.BackupProfile.Edges.Repositories[0] // Assumes one repository per backup profile
+	// Get repository from archive relationship
+	repo := archiveEntity.Edges.Repository
 
 	// Get current archive name from database
 	currentArchiveName := archiveEntity.Name
