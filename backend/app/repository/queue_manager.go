@@ -219,7 +219,8 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	// Archive-affecting operations - emit event
 	case statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
-		statemachine.OperationTypeArchiveRefresh:
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeExaminePrune:
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
 
 	// Non-archive-affecting operations - no action
@@ -816,6 +817,10 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 		// Unmount archive operations transition through refreshing state temporarily
 		return statemachine.CreateRefreshingState(ctx), nil
 
+	case statemachine.OperationTypeExaminePrune:
+		// ExaminePrune is a lightweight operation, treat as refreshing
+		return statemachine.CreateRefreshingState(ctx), nil
+
 	default:
 		assert.Fail("Unhandled OperationType in getTargetStateForOperation")
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
@@ -868,7 +873,8 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 		// All other operations return to idle
 		return statemachine.CreateIdleState(), nil
 
@@ -979,6 +985,8 @@ func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int
 		message = fmt.Sprintf("Failed to unmount repository: %s", errorMsg)
 	case statemachine.OperationTypeUnmountArchive:
 		message = fmt.Sprintf("Failed to unmount archive: %s", errorMsg)
+	case statemachine.OperationTypeExaminePrune:
+		message = fmt.Sprintf("Failed to examine prune: %s", errorMsg)
 	default:
 		assert.Fail("Unhandled OperationType in sendFrontendNotification")
 	}
@@ -1005,6 +1013,7 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -1031,6 +1040,7 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -1056,6 +1066,10 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 		pruneVariant := operation.(statemachine.PruneVariant)
 		pruneData := pruneVariant()
 		return pruneData.BackupID.BackupProfileId
+	case statemachine.OperationTypeExaminePrune:
+		examinePruneVariant := operation.(statemachine.ExaminePruneVariant)
+		examinePruneData := examinePruneVariant()
+		return examinePruneData.BackupID.BackupProfileId
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
@@ -1083,6 +1097,7 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -1137,7 +1152,9 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 	case statemachine.OperationTypeBackup:
 		return e.executeBackup(ctx, operation.(statemachine.BackupVariant))
 	case statemachine.OperationTypePrune:
-		return e.executePrune(ctx, operation.(statemachine.PruneVariant))
+		pruneVariant := operation.(statemachine.PruneVariant)
+		pruneData := pruneVariant()
+		return e.executePrune(ctx, pruneData.BackupID, false, nil, nil, false)
 	case statemachine.OperationTypeDelete:
 		return e.executeRepositoryDelete(ctx, operation.(statemachine.DeleteVariant))
 	case statemachine.OperationTypeArchiveDelete:
@@ -1154,6 +1171,10 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 		return e.executeUnmount(ctx, operation.(statemachine.UnmountVariant))
 	case statemachine.OperationTypeUnmountArchive:
 		return e.executeUnmountArchive(ctx, operation.(statemachine.UnmountArchiveVariant))
+	case statemachine.OperationTypeExaminePrune:
+		examineVariant := operation.(statemachine.ExaminePruneVariant)
+		examineData := examineVariant()
+		return e.executePrune(ctx, examineData.BackupID, true, examineData.PruningRule, examineData.ResultCh, examineData.SaveResults)
 	default:
 		assert.Fail("Unhandled OperationType in borgOperationExecutor.Execute")
 		return nil, fmt.Errorf("unsupported operation type: %T", operation)
@@ -1266,82 +1287,126 @@ func buildPruneOptions(rule *ent.PruningRule) []string {
 	return options
 }
 
-// executePrune performs a borg prune operation
-func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statemachine.PruneVariant) (*borgtypes.Status, error) {
-	pruneData := pruneOp()
-
-	// Get backup profile with repository and pruning rule data in a single query
+// executePrune performs a borg prune operation (real or dry-run)
+func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types.BackupId, isDryRun bool, customPruningRule *ent.PruningRule, resultCh chan<- borgtypes.PruneResult, saveResults bool) (*borgtypes.Status, error) {
+	// Get backup profile with repository and pruning rule data
 	profile, err := e.db.BackupProfile.Query().
 		Where(
-			backupprofile.ID(pruneData.BackupID.BackupProfileId),
-			backupprofile.HasRepositoriesWith(repository.ID(pruneData.BackupID.RepositoryId)),
+			backupprofile.ID(backupID.BackupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(backupID.RepositoryId)),
 		).
 		WithRepositories(func(q *ent.RepositoryQuery) {
-			q.Where(repository.ID(pruneData.BackupID.RepositoryId))
+			q.Where(repository.ID(backupID.RepositoryId))
 		}).
 		WithPruningRule().
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("backup profile %d not found: %w", pruneData.BackupID.BackupProfileId, err)
+		return nil, fmt.Errorf("backup profile %d not found: %w", backupID.BackupProfileId, err)
 	}
 
 	// Get repository from backup profile relationship
 	if len(profile.Edges.Repositories) != 1 {
 		return nil, fmt.Errorf("expected exactly one repository for backup profile %d and repository %d, got %d",
-			pruneData.BackupID.BackupProfileId, pruneData.BackupID.RepositoryId, len(profile.Edges.Repositories))
+			backupID.BackupProfileId, backupID.RepositoryId, len(profile.Edges.Repositories))
 	}
-	repo := profile.Edges.Repositories[0] // Should be exactly the repository we requested
+	repo := profile.Edges.Repositories[0]
 
 	// Get pruning configuration from database
 	prefix := profile.Prefix
 
-	// Handle pruning rule configuration
-	var pruneOptions []string
-	// Ensure pruning rule exists and is enabled
-	if profile.Edges.PruningRule == nil {
-		return nil, fmt.Errorf("backup profile %d has no pruning rule defined", pruneData.BackupID.BackupProfileId)
-	}
-	if !profile.Edges.PruningRule.IsEnabled {
-		return nil, fmt.Errorf("backup profile %d has pruning rule disabled", pruneData.BackupID.BackupProfileId)
+	// Handle pruning rule configuration - select rule source
+	var pruningRule *ent.PruningRule
+	if customPruningRule != nil {
+		pruningRule = customPruningRule
+	} else if profile.Edges.PruningRule != nil {
+		if !isDryRun && !profile.Edges.PruningRule.IsEnabled {
+			return nil, fmt.Errorf("backup profile %d has pruning rule disabled", backupID.BackupProfileId)
+		}
+		pruningRule = profile.Edges.PruningRule
+	} else {
+		return nil, fmt.Errorf("backup profile %d has no pruning rule available", backupID.BackupProfileId)
 	}
 
-	// Get pruning options from enabled pruning rule
-	pruneOptions = buildPruneOptions(profile.Edges.PruningRule)
-	e.log.Infow("Using database pruning rule configuration",
+	// Get pruning options from selected pruning rule
+	pruneOptions := buildPruneOptions(pruningRule)
+	e.log.Infow("Using pruning rule configuration",
 		"repoID", e.repoID,
 		"operationID", e.operationID,
-		"backupProfileID", pruneData.BackupID.BackupProfileId,
-		"pruneOptions", pruneOptions)
+		"backupProfileID", backupID.BackupProfileId,
+		"pruneOptions", pruneOptions,
+		"isDryRun", isDryRun)
 
 	// Create result channel for prune results
-	resultCh := make(chan borgtypes.PruneResult, 1)
+	borgResultCh := make(chan borgtypes.PruneResult, 1)
+	defer close(borgResultCh)
 
 	// Execute borg prune command
-	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, false, resultCh)
-	close(resultCh)
+	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, borgResultCh)
 
-	// Wait for prune result with timeout (like the old implementation)
+	// Wait for prune result with timeout
 	select {
-	case pruneResult := <-resultCh:
-		// Prune job completed successfully - log the result
-		e.log.Infow("Prune operation completed",
-			"repoID", e.repoID,
-			"operationID", e.operationID,
-			"isDryRun", pruneResult.IsDryRun,
-			"prunedCount", len(pruneResult.PruneArchives),
-			"keptCount", len(pruneResult.KeepArchives))
+	case pruneResult := <-borgResultCh:
+		// Log the result based on operation type
+		if isDryRun {
+			e.log.Infow("Prune examination completed",
+				"repoID", e.repoID,
+				"operationID", e.operationID,
+				"isDryRun", pruneResult.IsDryRun,
+				"archivesToPrune", len(pruneResult.PruneArchives),
+				"archivesToKeep", len(pruneResult.KeepArchives))
+		} else {
+			e.log.Infow("Prune operation completed",
+				"repoID", e.repoID,
+				"operationID", e.operationID,
+				"isDryRun", pruneResult.IsDryRun,
+				"prunedCount", len(pruneResult.PruneArchives),
+				"keptCount", len(pruneResult.KeepArchives))
+		}
 
-		// TODO: If this was a dry-run, we could store the PruneArchives list
-		// for display purposes to show what would be pruned in a future real run
+		// Send result to examination channel if provided (for dry-run examinations)
+		if isDryRun && resultCh != nil {
+			select {
+			case resultCh <- pruneResult:
+				// Successfully sent result
+			case <-time.After(5 * time.Second):
+				e.log.Warnw("Timeout sending examination result to channel", "repoID", e.repoID, "operationID", e.operationID)
+			}
+		}
+
+		// Save examination results to database if requested (for dry-run examinations)
+		if isDryRun && saveResults {
+			if err := e.saveExaminationResults(ctx, backupID.RepositoryId, pruneResult); err != nil {
+				e.log.Errorw("Failed to save examination results",
+					"repoID", e.repoID,
+					"operationID", e.operationID,
+					"backupID", backupID,
+					"error", err)
+			} else {
+				e.log.Infow("Examination results saved to database",
+					"repoID", e.repoID,
+					"operationID", e.operationID,
+					"backupID", backupID,
+					"archivesToPrune", len(pruneResult.PruneArchives))
+			}
+		}
 
 	case <-time.After(30 * time.Second):
-		e.log.Warnw("Timeout waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+		if isDryRun {
+			e.log.Warnw("Timeout waiting for examine prune result", "repoID", e.repoID, "operationID", e.operationID)
+		} else {
+			e.log.Warnw("Timeout waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+		}
 	case <-ctx.Done():
-		e.log.Warnw("Context canceled waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+		if isDryRun {
+			e.log.Warnw("Context canceled waiting for examine prune result", "repoID", e.repoID, "operationID", e.operationID)
+		} else {
+			e.log.Warnw("Context canceled waiting for prune result", "repoID", e.repoID, "operationID", e.operationID)
+		}
 	}
 
-	// Refresh archives after successful prune operation (archives may have been deleted)
-	if status.IsCompletedWithSuccess() {
+	// Refresh archives after successful real prune operation (archives may have been deleted)
+	// Skip for dry-run examinations
+	if !isDryRun && status.IsCompletedWithSuccess() {
 		// Get updated archive list from repository
 		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, repo.Password, "")
 		if listStatus.IsCompletedWithSuccess() {
@@ -1355,6 +1420,55 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, pruneOp statem
 		}
 	}
 	return status, nil
+}
+
+// saveExaminationResults saves prune examination results to database by updating WillBePruned flags
+func (e *borgOperationExecutor) saveExaminationResults(ctx context.Context, repositoryID int, pruneResult borgtypes.PruneResult) error {
+	// Map archive names to slices for database queries
+	archiveNamesToPrune := make([]string, len(pruneResult.PruneArchives))
+	for i, arch := range pruneResult.PruneArchives {
+		archiveNamesToPrune[i] = arch.Name
+	}
+
+	archiveNamesToKeep := make([]string, len(pruneResult.KeepArchives))
+	for i, arch := range pruneResult.KeepArchives {
+		archiveNamesToKeep[i] = arch.Name
+	}
+
+	// Update archives that will be pruned
+	cntToTrue, err := e.db.Archive.
+		Update().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(repositoryID)),
+			archive.NameIn(archiveNamesToPrune...),
+			archive.WillBePruned(false)),
+		).
+		SetWillBePruned(true).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update archives to be pruned: %w", err)
+	}
+
+	// Update archives that will be kept
+	cntToFalse, err := e.db.Archive.
+		Update().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.ID(repositoryID)),
+			archive.NameIn(archiveNamesToKeep...),
+			archive.WillBePruned(true)),
+		).
+		SetWillBePruned(false).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update archives to be kept: %w", err)
+	}
+
+	e.log.Debugw("Updated examination results in database",
+		"repoID", repositoryID,
+		"prunedCount", cntToTrue,
+		"keptCount", cntToFalse)
+
+	return nil
 }
 
 // executeRepositoryDelete performs a borg repository delete operation
@@ -1828,7 +1942,8 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 
 		// Default is to notify but not enter error state and not persist the errors
 		return OperationErrorResponse{

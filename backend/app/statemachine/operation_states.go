@@ -62,9 +62,10 @@ type UnmountArchive struct {
 }
 
 type ExaminePrune struct {
-	BackupID    types.BackupId   `json:"backupId"`
-	PruningRule *ent.PruningRule `json:"pruningRule"`
-	SaveResults bool             `json:"saveResults"`
+	BackupID    types.BackupId             `json:"backupId"`
+	PruningRule *ent.PruningRule           `json:"pruningRule"`
+	SaveResults bool                       `json:"saveResults"`
+	ResultCh    chan borgtypes.PruneResult `json:"-"` // Channel to receive results
 }
 
 // Operation ADT definition

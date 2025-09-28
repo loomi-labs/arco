@@ -8,175 +8,6 @@ import (
 	"github.com/negrel/assert"
 )
 
-// OperationType is the discriminator enum for Operation
-type OperationType string
-
-const (
-	OperationTypeArchiveDelete  OperationType = "ArchiveDelete"
-	OperationTypeArchiveRefresh OperationType = "ArchiveRefresh"
-	OperationTypeArchiveRename  OperationType = "ArchiveRename"
-	OperationTypeBackup         OperationType = "Backup"
-	OperationTypeDelete         OperationType = "Delete"
-	OperationTypeMount          OperationType = "Mount"
-	OperationTypeMountArchive   OperationType = "MountArchive"
-	OperationTypePrune          OperationType = "Prune"
-	OperationTypeUnmount        OperationType = "Unmount"
-	OperationTypeUnmountArchive OperationType = "UnmountArchive"
-)
-
-// Operation variant wrappers
-type ArchiveDeleteVariant adtenum.OneVariantValue[ArchiveDelete]
-type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
-type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
-type BackupVariant adtenum.OneVariantValue[Backup]
-type DeleteVariant adtenum.OneVariantValue[Delete]
-type MountVariant adtenum.OneVariantValue[Mount]
-type MountArchiveVariant adtenum.OneVariantValue[MountArchive]
-type PruneVariant adtenum.OneVariantValue[Prune]
-type UnmountVariant adtenum.OneVariantValue[Unmount]
-type UnmountArchiveVariant adtenum.OneVariantValue[UnmountArchive]
-
-// Operation constructors
-var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
-var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
-var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
-var NewOperationBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
-var NewOperationDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
-var NewOperationMount = adtenum.CreateOneVariantValueConstructor[MountVariant]()
-var NewOperationMountArchive = adtenum.CreateOneVariantValueConstructor[MountArchiveVariant]()
-var NewOperationPrune = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
-var NewOperationUnmount = adtenum.CreateOneVariantValueConstructor[UnmountVariant]()
-var NewOperationUnmountArchive = adtenum.CreateOneVariantValueConstructor[UnmountArchiveVariant]()
-
-// EnumType methods for Operation variants
-func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
-func (v ArchiveRefreshVariant) EnumType() Operation { return v }
-func (v ArchiveRenameVariant) EnumType() Operation  { return v }
-func (v BackupVariant) EnumType() Operation         { return v }
-func (v DeleteVariant) EnumType() Operation         { return v }
-func (v MountVariant) EnumType() Operation          { return v }
-func (v MountArchiveVariant) EnumType() Operation   { return v }
-func (v PruneVariant) EnumType() Operation          { return v }
-func (v UnmountVariant) EnumType() Operation        { return v }
-func (v UnmountArchiveVariant) EnumType() Operation { return v }
-
-// GetOperationType returns the discriminator type for exhaustive switch checking
-func GetOperationType(enum Operation) OperationType {
-	switch enum.(type) {
-	case BackupVariant:
-		return OperationTypeBackup
-	case PruneVariant:
-		return OperationTypePrune
-	case DeleteVariant:
-		return OperationTypeDelete
-	case ArchiveRefreshVariant:
-		return OperationTypeArchiveRefresh
-	case ArchiveDeleteVariant:
-		return OperationTypeArchiveDelete
-	case ArchiveRenameVariant:
-		return OperationTypeArchiveRename
-	case MountVariant:
-		return OperationTypeMount
-	case MountArchiveVariant:
-		return OperationTypeMountArchive
-	case UnmountVariant:
-		return OperationTypeUnmount
-	case UnmountArchiveVariant:
-		return OperationTypeUnmountArchive
-	default:
-		assert.Fail("Unhandled Operation variant in GetOperationType")
-		return OperationTypeArchiveDelete
-	}
-}
-
-// OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type OperationUnion struct {
-	Type OperationType `json:"type"` // Discriminator field
-
-	// Variant fields - only one will be non-nil
-	Backup         *Backup         `json:"backup,omitempty"`
-	Prune          *Prune          `json:"prune,omitempty"`
-	Delete         *Delete         `json:"delete,omitempty"`
-	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
-	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
-	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
-	Mount          *Mount          `json:"mount,omitempty"`
-	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
-	Unmount        *Unmount        `json:"unmount,omitempty"`
-	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
-}
-
-// ToOperationUnion converts an ADT Operation to an OperationUnion
-func ToOperationUnion(r Operation) OperationUnion {
-	switch i := r.(type) {
-	case BackupVariant:
-		data := i()
-		return OperationUnion{
-			Type:   OperationTypeBackup,
-			Backup: &data,
-		}
-	case PruneVariant:
-		data := i()
-		return OperationUnion{
-			Type:  OperationTypePrune,
-			Prune: &data,
-		}
-	case DeleteVariant:
-		data := i()
-		return OperationUnion{
-			Type:   OperationTypeDelete,
-			Delete: &data,
-		}
-	case ArchiveRefreshVariant:
-		data := i()
-		return OperationUnion{
-			Type:           OperationTypeArchiveRefresh,
-			ArchiveRefresh: &data,
-		}
-	case ArchiveDeleteVariant:
-		data := i()
-		return OperationUnion{
-			Type:          OperationTypeArchiveDelete,
-			ArchiveDelete: &data,
-		}
-	case ArchiveRenameVariant:
-		data := i()
-		return OperationUnion{
-			Type:          OperationTypeArchiveRename,
-			ArchiveRename: &data,
-		}
-	case MountVariant:
-		data := i()
-		return OperationUnion{
-			Type:  OperationTypeMount,
-			Mount: &data,
-		}
-	case MountArchiveVariant:
-		data := i()
-		return OperationUnion{
-			Type:         OperationTypeMountArchive,
-			MountArchive: &data,
-		}
-	case UnmountVariant:
-		data := i()
-		return OperationUnion{
-			Type:    OperationTypeUnmount,
-			Unmount: &data,
-		}
-	case UnmountArchiveVariant:
-		data := i()
-		return OperationUnion{
-			Type:           OperationTypeUnmountArchive,
-			UnmountArchive: &data,
-		}
-	default:
-		return OperationUnion{
-			Type:          OperationTypeArchiveDelete,
-			ArchiveDelete: &ArchiveDelete{},
-		}
-	}
-}
-
 // RepositoryStateType is the discriminator enum for RepositoryState
 type RepositoryStateType string
 
@@ -329,6 +160,188 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 		return RepositoryStateUnion{
 			Type:      RepositoryStateTypeBackingUp,
 			BackingUp: &BackingUp{},
+		}
+	}
+}
+
+// OperationType is the discriminator enum for Operation
+type OperationType string
+
+const (
+	OperationTypeArchiveDelete  OperationType = "ArchiveDelete"
+	OperationTypeArchiveRefresh OperationType = "ArchiveRefresh"
+	OperationTypeArchiveRename  OperationType = "ArchiveRename"
+	OperationTypeBackup         OperationType = "Backup"
+	OperationTypeDelete         OperationType = "Delete"
+	OperationTypeExaminePrune   OperationType = "ExaminePrune"
+	OperationTypeMount          OperationType = "Mount"
+	OperationTypeMountArchive   OperationType = "MountArchive"
+	OperationTypePrune          OperationType = "Prune"
+	OperationTypeUnmount        OperationType = "Unmount"
+	OperationTypeUnmountArchive OperationType = "UnmountArchive"
+)
+
+// Operation variant wrappers
+type ArchiveDeleteVariant adtenum.OneVariantValue[ArchiveDelete]
+type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
+type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
+type BackupVariant adtenum.OneVariantValue[Backup]
+type DeleteVariant adtenum.OneVariantValue[Delete]
+type ExaminePruneVariant adtenum.OneVariantValue[ExaminePrune]
+type MountVariant adtenum.OneVariantValue[Mount]
+type MountArchiveVariant adtenum.OneVariantValue[MountArchive]
+type PruneVariant adtenum.OneVariantValue[Prune]
+type UnmountVariant adtenum.OneVariantValue[Unmount]
+type UnmountArchiveVariant adtenum.OneVariantValue[UnmountArchive]
+
+// Operation constructors
+var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
+var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
+var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
+var NewOperationBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
+var NewOperationDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
+var NewOperationExaminePrune = adtenum.CreateOneVariantValueConstructor[ExaminePruneVariant]()
+var NewOperationMount = adtenum.CreateOneVariantValueConstructor[MountVariant]()
+var NewOperationMountArchive = adtenum.CreateOneVariantValueConstructor[MountArchiveVariant]()
+var NewOperationPrune = adtenum.CreateOneVariantValueConstructor[PruneVariant]()
+var NewOperationUnmount = adtenum.CreateOneVariantValueConstructor[UnmountVariant]()
+var NewOperationUnmountArchive = adtenum.CreateOneVariantValueConstructor[UnmountArchiveVariant]()
+
+// EnumType methods for Operation variants
+func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
+func (v ArchiveRefreshVariant) EnumType() Operation { return v }
+func (v ArchiveRenameVariant) EnumType() Operation  { return v }
+func (v BackupVariant) EnumType() Operation         { return v }
+func (v DeleteVariant) EnumType() Operation         { return v }
+func (v ExaminePruneVariant) EnumType() Operation   { return v }
+func (v MountVariant) EnumType() Operation          { return v }
+func (v MountArchiveVariant) EnumType() Operation   { return v }
+func (v PruneVariant) EnumType() Operation          { return v }
+func (v UnmountVariant) EnumType() Operation        { return v }
+func (v UnmountArchiveVariant) EnumType() Operation { return v }
+
+// GetOperationType returns the discriminator type for exhaustive switch checking
+func GetOperationType(enum Operation) OperationType {
+	switch enum.(type) {
+	case BackupVariant:
+		return OperationTypeBackup
+	case PruneVariant:
+		return OperationTypePrune
+	case DeleteVariant:
+		return OperationTypeDelete
+	case ArchiveRefreshVariant:
+		return OperationTypeArchiveRefresh
+	case ArchiveDeleteVariant:
+		return OperationTypeArchiveDelete
+	case ArchiveRenameVariant:
+		return OperationTypeArchiveRename
+	case MountVariant:
+		return OperationTypeMount
+	case MountArchiveVariant:
+		return OperationTypeMountArchive
+	case UnmountVariant:
+		return OperationTypeUnmount
+	case UnmountArchiveVariant:
+		return OperationTypeUnmountArchive
+	case ExaminePruneVariant:
+		return OperationTypeExaminePrune
+	default:
+		assert.Fail("Unhandled Operation variant in GetOperationType")
+		return OperationTypeArchiveDelete
+	}
+}
+
+// OperationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type OperationUnion struct {
+	Type OperationType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	Backup         *Backup         `json:"backup,omitempty"`
+	Prune          *Prune          `json:"prune,omitempty"`
+	Delete         *Delete         `json:"delete,omitempty"`
+	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
+	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
+	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
+	Mount          *Mount          `json:"mount,omitempty"`
+	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
+	Unmount        *Unmount        `json:"unmount,omitempty"`
+	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
+	ExaminePrune   *ExaminePrune   `json:"examinePrune,omitempty"`
+}
+
+// ToOperationUnion converts an ADT Operation to an OperationUnion
+func ToOperationUnion(r Operation) OperationUnion {
+	switch i := r.(type) {
+	case BackupVariant:
+		data := i()
+		return OperationUnion{
+			Type:   OperationTypeBackup,
+			Backup: &data,
+		}
+	case PruneVariant:
+		data := i()
+		return OperationUnion{
+			Type:  OperationTypePrune,
+			Prune: &data,
+		}
+	case DeleteVariant:
+		data := i()
+		return OperationUnion{
+			Type:   OperationTypeDelete,
+			Delete: &data,
+		}
+	case ArchiveRefreshVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeArchiveRefresh,
+			ArchiveRefresh: &data,
+		}
+	case ArchiveDeleteVariant:
+		data := i()
+		return OperationUnion{
+			Type:          OperationTypeArchiveDelete,
+			ArchiveDelete: &data,
+		}
+	case ArchiveRenameVariant:
+		data := i()
+		return OperationUnion{
+			Type:          OperationTypeArchiveRename,
+			ArchiveRename: &data,
+		}
+	case MountVariant:
+		data := i()
+		return OperationUnion{
+			Type:  OperationTypeMount,
+			Mount: &data,
+		}
+	case MountArchiveVariant:
+		data := i()
+		return OperationUnion{
+			Type:         OperationTypeMountArchive,
+			MountArchive: &data,
+		}
+	case UnmountVariant:
+		data := i()
+		return OperationUnion{
+			Type:    OperationTypeUnmount,
+			Unmount: &data,
+		}
+	case UnmountArchiveVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeUnmountArchive,
+			UnmountArchive: &data,
+		}
+	case ExaminePruneVariant:
+		data := i()
+		return OperationUnion{
+			Type:         OperationTypeExaminePrune,
+			ExaminePrune: &data,
+		}
+	default:
+		return OperationUnion{
+			Type:          OperationTypeArchiveDelete,
+			ArchiveDelete: &ArchiveDelete{},
 		}
 	}
 }

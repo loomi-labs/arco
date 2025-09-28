@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -1085,8 +1086,103 @@ func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) []error
 
 // ExaminePrunes analyzes what would be pruned with given rules
 func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
-	// TODO: Implement prune examination
-	return nil, nil
+	backupProfile, err := s.db.BackupProfile.
+		Query().
+		WithRepositories().
+		Where(backupprofile.ID(backupProfileId)).
+		Only(ctx)
+	if err != nil {
+		return []ExaminePruningResult{{Error: err}}, nil
+	}
+
+	var wg sync.WaitGroup
+	resultCh := make(chan ExaminePruningResult, len(backupProfile.Edges.Repositories))
+	results := make([]ExaminePruningResult, 0, len(backupProfile.Edges.Repositories))
+
+	for _, repo := range backupProfile.Edges.Repositories {
+		wg.Add(1)
+		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
+		go s.startExaminePrune(ctx, bId, pruningRule, saveResults, &wg, resultCh)
+	}
+
+	// Wait for all examine prune jobs to finish
+	wg.Wait()
+	close(resultCh)
+
+	// Collect results
+	for result := range resultCh {
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// startExaminePrune starts an examine prune operation for a single repository
+func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pruningRule *ent.PruningRule, saveResults bool, wg *sync.WaitGroup, resultCh chan<- ExaminePruningResult) {
+	defer wg.Done()
+
+	repo, err := s.db.Repository.Query().
+		Where(repository.ID(bId.RepositoryId)).
+		Select(repository.FieldName).
+		Only(ctx)
+	if err != nil {
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: ""}
+		return
+	}
+
+	// Create result channel for this operation
+	pruneResultCh := make(chan borgtypes.PruneResult, 1)
+
+	// Create examine prune operation with result channel
+	examinePruneOp := statemachine.NewOperationExaminePrune(statemachine.ExaminePrune{
+		BackupID:    bId,
+		PruningRule: pruningRule,
+		SaveResults: saveResults,
+		ResultCh:    pruneResultCh,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(bId.RepositoryId)
+	queuedOp := queue.CreateQueuedOperation(
+		examinePruneOp,
+		bId.RepositoryId,
+		&bId.BackupProfileId,
+		nil,  // no expiration
+		true, // will start immediately or fail
+	)
+
+	// Add to queue (will start immediately or fail)
+	operationID, err := s.queueManager.AddOperation(bId.RepositoryId, queuedOp)
+	if err != nil {
+		s.log.Debugf("Failed to start examine prune operation: %s", err)
+		resultCh <- ExaminePruningResult{BackupID: bId, Error: err, RepositoryName: repo.Name}
+		return
+	}
+
+	s.log.Debugf("Started examine prune operation %s for repository %s", operationID, repo.Name)
+
+	// Wait for result from the operation with timeout
+	select {
+	case pruneResult := <-pruneResultCh:
+		resultCh <- ExaminePruningResult{
+			BackupID:               bId,
+			RepositoryName:         repo.Name,
+			CntArchivesToBeDeleted: len(pruneResult.PruneArchives),
+			Error:                  nil,
+		}
+	case <-time.After(60 * time.Second):
+		resultCh <- ExaminePruningResult{
+			BackupID:       bId,
+			RepositoryName: repo.Name,
+			Error:          fmt.Errorf("examination timeout"),
+		}
+	case <-ctx.Done():
+		resultCh <- ExaminePruningResult{
+			BackupID:       bId,
+			RepositoryName: repo.Name,
+			Error:          ctx.Err(),
+		}
+	}
 }
 
 // ChangePassword changes the password for a repository
@@ -1212,6 +1308,16 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 		case statemachine.OperationTypeArchiveDelete:
 			deleteOp := active.Operation.(statemachine.ArchiveDeleteVariant)()
 			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
+		case statemachine.OperationTypeArchiveRefresh,
+			statemachine.OperationTypeBackup,
+			statemachine.OperationTypeDelete,
+			statemachine.OperationTypeExaminePrune,
+			statemachine.OperationTypeMount,
+			statemachine.OperationTypeMountArchive,
+			statemachine.OperationTypePrune,
+			statemachine.OperationTypeUnmount,
+			statemachine.OperationTypeUnmountArchive:
+			// These operations don't affect individual archive rename/delete states
 		}
 	}
 

@@ -343,7 +343,8 @@ func (q *RepositoryQueue) CanAddOperation(op statemachine.Operation) (bool, stri
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 		// No deduplication needed for these operations
 	default:
 		assert.Fail("Unhandled OperationType in CanAddOperation")
@@ -519,7 +520,8 @@ func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 		// No tracking needed for these operations
 	default:
 		assert.Fail("Unhandled OperationType in addToTrackingMaps")
@@ -545,7 +547,8 @@ func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 		// No tracking to remove for these operations
 	default:
 		assert.Fail("Unhandled OperationType in removeFromTrackingMaps")
@@ -599,7 +602,8 @@ func (q *RepositoryQueue) canAddOperationLocked(op statemachine.Operation) (bool
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
-		statemachine.OperationTypeUnmountArchive:
+		statemachine.OperationTypeUnmountArchive,
+		statemachine.OperationTypeExaminePrune:
 		// No deduplication needed for these operations
 	default:
 		assert.Fail("Unhandled OperationType in canAddOperationLocked")

@@ -12,6 +12,7 @@ export {
     Error,
     ErrorAction,
     ErrorType,
+    ExaminePrune,
     Idle,
     Mount,
     MountArchive,
