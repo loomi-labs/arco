@@ -208,7 +208,33 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	}
 
 	// Remove from repository queue
-	return queue.RemoveOperation(operationID)
+	err := queue.RemoveOperation(operationID)
+	if err != nil {
+		return err
+	}
+
+	// Emit event for archive-affecting operations before removal
+	operationType := statemachine.GetOperationType(operation.Operation)
+	switch operationType {
+	// Archive-affecting operations - emit event
+	case statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveRefresh:
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
+
+	// Non-archive-affecting operations - no action
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeDelete,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypePrune,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+	// No action needed
+	default:
+		assert.Fail("Unknown operation")
+	}
+	return nil
 }
 
 // CanStartOperation checks if an operation can start based on concurrency limits

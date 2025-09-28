@@ -187,8 +187,11 @@ export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$
     });
 }
 
-export function GetLastBackupErrorMsgByBackupId(backupId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(4136556109, backupId);
+/**
+ * GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
+ */
+export function GetLastBackupErrorMsgByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
+    return $Call.ByID(4136556109, bId);
 }
 
 /**

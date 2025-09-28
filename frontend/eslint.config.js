@@ -44,13 +44,14 @@ export default [
         extraFileExtensions: ['.vue']
       },
       globals: {
-        console: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
         process: 'readonly',
-        navigator: 'readonly'
+        navigator: 'readonly',
+        document: 'readonly',
+        window: 'readonly'
       }
     },
     plugins: {
@@ -112,7 +113,9 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         process: 'readonly',
-        navigator: 'readonly'
+        navigator: 'readonly',
+        document: 'readonly',
+        window: 'readonly'
       }
     },
     plugins: {
