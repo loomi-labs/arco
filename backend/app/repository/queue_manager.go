@@ -1166,18 +1166,24 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 
 	// Get backup profile with repository data in a single query
 	profile, err := e.db.BackupProfile.Query().
-		Where(backupprofile.ID(backupData.BackupID.BackupProfileId)).
-		WithRepositories().
+		Where(
+			backupprofile.ID(backupData.BackupID.BackupProfileId),
+			backupprofile.HasRepositoriesWith(repository.ID(backupData.BackupID.RepositoryId)),
+		).
+		WithRepositories(func(q *ent.RepositoryQuery) {
+			q.Where(repository.ID(backupData.BackupID.RepositoryId))
+		}).
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("backup profile %d not found: %w", backupData.BackupID.BackupProfileId, err)
 	}
 
 	// Get repository from backup profile relationship
-	if len(profile.Edges.Repositories) == 0 {
-		return nil, fmt.Errorf("backup profile %d has no associated repository", backupData.BackupID.BackupProfileId)
+	if len(profile.Edges.Repositories) != 1 {
+		return nil, fmt.Errorf("expected exactly one repository for backup profile %d and repository %d, got %d",
+			backupData.BackupID.BackupProfileId, backupData.BackupID.RepositoryId, len(profile.Edges.Repositories))
 	}
-	repo := profile.Edges.Repositories[0] // Backup profiles should have exactly one repository
+	repo := profile.Edges.Repositories[0] // Should be exactly the repository we requested
 
 	backupPaths := profile.BackupPaths
 	excludePaths := profile.ExcludePaths
@@ -1414,6 +1420,9 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 
 	// Execute borg list command to refresh archive information
 	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+	if !status.IsCompletedWithSuccess() {
+		return status, nil
+	}
 
 	// Update database with refreshed archive information
 	err = e.syncArchivesToDatabase(ctx, refreshData.RepositoryID, listResponse.Archives)
