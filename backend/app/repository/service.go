@@ -1097,7 +1097,44 @@ func (s *Service) ChangePassword(ctx context.Context, repoId int, password strin
 
 // RegenerateSSHKey regenerates SSH key for ArcoCloud repositories
 func (s *Service) RegenerateSSHKey(ctx context.Context) error {
-	// TODO: Implement SSH key regeneration
+	err := s.cloudRepoClient.AddOrReplaceSSHKey(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get all repositories and clear SSH error states for cloud repositories
+	repos, err := s.All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range repos {
+		if s.isCloudRepository(ctx, repo.ID) {
+			// Get current repository state
+			currentState := s.queueManager.GetRepositoryState(repo.ID)
+
+			// Check if repository has SSH key error
+			if statemachine.GetRepositoryStateType(currentState) == statemachine.RepositoryStateTypeError {
+				if errorVariant, ok := currentState.(statemachine.ErrorVariant); ok {
+					errorData := errorVariant()
+					if errorData.ErrorType == statemachine.ErrorTypeSSHKey {
+						// Create new idle state
+						idleState := statemachine.NewRepositoryStateIdle(statemachine.Idle{})
+
+						// Transition from Error to Idle state
+						err = s.stateMachine.Transition(repo.ID, currentState, idleState)
+						if err != nil {
+							return fmt.Errorf("failed to transition repository %d from error to idle state: %w", repo.ID, err)
+						}
+
+						// Update the repository state
+						s.queueManager.setRepositoryState(repo.ID, idleState)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
