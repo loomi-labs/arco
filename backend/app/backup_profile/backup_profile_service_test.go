@@ -74,7 +74,7 @@ func (m *mockRepositoryService) StartPruneJob(ctx context.Context, bId types.Bac
 // mockEventEmitter implements EventEmitter interface for testing
 type mockEventEmitter struct{}
 
-func (m *mockEventEmitter) EmitEvent(ctx context.Context, event string) {
+func (m *mockEventEmitter) EmitEvent(ctx context.Context, event string, data ...string) {
 	// Do nothing for tests
 }
 

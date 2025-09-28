@@ -1,3 +1,5 @@
+//go:generate go run ../../../scripts/generate_adts.go
+
 package statemachine
 
 import (

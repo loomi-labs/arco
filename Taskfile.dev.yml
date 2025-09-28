@@ -34,8 +34,8 @@ tasks:
       - go tool golangci-lint run
 
   # Testing
-  gen:mocks:
-    desc: Generates mock implementations
+  gen:
+    desc: Generates code (mocks, ADTs)
     deps:
       - task: common:go:mod:tidy
     cmds:

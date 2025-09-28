@@ -140,9 +140,36 @@ type StateStruct struct {
 	JsonField string // e.g., "idle", "backingUp"
 }
 
+// findBackendDir locates the backend directory relative to current working directory
+func findBackendDir() (string, error) {
+	return findBackendDirRecursive(".", 10)
+}
+
+// findBackendDirRecursive searches for backend directory recursively up the directory tree
+func findBackendDirRecursive(currentPath string, maxLevels int) (string, error) {
+	if maxLevels <= 0 {
+		return "", fmt.Errorf("could not find backend directory within %d levels", 10)
+	}
+
+	backendPath := filepath.Join(currentPath, "backend")
+	if _, err := os.Stat(backendPath); err == nil {
+		return backendPath, nil
+	}
+
+	// Try one level up
+	parentPath := filepath.Join(currentPath, "..")
+	return findBackendDirRecursive(parentPath, maxLevels-1)
+}
+
 func main() {
+	// Find the backend directory from current working directory
+	backendDir, err := findBackendDir()
+	if err != nil {
+		panic(err)
+	}
+
 	// Scan for packages containing ADT enums
-	packages, err := findPackagesWithAdtEnums(BackendRootDir)
+	packages, err := findPackagesWithAdtEnums(backendDir)
 	if err != nil {
 		panic(err)
 	}

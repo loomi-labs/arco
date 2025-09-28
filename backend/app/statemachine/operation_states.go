@@ -1,9 +1,12 @@
+//go:generate go run ../../../scripts/generate_adts.go
+
 package statemachine
 
 import (
 	"github.com/chris-tomich/adtenum"
 	"github.com/loomi-labs/arco/backend/app/types"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/negrel/assert"
 )
 
@@ -58,6 +61,12 @@ type UnmountArchive struct {
 	MountPath string `json:"mountPath"`
 }
 
+type ExaminePrune struct {
+	BackupID    types.BackupId   `json:"backupId"`
+	PruningRule *ent.PruningRule `json:"pruningRule"`
+	SaveResults bool             `json:"saveResults"`
+}
+
 // Operation ADT definition
 type Operation adtenum.Enum[Operation]
 
@@ -72,6 +81,7 @@ func (Mount) isADTVariant() Operation          { var zero Operation; return zero
 func (MountArchive) isADTVariant() Operation   { var zero Operation; return zero }
 func (Unmount) isADTVariant() Operation        { var zero Operation; return zero }
 func (UnmountArchive) isADTVariant() Operation { var zero Operation; return zero }
+func (ExaminePrune) isADTVariant() Operation   { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT
@@ -90,7 +100,7 @@ func GetOperationWeight(op Operation) OperationWeight {
 	switch GetOperationType(op) {
 	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete:
 		return WeightHeavy
-	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive:
+	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
 		return WeightLight
 	default:
 		assert.Fail("Unhandled OperationType in GetOperationWeight")
