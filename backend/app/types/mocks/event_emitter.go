@@ -41,13 +41,18 @@ func (m *MockEventEmitter) EXPECT() *MockEventEmitterMockRecorder {
 }
 
 // EmitEvent mocks base method.
-func (m *MockEventEmitter) EmitEvent(ctx context.Context, event string) {
+func (m *MockEventEmitter) EmitEvent(ctx context.Context, event string, data ...string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "EmitEvent", ctx, event)
+	varargs := []any{ctx, event}
+	for _, a := range data {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "EmitEvent", varargs...)
 }
 
 // EmitEvent indicates an expected call of EmitEvent.
-func (mr *MockEventEmitterMockRecorder) EmitEvent(ctx, event any) *gomock.Call {
+func (mr *MockEventEmitterMockRecorder) EmitEvent(ctx, event any, data ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmitEvent", reflect.TypeOf((*MockEventEmitter)(nil).EmitEvent), ctx, event)
+	varargs := append([]any{ctx, event}, data...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmitEvent", reflect.TypeOf((*MockEventEmitter)(nil).EmitEvent), varargs...)
 }
