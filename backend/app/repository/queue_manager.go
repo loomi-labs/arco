@@ -1253,7 +1253,6 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 
 	// Create progress channel
 	progressCh := make(chan borgtypes.BackupProgress, 100)
-	defer close(progressCh)
 
 	// Start progress monitoring in background
 	go e.monitorBackupProgress(ctx, progressCh)
@@ -1379,7 +1378,6 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 
 	// Create result channel for prune results
 	borgResultCh := make(chan borgtypes.PruneResult, 1)
-	defer close(borgResultCh)
 
 	// Execute borg prune command
 	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, borgResultCh)

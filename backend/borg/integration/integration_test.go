@@ -424,7 +424,6 @@ func TestBorgArchiveOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		archiveName := strings.Split(archivePath, "::")[1]
 
 		assert.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed: %v", status.GetError())
@@ -451,7 +450,6 @@ func TestBorgArchiveOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// List archives
@@ -489,7 +487,6 @@ func TestBorgDeleteOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Delete archive
@@ -545,7 +542,6 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Compact repository
@@ -573,15 +569,13 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 				[]string{},
 				progressChan,
 			)
-			close(progressChan)
-			require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+				require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 		}
 
 		// Prune repository (dry run)
 		pruneOptions := []string{"--keep-last=2"}
 		pruneChan := make(chan types.PruneResult, 10)
 		status = suite.borg.Prune(suite.ctx, repoPath, testPassword, "test-archive", pruneOptions, true, pruneChan)
-		close(pruneChan)
 
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository pruning should succeed: %v", status.GetError())
 
@@ -618,7 +612,6 @@ func TestBorgRenameOperation(t *testing.T) {
 		[]string{},
 		progressChan,
 	)
-	close(progressChan)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 	// Rename archive
@@ -677,7 +670,6 @@ func TestBorgMountOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Create mount directory
@@ -725,7 +717,6 @@ func TestBorgMountOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Create mount directory
@@ -813,7 +804,6 @@ func TestBorgDeleteArchives(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 	}
 
@@ -828,7 +818,6 @@ func TestBorgDeleteArchives(t *testing.T) {
 		[]string{},
 		progressChan,
 	)
-	close(progressChan)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 	// Verify all archives exist

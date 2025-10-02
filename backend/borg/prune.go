@@ -77,6 +77,7 @@ func (b *borg) Prune(ctx context.Context, repository string, password string, pr
 
 // decodePruneOutput decodes the progress messages from borg and sends them to the channel.
 func decodePruneOutput(cmd *gocmd.Cmd, isDryRun bool, ch chan types.PruneResult) {
+	defer close(ch)
 	var prunedArchives []*types.PruneArchive
 	var keptArchives []*types.KeepArchive
 
