@@ -2126,6 +2126,8 @@ func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name s
 
 // testRepoConnection performs the actual repository connection test
 func (s *Service) testRepoConnection(ctx context.Context, path, password string) (testRepoConnectionResult, error) {
+	// Expand ~ in local paths to user home directory
+	path = util.ExpandPath(path)
 	s.log.Debugf("Testing repository connection to %s", path)
 	result := testRepoConnectionResult{
 		Success:         false,
@@ -2166,6 +2168,8 @@ func (s *Service) testRepoConnection(ctx context.Context, path, password string)
 
 // TestRepoConnection tests connection to a repository
 func (s *Service) TestRepoConnection(ctx context.Context, path, password string) (TestRepoConnectionResult, error) {
+	// Expand ~ in local paths to user home directory
+	path = util.ExpandPath(path)
 	toTestRepoConnectionResult := func(t testRepoConnectionResult, err error, needsPassword bool) (TestRepoConnectionResult, error) {
 		if err != nil {
 			return TestRepoConnectionResult{}, err
