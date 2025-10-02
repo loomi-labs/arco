@@ -31,7 +31,3 @@ export {
     Unmount,
     UnmountArchive
 } from "./models.js";
-
-export type {
-    Operation
-} from "./models.js";

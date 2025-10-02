@@ -450,11 +450,6 @@ export class Mounting {
 }
 
 /**
- * Operation ADT definition
- */
-export type Operation = any;
-
-/**
  * OperationType is the discriminator enum for Operation
  */
 export enum OperationType {
@@ -613,13 +608,13 @@ export class Pruning {
 }
 
 export class Queued {
-    "nextOperation": Operation;
+    "nextOperation": OperationUnion;
     "queueLength": number;
 
     /** Creates a new Queued instance. */
     constructor($$source: Partial<Queued> = {}) {
         if (!("nextOperation" in $$source)) {
-            this["nextOperation"] = null;
+            this["nextOperation"] = (new OperationUnion());
         }
         if (!("queueLength" in $$source)) {
             this["queueLength"] = 0;
@@ -632,7 +627,11 @@ export class Queued {
      * Creates a new Queued instance from a string or object.
      */
     static createFrom($$source: any = {}): Queued {
+        const $$createField0_0 = $$createType29;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("nextOperation" in $$parsedSource) {
+            $$parsedSource["nextOperation"] = $$createField0_0($$parsedSource["nextOperation"]);
+        }
         return new Queued($$parsedSource as Partial<Queued>);
     }
 }
@@ -713,15 +712,15 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType30;
-        const $$createField2_0 = $$createType32;
-        const $$createField3_0 = $$createType34;
-        const $$createField4_0 = $$createType36;
-        const $$createField5_0 = $$createType38;
-        const $$createField6_0 = $$createType40;
-        const $$createField7_0 = $$createType42;
-        const $$createField8_0 = $$createType44;
-        const $$createField9_0 = $$createType46;
+        const $$createField1_0 = $$createType31;
+        const $$createField2_0 = $$createType33;
+        const $$createField3_0 = $$createType35;
+        const $$createField4_0 = $$createType37;
+        const $$createField5_0 = $$createType39;
+        const $$createField6_0 = $$createType41;
+        const $$createField7_0 = $$createType43;
+        const $$createField8_0 = $$createType45;
+        const $$createField9_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -834,21 +833,22 @@ const $$createType25 = UnmountArchive.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
 const $$createType27 = ExaminePrune.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = Idle.createFrom;
-const $$createType30 = $Create.Nullable($$createType29);
-const $$createType31 = Queued.createFrom;
-const $$createType32 = $Create.Nullable($$createType31);
-const $$createType33 = BackingUp.createFrom;
-const $$createType34 = $Create.Nullable($$createType33);
-const $$createType35 = Pruning.createFrom;
-const $$createType36 = $Create.Nullable($$createType35);
-const $$createType37 = Deleting.createFrom;
-const $$createType38 = $Create.Nullable($$createType37);
-const $$createType39 = Refreshing.createFrom;
-const $$createType40 = $Create.Nullable($$createType39);
-const $$createType41 = Mounting.createFrom;
-const $$createType42 = $Create.Nullable($$createType41);
-const $$createType43 = Mounted.createFrom;
-const $$createType44 = $Create.Nullable($$createType43);
-const $$createType45 = Error.createFrom;
-const $$createType46 = $Create.Nullable($$createType45);
+const $$createType29 = OperationUnion.createFrom;
+const $$createType30 = Idle.createFrom;
+const $$createType31 = $Create.Nullable($$createType30);
+const $$createType32 = Queued.createFrom;
+const $$createType33 = $Create.Nullable($$createType32);
+const $$createType34 = BackingUp.createFrom;
+const $$createType35 = $Create.Nullable($$createType34);
+const $$createType36 = Pruning.createFrom;
+const $$createType37 = $Create.Nullable($$createType36);
+const $$createType38 = Deleting.createFrom;
+const $$createType39 = $Create.Nullable($$createType38);
+const $$createType40 = Refreshing.createFrom;
+const $$createType41 = $Create.Nullable($$createType40);
+const $$createType42 = Mounting.createFrom;
+const $$createType43 = $Create.Nullable($$createType42);
+const $$createType44 = Mounted.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = Error.createFrom;
+const $$createType47 = $Create.Nullable($$createType46);
