@@ -842,72 +842,30 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 	}
 
 	// No more operations - determine final state based on completed operation
-	current := qm.GetRepositoryState(repoID)
 	switch statemachine.GetOperationType(completedOp.Operation) {
 	case statemachine.OperationTypeMount:
-		// Merge repository mount with existing mounts (if any)
+		// Mount operations transition to Mounted state
 		mountVariant := completedOp.Operation.(statemachine.MountVariant)
 		mountData := mountVariant()
-		var mounts []statemachine.MountInfo
-		if statemachine.GetRepositoryStateType(current) == statemachine.RepositoryStateTypeMounted {
-			mv := current.(statemachine.MountedVariant)()
-			mounts = append(mounts, mv.Mounts...)
-		}
-		mounts = append(mounts, statemachine.MountInfo{
-			MountType: statemachine.MountTypeRepository,
-			MountPath: mountData.MountPath,
-		})
-		return statemachine.CreateMountedState(mounts), nil
+		return statemachine.CreateMountedState([]statemachine.MountInfo{
+			{
+				MountType: statemachine.MountTypeRepository,
+				MountPath: mountData.MountPath,
+			},
+		}), nil
 
 	case statemachine.OperationTypeMountArchive:
-		// Merge archive mount with existing mounts (if any)
+		// Mount archive operations transition to Mounted state
 		mountVariant := completedOp.Operation.(statemachine.MountArchiveVariant)
 		mountData := mountVariant()
-		var mounts []statemachine.MountInfo
-		if statemachine.GetRepositoryStateType(current) == statemachine.RepositoryStateTypeMounted {
-			mv := current.(statemachine.MountedVariant)()
-			mounts = append(mounts, mv.Mounts...)
-		}
-		mounts = append(mounts, statemachine.MountInfo{
-			MountType: statemachine.MountTypeArchive,
-			ArchiveID: &mountData.ArchiveID,
-			MountPath: mountData.MountPath,
-		})
-		return statemachine.CreateMountedState(mounts), nil
-
-	case statemachine.OperationTypeUnmount, statemachine.OperationTypeUnmountArchive:
-		// Check remaining mounts from the platform; remain Mounted if others still mounted
-		repos, archs, err := platform.GetArcoMounts()
-		if err != nil {
-			qm.log.Warnf("Failed to get mounts from platform: %v", err)
-			return statemachine.CreateIdleState(), nil
-		}
-
-		var mounts []statemachine.MountInfo
-		// Check if repository mount exists
-		if repoMount, ok := repos[repoID]; ok && repoMount.IsMounted {
-			mounts = append(mounts, statemachine.MountInfo{
-				MountType: statemachine.MountTypeRepository,
-				MountPath: repoMount.MountPath,
-			})
-		}
-		// Check for archive mounts belonging to this repository
-		for archiveID, archMount := range archs {
-			if archMount.IsMounted {
-				id := archiveID
-				mounts = append(mounts, statemachine.MountInfo{
-					MountType: statemachine.MountTypeArchive,
-					ArchiveID: &id,
-					MountPath: archMount.MountPath,
-				})
-			}
-		}
-
-		// Return Mounted if any mounts remain, otherwise Idle
-		if len(mounts) > 0 {
-			return statemachine.CreateMountedState(mounts), nil
-		}
-		return statemachine.CreateIdleState(), nil
+		archiveID := mountData.ArchiveID
+		return statemachine.CreateMountedState([]statemachine.MountInfo{
+			{
+				MountType: statemachine.MountTypeArchive,
+				ArchiveID: &archiveID,
+				MountPath: mountData.MountPath,
+			},
+		}), nil
 
 	case statemachine.OperationTypeBackup,
 		statemachine.OperationTypePrune,
@@ -915,6 +873,8 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive,
 		statemachine.OperationTypeExaminePrune:
 		// All other operations return to idle
 		return statemachine.CreateIdleState(), nil
