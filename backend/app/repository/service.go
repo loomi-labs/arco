@@ -16,7 +16,6 @@ import (
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/database"
-	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -1719,9 +1718,9 @@ func (s *Service) GetLastArchiveByBackupId(ctx context.Context, backupId types.B
 // ============================================================================
 
 // GetBackupButtonStatus gets backup button status for given backup IDs
-func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
+func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (BackupButtonStatus, error) {
 	if len(backupIds) == 0 {
-		return state.BackupButtonStatusRunBackup, nil
+		return BackupButtonStatusRunBackup, nil
 	}
 
 	if len(backupIds) == 1 {
@@ -1732,85 +1731,85 @@ func (s *Service) GetBackupButtonStatus(ctx context.Context, backupIds []types.B
 }
 
 // getSingleBackupButtonStatus gets backup button status for a single backup ID
-func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId types.BackupId) (state.BackupButtonStatus, error) {
+func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId types.BackupId) (BackupButtonStatus, error) {
 	// Check repository state first
 	repositoryState := s.queueManager.GetRepositoryState(backupId.RepositoryId)
 
 	// Check repository state type
 	switch statemachine.GetRepositoryStateType(repositoryState) {
 	case statemachine.RepositoryStateTypeError:
-		return state.BackupButtonStatusLocked, nil
+		return BackupButtonStatusLocked, nil
 	case statemachine.RepositoryStateTypeMounted:
-		return state.BackupButtonStatusUnmount, nil
+		return BackupButtonStatusUnmount, nil
 	case statemachine.RepositoryStateTypeQueued:
 		// Check if this specific backup is queued
 		if s.isBackupInQueue(backupId) {
-			return state.BackupButtonStatusWaiting, nil
+			return BackupButtonStatusWaiting, nil
 		}
 		// Repository is busy with another operation
-		return state.BackupButtonStatusBusy, nil
+		return BackupButtonStatusBusy, nil
 	case statemachine.RepositoryStateTypeBackingUp:
 		// Check if this is our backup that's running
 		backingUpVariant := repositoryState.(statemachine.BackingUpVariant)
 		backingUpData := backingUpVariant()
 		if backingUpData.Data.BackupID.String() == backupId.String() {
-			return state.BackupButtonStatusAbort, nil
+			return BackupButtonStatusAbort, nil
 		}
 		// Repository is busy with another backup
-		return state.BackupButtonStatusBusy, nil
+		return BackupButtonStatusBusy, nil
 	case statemachine.RepositoryStateTypePruning,
 		statemachine.RepositoryStateTypeDeleting,
 		statemachine.RepositoryStateTypeRefreshing,
 		statemachine.RepositoryStateTypeMounting:
 		// Repository is busy with other operations
-		return state.BackupButtonStatusBusy, nil
+		return BackupButtonStatusBusy, nil
 	case statemachine.RepositoryStateTypeIdle:
 		// Repository is idle, can run backup
-		return state.BackupButtonStatusRunBackup, nil
+		return BackupButtonStatusRunBackup, nil
 	default:
 		assert.Fail("Unhandled RepositoryStateType in getSingleBackupButtonStatus")
-		return state.BackupButtonStatusRunBackup, nil
+		return BackupButtonStatusRunBackup, nil
 	}
 }
 
 // getCombinedBackupButtonStatus gets combined backup button status for multiple backup IDs
-func (s *Service) getCombinedBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (state.BackupButtonStatus, error) {
+func (s *Service) getCombinedBackupButtonStatus(ctx context.Context, backupIds []types.BackupId) (BackupButtonStatus, error) {
 	hasWaiting := false
 	hasRunning := false
 
 	for _, backupId := range backupIds {
 		status, err := s.getSingleBackupButtonStatus(ctx, backupId)
 		if err != nil {
-			return state.BackupButtonStatusRunBackup, err
+			return BackupButtonStatusRunBackup, err
 		}
 
 		// High priority statuses that should return immediately
 		switch status {
-		case state.BackupButtonStatusLocked:
-			return state.BackupButtonStatusLocked, nil
-		case state.BackupButtonStatusUnmount:
-			return state.BackupButtonStatusUnmount, nil
-		case state.BackupButtonStatusBusy:
-			return state.BackupButtonStatusBusy, nil
-		case state.BackupButtonStatusWaiting:
+		case BackupButtonStatusLocked:
+			return BackupButtonStatusLocked, nil
+		case BackupButtonStatusUnmount:
+			return BackupButtonStatusUnmount, nil
+		case BackupButtonStatusBusy:
+			return BackupButtonStatusBusy, nil
+		case BackupButtonStatusWaiting:
 			hasWaiting = true
-		case state.BackupButtonStatusAbort:
+		case BackupButtonStatusAbort:
 			hasRunning = true
-		case state.BackupButtonStatusRunBackup:
+		case BackupButtonStatusRunBackup:
 
 		}
 	}
 
 	// Return combined status based on what we found
 	if hasRunning {
-		return state.BackupButtonStatusAbort, nil
+		return BackupButtonStatusAbort, nil
 	}
 	if hasWaiting {
-		return state.BackupButtonStatusWaiting, nil
+		return BackupButtonStatusWaiting, nil
 	}
 
 	// All backups are idle
-	return state.BackupButtonStatusRunBackup, nil
+	return BackupButtonStatusRunBackup, nil
 }
 
 // isBackupInQueue checks if a backup operation is queued or active

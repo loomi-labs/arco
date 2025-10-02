@@ -271,6 +271,20 @@ export class ArcoCloud {
     }
 }
 
+export enum BackupButtonStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BackupButtonStatusRunBackup = "runBackup",
+    BackupButtonStatusWaiting = "waiting",
+    BackupButtonStatusAbort = "abort",
+    BackupButtonStatusLocked = "locked",
+    BackupButtonStatusUnmount = "unmount",
+    BackupButtonStatusBusy = "busy",
+};
+
 /**
  * BackupProfileFilter represents filters for backup profiles
  */

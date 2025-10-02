@@ -15,9 +15,6 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as arcov1$0 from "../../api/v1/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as state$0 from "../state/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as statemachine$0 from "../statemachine/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -131,7 +128,7 @@ export function GetActiveOperation(repoId: number, operationType: statemachine$0
 /**
  * GetBackupButtonStatus gets backup button status for given backup IDs
  */
-export function GetBackupButtonStatus(backupIds: types$0.BackupId[]): $CancellablePromise<state$0.BackupButtonStatus> {
+export function GetBackupButtonStatus(backupIds: types$0.BackupId[]): $CancellablePromise<$models.BackupButtonStatus> {
     return $Call.ByID(1281128506, backupIds);
 }
 

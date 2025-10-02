@@ -13,6 +13,7 @@ export {
     ArchiveRenameStateUnion,
     ArchiveWithPendingChanges,
     ArcoCloud,
+    BackupButtonStatus,
     BackupProfileFilter,
     Completed,
     DeleteActive,

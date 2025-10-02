@@ -270,3 +270,27 @@ type FixStoredPasswordResult struct {
 	Success      bool   `json:"success"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
 }
+
+type BackupButtonStatus string
+
+const (
+	BackupButtonStatusRunBackup BackupButtonStatus = "runBackup"
+	BackupButtonStatusWaiting   BackupButtonStatus = "waiting"
+	BackupButtonStatusAbort     BackupButtonStatus = "abort"
+	BackupButtonStatusLocked    BackupButtonStatus = "locked"
+	BackupButtonStatusUnmount   BackupButtonStatus = "unmount"
+	BackupButtonStatusBusy      BackupButtonStatus = "busy"
+)
+
+var AvailableBackupButtonStatuses = []BackupButtonStatus{
+	BackupButtonStatusRunBackup,
+	BackupButtonStatusWaiting,
+	BackupButtonStatusAbort,
+	BackupButtonStatusLocked,
+	BackupButtonStatusUnmount,
+	BackupButtonStatusBusy,
+}
+
+func (b BackupButtonStatus) String() string {
+	return string(b)
+}
