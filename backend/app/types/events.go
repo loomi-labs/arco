@@ -76,5 +76,9 @@ func EventSubscriptionCancelledString() string {
 type RuntimeEventEmitter struct{}
 
 func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string, data ...string) {
-	application.Get().Event.Emit(event, data)
+	args := make([]any, len(data))
+	for i, d := range data {
+		args[i] = d
+	}
+	application.Get().Event.Emit(event, args...)
 }

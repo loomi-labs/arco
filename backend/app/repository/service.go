@@ -123,10 +123,11 @@ func (si *ServiceInternal) initMountStates(ctx context.Context) {
 		}
 
 		repoID := archiveEntity.Edges.Repository.ID
+		id := archiveID
 		mountInfo := statemachine.MountInfo{
 			MountType: statemachine.MountTypeArchive,
 			MountPath: mountState.MountPath,
-			ArchiveID: &archiveID,
+			ArchiveID: &id,
 		}
 
 		archivesByRepo[repoID] = append(archivesByRepo[repoID], mountInfo)

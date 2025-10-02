@@ -894,9 +894,10 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		// Check for archive mounts belonging to this repository
 		for archiveID, archMount := range archs {
 			if archMount.IsMounted {
+				id := archiveID
 				mounts = append(mounts, statemachine.MountInfo{
 					MountType: statemachine.MountTypeArchive,
-					ArchiveID: &archiveID,
+					ArchiveID: &id,
 					MountPath: archMount.MountPath,
 				})
 			}
