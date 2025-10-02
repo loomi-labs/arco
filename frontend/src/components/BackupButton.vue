@@ -10,7 +10,6 @@ import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
-import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import type * as borgtypes from "../../bindings/github.com/loomi-labs/arco/backend/borg/types";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
@@ -34,7 +33,7 @@ const { t } = useI18n();
 const router = useRouter();
 
 const showProgressSpinner = ref(false);
-const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
+const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borgtypes.BackupProgress | undefined>(undefined);
 const lockedRepos = ref<repoModels.Repository[]>([]);
 const reposWithMounts = ref<repoModels.Repository[]>([]);
@@ -90,19 +89,19 @@ const buttonText = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return t("run_backup");
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return t("waiting");
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return `${t("abort")} ${progress.value}%`;
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return t("remove_lock");
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return t("run_backup");
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return t("busy");
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "";
@@ -116,19 +115,19 @@ const buttonColor = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "btn-success";
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return "btn-warning";
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return "btn-error";
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return "btn-success";
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return "btn-neutral";
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return "btn-neutral";
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "btn-neutral";
@@ -142,19 +141,19 @@ const buttonTextColor = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "text-success";
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return "text-warning";
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return "text-error";
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return "text-success";
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return "text-neutral";
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return "text-neutral";
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "text-neutral";
@@ -163,8 +162,8 @@ const buttonTextColor = computed(() => {
 
 const isButtonDisabled = computed(() => {
   // Don't disable for errors - allow clicking to navigate
-  return buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusBusy
-    || buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusWaiting;
+  return buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusBusy
+    || buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusWaiting;
 });
 
 const progress = computed(() => {
@@ -227,13 +226,13 @@ async function runButtonAction() {
     return;
   }
   
-  if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusRunBackup) {
+  if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusRunBackup) {
     await runBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusAbort) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusAbort) {
     await abortBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusLocked) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusLocked) {
     confirmRemoveLockModal.value?.showModal();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusUnmount) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusUnmount) {
     confirmUnmountModal.value?.showModal();
   }
 }

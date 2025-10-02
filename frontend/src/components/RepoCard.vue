@@ -15,7 +15,6 @@ import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import type * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import { Events } from "@wailsio/runtime";
@@ -62,7 +61,7 @@ const lastArchive = ref<ent.Archive | undefined>(undefined);
 const backupState = ref<statemachine.Backup>(statemachine.Backup.createFrom());
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
-const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
+const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 
 const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
