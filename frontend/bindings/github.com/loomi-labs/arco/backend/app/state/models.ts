@@ -26,20 +26,6 @@ export class AuthState {
     }
 }
 
-export enum BackupButtonStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    BackupButtonStatusRunBackup = "runBackup",
-    BackupButtonStatusWaiting = "waiting",
-    BackupButtonStatusAbort = "abort",
-    BackupButtonStatusLocked = "locked",
-    BackupButtonStatusUnmount = "unmount",
-    BackupButtonStatusBusy = "busy",
-};
-
 export class CheckoutResult {
     "status": CheckoutResultStatus;
     "errorMessage"?: string;
