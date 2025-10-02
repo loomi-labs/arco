@@ -23,7 +23,6 @@ import (
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/plan"
 	"github.com/loomi-labs/arco/backend/app/repository"
-	"github.com/loomi-labs/arco/backend/app/repository_old"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -184,10 +183,6 @@ func (a *App) Startup(ctx context.Context) {
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
-
-	// Create cloud repository service first
-	cloudRepositoryServiceO := repository_old.NewCloudRepositoryClient(a.log, a.state, a.config)
-	cloudRepositoryServiceO.Init(a.db, cloudRepositoryRPCClient)
 
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)

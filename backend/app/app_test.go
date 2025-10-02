@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/loomi-labs/arco/backend/app/repository_old"
+	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/types"
 	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
 	borgmocks "github.com/loomi-labs/arco/backend/borg/mocks"
@@ -65,7 +65,7 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 
 	// Initialize repository service with required dependencies for tests
 	// Create a cloud repository client for testing
-	cloudRepositoryClient := repository_old.NewCloudRepositoryClient(a.log, a.state, config)
+	cloudRepositoryClient := repository.NewCloudRepositoryClient(a.log, a.state, config)
 	cloudRepositoryClient.Init(db, nil) // Pass nil for RPC client in tests
 	a.repositoryService.Init(
 		db,
