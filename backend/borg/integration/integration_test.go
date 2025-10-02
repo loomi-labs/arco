@@ -581,6 +581,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 		pruneOptions := []string{"--keep-last=2"}
 		pruneChan := make(chan types.PruneResult, 10)
 		status = suite.borg.Prune(suite.ctx, repoPath, testPassword, "test-archive", pruneOptions, true, pruneChan)
+		close(pruneChan)
 
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository pruning should succeed: %v", status.GetError())
 
