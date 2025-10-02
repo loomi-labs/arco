@@ -420,7 +420,7 @@ UnmountAllForRepos(ctx, repoIds []int) error
 ExaminePrunes(ctx, backupProfileId int, pruningRule *ent.PruningRule) ([]ExaminePruningResult, error)
 
 // Configuration
-ChangePassword(ctx, repoId int, password string) error
+FixStoredPassword(ctx, repoId int, password string) (FixStoredPasswordResult, error)
 
 // Error recovery
 RegenerateSSHKey(ctx) error

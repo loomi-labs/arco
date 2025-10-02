@@ -21,6 +21,7 @@ export {
     ExaminePruningResult,
     Expired,
     Failed,
+    FixStoredPasswordResult,
     Local,
     LocationType,
     LocationUnion,

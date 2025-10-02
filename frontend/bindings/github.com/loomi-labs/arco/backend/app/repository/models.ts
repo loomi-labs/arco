@@ -463,6 +463,31 @@ export class Failed {
 }
 
 /**
+ * FixStoredPasswordResult represents the result of fixing stored repository password
+ */
+export class FixStoredPasswordResult {
+    "success": boolean;
+    "errorMessage"?: string;
+
+    /** Creates a new FixStoredPasswordResult instance. */
+    constructor($$source: Partial<FixStoredPasswordResult> = {}) {
+        if (!("success" in $$source)) {
+            this["success"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FixStoredPasswordResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FixStoredPasswordResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new FixStoredPasswordResult($$parsedSource as Partial<FixStoredPasswordResult>);
+    }
+}
+
+/**
  * Repository type variants
  */
 export class Local {

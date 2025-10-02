@@ -36,6 +36,9 @@ const lastArchive = ref<ent.Archive | undefined>(undefined);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
 const isRegeneratingSSH = ref(false);
+const isChangingPassphrase = ref(false);
+const isBreakingLock = ref(false);
+const newPassphrase = ref<string>("");
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -148,6 +151,46 @@ async function regenerateSSHKey() {
   }
 }
 
+async function changePassphrase() {
+  if (!newPassphrase.value.trim()) {
+    toast.error("Please enter a new passphrase");
+    return;
+  }
+
+  try {
+    isChangingPassphrase.value = true;
+    const result = await repoService.FixStoredPassword(repoId, newPassphrase.value);
+
+    if (result.success) {
+      toast.success("Password fixed successfully");
+      newPassphrase.value = "";
+      // Refresh repository after password fix
+      await getRepo();
+    } else {
+      toast.error(result.errorMessage ?? "Failed to fix password");
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to fix password", error);
+  } finally {
+    isChangingPassphrase.value = false;
+  }
+}
+
+async function breakLock() {
+  try {
+    isBreakingLock.value = true;
+    await repoService.BreakLock(repoId);
+    toast.success("Lock broken successfully");
+
+    // Refresh repository after breaking lock
+    await getRepo();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to break lock", error);
+  } finally {
+    isBreakingLock.value = false;
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -231,6 +274,31 @@ onUnmounted(() => {
                 @click='regenerateSSHKey'>
           <span v-if='isRegeneratingSSH' class='loading loading-spinner loading-xs'></span>
           {{ isRegeneratingSSH ? "Regenerating..." : "Regenerate SSH Key" }}
+        </button>
+      </div>
+
+      <!-- Change Passphrase Button -->
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionChangePassphrase' class='flex-none flex gap-2'>
+        <input v-model='newPassphrase'
+               type='password'
+               placeholder='New passphrase'
+               class='input input-sm input-bordered'
+               :disabled='isChangingPassphrase' />
+        <button class='btn btn-sm btn-outline btn-error-content'
+                :disabled='isChangingPassphrase || !newPassphrase.trim()'
+                @click='changePassphrase'>
+          <span v-if='isChangingPassphrase' class='loading loading-spinner loading-xs'></span>
+          {{ isChangingPassphrase ? "Changing..." : "Change Passphrase" }}
+        </button>
+      </div>
+
+      <!-- Break Lock Button -->
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionBreakLock' class='flex-none'>
+        <button class='btn btn-sm btn-outline btn-error-content'
+                :disabled='isBreakingLock'
+                @click='breakLock'>
+          <span v-if='isBreakingLock' class='loading loading-spinner loading-xs'></span>
+          {{ isBreakingLock ? "Breaking Lock..." : "Break Lock" }}
         </button>
       </div>
     </div>

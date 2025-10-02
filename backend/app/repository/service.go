@@ -1241,10 +1241,74 @@ func (s *Service) startExaminePrune(ctx context.Context, bId types.BackupId, pru
 	}
 }
 
-// ChangePassword changes the password for a repository
-func (s *Service) ChangePassword(ctx context.Context, repoId int, password string) error {
-	// TODO: Implement password change
-	return nil
+// FixStoredPassword validates and updates the stored password for a repository
+func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password string) (FixStoredPasswordResult, error) {
+	// Validate password is not empty
+	if password == "" {
+		return FixStoredPasswordResult{
+			Success:      false,
+			ErrorMessage: "password cannot be empty",
+		}, nil
+	}
+
+	// Get repository from database
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Test the new password by calling borg info
+	_, status := s.borgClient.Info(ctx, repoEntity.URL, password)
+
+	// Check if password is wrong
+	if status.HasError() {
+		if status.Error.ExitCode == borgtypes.ErrorPassphraseWrong.ExitCode {
+			return FixStoredPasswordResult{
+				Success:      false,
+				ErrorMessage: "Incorrect password",
+			}, nil
+		}
+		return FixStoredPasswordResult{
+			Success:      false,
+			ErrorMessage: status.GetError(),
+		}, nil
+	}
+
+	// Get current repository state
+	currentState := s.queueManager.GetRepositoryState(repoId)
+
+	// Check if repository has passphrase error and clear it
+	if statemachine.GetRepositoryStateType(currentState) == statemachine.RepositoryStateTypeError {
+		if errorVariant, ok := currentState.(statemachine.ErrorVariant); ok {
+			errorData := errorVariant()
+			if errorData.ErrorType == statemachine.ErrorTypePassphrase {
+				// Create new idle state
+				idleState := statemachine.NewRepositoryStateIdle(statemachine.Idle{})
+
+				// Transition from Error to Idle state
+				err = s.stateMachine.Transition(repoId, currentState, idleState)
+				if err != nil {
+					s.log.Warnf("Failed to transition repository %d from error to idle state: %v", repoId, err)
+				} else {
+					// Update the repository state
+					s.queueManager.setRepositoryState(repoId, idleState)
+				}
+			}
+		}
+	}
+
+	// Password is correct, update in database
+	err = repoEntity.Update().
+		SetPassword(password).
+		Exec(ctx)
+	if err != nil {
+		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to update password in database: %w", err)
+	}
+
+	return FixStoredPasswordResult{
+		Success:      true,
+		ErrorMessage: "",
+	}, nil
 }
 
 // RegenerateSSHKey regenerates SSH key for ArcoCloud repositories

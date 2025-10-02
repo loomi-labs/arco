@@ -264,3 +264,9 @@ type PruningDate struct {
 type UpdateRequest struct {
 	Name string `json:"name,omitempty"` // Repository name
 }
+
+// FixStoredPasswordResult represents the result of fixing stored repository password
+type FixStoredPasswordResult struct {
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+}
