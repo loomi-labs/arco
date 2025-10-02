@@ -30,20 +30,6 @@ export class BackupId {
     }
 }
 
-/**
- * DeleteResult represents the result of a delete operation
- */
-export enum DeleteResult {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    DeleteResultSuccess = "success",
-    DeleteResultCancelled = "cancelled",
-    DeleteResultError = "error",
-};
-
 export enum Event {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -61,44 +47,8 @@ export enum Event {
     EventCheckoutStateChanged = "checkoutStateChanged",
     EventSubscriptionAdded = "subscriptionAdded",
     EventSubscriptionCancelled = "subscriptionCancelled",
+    EventOperationErrorOccurred = "operationErrorOccurred",
 };
-
-export class ExaminePruningResult {
-    "BackupID": BackupId;
-    "RepositoryName": string;
-    "CntArchivesToBeDeleted": number;
-    "Error": any;
-
-    /** Creates a new ExaminePruningResult instance. */
-    constructor($$source: Partial<ExaminePruningResult> = {}) {
-        if (!("BackupID" in $$source)) {
-            this["BackupID"] = (new BackupId());
-        }
-        if (!("RepositoryName" in $$source)) {
-            this["RepositoryName"] = "";
-        }
-        if (!("CntArchivesToBeDeleted" in $$source)) {
-            this["CntArchivesToBeDeleted"] = 0;
-        }
-        if (!("Error" in $$source)) {
-            this["Error"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ExaminePruningResult instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ExaminePruningResult {
-        const $$createField0_0 = $$createType0;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("BackupID" in $$parsedSource) {
-            $$parsedSource["BackupID"] = $$createField0_0($$parsedSource["BackupID"]);
-        }
-        return new ExaminePruningResult($$parsedSource as Partial<ExaminePruningResult>);
-    }
-}
 
 /**
  * FrontendError is the error type that is received from the frontend
@@ -163,6 +113,3 @@ export enum NotificationLevel {
     LevelWarning = "warning",
     LevelError = "error",
 };
-
-// Private type creation functions
-const $$createType0 = BackupId.createFrom;

@@ -334,8 +334,8 @@ func (c *ArchiveClient) Update() *ArchiveUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ArchiveClient) UpdateOne(a *Archive) *ArchiveUpdateOne {
-	mutation := newArchiveMutation(c.config, OpUpdateOne, withArchive(a))
+func (c *ArchiveClient) UpdateOne(_m *Archive) *ArchiveUpdateOne {
+	mutation := newArchiveMutation(c.config, OpUpdateOne, withArchive(_m))
 	return &ArchiveUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -352,8 +352,8 @@ func (c *ArchiveClient) Delete() *ArchiveDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ArchiveClient) DeleteOne(a *Archive) *ArchiveDeleteOne {
-	return c.DeleteOneID(a.ID)
+func (c *ArchiveClient) DeleteOne(_m *Archive) *ArchiveDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -388,32 +388,32 @@ func (c *ArchiveClient) GetX(ctx context.Context, id int) *Archive {
 }
 
 // QueryRepository queries the repository edge of a Archive.
-func (c *ArchiveClient) QueryRepository(a *Archive) *RepositoryQuery {
+func (c *ArchiveClient) QueryRepository(_m *Archive) *RepositoryQuery {
 	query := (&RepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := a.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(archive.Table, archive.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, archive.RepositoryTable, archive.RepositoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryBackupProfile queries the backup_profile edge of a Archive.
-func (c *ArchiveClient) QueryBackupProfile(a *Archive) *BackupProfileQuery {
+func (c *ArchiveClient) QueryBackupProfile(_m *Archive) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := a.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(archive.Table, archive.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, archive.BackupProfileTable, archive.BackupProfileColumn),
 		)
-		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -499,8 +499,8 @@ func (c *AuthSessionClient) Update() *AuthSessionUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *AuthSessionClient) UpdateOne(as *AuthSession) *AuthSessionUpdateOne {
-	mutation := newAuthSessionMutation(c.config, OpUpdateOne, withAuthSession(as))
+func (c *AuthSessionClient) UpdateOne(_m *AuthSession) *AuthSessionUpdateOne {
+	mutation := newAuthSessionMutation(c.config, OpUpdateOne, withAuthSession(_m))
 	return &AuthSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -517,8 +517,8 @@ func (c *AuthSessionClient) Delete() *AuthSessionDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *AuthSessionClient) DeleteOne(as *AuthSession) *AuthSessionDeleteOne {
-	return c.DeleteOneID(as.ID)
+func (c *AuthSessionClient) DeleteOne(_m *AuthSession) *AuthSessionDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -632,8 +632,8 @@ func (c *BackupProfileClient) Update() *BackupProfileUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BackupProfileClient) UpdateOne(bp *BackupProfile) *BackupProfileUpdateOne {
-	mutation := newBackupProfileMutation(c.config, OpUpdateOne, withBackupProfile(bp))
+func (c *BackupProfileClient) UpdateOne(_m *BackupProfile) *BackupProfileUpdateOne {
+	mutation := newBackupProfileMutation(c.config, OpUpdateOne, withBackupProfile(_m))
 	return &BackupProfileUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -650,8 +650,8 @@ func (c *BackupProfileClient) Delete() *BackupProfileDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BackupProfileClient) DeleteOne(bp *BackupProfile) *BackupProfileDeleteOne {
-	return c.DeleteOneID(bp.ID)
+func (c *BackupProfileClient) DeleteOne(_m *BackupProfile) *BackupProfileDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -686,80 +686,80 @@ func (c *BackupProfileClient) GetX(ctx context.Context, id int) *BackupProfile {
 }
 
 // QueryRepositories queries the repositories edge of a BackupProfile.
-func (c *BackupProfileClient) QueryRepositories(bp *BackupProfile) *RepositoryQuery {
+func (c *BackupProfileClient) QueryRepositories(_m *BackupProfile) *RepositoryQuery {
 	query := (&RepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, backupprofile.RepositoriesTable, backupprofile.RepositoriesPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryArchives queries the archives edge of a BackupProfile.
-func (c *BackupProfileClient) QueryArchives(bp *BackupProfile) *ArchiveQuery {
+func (c *BackupProfileClient) QueryArchives(_m *BackupProfile) *ArchiveQuery {
 	query := (&ArchiveClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(archive.Table, archive.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, backupprofile.ArchivesTable, backupprofile.ArchivesColumn),
 		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryBackupSchedule queries the backup_schedule edge of a BackupProfile.
-func (c *BackupProfileClient) QueryBackupSchedule(bp *BackupProfile) *BackupScheduleQuery {
+func (c *BackupProfileClient) QueryBackupSchedule(_m *BackupProfile) *BackupScheduleQuery {
 	query := (&BackupScheduleClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(backupschedule.Table, backupschedule.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.BackupScheduleTable, backupprofile.BackupScheduleColumn),
 		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryPruningRule queries the pruning_rule edge of a BackupProfile.
-func (c *BackupProfileClient) QueryPruningRule(bp *BackupProfile) *PruningRuleQuery {
+func (c *BackupProfileClient) QueryPruningRule(_m *BackupProfile) *PruningRuleQuery {
 	query := (&PruningRuleClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(pruningrule.Table, pruningrule.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, backupprofile.PruningRuleTable, backupprofile.PruningRuleColumn),
 		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryNotifications queries the notifications edge of a BackupProfile.
-func (c *BackupProfileClient) QueryNotifications(bp *BackupProfile) *NotificationQuery {
+func (c *BackupProfileClient) QueryNotifications(_m *BackupProfile) *NotificationQuery {
 	query := (&NotificationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupprofile.Table, backupprofile.FieldID, id),
 			sqlgraph.To(notification.Table, notification.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, backupprofile.NotificationsTable, backupprofile.NotificationsColumn),
 		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -845,8 +845,8 @@ func (c *BackupScheduleClient) Update() *BackupScheduleUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BackupScheduleClient) UpdateOne(bs *BackupSchedule) *BackupScheduleUpdateOne {
-	mutation := newBackupScheduleMutation(c.config, OpUpdateOne, withBackupSchedule(bs))
+func (c *BackupScheduleClient) UpdateOne(_m *BackupSchedule) *BackupScheduleUpdateOne {
+	mutation := newBackupScheduleMutation(c.config, OpUpdateOne, withBackupSchedule(_m))
 	return &BackupScheduleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -863,8 +863,8 @@ func (c *BackupScheduleClient) Delete() *BackupScheduleDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BackupScheduleClient) DeleteOne(bs *BackupSchedule) *BackupScheduleDeleteOne {
-	return c.DeleteOneID(bs.ID)
+func (c *BackupScheduleClient) DeleteOne(_m *BackupSchedule) *BackupScheduleDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -899,16 +899,16 @@ func (c *BackupScheduleClient) GetX(ctx context.Context, id int) *BackupSchedule
 }
 
 // QueryBackupProfile queries the backup_profile edge of a BackupSchedule.
-func (c *BackupScheduleClient) QueryBackupProfile(bs *BackupSchedule) *BackupProfileQuery {
+func (c *BackupScheduleClient) QueryBackupProfile(_m *BackupSchedule) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bs.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(backupschedule.Table, backupschedule.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, backupschedule.BackupProfileTable, backupschedule.BackupProfileColumn),
 		)
-		fromV = sqlgraph.Neighbors(bs.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -994,8 +994,8 @@ func (c *CloudRepositoryClient) Update() *CloudRepositoryUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *CloudRepositoryClient) UpdateOne(cr *CloudRepository) *CloudRepositoryUpdateOne {
-	mutation := newCloudRepositoryMutation(c.config, OpUpdateOne, withCloudRepository(cr))
+func (c *CloudRepositoryClient) UpdateOne(_m *CloudRepository) *CloudRepositoryUpdateOne {
+	mutation := newCloudRepositoryMutation(c.config, OpUpdateOne, withCloudRepository(_m))
 	return &CloudRepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1012,8 +1012,8 @@ func (c *CloudRepositoryClient) Delete() *CloudRepositoryDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *CloudRepositoryClient) DeleteOne(cr *CloudRepository) *CloudRepositoryDeleteOne {
-	return c.DeleteOneID(cr.ID)
+func (c *CloudRepositoryClient) DeleteOne(_m *CloudRepository) *CloudRepositoryDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1048,16 +1048,16 @@ func (c *CloudRepositoryClient) GetX(ctx context.Context, id int) *CloudReposito
 }
 
 // QueryRepository queries the repository edge of a CloudRepository.
-func (c *CloudRepositoryClient) QueryRepository(cr *CloudRepository) *RepositoryQuery {
+func (c *CloudRepositoryClient) QueryRepository(_m *CloudRepository) *RepositoryQuery {
 	query := (&RepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(cloudrepository.Table, cloudrepository.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, cloudrepository.RepositoryTable, cloudrepository.RepositoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1143,8 +1143,8 @@ func (c *NotificationClient) Update() *NotificationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *NotificationClient) UpdateOne(n *Notification) *NotificationUpdateOne {
-	mutation := newNotificationMutation(c.config, OpUpdateOne, withNotification(n))
+func (c *NotificationClient) UpdateOne(_m *Notification) *NotificationUpdateOne {
+	mutation := newNotificationMutation(c.config, OpUpdateOne, withNotification(_m))
 	return &NotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1161,8 +1161,8 @@ func (c *NotificationClient) Delete() *NotificationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *NotificationClient) DeleteOne(n *Notification) *NotificationDeleteOne {
-	return c.DeleteOneID(n.ID)
+func (c *NotificationClient) DeleteOne(_m *Notification) *NotificationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1197,32 +1197,32 @@ func (c *NotificationClient) GetX(ctx context.Context, id int) *Notification {
 }
 
 // QueryBackupProfile queries the backup_profile edge of a Notification.
-func (c *NotificationClient) QueryBackupProfile(n *Notification) *BackupProfileQuery {
+func (c *NotificationClient) QueryBackupProfile(_m *Notification) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := n.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(notification.Table, notification.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, notification.BackupProfileTable, notification.BackupProfileColumn),
 		)
-		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryRepository queries the repository edge of a Notification.
-func (c *NotificationClient) QueryRepository(n *Notification) *RepositoryQuery {
+func (c *NotificationClient) QueryRepository(_m *Notification) *RepositoryQuery {
 	query := (&RepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := n.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(notification.Table, notification.FieldID, id),
 			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, notification.RepositoryTable, notification.RepositoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1308,8 +1308,8 @@ func (c *PruningRuleClient) Update() *PruningRuleUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *PruningRuleClient) UpdateOne(pr *PruningRule) *PruningRuleUpdateOne {
-	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRule(pr))
+func (c *PruningRuleClient) UpdateOne(_m *PruningRule) *PruningRuleUpdateOne {
+	mutation := newPruningRuleMutation(c.config, OpUpdateOne, withPruningRule(_m))
 	return &PruningRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1326,8 +1326,8 @@ func (c *PruningRuleClient) Delete() *PruningRuleDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *PruningRuleClient) DeleteOne(pr *PruningRule) *PruningRuleDeleteOne {
-	return c.DeleteOneID(pr.ID)
+func (c *PruningRuleClient) DeleteOne(_m *PruningRule) *PruningRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1362,16 +1362,16 @@ func (c *PruningRuleClient) GetX(ctx context.Context, id int) *PruningRule {
 }
 
 // QueryBackupProfile queries the backup_profile edge of a PruningRule.
-func (c *PruningRuleClient) QueryBackupProfile(pr *PruningRule) *BackupProfileQuery {
+func (c *PruningRuleClient) QueryBackupProfile(_m *PruningRule) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(pruningrule.Table, pruningrule.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, pruningrule.BackupProfileTable, pruningrule.BackupProfileColumn),
 		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1457,8 +1457,8 @@ func (c *RepositoryClient) Update() *RepositoryUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *RepositoryClient) UpdateOne(r *Repository) *RepositoryUpdateOne {
-	mutation := newRepositoryMutation(c.config, OpUpdateOne, withRepository(r))
+func (c *RepositoryClient) UpdateOne(_m *Repository) *RepositoryUpdateOne {
+	mutation := newRepositoryMutation(c.config, OpUpdateOne, withRepository(_m))
 	return &RepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1475,8 +1475,8 @@ func (c *RepositoryClient) Delete() *RepositoryDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *RepositoryClient) DeleteOne(r *Repository) *RepositoryDeleteOne {
-	return c.DeleteOneID(r.ID)
+func (c *RepositoryClient) DeleteOne(_m *Repository) *RepositoryDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1511,64 +1511,64 @@ func (c *RepositoryClient) GetX(ctx context.Context, id int) *Repository {
 }
 
 // QueryBackupProfiles queries the backup_profiles edge of a Repository.
-func (c *RepositoryClient) QueryBackupProfiles(r *Repository) *BackupProfileQuery {
+func (c *RepositoryClient) QueryBackupProfiles(_m *Repository) *BackupProfileQuery {
 	query := (&BackupProfileClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, repository.BackupProfilesTable, repository.BackupProfilesPrimaryKey...),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryArchives queries the archives edge of a Repository.
-func (c *RepositoryClient) QueryArchives(r *Repository) *ArchiveQuery {
+func (c *RepositoryClient) QueryArchives(_m *Repository) *ArchiveQuery {
 	query := (&ArchiveClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(archive.Table, archive.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, repository.ArchivesTable, repository.ArchivesColumn),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryNotifications queries the notifications edge of a Repository.
-func (c *RepositoryClient) QueryNotifications(r *Repository) *NotificationQuery {
+func (c *RepositoryClient) QueryNotifications(_m *Repository) *NotificationQuery {
 	query := (&NotificationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(notification.Table, notification.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, repository.NotificationsTable, repository.NotificationsColumn),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryCloudRepository queries the cloud_repository edge of a Repository.
-func (c *RepositoryClient) QueryCloudRepository(r *Repository) *CloudRepositoryQuery {
+func (c *RepositoryClient) QueryCloudRepository(_m *Repository) *CloudRepositoryQuery {
 	query := (&CloudRepositoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(cloudrepository.Table, cloudrepository.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, repository.CloudRepositoryTable, repository.CloudRepositoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1654,8 +1654,8 @@ func (c *SettingsClient) Update() *SettingsUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *SettingsClient) UpdateOne(s *Settings) *SettingsUpdateOne {
-	mutation := newSettingsMutation(c.config, OpUpdateOne, withSettings(s))
+func (c *SettingsClient) UpdateOne(_m *Settings) *SettingsUpdateOne {
+	mutation := newSettingsMutation(c.config, OpUpdateOne, withSettings(_m))
 	return &SettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1672,8 +1672,8 @@ func (c *SettingsClient) Delete() *SettingsDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *SettingsClient) DeleteOne(s *Settings) *SettingsDeleteOne {
-	return c.DeleteOneID(s.ID)
+func (c *SettingsClient) DeleteOne(_m *Settings) *SettingsDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1787,8 +1787,8 @@ func (c *UserClient) Update() *UserUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne, withUser(u))
+func (c *UserClient) UpdateOne(_m *User) *UserUpdateOne {
+	mutation := newUserMutation(c.config, OpUpdateOne, withUser(_m))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1805,8 +1805,8 @@ func (c *UserClient) Delete() *UserDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
-	return c.DeleteOneID(u.ID)
+func (c *UserClient) DeleteOne(_m *User) *UserDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.

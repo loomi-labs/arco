@@ -1,14 +1,14 @@
 <script setup lang='ts'>
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
-import { RepoType } from "../common/repository";
 import ArcoLogo from "./common/ArcoLogo.vue";
+import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
  ************/
 
 interface Props {
-  repoType: RepoType;
+  locationType: LocationType;
   isSelected: boolean;
 }
 
@@ -36,7 +36,7 @@ const emitClick = "click";
 
 <template>
   <!-- Local Repository Card -->
-  <div v-if='repoType === RepoType.Local'
+  <div v-if='locationType === LocationType.LocationTypeLocal'
        class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
        :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected  }'
        @click='emit(emitClick)'>
@@ -47,7 +47,7 @@ const emitClick = "click";
     <p class='text-sm text-base-content/70'>Store your backups on a local drive.</p>
   </div>
   <!-- Remote Repository Card -->
-  <div v-if='repoType === RepoType.Remote'
+  <div v-if='locationType === LocationType.LocationTypeRemote'
        class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
        :class='{ "ac-card-selected ": isSelected, "border-transparent": !isSelected }'
        @click='emit(emitClick)'>
@@ -58,7 +58,7 @@ const emitClick = "click";
     <p class='text-sm text-base-content/70'>Store your backups on a remote server.</p>
   </div>
   <!-- Arco Cloud Card -->
-  <div v-if='repoType === RepoType.ArcoCloud'
+  <div v-if='locationType === LocationType.LocationTypeArcoCloud'
        class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
        :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected }'
        @click='emit(emitClick)'>

@@ -13,6 +13,7 @@ import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types
 import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
 import { useSubscriptionNotifications } from "./common/subscription";
+import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
  * Variables
@@ -43,6 +44,11 @@ async function getNotifications() {
   } catch (error: unknown) {
     await showAndLogError("Failed to get notifications", error);
   }
+}
+
+async function handleOperationError(errorMessage: string) {
+  // Show error toast notification to user
+  toast.error(errorMessage);
 }
 
 async function goToNextPage() {
@@ -92,6 +98,9 @@ watchEffect(() => {
 
 cleanupFunctions.push(Events.On(types.Event.EventStartupStateChanged, getStartupState));
 cleanupFunctions.push(Events.On(types.Event.EventNotificationAvailable, getNotifications));
+cleanupFunctions.push(Events.On(types.Event.EventOperationErrorOccurred, (ev: WailsEvent) => {
+  handleOperationError(ev.data.toString());
+}));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());

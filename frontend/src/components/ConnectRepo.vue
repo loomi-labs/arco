@@ -4,12 +4,11 @@ import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/so
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import ArcoCloudModal from "./ArcoCloudModal.vue";
-import { getRepoType, RepoType } from "../common/repository";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import { useAuth } from "../common/auth";
 import { useFeatureFlags } from "../common/featureFlags";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -27,15 +26,15 @@ interface Props {
   showAddRepo?: boolean;
   showTitles?: boolean;
   useSingleRepo?: boolean;
-  existingRepos?: ent.Repository[];
+  existingRepos?: Repository[];
 }
 
 interface Emits {
-  (event: typeof emitUpdateConnectedRepos, repos: ent.Repository[]): void;
+  (event: typeof emitUpdateConnectedRepos, repos: Repository[]): void;
 
-  (event: typeof emitUpdateRepoAdded, repo: ent.Repository): void;
+  (event: typeof emitUpdateRepoAdded, repo: Repository): void;
 
-  (event: typeof emitClickRepo, repo: ent.Repository): void;
+  (event: typeof emitClickRepo, repo: Repository): void;
 }
 
 /************
@@ -56,9 +55,9 @@ const emitClickRepo = "click:repo";
 const { isAuthenticated: _isAuthenticated } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
-const existingRepos = ref<ent.Repository[]>(props.existingRepos ?? []);
+const existingRepos = ref<Repository[]>(props.existingRepos ?? []);
 
-const connectedRepos = ref<ent.Repository[]>([]);
+const connectedRepos = ref<Repository[]>([]);
 const selectedRepoType = ref<SelectedRepoType>(SelectedRepoType.None);
 const createLocalRepoModalKey = useId();
 const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepositoryModal>>(createLocalRepoModalKey);
@@ -74,6 +73,7 @@ const _taildwindcssPlaceholder = "grid-rows-1 grid-rows-2 grid-rows-3 grid-rows-
 /************
  * Functions
  ************/
+
 
 function selectLocalRepo() {
   selectedRepoType.value = SelectedRepoType.Local;
@@ -94,14 +94,14 @@ function onArcoCloudModalClose() {
   selectedRepoType.value = SelectedRepoType.None;
 }
 
-function addRepo(repo: ent.Repository) {
+function addRepo(repo: Repository) {
   existingRepos.value.push(repo);
   connectedRepos.value.push(repo);
   emit(emitUpdateRepoAdded, repo);
   emit(emitUpdateConnectedRepos, connectedRepos.value);
 }
 
-function connectOrDisconnectRepo(repo: ent.Repository) {
+function connectOrDisconnectRepo(repo: Repository) {
   if (props.useSingleRepo) {
     emit(emitClickRepo, repo);
     return;
@@ -115,7 +115,7 @@ function connectOrDisconnectRepo(repo: ent.Repository) {
   emit(emitUpdateConnectedRepos, connectedRepos.value);
 }
 
-function getRepoCardClass(repo: ent.Repository) {
+function getRepoCardClass(repo: Repository) {
   const isConnected = connectedRepos.value.some(r => r.id === repo.id);
   const isConnectedClass = isConnected ?
     `ac-card-selected border-secondary text-secondary` :
@@ -140,12 +140,13 @@ watch(() => props.existingRepos, (newRepos) => {
 
     <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
          :class='`grid-rows-${Math.ceil(existingRepos.length / 4)}`'>
-      <div class='group ac-card ac-card-hover flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
-           v-for='(repo, index) in existingRepos' :key='index'
-           :class='getRepoCardClass(repo)'
-           @click='connectOrDisconnectRepo(repo)'
+      <div
+        class='group ac-card ac-card-hover flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
+        v-for='(repo, index) in existingRepos' :key='index'
+        :class='getRepoCardClass(repo)'
+        @click='connectOrDisconnectRepo(repo)'
       >
-        <ComputerDesktopIcon v-if='getRepoType(repo.url) === RepoType.Local' class='size-12' />
+        <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-12' />
         <GlobeEuropeAfricaIcon v-else class='size-12' />
         {{ repo.name }}
       </div>
@@ -159,9 +160,12 @@ watch(() => props.existingRepos, (newRepos) => {
     <p class='text-lg'>Create a new repository or connect an existing one.</p>
 
     <div class='flex gap-6 pt-4'>
-      <ConnectRepoCard :repoType='RepoType.Local' :isSelected='selectedRepoType === SelectedRepoType.Local' @click='selectLocalRepo' />
-      <ConnectRepoCard :repoType='RepoType.Remote' :isSelected='selectedRepoType === SelectedRepoType.Remote' @click='selectRemoteRepo' />
-      <ConnectRepoCard v-if='featureFlags.loginBetaEnabled' :repoType='RepoType.ArcoCloud' :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
+      <ConnectRepoCard :locationType='LocationType.LocationTypeLocal' :isSelected='selectedRepoType === SelectedRepoType.Local'
+                       @click='selectLocalRepo' />
+      <ConnectRepoCard :locationType='LocationType.LocationTypeRemote' :isSelected='selectedRepoType === SelectedRepoType.Remote'
+                       @click='selectRemoteRepo' />
+      <ConnectRepoCard v-if='featureFlags.loginBetaEnabled' :locationType='LocationType.LocationTypeArcoCloud'
+                       :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
     </div>
 
     <CreateLocalRepositoryModal :ref='createLocalRepoModalKey'

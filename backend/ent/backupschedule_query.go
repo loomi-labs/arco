@@ -32,44 +32,44 @@ type BackupScheduleQuery struct {
 }
 
 // Where adds a new predicate for the BackupScheduleQuery builder.
-func (bsq *BackupScheduleQuery) Where(ps ...predicate.BackupSchedule) *BackupScheduleQuery {
-	bsq.predicates = append(bsq.predicates, ps...)
-	return bsq
+func (_q *BackupScheduleQuery) Where(ps ...predicate.BackupSchedule) *BackupScheduleQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (bsq *BackupScheduleQuery) Limit(limit int) *BackupScheduleQuery {
-	bsq.ctx.Limit = &limit
-	return bsq
+func (_q *BackupScheduleQuery) Limit(limit int) *BackupScheduleQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (bsq *BackupScheduleQuery) Offset(offset int) *BackupScheduleQuery {
-	bsq.ctx.Offset = &offset
-	return bsq
+func (_q *BackupScheduleQuery) Offset(offset int) *BackupScheduleQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (bsq *BackupScheduleQuery) Unique(unique bool) *BackupScheduleQuery {
-	bsq.ctx.Unique = &unique
-	return bsq
+func (_q *BackupScheduleQuery) Unique(unique bool) *BackupScheduleQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (bsq *BackupScheduleQuery) Order(o ...backupschedule.OrderOption) *BackupScheduleQuery {
-	bsq.order = append(bsq.order, o...)
-	return bsq
+func (_q *BackupScheduleQuery) Order(o ...backupschedule.OrderOption) *BackupScheduleQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryBackupProfile chains the current query on the "backup_profile" edge.
-func (bsq *BackupScheduleQuery) QueryBackupProfile() *BackupProfileQuery {
-	query := (&BackupProfileClient{config: bsq.config}).Query()
+func (_q *BackupScheduleQuery) QueryBackupProfile() *BackupProfileQuery {
+	query := (&BackupProfileClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bsq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := bsq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func (bsq *BackupScheduleQuery) QueryBackupProfile() *BackupProfileQuery {
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, backupschedule.BackupProfileTable, backupschedule.BackupProfileColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(bsq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -86,8 +86,8 @@ func (bsq *BackupScheduleQuery) QueryBackupProfile() *BackupProfileQuery {
 
 // First returns the first BackupSchedule entity from the query.
 // Returns a *NotFoundError when no BackupSchedule was found.
-func (bsq *BackupScheduleQuery) First(ctx context.Context) (*BackupSchedule, error) {
-	nodes, err := bsq.Limit(1).All(setContextOp(ctx, bsq.ctx, ent.OpQueryFirst))
+func (_q *BackupScheduleQuery) First(ctx context.Context) (*BackupSchedule, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func (bsq *BackupScheduleQuery) First(ctx context.Context) (*BackupSchedule, err
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) FirstX(ctx context.Context) *BackupSchedule {
-	node, err := bsq.First(ctx)
+func (_q *BackupScheduleQuery) FirstX(ctx context.Context) *BackupSchedule {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -108,9 +108,9 @@ func (bsq *BackupScheduleQuery) FirstX(ctx context.Context) *BackupSchedule {
 
 // FirstID returns the first BackupSchedule ID from the query.
 // Returns a *NotFoundError when no BackupSchedule ID was found.
-func (bsq *BackupScheduleQuery) FirstID(ctx context.Context) (id int, err error) {
+func (_q *BackupScheduleQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bsq.Limit(1).IDs(setContextOp(ctx, bsq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -121,8 +121,8 @@ func (bsq *BackupScheduleQuery) FirstID(ctx context.Context) (id int, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) FirstIDX(ctx context.Context) int {
-	id, err := bsq.FirstID(ctx)
+func (_q *BackupScheduleQuery) FirstIDX(ctx context.Context) int {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -132,8 +132,8 @@ func (bsq *BackupScheduleQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single BackupSchedule entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one BackupSchedule entity is found.
 // Returns a *NotFoundError when no BackupSchedule entities are found.
-func (bsq *BackupScheduleQuery) Only(ctx context.Context) (*BackupSchedule, error) {
-	nodes, err := bsq.Limit(2).All(setContextOp(ctx, bsq.ctx, ent.OpQueryOnly))
+func (_q *BackupScheduleQuery) Only(ctx context.Context) (*BackupSchedule, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (bsq *BackupScheduleQuery) Only(ctx context.Context) (*BackupSchedule, erro
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) OnlyX(ctx context.Context) *BackupSchedule {
-	node, err := bsq.Only(ctx)
+func (_q *BackupScheduleQuery) OnlyX(ctx context.Context) *BackupSchedule {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -159,9 +159,9 @@ func (bsq *BackupScheduleQuery) OnlyX(ctx context.Context) *BackupSchedule {
 // OnlyID is like Only, but returns the only BackupSchedule ID in the query.
 // Returns a *NotSingularError when more than one BackupSchedule ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bsq *BackupScheduleQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *BackupScheduleQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = bsq.Limit(2).IDs(setContextOp(ctx, bsq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -176,8 +176,8 @@ func (bsq *BackupScheduleQuery) OnlyID(ctx context.Context) (id int, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) OnlyIDX(ctx context.Context) int {
-	id, err := bsq.OnlyID(ctx)
+func (_q *BackupScheduleQuery) OnlyIDX(ctx context.Context) int {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -185,18 +185,18 @@ func (bsq *BackupScheduleQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of BackupSchedules.
-func (bsq *BackupScheduleQuery) All(ctx context.Context) ([]*BackupSchedule, error) {
-	ctx = setContextOp(ctx, bsq.ctx, ent.OpQueryAll)
-	if err := bsq.prepareQuery(ctx); err != nil {
+func (_q *BackupScheduleQuery) All(ctx context.Context) ([]*BackupSchedule, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*BackupSchedule, *BackupScheduleQuery]()
-	return withInterceptors[[]*BackupSchedule](ctx, bsq, qr, bsq.inters)
+	return withInterceptors[[]*BackupSchedule](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) AllX(ctx context.Context) []*BackupSchedule {
-	nodes, err := bsq.All(ctx)
+func (_q *BackupScheduleQuery) AllX(ctx context.Context) []*BackupSchedule {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -204,20 +204,20 @@ func (bsq *BackupScheduleQuery) AllX(ctx context.Context) []*BackupSchedule {
 }
 
 // IDs executes the query and returns a list of BackupSchedule IDs.
-func (bsq *BackupScheduleQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if bsq.ctx.Unique == nil && bsq.path != nil {
-		bsq.Unique(true)
+func (_q *BackupScheduleQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, bsq.ctx, ent.OpQueryIDs)
-	if err = bsq.Select(backupschedule.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(backupschedule.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) IDsX(ctx context.Context) []int {
-	ids, err := bsq.IDs(ctx)
+func (_q *BackupScheduleQuery) IDsX(ctx context.Context) []int {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -225,17 +225,17 @@ func (bsq *BackupScheduleQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (bsq *BackupScheduleQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, bsq.ctx, ent.OpQueryCount)
-	if err := bsq.prepareQuery(ctx); err != nil {
+func (_q *BackupScheduleQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, bsq, querierCount[*BackupScheduleQuery](), bsq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*BackupScheduleQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) CountX(ctx context.Context) int {
-	count, err := bsq.Count(ctx)
+func (_q *BackupScheduleQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -243,9 +243,9 @@ func (bsq *BackupScheduleQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (bsq *BackupScheduleQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, bsq.ctx, ent.OpQueryExist)
-	switch _, err := bsq.FirstID(ctx); {
+func (_q *BackupScheduleQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -256,8 +256,8 @@ func (bsq *BackupScheduleQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (bsq *BackupScheduleQuery) ExistX(ctx context.Context) bool {
-	exist, err := bsq.Exist(ctx)
+func (_q *BackupScheduleQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -266,33 +266,33 @@ func (bsq *BackupScheduleQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the BackupScheduleQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (bsq *BackupScheduleQuery) Clone() *BackupScheduleQuery {
-	if bsq == nil {
+func (_q *BackupScheduleQuery) Clone() *BackupScheduleQuery {
+	if _q == nil {
 		return nil
 	}
 	return &BackupScheduleQuery{
-		config:            bsq.config,
-		ctx:               bsq.ctx.Clone(),
-		order:             append([]backupschedule.OrderOption{}, bsq.order...),
-		inters:            append([]Interceptor{}, bsq.inters...),
-		predicates:        append([]predicate.BackupSchedule{}, bsq.predicates...),
-		withBackupProfile: bsq.withBackupProfile.Clone(),
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]backupschedule.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.BackupSchedule{}, _q.predicates...),
+		withBackupProfile: _q.withBackupProfile.Clone(),
 		// clone intermediate query.
-		sql:       bsq.sql.Clone(),
-		path:      bsq.path,
-		modifiers: append([]func(*sql.Selector){}, bsq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithBackupProfile tells the query-builder to eager-load the nodes that are connected to
 // the "backup_profile" edge. The optional arguments are used to configure the query builder of the edge.
-func (bsq *BackupScheduleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *BackupScheduleQuery {
-	query := (&BackupProfileClient{config: bsq.config}).Query()
+func (_q *BackupScheduleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *BackupScheduleQuery {
+	query := (&BackupProfileClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bsq.withBackupProfile = query
-	return bsq
+	_q.withBackupProfile = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -309,10 +309,10 @@ func (bsq *BackupScheduleQuery) WithBackupProfile(opts ...func(*BackupProfileQue
 //		GroupBy(backupschedule.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupScheduleGroupBy {
-	bsq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &BackupScheduleGroupBy{build: bsq}
-	grbuild.flds = &bsq.ctx.Fields
+func (_q *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupScheduleGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &BackupScheduleGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = backupschedule.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -330,55 +330,55 @@ func (bsq *BackupScheduleQuery) GroupBy(field string, fields ...string) *BackupS
 //	client.BackupSchedule.Query().
 //		Select(backupschedule.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (bsq *BackupScheduleQuery) Select(fields ...string) *BackupScheduleSelect {
-	bsq.ctx.Fields = append(bsq.ctx.Fields, fields...)
-	sbuild := &BackupScheduleSelect{BackupScheduleQuery: bsq}
+func (_q *BackupScheduleQuery) Select(fields ...string) *BackupScheduleSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &BackupScheduleSelect{BackupScheduleQuery: _q}
 	sbuild.label = backupschedule.Label
-	sbuild.flds, sbuild.scan = &bsq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a BackupScheduleSelect configured with the given aggregations.
-func (bsq *BackupScheduleQuery) Aggregate(fns ...AggregateFunc) *BackupScheduleSelect {
-	return bsq.Select().Aggregate(fns...)
+func (_q *BackupScheduleQuery) Aggregate(fns ...AggregateFunc) *BackupScheduleSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (bsq *BackupScheduleQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range bsq.inters {
+func (_q *BackupScheduleQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, bsq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range bsq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !backupschedule.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if bsq.path != nil {
-		prev, err := bsq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		bsq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (bsq *BackupScheduleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*BackupSchedule, error) {
+func (_q *BackupScheduleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*BackupSchedule, error) {
 	var (
 		nodes       = []*BackupSchedule{}
-		withFKs     = bsq.withFKs
-		_spec       = bsq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			bsq.withBackupProfile != nil,
+			_q.withBackupProfile != nil,
 		}
 	)
-	if bsq.withBackupProfile != nil {
+	if _q.withBackupProfile != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -388,25 +388,25 @@ func (bsq *BackupScheduleQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		return (*BackupSchedule).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &BackupSchedule{config: bsq.config}
+		node := &BackupSchedule{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(bsq.modifiers) > 0 {
-		_spec.Modifiers = bsq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, bsq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := bsq.withBackupProfile; query != nil {
-		if err := bsq.loadBackupProfile(ctx, query, nodes, nil,
+	if query := _q.withBackupProfile; query != nil {
+		if err := _q.loadBackupProfile(ctx, query, nodes, nil,
 			func(n *BackupSchedule, e *BackupProfile) { n.Edges.BackupProfile = e }); err != nil {
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (bsq *BackupScheduleQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	return nodes, nil
 }
 
-func (bsq *BackupScheduleQuery) loadBackupProfile(ctx context.Context, query *BackupProfileQuery, nodes []*BackupSchedule, init func(*BackupSchedule), assign func(*BackupSchedule, *BackupProfile)) error {
+func (_q *BackupScheduleQuery) loadBackupProfile(ctx context.Context, query *BackupProfileQuery, nodes []*BackupSchedule, init func(*BackupSchedule), assign func(*BackupSchedule, *BackupProfile)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*BackupSchedule)
 	for i := range nodes {
@@ -447,27 +447,27 @@ func (bsq *BackupScheduleQuery) loadBackupProfile(ctx context.Context, query *Ba
 	return nil
 }
 
-func (bsq *BackupScheduleQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := bsq.querySpec()
-	if len(bsq.modifiers) > 0 {
-		_spec.Modifiers = bsq.modifiers
+func (_q *BackupScheduleQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = bsq.ctx.Fields
-	if len(bsq.ctx.Fields) > 0 {
-		_spec.Unique = bsq.ctx.Unique != nil && *bsq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, bsq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (bsq *BackupScheduleQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *BackupScheduleQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(backupschedule.Table, backupschedule.Columns, sqlgraph.NewFieldSpec(backupschedule.FieldID, field.TypeInt))
-	_spec.From = bsq.sql
-	if unique := bsq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if bsq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := bsq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, backupschedule.FieldID)
 		for i := range fields {
@@ -476,20 +476,20 @@ func (bsq *BackupScheduleQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := bsq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := bsq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := bsq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := bsq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -499,45 +499,45 @@ func (bsq *BackupScheduleQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (bsq *BackupScheduleQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(bsq.driver.Dialect())
+func (_q *BackupScheduleQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(backupschedule.Table)
-	columns := bsq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = backupschedule.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if bsq.sql != nil {
-		selector = bsq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if bsq.ctx.Unique != nil && *bsq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range bsq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range bsq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range bsq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := bsq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := bsq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (bsq *BackupScheduleQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
-	bsq.modifiers = append(bsq.modifiers, modifiers...)
-	return bsq.Select()
+func (_q *BackupScheduleQuery) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // BackupScheduleGroupBy is the group-by builder for BackupSchedule entities.
@@ -547,41 +547,41 @@ type BackupScheduleGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (bsgb *BackupScheduleGroupBy) Aggregate(fns ...AggregateFunc) *BackupScheduleGroupBy {
-	bsgb.fns = append(bsgb.fns, fns...)
-	return bsgb
+func (_g *BackupScheduleGroupBy) Aggregate(fns ...AggregateFunc) *BackupScheduleGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (bsgb *BackupScheduleGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bsgb.build.ctx, ent.OpQueryGroupBy)
-	if err := bsgb.build.prepareQuery(ctx); err != nil {
+func (_g *BackupScheduleGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*BackupScheduleQuery, *BackupScheduleGroupBy](ctx, bsgb.build, bsgb, bsgb.build.inters, v)
+	return scanWithInterceptors[*BackupScheduleQuery, *BackupScheduleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (bsgb *BackupScheduleGroupBy) sqlScan(ctx context.Context, root *BackupScheduleQuery, v any) error {
+func (_g *BackupScheduleGroupBy) sqlScan(ctx context.Context, root *BackupScheduleQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(bsgb.fns))
-	for _, fn := range bsgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*bsgb.flds)+len(bsgb.fns))
-		for _, f := range *bsgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*bsgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := bsgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -595,27 +595,27 @@ type BackupScheduleSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (bss *BackupScheduleSelect) Aggregate(fns ...AggregateFunc) *BackupScheduleSelect {
-	bss.fns = append(bss.fns, fns...)
-	return bss
+func (_s *BackupScheduleSelect) Aggregate(fns ...AggregateFunc) *BackupScheduleSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (bss *BackupScheduleSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, bss.ctx, ent.OpQuerySelect)
-	if err := bss.prepareQuery(ctx); err != nil {
+func (_s *BackupScheduleSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*BackupScheduleQuery, *BackupScheduleSelect](ctx, bss.BackupScheduleQuery, bss, bss.inters, v)
+	return scanWithInterceptors[*BackupScheduleQuery, *BackupScheduleSelect](ctx, _s.BackupScheduleQuery, _s, _s.inters, v)
 }
 
-func (bss *BackupScheduleSelect) sqlScan(ctx context.Context, root *BackupScheduleQuery, v any) error {
+func (_s *BackupScheduleSelect) sqlScan(ctx context.Context, root *BackupScheduleQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(bss.fns))
-	for _, fn := range bss.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*bss.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -623,7 +623,7 @@ func (bss *BackupScheduleSelect) sqlScan(ctx context.Context, root *BackupSchedu
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := bss.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -631,7 +631,7 @@ func (bss *BackupScheduleSelect) sqlScan(ctx context.Context, root *BackupSchedu
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (bss *BackupScheduleSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
-	bss.modifiers = append(bss.modifiers, modifiers...)
-	return bss
+func (_s *BackupScheduleSelect) Modify(modifiers ...func(s *sql.Selector)) *BackupScheduleSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

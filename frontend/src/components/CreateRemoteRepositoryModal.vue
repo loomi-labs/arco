@@ -7,7 +7,7 @@ import { formInputClass } from "../common/form";
 import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 
 /************
@@ -15,7 +15,7 @@ import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
  ************/
 
 interface Emits {
-  (event: typeof emitCreateRepoStr, repo: ent.Repository): void;
+  (event: typeof emitCreateRepoStr, repo: Repository): void;
 }
 
 /************
@@ -95,8 +95,10 @@ async function createRepo() {
       location.value!,
       password.value!,
       noPassword
-    ) ?? ent.Repository.createFrom();
-    emit(emitCreateRepoStr, repo);
+    );
+    if (repo) {
+      emit(emitCreateRepoStr, repo);
+    }
     toast.success("Repository created");
     dialog.value?.close();
   } catch (error: unknown) {

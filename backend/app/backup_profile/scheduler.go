@@ -118,7 +118,7 @@ func (s *Service) runScheduledBackup(bs *ent.BackupSchedule, backupId types.Back
 	// Run the backup
 	s.log.Infof("Running scheduled backup for %s", backupId)
 	var lastRunStatus string
-	err = s.repositoryService.StartBackupJobs(s.ctx, []types.BackupId{backupId})
+	_, err = s.repositoryService.QueueBackup(s.ctx, backupId)
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
 		s.log.Error(fmt.Sprintf("Failed to run scheduled backup: %s", err))
@@ -379,7 +379,7 @@ func (s *Service) runScheduledPrune(ps *ent.PruningRule, backupId types.BackupId
 	// Run the prune
 	s.log.Infof("Running scheduled prune for %s", backupId)
 	var lastRunStatus string
-	err = s.repositoryService.StartPruneJob(s.ctx, backupId)
+	_, err = s.repositoryService.QueuePrune(s.ctx, backupId)
 	if err != nil {
 		lastRunStatus = fmt.Sprintf("error: %s", err)
 		s.log.Error(fmt.Sprintf("Failed to run scheduled prune: %s", err))

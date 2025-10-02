@@ -85,7 +85,7 @@ func NewApp(
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
-		repositoryService:        repository.NewService(log, state),
+		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
 	}
 }
@@ -184,18 +184,10 @@ func (a *App) Startup(ctx context.Context) {
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
-	// Create cloud repository service first
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
-	// Initialize repository service with full dependencies
-	a.repositoryService.Init(
-		a.db,
-		a.borg,
-		a.config,
-		a.eventEmitter,
-		cloudRepositoryService,
-	)
+	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService)
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
@@ -221,9 +213,6 @@ func (a *App) Startup(ctx context.Context) {
 		a.log.Errorf("Failed to validate stored tokens: %v", err)
 		// Don't fail startup for token validation errors, just log them
 	}
-
-	// Save mount states
-	a.repositoryService.SetMountStates(a.ctx)
 
 	// Start ArcoCloud sync listener
 	go a.startArcoCloudSyncListener()

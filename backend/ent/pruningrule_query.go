@@ -32,44 +32,44 @@ type PruningRuleQuery struct {
 }
 
 // Where adds a new predicate for the PruningRuleQuery builder.
-func (prq *PruningRuleQuery) Where(ps ...predicate.PruningRule) *PruningRuleQuery {
-	prq.predicates = append(prq.predicates, ps...)
-	return prq
+func (_q *PruningRuleQuery) Where(ps ...predicate.PruningRule) *PruningRuleQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (prq *PruningRuleQuery) Limit(limit int) *PruningRuleQuery {
-	prq.ctx.Limit = &limit
-	return prq
+func (_q *PruningRuleQuery) Limit(limit int) *PruningRuleQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (prq *PruningRuleQuery) Offset(offset int) *PruningRuleQuery {
-	prq.ctx.Offset = &offset
-	return prq
+func (_q *PruningRuleQuery) Offset(offset int) *PruningRuleQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (prq *PruningRuleQuery) Unique(unique bool) *PruningRuleQuery {
-	prq.ctx.Unique = &unique
-	return prq
+func (_q *PruningRuleQuery) Unique(unique bool) *PruningRuleQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (prq *PruningRuleQuery) Order(o ...pruningrule.OrderOption) *PruningRuleQuery {
-	prq.order = append(prq.order, o...)
-	return prq
+func (_q *PruningRuleQuery) Order(o ...pruningrule.OrderOption) *PruningRuleQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryBackupProfile chains the current query on the "backup_profile" edge.
-func (prq *PruningRuleQuery) QueryBackupProfile() *BackupProfileQuery {
-	query := (&BackupProfileClient{config: prq.config}).Query()
+func (_q *PruningRuleQuery) QueryBackupProfile() *BackupProfileQuery {
+	query := (&BackupProfileClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := prq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := prq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func (prq *PruningRuleQuery) QueryBackupProfile() *BackupProfileQuery {
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, pruningrule.BackupProfileTable, pruningrule.BackupProfileColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(prq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -86,8 +86,8 @@ func (prq *PruningRuleQuery) QueryBackupProfile() *BackupProfileQuery {
 
 // First returns the first PruningRule entity from the query.
 // Returns a *NotFoundError when no PruningRule was found.
-func (prq *PruningRuleQuery) First(ctx context.Context) (*PruningRule, error) {
-	nodes, err := prq.Limit(1).All(setContextOp(ctx, prq.ctx, ent.OpQueryFirst))
+func (_q *PruningRuleQuery) First(ctx context.Context) (*PruningRule, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func (prq *PruningRuleQuery) First(ctx context.Context) (*PruningRule, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (prq *PruningRuleQuery) FirstX(ctx context.Context) *PruningRule {
-	node, err := prq.First(ctx)
+func (_q *PruningRuleQuery) FirstX(ctx context.Context) *PruningRule {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -108,9 +108,9 @@ func (prq *PruningRuleQuery) FirstX(ctx context.Context) *PruningRule {
 
 // FirstID returns the first PruningRule ID from the query.
 // Returns a *NotFoundError when no PruningRule ID was found.
-func (prq *PruningRuleQuery) FirstID(ctx context.Context) (id int, err error) {
+func (_q *PruningRuleQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = prq.Limit(1).IDs(setContextOp(ctx, prq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -121,8 +121,8 @@ func (prq *PruningRuleQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (prq *PruningRuleQuery) FirstIDX(ctx context.Context) int {
-	id, err := prq.FirstID(ctx)
+func (_q *PruningRuleQuery) FirstIDX(ctx context.Context) int {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -132,8 +132,8 @@ func (prq *PruningRuleQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single PruningRule entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one PruningRule entity is found.
 // Returns a *NotFoundError when no PruningRule entities are found.
-func (prq *PruningRuleQuery) Only(ctx context.Context) (*PruningRule, error) {
-	nodes, err := prq.Limit(2).All(setContextOp(ctx, prq.ctx, ent.OpQueryOnly))
+func (_q *PruningRuleQuery) Only(ctx context.Context) (*PruningRule, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (prq *PruningRuleQuery) Only(ctx context.Context) (*PruningRule, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (prq *PruningRuleQuery) OnlyX(ctx context.Context) *PruningRule {
-	node, err := prq.Only(ctx)
+func (_q *PruningRuleQuery) OnlyX(ctx context.Context) *PruningRule {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -159,9 +159,9 @@ func (prq *PruningRuleQuery) OnlyX(ctx context.Context) *PruningRule {
 // OnlyID is like Only, but returns the only PruningRule ID in the query.
 // Returns a *NotSingularError when more than one PruningRule ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (prq *PruningRuleQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *PruningRuleQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = prq.Limit(2).IDs(setContextOp(ctx, prq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -176,8 +176,8 @@ func (prq *PruningRuleQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (prq *PruningRuleQuery) OnlyIDX(ctx context.Context) int {
-	id, err := prq.OnlyID(ctx)
+func (_q *PruningRuleQuery) OnlyIDX(ctx context.Context) int {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -185,18 +185,18 @@ func (prq *PruningRuleQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of PruningRules.
-func (prq *PruningRuleQuery) All(ctx context.Context) ([]*PruningRule, error) {
-	ctx = setContextOp(ctx, prq.ctx, ent.OpQueryAll)
-	if err := prq.prepareQuery(ctx); err != nil {
+func (_q *PruningRuleQuery) All(ctx context.Context) ([]*PruningRule, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*PruningRule, *PruningRuleQuery]()
-	return withInterceptors[[]*PruningRule](ctx, prq, qr, prq.inters)
+	return withInterceptors[[]*PruningRule](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (prq *PruningRuleQuery) AllX(ctx context.Context) []*PruningRule {
-	nodes, err := prq.All(ctx)
+func (_q *PruningRuleQuery) AllX(ctx context.Context) []*PruningRule {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -204,20 +204,20 @@ func (prq *PruningRuleQuery) AllX(ctx context.Context) []*PruningRule {
 }
 
 // IDs executes the query and returns a list of PruningRule IDs.
-func (prq *PruningRuleQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if prq.ctx.Unique == nil && prq.path != nil {
-		prq.Unique(true)
+func (_q *PruningRuleQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, prq.ctx, ent.OpQueryIDs)
-	if err = prq.Select(pruningrule.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(pruningrule.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (prq *PruningRuleQuery) IDsX(ctx context.Context) []int {
-	ids, err := prq.IDs(ctx)
+func (_q *PruningRuleQuery) IDsX(ctx context.Context) []int {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -225,17 +225,17 @@ func (prq *PruningRuleQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (prq *PruningRuleQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, prq.ctx, ent.OpQueryCount)
-	if err := prq.prepareQuery(ctx); err != nil {
+func (_q *PruningRuleQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, prq, querierCount[*PruningRuleQuery](), prq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*PruningRuleQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (prq *PruningRuleQuery) CountX(ctx context.Context) int {
-	count, err := prq.Count(ctx)
+func (_q *PruningRuleQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -243,9 +243,9 @@ func (prq *PruningRuleQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (prq *PruningRuleQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, prq.ctx, ent.OpQueryExist)
-	switch _, err := prq.FirstID(ctx); {
+func (_q *PruningRuleQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -256,8 +256,8 @@ func (prq *PruningRuleQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (prq *PruningRuleQuery) ExistX(ctx context.Context) bool {
-	exist, err := prq.Exist(ctx)
+func (_q *PruningRuleQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -266,33 +266,33 @@ func (prq *PruningRuleQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the PruningRuleQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (prq *PruningRuleQuery) Clone() *PruningRuleQuery {
-	if prq == nil {
+func (_q *PruningRuleQuery) Clone() *PruningRuleQuery {
+	if _q == nil {
 		return nil
 	}
 	return &PruningRuleQuery{
-		config:            prq.config,
-		ctx:               prq.ctx.Clone(),
-		order:             append([]pruningrule.OrderOption{}, prq.order...),
-		inters:            append([]Interceptor{}, prq.inters...),
-		predicates:        append([]predicate.PruningRule{}, prq.predicates...),
-		withBackupProfile: prq.withBackupProfile.Clone(),
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]pruningrule.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.PruningRule{}, _q.predicates...),
+		withBackupProfile: _q.withBackupProfile.Clone(),
 		// clone intermediate query.
-		sql:       prq.sql.Clone(),
-		path:      prq.path,
-		modifiers: append([]func(*sql.Selector){}, prq.modifiers...),
+		sql:       _q.sql.Clone(),
+		path:      _q.path,
+		modifiers: append([]func(*sql.Selector){}, _q.modifiers...),
 	}
 }
 
 // WithBackupProfile tells the query-builder to eager-load the nodes that are connected to
 // the "backup_profile" edge. The optional arguments are used to configure the query builder of the edge.
-func (prq *PruningRuleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *PruningRuleQuery {
-	query := (&BackupProfileClient{config: prq.config}).Query()
+func (_q *PruningRuleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)) *PruningRuleQuery {
+	query := (&BackupProfileClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	prq.withBackupProfile = query
-	return prq
+	_q.withBackupProfile = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -309,10 +309,10 @@ func (prq *PruningRuleQuery) WithBackupProfile(opts ...func(*BackupProfileQuery)
 //		GroupBy(pruningrule.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (prq *PruningRuleQuery) GroupBy(field string, fields ...string) *PruningRuleGroupBy {
-	prq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &PruningRuleGroupBy{build: prq}
-	grbuild.flds = &prq.ctx.Fields
+func (_q *PruningRuleQuery) GroupBy(field string, fields ...string) *PruningRuleGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &PruningRuleGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = pruningrule.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -330,55 +330,55 @@ func (prq *PruningRuleQuery) GroupBy(field string, fields ...string) *PruningRul
 //	client.PruningRule.Query().
 //		Select(pruningrule.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (prq *PruningRuleQuery) Select(fields ...string) *PruningRuleSelect {
-	prq.ctx.Fields = append(prq.ctx.Fields, fields...)
-	sbuild := &PruningRuleSelect{PruningRuleQuery: prq}
+func (_q *PruningRuleQuery) Select(fields ...string) *PruningRuleSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &PruningRuleSelect{PruningRuleQuery: _q}
 	sbuild.label = pruningrule.Label
-	sbuild.flds, sbuild.scan = &prq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a PruningRuleSelect configured with the given aggregations.
-func (prq *PruningRuleQuery) Aggregate(fns ...AggregateFunc) *PruningRuleSelect {
-	return prq.Select().Aggregate(fns...)
+func (_q *PruningRuleQuery) Aggregate(fns ...AggregateFunc) *PruningRuleSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (prq *PruningRuleQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range prq.inters {
+func (_q *PruningRuleQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, prq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range prq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !pruningrule.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if prq.path != nil {
-		prev, err := prq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		prq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (prq *PruningRuleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PruningRule, error) {
+func (_q *PruningRuleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PruningRule, error) {
 	var (
 		nodes       = []*PruningRule{}
-		withFKs     = prq.withFKs
-		_spec       = prq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			prq.withBackupProfile != nil,
+			_q.withBackupProfile != nil,
 		}
 	)
-	if prq.withBackupProfile != nil {
+	if _q.withBackupProfile != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -388,25 +388,25 @@ func (prq *PruningRuleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		return (*PruningRule).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &PruningRule{config: prq.config}
+		node := &PruningRule{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(prq.modifiers) > 0 {
-		_spec.Modifiers = prq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, prq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := prq.withBackupProfile; query != nil {
-		if err := prq.loadBackupProfile(ctx, query, nodes, nil,
+	if query := _q.withBackupProfile; query != nil {
+		if err := _q.loadBackupProfile(ctx, query, nodes, nil,
 			func(n *PruningRule, e *BackupProfile) { n.Edges.BackupProfile = e }); err != nil {
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (prq *PruningRuleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (prq *PruningRuleQuery) loadBackupProfile(ctx context.Context, query *BackupProfileQuery, nodes []*PruningRule, init func(*PruningRule), assign func(*PruningRule, *BackupProfile)) error {
+func (_q *PruningRuleQuery) loadBackupProfile(ctx context.Context, query *BackupProfileQuery, nodes []*PruningRule, init func(*PruningRule), assign func(*PruningRule, *BackupProfile)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*PruningRule)
 	for i := range nodes {
@@ -447,27 +447,27 @@ func (prq *PruningRuleQuery) loadBackupProfile(ctx context.Context, query *Backu
 	return nil
 }
 
-func (prq *PruningRuleQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := prq.querySpec()
-	if len(prq.modifiers) > 0 {
-		_spec.Modifiers = prq.modifiers
+func (_q *PruningRuleQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = prq.ctx.Fields
-	if len(prq.ctx.Fields) > 0 {
-		_spec.Unique = prq.ctx.Unique != nil && *prq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, prq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (prq *PruningRuleQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *PruningRuleQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(pruningrule.Table, pruningrule.Columns, sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt))
-	_spec.From = prq.sql
-	if unique := prq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if prq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := prq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, pruningrule.FieldID)
 		for i := range fields {
@@ -476,20 +476,20 @@ func (prq *PruningRuleQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := prq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := prq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := prq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := prq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -499,45 +499,45 @@ func (prq *PruningRuleQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (prq *PruningRuleQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(prq.driver.Dialect())
+func (_q *PruningRuleQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(pruningrule.Table)
-	columns := prq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = pruningrule.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if prq.sql != nil {
-		selector = prq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if prq.ctx.Unique != nil && *prq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, m := range prq.modifiers {
+	for _, m := range _q.modifiers {
 		m(selector)
 	}
-	for _, p := range prq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range prq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := prq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := prq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (prq *PruningRuleQuery) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
-	prq.modifiers = append(prq.modifiers, modifiers...)
-	return prq.Select()
+func (_q *PruningRuleQuery) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
+	_q.modifiers = append(_q.modifiers, modifiers...)
+	return _q.Select()
 }
 
 // PruningRuleGroupBy is the group-by builder for PruningRule entities.
@@ -547,41 +547,41 @@ type PruningRuleGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (prgb *PruningRuleGroupBy) Aggregate(fns ...AggregateFunc) *PruningRuleGroupBy {
-	prgb.fns = append(prgb.fns, fns...)
-	return prgb
+func (_g *PruningRuleGroupBy) Aggregate(fns ...AggregateFunc) *PruningRuleGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (prgb *PruningRuleGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, prgb.build.ctx, ent.OpQueryGroupBy)
-	if err := prgb.build.prepareQuery(ctx); err != nil {
+func (_g *PruningRuleGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PruningRuleQuery, *PruningRuleGroupBy](ctx, prgb.build, prgb, prgb.build.inters, v)
+	return scanWithInterceptors[*PruningRuleQuery, *PruningRuleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (prgb *PruningRuleGroupBy) sqlScan(ctx context.Context, root *PruningRuleQuery, v any) error {
+func (_g *PruningRuleGroupBy) sqlScan(ctx context.Context, root *PruningRuleQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(prgb.fns))
-	for _, fn := range prgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*prgb.flds)+len(prgb.fns))
-		for _, f := range *prgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*prgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := prgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -595,27 +595,27 @@ type PruningRuleSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (prs *PruningRuleSelect) Aggregate(fns ...AggregateFunc) *PruningRuleSelect {
-	prs.fns = append(prs.fns, fns...)
-	return prs
+func (_s *PruningRuleSelect) Aggregate(fns ...AggregateFunc) *PruningRuleSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (prs *PruningRuleSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, prs.ctx, ent.OpQuerySelect)
-	if err := prs.prepareQuery(ctx); err != nil {
+func (_s *PruningRuleSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PruningRuleQuery, *PruningRuleSelect](ctx, prs.PruningRuleQuery, prs, prs.inters, v)
+	return scanWithInterceptors[*PruningRuleQuery, *PruningRuleSelect](ctx, _s.PruningRuleQuery, _s, _s.inters, v)
 }
 
-func (prs *PruningRuleSelect) sqlScan(ctx context.Context, root *PruningRuleQuery, v any) error {
+func (_s *PruningRuleSelect) sqlScan(ctx context.Context, root *PruningRuleQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(prs.fns))
-	for _, fn := range prs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*prs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -623,7 +623,7 @@ func (prs *PruningRuleSelect) sqlScan(ctx context.Context, root *PruningRuleQuer
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := prs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -631,7 +631,7 @@ func (prs *PruningRuleSelect) sqlScan(ctx context.Context, root *PruningRuleQuer
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (prs *PruningRuleSelect) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
-	prs.modifiers = append(prs.modifiers, modifiers...)
-	return prs
+func (_s *PruningRuleSelect) Modify(modifiers ...func(s *sql.Selector)) *PruningRuleSelect {
+	_s.modifiers = append(_s.modifiers, modifiers...)
+	return _s
 }

@@ -28,352 +28,352 @@ type RepositoryUpdate struct {
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
-func (ru *RepositoryUpdate) Where(ps ...predicate.Repository) *RepositoryUpdate {
-	ru.mutation.Where(ps...)
-	return ru
+func (_u *RepositoryUpdate) Where(ps ...predicate.Repository) *RepositoryUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (ru *RepositoryUpdate) SetUpdatedAt(t time.Time) *RepositoryUpdate {
-	ru.mutation.SetUpdatedAt(t)
-	return ru
+func (_u *RepositoryUpdate) SetUpdatedAt(v time.Time) *RepositoryUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (ru *RepositoryUpdate) SetName(s string) *RepositoryUpdate {
-	ru.mutation.SetName(s)
-	return ru
+func (_u *RepositoryUpdate) SetName(v string) *RepositoryUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableName(s *string) *RepositoryUpdate {
-	if s != nil {
-		ru.SetName(*s)
+func (_u *RepositoryUpdate) SetNillableName(v *string) *RepositoryUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return ru
+	return _u
 }
 
 // SetURL sets the "url" field.
-func (ru *RepositoryUpdate) SetURL(s string) *RepositoryUpdate {
-	ru.mutation.SetURL(s)
-	return ru
+func (_u *RepositoryUpdate) SetURL(v string) *RepositoryUpdate {
+	_u.mutation.SetURL(v)
+	return _u
 }
 
 // SetNillableURL sets the "url" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableURL(s *string) *RepositoryUpdate {
-	if s != nil {
-		ru.SetURL(*s)
+func (_u *RepositoryUpdate) SetNillableURL(v *string) *RepositoryUpdate {
+	if v != nil {
+		_u.SetURL(*v)
 	}
-	return ru
+	return _u
 }
 
 // SetPassword sets the "password" field.
-func (ru *RepositoryUpdate) SetPassword(s string) *RepositoryUpdate {
-	ru.mutation.SetPassword(s)
-	return ru
+func (_u *RepositoryUpdate) SetPassword(v string) *RepositoryUpdate {
+	_u.mutation.SetPassword(v)
+	return _u
 }
 
 // SetNillablePassword sets the "password" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillablePassword(s *string) *RepositoryUpdate {
-	if s != nil {
-		ru.SetPassword(*s)
+func (_u *RepositoryUpdate) SetNillablePassword(v *string) *RepositoryUpdate {
+	if v != nil {
+		_u.SetPassword(*v)
 	}
-	return ru
+	return _u
 }
 
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (ru *RepositoryUpdate) SetNextIntegrityCheck(t time.Time) *RepositoryUpdate {
-	ru.mutation.SetNextIntegrityCheck(t)
-	return ru
+func (_u *RepositoryUpdate) SetNextIntegrityCheck(v time.Time) *RepositoryUpdate {
+	_u.mutation.SetNextIntegrityCheck(v)
+	return _u
 }
 
 // SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdate {
-	if t != nil {
-		ru.SetNextIntegrityCheck(*t)
+func (_u *RepositoryUpdate) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryUpdate {
+	if v != nil {
+		_u.SetNextIntegrityCheck(*v)
 	}
-	return ru
+	return _u
 }
 
 // ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (ru *RepositoryUpdate) ClearNextIntegrityCheck() *RepositoryUpdate {
-	ru.mutation.ClearNextIntegrityCheck()
-	return ru
+func (_u *RepositoryUpdate) ClearNextIntegrityCheck() *RepositoryUpdate {
+	_u.mutation.ClearNextIntegrityCheck()
+	return _u
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
-func (ru *RepositoryUpdate) SetStatsTotalChunks(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsTotalChunks()
-	ru.mutation.SetStatsTotalChunks(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsTotalChunks(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsTotalChunks()
+	_u.mutation.SetStatsTotalChunks(v)
+	return _u
 }
 
 // SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsTotalChunks(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsTotalChunks(*i)
+func (_u *RepositoryUpdate) SetNillableStatsTotalChunks(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsTotalChunks(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
-func (ru *RepositoryUpdate) AddStatsTotalChunks(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsTotalChunks(i)
-	return ru
+// AddStatsTotalChunks adds value to the "stats_total_chunks" field.
+func (_u *RepositoryUpdate) AddStatsTotalChunks(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsTotalChunks(v)
+	return _u
 }
 
 // SetStatsTotalSize sets the "stats_total_size" field.
-func (ru *RepositoryUpdate) SetStatsTotalSize(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsTotalSize()
-	ru.mutation.SetStatsTotalSize(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsTotalSize(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsTotalSize()
+	_u.mutation.SetStatsTotalSize(v)
+	return _u
 }
 
 // SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsTotalSize(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsTotalSize(*i)
+func (_u *RepositoryUpdate) SetNillableStatsTotalSize(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsTotalSize(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsTotalSize adds i to the "stats_total_size" field.
-func (ru *RepositoryUpdate) AddStatsTotalSize(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsTotalSize(i)
-	return ru
+// AddStatsTotalSize adds value to the "stats_total_size" field.
+func (_u *RepositoryUpdate) AddStatsTotalSize(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsTotalSize(v)
+	return _u
 }
 
 // SetStatsTotalCsize sets the "stats_total_csize" field.
-func (ru *RepositoryUpdate) SetStatsTotalCsize(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsTotalCsize()
-	ru.mutation.SetStatsTotalCsize(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsTotalCsize(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsTotalCsize()
+	_u.mutation.SetStatsTotalCsize(v)
+	return _u
 }
 
 // SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsTotalCsize(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsTotalCsize(*i)
+func (_u *RepositoryUpdate) SetNillableStatsTotalCsize(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsTotalCsize(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsTotalCsize adds i to the "stats_total_csize" field.
-func (ru *RepositoryUpdate) AddStatsTotalCsize(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsTotalCsize(i)
-	return ru
+// AddStatsTotalCsize adds value to the "stats_total_csize" field.
+func (_u *RepositoryUpdate) AddStatsTotalCsize(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsTotalCsize(v)
+	return _u
 }
 
 // SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
-func (ru *RepositoryUpdate) SetStatsTotalUniqueChunks(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsTotalUniqueChunks()
-	ru.mutation.SetStatsTotalUniqueChunks(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsTotalUniqueChunks(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsTotalUniqueChunks()
+	_u.mutation.SetStatsTotalUniqueChunks(v)
+	return _u
 }
 
 // SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsTotalUniqueChunks(*i)
+func (_u *RepositoryUpdate) SetNillableStatsTotalUniqueChunks(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsTotalUniqueChunks(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
-func (ru *RepositoryUpdate) AddStatsTotalUniqueChunks(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsTotalUniqueChunks(i)
-	return ru
+// AddStatsTotalUniqueChunks adds value to the "stats_total_unique_chunks" field.
+func (_u *RepositoryUpdate) AddStatsTotalUniqueChunks(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsTotalUniqueChunks(v)
+	return _u
 }
 
 // SetStatsUniqueSize sets the "stats_unique_size" field.
-func (ru *RepositoryUpdate) SetStatsUniqueSize(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsUniqueSize()
-	ru.mutation.SetStatsUniqueSize(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsUniqueSize(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsUniqueSize()
+	_u.mutation.SetStatsUniqueSize(v)
+	return _u
 }
 
 // SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsUniqueSize(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsUniqueSize(*i)
+func (_u *RepositoryUpdate) SetNillableStatsUniqueSize(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsUniqueSize(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsUniqueSize adds i to the "stats_unique_size" field.
-func (ru *RepositoryUpdate) AddStatsUniqueSize(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsUniqueSize(i)
-	return ru
+// AddStatsUniqueSize adds value to the "stats_unique_size" field.
+func (_u *RepositoryUpdate) AddStatsUniqueSize(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsUniqueSize(v)
+	return _u
 }
 
 // SetStatsUniqueCsize sets the "stats_unique_csize" field.
-func (ru *RepositoryUpdate) SetStatsUniqueCsize(i int) *RepositoryUpdate {
-	ru.mutation.ResetStatsUniqueCsize()
-	ru.mutation.SetStatsUniqueCsize(i)
-	return ru
+func (_u *RepositoryUpdate) SetStatsUniqueCsize(v int) *RepositoryUpdate {
+	_u.mutation.ResetStatsUniqueCsize()
+	_u.mutation.SetStatsUniqueCsize(v)
+	return _u
 }
 
 // SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableStatsUniqueCsize(i *int) *RepositoryUpdate {
-	if i != nil {
-		ru.SetStatsUniqueCsize(*i)
+func (_u *RepositoryUpdate) SetNillableStatsUniqueCsize(v *int) *RepositoryUpdate {
+	if v != nil {
+		_u.SetStatsUniqueCsize(*v)
 	}
-	return ru
+	return _u
 }
 
-// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
-func (ru *RepositoryUpdate) AddStatsUniqueCsize(i int) *RepositoryUpdate {
-	ru.mutation.AddStatsUniqueCsize(i)
-	return ru
+// AddStatsUniqueCsize adds value to the "stats_unique_csize" field.
+func (_u *RepositoryUpdate) AddStatsUniqueCsize(v int) *RepositoryUpdate {
+	_u.mutation.AddStatsUniqueCsize(v)
+	return _u
 }
 
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
-func (ru *RepositoryUpdate) AddBackupProfileIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.AddBackupProfileIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) AddBackupProfileIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.AddBackupProfileIDs(ids...)
+	return _u
 }
 
 // AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
-func (ru *RepositoryUpdate) AddBackupProfiles(b ...*BackupProfile) *RepositoryUpdate {
-	ids := make([]int, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+func (_u *RepositoryUpdate) AddBackupProfiles(v ...*BackupProfile) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddBackupProfileIDs(ids...)
+	return _u.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (ru *RepositoryUpdate) AddArchiveIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.AddArchiveIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) AddArchiveIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.AddArchiveIDs(ids...)
+	return _u
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (ru *RepositoryUpdate) AddArchives(a ...*Archive) *RepositoryUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *RepositoryUpdate) AddArchives(v ...*Archive) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddArchiveIDs(ids...)
+	return _u.AddArchiveIDs(ids...)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (ru *RepositoryUpdate) AddNotificationIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.AddNotificationIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) AddNotificationIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.AddNotificationIDs(ids...)
+	return _u
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (ru *RepositoryUpdate) AddNotifications(n ...*Notification) *RepositoryUpdate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *RepositoryUpdate) AddNotifications(v ...*Notification) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddNotificationIDs(ids...)
+	return _u.AddNotificationIDs(ids...)
 }
 
 // SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
-func (ru *RepositoryUpdate) SetCloudRepositoryID(id int) *RepositoryUpdate {
-	ru.mutation.SetCloudRepositoryID(id)
-	return ru
+func (_u *RepositoryUpdate) SetCloudRepositoryID(id int) *RepositoryUpdate {
+	_u.mutation.SetCloudRepositoryID(id)
+	return _u
 }
 
 // SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
-func (ru *RepositoryUpdate) SetNillableCloudRepositoryID(id *int) *RepositoryUpdate {
+func (_u *RepositoryUpdate) SetNillableCloudRepositoryID(id *int) *RepositoryUpdate {
 	if id != nil {
-		ru = ru.SetCloudRepositoryID(*id)
+		_u = _u.SetCloudRepositoryID(*id)
 	}
-	return ru
+	return _u
 }
 
 // SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
-func (ru *RepositoryUpdate) SetCloudRepository(c *CloudRepository) *RepositoryUpdate {
-	return ru.SetCloudRepositoryID(c.ID)
+func (_u *RepositoryUpdate) SetCloudRepository(v *CloudRepository) *RepositoryUpdate {
+	return _u.SetCloudRepositoryID(v.ID)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
-func (ru *RepositoryUpdate) Mutation() *RepositoryMutation {
-	return ru.mutation
+func (_u *RepositoryUpdate) Mutation() *RepositoryMutation {
+	return _u.mutation
 }
 
 // ClearBackupProfiles clears all "backup_profiles" edges to the BackupProfile entity.
-func (ru *RepositoryUpdate) ClearBackupProfiles() *RepositoryUpdate {
-	ru.mutation.ClearBackupProfiles()
-	return ru
+func (_u *RepositoryUpdate) ClearBackupProfiles() *RepositoryUpdate {
+	_u.mutation.ClearBackupProfiles()
+	return _u
 }
 
 // RemoveBackupProfileIDs removes the "backup_profiles" edge to BackupProfile entities by IDs.
-func (ru *RepositoryUpdate) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.RemoveBackupProfileIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.RemoveBackupProfileIDs(ids...)
+	return _u
 }
 
 // RemoveBackupProfiles removes "backup_profiles" edges to BackupProfile entities.
-func (ru *RepositoryUpdate) RemoveBackupProfiles(b ...*BackupProfile) *RepositoryUpdate {
-	ids := make([]int, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+func (_u *RepositoryUpdate) RemoveBackupProfiles(v ...*BackupProfile) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveBackupProfileIDs(ids...)
+	return _u.RemoveBackupProfileIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
-func (ru *RepositoryUpdate) ClearArchives() *RepositoryUpdate {
-	ru.mutation.ClearArchives()
-	return ru
+func (_u *RepositoryUpdate) ClearArchives() *RepositoryUpdate {
+	_u.mutation.ClearArchives()
+	return _u
 }
 
 // RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
-func (ru *RepositoryUpdate) RemoveArchiveIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.RemoveArchiveIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) RemoveArchiveIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.RemoveArchiveIDs(ids...)
+	return _u
 }
 
 // RemoveArchives removes "archives" edges to Archive entities.
-func (ru *RepositoryUpdate) RemoveArchives(a ...*Archive) *RepositoryUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *RepositoryUpdate) RemoveArchives(v ...*Archive) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveArchiveIDs(ids...)
+	return _u.RemoveArchiveIDs(ids...)
 }
 
 // ClearNotifications clears all "notifications" edges to the Notification entity.
-func (ru *RepositoryUpdate) ClearNotifications() *RepositoryUpdate {
-	ru.mutation.ClearNotifications()
-	return ru
+func (_u *RepositoryUpdate) ClearNotifications() *RepositoryUpdate {
+	_u.mutation.ClearNotifications()
+	return _u
 }
 
 // RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
-func (ru *RepositoryUpdate) RemoveNotificationIDs(ids ...int) *RepositoryUpdate {
-	ru.mutation.RemoveNotificationIDs(ids...)
-	return ru
+func (_u *RepositoryUpdate) RemoveNotificationIDs(ids ...int) *RepositoryUpdate {
+	_u.mutation.RemoveNotificationIDs(ids...)
+	return _u
 }
 
 // RemoveNotifications removes "notifications" edges to Notification entities.
-func (ru *RepositoryUpdate) RemoveNotifications(n ...*Notification) *RepositoryUpdate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *RepositoryUpdate) RemoveNotifications(v ...*Notification) *RepositoryUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveNotificationIDs(ids...)
+	return _u.RemoveNotificationIDs(ids...)
 }
 
 // ClearCloudRepository clears the "cloud_repository" edge to the CloudRepository entity.
-func (ru *RepositoryUpdate) ClearCloudRepository() *RepositoryUpdate {
-	ru.mutation.ClearCloudRepository()
-	return ru
+func (_u *RepositoryUpdate) ClearCloudRepository() *RepositoryUpdate {
+	_u.mutation.ClearCloudRepository()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (ru *RepositoryUpdate) Save(ctx context.Context) (int, error) {
-	ru.defaults()
-	return withHooks(ctx, ru.sqlSave, ru.mutation, ru.hooks)
+func (_u *RepositoryUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ru *RepositoryUpdate) SaveX(ctx context.Context) int {
-	affected, err := ru.Save(ctx)
+func (_u *RepositoryUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -381,29 +381,29 @@ func (ru *RepositoryUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (ru *RepositoryUpdate) Exec(ctx context.Context) error {
-	_, err := ru.Save(ctx)
+func (_u *RepositoryUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ru *RepositoryUpdate) ExecX(ctx context.Context) {
-	if err := ru.Exec(ctx); err != nil {
+func (_u *RepositoryUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (ru *RepositoryUpdate) defaults() {
-	if _, ok := ru.mutation.UpdatedAt(); !ok {
+func (_u *RepositoryUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := repository.UpdateDefaultUpdatedAt()
-		ru.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (ru *RepositoryUpdate) check() error {
-	if v, ok := ru.mutation.Name(); ok {
+func (_u *RepositoryUpdate) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := repository.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
 		}
@@ -412,78 +412,78 @@ func (ru *RepositoryUpdate) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (ru *RepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdate {
-	ru.modifiers = append(ru.modifiers, modifiers...)
-	return ru
+func (_u *RepositoryUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := ru.check(); err != nil {
-		return n, err
+func (_u *RepositoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
-	if ps := ru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := ru.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := ru.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.URL(); ok {
+	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.Password(); ok {
+	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.NextIntegrityCheck(); ok {
+	if value, ok := _u.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
 	}
-	if ru.mutation.NextIntegrityCheckCleared() {
+	if _u.mutation.NextIntegrityCheckCleared() {
 		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
 	}
-	if value, ok := ru.mutation.StatsTotalChunks(); ok {
+	if value, ok := _u.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsTotalChunks(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalChunks(); ok {
 		_spec.AddField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.StatsTotalSize(); ok {
+	if value, ok := _u.mutation.StatsTotalSize(); ok {
 		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsTotalSize(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalSize(); ok {
 		_spec.AddField(repository.FieldStatsTotalSize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.StatsTotalCsize(); ok {
+	if value, ok := _u.mutation.StatsTotalCsize(); ok {
 		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsTotalCsize(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalCsize(); ok {
 		_spec.AddField(repository.FieldStatsTotalCsize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.StatsTotalUniqueChunks(); ok {
+	if value, ok := _u.mutation.StatsTotalUniqueChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsTotalUniqueChunks(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalUniqueChunks(); ok {
 		_spec.AddField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.StatsUniqueSize(); ok {
+	if value, ok := _u.mutation.StatsUniqueSize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsUniqueSize(); ok {
+	if value, ok := _u.mutation.AddedStatsUniqueSize(); ok {
 		_spec.AddField(repository.FieldStatsUniqueSize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.StatsUniqueCsize(); ok {
+	if value, ok := _u.mutation.StatsUniqueCsize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
-	if value, ok := ru.mutation.AddedStatsUniqueCsize(); ok {
+	if value, ok := _u.mutation.AddedStatsUniqueCsize(); ok {
 		_spec.AddField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
-	if ru.mutation.BackupProfilesCleared() {
+	if _u.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -496,7 +496,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !ru.mutation.BackupProfilesCleared() {
+	if nodes := _u.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !_u.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -512,7 +512,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.BackupProfilesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -528,7 +528,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.ArchivesCleared() {
+	if _u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -541,7 +541,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ru.mutation.ArchivesCleared() {
+	if nodes := _u.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !_u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -557,7 +557,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -573,7 +573,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.NotificationsCleared() {
+	if _u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -586,7 +586,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !ru.mutation.NotificationsCleared() {
+	if nodes := _u.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !_u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -602,7 +602,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -618,7 +618,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.CloudRepositoryCleared() {
+	if _u.mutation.CloudRepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -631,7 +631,7 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -647,8 +647,8 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(ru.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{repository.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -656,8 +656,8 @@ func (ru *RepositoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	ru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // RepositoryUpdateOne is the builder for updating a single Repository entity.
@@ -670,359 +670,359 @@ type RepositoryUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (ruo *RepositoryUpdateOne) SetUpdatedAt(t time.Time) *RepositoryUpdateOne {
-	ruo.mutation.SetUpdatedAt(t)
-	return ruo
+func (_u *RepositoryUpdateOne) SetUpdatedAt(v time.Time) *RepositoryUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (ruo *RepositoryUpdateOne) SetName(s string) *RepositoryUpdateOne {
-	ruo.mutation.SetName(s)
-	return ruo
+func (_u *RepositoryUpdateOne) SetName(v string) *RepositoryUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableName(s *string) *RepositoryUpdateOne {
-	if s != nil {
-		ruo.SetName(*s)
+func (_u *RepositoryUpdateOne) SetNillableName(v *string) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return ruo
+	return _u
 }
 
 // SetURL sets the "url" field.
-func (ruo *RepositoryUpdateOne) SetURL(s string) *RepositoryUpdateOne {
-	ruo.mutation.SetURL(s)
-	return ruo
+func (_u *RepositoryUpdateOne) SetURL(v string) *RepositoryUpdateOne {
+	_u.mutation.SetURL(v)
+	return _u
 }
 
 // SetNillableURL sets the "url" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableURL(s *string) *RepositoryUpdateOne {
-	if s != nil {
-		ruo.SetURL(*s)
+func (_u *RepositoryUpdateOne) SetNillableURL(v *string) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetURL(*v)
 	}
-	return ruo
+	return _u
 }
 
 // SetPassword sets the "password" field.
-func (ruo *RepositoryUpdateOne) SetPassword(s string) *RepositoryUpdateOne {
-	ruo.mutation.SetPassword(s)
-	return ruo
+func (_u *RepositoryUpdateOne) SetPassword(v string) *RepositoryUpdateOne {
+	_u.mutation.SetPassword(v)
+	return _u
 }
 
 // SetNillablePassword sets the "password" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillablePassword(s *string) *RepositoryUpdateOne {
-	if s != nil {
-		ruo.SetPassword(*s)
+func (_u *RepositoryUpdateOne) SetNillablePassword(v *string) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetPassword(*v)
 	}
-	return ruo
+	return _u
 }
 
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (ruo *RepositoryUpdateOne) SetNextIntegrityCheck(t time.Time) *RepositoryUpdateOne {
-	ruo.mutation.SetNextIntegrityCheck(t)
-	return ruo
+func (_u *RepositoryUpdateOne) SetNextIntegrityCheck(v time.Time) *RepositoryUpdateOne {
+	_u.mutation.SetNextIntegrityCheck(v)
+	return _u
 }
 
 // SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryUpdateOne {
-	if t != nil {
-		ruo.SetNextIntegrityCheck(*t)
+func (_u *RepositoryUpdateOne) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetNextIntegrityCheck(*v)
 	}
-	return ruo
+	return _u
 }
 
 // ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (ruo *RepositoryUpdateOne) ClearNextIntegrityCheck() *RepositoryUpdateOne {
-	ruo.mutation.ClearNextIntegrityCheck()
-	return ruo
+func (_u *RepositoryUpdateOne) ClearNextIntegrityCheck() *RepositoryUpdateOne {
+	_u.mutation.ClearNextIntegrityCheck()
+	return _u
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
-func (ruo *RepositoryUpdateOne) SetStatsTotalChunks(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsTotalChunks()
-	ruo.mutation.SetStatsTotalChunks(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsTotalChunks(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsTotalChunks()
+	_u.mutation.SetStatsTotalChunks(v)
+	return _u
 }
 
 // SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsTotalChunks(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsTotalChunks(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsTotalChunks(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsTotalChunks(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsTotalChunks adds i to the "stats_total_chunks" field.
-func (ruo *RepositoryUpdateOne) AddStatsTotalChunks(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsTotalChunks(i)
-	return ruo
+// AddStatsTotalChunks adds value to the "stats_total_chunks" field.
+func (_u *RepositoryUpdateOne) AddStatsTotalChunks(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsTotalChunks(v)
+	return _u
 }
 
 // SetStatsTotalSize sets the "stats_total_size" field.
-func (ruo *RepositoryUpdateOne) SetStatsTotalSize(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsTotalSize()
-	ruo.mutation.SetStatsTotalSize(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsTotalSize(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsTotalSize()
+	_u.mutation.SetStatsTotalSize(v)
+	return _u
 }
 
 // SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsTotalSize(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsTotalSize(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsTotalSize(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsTotalSize(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsTotalSize adds i to the "stats_total_size" field.
-func (ruo *RepositoryUpdateOne) AddStatsTotalSize(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsTotalSize(i)
-	return ruo
+// AddStatsTotalSize adds value to the "stats_total_size" field.
+func (_u *RepositoryUpdateOne) AddStatsTotalSize(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsTotalSize(v)
+	return _u
 }
 
 // SetStatsTotalCsize sets the "stats_total_csize" field.
-func (ruo *RepositoryUpdateOne) SetStatsTotalCsize(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsTotalCsize()
-	ruo.mutation.SetStatsTotalCsize(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsTotalCsize(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsTotalCsize()
+	_u.mutation.SetStatsTotalCsize(v)
+	return _u
 }
 
 // SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsTotalCsize(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsTotalCsize(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsTotalCsize(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsTotalCsize(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsTotalCsize adds i to the "stats_total_csize" field.
-func (ruo *RepositoryUpdateOne) AddStatsTotalCsize(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsTotalCsize(i)
-	return ruo
+// AddStatsTotalCsize adds value to the "stats_total_csize" field.
+func (_u *RepositoryUpdateOne) AddStatsTotalCsize(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsTotalCsize(v)
+	return _u
 }
 
 // SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
-func (ruo *RepositoryUpdateOne) SetStatsTotalUniqueChunks(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsTotalUniqueChunks()
-	ruo.mutation.SetStatsTotalUniqueChunks(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsTotalUniqueChunks(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsTotalUniqueChunks()
+	_u.mutation.SetStatsTotalUniqueChunks(v)
+	return _u
 }
 
 // SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsTotalUniqueChunks(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsTotalUniqueChunks(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsTotalUniqueChunks(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsTotalUniqueChunks adds i to the "stats_total_unique_chunks" field.
-func (ruo *RepositoryUpdateOne) AddStatsTotalUniqueChunks(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsTotalUniqueChunks(i)
-	return ruo
+// AddStatsTotalUniqueChunks adds value to the "stats_total_unique_chunks" field.
+func (_u *RepositoryUpdateOne) AddStatsTotalUniqueChunks(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsTotalUniqueChunks(v)
+	return _u
 }
 
 // SetStatsUniqueSize sets the "stats_unique_size" field.
-func (ruo *RepositoryUpdateOne) SetStatsUniqueSize(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsUniqueSize()
-	ruo.mutation.SetStatsUniqueSize(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsUniqueSize(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsUniqueSize()
+	_u.mutation.SetStatsUniqueSize(v)
+	return _u
 }
 
 // SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsUniqueSize(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsUniqueSize(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsUniqueSize(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsUniqueSize(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsUniqueSize adds i to the "stats_unique_size" field.
-func (ruo *RepositoryUpdateOne) AddStatsUniqueSize(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsUniqueSize(i)
-	return ruo
+// AddStatsUniqueSize adds value to the "stats_unique_size" field.
+func (_u *RepositoryUpdateOne) AddStatsUniqueSize(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsUniqueSize(v)
+	return _u
 }
 
 // SetStatsUniqueCsize sets the "stats_unique_csize" field.
-func (ruo *RepositoryUpdateOne) SetStatsUniqueCsize(i int) *RepositoryUpdateOne {
-	ruo.mutation.ResetStatsUniqueCsize()
-	ruo.mutation.SetStatsUniqueCsize(i)
-	return ruo
+func (_u *RepositoryUpdateOne) SetStatsUniqueCsize(v int) *RepositoryUpdateOne {
+	_u.mutation.ResetStatsUniqueCsize()
+	_u.mutation.SetStatsUniqueCsize(v)
+	return _u
 }
 
 // SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableStatsUniqueCsize(i *int) *RepositoryUpdateOne {
-	if i != nil {
-		ruo.SetStatsUniqueCsize(*i)
+func (_u *RepositoryUpdateOne) SetNillableStatsUniqueCsize(v *int) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetStatsUniqueCsize(*v)
 	}
-	return ruo
+	return _u
 }
 
-// AddStatsUniqueCsize adds i to the "stats_unique_csize" field.
-func (ruo *RepositoryUpdateOne) AddStatsUniqueCsize(i int) *RepositoryUpdateOne {
-	ruo.mutation.AddStatsUniqueCsize(i)
-	return ruo
+// AddStatsUniqueCsize adds value to the "stats_unique_csize" field.
+func (_u *RepositoryUpdateOne) AddStatsUniqueCsize(v int) *RepositoryUpdateOne {
+	_u.mutation.AddStatsUniqueCsize(v)
+	return _u
 }
 
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
-func (ruo *RepositoryUpdateOne) AddBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.AddBackupProfileIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) AddBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.AddBackupProfileIDs(ids...)
+	return _u
 }
 
 // AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
-func (ruo *RepositoryUpdateOne) AddBackupProfiles(b ...*BackupProfile) *RepositoryUpdateOne {
-	ids := make([]int, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+func (_u *RepositoryUpdateOne) AddBackupProfiles(v ...*BackupProfile) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddBackupProfileIDs(ids...)
+	return _u.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (ruo *RepositoryUpdateOne) AddArchiveIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.AddArchiveIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) AddArchiveIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.AddArchiveIDs(ids...)
+	return _u
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (ruo *RepositoryUpdateOne) AddArchives(a ...*Archive) *RepositoryUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *RepositoryUpdateOne) AddArchives(v ...*Archive) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddArchiveIDs(ids...)
+	return _u.AddArchiveIDs(ids...)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (ruo *RepositoryUpdateOne) AddNotificationIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.AddNotificationIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) AddNotificationIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.AddNotificationIDs(ids...)
+	return _u
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (ruo *RepositoryUpdateOne) AddNotifications(n ...*Notification) *RepositoryUpdateOne {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *RepositoryUpdateOne) AddNotifications(v ...*Notification) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddNotificationIDs(ids...)
+	return _u.AddNotificationIDs(ids...)
 }
 
 // SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
-func (ruo *RepositoryUpdateOne) SetCloudRepositoryID(id int) *RepositoryUpdateOne {
-	ruo.mutation.SetCloudRepositoryID(id)
-	return ruo
+func (_u *RepositoryUpdateOne) SetCloudRepositoryID(id int) *RepositoryUpdateOne {
+	_u.mutation.SetCloudRepositoryID(id)
+	return _u
 }
 
 // SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
-func (ruo *RepositoryUpdateOne) SetNillableCloudRepositoryID(id *int) *RepositoryUpdateOne {
+func (_u *RepositoryUpdateOne) SetNillableCloudRepositoryID(id *int) *RepositoryUpdateOne {
 	if id != nil {
-		ruo = ruo.SetCloudRepositoryID(*id)
+		_u = _u.SetCloudRepositoryID(*id)
 	}
-	return ruo
+	return _u
 }
 
 // SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
-func (ruo *RepositoryUpdateOne) SetCloudRepository(c *CloudRepository) *RepositoryUpdateOne {
-	return ruo.SetCloudRepositoryID(c.ID)
+func (_u *RepositoryUpdateOne) SetCloudRepository(v *CloudRepository) *RepositoryUpdateOne {
+	return _u.SetCloudRepositoryID(v.ID)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
-func (ruo *RepositoryUpdateOne) Mutation() *RepositoryMutation {
-	return ruo.mutation
+func (_u *RepositoryUpdateOne) Mutation() *RepositoryMutation {
+	return _u.mutation
 }
 
 // ClearBackupProfiles clears all "backup_profiles" edges to the BackupProfile entity.
-func (ruo *RepositoryUpdateOne) ClearBackupProfiles() *RepositoryUpdateOne {
-	ruo.mutation.ClearBackupProfiles()
-	return ruo
+func (_u *RepositoryUpdateOne) ClearBackupProfiles() *RepositoryUpdateOne {
+	_u.mutation.ClearBackupProfiles()
+	return _u
 }
 
 // RemoveBackupProfileIDs removes the "backup_profiles" edge to BackupProfile entities by IDs.
-func (ruo *RepositoryUpdateOne) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.RemoveBackupProfileIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) RemoveBackupProfileIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.RemoveBackupProfileIDs(ids...)
+	return _u
 }
 
 // RemoveBackupProfiles removes "backup_profiles" edges to BackupProfile entities.
-func (ruo *RepositoryUpdateOne) RemoveBackupProfiles(b ...*BackupProfile) *RepositoryUpdateOne {
-	ids := make([]int, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+func (_u *RepositoryUpdateOne) RemoveBackupProfiles(v ...*BackupProfile) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveBackupProfileIDs(ids...)
+	return _u.RemoveBackupProfileIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
-func (ruo *RepositoryUpdateOne) ClearArchives() *RepositoryUpdateOne {
-	ruo.mutation.ClearArchives()
-	return ruo
+func (_u *RepositoryUpdateOne) ClearArchives() *RepositoryUpdateOne {
+	_u.mutation.ClearArchives()
+	return _u
 }
 
 // RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
-func (ruo *RepositoryUpdateOne) RemoveArchiveIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.RemoveArchiveIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) RemoveArchiveIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.RemoveArchiveIDs(ids...)
+	return _u
 }
 
 // RemoveArchives removes "archives" edges to Archive entities.
-func (ruo *RepositoryUpdateOne) RemoveArchives(a ...*Archive) *RepositoryUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *RepositoryUpdateOne) RemoveArchives(v ...*Archive) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveArchiveIDs(ids...)
+	return _u.RemoveArchiveIDs(ids...)
 }
 
 // ClearNotifications clears all "notifications" edges to the Notification entity.
-func (ruo *RepositoryUpdateOne) ClearNotifications() *RepositoryUpdateOne {
-	ruo.mutation.ClearNotifications()
-	return ruo
+func (_u *RepositoryUpdateOne) ClearNotifications() *RepositoryUpdateOne {
+	_u.mutation.ClearNotifications()
+	return _u
 }
 
 // RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
-func (ruo *RepositoryUpdateOne) RemoveNotificationIDs(ids ...int) *RepositoryUpdateOne {
-	ruo.mutation.RemoveNotificationIDs(ids...)
-	return ruo
+func (_u *RepositoryUpdateOne) RemoveNotificationIDs(ids ...int) *RepositoryUpdateOne {
+	_u.mutation.RemoveNotificationIDs(ids...)
+	return _u
 }
 
 // RemoveNotifications removes "notifications" edges to Notification entities.
-func (ruo *RepositoryUpdateOne) RemoveNotifications(n ...*Notification) *RepositoryUpdateOne {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *RepositoryUpdateOne) RemoveNotifications(v ...*Notification) *RepositoryUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveNotificationIDs(ids...)
+	return _u.RemoveNotificationIDs(ids...)
 }
 
 // ClearCloudRepository clears the "cloud_repository" edge to the CloudRepository entity.
-func (ruo *RepositoryUpdateOne) ClearCloudRepository() *RepositoryUpdateOne {
-	ruo.mutation.ClearCloudRepository()
-	return ruo
+func (_u *RepositoryUpdateOne) ClearCloudRepository() *RepositoryUpdateOne {
+	_u.mutation.ClearCloudRepository()
+	return _u
 }
 
 // Where appends a list predicates to the RepositoryUpdate builder.
-func (ruo *RepositoryUpdateOne) Where(ps ...predicate.Repository) *RepositoryUpdateOne {
-	ruo.mutation.Where(ps...)
-	return ruo
+func (_u *RepositoryUpdateOne) Where(ps ...predicate.Repository) *RepositoryUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (ruo *RepositoryUpdateOne) Select(field string, fields ...string) *RepositoryUpdateOne {
-	ruo.fields = append([]string{field}, fields...)
-	return ruo
+func (_u *RepositoryUpdateOne) Select(field string, fields ...string) *RepositoryUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Repository entity.
-func (ruo *RepositoryUpdateOne) Save(ctx context.Context) (*Repository, error) {
-	ruo.defaults()
-	return withHooks(ctx, ruo.sqlSave, ruo.mutation, ruo.hooks)
+func (_u *RepositoryUpdateOne) Save(ctx context.Context) (*Repository, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ruo *RepositoryUpdateOne) SaveX(ctx context.Context) *Repository {
-	node, err := ruo.Save(ctx)
+func (_u *RepositoryUpdateOne) SaveX(ctx context.Context) *Repository {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -1030,29 +1030,29 @@ func (ruo *RepositoryUpdateOne) SaveX(ctx context.Context) *Repository {
 }
 
 // Exec executes the query on the entity.
-func (ruo *RepositoryUpdateOne) Exec(ctx context.Context) error {
-	_, err := ruo.Save(ctx)
+func (_u *RepositoryUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ruo *RepositoryUpdateOne) ExecX(ctx context.Context) {
-	if err := ruo.Exec(ctx); err != nil {
+func (_u *RepositoryUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (ruo *RepositoryUpdateOne) defaults() {
-	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+func (_u *RepositoryUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := repository.UpdateDefaultUpdatedAt()
-		ruo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (ruo *RepositoryUpdateOne) check() error {
-	if v, ok := ruo.mutation.Name(); ok {
+func (_u *RepositoryUpdateOne) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := repository.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
 		}
@@ -1061,22 +1061,22 @@ func (ruo *RepositoryUpdateOne) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (ruo *RepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdateOne {
-	ruo.modifiers = append(ruo.modifiers, modifiers...)
-	return ruo
+func (_u *RepositoryUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *RepositoryUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, err error) {
-	if err := ruo.check(); err != nil {
+func (_u *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(repository.Table, repository.Columns, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
-	id, ok := ruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Repository.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := ruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, repository.FieldID)
 		for _, f := range fields {
@@ -1088,68 +1088,68 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 			}
 		}
 	}
-	if ps := ruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := ruo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := ruo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.URL(); ok {
+	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.Password(); ok {
+	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.NextIntegrityCheck(); ok {
+	if value, ok := _u.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
 	}
-	if ruo.mutation.NextIntegrityCheckCleared() {
+	if _u.mutation.NextIntegrityCheckCleared() {
 		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
 	}
-	if value, ok := ruo.mutation.StatsTotalChunks(); ok {
+	if value, ok := _u.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsTotalChunks(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalChunks(); ok {
 		_spec.AddField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.StatsTotalSize(); ok {
+	if value, ok := _u.mutation.StatsTotalSize(); ok {
 		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsTotalSize(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalSize(); ok {
 		_spec.AddField(repository.FieldStatsTotalSize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.StatsTotalCsize(); ok {
+	if value, ok := _u.mutation.StatsTotalCsize(); ok {
 		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsTotalCsize(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalCsize(); ok {
 		_spec.AddField(repository.FieldStatsTotalCsize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.StatsTotalUniqueChunks(); ok {
+	if value, ok := _u.mutation.StatsTotalUniqueChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsTotalUniqueChunks(); ok {
+	if value, ok := _u.mutation.AddedStatsTotalUniqueChunks(); ok {
 		_spec.AddField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.StatsUniqueSize(); ok {
+	if value, ok := _u.mutation.StatsUniqueSize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsUniqueSize(); ok {
+	if value, ok := _u.mutation.AddedStatsUniqueSize(); ok {
 		_spec.AddField(repository.FieldStatsUniqueSize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.StatsUniqueCsize(); ok {
+	if value, ok := _u.mutation.StatsUniqueCsize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
-	if value, ok := ruo.mutation.AddedStatsUniqueCsize(); ok {
+	if value, ok := _u.mutation.AddedStatsUniqueCsize(); ok {
 		_spec.AddField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 	}
-	if ruo.mutation.BackupProfilesCleared() {
+	if _u.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1162,7 +1162,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !ruo.mutation.BackupProfilesCleared() {
+	if nodes := _u.mutation.RemovedBackupProfilesIDs(); len(nodes) > 0 && !_u.mutation.BackupProfilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1178,7 +1178,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.BackupProfilesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1194,7 +1194,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.ArchivesCleared() {
+	if _u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1207,7 +1207,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !ruo.mutation.ArchivesCleared() {
+	if nodes := _u.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !_u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1223,7 +1223,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1239,7 +1239,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.NotificationsCleared() {
+	if _u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1252,7 +1252,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !ruo.mutation.NotificationsCleared() {
+	if nodes := _u.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !_u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1268,7 +1268,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1284,7 +1284,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.CloudRepositoryCleared() {
+	if _u.mutation.CloudRepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -1297,7 +1297,7 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -1313,11 +1313,11 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(ruo.modifiers...)
-	_node = &Repository{config: ruo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Repository{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, ruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{repository.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1325,6 +1325,6 @@ func (ruo *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository,
 		}
 		return nil, err
 	}
-	ruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

@@ -9,10 +9,10 @@ import { debounce } from "lodash";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
+import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import type * as borgtypes from "../../bindings/github.com/loomi-labs/arco/backend/borg/types";
+import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import {Events} from "@wailsio/runtime";
 
 /************
@@ -33,11 +33,11 @@ const { t } = useI18n();
 const router = useRouter();
 
 const showProgressSpinner = ref(false);
-const buttonStatus = ref<state.BackupButtonStatus | undefined>(undefined);
+const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 const backupProgress = ref<borgtypes.BackupProgress | undefined>(undefined);
-const lockedRepos = ref<ent.Repository[]>([]);
-const reposWithMounts = ref<ent.Repository[]>([]);
-const repoStates = ref<Map<number, state.RepoState>>(new Map());
+const lockedRepos = ref<repoModels.Repository[]>([]);
+const reposWithMounts = ref<repoModels.Repository[]>([]);
+const repos = ref<Map<number, repoModels.Repository>>(new Map());
 
 const confirmUnmountModalKey = useId();
 const confirmUnmountModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmUnmountModalKey);
@@ -54,9 +54,8 @@ const cleanupFunctions: (() => void)[] = [];
 const hasRepositoryErrors = computed(() => {
   // Use forEach instead of for...of to avoid iteration issues
   let hasErrors = false;
-  repoStates.value.forEach((repoState) => {
-    if (repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && 
-        repoState.errorType !== state.RepoErrorType.$zero) {
+  repos.value.forEach((repo) => {
+    if (repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
       hasErrors = true;
     }
   });
@@ -74,10 +73,9 @@ const errorTooltipText = computed(() => {
 const repositoryWithErrorId = computed(() => {
   // Find the first repository ID that has an error
   let errorRepoId: number | null = null;
-  repoStates.value.forEach((repoState, repoId) => {
+  repos.value.forEach((repo, repoId) => {
     if (!errorRepoId && 
-        repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && 
-        repoState.errorType !== state.RepoErrorType.$zero) {
+        repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
       errorRepoId = repoId;
     }
   });
@@ -91,19 +89,19 @@ const buttonText = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return t("run_backup");
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return t("waiting");
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return `${t("abort")} ${progress.value}%`;
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return t("remove_lock");
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return t("run_backup");
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return t("busy");
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "";
@@ -117,19 +115,19 @@ const buttonColor = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "btn-success";
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return "btn-warning";
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return "btn-error";
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return "btn-success";
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return "btn-neutral";
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return "btn-neutral";
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "btn-neutral";
@@ -143,19 +141,19 @@ const buttonTextColor = computed(() => {
   }
   
   switch (buttonStatus.value) {
-    case state.BackupButtonStatus.BackupButtonStatusRunBackup:
+    case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "text-success";
-    case state.BackupButtonStatus.BackupButtonStatusAbort:
+    case repoModels.BackupButtonStatus.BackupButtonStatusAbort:
       return "text-warning";
-    case state.BackupButtonStatus.BackupButtonStatusLocked:
+    case repoModels.BackupButtonStatus.BackupButtonStatusLocked:
       return "text-error";
-    case state.BackupButtonStatus.BackupButtonStatusUnmount:
+    case repoModels.BackupButtonStatus.BackupButtonStatusUnmount:
       return "text-success";
-    case state.BackupButtonStatus.BackupButtonStatusWaiting:
+    case repoModels.BackupButtonStatus.BackupButtonStatusWaiting:
       return "text-neutral";
-    case state.BackupButtonStatus.BackupButtonStatusBusy:
+    case repoModels.BackupButtonStatus.BackupButtonStatusBusy:
       return "text-neutral";
-    case state.BackupButtonStatus.$zero:
+    case repoModels.BackupButtonStatus.$zero:
     case undefined:
     default:
       return "text-neutral";
@@ -164,8 +162,8 @@ const buttonTextColor = computed(() => {
 
 const isButtonDisabled = computed(() => {
   // Don't disable for errors - allow clicking to navigate
-  return buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusBusy
-    || buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusWaiting;
+  return buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusBusy
+    || buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusWaiting;
 });
 
 const progress = computed(() => {
@@ -199,30 +197,23 @@ async function getBackupProgress() {
   }
 }
 
-async function getLockedRepos() {
-  try {
-    const result = (await repoService.GetLocked()).filter(r => r !== null) ?? [];
-    lockedRepos.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get locked repositories", error);
-  }
-}
-
-async function getReposWithMounts() {
-  try {
-    const result = (await repoService.GetWithActiveMounts()).filter(r => r !== null) ?? [];
-    reposWithMounts.value = result.filter((repo) => props.backupIds.some((id) => id.repositoryId === repo.id));
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get mounted repositories", error);
-  }
-}
-
-async function getRepoStates() {
+async function getRepositories() {
   try {
     for (const backupId of props.backupIds) {
-      const repoState = await repoService.GetState(backupId.repositoryId);
-      repoStates.value.set(backupId.repositoryId, repoState);
+      const repo = await repoService.Get(backupId.repositoryId) ?? repoModels.Repository.createFrom();
+      repos.value.set(backupId.repositoryId, repo);
     }
+    
+    // Filter repositories that are mounted and belong to our backup IDs
+    reposWithMounts.value = Array.from(repos.value.values())
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted)
+      .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
+      
+    // Filter repositories that are locked and belong to our backup IDs
+    lockedRepos.value = Array.from(repos.value.values())
+      .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError)
+      .filter(repo => repo.state.error?.errorType === statemachine.ErrorType.ErrorTypeLocked)
+      .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository states", error);
   }
@@ -235,20 +226,20 @@ async function runButtonAction() {
     return;
   }
   
-  if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusRunBackup) {
+  if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusRunBackup) {
     await runBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusAbort) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusAbort) {
     await abortBackups();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusLocked) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusLocked) {
     confirmRemoveLockModal.value?.showModal();
-  } else if (buttonStatus.value === state.BackupButtonStatus.BackupButtonStatusUnmount) {
+  } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusUnmount) {
     confirmUnmountModal.value?.showModal();
   }
 }
 
 async function runBackups() {
   try {
-    await repoService.StartBackupJobs(props.backupIds);
+    await repoService.QueueBackups(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to run backup", error);
   }
@@ -256,7 +247,7 @@ async function runBackups() {
 
 async function abortBackups() {
   try {
-    await repoService.AbortBackupJobs(props.backupIds);
+    await repoService.AbortBackups(props.backupIds);
   } catch (error: unknown) {
     await showAndLogError("Failed to abort backup", error);
   }
@@ -295,9 +286,7 @@ async function unmountAllAndRunBackups() {
 
 getButtonStatus();
 getBackupProgress();
-getLockedRepos();
-getReposWithMounts();
-getRepoStates();
+getRepositories();
 
 for (const backupId of props.backupIds) {
   const handleBackupStateChanged = debounce(async () => {
@@ -308,9 +297,7 @@ for (const backupId of props.backupIds) {
 
   const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
-    await getLockedRepos();
-    await getReposWithMounts();
-    await getRepoStates();
+    await getRepositories();
   }, 200);
 
   cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));

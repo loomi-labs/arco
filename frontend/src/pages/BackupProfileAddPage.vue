@@ -18,7 +18,7 @@ import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
-import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Browser } from "@wailsio/runtime";
 
@@ -156,10 +156,9 @@ async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupProfileService.GetPrefixSuggestion(backupProfile.value.name);
     backupProfile.value.edges = backupProfile.value.edges ?? {};
-    backupProfile.value.edges.repositories = connectedRepos.value;
     const savedBackupProfile = await backupProfileService.CreateBackupProfile(
       backupProfile.value,
-      (backupProfile.value.edges.repositories ?? []).filter((r) => r !== null).map((r) => r.id)
+      (connectedRepos.value ?? []).filter((r) => r !== null).map((r) => r.id)
     ) ?? BackupProfile.createFrom();
 
     if (backupProfile.value.edges.backupSchedule) {

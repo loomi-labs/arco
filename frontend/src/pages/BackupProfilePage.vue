@@ -6,11 +6,10 @@ import { object } from "zod";
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
-import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { RepoStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
@@ -35,8 +34,7 @@ const router = useRouter();
 const toast = useToast();
 
 const backupProfile = ref<BackupProfile>(BackupProfile.createFrom());
-const selectedRepo = ref<Repository | undefined>(undefined);
-const repoStatuses = ref<Map<number, RepoStatus>>(new Map());
+const selectedRepoId = ref<number | undefined>(undefined);
 const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
@@ -118,13 +116,9 @@ async function getData() {
     backupProfile.value = await backupProfileService.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string)) ?? BackupProfile.createFrom();
     name.value = backupProfile.value.name;
 
-    if (!selectedRepo.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepo.value?.id)) {
+    if (!selectedRepoId.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepoId.value)) {
       // Select the first repo by default
-      selectedRepo.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0] ?? undefined;
-    }
-    for (const repo of backupProfile.value?.edges?.repositories?.filter(r => r !== null) ?? []) {
-      // Set all repo statuses to idle
-      repoStatuses.value.set(repo.id, RepoStatus.RepoStatusIdle);
+      selectedRepoId.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0].id
     }
 
     // Get existing repositories
@@ -211,7 +205,7 @@ async function setPruningRule(pruningRule: ent.PruningRule) {
   }
 }
 
-async function addRepo(repo: ent.Repository) {
+async function addRepo(repo: Repository) {
   addRepoModal.value?.close();
   try {
     await backupProfileService.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
@@ -383,12 +377,11 @@ watch(loading, async () => {
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
-            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepo!.id'
+            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepoId'
             :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
             :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
             :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
-            @click='() => selectedRepo = repo'
-            @repo:status='(event) => repoStatuses.set(repo.id, event)'
+            @click='() => selectedRepoId = repo.id'
             @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
           >
           </RepoCard>
@@ -413,7 +406,7 @@ watch(loading, async () => {
                 <ConnectRepo
                   :show-connected-repos='true'
                   :use-single-repo='true'
-                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.filter(r => r !== null).some(repo => repo.id === r.id))'
+                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.filter(repo => repo !== null).some(repo => repo.id === r.id))'
                   @click:repo='(repo) => addRepo(repo)' />
 
                 <div class='divider'></div>
@@ -446,10 +439,9 @@ watch(loading, async () => {
           </form>
         </dialog>
       </div>
-      <ArchivesCard v-if='selectedRepo'
+      <ArchivesCard v-if='selectedRepoId'
                     :backup-profile-id='backupProfile.id'
-                    :repo='selectedRepo!'
-                    :repo-status='repoStatuses.get(selectedRepo.id)!'
+                    :repo-id='selectedRepoId'
                     :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
                     :show-name='true'>
       </ArchivesCard>

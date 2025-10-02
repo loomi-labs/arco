@@ -25,233 +25,233 @@ type RepositoryCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (rc *RepositoryCreate) SetCreatedAt(t time.Time) *RepositoryCreate {
-	rc.mutation.SetCreatedAt(t)
-	return rc
+func (_c *RepositoryCreate) SetCreatedAt(v time.Time) *RepositoryCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableCreatedAt(t *time.Time) *RepositoryCreate {
-	if t != nil {
-		rc.SetCreatedAt(*t)
+func (_c *RepositoryCreate) SetNillableCreatedAt(v *time.Time) *RepositoryCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (rc *RepositoryCreate) SetUpdatedAt(t time.Time) *RepositoryCreate {
-	rc.mutation.SetUpdatedAt(t)
-	return rc
+func (_c *RepositoryCreate) SetUpdatedAt(v time.Time) *RepositoryCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableUpdatedAt(t *time.Time) *RepositoryCreate {
-	if t != nil {
-		rc.SetUpdatedAt(*t)
+func (_c *RepositoryCreate) SetNillableUpdatedAt(v *time.Time) *RepositoryCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetName sets the "name" field.
-func (rc *RepositoryCreate) SetName(s string) *RepositoryCreate {
-	rc.mutation.SetName(s)
-	return rc
+func (_c *RepositoryCreate) SetName(v string) *RepositoryCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetURL sets the "url" field.
-func (rc *RepositoryCreate) SetURL(s string) *RepositoryCreate {
-	rc.mutation.SetURL(s)
-	return rc
+func (_c *RepositoryCreate) SetURL(v string) *RepositoryCreate {
+	_c.mutation.SetURL(v)
+	return _c
 }
 
 // SetPassword sets the "password" field.
-func (rc *RepositoryCreate) SetPassword(s string) *RepositoryCreate {
-	rc.mutation.SetPassword(s)
-	return rc
+func (_c *RepositoryCreate) SetPassword(v string) *RepositoryCreate {
+	_c.mutation.SetPassword(v)
+	return _c
 }
 
 // SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (rc *RepositoryCreate) SetNextIntegrityCheck(t time.Time) *RepositoryCreate {
-	rc.mutation.SetNextIntegrityCheck(t)
-	return rc
+func (_c *RepositoryCreate) SetNextIntegrityCheck(v time.Time) *RepositoryCreate {
+	_c.mutation.SetNextIntegrityCheck(v)
+	return _c
 }
 
 // SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableNextIntegrityCheck(t *time.Time) *RepositoryCreate {
-	if t != nil {
-		rc.SetNextIntegrityCheck(*t)
+func (_c *RepositoryCreate) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryCreate {
+	if v != nil {
+		_c.SetNextIntegrityCheck(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
-func (rc *RepositoryCreate) SetStatsTotalChunks(i int) *RepositoryCreate {
-	rc.mutation.SetStatsTotalChunks(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsTotalChunks(v int) *RepositoryCreate {
+	_c.mutation.SetStatsTotalChunks(v)
+	return _c
 }
 
 // SetNillableStatsTotalChunks sets the "stats_total_chunks" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsTotalChunks(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsTotalChunks(*i)
+func (_c *RepositoryCreate) SetNillableStatsTotalChunks(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsTotalChunks(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsTotalSize sets the "stats_total_size" field.
-func (rc *RepositoryCreate) SetStatsTotalSize(i int) *RepositoryCreate {
-	rc.mutation.SetStatsTotalSize(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsTotalSize(v int) *RepositoryCreate {
+	_c.mutation.SetStatsTotalSize(v)
+	return _c
 }
 
 // SetNillableStatsTotalSize sets the "stats_total_size" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsTotalSize(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsTotalSize(*i)
+func (_c *RepositoryCreate) SetNillableStatsTotalSize(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsTotalSize(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsTotalCsize sets the "stats_total_csize" field.
-func (rc *RepositoryCreate) SetStatsTotalCsize(i int) *RepositoryCreate {
-	rc.mutation.SetStatsTotalCsize(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsTotalCsize(v int) *RepositoryCreate {
+	_c.mutation.SetStatsTotalCsize(v)
+	return _c
 }
 
 // SetNillableStatsTotalCsize sets the "stats_total_csize" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsTotalCsize(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsTotalCsize(*i)
+func (_c *RepositoryCreate) SetNillableStatsTotalCsize(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsTotalCsize(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field.
-func (rc *RepositoryCreate) SetStatsTotalUniqueChunks(i int) *RepositoryCreate {
-	rc.mutation.SetStatsTotalUniqueChunks(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsTotalUniqueChunks(v int) *RepositoryCreate {
+	_c.mutation.SetStatsTotalUniqueChunks(v)
+	return _c
 }
 
 // SetNillableStatsTotalUniqueChunks sets the "stats_total_unique_chunks" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsTotalUniqueChunks(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsTotalUniqueChunks(*i)
+func (_c *RepositoryCreate) SetNillableStatsTotalUniqueChunks(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsTotalUniqueChunks(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsUniqueSize sets the "stats_unique_size" field.
-func (rc *RepositoryCreate) SetStatsUniqueSize(i int) *RepositoryCreate {
-	rc.mutation.SetStatsUniqueSize(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsUniqueSize(v int) *RepositoryCreate {
+	_c.mutation.SetStatsUniqueSize(v)
+	return _c
 }
 
 // SetNillableStatsUniqueSize sets the "stats_unique_size" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsUniqueSize(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsUniqueSize(*i)
+func (_c *RepositoryCreate) SetNillableStatsUniqueSize(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsUniqueSize(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetStatsUniqueCsize sets the "stats_unique_csize" field.
-func (rc *RepositoryCreate) SetStatsUniqueCsize(i int) *RepositoryCreate {
-	rc.mutation.SetStatsUniqueCsize(i)
-	return rc
+func (_c *RepositoryCreate) SetStatsUniqueCsize(v int) *RepositoryCreate {
+	_c.mutation.SetStatsUniqueCsize(v)
+	return _c
 }
 
 // SetNillableStatsUniqueCsize sets the "stats_unique_csize" field if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableStatsUniqueCsize(i *int) *RepositoryCreate {
-	if i != nil {
-		rc.SetStatsUniqueCsize(*i)
+func (_c *RepositoryCreate) SetNillableStatsUniqueCsize(v *int) *RepositoryCreate {
+	if v != nil {
+		_c.SetStatsUniqueCsize(*v)
 	}
-	return rc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (rc *RepositoryCreate) SetID(i int) *RepositoryCreate {
-	rc.mutation.SetID(i)
-	return rc
+func (_c *RepositoryCreate) SetID(v int) *RepositoryCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // AddBackupProfileIDs adds the "backup_profiles" edge to the BackupProfile entity by IDs.
-func (rc *RepositoryCreate) AddBackupProfileIDs(ids ...int) *RepositoryCreate {
-	rc.mutation.AddBackupProfileIDs(ids...)
-	return rc
+func (_c *RepositoryCreate) AddBackupProfileIDs(ids ...int) *RepositoryCreate {
+	_c.mutation.AddBackupProfileIDs(ids...)
+	return _c
 }
 
 // AddBackupProfiles adds the "backup_profiles" edges to the BackupProfile entity.
-func (rc *RepositoryCreate) AddBackupProfiles(b ...*BackupProfile) *RepositoryCreate {
-	ids := make([]int, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+func (_c *RepositoryCreate) AddBackupProfiles(v ...*BackupProfile) *RepositoryCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddBackupProfileIDs(ids...)
+	return _c.AddBackupProfileIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (rc *RepositoryCreate) AddArchiveIDs(ids ...int) *RepositoryCreate {
-	rc.mutation.AddArchiveIDs(ids...)
-	return rc
+func (_c *RepositoryCreate) AddArchiveIDs(ids ...int) *RepositoryCreate {
+	_c.mutation.AddArchiveIDs(ids...)
+	return _c
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (rc *RepositoryCreate) AddArchives(a ...*Archive) *RepositoryCreate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_c *RepositoryCreate) AddArchives(v ...*Archive) *RepositoryCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddArchiveIDs(ids...)
+	return _c.AddArchiveIDs(ids...)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (rc *RepositoryCreate) AddNotificationIDs(ids ...int) *RepositoryCreate {
-	rc.mutation.AddNotificationIDs(ids...)
-	return rc
+func (_c *RepositoryCreate) AddNotificationIDs(ids ...int) *RepositoryCreate {
+	_c.mutation.AddNotificationIDs(ids...)
+	return _c
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (rc *RepositoryCreate) AddNotifications(n ...*Notification) *RepositoryCreate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_c *RepositoryCreate) AddNotifications(v ...*Notification) *RepositoryCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddNotificationIDs(ids...)
+	return _c.AddNotificationIDs(ids...)
 }
 
 // SetCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID.
-func (rc *RepositoryCreate) SetCloudRepositoryID(id int) *RepositoryCreate {
-	rc.mutation.SetCloudRepositoryID(id)
-	return rc
+func (_c *RepositoryCreate) SetCloudRepositoryID(id int) *RepositoryCreate {
+	_c.mutation.SetCloudRepositoryID(id)
+	return _c
 }
 
 // SetNillableCloudRepositoryID sets the "cloud_repository" edge to the CloudRepository entity by ID if the given value is not nil.
-func (rc *RepositoryCreate) SetNillableCloudRepositoryID(id *int) *RepositoryCreate {
+func (_c *RepositoryCreate) SetNillableCloudRepositoryID(id *int) *RepositoryCreate {
 	if id != nil {
-		rc = rc.SetCloudRepositoryID(*id)
+		_c = _c.SetCloudRepositoryID(*id)
 	}
-	return rc
+	return _c
 }
 
 // SetCloudRepository sets the "cloud_repository" edge to the CloudRepository entity.
-func (rc *RepositoryCreate) SetCloudRepository(c *CloudRepository) *RepositoryCreate {
-	return rc.SetCloudRepositoryID(c.ID)
+func (_c *RepositoryCreate) SetCloudRepository(v *CloudRepository) *RepositoryCreate {
+	return _c.SetCloudRepositoryID(v.ID)
 }
 
 // Mutation returns the RepositoryMutation object of the builder.
-func (rc *RepositoryCreate) Mutation() *RepositoryMutation {
-	return rc.mutation
+func (_c *RepositoryCreate) Mutation() *RepositoryMutation {
+	return _c.mutation
 }
 
 // Save creates the Repository in the database.
-func (rc *RepositoryCreate) Save(ctx context.Context) (*Repository, error) {
-	rc.defaults()
-	return withHooks(ctx, rc.sqlSave, rc.mutation, rc.hooks)
+func (_c *RepositoryCreate) Save(ctx context.Context) (*Repository, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (rc *RepositoryCreate) SaveX(ctx context.Context) *Repository {
-	v, err := rc.Save(ctx)
+func (_c *RepositoryCreate) SaveX(ctx context.Context) *Repository {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -259,103 +259,103 @@ func (rc *RepositoryCreate) SaveX(ctx context.Context) *Repository {
 }
 
 // Exec executes the query.
-func (rc *RepositoryCreate) Exec(ctx context.Context) error {
-	_, err := rc.Save(ctx)
+func (_c *RepositoryCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rc *RepositoryCreate) ExecX(ctx context.Context) {
-	if err := rc.Exec(ctx); err != nil {
+func (_c *RepositoryCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (rc *RepositoryCreate) defaults() {
-	if _, ok := rc.mutation.CreatedAt(); !ok {
+func (_c *RepositoryCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := repository.DefaultCreatedAt()
-		rc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := rc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := repository.DefaultUpdatedAt()
-		rc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := rc.mutation.StatsTotalChunks(); !ok {
+	if _, ok := _c.mutation.StatsTotalChunks(); !ok {
 		v := repository.DefaultStatsTotalChunks
-		rc.mutation.SetStatsTotalChunks(v)
+		_c.mutation.SetStatsTotalChunks(v)
 	}
-	if _, ok := rc.mutation.StatsTotalSize(); !ok {
+	if _, ok := _c.mutation.StatsTotalSize(); !ok {
 		v := repository.DefaultStatsTotalSize
-		rc.mutation.SetStatsTotalSize(v)
+		_c.mutation.SetStatsTotalSize(v)
 	}
-	if _, ok := rc.mutation.StatsTotalCsize(); !ok {
+	if _, ok := _c.mutation.StatsTotalCsize(); !ok {
 		v := repository.DefaultStatsTotalCsize
-		rc.mutation.SetStatsTotalCsize(v)
+		_c.mutation.SetStatsTotalCsize(v)
 	}
-	if _, ok := rc.mutation.StatsTotalUniqueChunks(); !ok {
+	if _, ok := _c.mutation.StatsTotalUniqueChunks(); !ok {
 		v := repository.DefaultStatsTotalUniqueChunks
-		rc.mutation.SetStatsTotalUniqueChunks(v)
+		_c.mutation.SetStatsTotalUniqueChunks(v)
 	}
-	if _, ok := rc.mutation.StatsUniqueSize(); !ok {
+	if _, ok := _c.mutation.StatsUniqueSize(); !ok {
 		v := repository.DefaultStatsUniqueSize
-		rc.mutation.SetStatsUniqueSize(v)
+		_c.mutation.SetStatsUniqueSize(v)
 	}
-	if _, ok := rc.mutation.StatsUniqueCsize(); !ok {
+	if _, ok := _c.mutation.StatsUniqueCsize(); !ok {
 		v := repository.DefaultStatsUniqueCsize
-		rc.mutation.SetStatsUniqueCsize(v)
+		_c.mutation.SetStatsUniqueCsize(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (rc *RepositoryCreate) check() error {
-	if _, ok := rc.mutation.CreatedAt(); !ok {
+func (_c *RepositoryCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Repository.created_at"`)}
 	}
-	if _, ok := rc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Repository.updated_at"`)}
 	}
-	if _, ok := rc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Repository.name"`)}
 	}
-	if v, ok := rc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := repository.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Repository.name": %w`, err)}
 		}
 	}
-	if _, ok := rc.mutation.URL(); !ok {
+	if _, ok := _c.mutation.URL(); !ok {
 		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "Repository.url"`)}
 	}
-	if _, ok := rc.mutation.Password(); !ok {
+	if _, ok := _c.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
 	}
-	if _, ok := rc.mutation.StatsTotalChunks(); !ok {
+	if _, ok := _c.mutation.StatsTotalChunks(); !ok {
 		return &ValidationError{Name: "stats_total_chunks", err: errors.New(`ent: missing required field "Repository.stats_total_chunks"`)}
 	}
-	if _, ok := rc.mutation.StatsTotalSize(); !ok {
+	if _, ok := _c.mutation.StatsTotalSize(); !ok {
 		return &ValidationError{Name: "stats_total_size", err: errors.New(`ent: missing required field "Repository.stats_total_size"`)}
 	}
-	if _, ok := rc.mutation.StatsTotalCsize(); !ok {
+	if _, ok := _c.mutation.StatsTotalCsize(); !ok {
 		return &ValidationError{Name: "stats_total_csize", err: errors.New(`ent: missing required field "Repository.stats_total_csize"`)}
 	}
-	if _, ok := rc.mutation.StatsTotalUniqueChunks(); !ok {
+	if _, ok := _c.mutation.StatsTotalUniqueChunks(); !ok {
 		return &ValidationError{Name: "stats_total_unique_chunks", err: errors.New(`ent: missing required field "Repository.stats_total_unique_chunks"`)}
 	}
-	if _, ok := rc.mutation.StatsUniqueSize(); !ok {
+	if _, ok := _c.mutation.StatsUniqueSize(); !ok {
 		return &ValidationError{Name: "stats_unique_size", err: errors.New(`ent: missing required field "Repository.stats_unique_size"`)}
 	}
-	if _, ok := rc.mutation.StatsUniqueCsize(); !ok {
+	if _, ok := _c.mutation.StatsUniqueCsize(); !ok {
 		return &ValidationError{Name: "stats_unique_csize", err: errors.New(`ent: missing required field "Repository.stats_unique_csize"`)}
 	}
 	return nil
 }
 
-func (rc *RepositoryCreate) sqlSave(ctx context.Context) (*Repository, error) {
-	if err := rc.check(); err != nil {
+func (_c *RepositoryCreate) sqlSave(ctx context.Context) (*Repository, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := rc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -365,69 +365,69 @@ func (rc *RepositoryCreate) sqlSave(ctx context.Context) (*Repository, error) {
 		id := _spec.ID.Value.(int64)
 		_node.ID = int(id)
 	}
-	rc.mutation.id = &_node.ID
-	rc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
+func (_c *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Repository{config: rc.config}
+		_node = &Repository{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(repository.Table, sqlgraph.NewFieldSpec(repository.FieldID, field.TypeInt))
 	)
-	if id, ok := rc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := rc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(repository.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := rc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(repository.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := rc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(repository.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := rc.mutation.URL(); ok {
+	if value, ok := _c.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 		_node.URL = value
 	}
-	if value, ok := rc.mutation.Password(); ok {
+	if value, ok := _c.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
-	if value, ok := rc.mutation.NextIntegrityCheck(); ok {
+	if value, ok := _c.mutation.NextIntegrityCheck(); ok {
 		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
 		_node.NextIntegrityCheck = &value
 	}
-	if value, ok := rc.mutation.StatsTotalChunks(); ok {
+	if value, ok := _c.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
 		_node.StatsTotalChunks = value
 	}
-	if value, ok := rc.mutation.StatsTotalSize(); ok {
+	if value, ok := _c.mutation.StatsTotalSize(); ok {
 		_spec.SetField(repository.FieldStatsTotalSize, field.TypeInt, value)
 		_node.StatsTotalSize = value
 	}
-	if value, ok := rc.mutation.StatsTotalCsize(); ok {
+	if value, ok := _c.mutation.StatsTotalCsize(); ok {
 		_spec.SetField(repository.FieldStatsTotalCsize, field.TypeInt, value)
 		_node.StatsTotalCsize = value
 	}
-	if value, ok := rc.mutation.StatsTotalUniqueChunks(); ok {
+	if value, ok := _c.mutation.StatsTotalUniqueChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalUniqueChunks, field.TypeInt, value)
 		_node.StatsTotalUniqueChunks = value
 	}
-	if value, ok := rc.mutation.StatsUniqueSize(); ok {
+	if value, ok := _c.mutation.StatsUniqueSize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueSize, field.TypeInt, value)
 		_node.StatsUniqueSize = value
 	}
-	if value, ok := rc.mutation.StatsUniqueCsize(); ok {
+	if value, ok := _c.mutation.StatsUniqueCsize(); ok {
 		_spec.SetField(repository.FieldStatsUniqueCsize, field.TypeInt, value)
 		_node.StatsUniqueCsize = value
 	}
-	if nodes := rc.mutation.BackupProfilesIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.BackupProfilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -443,7 +443,7 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -459,7 +459,7 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -475,7 +475,7 @@ func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.CloudRepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -503,16 +503,16 @@ type RepositoryCreateBulk struct {
 }
 
 // Save creates the Repository entities in the database.
-func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error) {
-	if rcb.err != nil {
-		return nil, rcb.err
+func (_c *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(rcb.builders))
-	nodes := make([]*Repository, len(rcb.builders))
-	mutators := make([]Mutator, len(rcb.builders))
-	for i := range rcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Repository, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := rcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*RepositoryMutation)
@@ -526,11 +526,11 @@ func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -554,7 +554,7 @@ func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, rcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -562,8 +562,8 @@ func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (rcb *RepositoryCreateBulk) SaveX(ctx context.Context) []*Repository {
-	v, err := rcb.Save(ctx)
+func (_c *RepositoryCreateBulk) SaveX(ctx context.Context) []*Repository {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -571,14 +571,14 @@ func (rcb *RepositoryCreateBulk) SaveX(ctx context.Context) []*Repository {
 }
 
 // Exec executes the query.
-func (rcb *RepositoryCreateBulk) Exec(ctx context.Context) error {
-	_, err := rcb.Save(ctx)
+func (_c *RepositoryCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rcb *RepositoryCreateBulk) ExecX(ctx context.Context) {
-	if err := rcb.Exec(ctx); err != nil {
+func (_c *RepositoryCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

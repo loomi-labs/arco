@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	gocmd "github.com/go-cmd/cmd"
-	"github.com/loomi-labs/arco/backend/borg/types"
 	"os"
 	"strings"
 	"time"
+
+	gocmd "github.com/go-cmd/cmd"
+	"github.com/loomi-labs/arco/backend/borg/types"
 )
 
 // Create creates a new backup in the repository.
@@ -75,6 +76,7 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 
 // decodeBackupProgress decodes the progress messages from borg and sends them to the channel.
 func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.BackupProgress) {
+	defer close(ch)
 	for {
 		select {
 		case _ = <-cmd.Stdout:

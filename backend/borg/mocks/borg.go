@@ -157,18 +157,18 @@ func (mr *MockBorgMockRecorder) Init(ctx, repository, password, noPassword any) 
 }
 
 // List mocks base method.
-func (m *MockBorg) List(ctx context.Context, repository, password string) (*types.ListResponse, *types.Status) {
+func (m *MockBorg) List(ctx context.Context, repository, password, glob string) (*types.ListResponse, *types.Status) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, repository, password)
+	ret := m.ctrl.Call(m, "List", ctx, repository, password, glob)
 	ret0, _ := ret[0].(*types.ListResponse)
 	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockBorgMockRecorder) List(ctx, repository, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) List(ctx, repository, password, glob any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), ctx, repository, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockBorg)(nil).List), ctx, repository, password, glob)
 }
 
 // MountArchive mocks base method.

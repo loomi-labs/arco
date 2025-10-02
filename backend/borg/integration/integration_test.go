@@ -392,7 +392,7 @@ func TestBorgRepositoryOperations(t *testing.T) {
 		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
 
 		// Test empty repository list
-		list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+		list, status := suite.borg.List(suite.ctx, repoPath, testPassword, "")
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository list should succeed: %v", status.GetError())
 		assert.NotNil(t, list, "List response should not be nil")
 		assert.Empty(t, list.Archives, "Empty repository should have no archives")
@@ -424,7 +424,6 @@ func TestBorgArchiveOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		archiveName := strings.Split(archivePath, "::")[1]
 
 		assert.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed: %v", status.GetError())
@@ -451,11 +450,10 @@ func TestBorgArchiveOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// List archives
-		list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+		list, status := suite.borg.List(suite.ctx, repoPath, testPassword, "")
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository list should succeed: %v", status.GetError())
 		assert.NotNil(t, list, "List response should not be nil")
 		assert.Len(t, list.Archives, 1, "Repository should have one archive")
@@ -489,7 +487,6 @@ func TestBorgDeleteOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Delete archive
@@ -498,7 +495,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 		assert.True(t, status.IsCompletedWithSuccess(), "Archive deletion should succeed: %v", status.GetError())
 
 		// Verify archive is deleted
-		list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+		list, status := suite.borg.List(suite.ctx, repoPath, testPassword, "")
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository list should succeed")
 		assert.Empty(t, list.Archives, "Repository should have no archives after deletion")
 	})
@@ -545,7 +542,6 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Compact repository
@@ -573,8 +569,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 				[]string{},
 				progressChan,
 			)
-			close(progressChan)
-			require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+				require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 		}
 
 		// Prune repository (dry run)
@@ -617,7 +612,6 @@ func TestBorgRenameOperation(t *testing.T) {
 		[]string{},
 		progressChan,
 	)
-	close(progressChan)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 	// Rename archive
@@ -627,7 +621,7 @@ func TestBorgRenameOperation(t *testing.T) {
 	assert.True(t, status.IsCompletedWithSuccess(), "Archive rename should succeed: %v", status.GetError())
 
 	// Verify archive is renamed
-	list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+	list, status := suite.borg.List(suite.ctx, repoPath, testPassword, "")
 	assert.True(t, status.IsCompletedWithSuccess(), "Repository list should succeed")
 	assert.Len(t, list.Archives, 1, "Repository should have one archive")
 	assert.Equal(t, newName, list.Archives[0].Name, "Archive should have new name")
@@ -676,7 +670,6 @@ func TestBorgMountOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Create mount directory
@@ -724,7 +717,6 @@ func TestBorgMountOperations(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 		// Create mount directory
@@ -812,7 +804,6 @@ func TestBorgDeleteArchives(t *testing.T) {
 			[]string{},
 			progressChan,
 		)
-		close(progressChan)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 	}
 
@@ -827,11 +818,10 @@ func TestBorgDeleteArchives(t *testing.T) {
 		[]string{},
 		progressChan,
 	)
-	close(progressChan)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 
 	// Verify all archives exist
-	list, status := suite.borg.List(suite.ctx, repoPath, testPassword)
+	list, status := suite.borg.List(suite.ctx, repoPath, testPassword, "")
 	require.True(t, status.IsCompletedWithSuccess(), "List should succeed")
 	assert.Len(t, list.Archives, 6, "Should have 6 archives before deletion")
 
@@ -840,7 +830,7 @@ func TestBorgDeleteArchives(t *testing.T) {
 	assert.True(t, status.IsCompletedWithSuccess(), "Delete archives should succeed: %v", status.GetError())
 
 	// Verify only other-archive remains
-	list, status = suite.borg.List(suite.ctx, repoPath, testPassword)
+	list, status = suite.borg.List(suite.ctx, repoPath, testPassword, "")
 	assert.True(t, status.IsCompletedWithSuccess(), "List should succeed after deletion")
 	assert.Len(t, list.Archives, 1, "Should have 1 archive after deletion")
 	assert.True(t, strings.HasPrefix(list.Archives[0].Name, "other-archive-"), "Remaining archive should start with other-archive-")

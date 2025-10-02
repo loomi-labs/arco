@@ -22,148 +22,148 @@ type PruningRuleCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (prc *PruningRuleCreate) SetCreatedAt(t time.Time) *PruningRuleCreate {
-	prc.mutation.SetCreatedAt(t)
-	return prc
+func (_c *PruningRuleCreate) SetCreatedAt(v time.Time) *PruningRuleCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (prc *PruningRuleCreate) SetNillableCreatedAt(t *time.Time) *PruningRuleCreate {
-	if t != nil {
-		prc.SetCreatedAt(*t)
+func (_c *PruningRuleCreate) SetNillableCreatedAt(v *time.Time) *PruningRuleCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return prc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (prc *PruningRuleCreate) SetUpdatedAt(t time.Time) *PruningRuleCreate {
-	prc.mutation.SetUpdatedAt(t)
-	return prc
+func (_c *PruningRuleCreate) SetUpdatedAt(v time.Time) *PruningRuleCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (prc *PruningRuleCreate) SetNillableUpdatedAt(t *time.Time) *PruningRuleCreate {
-	if t != nil {
-		prc.SetUpdatedAt(*t)
+func (_c *PruningRuleCreate) SetNillableUpdatedAt(v *time.Time) *PruningRuleCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return prc
+	return _c
 }
 
 // SetIsEnabled sets the "is_enabled" field.
-func (prc *PruningRuleCreate) SetIsEnabled(b bool) *PruningRuleCreate {
-	prc.mutation.SetIsEnabled(b)
-	return prc
+func (_c *PruningRuleCreate) SetIsEnabled(v bool) *PruningRuleCreate {
+	_c.mutation.SetIsEnabled(v)
+	return _c
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
-func (prc *PruningRuleCreate) SetKeepHourly(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepHourly(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepHourly(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepHourly(v)
+	return _c
 }
 
 // SetKeepDaily sets the "keep_daily" field.
-func (prc *PruningRuleCreate) SetKeepDaily(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepDaily(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepDaily(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepDaily(v)
+	return _c
 }
 
 // SetKeepWeekly sets the "keep_weekly" field.
-func (prc *PruningRuleCreate) SetKeepWeekly(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepWeekly(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepWeekly(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepWeekly(v)
+	return _c
 }
 
 // SetKeepMonthly sets the "keep_monthly" field.
-func (prc *PruningRuleCreate) SetKeepMonthly(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepMonthly(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepMonthly(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepMonthly(v)
+	return _c
 }
 
 // SetKeepYearly sets the "keep_yearly" field.
-func (prc *PruningRuleCreate) SetKeepYearly(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepYearly(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepYearly(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepYearly(v)
+	return _c
 }
 
 // SetKeepWithinDays sets the "keep_within_days" field.
-func (prc *PruningRuleCreate) SetKeepWithinDays(i int) *PruningRuleCreate {
-	prc.mutation.SetKeepWithinDays(i)
-	return prc
+func (_c *PruningRuleCreate) SetKeepWithinDays(v int) *PruningRuleCreate {
+	_c.mutation.SetKeepWithinDays(v)
+	return _c
 }
 
 // SetNextRun sets the "next_run" field.
-func (prc *PruningRuleCreate) SetNextRun(t time.Time) *PruningRuleCreate {
-	prc.mutation.SetNextRun(t)
-	return prc
+func (_c *PruningRuleCreate) SetNextRun(v time.Time) *PruningRuleCreate {
+	_c.mutation.SetNextRun(v)
+	return _c
 }
 
 // SetNillableNextRun sets the "next_run" field if the given value is not nil.
-func (prc *PruningRuleCreate) SetNillableNextRun(t *time.Time) *PruningRuleCreate {
-	if t != nil {
-		prc.SetNextRun(*t)
+func (_c *PruningRuleCreate) SetNillableNextRun(v *time.Time) *PruningRuleCreate {
+	if v != nil {
+		_c.SetNextRun(*v)
 	}
-	return prc
+	return _c
 }
 
 // SetLastRun sets the "last_run" field.
-func (prc *PruningRuleCreate) SetLastRun(t time.Time) *PruningRuleCreate {
-	prc.mutation.SetLastRun(t)
-	return prc
+func (_c *PruningRuleCreate) SetLastRun(v time.Time) *PruningRuleCreate {
+	_c.mutation.SetLastRun(v)
+	return _c
 }
 
 // SetNillableLastRun sets the "last_run" field if the given value is not nil.
-func (prc *PruningRuleCreate) SetNillableLastRun(t *time.Time) *PruningRuleCreate {
-	if t != nil {
-		prc.SetLastRun(*t)
+func (_c *PruningRuleCreate) SetNillableLastRun(v *time.Time) *PruningRuleCreate {
+	if v != nil {
+		_c.SetLastRun(*v)
 	}
-	return prc
+	return _c
 }
 
 // SetLastRunStatus sets the "last_run_status" field.
-func (prc *PruningRuleCreate) SetLastRunStatus(s string) *PruningRuleCreate {
-	prc.mutation.SetLastRunStatus(s)
-	return prc
+func (_c *PruningRuleCreate) SetLastRunStatus(v string) *PruningRuleCreate {
+	_c.mutation.SetLastRunStatus(v)
+	return _c
 }
 
 // SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
-func (prc *PruningRuleCreate) SetNillableLastRunStatus(s *string) *PruningRuleCreate {
-	if s != nil {
-		prc.SetLastRunStatus(*s)
+func (_c *PruningRuleCreate) SetNillableLastRunStatus(v *string) *PruningRuleCreate {
+	if v != nil {
+		_c.SetLastRunStatus(*v)
 	}
-	return prc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (prc *PruningRuleCreate) SetID(i int) *PruningRuleCreate {
-	prc.mutation.SetID(i)
-	return prc
+func (_c *PruningRuleCreate) SetID(v int) *PruningRuleCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (prc *PruningRuleCreate) SetBackupProfileID(id int) *PruningRuleCreate {
-	prc.mutation.SetBackupProfileID(id)
-	return prc
+func (_c *PruningRuleCreate) SetBackupProfileID(id int) *PruningRuleCreate {
+	_c.mutation.SetBackupProfileID(id)
+	return _c
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (prc *PruningRuleCreate) SetBackupProfile(b *BackupProfile) *PruningRuleCreate {
-	return prc.SetBackupProfileID(b.ID)
+func (_c *PruningRuleCreate) SetBackupProfile(v *BackupProfile) *PruningRuleCreate {
+	return _c.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the PruningRuleMutation object of the builder.
-func (prc *PruningRuleCreate) Mutation() *PruningRuleMutation {
-	return prc.mutation
+func (_c *PruningRuleCreate) Mutation() *PruningRuleMutation {
+	return _c.mutation
 }
 
 // Save creates the PruningRule in the database.
-func (prc *PruningRuleCreate) Save(ctx context.Context) (*PruningRule, error) {
-	prc.defaults()
-	return withHooks(ctx, prc.sqlSave, prc.mutation, prc.hooks)
+func (_c *PruningRuleCreate) Save(ctx context.Context) (*PruningRule, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (prc *PruningRuleCreate) SaveX(ctx context.Context) *PruningRule {
-	v, err := prc.Save(ctx)
+func (_c *PruningRuleCreate) SaveX(ctx context.Context) *PruningRule {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -171,71 +171,71 @@ func (prc *PruningRuleCreate) SaveX(ctx context.Context) *PruningRule {
 }
 
 // Exec executes the query.
-func (prc *PruningRuleCreate) Exec(ctx context.Context) error {
-	_, err := prc.Save(ctx)
+func (_c *PruningRuleCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (prc *PruningRuleCreate) ExecX(ctx context.Context) {
-	if err := prc.Exec(ctx); err != nil {
+func (_c *PruningRuleCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (prc *PruningRuleCreate) defaults() {
-	if _, ok := prc.mutation.CreatedAt(); !ok {
+func (_c *PruningRuleCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := pruningrule.DefaultCreatedAt()
-		prc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := prc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := pruningrule.DefaultUpdatedAt()
-		prc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (prc *PruningRuleCreate) check() error {
-	if _, ok := prc.mutation.CreatedAt(); !ok {
+func (_c *PruningRuleCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PruningRule.created_at"`)}
 	}
-	if _, ok := prc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PruningRule.updated_at"`)}
 	}
-	if _, ok := prc.mutation.IsEnabled(); !ok {
+	if _, ok := _c.mutation.IsEnabled(); !ok {
 		return &ValidationError{Name: "is_enabled", err: errors.New(`ent: missing required field "PruningRule.is_enabled"`)}
 	}
-	if _, ok := prc.mutation.KeepHourly(); !ok {
+	if _, ok := _c.mutation.KeepHourly(); !ok {
 		return &ValidationError{Name: "keep_hourly", err: errors.New(`ent: missing required field "PruningRule.keep_hourly"`)}
 	}
-	if _, ok := prc.mutation.KeepDaily(); !ok {
+	if _, ok := _c.mutation.KeepDaily(); !ok {
 		return &ValidationError{Name: "keep_daily", err: errors.New(`ent: missing required field "PruningRule.keep_daily"`)}
 	}
-	if _, ok := prc.mutation.KeepWeekly(); !ok {
+	if _, ok := _c.mutation.KeepWeekly(); !ok {
 		return &ValidationError{Name: "keep_weekly", err: errors.New(`ent: missing required field "PruningRule.keep_weekly"`)}
 	}
-	if _, ok := prc.mutation.KeepMonthly(); !ok {
+	if _, ok := _c.mutation.KeepMonthly(); !ok {
 		return &ValidationError{Name: "keep_monthly", err: errors.New(`ent: missing required field "PruningRule.keep_monthly"`)}
 	}
-	if _, ok := prc.mutation.KeepYearly(); !ok {
+	if _, ok := _c.mutation.KeepYearly(); !ok {
 		return &ValidationError{Name: "keep_yearly", err: errors.New(`ent: missing required field "PruningRule.keep_yearly"`)}
 	}
-	if _, ok := prc.mutation.KeepWithinDays(); !ok {
+	if _, ok := _c.mutation.KeepWithinDays(); !ok {
 		return &ValidationError{Name: "keep_within_days", err: errors.New(`ent: missing required field "PruningRule.keep_within_days"`)}
 	}
-	if len(prc.mutation.BackupProfileIDs()) == 0 {
+	if len(_c.mutation.BackupProfileIDs()) == 0 {
 		return &ValidationError{Name: "backup_profile", err: errors.New(`ent: missing required edge "PruningRule.backup_profile"`)}
 	}
 	return nil
 }
 
-func (prc *PruningRuleCreate) sqlSave(ctx context.Context) (*PruningRule, error) {
-	if err := prc.check(); err != nil {
+func (_c *PruningRuleCreate) sqlSave(ctx context.Context) (*PruningRule, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := prc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, prc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -245,69 +245,69 @@ func (prc *PruningRuleCreate) sqlSave(ctx context.Context) (*PruningRule, error)
 		id := _spec.ID.Value.(int64)
 		_node.ID = int(id)
 	}
-	prc.mutation.id = &_node.ID
-	prc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (prc *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) {
+func (_c *PruningRuleCreate) createSpec() (*PruningRule, *sqlgraph.CreateSpec) {
 	var (
-		_node = &PruningRule{config: prc.config}
+		_node = &PruningRule{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(pruningrule.Table, sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt))
 	)
-	if id, ok := prc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := prc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(pruningrule.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := prc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := prc.mutation.IsEnabled(); ok {
+	if value, ok := _c.mutation.IsEnabled(); ok {
 		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
 		_node.IsEnabled = value
 	}
-	if value, ok := prc.mutation.KeepHourly(); ok {
+	if value, ok := _c.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 		_node.KeepHourly = value
 	}
-	if value, ok := prc.mutation.KeepDaily(); ok {
+	if value, ok := _c.mutation.KeepDaily(); ok {
 		_spec.SetField(pruningrule.FieldKeepDaily, field.TypeInt, value)
 		_node.KeepDaily = value
 	}
-	if value, ok := prc.mutation.KeepWeekly(); ok {
+	if value, ok := _c.mutation.KeepWeekly(); ok {
 		_spec.SetField(pruningrule.FieldKeepWeekly, field.TypeInt, value)
 		_node.KeepWeekly = value
 	}
-	if value, ok := prc.mutation.KeepMonthly(); ok {
+	if value, ok := _c.mutation.KeepMonthly(); ok {
 		_spec.SetField(pruningrule.FieldKeepMonthly, field.TypeInt, value)
 		_node.KeepMonthly = value
 	}
-	if value, ok := prc.mutation.KeepYearly(); ok {
+	if value, ok := _c.mutation.KeepYearly(); ok {
 		_spec.SetField(pruningrule.FieldKeepYearly, field.TypeInt, value)
 		_node.KeepYearly = value
 	}
-	if value, ok := prc.mutation.KeepWithinDays(); ok {
+	if value, ok := _c.mutation.KeepWithinDays(); ok {
 		_spec.SetField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 		_node.KeepWithinDays = value
 	}
-	if value, ok := prc.mutation.NextRun(); ok {
+	if value, ok := _c.mutation.NextRun(); ok {
 		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
 		_node.NextRun = value
 	}
-	if value, ok := prc.mutation.LastRun(); ok {
+	if value, ok := _c.mutation.LastRun(); ok {
 		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
 		_node.LastRun = &value
 	}
-	if value, ok := prc.mutation.LastRunStatus(); ok {
+	if value, ok := _c.mutation.LastRunStatus(); ok {
 		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
 		_node.LastRunStatus = &value
 	}
-	if nodes := prc.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -335,16 +335,16 @@ type PruningRuleCreateBulk struct {
 }
 
 // Save creates the PruningRule entities in the database.
-func (prcb *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, error) {
-	if prcb.err != nil {
-		return nil, prcb.err
+func (_c *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(prcb.builders))
-	nodes := make([]*PruningRule, len(prcb.builders))
-	mutators := make([]Mutator, len(prcb.builders))
-	for i := range prcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*PruningRule, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := prcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PruningRuleMutation)
@@ -358,11 +358,11 @@ func (prcb *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, er
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, prcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, prcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -386,7 +386,7 @@ func (prcb *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, er
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, prcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -394,8 +394,8 @@ func (prcb *PruningRuleCreateBulk) Save(ctx context.Context) ([]*PruningRule, er
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (prcb *PruningRuleCreateBulk) SaveX(ctx context.Context) []*PruningRule {
-	v, err := prcb.Save(ctx)
+func (_c *PruningRuleCreateBulk) SaveX(ctx context.Context) []*PruningRule {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -403,14 +403,14 @@ func (prcb *PruningRuleCreateBulk) SaveX(ctx context.Context) []*PruningRule {
 }
 
 // Exec executes the query.
-func (prcb *PruningRuleCreateBulk) Exec(ctx context.Context) error {
-	_, err := prcb.Save(ctx)
+func (_c *PruningRuleCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (prcb *PruningRuleCreateBulk) ExecX(ctx context.Context) {
-	if err := prcb.Exec(ctx); err != nil {
+func (_c *PruningRuleCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

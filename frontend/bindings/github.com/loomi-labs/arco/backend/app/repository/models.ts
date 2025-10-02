@@ -7,11 +7,287 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as statemachine$0 from "../statemachine/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as types$0 from "../types/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
 
+/**
+ * ArchiveDeleteStateType is the discriminator enum for ArchiveDeleteState
+ */
+export enum ArchiveDeleteStateType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ArchiveDeleteStateTypeDeleteActive = "DeleteActive",
+    ArchiveDeleteStateTypeDeleteNone = "DeleteNone",
+    ArchiveDeleteStateTypeDeleteQueued = "DeleteQueued",
+};
+
+/**
+ * ArchiveDeleteStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class ArchiveDeleteStateUnion {
+    /**
+     * Discriminator field
+     */
+    "type": ArchiveDeleteStateType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "deleteNone"?: DeleteNone | null;
+    "deleteQueued"?: DeleteQueued | null;
+    "deleteActive"?: DeleteActive | null;
+
+    /** Creates a new ArchiveDeleteStateUnion instance. */
+    constructor($$source: Partial<ArchiveDeleteStateUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = ArchiveDeleteStateType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveDeleteStateUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveDeleteStateUnion {
+        const $$createField1_0 = $$createType1;
+        const $$createField2_0 = $$createType3;
+        const $$createField3_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("deleteNone" in $$parsedSource) {
+            $$parsedSource["deleteNone"] = $$createField1_0($$parsedSource["deleteNone"]);
+        }
+        if ("deleteQueued" in $$parsedSource) {
+            $$parsedSource["deleteQueued"] = $$createField2_0($$parsedSource["deleteQueued"]);
+        }
+        if ("deleteActive" in $$parsedSource) {
+            $$parsedSource["deleteActive"] = $$createField3_0($$parsedSource["deleteActive"]);
+        }
+        return new ArchiveDeleteStateUnion($$parsedSource as Partial<ArchiveDeleteStateUnion>);
+    }
+}
+
+/**
+ * ArchiveRenameStateType is the discriminator enum for ArchiveRenameState
+ */
+export enum ArchiveRenameStateType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ArchiveRenameStateTypeRenameActive = "RenameActive",
+    ArchiveRenameStateTypeRenameNone = "RenameNone",
+    ArchiveRenameStateTypeRenameQueued = "RenameQueued",
+};
+
+/**
+ * ArchiveRenameStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class ArchiveRenameStateUnion {
+    /**
+     * Discriminator field
+     */
+    "type": ArchiveRenameStateType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "renameNone"?: RenameNone | null;
+    "renameQueued"?: RenameQueued | null;
+    "renameActive"?: RenameActive | null;
+
+    /** Creates a new ArchiveRenameStateUnion instance. */
+    constructor($$source: Partial<ArchiveRenameStateUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = ArchiveRenameStateType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveRenameStateUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveRenameStateUnion {
+        const $$createField1_0 = $$createType7;
+        const $$createField2_0 = $$createType9;
+        const $$createField3_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("renameNone" in $$parsedSource) {
+            $$parsedSource["renameNone"] = $$createField1_0($$parsedSource["renameNone"]);
+        }
+        if ("renameQueued" in $$parsedSource) {
+            $$parsedSource["renameQueued"] = $$createField2_0($$parsedSource["renameQueued"]);
+        }
+        if ("renameActive" in $$parsedSource) {
+            $$parsedSource["renameActive"] = $$createField3_0($$parsedSource["renameActive"]);
+        }
+        return new ArchiveRenameStateUnion($$parsedSource as Partial<ArchiveRenameStateUnion>);
+    }
+}
+
+/**
+ * ArchiveWithPendingChanges represents an archive with potential pending operations
+ */
+export class ArchiveWithPendingChanges {
+    /**
+     * ID of the ent.
+     */
+    "id": number;
+
+    /**
+     * CreatedAt holds the value of the "created_at" field.
+     */
+    "createdAt": time$0.Time;
+
+    /**
+     * UpdatedAt holds the value of the "updated_at" field.
+     */
+    "updatedAt": time$0.Time;
+
+    /**
+     * Name holds the value of the "name" field.
+     */
+    "name": string;
+
+    /**
+     * Duration holds the value of the "duration" field.
+     */
+    "duration": number;
+
+    /**
+     * BorgID holds the value of the "borg_id" field.
+     */
+    "borgId": string;
+
+    /**
+     * WillBePruned holds the value of the "will_be_pruned" field.
+     */
+    "willBePruned": boolean;
+
+    /**
+     * Edges holds the relations/edges for other nodes in the graph.
+     * The values are being populated by the ArchiveQuery when eager-loading is set.
+     */
+    "edges": ent$0.ArchiveEdges;
+
+    /**
+     * Serializable rename operation state
+     */
+    "renameStateUnion": ArchiveRenameStateUnion;
+
+    /**
+     * Serializable delete operation state
+     */
+    "deleteStateUnion": ArchiveDeleteStateUnion;
+
+    /** Creates a new ArchiveWithPendingChanges instance. */
+    constructor($$source: Partial<ArchiveWithPendingChanges> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("duration" in $$source)) {
+            this["duration"] = 0;
+        }
+        if (!("borgId" in $$source)) {
+            this["borgId"] = "";
+        }
+        if (!("willBePruned" in $$source)) {
+            this["willBePruned"] = false;
+        }
+        if (!("edges" in $$source)) {
+            this["edges"] = (new ent$0.ArchiveEdges());
+        }
+        if (!("renameStateUnion" in $$source)) {
+            this["renameStateUnion"] = (new ArchiveRenameStateUnion());
+        }
+        if (!("deleteStateUnion" in $$source)) {
+            this["deleteStateUnion"] = (new ArchiveDeleteStateUnion());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveWithPendingChanges instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveWithPendingChanges {
+        const $$createField7_0 = $$createType12;
+        const $$createField8_0 = $$createType13;
+        const $$createField9_0 = $$createType14;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("edges" in $$parsedSource) {
+            $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
+        }
+        if ("renameStateUnion" in $$parsedSource) {
+            $$parsedSource["renameStateUnion"] = $$createField8_0($$parsedSource["renameStateUnion"]);
+        }
+        if ("deleteStateUnion" in $$parsedSource) {
+            $$parsedSource["deleteStateUnion"] = $$createField9_0($$parsedSource["deleteStateUnion"]);
+        }
+        return new ArchiveWithPendingChanges($$parsedSource as Partial<ArchiveWithPendingChanges>);
+    }
+}
+
+export class ArcoCloud {
+    "cloudId": string;
+
+    /** Creates a new ArcoCloud instance. */
+    constructor($$source: Partial<ArcoCloud> = {}) {
+        if (!("cloudId" in $$source)) {
+            this["cloudId"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArcoCloud instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArcoCloud {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArcoCloud($$parsedSource as Partial<ArcoCloud>);
+    }
+}
+
+export enum BackupButtonStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BackupButtonStatusRunBackup = "runBackup",
+    BackupButtonStatusWaiting = "waiting",
+    BackupButtonStatusAbort = "abort",
+    BackupButtonStatusLocked = "locked",
+    BackupButtonStatusUnmount = "unmount",
+    BackupButtonStatusBusy = "busy",
+};
+
+/**
+ * BackupProfileFilter represents filters for backup profiles
+ */
 export class BackupProfileFilter {
     "id"?: number;
     "name": string;
@@ -42,6 +318,344 @@ export class BackupProfileFilter {
     }
 }
 
+export class Completed {
+    "completedAt": time$0.Time;
+
+    /** Creates a new Completed instance. */
+    constructor($$source: Partial<Completed> = {}) {
+        if (!("completedAt" in $$source)) {
+            this["completedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Completed instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Completed {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Completed($$parsedSource as Partial<Completed>);
+    }
+}
+
+export class DeleteActive {
+
+    /** Creates a new DeleteActive instance. */
+    constructor($$source: Partial<DeleteActive> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeleteActive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeleteActive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DeleteActive($$parsedSource as Partial<DeleteActive>);
+    }
+}
+
+/**
+ * Archive delete state variants
+ */
+export class DeleteNone {
+
+    /** Creates a new DeleteNone instance. */
+    constructor($$source: Partial<DeleteNone> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeleteNone instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeleteNone {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DeleteNone($$parsedSource as Partial<DeleteNone>);
+    }
+}
+
+export class DeleteQueued {
+
+    /** Creates a new DeleteQueued instance. */
+    constructor($$source: Partial<DeleteQueued> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeleteQueued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeleteQueued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DeleteQueued($$parsedSource as Partial<DeleteQueued>);
+    }
+}
+
+/**
+ * ExaminePruningResult represents the result of examining pruning operations
+ */
+export class ExaminePruningResult {
+    "backupId": types$0.BackupId;
+    "repositoryName": string;
+    "cntArchivesToBeDeleted": number;
+    "error"?: any;
+
+    /** Creates a new ExaminePruningResult instance. */
+    constructor($$source: Partial<ExaminePruningResult> = {}) {
+        if (!("backupId" in $$source)) {
+            this["backupId"] = (new types$0.BackupId());
+        }
+        if (!("repositoryName" in $$source)) {
+            this["repositoryName"] = "";
+        }
+        if (!("cntArchivesToBeDeleted" in $$source)) {
+            this["cntArchivesToBeDeleted"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ExaminePruningResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ExaminePruningResult {
+        const $$createField0_0 = $$createType15;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupId" in $$parsedSource) {
+            $$parsedSource["backupId"] = $$createField0_0($$parsedSource["backupId"]);
+        }
+        return new ExaminePruningResult($$parsedSource as Partial<ExaminePruningResult>);
+    }
+}
+
+export class Expired {
+    "expiredAt": time$0.Time;
+
+    /** Creates a new Expired instance. */
+    constructor($$source: Partial<Expired> = {}) {
+        if (!("expiredAt" in $$source)) {
+            this["expiredAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Expired instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Expired {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Expired($$parsedSource as Partial<Expired>);
+    }
+}
+
+export class Failed {
+    "error": string;
+    "failedAt": time$0.Time;
+
+    /** Creates a new Failed instance. */
+    constructor($$source: Partial<Failed> = {}) {
+        if (!("error" in $$source)) {
+            this["error"] = "";
+        }
+        if (!("failedAt" in $$source)) {
+            this["failedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Failed instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Failed {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Failed($$parsedSource as Partial<Failed>);
+    }
+}
+
+/**
+ * FixStoredPasswordResult represents the result of fixing stored repository password
+ */
+export class FixStoredPasswordResult {
+    "success": boolean;
+    "errorMessage"?: string;
+
+    /** Creates a new FixStoredPasswordResult instance. */
+    constructor($$source: Partial<FixStoredPasswordResult> = {}) {
+        if (!("success" in $$source)) {
+            this["success"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FixStoredPasswordResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FixStoredPasswordResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new FixStoredPasswordResult($$parsedSource as Partial<FixStoredPasswordResult>);
+    }
+}
+
+/**
+ * Repository type variants
+ */
+export class Local {
+
+    /** Creates a new Local instance. */
+    constructor($$source: Partial<Local> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Local instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Local {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Local($$parsedSource as Partial<Local>);
+    }
+}
+
+/**
+ * LocationType is the discriminator enum for Location
+ */
+export enum LocationType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LocationTypeArcoCloud = "ArcoCloud",
+    LocationTypeLocal = "Local",
+    LocationTypeRemote = "Remote",
+};
+
+/**
+ * LocationUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class LocationUnion {
+    /**
+     * Discriminator field
+     */
+    "type": LocationType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "local"?: Local | null;
+    "remote"?: Remote | null;
+    "arcoCloud"?: ArcoCloud | null;
+
+    /** Creates a new LocationUnion instance. */
+    constructor($$source: Partial<LocationUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = LocationType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LocationUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LocationUnion {
+        const $$createField1_0 = $$createType17;
+        const $$createField2_0 = $$createType19;
+        const $$createField3_0 = $$createType21;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("local" in $$parsedSource) {
+            $$parsedSource["local"] = $$createField1_0($$parsedSource["local"]);
+        }
+        if ("remote" in $$parsedSource) {
+            $$parsedSource["remote"] = $$createField2_0($$parsedSource["remote"]);
+        }
+        if ("arcoCloud" in $$parsedSource) {
+            $$parsedSource["arcoCloud"] = $$createField3_0($$parsedSource["arcoCloud"]);
+        }
+        return new LocationUnion($$parsedSource as Partial<LocationUnion>);
+    }
+}
+
+/**
+ * OperationStatusType is the discriminator enum for OperationStatus
+ */
+export enum OperationStatusType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    OperationStatusTypeCompleted = "Completed",
+    OperationStatusTypeExpired = "Expired",
+    OperationStatusTypeFailed = "Failed",
+    OperationStatusTypeQueued = "Queued",
+    OperationStatusTypeRunning = "Running",
+};
+
+/**
+ * OperationStatusUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ */
+export class OperationStatusUnion {
+    /**
+     * Discriminator field
+     */
+    "type": OperationStatusType;
+
+    /**
+     * Variant fields - only one will be non-nil
+     */
+    "queued"?: Queued | null;
+    "running"?: Running | null;
+    "completed"?: Completed | null;
+    "failed"?: Failed | null;
+    "expired"?: Expired | null;
+
+    /** Creates a new OperationStatusUnion instance. */
+    constructor($$source: Partial<OperationStatusUnion> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = OperationStatusType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OperationStatusUnion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OperationStatusUnion {
+        const $$createField1_0 = $$createType23;
+        const $$createField2_0 = $$createType25;
+        const $$createField3_0 = $$createType27;
+        const $$createField4_0 = $$createType29;
+        const $$createField5_0 = $$createType31;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("queued" in $$parsedSource) {
+            $$parsedSource["queued"] = $$createField1_0($$parsedSource["queued"]);
+        }
+        if ("running" in $$parsedSource) {
+            $$parsedSource["running"] = $$createField2_0($$parsedSource["running"]);
+        }
+        if ("completed" in $$parsedSource) {
+            $$parsedSource["completed"] = $$createField3_0($$parsedSource["completed"]);
+        }
+        if ("failed" in $$parsedSource) {
+            $$parsedSource["failed"] = $$createField4_0($$parsedSource["failed"]);
+        }
+        if ("expired" in $$parsedSource) {
+            $$parsedSource["expired"] = $$createField5_0($$parsedSource["expired"]);
+        }
+        return new OperationStatusUnion($$parsedSource as Partial<OperationStatusUnion>);
+    }
+}
+
+/**
+ * PaginatedArchivesRequest represents a request for paginated archives
+ */
 export class PaginatedArchivesRequest {
     /**
      * Required
@@ -77,7 +691,7 @@ export class PaginatedArchivesRequest {
      * Creates a new PaginatedArchivesRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesRequest {
-        const $$createField3_0 = $$createType1;
+        const $$createField3_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupProfileFilter" in $$parsedSource) {
             $$parsedSource["backupProfileFilter"] = $$createField3_0($$parsedSource["backupProfileFilter"]);
@@ -86,8 +700,11 @@ export class PaginatedArchivesRequest {
     }
 }
 
+/**
+ * PaginatedArchivesResponse represents the response for paginated archives
+ */
 export class PaginatedArchivesResponse {
-    "archives": (ent$0.Archive | null)[];
+    "archives": (ArchiveWithPendingChanges | null)[];
     "total": number;
 
     /** Creates a new PaginatedArchivesResponse instance. */
@@ -106,7 +723,7 @@ export class PaginatedArchivesResponse {
      * Creates a new PaginatedArchivesResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): PaginatedArchivesResponse {
-        const $$createField0_0 = $$createType4;
+        const $$createField0_0 = $$createType36;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("archives" in $$parsedSource) {
             $$parsedSource["archives"] = $$createField0_0($$parsedSource["archives"]);
@@ -115,17 +732,49 @@ export class PaginatedArchivesResponse {
     }
 }
 
+/**
+ * Progress represents generic progress information
+ */
+export class Progress {
+    "current": number;
+    "total": number;
+    "message"?: string;
+
+    /** Creates a new Progress instance. */
+    constructor($$source: Partial<Progress> = {}) {
+        if (!("current" in $$source)) {
+            this["current"] = 0;
+        }
+        if (!("total" in $$source)) {
+            this["total"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Progress instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Progress {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Progress($$parsedSource as Partial<Progress>);
+    }
+}
+
+/**
+ * PruningDate represents pruning information for a single archive
+ */
 export class PruningDate {
     "archiveId": number;
-    "nextRun": time$0.Time;
+    "date": time$0.Time;
 
     /** Creates a new PruningDate instance. */
     constructor($$source: Partial<PruningDate> = {}) {
         if (!("archiveId" in $$source)) {
             this["archiveId"] = 0;
         }
-        if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
+        if (!("date" in $$source)) {
+            this["date"] = null;
         }
 
         Object.assign(this, $$source);
@@ -140,6 +789,9 @@ export class PruningDate {
     }
 }
 
+/**
+ * PruningDates represents pruning date information for archives
+ */
 export class PruningDates {
     "dates": PruningDate[];
 
@@ -156,7 +808,7 @@ export class PruningDates {
      * Creates a new PruningDates instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningDates {
-        const $$createField0_0 = $$createType6;
+        const $$createField0_0 = $$createType38;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("dates" in $$parsedSource) {
             $$parsedSource["dates"] = $$createField0_0($$parsedSource["dates"]);
@@ -165,6 +817,384 @@ export class PruningDates {
     }
 }
 
+export class Queued {
+    /**
+     * Position in queue
+     */
+    "position": number;
+
+    /** Creates a new Queued instance. */
+    constructor($$source: Partial<Queued> = {}) {
+        if (!("position" in $$source)) {
+            this["position"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Queued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Queued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Queued($$parsedSource as Partial<Queued>);
+    }
+}
+
+export class Remote {
+
+    /** Creates a new Remote instance. */
+    constructor($$source: Partial<Remote> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Remote instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Remote {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Remote($$parsedSource as Partial<Remote>);
+    }
+}
+
+export class RenameActive {
+    /**
+     * Full new name (prefix + name)
+     */
+    "newName": string;
+
+    /** Creates a new RenameActive instance. */
+    constructor($$source: Partial<RenameActive> = {}) {
+        if (!("newName" in $$source)) {
+            this["newName"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RenameActive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RenameActive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RenameActive($$parsedSource as Partial<RenameActive>);
+    }
+}
+
+/**
+ * Archive rename state variants
+ */
+export class RenameNone {
+
+    /** Creates a new RenameNone instance. */
+    constructor($$source: Partial<RenameNone> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RenameNone instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RenameNone {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RenameNone($$parsedSource as Partial<RenameNone>);
+    }
+}
+
+export class RenameQueued {
+    /**
+     * Full new name (prefix + name)
+     */
+    "newName": string;
+
+    /** Creates a new RenameQueued instance. */
+    constructor($$source: Partial<RenameQueued> = {}) {
+        if (!("newName" in $$source)) {
+            this["newName"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RenameQueued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RenameQueued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RenameQueued($$parsedSource as Partial<RenameQueued>);
+    }
+}
+
+/**
+ * Repository represents the consolidated repository data structure
+ */
+export class Repository {
+    /**
+     * Core fields
+     */
+    "id": number;
+    "name": string;
+    "url": string;
+
+    /**
+     * Repository type with associated data
+     */
+    "type": LocationUnion;
+
+    /**
+     * Current state
+     */
+    "state": statemachine$0.RepositoryStateUnion;
+
+    /**
+     * Metadata
+     */
+    "archiveCount": number;
+    "lastBackupTime"?: time$0.Time | null;
+    "lastBackupError"?: string;
+    "lastBackupWarning"?: string;
+    "storageUsed": number;
+
+    /** Creates a new Repository instance. */
+    constructor($$source: Partial<Repository> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("url" in $$source)) {
+            this["url"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = (new LocationUnion());
+        }
+        if (!("state" in $$source)) {
+            this["state"] = (new statemachine$0.RepositoryStateUnion());
+        }
+        if (!("archiveCount" in $$source)) {
+            this["archiveCount"] = 0;
+        }
+        if (!("storageUsed" in $$source)) {
+            this["storageUsed"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Repository instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Repository {
+        const $$createField3_0 = $$createType39;
+        const $$createField4_0 = $$createType40;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("type" in $$parsedSource) {
+            $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
+        }
+        if ("state" in $$parsedSource) {
+            $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
+        }
+        return new Repository($$parsedSource as Partial<Repository>);
+    }
+}
+
+/**
+ * RepositoryWithQueue extends Repository with queue information for frontend
+ */
+export class RepositoryWithQueue {
+    /**
+     * Core fields
+     */
+    "id": number;
+    "name": string;
+    "url": string;
+
+    /**
+     * Repository type with associated data
+     */
+    "type": LocationUnion;
+
+    /**
+     * Current state
+     */
+    "state": statemachine$0.RepositoryStateUnion;
+
+    /**
+     * Metadata
+     */
+    "archiveCount": number;
+    "lastBackupTime"?: time$0.Time | null;
+    "lastBackupError"?: string;
+    "lastBackupWarning"?: string;
+    "storageUsed": number;
+    "queuedOperations": (SerializableQueuedOperation | null)[];
+    "activeOperation"?: SerializableQueuedOperation | null;
+
+    /** Creates a new RepositoryWithQueue instance. */
+    constructor($$source: Partial<RepositoryWithQueue> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("url" in $$source)) {
+            this["url"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = (new LocationUnion());
+        }
+        if (!("state" in $$source)) {
+            this["state"] = (new statemachine$0.RepositoryStateUnion());
+        }
+        if (!("archiveCount" in $$source)) {
+            this["archiveCount"] = 0;
+        }
+        if (!("storageUsed" in $$source)) {
+            this["storageUsed"] = 0;
+        }
+        if (!("queuedOperations" in $$source)) {
+            this["queuedOperations"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RepositoryWithQueue instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RepositoryWithQueue {
+        const $$createField3_0 = $$createType39;
+        const $$createField4_0 = $$createType40;
+        const $$createField10_0 = $$createType43;
+        const $$createField11_0 = $$createType42;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("type" in $$parsedSource) {
+            $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
+        }
+        if ("state" in $$parsedSource) {
+            $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
+        }
+        if ("queuedOperations" in $$parsedSource) {
+            $$parsedSource["queuedOperations"] = $$createField10_0($$parsedSource["queuedOperations"]);
+        }
+        if ("activeOperation" in $$parsedSource) {
+            $$parsedSource["activeOperation"] = $$createField11_0($$parsedSource["activeOperation"]);
+        }
+        return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
+    }
+}
+
+export class Running {
+    "progress"?: Progress | null;
+    "startedAt": time$0.Time;
+
+    /** Creates a new Running instance. */
+    constructor($$source: Partial<Running> = {}) {
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Running instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Running {
+        const $$createField0_0 = $$createType45;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("progress" in $$parsedSource) {
+            $$parsedSource["progress"] = $$createField0_0($$parsedSource["progress"]);
+        }
+        return new Running($$parsedSource as Partial<Running>);
+    }
+}
+
+/**
+ * SerializableQueuedOperation represents a queued repository operation with JSON-serializable Union types
+ */
+export class SerializableQueuedOperation {
+    /**
+     * Unique operation ID (UUID) - enables idempotency and deduplication
+     */
+    "id": string;
+    "repoId": number;
+    "backupProfileId": number | null;
+
+    /**
+     * Serializable operation with type and parameters
+     */
+    "operationUnion": statemachine$0.OperationUnion;
+
+    /**
+     * Serializable status with progress, error
+     */
+    "statusUnion": OperationStatusUnion;
+    "createdAt": time$0.Time;
+
+    /**
+     * Auto-expire if not started
+     */
+    "validUntil": time$0.Time | null;
+
+    /**
+     * Must start immediately or fail
+     */
+    "immediate": boolean;
+
+    /** Creates a new SerializableQueuedOperation instance. */
+    constructor($$source: Partial<SerializableQueuedOperation> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("repoId" in $$source)) {
+            this["repoId"] = 0;
+        }
+        if (!("backupProfileId" in $$source)) {
+            this["backupProfileId"] = null;
+        }
+        if (!("operationUnion" in $$source)) {
+            this["operationUnion"] = (new statemachine$0.OperationUnion());
+        }
+        if (!("statusUnion" in $$source)) {
+            this["statusUnion"] = (new OperationStatusUnion());
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("validUntil" in $$source)) {
+            this["validUntil"] = null;
+        }
+        if (!("immediate" in $$source)) {
+            this["immediate"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SerializableQueuedOperation instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SerializableQueuedOperation {
+        const $$createField3_0 = $$createType46;
+        const $$createField4_0 = $$createType47;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("operationUnion" in $$parsedSource) {
+            $$parsedSource["operationUnion"] = $$createField3_0($$parsedSource["operationUnion"]);
+        }
+        if ("statusUnion" in $$parsedSource) {
+            $$parsedSource["statusUnion"] = $$createField4_0($$parsedSource["statusUnion"]);
+        }
+        return new SerializableQueuedOperation($$parsedSource as Partial<SerializableQueuedOperation>);
+    }
+}
+
+/**
+ * TestRepoConnectionResult represents the result of testing repository connection
+ */
 export class TestRepoConnectionResult {
     "success": boolean;
     "needsPassword": boolean;
@@ -198,11 +1228,76 @@ export class TestRepoConnectionResult {
     }
 }
 
+/**
+ * UpdateRequest represents fields that can be updated for a repository
+ */
+export class UpdateRequest {
+    /**
+     * Repository name
+     */
+    "name"?: string;
+
+    /** Creates a new UpdateRequest instance. */
+    constructor($$source: Partial<UpdateRequest> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpdateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UpdateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new UpdateRequest($$parsedSource as Partial<UpdateRequest>);
+    }
+}
+
 // Private type creation functions
-const $$createType0 = BackupProfileFilter.createFrom;
+const $$createType0 = DeleteNone.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = ent$0.Archive.createFrom;
+const $$createType2 = DeleteQueued.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = PruningDate.createFrom;
-const $$createType6 = $Create.Array($$createType5);
+const $$createType4 = DeleteActive.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = RenameNone.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = RenameQueued.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = RenameActive.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = ent$0.ArchiveEdges.createFrom;
+const $$createType13 = ArchiveRenameStateUnion.createFrom;
+const $$createType14 = ArchiveDeleteStateUnion.createFrom;
+const $$createType15 = types$0.BackupId.createFrom;
+const $$createType16 = Local.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);
+const $$createType18 = Remote.createFrom;
+const $$createType19 = $Create.Nullable($$createType18);
+const $$createType20 = ArcoCloud.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = Queued.createFrom;
+const $$createType23 = $Create.Nullable($$createType22);
+const $$createType24 = Running.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);
+const $$createType26 = Completed.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = Failed.createFrom;
+const $$createType29 = $Create.Nullable($$createType28);
+const $$createType30 = Expired.createFrom;
+const $$createType31 = $Create.Nullable($$createType30);
+const $$createType32 = BackupProfileFilter.createFrom;
+const $$createType33 = $Create.Nullable($$createType32);
+const $$createType34 = ArchiveWithPendingChanges.createFrom;
+const $$createType35 = $Create.Nullable($$createType34);
+const $$createType36 = $Create.Array($$createType35);
+const $$createType37 = PruningDate.createFrom;
+const $$createType38 = $Create.Array($$createType37);
+const $$createType39 = LocationUnion.createFrom;
+const $$createType40 = statemachine$0.RepositoryStateUnion.createFrom;
+const $$createType41 = SerializableQueuedOperation.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = $Create.Array($$createType42);
+const $$createType44 = Progress.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = statemachine$0.OperationUnion.createFrom;
+const $$createType47 = OperationStatusUnion.createFrom;

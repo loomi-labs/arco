@@ -10,8 +10,17 @@ import (
 	"time"
 )
 
-func (b *borg) List(ctx context.Context, repository string, password string) (*types.ListResponse, *types.Status) {
-	cmd := exec.CommandContext(ctx, b.path, "list", "--json", "--format", "`{end}`", repository)
+func (b *borg) List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status) {
+	// Build command arguments
+	args := []string{"list", "--json", "--format", "`{end}`"}
+
+	// Add glob filtering if provided
+	if glob != "" {
+		args = append(args, "--glob-archives", glob)
+	}
+
+	args = append(args, repository)
+	cmd := exec.CommandContext(ctx, b.path, args...)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	// Get the list from the borg repository

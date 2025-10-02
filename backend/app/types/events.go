@@ -23,6 +23,7 @@ const (
 	EventCheckoutStateChanged  Event = "checkoutStateChanged"
 	EventSubscriptionAdded     Event = "subscriptionAdded"
 	EventSubscriptionCancelled Event = "subscriptionCancelled"
+	EventOperationErrorOccurred Event = "operationErrorOccurred"
 )
 
 var AllEvents = []Event{
@@ -37,6 +38,7 @@ var AllEvents = []Event{
 	EventCheckoutStateChanged,
 	EventSubscriptionAdded,
 	EventSubscriptionCancelled,
+	EventOperationErrorOccurred,
 }
 
 func (e Event) String() string {
@@ -73,6 +75,10 @@ func EventSubscriptionCancelledString() string {
 
 type RuntimeEventEmitter struct{}
 
-func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string) {
-	application.Get().Event.Emit(event)
+func (r *RuntimeEventEmitter) EmitEvent(_ context.Context, event string, data ...string) {
+	args := make([]any, len(data))
+	for i, d := range data {
+		args[i] = d
+	}
+	application.Get().Event.Emit(event, args...)
 }

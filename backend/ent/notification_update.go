@@ -24,65 +24,65 @@ type NotificationUpdate struct {
 }
 
 // Where appends a list predicates to the NotificationUpdate builder.
-func (nu *NotificationUpdate) Where(ps ...predicate.Notification) *NotificationUpdate {
-	nu.mutation.Where(ps...)
-	return nu
+func (_u *NotificationUpdate) Where(ps ...predicate.Notification) *NotificationUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (nu *NotificationUpdate) SetUpdatedAt(t time.Time) *NotificationUpdate {
-	nu.mutation.SetUpdatedAt(t)
-	return nu
+func (_u *NotificationUpdate) SetUpdatedAt(v time.Time) *NotificationUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetSeen sets the "seen" field.
-func (nu *NotificationUpdate) SetSeen(b bool) *NotificationUpdate {
-	nu.mutation.SetSeen(b)
-	return nu
+func (_u *NotificationUpdate) SetSeen(v bool) *NotificationUpdate {
+	_u.mutation.SetSeen(v)
+	return _u
 }
 
 // SetNillableSeen sets the "seen" field if the given value is not nil.
-func (nu *NotificationUpdate) SetNillableSeen(b *bool) *NotificationUpdate {
-	if b != nil {
-		nu.SetSeen(*b)
+func (_u *NotificationUpdate) SetNillableSeen(v *bool) *NotificationUpdate {
+	if v != nil {
+		_u.SetSeen(*v)
 	}
-	return nu
+	return _u
 }
 
 // SetAction sets the "action" field.
-func (nu *NotificationUpdate) SetAction(n notification.Action) *NotificationUpdate {
-	nu.mutation.SetAction(n)
-	return nu
+func (_u *NotificationUpdate) SetAction(v notification.Action) *NotificationUpdate {
+	_u.mutation.SetAction(v)
+	return _u
 }
 
 // SetNillableAction sets the "action" field if the given value is not nil.
-func (nu *NotificationUpdate) SetNillableAction(n *notification.Action) *NotificationUpdate {
-	if n != nil {
-		nu.SetAction(*n)
+func (_u *NotificationUpdate) SetNillableAction(v *notification.Action) *NotificationUpdate {
+	if v != nil {
+		_u.SetAction(*v)
 	}
-	return nu
+	return _u
 }
 
 // ClearAction clears the value of the "action" field.
-func (nu *NotificationUpdate) ClearAction() *NotificationUpdate {
-	nu.mutation.ClearAction()
-	return nu
+func (_u *NotificationUpdate) ClearAction() *NotificationUpdate {
+	_u.mutation.ClearAction()
+	return _u
 }
 
 // Mutation returns the NotificationMutation object of the builder.
-func (nu *NotificationUpdate) Mutation() *NotificationMutation {
-	return nu.mutation
+func (_u *NotificationUpdate) Mutation() *NotificationMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (nu *NotificationUpdate) Save(ctx context.Context) (int, error) {
-	nu.defaults()
-	return withHooks(ctx, nu.sqlSave, nu.mutation, nu.hooks)
+func (_u *NotificationUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (nu *NotificationUpdate) SaveX(ctx context.Context) int {
-	affected, err := nu.Save(ctx)
+func (_u *NotificationUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -90,74 +90,74 @@ func (nu *NotificationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (nu *NotificationUpdate) Exec(ctx context.Context) error {
-	_, err := nu.Save(ctx)
+func (_u *NotificationUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (nu *NotificationUpdate) ExecX(ctx context.Context) {
-	if err := nu.Exec(ctx); err != nil {
+func (_u *NotificationUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (nu *NotificationUpdate) defaults() {
-	if _, ok := nu.mutation.UpdatedAt(); !ok {
+func (_u *NotificationUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := notification.UpdateDefaultUpdatedAt()
-		nu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (nu *NotificationUpdate) check() error {
-	if v, ok := nu.mutation.Action(); ok {
+func (_u *NotificationUpdate) check() error {
+	if v, ok := _u.mutation.Action(); ok {
 		if err := notification.ActionValidator(v); err != nil {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "Notification.action": %w`, err)}
 		}
 	}
-	if nu.mutation.BackupProfileCleared() && len(nu.mutation.BackupProfileIDs()) > 0 {
+	if _u.mutation.BackupProfileCleared() && len(_u.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Notification.backup_profile"`)
 	}
-	if nu.mutation.RepositoryCleared() && len(nu.mutation.RepositoryIDs()) > 0 {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Notification.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (nu *NotificationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdate {
-	nu.modifiers = append(nu.modifiers, modifiers...)
-	return nu
+func (_u *NotificationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := nu.check(); err != nil {
-		return n, err
+func (_u *NotificationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(notification.Table, notification.Columns, sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt))
-	if ps := nu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := nu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := nu.mutation.Seen(); ok {
+	if value, ok := _u.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)
 	}
-	if value, ok := nu.mutation.Action(); ok {
+	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(notification.FieldAction, field.TypeEnum, value)
 	}
-	if nu.mutation.ActionCleared() {
+	if _u.mutation.ActionCleared() {
 		_spec.ClearField(notification.FieldAction, field.TypeEnum)
 	}
-	_spec.AddModifiers(nu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, nu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{notification.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -165,8 +165,8 @@ func (nu *NotificationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	nu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // NotificationUpdateOne is the builder for updating a single Notification entity.
@@ -179,72 +179,72 @@ type NotificationUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (nuo *NotificationUpdateOne) SetUpdatedAt(t time.Time) *NotificationUpdateOne {
-	nuo.mutation.SetUpdatedAt(t)
-	return nuo
+func (_u *NotificationUpdateOne) SetUpdatedAt(v time.Time) *NotificationUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetSeen sets the "seen" field.
-func (nuo *NotificationUpdateOne) SetSeen(b bool) *NotificationUpdateOne {
-	nuo.mutation.SetSeen(b)
-	return nuo
+func (_u *NotificationUpdateOne) SetSeen(v bool) *NotificationUpdateOne {
+	_u.mutation.SetSeen(v)
+	return _u
 }
 
 // SetNillableSeen sets the "seen" field if the given value is not nil.
-func (nuo *NotificationUpdateOne) SetNillableSeen(b *bool) *NotificationUpdateOne {
-	if b != nil {
-		nuo.SetSeen(*b)
+func (_u *NotificationUpdateOne) SetNillableSeen(v *bool) *NotificationUpdateOne {
+	if v != nil {
+		_u.SetSeen(*v)
 	}
-	return nuo
+	return _u
 }
 
 // SetAction sets the "action" field.
-func (nuo *NotificationUpdateOne) SetAction(n notification.Action) *NotificationUpdateOne {
-	nuo.mutation.SetAction(n)
-	return nuo
+func (_u *NotificationUpdateOne) SetAction(v notification.Action) *NotificationUpdateOne {
+	_u.mutation.SetAction(v)
+	return _u
 }
 
 // SetNillableAction sets the "action" field if the given value is not nil.
-func (nuo *NotificationUpdateOne) SetNillableAction(n *notification.Action) *NotificationUpdateOne {
-	if n != nil {
-		nuo.SetAction(*n)
+func (_u *NotificationUpdateOne) SetNillableAction(v *notification.Action) *NotificationUpdateOne {
+	if v != nil {
+		_u.SetAction(*v)
 	}
-	return nuo
+	return _u
 }
 
 // ClearAction clears the value of the "action" field.
-func (nuo *NotificationUpdateOne) ClearAction() *NotificationUpdateOne {
-	nuo.mutation.ClearAction()
-	return nuo
+func (_u *NotificationUpdateOne) ClearAction() *NotificationUpdateOne {
+	_u.mutation.ClearAction()
+	return _u
 }
 
 // Mutation returns the NotificationMutation object of the builder.
-func (nuo *NotificationUpdateOne) Mutation() *NotificationMutation {
-	return nuo.mutation
+func (_u *NotificationUpdateOne) Mutation() *NotificationMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the NotificationUpdate builder.
-func (nuo *NotificationUpdateOne) Where(ps ...predicate.Notification) *NotificationUpdateOne {
-	nuo.mutation.Where(ps...)
-	return nuo
+func (_u *NotificationUpdateOne) Where(ps ...predicate.Notification) *NotificationUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (nuo *NotificationUpdateOne) Select(field string, fields ...string) *NotificationUpdateOne {
-	nuo.fields = append([]string{field}, fields...)
-	return nuo
+func (_u *NotificationUpdateOne) Select(field string, fields ...string) *NotificationUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Notification entity.
-func (nuo *NotificationUpdateOne) Save(ctx context.Context) (*Notification, error) {
-	nuo.defaults()
-	return withHooks(ctx, nuo.sqlSave, nuo.mutation, nuo.hooks)
+func (_u *NotificationUpdateOne) Save(ctx context.Context) (*Notification, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (nuo *NotificationUpdateOne) SaveX(ctx context.Context) *Notification {
-	node, err := nuo.Save(ctx)
+func (_u *NotificationUpdateOne) SaveX(ctx context.Context) *Notification {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -252,59 +252,59 @@ func (nuo *NotificationUpdateOne) SaveX(ctx context.Context) *Notification {
 }
 
 // Exec executes the query on the entity.
-func (nuo *NotificationUpdateOne) Exec(ctx context.Context) error {
-	_, err := nuo.Save(ctx)
+func (_u *NotificationUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (nuo *NotificationUpdateOne) ExecX(ctx context.Context) {
-	if err := nuo.Exec(ctx); err != nil {
+func (_u *NotificationUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (nuo *NotificationUpdateOne) defaults() {
-	if _, ok := nuo.mutation.UpdatedAt(); !ok {
+func (_u *NotificationUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := notification.UpdateDefaultUpdatedAt()
-		nuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (nuo *NotificationUpdateOne) check() error {
-	if v, ok := nuo.mutation.Action(); ok {
+func (_u *NotificationUpdateOne) check() error {
+	if v, ok := _u.mutation.Action(); ok {
 		if err := notification.ActionValidator(v); err != nil {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "Notification.action": %w`, err)}
 		}
 	}
-	if nuo.mutation.BackupProfileCleared() && len(nuo.mutation.BackupProfileIDs()) > 0 {
+	if _u.mutation.BackupProfileCleared() && len(_u.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Notification.backup_profile"`)
 	}
-	if nuo.mutation.RepositoryCleared() && len(nuo.mutation.RepositoryIDs()) > 0 {
+	if _u.mutation.RepositoryCleared() && len(_u.mutation.RepositoryIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Notification.repository"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (nuo *NotificationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdateOne {
-	nuo.modifiers = append(nuo.modifiers, modifiers...)
-	return nuo
+func (_u *NotificationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *NotificationUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notification, err error) {
-	if err := nuo.check(); err != nil {
+func (_u *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notification, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(notification.Table, notification.Columns, sqlgraph.NewFieldSpec(notification.FieldID, field.TypeInt))
-	id, ok := nuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Notification.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := nuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, notification.FieldID)
 		for _, f := range fields {
@@ -316,30 +316,30 @@ func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notificat
 			}
 		}
 	}
-	if ps := nuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := nuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(notification.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := nuo.mutation.Seen(); ok {
+	if value, ok := _u.mutation.Seen(); ok {
 		_spec.SetField(notification.FieldSeen, field.TypeBool, value)
 	}
-	if value, ok := nuo.mutation.Action(); ok {
+	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(notification.FieldAction, field.TypeEnum, value)
 	}
-	if nuo.mutation.ActionCleared() {
+	if _u.mutation.ActionCleared() {
 		_spec.ClearField(notification.FieldAction, field.TypeEnum)
 	}
-	_spec.AddModifiers(nuo.modifiers...)
-	_node = &Notification{config: nuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &Notification{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, nuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{notification.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -347,6 +347,6 @@ func (nuo *NotificationUpdateOne) sqlSave(ctx context.Context) (_node *Notificat
 		}
 		return nil, err
 	}
-	nuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

@@ -25,248 +25,248 @@ type PruningRuleUpdate struct {
 }
 
 // Where appends a list predicates to the PruningRuleUpdate builder.
-func (pru *PruningRuleUpdate) Where(ps ...predicate.PruningRule) *PruningRuleUpdate {
-	pru.mutation.Where(ps...)
-	return pru
+func (_u *PruningRuleUpdate) Where(ps ...predicate.PruningRule) *PruningRuleUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pru *PruningRuleUpdate) SetUpdatedAt(t time.Time) *PruningRuleUpdate {
-	pru.mutation.SetUpdatedAt(t)
-	return pru
+func (_u *PruningRuleUpdate) SetUpdatedAt(v time.Time) *PruningRuleUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetIsEnabled sets the "is_enabled" field.
-func (pru *PruningRuleUpdate) SetIsEnabled(b bool) *PruningRuleUpdate {
-	pru.mutation.SetIsEnabled(b)
-	return pru
+func (_u *PruningRuleUpdate) SetIsEnabled(v bool) *PruningRuleUpdate {
+	_u.mutation.SetIsEnabled(v)
+	return _u
 }
 
 // SetNillableIsEnabled sets the "is_enabled" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableIsEnabled(b *bool) *PruningRuleUpdate {
-	if b != nil {
-		pru.SetIsEnabled(*b)
+func (_u *PruningRuleUpdate) SetNillableIsEnabled(v *bool) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetIsEnabled(*v)
 	}
-	return pru
+	return _u
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
-func (pru *PruningRuleUpdate) SetKeepHourly(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepHourly()
-	pru.mutation.SetKeepHourly(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepHourly(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepHourly()
+	_u.mutation.SetKeepHourly(v)
+	return _u
 }
 
 // SetNillableKeepHourly sets the "keep_hourly" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepHourly(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepHourly(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepHourly(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepHourly(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepHourly adds i to the "keep_hourly" field.
-func (pru *PruningRuleUpdate) AddKeepHourly(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepHourly(i)
-	return pru
+// AddKeepHourly adds value to the "keep_hourly" field.
+func (_u *PruningRuleUpdate) AddKeepHourly(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepHourly(v)
+	return _u
 }
 
 // SetKeepDaily sets the "keep_daily" field.
-func (pru *PruningRuleUpdate) SetKeepDaily(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepDaily()
-	pru.mutation.SetKeepDaily(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepDaily(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepDaily()
+	_u.mutation.SetKeepDaily(v)
+	return _u
 }
 
 // SetNillableKeepDaily sets the "keep_daily" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepDaily(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepDaily(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepDaily(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepDaily(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepDaily adds i to the "keep_daily" field.
-func (pru *PruningRuleUpdate) AddKeepDaily(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepDaily(i)
-	return pru
+// AddKeepDaily adds value to the "keep_daily" field.
+func (_u *PruningRuleUpdate) AddKeepDaily(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepDaily(v)
+	return _u
 }
 
 // SetKeepWeekly sets the "keep_weekly" field.
-func (pru *PruningRuleUpdate) SetKeepWeekly(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepWeekly()
-	pru.mutation.SetKeepWeekly(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepWeekly(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepWeekly()
+	_u.mutation.SetKeepWeekly(v)
+	return _u
 }
 
 // SetNillableKeepWeekly sets the "keep_weekly" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepWeekly(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepWeekly(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepWeekly(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepWeekly(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepWeekly adds i to the "keep_weekly" field.
-func (pru *PruningRuleUpdate) AddKeepWeekly(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepWeekly(i)
-	return pru
+// AddKeepWeekly adds value to the "keep_weekly" field.
+func (_u *PruningRuleUpdate) AddKeepWeekly(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepWeekly(v)
+	return _u
 }
 
 // SetKeepMonthly sets the "keep_monthly" field.
-func (pru *PruningRuleUpdate) SetKeepMonthly(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepMonthly()
-	pru.mutation.SetKeepMonthly(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepMonthly(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepMonthly()
+	_u.mutation.SetKeepMonthly(v)
+	return _u
 }
 
 // SetNillableKeepMonthly sets the "keep_monthly" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepMonthly(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepMonthly(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepMonthly(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepMonthly(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepMonthly adds i to the "keep_monthly" field.
-func (pru *PruningRuleUpdate) AddKeepMonthly(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepMonthly(i)
-	return pru
+// AddKeepMonthly adds value to the "keep_monthly" field.
+func (_u *PruningRuleUpdate) AddKeepMonthly(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepMonthly(v)
+	return _u
 }
 
 // SetKeepYearly sets the "keep_yearly" field.
-func (pru *PruningRuleUpdate) SetKeepYearly(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepYearly()
-	pru.mutation.SetKeepYearly(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepYearly(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepYearly()
+	_u.mutation.SetKeepYearly(v)
+	return _u
 }
 
 // SetNillableKeepYearly sets the "keep_yearly" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepYearly(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepYearly(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepYearly(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepYearly(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepYearly adds i to the "keep_yearly" field.
-func (pru *PruningRuleUpdate) AddKeepYearly(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepYearly(i)
-	return pru
+// AddKeepYearly adds value to the "keep_yearly" field.
+func (_u *PruningRuleUpdate) AddKeepYearly(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepYearly(v)
+	return _u
 }
 
 // SetKeepWithinDays sets the "keep_within_days" field.
-func (pru *PruningRuleUpdate) SetKeepWithinDays(i int) *PruningRuleUpdate {
-	pru.mutation.ResetKeepWithinDays()
-	pru.mutation.SetKeepWithinDays(i)
-	return pru
+func (_u *PruningRuleUpdate) SetKeepWithinDays(v int) *PruningRuleUpdate {
+	_u.mutation.ResetKeepWithinDays()
+	_u.mutation.SetKeepWithinDays(v)
+	return _u
 }
 
 // SetNillableKeepWithinDays sets the "keep_within_days" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableKeepWithinDays(i *int) *PruningRuleUpdate {
-	if i != nil {
-		pru.SetKeepWithinDays(*i)
+func (_u *PruningRuleUpdate) SetNillableKeepWithinDays(v *int) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetKeepWithinDays(*v)
 	}
-	return pru
+	return _u
 }
 
-// AddKeepWithinDays adds i to the "keep_within_days" field.
-func (pru *PruningRuleUpdate) AddKeepWithinDays(i int) *PruningRuleUpdate {
-	pru.mutation.AddKeepWithinDays(i)
-	return pru
+// AddKeepWithinDays adds value to the "keep_within_days" field.
+func (_u *PruningRuleUpdate) AddKeepWithinDays(v int) *PruningRuleUpdate {
+	_u.mutation.AddKeepWithinDays(v)
+	return _u
 }
 
 // SetNextRun sets the "next_run" field.
-func (pru *PruningRuleUpdate) SetNextRun(t time.Time) *PruningRuleUpdate {
-	pru.mutation.SetNextRun(t)
-	return pru
+func (_u *PruningRuleUpdate) SetNextRun(v time.Time) *PruningRuleUpdate {
+	_u.mutation.SetNextRun(v)
+	return _u
 }
 
 // SetNillableNextRun sets the "next_run" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableNextRun(t *time.Time) *PruningRuleUpdate {
-	if t != nil {
-		pru.SetNextRun(*t)
+func (_u *PruningRuleUpdate) SetNillableNextRun(v *time.Time) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetNextRun(*v)
 	}
-	return pru
+	return _u
 }
 
 // ClearNextRun clears the value of the "next_run" field.
-func (pru *PruningRuleUpdate) ClearNextRun() *PruningRuleUpdate {
-	pru.mutation.ClearNextRun()
-	return pru
+func (_u *PruningRuleUpdate) ClearNextRun() *PruningRuleUpdate {
+	_u.mutation.ClearNextRun()
+	return _u
 }
 
 // SetLastRun sets the "last_run" field.
-func (pru *PruningRuleUpdate) SetLastRun(t time.Time) *PruningRuleUpdate {
-	pru.mutation.SetLastRun(t)
-	return pru
+func (_u *PruningRuleUpdate) SetLastRun(v time.Time) *PruningRuleUpdate {
+	_u.mutation.SetLastRun(v)
+	return _u
 }
 
 // SetNillableLastRun sets the "last_run" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableLastRun(t *time.Time) *PruningRuleUpdate {
-	if t != nil {
-		pru.SetLastRun(*t)
+func (_u *PruningRuleUpdate) SetNillableLastRun(v *time.Time) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetLastRun(*v)
 	}
-	return pru
+	return _u
 }
 
 // ClearLastRun clears the value of the "last_run" field.
-func (pru *PruningRuleUpdate) ClearLastRun() *PruningRuleUpdate {
-	pru.mutation.ClearLastRun()
-	return pru
+func (_u *PruningRuleUpdate) ClearLastRun() *PruningRuleUpdate {
+	_u.mutation.ClearLastRun()
+	return _u
 }
 
 // SetLastRunStatus sets the "last_run_status" field.
-func (pru *PruningRuleUpdate) SetLastRunStatus(s string) *PruningRuleUpdate {
-	pru.mutation.SetLastRunStatus(s)
-	return pru
+func (_u *PruningRuleUpdate) SetLastRunStatus(v string) *PruningRuleUpdate {
+	_u.mutation.SetLastRunStatus(v)
+	return _u
 }
 
 // SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
-func (pru *PruningRuleUpdate) SetNillableLastRunStatus(s *string) *PruningRuleUpdate {
-	if s != nil {
-		pru.SetLastRunStatus(*s)
+func (_u *PruningRuleUpdate) SetNillableLastRunStatus(v *string) *PruningRuleUpdate {
+	if v != nil {
+		_u.SetLastRunStatus(*v)
 	}
-	return pru
+	return _u
 }
 
 // ClearLastRunStatus clears the value of the "last_run_status" field.
-func (pru *PruningRuleUpdate) ClearLastRunStatus() *PruningRuleUpdate {
-	pru.mutation.ClearLastRunStatus()
-	return pru
+func (_u *PruningRuleUpdate) ClearLastRunStatus() *PruningRuleUpdate {
+	_u.mutation.ClearLastRunStatus()
+	return _u
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (pru *PruningRuleUpdate) SetBackupProfileID(id int) *PruningRuleUpdate {
-	pru.mutation.SetBackupProfileID(id)
-	return pru
+func (_u *PruningRuleUpdate) SetBackupProfileID(id int) *PruningRuleUpdate {
+	_u.mutation.SetBackupProfileID(id)
+	return _u
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (pru *PruningRuleUpdate) SetBackupProfile(b *BackupProfile) *PruningRuleUpdate {
-	return pru.SetBackupProfileID(b.ID)
+func (_u *PruningRuleUpdate) SetBackupProfile(v *BackupProfile) *PruningRuleUpdate {
+	return _u.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the PruningRuleMutation object of the builder.
-func (pru *PruningRuleUpdate) Mutation() *PruningRuleMutation {
-	return pru.mutation
+func (_u *PruningRuleUpdate) Mutation() *PruningRuleMutation {
+	return _u.mutation
 }
 
 // ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
-func (pru *PruningRuleUpdate) ClearBackupProfile() *PruningRuleUpdate {
-	pru.mutation.ClearBackupProfile()
-	return pru
+func (_u *PruningRuleUpdate) ClearBackupProfile() *PruningRuleUpdate {
+	_u.mutation.ClearBackupProfile()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pru *PruningRuleUpdate) Save(ctx context.Context) (int, error) {
-	pru.defaults()
-	return withHooks(ctx, pru.sqlSave, pru.mutation, pru.hooks)
+func (_u *PruningRuleUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pru *PruningRuleUpdate) SaveX(ctx context.Context) int {
-	affected, err := pru.Save(ctx)
+func (_u *PruningRuleUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -274,113 +274,113 @@ func (pru *PruningRuleUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pru *PruningRuleUpdate) Exec(ctx context.Context) error {
-	_, err := pru.Save(ctx)
+func (_u *PruningRuleUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pru *PruningRuleUpdate) ExecX(ctx context.Context) {
-	if err := pru.Exec(ctx); err != nil {
+func (_u *PruningRuleUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pru *PruningRuleUpdate) defaults() {
-	if _, ok := pru.mutation.UpdatedAt(); !ok {
+func (_u *PruningRuleUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := pruningrule.UpdateDefaultUpdatedAt()
-		pru.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pru *PruningRuleUpdate) check() error {
-	if pru.mutation.BackupProfileCleared() && len(pru.mutation.BackupProfileIDs()) > 0 {
+func (_u *PruningRuleUpdate) check() error {
+	if _u.mutation.BackupProfileCleared() && len(_u.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PruningRule.backup_profile"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (pru *PruningRuleUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdate {
-	pru.modifiers = append(pru.modifiers, modifiers...)
-	return pru
+func (_u *PruningRuleUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pru.check(); err != nil {
-		return n, err
+func (_u *PruningRuleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(pruningrule.Table, pruningrule.Columns, sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt))
-	if ps := pru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pru.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pru.mutation.IsEnabled(); ok {
+	if value, ok := _u.mutation.IsEnabled(); ok {
 		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
 	}
-	if value, ok := pru.mutation.KeepHourly(); ok {
+	if value, ok := _u.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepHourly(); ok {
+	if value, ok := _u.mutation.AddedKeepHourly(); ok {
 		_spec.AddField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.KeepDaily(); ok {
+	if value, ok := _u.mutation.KeepDaily(); ok {
 		_spec.SetField(pruningrule.FieldKeepDaily, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepDaily(); ok {
+	if value, ok := _u.mutation.AddedKeepDaily(); ok {
 		_spec.AddField(pruningrule.FieldKeepDaily, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.KeepWeekly(); ok {
+	if value, ok := _u.mutation.KeepWeekly(); ok {
 		_spec.SetField(pruningrule.FieldKeepWeekly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepWeekly(); ok {
+	if value, ok := _u.mutation.AddedKeepWeekly(); ok {
 		_spec.AddField(pruningrule.FieldKeepWeekly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.KeepMonthly(); ok {
+	if value, ok := _u.mutation.KeepMonthly(); ok {
 		_spec.SetField(pruningrule.FieldKeepMonthly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepMonthly(); ok {
+	if value, ok := _u.mutation.AddedKeepMonthly(); ok {
 		_spec.AddField(pruningrule.FieldKeepMonthly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.KeepYearly(); ok {
+	if value, ok := _u.mutation.KeepYearly(); ok {
 		_spec.SetField(pruningrule.FieldKeepYearly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepYearly(); ok {
+	if value, ok := _u.mutation.AddedKeepYearly(); ok {
 		_spec.AddField(pruningrule.FieldKeepYearly, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.KeepWithinDays(); ok {
+	if value, ok := _u.mutation.KeepWithinDays(); ok {
 		_spec.SetField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.AddedKeepWithinDays(); ok {
+	if value, ok := _u.mutation.AddedKeepWithinDays(); ok {
 		_spec.AddField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 	}
-	if value, ok := pru.mutation.NextRun(); ok {
+	if value, ok := _u.mutation.NextRun(); ok {
 		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
 	}
-	if pru.mutation.NextRunCleared() {
+	if _u.mutation.NextRunCleared() {
 		_spec.ClearField(pruningrule.FieldNextRun, field.TypeTime)
 	}
-	if value, ok := pru.mutation.LastRun(); ok {
+	if value, ok := _u.mutation.LastRun(); ok {
 		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
 	}
-	if pru.mutation.LastRunCleared() {
+	if _u.mutation.LastRunCleared() {
 		_spec.ClearField(pruningrule.FieldLastRun, field.TypeTime)
 	}
-	if value, ok := pru.mutation.LastRunStatus(); ok {
+	if value, ok := _u.mutation.LastRunStatus(); ok {
 		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
 	}
-	if pru.mutation.LastRunStatusCleared() {
+	if _u.mutation.LastRunStatusCleared() {
 		_spec.ClearField(pruningrule.FieldLastRunStatus, field.TypeString)
 	}
-	if pru.mutation.BackupProfileCleared() {
+	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -393,7 +393,7 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pru.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -409,8 +409,8 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(pru.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, pru.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{pruningrule.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -418,8 +418,8 @@ func (pru *PruningRuleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	pru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // PruningRuleUpdateOne is the builder for updating a single PruningRule entity.
@@ -432,255 +432,255 @@ type PruningRuleUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pruo *PruningRuleUpdateOne) SetUpdatedAt(t time.Time) *PruningRuleUpdateOne {
-	pruo.mutation.SetUpdatedAt(t)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetUpdatedAt(v time.Time) *PruningRuleUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetIsEnabled sets the "is_enabled" field.
-func (pruo *PruningRuleUpdateOne) SetIsEnabled(b bool) *PruningRuleUpdateOne {
-	pruo.mutation.SetIsEnabled(b)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetIsEnabled(v bool) *PruningRuleUpdateOne {
+	_u.mutation.SetIsEnabled(v)
+	return _u
 }
 
 // SetNillableIsEnabled sets the "is_enabled" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableIsEnabled(b *bool) *PruningRuleUpdateOne {
-	if b != nil {
-		pruo.SetIsEnabled(*b)
+func (_u *PruningRuleUpdateOne) SetNillableIsEnabled(v *bool) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetIsEnabled(*v)
 	}
-	return pruo
+	return _u
 }
 
 // SetKeepHourly sets the "keep_hourly" field.
-func (pruo *PruningRuleUpdateOne) SetKeepHourly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepHourly()
-	pruo.mutation.SetKeepHourly(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepHourly(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepHourly()
+	_u.mutation.SetKeepHourly(v)
+	return _u
 }
 
 // SetNillableKeepHourly sets the "keep_hourly" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepHourly(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepHourly(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepHourly(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepHourly(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepHourly adds i to the "keep_hourly" field.
-func (pruo *PruningRuleUpdateOne) AddKeepHourly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepHourly(i)
-	return pruo
+// AddKeepHourly adds value to the "keep_hourly" field.
+func (_u *PruningRuleUpdateOne) AddKeepHourly(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepHourly(v)
+	return _u
 }
 
 // SetKeepDaily sets the "keep_daily" field.
-func (pruo *PruningRuleUpdateOne) SetKeepDaily(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepDaily()
-	pruo.mutation.SetKeepDaily(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepDaily(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepDaily()
+	_u.mutation.SetKeepDaily(v)
+	return _u
 }
 
 // SetNillableKeepDaily sets the "keep_daily" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepDaily(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepDaily(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepDaily(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepDaily(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepDaily adds i to the "keep_daily" field.
-func (pruo *PruningRuleUpdateOne) AddKeepDaily(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepDaily(i)
-	return pruo
+// AddKeepDaily adds value to the "keep_daily" field.
+func (_u *PruningRuleUpdateOne) AddKeepDaily(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepDaily(v)
+	return _u
 }
 
 // SetKeepWeekly sets the "keep_weekly" field.
-func (pruo *PruningRuleUpdateOne) SetKeepWeekly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepWeekly()
-	pruo.mutation.SetKeepWeekly(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepWeekly(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepWeekly()
+	_u.mutation.SetKeepWeekly(v)
+	return _u
 }
 
 // SetNillableKeepWeekly sets the "keep_weekly" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepWeekly(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepWeekly(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepWeekly(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepWeekly(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepWeekly adds i to the "keep_weekly" field.
-func (pruo *PruningRuleUpdateOne) AddKeepWeekly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepWeekly(i)
-	return pruo
+// AddKeepWeekly adds value to the "keep_weekly" field.
+func (_u *PruningRuleUpdateOne) AddKeepWeekly(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepWeekly(v)
+	return _u
 }
 
 // SetKeepMonthly sets the "keep_monthly" field.
-func (pruo *PruningRuleUpdateOne) SetKeepMonthly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepMonthly()
-	pruo.mutation.SetKeepMonthly(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepMonthly(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepMonthly()
+	_u.mutation.SetKeepMonthly(v)
+	return _u
 }
 
 // SetNillableKeepMonthly sets the "keep_monthly" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepMonthly(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepMonthly(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepMonthly(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepMonthly(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepMonthly adds i to the "keep_monthly" field.
-func (pruo *PruningRuleUpdateOne) AddKeepMonthly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepMonthly(i)
-	return pruo
+// AddKeepMonthly adds value to the "keep_monthly" field.
+func (_u *PruningRuleUpdateOne) AddKeepMonthly(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepMonthly(v)
+	return _u
 }
 
 // SetKeepYearly sets the "keep_yearly" field.
-func (pruo *PruningRuleUpdateOne) SetKeepYearly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepYearly()
-	pruo.mutation.SetKeepYearly(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepYearly(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepYearly()
+	_u.mutation.SetKeepYearly(v)
+	return _u
 }
 
 // SetNillableKeepYearly sets the "keep_yearly" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepYearly(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepYearly(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepYearly(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepYearly(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepYearly adds i to the "keep_yearly" field.
-func (pruo *PruningRuleUpdateOne) AddKeepYearly(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepYearly(i)
-	return pruo
+// AddKeepYearly adds value to the "keep_yearly" field.
+func (_u *PruningRuleUpdateOne) AddKeepYearly(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepYearly(v)
+	return _u
 }
 
 // SetKeepWithinDays sets the "keep_within_days" field.
-func (pruo *PruningRuleUpdateOne) SetKeepWithinDays(i int) *PruningRuleUpdateOne {
-	pruo.mutation.ResetKeepWithinDays()
-	pruo.mutation.SetKeepWithinDays(i)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetKeepWithinDays(v int) *PruningRuleUpdateOne {
+	_u.mutation.ResetKeepWithinDays()
+	_u.mutation.SetKeepWithinDays(v)
+	return _u
 }
 
 // SetNillableKeepWithinDays sets the "keep_within_days" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableKeepWithinDays(i *int) *PruningRuleUpdateOne {
-	if i != nil {
-		pruo.SetKeepWithinDays(*i)
+func (_u *PruningRuleUpdateOne) SetNillableKeepWithinDays(v *int) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetKeepWithinDays(*v)
 	}
-	return pruo
+	return _u
 }
 
-// AddKeepWithinDays adds i to the "keep_within_days" field.
-func (pruo *PruningRuleUpdateOne) AddKeepWithinDays(i int) *PruningRuleUpdateOne {
-	pruo.mutation.AddKeepWithinDays(i)
-	return pruo
+// AddKeepWithinDays adds value to the "keep_within_days" field.
+func (_u *PruningRuleUpdateOne) AddKeepWithinDays(v int) *PruningRuleUpdateOne {
+	_u.mutation.AddKeepWithinDays(v)
+	return _u
 }
 
 // SetNextRun sets the "next_run" field.
-func (pruo *PruningRuleUpdateOne) SetNextRun(t time.Time) *PruningRuleUpdateOne {
-	pruo.mutation.SetNextRun(t)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetNextRun(v time.Time) *PruningRuleUpdateOne {
+	_u.mutation.SetNextRun(v)
+	return _u
 }
 
 // SetNillableNextRun sets the "next_run" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableNextRun(t *time.Time) *PruningRuleUpdateOne {
-	if t != nil {
-		pruo.SetNextRun(*t)
+func (_u *PruningRuleUpdateOne) SetNillableNextRun(v *time.Time) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetNextRun(*v)
 	}
-	return pruo
+	return _u
 }
 
 // ClearNextRun clears the value of the "next_run" field.
-func (pruo *PruningRuleUpdateOne) ClearNextRun() *PruningRuleUpdateOne {
-	pruo.mutation.ClearNextRun()
-	return pruo
+func (_u *PruningRuleUpdateOne) ClearNextRun() *PruningRuleUpdateOne {
+	_u.mutation.ClearNextRun()
+	return _u
 }
 
 // SetLastRun sets the "last_run" field.
-func (pruo *PruningRuleUpdateOne) SetLastRun(t time.Time) *PruningRuleUpdateOne {
-	pruo.mutation.SetLastRun(t)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetLastRun(v time.Time) *PruningRuleUpdateOne {
+	_u.mutation.SetLastRun(v)
+	return _u
 }
 
 // SetNillableLastRun sets the "last_run" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableLastRun(t *time.Time) *PruningRuleUpdateOne {
-	if t != nil {
-		pruo.SetLastRun(*t)
+func (_u *PruningRuleUpdateOne) SetNillableLastRun(v *time.Time) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetLastRun(*v)
 	}
-	return pruo
+	return _u
 }
 
 // ClearLastRun clears the value of the "last_run" field.
-func (pruo *PruningRuleUpdateOne) ClearLastRun() *PruningRuleUpdateOne {
-	pruo.mutation.ClearLastRun()
-	return pruo
+func (_u *PruningRuleUpdateOne) ClearLastRun() *PruningRuleUpdateOne {
+	_u.mutation.ClearLastRun()
+	return _u
 }
 
 // SetLastRunStatus sets the "last_run_status" field.
-func (pruo *PruningRuleUpdateOne) SetLastRunStatus(s string) *PruningRuleUpdateOne {
-	pruo.mutation.SetLastRunStatus(s)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetLastRunStatus(v string) *PruningRuleUpdateOne {
+	_u.mutation.SetLastRunStatus(v)
+	return _u
 }
 
 // SetNillableLastRunStatus sets the "last_run_status" field if the given value is not nil.
-func (pruo *PruningRuleUpdateOne) SetNillableLastRunStatus(s *string) *PruningRuleUpdateOne {
-	if s != nil {
-		pruo.SetLastRunStatus(*s)
+func (_u *PruningRuleUpdateOne) SetNillableLastRunStatus(v *string) *PruningRuleUpdateOne {
+	if v != nil {
+		_u.SetLastRunStatus(*v)
 	}
-	return pruo
+	return _u
 }
 
 // ClearLastRunStatus clears the value of the "last_run_status" field.
-func (pruo *PruningRuleUpdateOne) ClearLastRunStatus() *PruningRuleUpdateOne {
-	pruo.mutation.ClearLastRunStatus()
-	return pruo
+func (_u *PruningRuleUpdateOne) ClearLastRunStatus() *PruningRuleUpdateOne {
+	_u.mutation.ClearLastRunStatus()
+	return _u
 }
 
 // SetBackupProfileID sets the "backup_profile" edge to the BackupProfile entity by ID.
-func (pruo *PruningRuleUpdateOne) SetBackupProfileID(id int) *PruningRuleUpdateOne {
-	pruo.mutation.SetBackupProfileID(id)
-	return pruo
+func (_u *PruningRuleUpdateOne) SetBackupProfileID(id int) *PruningRuleUpdateOne {
+	_u.mutation.SetBackupProfileID(id)
+	return _u
 }
 
 // SetBackupProfile sets the "backup_profile" edge to the BackupProfile entity.
-func (pruo *PruningRuleUpdateOne) SetBackupProfile(b *BackupProfile) *PruningRuleUpdateOne {
-	return pruo.SetBackupProfileID(b.ID)
+func (_u *PruningRuleUpdateOne) SetBackupProfile(v *BackupProfile) *PruningRuleUpdateOne {
+	return _u.SetBackupProfileID(v.ID)
 }
 
 // Mutation returns the PruningRuleMutation object of the builder.
-func (pruo *PruningRuleUpdateOne) Mutation() *PruningRuleMutation {
-	return pruo.mutation
+func (_u *PruningRuleUpdateOne) Mutation() *PruningRuleMutation {
+	return _u.mutation
 }
 
 // ClearBackupProfile clears the "backup_profile" edge to the BackupProfile entity.
-func (pruo *PruningRuleUpdateOne) ClearBackupProfile() *PruningRuleUpdateOne {
-	pruo.mutation.ClearBackupProfile()
-	return pruo
+func (_u *PruningRuleUpdateOne) ClearBackupProfile() *PruningRuleUpdateOne {
+	_u.mutation.ClearBackupProfile()
+	return _u
 }
 
 // Where appends a list predicates to the PruningRuleUpdate builder.
-func (pruo *PruningRuleUpdateOne) Where(ps ...predicate.PruningRule) *PruningRuleUpdateOne {
-	pruo.mutation.Where(ps...)
-	return pruo
+func (_u *PruningRuleUpdateOne) Where(ps ...predicate.PruningRule) *PruningRuleUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (pruo *PruningRuleUpdateOne) Select(field string, fields ...string) *PruningRuleUpdateOne {
-	pruo.fields = append([]string{field}, fields...)
-	return pruo
+func (_u *PruningRuleUpdateOne) Select(field string, fields ...string) *PruningRuleUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated PruningRule entity.
-func (pruo *PruningRuleUpdateOne) Save(ctx context.Context) (*PruningRule, error) {
-	pruo.defaults()
-	return withHooks(ctx, pruo.sqlSave, pruo.mutation, pruo.hooks)
+func (_u *PruningRuleUpdateOne) Save(ctx context.Context) (*PruningRule, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pruo *PruningRuleUpdateOne) SaveX(ctx context.Context) *PruningRule {
-	node, err := pruo.Save(ctx)
+func (_u *PruningRuleUpdateOne) SaveX(ctx context.Context) *PruningRule {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -688,51 +688,51 @@ func (pruo *PruningRuleUpdateOne) SaveX(ctx context.Context) *PruningRule {
 }
 
 // Exec executes the query on the entity.
-func (pruo *PruningRuleUpdateOne) Exec(ctx context.Context) error {
-	_, err := pruo.Save(ctx)
+func (_u *PruningRuleUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pruo *PruningRuleUpdateOne) ExecX(ctx context.Context) {
-	if err := pruo.Exec(ctx); err != nil {
+func (_u *PruningRuleUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pruo *PruningRuleUpdateOne) defaults() {
-	if _, ok := pruo.mutation.UpdatedAt(); !ok {
+func (_u *PruningRuleUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := pruningrule.UpdateDefaultUpdatedAt()
-		pruo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pruo *PruningRuleUpdateOne) check() error {
-	if pruo.mutation.BackupProfileCleared() && len(pruo.mutation.BackupProfileIDs()) > 0 {
+func (_u *PruningRuleUpdateOne) check() error {
+	if _u.mutation.BackupProfileCleared() && len(_u.mutation.BackupProfileIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PruningRule.backup_profile"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (pruo *PruningRuleUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdateOne {
-	pruo.modifiers = append(pruo.modifiers, modifiers...)
-	return pruo
+func (_u *PruningRuleUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *PruningRuleUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRule, err error) {
-	if err := pruo.check(); err != nil {
+func (_u *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRule, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(pruningrule.Table, pruningrule.Columns, sqlgraph.NewFieldSpec(pruningrule.FieldID, field.TypeInt))
-	id, ok := pruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PruningRule.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := pruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, pruningrule.FieldID)
 		for _, f := range fields {
@@ -744,74 +744,74 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 			}
 		}
 	}
-	if ps := pruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pruo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(pruningrule.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pruo.mutation.IsEnabled(); ok {
+	if value, ok := _u.mutation.IsEnabled(); ok {
 		_spec.SetField(pruningrule.FieldIsEnabled, field.TypeBool, value)
 	}
-	if value, ok := pruo.mutation.KeepHourly(); ok {
+	if value, ok := _u.mutation.KeepHourly(); ok {
 		_spec.SetField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepHourly(); ok {
+	if value, ok := _u.mutation.AddedKeepHourly(); ok {
 		_spec.AddField(pruningrule.FieldKeepHourly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.KeepDaily(); ok {
+	if value, ok := _u.mutation.KeepDaily(); ok {
 		_spec.SetField(pruningrule.FieldKeepDaily, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepDaily(); ok {
+	if value, ok := _u.mutation.AddedKeepDaily(); ok {
 		_spec.AddField(pruningrule.FieldKeepDaily, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.KeepWeekly(); ok {
+	if value, ok := _u.mutation.KeepWeekly(); ok {
 		_spec.SetField(pruningrule.FieldKeepWeekly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepWeekly(); ok {
+	if value, ok := _u.mutation.AddedKeepWeekly(); ok {
 		_spec.AddField(pruningrule.FieldKeepWeekly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.KeepMonthly(); ok {
+	if value, ok := _u.mutation.KeepMonthly(); ok {
 		_spec.SetField(pruningrule.FieldKeepMonthly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepMonthly(); ok {
+	if value, ok := _u.mutation.AddedKeepMonthly(); ok {
 		_spec.AddField(pruningrule.FieldKeepMonthly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.KeepYearly(); ok {
+	if value, ok := _u.mutation.KeepYearly(); ok {
 		_spec.SetField(pruningrule.FieldKeepYearly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepYearly(); ok {
+	if value, ok := _u.mutation.AddedKeepYearly(); ok {
 		_spec.AddField(pruningrule.FieldKeepYearly, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.KeepWithinDays(); ok {
+	if value, ok := _u.mutation.KeepWithinDays(); ok {
 		_spec.SetField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.AddedKeepWithinDays(); ok {
+	if value, ok := _u.mutation.AddedKeepWithinDays(); ok {
 		_spec.AddField(pruningrule.FieldKeepWithinDays, field.TypeInt, value)
 	}
-	if value, ok := pruo.mutation.NextRun(); ok {
+	if value, ok := _u.mutation.NextRun(); ok {
 		_spec.SetField(pruningrule.FieldNextRun, field.TypeTime, value)
 	}
-	if pruo.mutation.NextRunCleared() {
+	if _u.mutation.NextRunCleared() {
 		_spec.ClearField(pruningrule.FieldNextRun, field.TypeTime)
 	}
-	if value, ok := pruo.mutation.LastRun(); ok {
+	if value, ok := _u.mutation.LastRun(); ok {
 		_spec.SetField(pruningrule.FieldLastRun, field.TypeTime, value)
 	}
-	if pruo.mutation.LastRunCleared() {
+	if _u.mutation.LastRunCleared() {
 		_spec.ClearField(pruningrule.FieldLastRun, field.TypeTime)
 	}
-	if value, ok := pruo.mutation.LastRunStatus(); ok {
+	if value, ok := _u.mutation.LastRunStatus(); ok {
 		_spec.SetField(pruningrule.FieldLastRunStatus, field.TypeString, value)
 	}
-	if pruo.mutation.LastRunStatusCleared() {
+	if _u.mutation.LastRunStatusCleared() {
 		_spec.ClearField(pruningrule.FieldLastRunStatus, field.TypeString)
 	}
-	if pruo.mutation.BackupProfileCleared() {
+	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -824,7 +824,7 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pruo.mutation.BackupProfileIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: true,
@@ -840,11 +840,11 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(pruo.modifiers...)
-	_node = &PruningRule{config: pruo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &PruningRule{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, pruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{pruningrule.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -852,6 +852,6 @@ func (pruo *PruningRuleUpdateOne) sqlSave(ctx context.Context) (_node *PruningRu
 		}
 		return nil, err
 	}
-	pruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

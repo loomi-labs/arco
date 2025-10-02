@@ -30,275 +30,275 @@ type BackupProfileUpdate struct {
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
-func (bpu *BackupProfileUpdate) Where(ps ...predicate.BackupProfile) *BackupProfileUpdate {
-	bpu.mutation.Where(ps...)
-	return bpu
+func (_u *BackupProfileUpdate) Where(ps ...predicate.BackupProfile) *BackupProfileUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (bpu *BackupProfileUpdate) SetUpdatedAt(t time.Time) *BackupProfileUpdate {
-	bpu.mutation.SetUpdatedAt(t)
-	return bpu
+func (_u *BackupProfileUpdate) SetUpdatedAt(v time.Time) *BackupProfileUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (bpu *BackupProfileUpdate) SetName(s string) *BackupProfileUpdate {
-	bpu.mutation.SetName(s)
-	return bpu
+func (_u *BackupProfileUpdate) SetName(v string) *BackupProfileUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableName(s *string) *BackupProfileUpdate {
-	if s != nil {
-		bpu.SetName(*s)
+func (_u *BackupProfileUpdate) SetNillableName(v *string) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return bpu
+	return _u
 }
 
 // SetBackupPaths sets the "backup_paths" field.
-func (bpu *BackupProfileUpdate) SetBackupPaths(s []string) *BackupProfileUpdate {
-	bpu.mutation.SetBackupPaths(s)
-	return bpu
+func (_u *BackupProfileUpdate) SetBackupPaths(v []string) *BackupProfileUpdate {
+	_u.mutation.SetBackupPaths(v)
+	return _u
 }
 
-// AppendBackupPaths appends s to the "backup_paths" field.
-func (bpu *BackupProfileUpdate) AppendBackupPaths(s []string) *BackupProfileUpdate {
-	bpu.mutation.AppendBackupPaths(s)
-	return bpu
+// AppendBackupPaths appends value to the "backup_paths" field.
+func (_u *BackupProfileUpdate) AppendBackupPaths(v []string) *BackupProfileUpdate {
+	_u.mutation.AppendBackupPaths(v)
+	return _u
 }
 
 // SetExcludePaths sets the "exclude_paths" field.
-func (bpu *BackupProfileUpdate) SetExcludePaths(s []string) *BackupProfileUpdate {
-	bpu.mutation.SetExcludePaths(s)
-	return bpu
+func (_u *BackupProfileUpdate) SetExcludePaths(v []string) *BackupProfileUpdate {
+	_u.mutation.SetExcludePaths(v)
+	return _u
 }
 
-// AppendExcludePaths appends s to the "exclude_paths" field.
-func (bpu *BackupProfileUpdate) AppendExcludePaths(s []string) *BackupProfileUpdate {
-	bpu.mutation.AppendExcludePaths(s)
-	return bpu
+// AppendExcludePaths appends value to the "exclude_paths" field.
+func (_u *BackupProfileUpdate) AppendExcludePaths(v []string) *BackupProfileUpdate {
+	_u.mutation.AppendExcludePaths(v)
+	return _u
 }
 
 // ClearExcludePaths clears the value of the "exclude_paths" field.
-func (bpu *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
-	bpu.mutation.ClearExcludePaths()
-	return bpu
+func (_u *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
+	_u.mutation.ClearExcludePaths()
+	return _u
 }
 
 // SetIcon sets the "icon" field.
-func (bpu *BackupProfileUpdate) SetIcon(b backupprofile.Icon) *BackupProfileUpdate {
-	bpu.mutation.SetIcon(b)
-	return bpu
+func (_u *BackupProfileUpdate) SetIcon(v backupprofile.Icon) *BackupProfileUpdate {
+	_u.mutation.SetIcon(v)
+	return _u
 }
 
 // SetNillableIcon sets the "icon" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableIcon(b *backupprofile.Icon) *BackupProfileUpdate {
-	if b != nil {
-		bpu.SetIcon(*b)
+func (_u *BackupProfileUpdate) SetNillableIcon(v *backupprofile.Icon) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetIcon(*v)
 	}
-	return bpu
+	return _u
 }
 
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
-func (bpu *BackupProfileUpdate) SetDataSectionCollapsed(b bool) *BackupProfileUpdate {
-	bpu.mutation.SetDataSectionCollapsed(b)
-	return bpu
+func (_u *BackupProfileUpdate) SetDataSectionCollapsed(v bool) *BackupProfileUpdate {
+	_u.mutation.SetDataSectionCollapsed(v)
+	return _u
 }
 
 // SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableDataSectionCollapsed(b *bool) *BackupProfileUpdate {
-	if b != nil {
-		bpu.SetDataSectionCollapsed(*b)
+func (_u *BackupProfileUpdate) SetNillableDataSectionCollapsed(v *bool) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetDataSectionCollapsed(*v)
 	}
-	return bpu
+	return _u
 }
 
 // SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
-func (bpu *BackupProfileUpdate) SetScheduleSectionCollapsed(b bool) *BackupProfileUpdate {
-	bpu.mutation.SetScheduleSectionCollapsed(b)
-	return bpu
+func (_u *BackupProfileUpdate) SetScheduleSectionCollapsed(v bool) *BackupProfileUpdate {
+	_u.mutation.SetScheduleSectionCollapsed(v)
+	return _u
 }
 
 // SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileUpdate {
-	if b != nil {
-		bpu.SetScheduleSectionCollapsed(*b)
+func (_u *BackupProfileUpdate) SetNillableScheduleSectionCollapsed(v *bool) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetScheduleSectionCollapsed(*v)
 	}
-	return bpu
+	return _u
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
-func (bpu *BackupProfileUpdate) AddRepositoryIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.AddRepositoryIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) AddRepositoryIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.AddRepositoryIDs(ids...)
+	return _u
 }
 
 // AddRepositories adds the "repositories" edges to the Repository entity.
-func (bpu *BackupProfileUpdate) AddRepositories(r ...*Repository) *BackupProfileUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *BackupProfileUpdate) AddRepositories(v ...*Repository) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.AddRepositoryIDs(ids...)
+	return _u.AddRepositoryIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (bpu *BackupProfileUpdate) AddArchiveIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.AddArchiveIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) AddArchiveIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.AddArchiveIDs(ids...)
+	return _u
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (bpu *BackupProfileUpdate) AddArchives(a ...*Archive) *BackupProfileUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *BackupProfileUpdate) AddArchives(v ...*Archive) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.AddArchiveIDs(ids...)
+	return _u.AddArchiveIDs(ids...)
 }
 
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
-func (bpu *BackupProfileUpdate) SetBackupScheduleID(id int) *BackupProfileUpdate {
-	bpu.mutation.SetBackupScheduleID(id)
-	return bpu
+func (_u *BackupProfileUpdate) SetBackupScheduleID(id int) *BackupProfileUpdate {
+	_u.mutation.SetBackupScheduleID(id)
+	return _u
 }
 
 // SetNillableBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillableBackupScheduleID(id *int) *BackupProfileUpdate {
+func (_u *BackupProfileUpdate) SetNillableBackupScheduleID(id *int) *BackupProfileUpdate {
 	if id != nil {
-		bpu = bpu.SetBackupScheduleID(*id)
+		_u = _u.SetBackupScheduleID(*id)
 	}
-	return bpu
+	return _u
 }
 
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
-func (bpu *BackupProfileUpdate) SetBackupSchedule(b *BackupSchedule) *BackupProfileUpdate {
-	return bpu.SetBackupScheduleID(b.ID)
+func (_u *BackupProfileUpdate) SetBackupSchedule(v *BackupSchedule) *BackupProfileUpdate {
+	return _u.SetBackupScheduleID(v.ID)
 }
 
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
-func (bpu *BackupProfileUpdate) SetPruningRuleID(id int) *BackupProfileUpdate {
-	bpu.mutation.SetPruningRuleID(id)
-	return bpu
+func (_u *BackupProfileUpdate) SetPruningRuleID(id int) *BackupProfileUpdate {
+	_u.mutation.SetPruningRuleID(id)
+	return _u
 }
 
 // SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
-func (bpu *BackupProfileUpdate) SetNillablePruningRuleID(id *int) *BackupProfileUpdate {
+func (_u *BackupProfileUpdate) SetNillablePruningRuleID(id *int) *BackupProfileUpdate {
 	if id != nil {
-		bpu = bpu.SetPruningRuleID(*id)
+		_u = _u.SetPruningRuleID(*id)
 	}
-	return bpu
+	return _u
 }
 
 // SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
-func (bpu *BackupProfileUpdate) SetPruningRule(p *PruningRule) *BackupProfileUpdate {
-	return bpu.SetPruningRuleID(p.ID)
+func (_u *BackupProfileUpdate) SetPruningRule(v *PruningRule) *BackupProfileUpdate {
+	return _u.SetPruningRuleID(v.ID)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (bpu *BackupProfileUpdate) AddNotificationIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.AddNotificationIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) AddNotificationIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.AddNotificationIDs(ids...)
+	return _u
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (bpu *BackupProfileUpdate) AddNotifications(n ...*Notification) *BackupProfileUpdate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *BackupProfileUpdate) AddNotifications(v ...*Notification) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.AddNotificationIDs(ids...)
+	return _u.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
-func (bpu *BackupProfileUpdate) Mutation() *BackupProfileMutation {
-	return bpu.mutation
+func (_u *BackupProfileUpdate) Mutation() *BackupProfileMutation {
+	return _u.mutation
 }
 
 // ClearRepositories clears all "repositories" edges to the Repository entity.
-func (bpu *BackupProfileUpdate) ClearRepositories() *BackupProfileUpdate {
-	bpu.mutation.ClearRepositories()
-	return bpu
+func (_u *BackupProfileUpdate) ClearRepositories() *BackupProfileUpdate {
+	_u.mutation.ClearRepositories()
+	return _u
 }
 
 // RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
-func (bpu *BackupProfileUpdate) RemoveRepositoryIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.RemoveRepositoryIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) RemoveRepositoryIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.RemoveRepositoryIDs(ids...)
+	return _u
 }
 
 // RemoveRepositories removes "repositories" edges to Repository entities.
-func (bpu *BackupProfileUpdate) RemoveRepositories(r ...*Repository) *BackupProfileUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *BackupProfileUpdate) RemoveRepositories(v ...*Repository) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.RemoveRepositoryIDs(ids...)
+	return _u.RemoveRepositoryIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
-func (bpu *BackupProfileUpdate) ClearArchives() *BackupProfileUpdate {
-	bpu.mutation.ClearArchives()
-	return bpu
+func (_u *BackupProfileUpdate) ClearArchives() *BackupProfileUpdate {
+	_u.mutation.ClearArchives()
+	return _u
 }
 
 // RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
-func (bpu *BackupProfileUpdate) RemoveArchiveIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.RemoveArchiveIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) RemoveArchiveIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.RemoveArchiveIDs(ids...)
+	return _u
 }
 
 // RemoveArchives removes "archives" edges to Archive entities.
-func (bpu *BackupProfileUpdate) RemoveArchives(a ...*Archive) *BackupProfileUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *BackupProfileUpdate) RemoveArchives(v ...*Archive) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.RemoveArchiveIDs(ids...)
+	return _u.RemoveArchiveIDs(ids...)
 }
 
 // ClearBackupSchedule clears the "backup_schedule" edge to the BackupSchedule entity.
-func (bpu *BackupProfileUpdate) ClearBackupSchedule() *BackupProfileUpdate {
-	bpu.mutation.ClearBackupSchedule()
-	return bpu
+func (_u *BackupProfileUpdate) ClearBackupSchedule() *BackupProfileUpdate {
+	_u.mutation.ClearBackupSchedule()
+	return _u
 }
 
 // ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
-func (bpu *BackupProfileUpdate) ClearPruningRule() *BackupProfileUpdate {
-	bpu.mutation.ClearPruningRule()
-	return bpu
+func (_u *BackupProfileUpdate) ClearPruningRule() *BackupProfileUpdate {
+	_u.mutation.ClearPruningRule()
+	return _u
 }
 
 // ClearNotifications clears all "notifications" edges to the Notification entity.
-func (bpu *BackupProfileUpdate) ClearNotifications() *BackupProfileUpdate {
-	bpu.mutation.ClearNotifications()
-	return bpu
+func (_u *BackupProfileUpdate) ClearNotifications() *BackupProfileUpdate {
+	_u.mutation.ClearNotifications()
+	return _u
 }
 
 // RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
-func (bpu *BackupProfileUpdate) RemoveNotificationIDs(ids ...int) *BackupProfileUpdate {
-	bpu.mutation.RemoveNotificationIDs(ids...)
-	return bpu
+func (_u *BackupProfileUpdate) RemoveNotificationIDs(ids ...int) *BackupProfileUpdate {
+	_u.mutation.RemoveNotificationIDs(ids...)
+	return _u
 }
 
 // RemoveNotifications removes "notifications" edges to Notification entities.
-func (bpu *BackupProfileUpdate) RemoveNotifications(n ...*Notification) *BackupProfileUpdate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *BackupProfileUpdate) RemoveNotifications(v ...*Notification) *BackupProfileUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpu.RemoveNotificationIDs(ids...)
+	return _u.RemoveNotificationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (bpu *BackupProfileUpdate) Save(ctx context.Context) (int, error) {
-	bpu.defaults()
-	return withHooks(ctx, bpu.sqlSave, bpu.mutation, bpu.hooks)
+func (_u *BackupProfileUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (bpu *BackupProfileUpdate) SaveX(ctx context.Context) int {
-	affected, err := bpu.Save(ctx)
+func (_u *BackupProfileUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -306,34 +306,34 @@ func (bpu *BackupProfileUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (bpu *BackupProfileUpdate) Exec(ctx context.Context) error {
-	_, err := bpu.Save(ctx)
+func (_u *BackupProfileUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bpu *BackupProfileUpdate) ExecX(ctx context.Context) {
-	if err := bpu.Exec(ctx); err != nil {
+func (_u *BackupProfileUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (bpu *BackupProfileUpdate) defaults() {
-	if _, ok := bpu.mutation.UpdatedAt(); !ok {
+func (_u *BackupProfileUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := backupprofile.UpdateDefaultUpdatedAt()
-		bpu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (bpu *BackupProfileUpdate) check() error {
-	if v, ok := bpu.mutation.Name(); ok {
+func (_u *BackupProfileUpdate) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := backupprofile.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
 		}
 	}
-	if v, ok := bpu.mutation.Icon(); ok {
+	if v, ok := _u.mutation.Icon(); ok {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
@@ -342,58 +342,58 @@ func (bpu *BackupProfileUpdate) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (bpu *BackupProfileUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdate {
-	bpu.modifiers = append(bpu.modifiers, modifiers...)
-	return bpu
+func (_u *BackupProfileUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdate {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := bpu.check(); err != nil {
-		return n, err
+func (_u *BackupProfileUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(backupprofile.Table, backupprofile.Columns, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
-	if ps := bpu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := bpu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := bpu.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 	}
-	if value, ok := bpu.mutation.BackupPaths(); ok {
+	if value, ok := _u.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
-	if value, ok := bpu.mutation.AppendedBackupPaths(); ok {
+	if value, ok := _u.mutation.AppendedBackupPaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, backupprofile.FieldBackupPaths, value)
 		})
 	}
-	if value, ok := bpu.mutation.ExcludePaths(); ok {
+	if value, ok := _u.mutation.ExcludePaths(); ok {
 		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
 	}
-	if value, ok := bpu.mutation.AppendedExcludePaths(); ok {
+	if value, ok := _u.mutation.AppendedExcludePaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, backupprofile.FieldExcludePaths, value)
 		})
 	}
-	if bpu.mutation.ExcludePathsCleared() {
+	if _u.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
-	if value, ok := bpu.mutation.Icon(); ok {
+	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
-	if value, ok := bpu.mutation.DataSectionCollapsed(); ok {
+	if value, ok := _u.mutation.DataSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
 	}
-	if value, ok := bpu.mutation.ScheduleSectionCollapsed(); ok {
+	if value, ok := _u.mutation.ScheduleSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
 	}
-	if bpu.mutation.RepositoriesCleared() {
+	if _u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -406,7 +406,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !bpu.mutation.RepositoriesCleared() {
+	if nodes := _u.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !_u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -422,7 +422,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.RepositoriesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -438,7 +438,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpu.mutation.ArchivesCleared() {
+	if _u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -451,7 +451,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !bpu.mutation.ArchivesCleared() {
+	if nodes := _u.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !_u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -467,7 +467,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -483,7 +483,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpu.mutation.BackupScheduleCleared() {
+	if _u.mutation.BackupScheduleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -496,7 +496,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.BackupScheduleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupScheduleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -512,7 +512,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpu.mutation.PruningRuleCleared() {
+	if _u.mutation.PruningRuleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -525,7 +525,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.PruningRuleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PruningRuleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -541,7 +541,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpu.mutation.NotificationsCleared() {
+	if _u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -554,7 +554,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !bpu.mutation.NotificationsCleared() {
+	if nodes := _u.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !_u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -570,7 +570,7 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpu.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -586,8 +586,8 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(bpu.modifiers...)
-	if n, err = sqlgraph.UpdateNodes(ctx, bpu.driver, _spec); err != nil {
+	_spec.AddModifiers(_u.modifiers...)
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupprofile.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -595,8 +595,8 @@ func (bpu *BackupProfileUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		return 0, err
 	}
-	bpu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // BackupProfileUpdateOne is the builder for updating a single BackupProfile entity.
@@ -609,282 +609,282 @@ type BackupProfileUpdateOne struct {
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (bpuo *BackupProfileUpdateOne) SetUpdatedAt(t time.Time) *BackupProfileUpdateOne {
-	bpuo.mutation.SetUpdatedAt(t)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetUpdatedAt(v time.Time) *BackupProfileUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (bpuo *BackupProfileUpdateOne) SetName(s string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetName(s)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetName(v string) *BackupProfileUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableName(s *string) *BackupProfileUpdateOne {
-	if s != nil {
-		bpuo.SetName(*s)
+func (_u *BackupProfileUpdateOne) SetNillableName(v *string) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return bpuo
+	return _u
 }
 
 // SetBackupPaths sets the "backup_paths" field.
-func (bpuo *BackupProfileUpdateOne) SetBackupPaths(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetBackupPaths(s)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetBackupPaths(v []string) *BackupProfileUpdateOne {
+	_u.mutation.SetBackupPaths(v)
+	return _u
 }
 
-// AppendBackupPaths appends s to the "backup_paths" field.
-func (bpuo *BackupProfileUpdateOne) AppendBackupPaths(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.AppendBackupPaths(s)
-	return bpuo
+// AppendBackupPaths appends value to the "backup_paths" field.
+func (_u *BackupProfileUpdateOne) AppendBackupPaths(v []string) *BackupProfileUpdateOne {
+	_u.mutation.AppendBackupPaths(v)
+	return _u
 }
 
 // SetExcludePaths sets the "exclude_paths" field.
-func (bpuo *BackupProfileUpdateOne) SetExcludePaths(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.SetExcludePaths(s)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetExcludePaths(v []string) *BackupProfileUpdateOne {
+	_u.mutation.SetExcludePaths(v)
+	return _u
 }
 
-// AppendExcludePaths appends s to the "exclude_paths" field.
-func (bpuo *BackupProfileUpdateOne) AppendExcludePaths(s []string) *BackupProfileUpdateOne {
-	bpuo.mutation.AppendExcludePaths(s)
-	return bpuo
+// AppendExcludePaths appends value to the "exclude_paths" field.
+func (_u *BackupProfileUpdateOne) AppendExcludePaths(v []string) *BackupProfileUpdateOne {
+	_u.mutation.AppendExcludePaths(v)
+	return _u
 }
 
 // ClearExcludePaths clears the value of the "exclude_paths" field.
-func (bpuo *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearExcludePaths()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne {
+	_u.mutation.ClearExcludePaths()
+	return _u
 }
 
 // SetIcon sets the "icon" field.
-func (bpuo *BackupProfileUpdateOne) SetIcon(b backupprofile.Icon) *BackupProfileUpdateOne {
-	bpuo.mutation.SetIcon(b)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetIcon(v backupprofile.Icon) *BackupProfileUpdateOne {
+	_u.mutation.SetIcon(v)
+	return _u
 }
 
 // SetNillableIcon sets the "icon" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableIcon(b *backupprofile.Icon) *BackupProfileUpdateOne {
-	if b != nil {
-		bpuo.SetIcon(*b)
+func (_u *BackupProfileUpdateOne) SetNillableIcon(v *backupprofile.Icon) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetIcon(*v)
 	}
-	return bpuo
+	return _u
 }
 
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
-func (bpuo *BackupProfileUpdateOne) SetDataSectionCollapsed(b bool) *BackupProfileUpdateOne {
-	bpuo.mutation.SetDataSectionCollapsed(b)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetDataSectionCollapsed(v bool) *BackupProfileUpdateOne {
+	_u.mutation.SetDataSectionCollapsed(v)
+	return _u
 }
 
 // SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableDataSectionCollapsed(b *bool) *BackupProfileUpdateOne {
-	if b != nil {
-		bpuo.SetDataSectionCollapsed(*b)
+func (_u *BackupProfileUpdateOne) SetNillableDataSectionCollapsed(v *bool) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetDataSectionCollapsed(*v)
 	}
-	return bpuo
+	return _u
 }
 
 // SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
-func (bpuo *BackupProfileUpdateOne) SetScheduleSectionCollapsed(b bool) *BackupProfileUpdateOne {
-	bpuo.mutation.SetScheduleSectionCollapsed(b)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetScheduleSectionCollapsed(v bool) *BackupProfileUpdateOne {
+	_u.mutation.SetScheduleSectionCollapsed(v)
+	return _u
 }
 
 // SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileUpdateOne {
-	if b != nil {
-		bpuo.SetScheduleSectionCollapsed(*b)
+func (_u *BackupProfileUpdateOne) SetNillableScheduleSectionCollapsed(v *bool) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetScheduleSectionCollapsed(*v)
 	}
-	return bpuo
+	return _u
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
-func (bpuo *BackupProfileUpdateOne) AddRepositoryIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.AddRepositoryIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) AddRepositoryIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.AddRepositoryIDs(ids...)
+	return _u
 }
 
 // AddRepositories adds the "repositories" edges to the Repository entity.
-func (bpuo *BackupProfileUpdateOne) AddRepositories(r ...*Repository) *BackupProfileUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *BackupProfileUpdateOne) AddRepositories(v ...*Repository) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.AddRepositoryIDs(ids...)
+	return _u.AddRepositoryIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (bpuo *BackupProfileUpdateOne) AddArchiveIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.AddArchiveIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) AddArchiveIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.AddArchiveIDs(ids...)
+	return _u
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (bpuo *BackupProfileUpdateOne) AddArchives(a ...*Archive) *BackupProfileUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *BackupProfileUpdateOne) AddArchives(v ...*Archive) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.AddArchiveIDs(ids...)
+	return _u.AddArchiveIDs(ids...)
 }
 
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
-func (bpuo *BackupProfileUpdateOne) SetBackupScheduleID(id int) *BackupProfileUpdateOne {
-	bpuo.mutation.SetBackupScheduleID(id)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetBackupScheduleID(id int) *BackupProfileUpdateOne {
+	_u.mutation.SetBackupScheduleID(id)
+	return _u
 }
 
 // SetNillableBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillableBackupScheduleID(id *int) *BackupProfileUpdateOne {
+func (_u *BackupProfileUpdateOne) SetNillableBackupScheduleID(id *int) *BackupProfileUpdateOne {
 	if id != nil {
-		bpuo = bpuo.SetBackupScheduleID(*id)
+		_u = _u.SetBackupScheduleID(*id)
 	}
-	return bpuo
+	return _u
 }
 
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
-func (bpuo *BackupProfileUpdateOne) SetBackupSchedule(b *BackupSchedule) *BackupProfileUpdateOne {
-	return bpuo.SetBackupScheduleID(b.ID)
+func (_u *BackupProfileUpdateOne) SetBackupSchedule(v *BackupSchedule) *BackupProfileUpdateOne {
+	return _u.SetBackupScheduleID(v.ID)
 }
 
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
-func (bpuo *BackupProfileUpdateOne) SetPruningRuleID(id int) *BackupProfileUpdateOne {
-	bpuo.mutation.SetPruningRuleID(id)
-	return bpuo
+func (_u *BackupProfileUpdateOne) SetPruningRuleID(id int) *BackupProfileUpdateOne {
+	_u.mutation.SetPruningRuleID(id)
+	return _u
 }
 
 // SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
-func (bpuo *BackupProfileUpdateOne) SetNillablePruningRuleID(id *int) *BackupProfileUpdateOne {
+func (_u *BackupProfileUpdateOne) SetNillablePruningRuleID(id *int) *BackupProfileUpdateOne {
 	if id != nil {
-		bpuo = bpuo.SetPruningRuleID(*id)
+		_u = _u.SetPruningRuleID(*id)
 	}
-	return bpuo
+	return _u
 }
 
 // SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
-func (bpuo *BackupProfileUpdateOne) SetPruningRule(p *PruningRule) *BackupProfileUpdateOne {
-	return bpuo.SetPruningRuleID(p.ID)
+func (_u *BackupProfileUpdateOne) SetPruningRule(v *PruningRule) *BackupProfileUpdateOne {
+	return _u.SetPruningRuleID(v.ID)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (bpuo *BackupProfileUpdateOne) AddNotificationIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.AddNotificationIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) AddNotificationIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.AddNotificationIDs(ids...)
+	return _u
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (bpuo *BackupProfileUpdateOne) AddNotifications(n ...*Notification) *BackupProfileUpdateOne {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *BackupProfileUpdateOne) AddNotifications(v ...*Notification) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.AddNotificationIDs(ids...)
+	return _u.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
-func (bpuo *BackupProfileUpdateOne) Mutation() *BackupProfileMutation {
-	return bpuo.mutation
+func (_u *BackupProfileUpdateOne) Mutation() *BackupProfileMutation {
+	return _u.mutation
 }
 
 // ClearRepositories clears all "repositories" edges to the Repository entity.
-func (bpuo *BackupProfileUpdateOne) ClearRepositories() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearRepositories()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearRepositories() *BackupProfileUpdateOne {
+	_u.mutation.ClearRepositories()
+	return _u
 }
 
 // RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
-func (bpuo *BackupProfileUpdateOne) RemoveRepositoryIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.RemoveRepositoryIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) RemoveRepositoryIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.RemoveRepositoryIDs(ids...)
+	return _u
 }
 
 // RemoveRepositories removes "repositories" edges to Repository entities.
-func (bpuo *BackupProfileUpdateOne) RemoveRepositories(r ...*Repository) *BackupProfileUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_u *BackupProfileUpdateOne) RemoveRepositories(v ...*Repository) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.RemoveRepositoryIDs(ids...)
+	return _u.RemoveRepositoryIDs(ids...)
 }
 
 // ClearArchives clears all "archives" edges to the Archive entity.
-func (bpuo *BackupProfileUpdateOne) ClearArchives() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearArchives()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearArchives() *BackupProfileUpdateOne {
+	_u.mutation.ClearArchives()
+	return _u
 }
 
 // RemoveArchiveIDs removes the "archives" edge to Archive entities by IDs.
-func (bpuo *BackupProfileUpdateOne) RemoveArchiveIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.RemoveArchiveIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) RemoveArchiveIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.RemoveArchiveIDs(ids...)
+	return _u
 }
 
 // RemoveArchives removes "archives" edges to Archive entities.
-func (bpuo *BackupProfileUpdateOne) RemoveArchives(a ...*Archive) *BackupProfileUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_u *BackupProfileUpdateOne) RemoveArchives(v ...*Archive) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.RemoveArchiveIDs(ids...)
+	return _u.RemoveArchiveIDs(ids...)
 }
 
 // ClearBackupSchedule clears the "backup_schedule" edge to the BackupSchedule entity.
-func (bpuo *BackupProfileUpdateOne) ClearBackupSchedule() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearBackupSchedule()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearBackupSchedule() *BackupProfileUpdateOne {
+	_u.mutation.ClearBackupSchedule()
+	return _u
 }
 
 // ClearPruningRule clears the "pruning_rule" edge to the PruningRule entity.
-func (bpuo *BackupProfileUpdateOne) ClearPruningRule() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearPruningRule()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearPruningRule() *BackupProfileUpdateOne {
+	_u.mutation.ClearPruningRule()
+	return _u
 }
 
 // ClearNotifications clears all "notifications" edges to the Notification entity.
-func (bpuo *BackupProfileUpdateOne) ClearNotifications() *BackupProfileUpdateOne {
-	bpuo.mutation.ClearNotifications()
-	return bpuo
+func (_u *BackupProfileUpdateOne) ClearNotifications() *BackupProfileUpdateOne {
+	_u.mutation.ClearNotifications()
+	return _u
 }
 
 // RemoveNotificationIDs removes the "notifications" edge to Notification entities by IDs.
-func (bpuo *BackupProfileUpdateOne) RemoveNotificationIDs(ids ...int) *BackupProfileUpdateOne {
-	bpuo.mutation.RemoveNotificationIDs(ids...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) RemoveNotificationIDs(ids ...int) *BackupProfileUpdateOne {
+	_u.mutation.RemoveNotificationIDs(ids...)
+	return _u
 }
 
 // RemoveNotifications removes "notifications" edges to Notification entities.
-func (bpuo *BackupProfileUpdateOne) RemoveNotifications(n ...*Notification) *BackupProfileUpdateOne {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_u *BackupProfileUpdateOne) RemoveNotifications(v ...*Notification) *BackupProfileUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpuo.RemoveNotificationIDs(ids...)
+	return _u.RemoveNotificationIDs(ids...)
 }
 
 // Where appends a list predicates to the BackupProfileUpdate builder.
-func (bpuo *BackupProfileUpdateOne) Where(ps ...predicate.BackupProfile) *BackupProfileUpdateOne {
-	bpuo.mutation.Where(ps...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) Where(ps ...predicate.BackupProfile) *BackupProfileUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (bpuo *BackupProfileUpdateOne) Select(field string, fields ...string) *BackupProfileUpdateOne {
-	bpuo.fields = append([]string{field}, fields...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) Select(field string, fields ...string) *BackupProfileUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated BackupProfile entity.
-func (bpuo *BackupProfileUpdateOne) Save(ctx context.Context) (*BackupProfile, error) {
-	bpuo.defaults()
-	return withHooks(ctx, bpuo.sqlSave, bpuo.mutation, bpuo.hooks)
+func (_u *BackupProfileUpdateOne) Save(ctx context.Context) (*BackupProfile, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (bpuo *BackupProfileUpdateOne) SaveX(ctx context.Context) *BackupProfile {
-	node, err := bpuo.Save(ctx)
+func (_u *BackupProfileUpdateOne) SaveX(ctx context.Context) *BackupProfile {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -892,34 +892,34 @@ func (bpuo *BackupProfileUpdateOne) SaveX(ctx context.Context) *BackupProfile {
 }
 
 // Exec executes the query on the entity.
-func (bpuo *BackupProfileUpdateOne) Exec(ctx context.Context) error {
-	_, err := bpuo.Save(ctx)
+func (_u *BackupProfileUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bpuo *BackupProfileUpdateOne) ExecX(ctx context.Context) {
-	if err := bpuo.Exec(ctx); err != nil {
+func (_u *BackupProfileUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (bpuo *BackupProfileUpdateOne) defaults() {
-	if _, ok := bpuo.mutation.UpdatedAt(); !ok {
+func (_u *BackupProfileUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := backupprofile.UpdateDefaultUpdatedAt()
-		bpuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (bpuo *BackupProfileUpdateOne) check() error {
-	if v, ok := bpuo.mutation.Name(); ok {
+func (_u *BackupProfileUpdateOne) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := backupprofile.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
 		}
 	}
-	if v, ok := bpuo.mutation.Icon(); ok {
+	if v, ok := _u.mutation.Icon(); ok {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
@@ -928,22 +928,22 @@ func (bpuo *BackupProfileUpdateOne) check() error {
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (bpuo *BackupProfileUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdateOne {
-	bpuo.modifiers = append(bpuo.modifiers, modifiers...)
-	return bpuo
+func (_u *BackupProfileUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *BackupProfileUpdateOne {
+	_u.modifiers = append(_u.modifiers, modifiers...)
+	return _u
 }
 
-func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupProfile, err error) {
-	if err := bpuo.check(); err != nil {
+func (_u *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupProfile, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(backupprofile.Table, backupprofile.Columns, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
-	id, ok := bpuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "BackupProfile.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := bpuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, backupprofile.FieldID)
 		for _, f := range fields {
@@ -955,48 +955,48 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 			}
 		}
 	}
-	if ps := bpuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := bpuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := bpuo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 	}
-	if value, ok := bpuo.mutation.BackupPaths(); ok {
+	if value, ok := _u.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 	}
-	if value, ok := bpuo.mutation.AppendedBackupPaths(); ok {
+	if value, ok := _u.mutation.AppendedBackupPaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, backupprofile.FieldBackupPaths, value)
 		})
 	}
-	if value, ok := bpuo.mutation.ExcludePaths(); ok {
+	if value, ok := _u.mutation.ExcludePaths(); ok {
 		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
 	}
-	if value, ok := bpuo.mutation.AppendedExcludePaths(); ok {
+	if value, ok := _u.mutation.AppendedExcludePaths(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, backupprofile.FieldExcludePaths, value)
 		})
 	}
-	if bpuo.mutation.ExcludePathsCleared() {
+	if _u.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
-	if value, ok := bpuo.mutation.Icon(); ok {
+	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
-	if value, ok := bpuo.mutation.DataSectionCollapsed(); ok {
+	if value, ok := _u.mutation.DataSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
 	}
-	if value, ok := bpuo.mutation.ScheduleSectionCollapsed(); ok {
+	if value, ok := _u.mutation.ScheduleSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
 	}
-	if bpuo.mutation.RepositoriesCleared() {
+	if _u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1009,7 +1009,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !bpuo.mutation.RepositoriesCleared() {
+	if nodes := _u.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !_u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1025,7 +1025,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.RepositoriesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1041,7 +1041,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpuo.mutation.ArchivesCleared() {
+	if _u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1054,7 +1054,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !bpuo.mutation.ArchivesCleared() {
+	if nodes := _u.mutation.RemovedArchivesIDs(); len(nodes) > 0 && !_u.mutation.ArchivesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1070,7 +1070,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1086,7 +1086,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpuo.mutation.BackupScheduleCleared() {
+	if _u.mutation.BackupScheduleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1099,7 +1099,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.BackupScheduleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.BackupScheduleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1115,7 +1115,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpuo.mutation.PruningRuleCleared() {
+	if _u.mutation.PruningRuleCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1128,7 +1128,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.PruningRuleIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PruningRuleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -1144,7 +1144,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bpuo.mutation.NotificationsCleared() {
+	if _u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1157,7 +1157,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !bpuo.mutation.NotificationsCleared() {
+	if nodes := _u.mutation.RemovedNotificationsIDs(); len(nodes) > 0 && !_u.mutation.NotificationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1173,7 +1173,7 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bpuo.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1189,11 +1189,11 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_spec.AddModifiers(bpuo.modifiers...)
-	_node = &BackupProfile{config: bpuo.config}
+	_spec.AddModifiers(_u.modifiers...)
+	_node = &BackupProfile{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, bpuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{backupprofile.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1201,6 +1201,6 @@ func (bpuo *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupP
 		}
 		return nil, err
 	}
-	bpuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

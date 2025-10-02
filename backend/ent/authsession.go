@@ -50,7 +50,7 @@ func (*AuthSession) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the AuthSession fields.
-func (as *AuthSession) assignValues(columns []string, values []any) error {
+func (_m *AuthSession) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -61,39 +61,39 @@ func (as *AuthSession) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			as.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case authsession.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				as.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case authsession.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				as.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case authsession.FieldSessionID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field session_id", values[i])
 			} else if value.Valid {
-				as.SessionID = value.String
+				_m.SessionID = value.String
 			}
 		case authsession.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				as.Status = authsession.Status(value.String)
+				_m.Status = authsession.Status(value.String)
 			}
 		case authsession.FieldExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
 			} else if value.Valid {
-				as.ExpiresAt = value.Time
+				_m.ExpiresAt = value.Time
 			}
 		default:
-			as.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -101,47 +101,47 @@ func (as *AuthSession) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the AuthSession.
 // This includes values selected through modifiers, order, etc.
-func (as *AuthSession) Value(name string) (ent.Value, error) {
-	return as.selectValues.Get(name)
+func (_m *AuthSession) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // Update returns a builder for updating this AuthSession.
 // Note that you need to call AuthSession.Unwrap() before calling this method if this AuthSession
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (as *AuthSession) Update() *AuthSessionUpdateOne {
-	return NewAuthSessionClient(as.config).UpdateOne(as)
+func (_m *AuthSession) Update() *AuthSessionUpdateOne {
+	return NewAuthSessionClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the AuthSession entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (as *AuthSession) Unwrap() *AuthSession {
-	_tx, ok := as.config.driver.(*txDriver)
+func (_m *AuthSession) Unwrap() *AuthSession {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: AuthSession is not a transactional entity")
 	}
-	as.config.driver = _tx.drv
-	return as
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (as *AuthSession) String() string {
+func (_m *AuthSession) String() string {
 	var builder strings.Builder
 	builder.WriteString("AuthSession(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", as.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(as.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(as.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("session_id=")
-	builder.WriteString(as.SessionID)
+	builder.WriteString(_m.SessionID)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", as.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
-	builder.WriteString(as.ExpiresAt.Format(time.ANSIC))
+	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

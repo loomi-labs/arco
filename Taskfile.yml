@@ -40,7 +40,8 @@ tasks:
       - touch frontend/dist/index.html
     cmds:
       - |
-        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent) -json | \
+        # Exclude all ent packages except backend/ent/migrate (which contains migration tests)
+        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v '/ent/'; echo github.com/loomi-labs/arco/backend/ent/migrate) -json | \
         tee >(./scripts/test-output-processor.sh) | \
         ./scripts/test-summary.sh
 
@@ -50,7 +51,9 @@ tasks:
       - mkdir -p frontend/dist
       - touch frontend/dist/index.html
     cmds:
-      - go test -v -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent)
+      - |
+        # Exclude all ent packages except backend/ent/migrate (which contains migration tests)
+        go test -v -cover -mod=readonly --timeout 5m $(go list ./... | grep -v '/ent/'; echo github.com/loomi-labs/arco/backend/ent/migrate)
 
   test:detailed:
     desc: Run tests with detailed output
@@ -60,7 +63,8 @@ tasks:
       - touch frontend/dist/index.html
     cmds:
       - |
-        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v ent) -json | \
+        # Exclude all ent packages except backend/ent/migrate (which contains migration tests)
+        go test -cover -mod=readonly --timeout 5m $(go list ./... | grep -v '/ent/'; echo github.com/loomi-labs/arco/backend/ent/migrate) -json | \
         tee >(jq --unbuffered -r '
           if .Action == "run" and .Test == null then
             "🔄 Starting: " + .Package

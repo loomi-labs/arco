@@ -59,22 +59,34 @@ TestBackupProfileService_RemoveRepositoryFromBackupProfile
 // mockRepositoryService implements RepositoryServiceInterface for testing
 type mockRepositoryService struct{}
 
-func (m *mockRepositoryService) RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error) {
-	return types.DeleteResultSuccess, nil
+func (m *mockRepositoryService) QueueBackup(ctx context.Context, backupId types.BackupId) (string, error) {
+	return "mock-operation-id", nil
 }
 
-func (m *mockRepositoryService) StartBackupJobs(ctx context.Context, bIds []types.BackupId) error {
-	return nil
+func (m *mockRepositoryService) QueueBackups(ctx context.Context, backupIds []types.BackupId) ([]string, error) {
+	ids := make([]string, len(backupIds))
+	for i := range backupIds {
+		ids[i] = "mock-operation-id"
+	}
+	return ids, nil
 }
 
-func (m *mockRepositoryService) StartPruneJob(ctx context.Context, bId types.BackupId) error {
-	return nil
+func (m *mockRepositoryService) QueuePrune(ctx context.Context, backupId types.BackupId) (string, error) {
+	return "mock-operation-id", nil
+}
+
+func (m *mockRepositoryService) QueueArchiveDelete(ctx context.Context, archiveId int) (string, error) {
+	return "mock-operation-id", nil
+}
+
+func (m *mockRepositoryService) QueueArchiveRename(ctx context.Context, archiveId int, name string) (string, error) {
+	return "mock-operation-id", nil
 }
 
 // mockEventEmitter implements EventEmitter interface for testing
 type mockEventEmitter struct{}
 
-func (m *mockEventEmitter) EmitEvent(ctx context.Context, event string) {
+func (m *mockEventEmitter) EmitEvent(ctx context.Context, event string, data ...string) {
 	// Do nothing for tests
 }
 

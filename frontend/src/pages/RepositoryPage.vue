@@ -9,33 +9,36 @@ import { useToast } from "vue-toastification";
 import * as zod from "zod";
 import { object } from "zod";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import * as state from "../../bindings/github.com/loomi-labs/arco/backend/app/state";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
-import { getRepoType, RepoType, toHumanReadableSize } from "../common/repository";
+import {
+  LocationType,
+  Repository,
+  UpdateRequest
+} from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { Anchor, Page } from "../router";
+import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
 const router = useRouter();
 const toast = useToast();
-const repo = ref<ent.Repository>(ent.Repository.createFrom());
+const repo = ref<Repository>(Repository.createFrom());
 const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
-const repoState = ref<state.RepoState>(state.RepoState.createFrom());
 const loading = ref(true);
-const repoType = ref<RepoType>(RepoType.Local);
-const nbrOfArchives = ref<number>(0);
+
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
-const failedBackupRun = ref<string | undefined>(undefined);
-const isIntegrityCheckEnabled = ref(false);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
 const isRegeneratingSSH = ref(false);
+const isChangingPassphrase = ref(false);
+const isBreakingLock = ref(false);
+const newPassphrase = ref<string>("");
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -72,51 +75,28 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
  * Functions
  ************/
 
-async function getData() {
+async function getRepo() {
   try {
-    loading.value = true;
-
-    repo.value =
-      (await repoService.Get(repoId)) ?? ent.Repository.createFrom();
+    repo.value = (await repoService.Get(repoId)) ?? Repository.createFrom();
     name.value = repo.value.name;
 
-    repoType.value = getRepoType(repo.value.url);
-    isIntegrityCheckEnabled.value = !!repo.value.nextIntegrityCheck;
-
-    deletableBackupProfiles.value =
-      (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter(
-        (r) => r !== null
-      ) ?? [];
+    deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter((r) => r !== null) ?? [];
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository data", error);
   }
   loading.value = false;
 }
 
-async function getRepoState() {
-  try {
-    repoState.value = await repoService.GetState(repoId);
-
-    nbrOfArchives.value = await repoService.GetNbrOfArchives(repoId);
-
-    totalSize.value = toHumanReadableSize(repo.value.statsTotalSize);
-    sizeOnDisk.value = toHumanReadableSize(repo.value.statsUniqueCsize);
-    failedBackupRun.value = await repoService.GetLastBackupErrorMsg(repoId);
-
-    const archive =
-      (await repoService.GetLastArchiveByRepoId(repoId)) ?? undefined;
-    // Only set lastArchive if it has a valid ID (id > 0)
-    lastArchive.value = archive && archive.id > 0 ? archive : undefined;
-  } catch (error: unknown) {
-    await showAndLogError("Failed to get repository state", error);
-  }
-}
-
 async function saveName() {
   if (meta.value.valid && name.value !== repo.value.name) {
     try {
-      repo.value.name = name.value ?? "";
-      await repoService.Update(repo.value);
+      const updateRequest = new UpdateRequest({
+        name: name.value ?? ""
+      });
+      const updatedRepo = await repoService.Update(repoId, updateRequest);
+      if (updatedRepo) {
+        repo.value = updatedRepo;
+      }
     } catch (error: unknown) {
       await showAndLogError("Failed to save repository name", error);
     }
@@ -130,28 +110,16 @@ function resizeNameWidth() {
   }
 }
 
-async function _saveIntegrityCheckSettings() {
-  try {
-    const result = await repoService.SaveIntegrityCheckSettings(
-      repoId,
-      isIntegrityCheckEnabled.value
-    );
-    repo.value.nextIntegrityCheck = result?.nextIntegrityCheck;
-  } catch (error: unknown) {
-    await showAndLogError("Failed to save integrity check settings", error);
-  }
-}
-
 async function removeRepo() {
   try {
     await repoService.Remove(repoId);
-    toast.success("Repository removed");
+    toast.success("Repository removal queued");
     await router.replace({
       path: Page.Dashboard,
       hash: `#${Anchor.Repositories}`
     });
   } catch (error: unknown) {
-    await showAndLogError("Failed to remove repository", error);
+    await showAndLogError("Failed to queue repository removal", error);
   }
 }
 
@@ -173,9 +141,9 @@ async function regenerateSSHKey() {
     isRegeneratingSSH.value = true;
     await repoService.RegenerateSSHKey();
     toast.success("SSH key regenerated successfully");
-    
-    // Refresh repository state after SSH key regeneration
-    await getRepoState();
+
+    // Refresh repository after SSH key regeneration
+    await getRepo();
   } catch (error: unknown) {
     await showAndLogError("Failed to regenerate SSH key", error);
   } finally {
@@ -183,12 +151,51 @@ async function regenerateSSHKey() {
   }
 }
 
+async function changePassphrase() {
+  if (!newPassphrase.value.trim()) {
+    toast.error("Please enter a new passphrase");
+    return;
+  }
+
+  try {
+    isChangingPassphrase.value = true;
+    const result = await repoService.FixStoredPassword(repoId, newPassphrase.value);
+
+    if (result.success) {
+      toast.success("Password fixed successfully");
+      newPassphrase.value = "";
+      // Refresh repository after password fix
+      await getRepo();
+    } else {
+      toast.error(result.errorMessage ?? "Failed to fix password");
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to fix password", error);
+  } finally {
+    isChangingPassphrase.value = false;
+  }
+}
+
+async function breakLock() {
+  try {
+    isBreakingLock.value = true;
+    await repoService.BreakLock(repoId);
+    toast.success("Lock broken successfully");
+
+    // Refresh repository after breaking lock
+    await getRepo();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to break lock", error);
+  } finally {
+    isBreakingLock.value = false;
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
-getData();
-getRepoState();
+getRepo();
 
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
@@ -197,7 +204,7 @@ watch(loading, async () => {
 });
 
 cleanupFunctions.push(
-  Events.On(repoStateChangedEvent(repoId), async () => await getRepoState())
+  Events.On(repoStateChangedEvent(repoId), async () => await getRepo())
 );
 
 onUnmounted(() => {
@@ -233,14 +240,12 @@ onUnmounted(() => {
         <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
           <li>
             <button @click='confirmRemoveModal?.showModal()'
-                    :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Remove Repository
             </button>
           </li>
           <li>
             <button @click='confirmDeleteModal?.showModal()'
-                    :disabled='repoState.status !== state.RepoStatus.RepoStatusIdle'
                     class='text-error hover:bg-error hover:text-error-content'>
               Delete Permanently
             </button>
@@ -250,41 +255,69 @@ onUnmounted(() => {
     </div>
 
     <!-- Error Alert Banner -->
-    <div v-if='repoState.errorType !== state.RepoErrorType.RepoErrorTypeNone && repoState.errorType !== state.RepoErrorType.$zero' 
-         role='alert' 
-         class='alert alert-error mb-4'>
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div
+      v-if='repo.state.type === RepositoryStateType.RepositoryStateTypeError && repo.state.error !== null'
+      role='alert'
+      class='alert alert-error mb-4'>
+      <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none' viewBox='0 0 24 24'>
+        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+              d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
       </svg>
       <div class='flex-1'>
         <div class='font-bold'>Repository Error</div>
-        <div class='text-sm'>{{ repoState.errorMessage }}</div>
+        <div class='text-sm'>{{ repo.state.error?.message }}</div>
       </div>
       <!-- SSH Regeneration Button for Cloud Repositories -->
-      <div v-if='repoState.errorAction === state.RepoErrorAction.RepoErrorActionRegenerateSSH' class='flex-none'>
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionRegenerateSSH' class='flex-none'>
         <button class='btn btn-sm btn-outline btn-error-content'
                 :disabled='isRegeneratingSSH'
                 @click='regenerateSSHKey'>
           <span v-if='isRegeneratingSSH' class='loading loading-spinner loading-xs'></span>
-          {{ isRegeneratingSSH ? 'Regenerating...' : 'Regenerate SSH Key' }}
+          {{ isRegeneratingSSH ? "Regenerating..." : "Regenerate SSH Key" }}
+        </button>
+      </div>
+
+      <!-- Change Passphrase Button -->
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionChangePassphrase' class='flex-none flex gap-2'>
+        <input v-model='newPassphrase'
+               type='password'
+               placeholder='New passphrase'
+               class='input input-sm input-bordered'
+               :disabled='isChangingPassphrase' />
+        <button class='btn btn-sm btn-outline btn-error-content'
+                :disabled='isChangingPassphrase || !newPassphrase.trim()'
+                @click='changePassphrase'>
+          <span v-if='isChangingPassphrase' class='loading loading-spinner loading-xs'></span>
+          {{ isChangingPassphrase ? "Changing..." : "Change Passphrase" }}
+        </button>
+      </div>
+
+      <!-- Break Lock Button -->
+      <div v-if='repo.state.error?.action === ErrorAction.ErrorActionBreakLock' class='flex-none'>
+        <button class='btn btn-sm btn-outline btn-error-content'
+                :disabled='isBreakingLock'
+                @click='breakLock'>
+          <span v-if='isBreakingLock' class='loading loading-spinner loading-xs'></span>
+          {{ isBreakingLock ? "Breaking Lock..." : "Break Lock" }}
         </button>
       </div>
     </div>
 
     <!-- Warning Alert Banner -->
-    <div v-if='repoState.hasWarning && !isWarningDismissed' 
-         role='alert' 
+    <div v-if='repo.lastBackupWarning && !isWarningDismissed'
+         role='alert'
          class='alert alert-warning mb-4'>
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none' viewBox='0 0 24 24'>
+        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+              d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
       </svg>
       <div class='flex-1'>
         <div class='font-bold'>Warning</div>
-        <div class='text-sm'>{{ repoState.warningMessage }}</div>
+        <div class='text-sm'>{{ repo.lastBackupWarning }}</div>
       </div>
       <button class='btn btn-sm btn-ghost' @click='isWarningDismissed = true'>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+          <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12' />
         </svg>
       </button>
     </div>
@@ -296,7 +329,7 @@ onUnmounted(() => {
         <div class='card-body'>
           <h3 class='card-title text-lg'>{{ $t("archives") }}</h3>
           <p class='text-3xl font-bold text-primary dark:text-white'>
-            {{ nbrOfArchives }}
+            {{ repo.archiveCount }}
           </p>
         </div>
       </div>
@@ -323,13 +356,15 @@ onUnmounted(() => {
         <div class='card-body'>
           <h3 class='card-title text-lg'>{{ $t("last_backup") }}</h3>
           <div class='flex items-center h-full'>
-            <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
+            <span v-if='repo.lastBackupError' class='tooltip tooltip-error' :data-tip='repo.lastBackupError'>
               <span class='badge badge-error'>{{
-                  $t("failed") }}</span>
+                  $t("failed")
+                }}</span>
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
-                  toRelativeTimeString(lastArchive.createdAt) }}</span>
+                  toRelativeTimeString(lastArchive.createdAt)
+                }}</span>
             </span>
             <span v-else class='text-lg opacity-50'>-</span>
           </div>
@@ -346,7 +381,11 @@ onUnmounted(() => {
             <span class='font-medium'>{{ $t("location") }}</span>
             <div class='flex items-center gap-2'>
               <span class='text-sm opacity-70 break-all'>{{ repo.url }}</span>
-              <span :class='toRepoTypeBadge(repoType)'>{{ repoType === RepoType.Local ? $t("local") : $t("remote") }}</span>
+              <span :class='toRepoTypeBadge(repo.type)'>{{
+                  repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
+                    repo.type.type === LocationType.LocationTypeArcoCloud ? $t("arcoCloud") :
+                      $t("remote")
+                }}</span>
             </div>
           </div>
         </div>
@@ -354,8 +393,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Archives Section -->
-    <ArchivesCard :repo='repo'
-                  :repo-status='repoState.status'
+    <ArchivesCard :repo-id='repo.id'
                   :highlight='false'
                   :show-backup-profile-column='true' />
 

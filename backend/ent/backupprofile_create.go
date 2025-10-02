@@ -26,194 +26,194 @@ type BackupProfileCreate struct {
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (bpc *BackupProfileCreate) SetCreatedAt(t time.Time) *BackupProfileCreate {
-	bpc.mutation.SetCreatedAt(t)
-	return bpc
+func (_c *BackupProfileCreate) SetCreatedAt(v time.Time) *BackupProfileCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableCreatedAt(t *time.Time) *BackupProfileCreate {
-	if t != nil {
-		bpc.SetCreatedAt(*t)
+func (_c *BackupProfileCreate) SetNillableCreatedAt(v *time.Time) *BackupProfileCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return bpc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (bpc *BackupProfileCreate) SetUpdatedAt(t time.Time) *BackupProfileCreate {
-	bpc.mutation.SetUpdatedAt(t)
-	return bpc
+func (_c *BackupProfileCreate) SetUpdatedAt(v time.Time) *BackupProfileCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableUpdatedAt(t *time.Time) *BackupProfileCreate {
-	if t != nil {
-		bpc.SetUpdatedAt(*t)
+func (_c *BackupProfileCreate) SetNillableUpdatedAt(v *time.Time) *BackupProfileCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return bpc
+	return _c
 }
 
 // SetName sets the "name" field.
-func (bpc *BackupProfileCreate) SetName(s string) *BackupProfileCreate {
-	bpc.mutation.SetName(s)
-	return bpc
+func (_c *BackupProfileCreate) SetName(v string) *BackupProfileCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetPrefix sets the "prefix" field.
-func (bpc *BackupProfileCreate) SetPrefix(s string) *BackupProfileCreate {
-	bpc.mutation.SetPrefix(s)
-	return bpc
+func (_c *BackupProfileCreate) SetPrefix(v string) *BackupProfileCreate {
+	_c.mutation.SetPrefix(v)
+	return _c
 }
 
 // SetBackupPaths sets the "backup_paths" field.
-func (bpc *BackupProfileCreate) SetBackupPaths(s []string) *BackupProfileCreate {
-	bpc.mutation.SetBackupPaths(s)
-	return bpc
+func (_c *BackupProfileCreate) SetBackupPaths(v []string) *BackupProfileCreate {
+	_c.mutation.SetBackupPaths(v)
+	return _c
 }
 
 // SetExcludePaths sets the "exclude_paths" field.
-func (bpc *BackupProfileCreate) SetExcludePaths(s []string) *BackupProfileCreate {
-	bpc.mutation.SetExcludePaths(s)
-	return bpc
+func (_c *BackupProfileCreate) SetExcludePaths(v []string) *BackupProfileCreate {
+	_c.mutation.SetExcludePaths(v)
+	return _c
 }
 
 // SetIcon sets the "icon" field.
-func (bpc *BackupProfileCreate) SetIcon(b backupprofile.Icon) *BackupProfileCreate {
-	bpc.mutation.SetIcon(b)
-	return bpc
+func (_c *BackupProfileCreate) SetIcon(v backupprofile.Icon) *BackupProfileCreate {
+	_c.mutation.SetIcon(v)
+	return _c
 }
 
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
-func (bpc *BackupProfileCreate) SetDataSectionCollapsed(b bool) *BackupProfileCreate {
-	bpc.mutation.SetDataSectionCollapsed(b)
-	return bpc
+func (_c *BackupProfileCreate) SetDataSectionCollapsed(v bool) *BackupProfileCreate {
+	_c.mutation.SetDataSectionCollapsed(v)
+	return _c
 }
 
 // SetNillableDataSectionCollapsed sets the "data_section_collapsed" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableDataSectionCollapsed(b *bool) *BackupProfileCreate {
-	if b != nil {
-		bpc.SetDataSectionCollapsed(*b)
+func (_c *BackupProfileCreate) SetNillableDataSectionCollapsed(v *bool) *BackupProfileCreate {
+	if v != nil {
+		_c.SetDataSectionCollapsed(*v)
 	}
-	return bpc
+	return _c
 }
 
 // SetScheduleSectionCollapsed sets the "schedule_section_collapsed" field.
-func (bpc *BackupProfileCreate) SetScheduleSectionCollapsed(b bool) *BackupProfileCreate {
-	bpc.mutation.SetScheduleSectionCollapsed(b)
-	return bpc
+func (_c *BackupProfileCreate) SetScheduleSectionCollapsed(v bool) *BackupProfileCreate {
+	_c.mutation.SetScheduleSectionCollapsed(v)
+	return _c
 }
 
 // SetNillableScheduleSectionCollapsed sets the "schedule_section_collapsed" field if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableScheduleSectionCollapsed(b *bool) *BackupProfileCreate {
-	if b != nil {
-		bpc.SetScheduleSectionCollapsed(*b)
+func (_c *BackupProfileCreate) SetNillableScheduleSectionCollapsed(v *bool) *BackupProfileCreate {
+	if v != nil {
+		_c.SetScheduleSectionCollapsed(*v)
 	}
-	return bpc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (bpc *BackupProfileCreate) SetID(i int) *BackupProfileCreate {
-	bpc.mutation.SetID(i)
-	return bpc
+func (_c *BackupProfileCreate) SetID(v int) *BackupProfileCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
-func (bpc *BackupProfileCreate) AddRepositoryIDs(ids ...int) *BackupProfileCreate {
-	bpc.mutation.AddRepositoryIDs(ids...)
-	return bpc
+func (_c *BackupProfileCreate) AddRepositoryIDs(ids ...int) *BackupProfileCreate {
+	_c.mutation.AddRepositoryIDs(ids...)
+	return _c
 }
 
 // AddRepositories adds the "repositories" edges to the Repository entity.
-func (bpc *BackupProfileCreate) AddRepositories(r ...*Repository) *BackupProfileCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+func (_c *BackupProfileCreate) AddRepositories(v ...*Repository) *BackupProfileCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpc.AddRepositoryIDs(ids...)
+	return _c.AddRepositoryIDs(ids...)
 }
 
 // AddArchiveIDs adds the "archives" edge to the Archive entity by IDs.
-func (bpc *BackupProfileCreate) AddArchiveIDs(ids ...int) *BackupProfileCreate {
-	bpc.mutation.AddArchiveIDs(ids...)
-	return bpc
+func (_c *BackupProfileCreate) AddArchiveIDs(ids ...int) *BackupProfileCreate {
+	_c.mutation.AddArchiveIDs(ids...)
+	return _c
 }
 
 // AddArchives adds the "archives" edges to the Archive entity.
-func (bpc *BackupProfileCreate) AddArchives(a ...*Archive) *BackupProfileCreate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
+func (_c *BackupProfileCreate) AddArchives(v ...*Archive) *BackupProfileCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpc.AddArchiveIDs(ids...)
+	return _c.AddArchiveIDs(ids...)
 }
 
 // SetBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID.
-func (bpc *BackupProfileCreate) SetBackupScheduleID(id int) *BackupProfileCreate {
-	bpc.mutation.SetBackupScheduleID(id)
-	return bpc
+func (_c *BackupProfileCreate) SetBackupScheduleID(id int) *BackupProfileCreate {
+	_c.mutation.SetBackupScheduleID(id)
+	return _c
 }
 
 // SetNillableBackupScheduleID sets the "backup_schedule" edge to the BackupSchedule entity by ID if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillableBackupScheduleID(id *int) *BackupProfileCreate {
+func (_c *BackupProfileCreate) SetNillableBackupScheduleID(id *int) *BackupProfileCreate {
 	if id != nil {
-		bpc = bpc.SetBackupScheduleID(*id)
+		_c = _c.SetBackupScheduleID(*id)
 	}
-	return bpc
+	return _c
 }
 
 // SetBackupSchedule sets the "backup_schedule" edge to the BackupSchedule entity.
-func (bpc *BackupProfileCreate) SetBackupSchedule(b *BackupSchedule) *BackupProfileCreate {
-	return bpc.SetBackupScheduleID(b.ID)
+func (_c *BackupProfileCreate) SetBackupSchedule(v *BackupSchedule) *BackupProfileCreate {
+	return _c.SetBackupScheduleID(v.ID)
 }
 
 // SetPruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID.
-func (bpc *BackupProfileCreate) SetPruningRuleID(id int) *BackupProfileCreate {
-	bpc.mutation.SetPruningRuleID(id)
-	return bpc
+func (_c *BackupProfileCreate) SetPruningRuleID(id int) *BackupProfileCreate {
+	_c.mutation.SetPruningRuleID(id)
+	return _c
 }
 
 // SetNillablePruningRuleID sets the "pruning_rule" edge to the PruningRule entity by ID if the given value is not nil.
-func (bpc *BackupProfileCreate) SetNillablePruningRuleID(id *int) *BackupProfileCreate {
+func (_c *BackupProfileCreate) SetNillablePruningRuleID(id *int) *BackupProfileCreate {
 	if id != nil {
-		bpc = bpc.SetPruningRuleID(*id)
+		_c = _c.SetPruningRuleID(*id)
 	}
-	return bpc
+	return _c
 }
 
 // SetPruningRule sets the "pruning_rule" edge to the PruningRule entity.
-func (bpc *BackupProfileCreate) SetPruningRule(p *PruningRule) *BackupProfileCreate {
-	return bpc.SetPruningRuleID(p.ID)
+func (_c *BackupProfileCreate) SetPruningRule(v *PruningRule) *BackupProfileCreate {
+	return _c.SetPruningRuleID(v.ID)
 }
 
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
-func (bpc *BackupProfileCreate) AddNotificationIDs(ids ...int) *BackupProfileCreate {
-	bpc.mutation.AddNotificationIDs(ids...)
-	return bpc
+func (_c *BackupProfileCreate) AddNotificationIDs(ids ...int) *BackupProfileCreate {
+	_c.mutation.AddNotificationIDs(ids...)
+	return _c
 }
 
 // AddNotifications adds the "notifications" edges to the Notification entity.
-func (bpc *BackupProfileCreate) AddNotifications(n ...*Notification) *BackupProfileCreate {
-	ids := make([]int, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+func (_c *BackupProfileCreate) AddNotifications(v ...*Notification) *BackupProfileCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bpc.AddNotificationIDs(ids...)
+	return _c.AddNotificationIDs(ids...)
 }
 
 // Mutation returns the BackupProfileMutation object of the builder.
-func (bpc *BackupProfileCreate) Mutation() *BackupProfileMutation {
-	return bpc.mutation
+func (_c *BackupProfileCreate) Mutation() *BackupProfileMutation {
+	return _c.mutation
 }
 
 // Save creates the BackupProfile in the database.
-func (bpc *BackupProfileCreate) Save(ctx context.Context) (*BackupProfile, error) {
-	bpc.defaults()
-	return withHooks(ctx, bpc.sqlSave, bpc.mutation, bpc.hooks)
+func (_c *BackupProfileCreate) Save(ctx context.Context) (*BackupProfile, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (bpc *BackupProfileCreate) SaveX(ctx context.Context) *BackupProfile {
-	v, err := bpc.Save(ctx)
+func (_c *BackupProfileCreate) SaveX(ctx context.Context) *BackupProfile {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -221,99 +221,99 @@ func (bpc *BackupProfileCreate) SaveX(ctx context.Context) *BackupProfile {
 }
 
 // Exec executes the query.
-func (bpc *BackupProfileCreate) Exec(ctx context.Context) error {
-	_, err := bpc.Save(ctx)
+func (_c *BackupProfileCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bpc *BackupProfileCreate) ExecX(ctx context.Context) {
-	if err := bpc.Exec(ctx); err != nil {
+func (_c *BackupProfileCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (bpc *BackupProfileCreate) defaults() {
-	if _, ok := bpc.mutation.CreatedAt(); !ok {
+func (_c *BackupProfileCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := backupprofile.DefaultCreatedAt()
-		bpc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := bpc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := backupprofile.DefaultUpdatedAt()
-		bpc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := bpc.mutation.BackupPaths(); !ok {
+	if _, ok := _c.mutation.BackupPaths(); !ok {
 		v := backupprofile.DefaultBackupPaths
-		bpc.mutation.SetBackupPaths(v)
+		_c.mutation.SetBackupPaths(v)
 	}
-	if _, ok := bpc.mutation.ExcludePaths(); !ok {
+	if _, ok := _c.mutation.ExcludePaths(); !ok {
 		v := backupprofile.DefaultExcludePaths
-		bpc.mutation.SetExcludePaths(v)
+		_c.mutation.SetExcludePaths(v)
 	}
-	if _, ok := bpc.mutation.DataSectionCollapsed(); !ok {
+	if _, ok := _c.mutation.DataSectionCollapsed(); !ok {
 		v := backupprofile.DefaultDataSectionCollapsed
-		bpc.mutation.SetDataSectionCollapsed(v)
+		_c.mutation.SetDataSectionCollapsed(v)
 	}
-	if _, ok := bpc.mutation.ScheduleSectionCollapsed(); !ok {
+	if _, ok := _c.mutation.ScheduleSectionCollapsed(); !ok {
 		v := backupprofile.DefaultScheduleSectionCollapsed
-		bpc.mutation.SetScheduleSectionCollapsed(v)
+		_c.mutation.SetScheduleSectionCollapsed(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (bpc *BackupProfileCreate) check() error {
-	if _, ok := bpc.mutation.CreatedAt(); !ok {
+func (_c *BackupProfileCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BackupProfile.created_at"`)}
 	}
-	if _, ok := bpc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BackupProfile.updated_at"`)}
 	}
-	if _, ok := bpc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "BackupProfile.name"`)}
 	}
-	if v, ok := bpc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := backupprofile.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.name": %w`, err)}
 		}
 	}
-	if _, ok := bpc.mutation.Prefix(); !ok {
+	if _, ok := _c.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupProfile.prefix"`)}
 	}
-	if v, ok := bpc.mutation.Prefix(); ok {
+	if v, ok := _c.mutation.Prefix(); ok {
 		if err := backupprofile.PrefixValidator(v); err != nil {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.prefix": %w`, err)}
 		}
 	}
-	if _, ok := bpc.mutation.BackupPaths(); !ok {
+	if _, ok := _c.mutation.BackupPaths(); !ok {
 		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
 	}
-	if _, ok := bpc.mutation.Icon(); !ok {
+	if _, ok := _c.mutation.Icon(); !ok {
 		return &ValidationError{Name: "icon", err: errors.New(`ent: missing required field "BackupProfile.icon"`)}
 	}
-	if v, ok := bpc.mutation.Icon(); ok {
+	if v, ok := _c.mutation.Icon(); ok {
 		if err := backupprofile.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
 	}
-	if _, ok := bpc.mutation.DataSectionCollapsed(); !ok {
+	if _, ok := _c.mutation.DataSectionCollapsed(); !ok {
 		return &ValidationError{Name: "data_section_collapsed", err: errors.New(`ent: missing required field "BackupProfile.data_section_collapsed"`)}
 	}
-	if _, ok := bpc.mutation.ScheduleSectionCollapsed(); !ok {
+	if _, ok := _c.mutation.ScheduleSectionCollapsed(); !ok {
 		return &ValidationError{Name: "schedule_section_collapsed", err: errors.New(`ent: missing required field "BackupProfile.schedule_section_collapsed"`)}
 	}
-	if len(bpc.mutation.RepositoriesIDs()) == 0 {
+	if len(_c.mutation.RepositoriesIDs()) == 0 {
 		return &ValidationError{Name: "repositories", err: errors.New(`ent: missing required edge "BackupProfile.repositories"`)}
 	}
 	return nil
 }
 
-func (bpc *BackupProfileCreate) sqlSave(ctx context.Context) (*BackupProfile, error) {
-	if err := bpc.check(); err != nil {
+func (_c *BackupProfileCreate) sqlSave(ctx context.Context) (*BackupProfile, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := bpc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, bpc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -323,57 +323,57 @@ func (bpc *BackupProfileCreate) sqlSave(ctx context.Context) (*BackupProfile, er
 		id := _spec.ID.Value.(int64)
 		_node.ID = int(id)
 	}
-	bpc.mutation.id = &_node.ID
-	bpc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSpec) {
+func (_c *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSpec) {
 	var (
-		_node = &BackupProfile{config: bpc.config}
+		_node = &BackupProfile{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(backupprofile.Table, sqlgraph.NewFieldSpec(backupprofile.FieldID, field.TypeInt))
 	)
-	if id, ok := bpc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := bpc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(backupprofile.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := bpc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(backupprofile.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := bpc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(backupprofile.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := bpc.mutation.Prefix(); ok {
+	if value, ok := _c.mutation.Prefix(); ok {
 		_spec.SetField(backupprofile.FieldPrefix, field.TypeString, value)
 		_node.Prefix = value
 	}
-	if value, ok := bpc.mutation.BackupPaths(); ok {
+	if value, ok := _c.mutation.BackupPaths(); ok {
 		_spec.SetField(backupprofile.FieldBackupPaths, field.TypeJSON, value)
 		_node.BackupPaths = value
 	}
-	if value, ok := bpc.mutation.ExcludePaths(); ok {
+	if value, ok := _c.mutation.ExcludePaths(); ok {
 		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
 		_node.ExcludePaths = value
 	}
-	if value, ok := bpc.mutation.Icon(); ok {
+	if value, ok := _c.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 		_node.Icon = value
 	}
-	if value, ok := bpc.mutation.DataSectionCollapsed(); ok {
+	if value, ok := _c.mutation.DataSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
 		_node.DataSectionCollapsed = value
 	}
-	if value, ok := bpc.mutation.ScheduleSectionCollapsed(); ok {
+	if value, ok := _c.mutation.ScheduleSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
 		_node.ScheduleSectionCollapsed = value
 	}
-	if nodes := bpc.mutation.RepositoriesIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -389,7 +389,7 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bpc.mutation.ArchivesIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ArchivesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -405,7 +405,7 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bpc.mutation.BackupScheduleIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.BackupScheduleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -421,7 +421,7 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bpc.mutation.PruningRuleIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.PruningRuleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
@@ -437,7 +437,7 @@ func (bpc *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSp
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bpc.mutation.NotificationsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.NotificationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -464,16 +464,16 @@ type BackupProfileCreateBulk struct {
 }
 
 // Save creates the BackupProfile entities in the database.
-func (bpcb *BackupProfileCreateBulk) Save(ctx context.Context) ([]*BackupProfile, error) {
-	if bpcb.err != nil {
-		return nil, bpcb.err
+func (_c *BackupProfileCreateBulk) Save(ctx context.Context) ([]*BackupProfile, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(bpcb.builders))
-	nodes := make([]*BackupProfile, len(bpcb.builders))
-	mutators := make([]Mutator, len(bpcb.builders))
-	for i := range bpcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*BackupProfile, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := bpcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*BackupProfileMutation)
@@ -487,11 +487,11 @@ func (bpcb *BackupProfileCreateBulk) Save(ctx context.Context) ([]*BackupProfile
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, bpcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, bpcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -515,7 +515,7 @@ func (bpcb *BackupProfileCreateBulk) Save(ctx context.Context) ([]*BackupProfile
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, bpcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -523,8 +523,8 @@ func (bpcb *BackupProfileCreateBulk) Save(ctx context.Context) ([]*BackupProfile
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (bpcb *BackupProfileCreateBulk) SaveX(ctx context.Context) []*BackupProfile {
-	v, err := bpcb.Save(ctx)
+func (_c *BackupProfileCreateBulk) SaveX(ctx context.Context) []*BackupProfile {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -532,14 +532,14 @@ func (bpcb *BackupProfileCreateBulk) SaveX(ctx context.Context) []*BackupProfile
 }
 
 // Exec executes the query.
-func (bpcb *BackupProfileCreateBulk) Exec(ctx context.Context) error {
-	_, err := bpcb.Save(ctx)
+func (_c *BackupProfileCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bpcb *BackupProfileCreateBulk) ExecX(ctx context.Context) {
-	if err := bpcb.Exec(ctx); err != nil {
+func (_c *BackupProfileCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

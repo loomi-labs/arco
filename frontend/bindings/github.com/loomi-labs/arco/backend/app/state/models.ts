@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as types$0 from "../../borg/types/models.js";
-
 export class AuthState {
     "isAuthenticated": boolean;
 
@@ -29,61 +25,6 @@ export class AuthState {
         return new AuthState($$parsedSource as Partial<AuthState>);
     }
 }
-
-export enum BackupButtonStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    BackupButtonStatusRunBackup = "runBackup",
-    BackupButtonStatusWaiting = "waiting",
-    BackupButtonStatusAbort = "abort",
-    BackupButtonStatusLocked = "locked",
-    BackupButtonStatusUnmount = "unmount",
-    BackupButtonStatusBusy = "busy",
-};
-
-export class BackupState {
-    "status": BackupStatus;
-    "progress"?: types$0.BackupProgress | null;
-    "error"?: string;
-
-    /** Creates a new BackupState instance. */
-    constructor($$source: Partial<BackupState> = {}) {
-        if (!("status" in $$source)) {
-            this["status"] = BackupStatus.$zero;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new BackupState instance from a string or object.
-     */
-    static createFrom($$source: any = {}): BackupState {
-        const $$createField1_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("progress" in $$parsedSource) {
-            $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
-        }
-        return new BackupState($$parsedSource as Partial<BackupState>);
-    }
-}
-
-export enum BackupStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    BackupStatusIdle = "idle",
-    BackupStatusWaiting = "waiting",
-    BackupStatusRunning = "running",
-    BackupStatusCompleted = "completed",
-    BackupStatusCancelled = "cancelled",
-    BackupStatusFailed = "failed",
-};
 
 export class CheckoutResult {
     "status": CheckoutResultStatus;
@@ -118,85 +59,6 @@ export enum CheckoutResultStatus {
     CheckoutStatusCompleted = "completed",
     CheckoutStatusFailed = "failed",
     CheckoutStatusTimeout = "timeout",
-};
-
-export enum RepoErrorAction {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    RepoErrorActionNone = "none",
-    RepoErrorActionRegenerateSSH = "regenerateSSH",
-    RepoErrorActionUnlockRepository = "unlockRepository",
-};
-
-export enum RepoErrorType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    RepoErrorTypeNone = "none",
-    RepoErrorTypeSSHKey = "sshKey",
-    RepoErrorTypePassphrase = "passphrase",
-    RepoErrorTypeLockTimeout = "lockTimeout",
-};
-
-export class RepoState {
-    "status": RepoStatus;
-    "errorType": RepoErrorType;
-    "errorMessage": string;
-    "errorAction": RepoErrorAction;
-    "hasWarning": boolean;
-    "warningMessage": string;
-
-    /** Creates a new RepoState instance. */
-    constructor($$source: Partial<RepoState> = {}) {
-        if (!("status" in $$source)) {
-            this["status"] = RepoStatus.$zero;
-        }
-        if (!("errorType" in $$source)) {
-            this["errorType"] = RepoErrorType.$zero;
-        }
-        if (!("errorMessage" in $$source)) {
-            this["errorMessage"] = "";
-        }
-        if (!("errorAction" in $$source)) {
-            this["errorAction"] = RepoErrorAction.$zero;
-        }
-        if (!("hasWarning" in $$source)) {
-            this["hasWarning"] = false;
-        }
-        if (!("warningMessage" in $$source)) {
-            this["warningMessage"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RepoState instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RepoState {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RepoState($$parsedSource as Partial<RepoState>);
-    }
-}
-
-export enum RepoStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    RepoStatusIdle = "idle",
-    RepoStatusBackingUp = "backingUp",
-    RepoStatusPruning = "pruning",
-    RepoStatusDeleting = "deleting",
-    RepoStatusMounted = "mounted",
-    RepoStatusPerformingOperation = "performingOperation",
-    RepoStatusError = "error",
 };
 
 export class StartupState {
@@ -240,7 +102,3 @@ export enum StartupStatus {
     StartupStatusInitializingApp = "initializingApp",
     StartupStatusReady = "ready",
 };
-
-// Private type creation functions
-const $$createType0 = types$0.BackupProgress.createFrom;
-const $$createType1 = $Create.Nullable($$createType0);

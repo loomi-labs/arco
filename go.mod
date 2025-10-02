@@ -8,7 +8,7 @@ require (
 	entgo.io/ent v0.14.5
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/charmbracelet/keygen v0.5.3
-	github.com/eminarican/safetypes v0.0.8
+	github.com/chris-tomich/adtenum v0.0.0-20240224102410-27b45bba484e
 	github.com/go-cmd/cmd v1.4.3
 	github.com/google/go-github/v66 v66.0.0
 	github.com/google/uuid v1.6.0

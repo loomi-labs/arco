@@ -19,7 +19,7 @@ import (
 type Borg interface {
 	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status)
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
-	List(ctx context.Context, repository string, password string) (*types.ListResponse, *types.Status)
+	List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status)
 	Compact(ctx context.Context, repository string, password string) *types.Status
 	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status)
 	Rename(ctx context.Context, repository, archive, password, newName string) *types.Status

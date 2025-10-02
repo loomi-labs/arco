@@ -124,7 +124,7 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Repository fields.
-func (r *Repository) assignValues(columns []string, values []any) error {
+func (_m *Repository) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -135,89 +135,89 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			r.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case repository.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				r.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case repository.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				r.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case repository.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				r.Name = value.String
+				_m.Name = value.String
 			}
 		case repository.FieldURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field url", values[i])
 			} else if value.Valid {
-				r.URL = value.String
+				_m.URL = value.String
 			}
 		case repository.FieldPassword:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
-				r.Password = value.String
+				_m.Password = value.String
 			}
 		case repository.FieldNextIntegrityCheck:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
 			} else if value.Valid {
-				r.NextIntegrityCheck = new(time.Time)
-				*r.NextIntegrityCheck = value.Time
+				_m.NextIntegrityCheck = new(time.Time)
+				*_m.NextIntegrityCheck = value.Time
 			}
 		case repository.FieldStatsTotalChunks:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_total_chunks", values[i])
 			} else if value.Valid {
-				r.StatsTotalChunks = int(value.Int64)
+				_m.StatsTotalChunks = int(value.Int64)
 			}
 		case repository.FieldStatsTotalSize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_total_size", values[i])
 			} else if value.Valid {
-				r.StatsTotalSize = int(value.Int64)
+				_m.StatsTotalSize = int(value.Int64)
 			}
 		case repository.FieldStatsTotalCsize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_total_csize", values[i])
 			} else if value.Valid {
-				r.StatsTotalCsize = int(value.Int64)
+				_m.StatsTotalCsize = int(value.Int64)
 			}
 		case repository.FieldStatsTotalUniqueChunks:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_total_unique_chunks", values[i])
 			} else if value.Valid {
-				r.StatsTotalUniqueChunks = int(value.Int64)
+				_m.StatsTotalUniqueChunks = int(value.Int64)
 			}
 		case repository.FieldStatsUniqueSize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_unique_size", values[i])
 			} else if value.Valid {
-				r.StatsUniqueSize = int(value.Int64)
+				_m.StatsUniqueSize = int(value.Int64)
 			}
 		case repository.FieldStatsUniqueCsize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field stats_unique_csize", values[i])
 			} else if value.Valid {
-				r.StatsUniqueCsize = int(value.Int64)
+				_m.StatsUniqueCsize = int(value.Int64)
 			}
 		case repository.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field cloud_repository_repository", value)
 			} else if value.Valid {
-				r.cloud_repository_repository = new(int)
-				*r.cloud_repository_repository = int(value.Int64)
+				_m.cloud_repository_repository = new(int)
+				*_m.cloud_repository_repository = int(value.Int64)
 			}
 		default:
-			r.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -225,90 +225,90 @@ func (r *Repository) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Repository.
 // This includes values selected through modifiers, order, etc.
-func (r *Repository) Value(name string) (ent.Value, error) {
-	return r.selectValues.Get(name)
+func (_m *Repository) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryBackupProfiles queries the "backup_profiles" edge of the Repository entity.
-func (r *Repository) QueryBackupProfiles() *BackupProfileQuery {
-	return NewRepositoryClient(r.config).QueryBackupProfiles(r)
+func (_m *Repository) QueryBackupProfiles() *BackupProfileQuery {
+	return NewRepositoryClient(_m.config).QueryBackupProfiles(_m)
 }
 
 // QueryArchives queries the "archives" edge of the Repository entity.
-func (r *Repository) QueryArchives() *ArchiveQuery {
-	return NewRepositoryClient(r.config).QueryArchives(r)
+func (_m *Repository) QueryArchives() *ArchiveQuery {
+	return NewRepositoryClient(_m.config).QueryArchives(_m)
 }
 
 // QueryNotifications queries the "notifications" edge of the Repository entity.
-func (r *Repository) QueryNotifications() *NotificationQuery {
-	return NewRepositoryClient(r.config).QueryNotifications(r)
+func (_m *Repository) QueryNotifications() *NotificationQuery {
+	return NewRepositoryClient(_m.config).QueryNotifications(_m)
 }
 
 // QueryCloudRepository queries the "cloud_repository" edge of the Repository entity.
-func (r *Repository) QueryCloudRepository() *CloudRepositoryQuery {
-	return NewRepositoryClient(r.config).QueryCloudRepository(r)
+func (_m *Repository) QueryCloudRepository() *CloudRepositoryQuery {
+	return NewRepositoryClient(_m.config).QueryCloudRepository(_m)
 }
 
 // Update returns a builder for updating this Repository.
 // Note that you need to call Repository.Unwrap() before calling this method if this Repository
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (r *Repository) Update() *RepositoryUpdateOne {
-	return NewRepositoryClient(r.config).UpdateOne(r)
+func (_m *Repository) Update() *RepositoryUpdateOne {
+	return NewRepositoryClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Repository entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (r *Repository) Unwrap() *Repository {
-	_tx, ok := r.config.driver.(*txDriver)
+func (_m *Repository) Unwrap() *Repository {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Repository is not a transactional entity")
 	}
-	r.config.driver = _tx.drv
-	return r
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (r *Repository) String() string {
+func (_m *Repository) String() string {
 	var builder strings.Builder
 	builder.WriteString("Repository(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(r.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("url=")
-	builder.WriteString(r.URL)
+	builder.WriteString(_m.URL)
 	builder.WriteString(", ")
 	builder.WriteString("password=")
-	builder.WriteString(r.Password)
+	builder.WriteString(_m.Password)
 	builder.WriteString(", ")
-	if v := r.NextIntegrityCheck; v != nil {
+	if v := _m.NextIntegrityCheck; v != nil {
 		builder.WriteString("next_integrity_check=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_chunks=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalChunks))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsTotalChunks))
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_size=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalSize))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsTotalSize))
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_csize=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalCsize))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsTotalCsize))
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_unique_chunks=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsTotalUniqueChunks))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsTotalUniqueChunks))
 	builder.WriteString(", ")
 	builder.WriteString("stats_unique_size=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsUniqueSize))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsUniqueSize))
 	builder.WriteString(", ")
 	builder.WriteString("stats_unique_csize=")
-	builder.WriteString(fmt.Sprintf("%v", r.StatsUniqueCsize))
+	builder.WriteString(fmt.Sprintf("%v", _m.StatsUniqueCsize))
 	builder.WriteByte(')')
 	return builder.String()
 }

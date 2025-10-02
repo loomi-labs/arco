@@ -134,7 +134,7 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the BackupProfile fields.
-func (bp *BackupProfile) assignValues(columns []string, values []any) error {
+func (_m *BackupProfile) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -145,36 +145,36 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			bp.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case backupprofile.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				bp.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case backupprofile.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				bp.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case backupprofile.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				bp.Name = value.String
+				_m.Name = value.String
 			}
 		case backupprofile.FieldPrefix:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field prefix", values[i])
 			} else if value.Valid {
-				bp.Prefix = value.String
+				_m.Prefix = value.String
 			}
 		case backupprofile.FieldBackupPaths:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field backup_paths", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &bp.BackupPaths); err != nil {
+				if err := json.Unmarshal(*value, &_m.BackupPaths); err != nil {
 					return fmt.Errorf("unmarshal field backup_paths: %w", err)
 				}
 			}
@@ -182,7 +182,7 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field exclude_paths", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &bp.ExcludePaths); err != nil {
+				if err := json.Unmarshal(*value, &_m.ExcludePaths); err != nil {
 					return fmt.Errorf("unmarshal field exclude_paths: %w", err)
 				}
 			}
@@ -190,22 +190,22 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field icon", values[i])
 			} else if value.Valid {
-				bp.Icon = backupprofile.Icon(value.String)
+				_m.Icon = backupprofile.Icon(value.String)
 			}
 		case backupprofile.FieldDataSectionCollapsed:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field data_section_collapsed", values[i])
 			} else if value.Valid {
-				bp.DataSectionCollapsed = value.Bool
+				_m.DataSectionCollapsed = value.Bool
 			}
 		case backupprofile.FieldScheduleSectionCollapsed:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field schedule_section_collapsed", values[i])
 			} else if value.Valid {
-				bp.ScheduleSectionCollapsed = value.Bool
+				_m.ScheduleSectionCollapsed = value.Bool
 			}
 		default:
-			bp.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -213,84 +213,84 @@ func (bp *BackupProfile) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the BackupProfile.
 // This includes values selected through modifiers, order, etc.
-func (bp *BackupProfile) Value(name string) (ent.Value, error) {
-	return bp.selectValues.Get(name)
+func (_m *BackupProfile) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryRepositories queries the "repositories" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryRepositories() *RepositoryQuery {
-	return NewBackupProfileClient(bp.config).QueryRepositories(bp)
+func (_m *BackupProfile) QueryRepositories() *RepositoryQuery {
+	return NewBackupProfileClient(_m.config).QueryRepositories(_m)
 }
 
 // QueryArchives queries the "archives" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryArchives() *ArchiveQuery {
-	return NewBackupProfileClient(bp.config).QueryArchives(bp)
+func (_m *BackupProfile) QueryArchives() *ArchiveQuery {
+	return NewBackupProfileClient(_m.config).QueryArchives(_m)
 }
 
 // QueryBackupSchedule queries the "backup_schedule" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
-	return NewBackupProfileClient(bp.config).QueryBackupSchedule(bp)
+func (_m *BackupProfile) QueryBackupSchedule() *BackupScheduleQuery {
+	return NewBackupProfileClient(_m.config).QueryBackupSchedule(_m)
 }
 
 // QueryPruningRule queries the "pruning_rule" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryPruningRule() *PruningRuleQuery {
-	return NewBackupProfileClient(bp.config).QueryPruningRule(bp)
+func (_m *BackupProfile) QueryPruningRule() *PruningRuleQuery {
+	return NewBackupProfileClient(_m.config).QueryPruningRule(_m)
 }
 
 // QueryNotifications queries the "notifications" edge of the BackupProfile entity.
-func (bp *BackupProfile) QueryNotifications() *NotificationQuery {
-	return NewBackupProfileClient(bp.config).QueryNotifications(bp)
+func (_m *BackupProfile) QueryNotifications() *NotificationQuery {
+	return NewBackupProfileClient(_m.config).QueryNotifications(_m)
 }
 
 // Update returns a builder for updating this BackupProfile.
 // Note that you need to call BackupProfile.Unwrap() before calling this method if this BackupProfile
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (bp *BackupProfile) Update() *BackupProfileUpdateOne {
-	return NewBackupProfileClient(bp.config).UpdateOne(bp)
+func (_m *BackupProfile) Update() *BackupProfileUpdateOne {
+	return NewBackupProfileClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the BackupProfile entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (bp *BackupProfile) Unwrap() *BackupProfile {
-	_tx, ok := bp.config.driver.(*txDriver)
+func (_m *BackupProfile) Unwrap() *BackupProfile {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: BackupProfile is not a transactional entity")
 	}
-	bp.config.driver = _tx.drv
-	return bp
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (bp *BackupProfile) String() string {
+func (_m *BackupProfile) String() string {
 	var builder strings.Builder
 	builder.WriteString("BackupProfile(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", bp.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(bp.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(bp.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(bp.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("prefix=")
-	builder.WriteString(bp.Prefix)
+	builder.WriteString(_m.Prefix)
 	builder.WriteString(", ")
 	builder.WriteString("backup_paths=")
-	builder.WriteString(fmt.Sprintf("%v", bp.BackupPaths))
+	builder.WriteString(fmt.Sprintf("%v", _m.BackupPaths))
 	builder.WriteString(", ")
 	builder.WriteString("exclude_paths=")
-	builder.WriteString(fmt.Sprintf("%v", bp.ExcludePaths))
+	builder.WriteString(fmt.Sprintf("%v", _m.ExcludePaths))
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
-	builder.WriteString(fmt.Sprintf("%v", bp.Icon))
+	builder.WriteString(fmt.Sprintf("%v", _m.Icon))
 	builder.WriteString(", ")
 	builder.WriteString("data_section_collapsed=")
-	builder.WriteString(fmt.Sprintf("%v", bp.DataSectionCollapsed))
+	builder.WriteString(fmt.Sprintf("%v", _m.DataSectionCollapsed))
 	builder.WriteString(", ")
 	builder.WriteString("schedule_section_collapsed=")
-	builder.WriteString(fmt.Sprintf("%v", bp.ScheduleSectionCollapsed))
+	builder.WriteString(fmt.Sprintf("%v", _m.ScheduleSectionCollapsed))
 	builder.WriteByte(')')
 	return builder.String()
 }

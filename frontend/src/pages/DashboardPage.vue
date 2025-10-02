@@ -16,8 +16,8 @@ import { useDark } from "@vueuse/core";
 import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import {Events} from "@wailsio/runtime";
 
 /************
@@ -30,10 +30,11 @@ import {Events} from "@wailsio/runtime";
 
 const router = useRouter();
 const backupProfiles = ref<ent.BackupProfile[]>([]);
-const repos = ref<ent.Repository[]>([]);
+const repos = ref<repoModels.Repository[]>([]);
 const showWelcomeModal = computed(() => settings.value.showWelcome && backupProfiles.value.length === 0 && repos.value.length === 0);
 const settings = ref<ent.Settings>(ent.Settings.createFrom());
 const isDark = useDark();
+
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -44,7 +45,7 @@ const cleanupFunctions: (() => void)[] = [];
 async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
-    repos.value = (await repoService.All()).filter((repo): repo is Repository => repo !== null);
+    repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
     settings.value = await userService.GetSettings() ?? ent.Settings.createFrom();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
