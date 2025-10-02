@@ -98,7 +98,7 @@ func (a *App) BackupProfileService() *backup_profile.Service {
 	return a.backupProfileService.Service
 }
 
-func (a *App) RepositoryServiceN() *repository.Service {
+func (a *App) RepositoryService() *repository.Service {
 	return a.repositoryService.Service
 }
 

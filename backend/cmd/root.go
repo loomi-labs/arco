@@ -201,7 +201,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		Services: []application.Service{
 			application.NewService(arco.UserService()),
 			application.NewService(arco.BackupProfileService()),
-			application.NewService(arco.RepositoryServiceN()),
+			application.NewService(arco.RepositoryService()),
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),
 			application.NewService(arco.SubscriptionService()),

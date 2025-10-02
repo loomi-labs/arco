@@ -68,10 +68,10 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 	cloudRepositoryClient := repository.NewCloudRepositoryClient(a.log, a.state, config)
 	cloudRepositoryClient.Init(db, nil) // Pass nil for RPC client in tests
 	a.repositoryService.Init(
+		a.ctx,
 		db,
-		mockBorg,
-		config,
 		mockEventEmitter,
+		mockBorg,
 		cloudRepositoryClient,
 	)
 
