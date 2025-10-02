@@ -37,11 +37,19 @@ SELECT
     `stats_unique_csize`, `cloud_repository_repository`
 FROM `repositories`;
 
--- Backup junction table data
+-- Backup data from tables with foreign keys to repositories
 CREATE TEMPORARY TABLE `backup_profile_repositories_backup` AS
 SELECT * FROM `backup_profile_repositories`;
 
--- Drop old tables
+CREATE TEMPORARY TABLE `archives_backup` AS
+SELECT * FROM `archives`;
+
+CREATE TEMPORARY TABLE `notifications_backup` AS
+SELECT * FROM `notifications`;
+
+-- Drop old tables (order matters due to foreign keys)
+DROP TABLE `notifications`;
+DROP TABLE `archives`;
 DROP TABLE `backup_profile_repositories`;
 DROP TABLE `repositories`;
 
@@ -57,11 +65,47 @@ CREATE TABLE `backup_profile_repositories` (
     CONSTRAINT `backup_profile_repositories_repository_id` FOREIGN KEY (`repository_id`) REFERENCES `repositories` (`id`) ON DELETE CASCADE
 );
 
--- Restore junction table data
-INSERT INTO `backup_profile_repositories` SELECT * FROM `backup_profile_repositories_backup`;
+-- Recreate archives table
+CREATE TABLE `archives` (
+    `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+    `created_at` datetime NOT NULL,
+    `updated_at` datetime NOT NULL,
+    `name` text NOT NULL,
+    `duration` real NOT NULL,
+    `borg_id` text NOT NULL,
+    `will_be_pruned` bool NOT NULL DEFAULT false,
+    `archive_repository` integer NOT NULL,
+    `archive_backup_profile` integer NULL,
+    `backup_profile_archives` integer NULL,
+    CONSTRAINT `archives_repositories_repository` FOREIGN KEY (`archive_repository`) REFERENCES `repositories` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `archives_backup_profiles_backup_profile` FOREIGN KEY (`archive_backup_profile`) REFERENCES `backup_profiles` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `archives_backup_profiles_archives` FOREIGN KEY (`backup_profile_archives`) REFERENCES `backup_profiles` (`id`) ON DELETE SET NULL
+);
 
--- Clean up temporary table
+-- Recreate notifications table
+CREATE TABLE `notifications` (
+    `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+    `created_at` datetime NOT NULL,
+    `updated_at` datetime NOT NULL,
+    `message` text NOT NULL,
+    `type` text NOT NULL,
+    `seen` bool NOT NULL DEFAULT false,
+    `action` text NULL,
+    `notification_backup_profile` integer NOT NULL,
+    `notification_repository` integer NOT NULL,
+    CONSTRAINT `notifications_backup_profiles_backup_profile` FOREIGN KEY (`notification_backup_profile`) REFERENCES `backup_profiles` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `notifications_repositories_repository` FOREIGN KEY (`notification_repository`) REFERENCES `repositories` (`id`) ON DELETE CASCADE
+);
+
+-- Restore all data
+INSERT INTO `backup_profile_repositories` SELECT * FROM `backup_profile_repositories_backup`;
+INSERT INTO `archives` SELECT * FROM `archives_backup`;
+INSERT INTO `notifications` SELECT * FROM `notifications_backup`;
+
+-- Clean up temporary tables
 DROP TABLE `backup_profile_repositories_backup`;
+DROP TABLE `archives_backup`;
+DROP TABLE `notifications_backup`;
 
 -- Recreate indexes on repositories
 CREATE UNIQUE INDEX `repositories_name_key` ON `repositories` (`name`);
