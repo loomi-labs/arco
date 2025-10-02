@@ -86,12 +86,12 @@ func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitte
 	si.queueManager.Init(db, si.borgClient, si.eventEmitter)
 
 	// Initialize mount states
-	si.InitMountStates(ctx)
+	si.initMountStates(ctx)
 }
 
-// InitMountStates initializes the mount states of all repositories and archives at startup
+// initMountStates initializes the mount states of all repositories and archives at startup
 // This method is called during app startup and restores mount states if things are mounted
-func (si *ServiceInternal) InitMountStates(ctx context.Context) {
+func (si *ServiceInternal) initMountStates(ctx context.Context) {
 	// Get all mounted repositories and archives in a single system call
 	mountedRepos, mountedArchives, err := platform.GetArcoMounts()
 	if err != nil {
@@ -384,6 +384,110 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
 	return s.entityToRepository(ctx, entRepo), nil
+}
+
+// SyncCloudRepositories syncs all cloud repositories from ArcoCloud to local database
+func (si *ServiceInternal) SyncCloudRepositories(ctx context.Context) ([]*ent.Repository, error) {
+	cloudRepos, err := si.cloudRepoClient.ListCloudRepositories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	si.log.Debugf("Syncing %d cloud repositories", len(cloudRepos))
+
+	var syncedRepos []*ent.Repository
+	for _, cloudRepo := range cloudRepos {
+		localRepo, err := si.syncSingleCloudRepository(ctx, cloudRepo)
+		if err != nil {
+			si.log.Errorf("Failed to sync cloud repository %s (%s): %v", cloudRepo.Name, cloudRepo.Id, err)
+			return nil, err
+		}
+		if localRepo != nil {
+			syncedRepos = append(syncedRepos, localRepo)
+		}
+	}
+	return syncedRepos, nil
+}
+
+// syncSingleCloudRepository creates or updates a local repository entity with cloud metadata
+func (s *Service) syncSingleCloudRepository(ctx context.Context, cloudRepo *arcov1.Repository) (*ent.Repository, error) {
+	var result *ent.Repository
+	err := database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+		// Check if local repository already exists by ArcoCloud ID
+		if cloudRepo.Id != "" {
+			if localRepo, err := tx.Repository.Query().
+				Where(repository.HasCloudRepositoryWith(
+					cloudrepository.CloudIDEQ(cloudRepo.Id),
+				)).
+				First(ctx); err == nil {
+				// Update existing repository
+				updatedRepo, txErr := tx.Repository.UpdateOne(localRepo).
+					SetName(cloudRepo.Name).
+					SetURL(cloudRepo.RepoUrl).
+					Save(ctx)
+				if txErr != nil {
+					return txErr
+				}
+				result = updatedRepo
+				return nil
+			}
+		}
+
+		// Check if repository exists by location (repo URL)
+		if localRepo, err := tx.Repository.Query().
+			Where(repository.URLEQ(cloudRepo.RepoUrl)).
+			First(ctx); err == nil {
+			// Create cloud repository association
+			_, txErr := tx.CloudRepository.Create().
+				SetCloudID(cloudRepo.Id).
+				SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+				SetLocation(s.getLocationEnum(cloudRepo.Location)).
+				SetRepository(localRepo).
+				Save(ctx)
+			if txErr != nil {
+				return txErr
+			}
+
+			// Update repository name if needed
+			updatedRepo, txErr := tx.Repository.UpdateOne(localRepo).
+				SetName(cloudRepo.Name).
+				Save(ctx)
+			if txErr != nil {
+				return txErr
+			}
+			result = updatedRepo
+			return nil
+		}
+
+		// Create new local repository with cloud association
+		localRepo, txErr := tx.Repository.Create().
+			SetName(cloudRepo.Name).
+			SetURL(cloudRepo.RepoUrl).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+
+		// Create cloud repository association
+		_, txErr = tx.CloudRepository.Create().
+			SetCloudID(cloudRepo.Id).
+			SetStorageUsedBytes(cloudRepo.StorageUsedBytes).
+			SetLocation(s.getLocationEnum(cloudRepo.Location)).
+			SetRepository(localRepo).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+
+		result = localRepo
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cloud repository: %w", err)
+	}
+
+	return result, nil
 }
 
 // Update updates a repository with provided changes
