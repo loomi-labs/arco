@@ -855,10 +855,16 @@ func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, name st
 		return "", fmt.Errorf("cannot rename archive while repository is mounted or mounting - please unmount the repository first")
 	}
 
+	// Get prefix from backup profile if available
+	var prefix string
+	if archiveEntity.Edges.BackupProfile != nil {
+		prefix = archiveEntity.Edges.BackupProfile.Prefix
+	}
+
 	// Create archive rename operation
 	archiveRenameOp := statemachine.NewOperationArchiveRename(statemachine.ArchiveRename{
 		ArchiveID: archiveId,
-		Prefix:    archiveEntity.Edges.BackupProfile.Prefix,
+		Prefix:    prefix,
 		Name:      name,
 	})
 
