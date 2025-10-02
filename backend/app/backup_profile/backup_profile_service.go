@@ -39,9 +39,9 @@ type Service struct {
 
 // RepositoryServiceInterface defines the methods needed from repository service
 type RepositoryServiceInterface interface {
-	RunBorgDelete(ctx context.Context, bId types.BackupId, location, password, prefix string) (types.DeleteResult, error)
-	StartBackupJobs(ctx context.Context, bIds []types.BackupId) error
-	StartPruneJob(ctx context.Context, bId types.BackupId) error
+	QueueBackup(ctx context.Context, backupId types.BackupId) (string, error)
+	QueuePrune(ctx context.Context, backupId types.BackupId) (string, error)
+	QueueArchiveDelete(ctx context.Context, archiveId int) (string, error)
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -319,23 +319,33 @@ func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, 
 		return err
 	}
 
-	var deleteJobs []func()
-	// If deleteArchives is true, we prepare a delete job for each repository
+	// If deleteArchives is true, queue archive deletions for each repository
 	if deleteArchives && s.repositoryService != nil {
-		for _, r := range backupProfile.Edges.Repositories {
-			repo := r // Capture loop variable
-			bId := types.BackupId{
-				BackupProfileId: backupProfileId,
-				RepositoryId:    repo.ID,
+		for _, repo := range backupProfile.Edges.Repositories {
+			// Query archives for this backup profile and repository
+			archives, err := s.db.Archive.Query().
+				Where(
+					archive.HasRepositoryWith(repository.ID(repo.ID)),
+					archive.HasBackupProfileWith(backupprofile.ID(backupProfileId)),
+				).
+				All(ctx)
+			if err != nil {
+				s.log.Errorw("Failed to query archives for deletion",
+					"backupProfileId", backupProfileId,
+					"repositoryId", repo.ID,
+					"error", err)
+				continue
 			}
-			deleteJobs = append(deleteJobs, func() {
-				go func() {
-					_, err := s.repositoryService.RunBorgDelete(application.Get().Context(), bId, repo.URL, repo.Password, backupProfile.Prefix)
-					if err != nil {
-						s.log.Error("Delete job failed: ", err)
-					}
-				}()
-			})
+
+			// Queue delete operation for each archive
+			for _, arch := range archives {
+				_, err := s.repositoryService.QueueArchiveDelete(ctx, arch.ID)
+				if err != nil {
+					s.log.Errorw("Failed to queue archive delete",
+						"archiveId", arch.ID,
+						"error", err)
+				}
+			}
 		}
 	}
 
@@ -346,11 +356,6 @@ func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, 
 		return err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileDeleted.String())
-
-	// Execute the delete jobs
-	for _, fn := range deleteJobs {
-		fn()
-	}
 
 	return nil
 }
@@ -406,28 +411,34 @@ func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupP
 		return fmt.Errorf("cannot remove the only repository from the backup profile")
 	}
 
-	var deleteJob func()
-	// If deleteArchives is true, we run a delete job for the repository
+	// If deleteArchives is true, queue archive deletions for this repository
 	if deleteArchives && len(backupProfile.Edges.Repositories) > 0 && s.repositoryService != nil {
-		bId := types.BackupId{
-			BackupProfileId: backupProfileId,
-			RepositoryId:    repositoryId,
-		}
 		repo := backupProfile.Edges.Repositories[0]
 		if repo.ID == repositoryId {
-			location, password, prefix := repo.URL, repo.Password, backupProfile.Prefix
-			deleteJob = func() {
-				_, err := s.repositoryService.RunBorgDelete(ctx, bId, location, password, prefix)
-				if err != nil {
-					s.log.Error("Delete job failed: ", err)
+			// Query archives for this backup profile and repository
+			archives, err := s.db.Archive.Query().
+				Where(
+					archive.HasRepositoryWith(repository.ID(repositoryId)),
+					archive.HasBackupProfileWith(backupprofile.ID(backupProfileId)),
+				).
+				All(ctx)
+			if err != nil {
+				s.log.Errorw("Failed to query archives for deletion",
+					"backupProfileId", backupProfileId,
+					"repositoryId", repositoryId,
+					"error", err)
+			} else {
+				// Queue delete operation for each archive
+				for _, arch := range archives {
+					_, err := s.repositoryService.QueueArchiveDelete(ctx, arch.ID)
+					if err != nil {
+						s.log.Errorw("Failed to queue archive delete",
+							"archiveId", arch.ID,
+							"error", err)
+					}
 				}
 			}
 		}
-	}
-
-	// Execute the delete job if created
-	if deleteJob != nil {
-		go deleteJob()
 	}
 
 	return s.db.BackupProfile.
