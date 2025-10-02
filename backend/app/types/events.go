@@ -23,7 +23,7 @@ const (
 	EventCheckoutStateChanged  Event = "checkoutStateChanged"
 	EventSubscriptionAdded     Event = "subscriptionAdded"
 	EventSubscriptionCancelled Event = "subscriptionCancelled"
-	EventOperationErrorOccured Event = "operationErrorOccured"
+	EventOperationErrorOccurred Event = "operationErrorOccurred"
 )
 
 var AllEvents = []Event{
@@ -38,7 +38,7 @@ var AllEvents = []Event{
 	EventCheckoutStateChanged,
 	EventSubscriptionAdded,
 	EventSubscriptionCancelled,
-	EventOperationErrorOccured,
+	EventOperationErrorOccurred,
 }
 
 func (e Event) String() string {

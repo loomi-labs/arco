@@ -98,7 +98,7 @@ watchEffect(() => {
 
 cleanupFunctions.push(Events.On(types.Event.EventStartupStateChanged, getStartupState));
 cleanupFunctions.push(Events.On(types.Event.EventNotificationAvailable, getNotifications));
-cleanupFunctions.push(Events.On(types.Event.EventOperationErrorOccured, (ev: WailsEvent) => {
+cleanupFunctions.push(Events.On(types.Event.EventOperationErrorOccurred, (ev: WailsEvent) => {
   handleOperationError(ev.data.toString());
 }));
 
