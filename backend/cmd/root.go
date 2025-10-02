@@ -236,8 +236,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	}
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
-		// TODO: what about the context?
-		arco.Startup(context.TODO())
+		arco.Startup(application.Get().Context())
 	})
 
 	systray := wailsApp.SystemTray.New()
