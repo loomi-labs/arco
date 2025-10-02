@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.15.0](https://github.com/loomi-labs/arco/compare/v0.14.1...v0.15.0) (2025-10-02)
+
+
+### Features
+
+* add arco cloud repositories ([#180](https://github.com/loomi-labs/arco/issues/180)) ([a76538f](https://github.com/loomi-labs/arco/commit/a76538f07bac52badd7f3ceba872285858272728))
+* add polar integration ([#182](https://github.com/loomi-labs/arco/issues/182)) ([33d78b6](https://github.com/loomi-labs/arco/commit/33d78b6c8d857d2ce3ffe10d970829761aeb9b16))
+* add quequed operations ([#187](https://github.com/loomi-labs/arco/issues/187)) ([02aa04e](https://github.com/loomi-labs/arco/commit/02aa04ef7460f166d4a000aaac6de65fb29aa68c))
+* auto detect glibc version ([#181](https://github.com/loomi-labs/arco/issues/181)) ([edc893b](https://github.com/loomi-labs/arco/commit/edc893b04a9a9a034da3aba9ee08a95492360ad4))
+
+
+### Bug Fixes
+
+* remove multicurrency ([#175](https://github.com/loomi-labs/arco/issues/175)) ([d4d4442](https://github.com/loomi-labs/arco/commit/d4d44423cea2bbbebc0b5db12563702eff001a1a))
+
 ## [0.14.1](https://github.com/loomi-labs/arco/compare/v0.14.0...v0.14.1) (2025-07-17)
 
 
