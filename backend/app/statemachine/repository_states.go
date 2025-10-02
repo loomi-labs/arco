@@ -25,8 +25,9 @@ type cancelCtx struct {
 type Idle struct{}
 
 type Queued struct {
-	NextOperation Operation `json:"nextOperation"`
-	QueueLength   int       `json:"queueLength"`
+	NextOperation      Operation      `json:"-"`
+	NextOperationUnion OperationUnion `json:"nextOperation"`
+	QueueLength        int            `json:"queueLength"`
 }
 
 type BackingUp struct {
@@ -272,8 +273,9 @@ func CreateIdleState() RepositoryState {
 // CreateQueuedState creates a new queued state with operation info
 func CreateQueuedState(nextOperation Operation, queueLength int) RepositoryState {
 	return NewRepositoryStateQueued(Queued{
-		NextOperation: nextOperation,
-		QueueLength:   queueLength,
+		NextOperation:      nextOperation,
+		NextOperationUnion: ToOperationUnion(nextOperation),
+		QueueLength:        queueLength,
 	})
 }
 
