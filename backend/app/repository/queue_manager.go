@@ -217,15 +217,15 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	operationType := statemachine.GetOperationType(operation.Operation)
 	switch operationType {
 	// Archive-affecting operations - emit event
-	case statemachine.OperationTypeArchiveDelete,
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeExaminePrune:
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
 
 	// Non-archive-affecting operations - no action
-	case statemachine.OperationTypeBackup,
-		statemachine.OperationTypeDelete,
+	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypePrune,

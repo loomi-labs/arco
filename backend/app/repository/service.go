@@ -1084,6 +1084,48 @@ func (s *Service) UnmountAllForRepos(ctx context.Context, repoIds []int) []error
 	return errorSlice
 }
 
+// clearWillBePrunedFlags clears all WillBePruned flags for archives in the backup profile's repositories
+func (s *Service) clearWillBePrunedFlags(ctx context.Context, backupProfile *ent.BackupProfile) error {
+	// Extract repository IDs from the backup profile
+	repositoryIDs := make([]int, 0, len(backupProfile.Edges.Repositories))
+	for _, repo := range backupProfile.Edges.Repositories {
+		repositoryIDs = append(repositoryIDs, repo.ID)
+	}
+
+	if len(repositoryIDs) == 0 {
+		s.log.Errorw("No repositories found for backup profile, nothing to clear",
+			"backupProfileId", backupProfile.ID)
+		return nil
+	}
+
+	// Clear WillBePruned flags for all archives in these repositories that belong to this backup profile
+	clearedCount, err := s.db.Debug().Archive.
+		Update().
+		Where(archive.And(
+			archive.HasRepositoryWith(repository.IDIn(repositoryIDs...)),
+			archive.HasBackupProfileWith(backupprofile.ID(backupProfile.ID)),
+			archive.WillBePruned(true),
+		)).
+		SetWillBePruned(false).
+		Save(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to clear WillBePruned flags: %w", err)
+	}
+
+	s.log.Infow("Cleared WillBePruned flags",
+		"backupProfileId", backupProfile.ID,
+		"repositoryCount", len(repositoryIDs),
+		"clearedArchiveCount", clearedCount)
+
+	// Emit archive change events for all affected repositories
+	for _, repo := range backupProfile.Edges.Repositories {
+		s.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repo.ID))
+	}
+
+	return nil
+}
+
 // ExaminePrunes analyzes what would be pruned with given rules
 func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
 	backupProfile, err := s.db.BackupProfile.
@@ -1093,6 +1135,20 @@ func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, prunin
 		Only(ctx)
 	if err != nil {
 		return []ExaminePruningResult{{Error: err}}, nil
+	}
+
+	// If pruning is disabled and we're saving results, just clear all WillBePruned flags
+	if !pruningRule.IsEnabled && saveResults {
+		s.log.Infow("Pruning rule is disabled, clearing all WillBePruned flags",
+			"backupProfileId", backupProfileId)
+		err := s.clearWillBePrunedFlags(ctx, backupProfile)
+		if err != nil {
+			s.log.Errorw("Failed to clear WillBePruned flags",
+				"backupProfileId", backupProfileId,
+				"error", err)
+			return []ExaminePruningResult{{Error: err}}, nil
+		}
+		return []ExaminePruningResult{}, nil
 	}
 
 	var wg sync.WaitGroup
