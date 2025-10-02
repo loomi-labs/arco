@@ -62,8 +62,7 @@ type App struct {
 	authService          *auth.ServiceInternal
 	planService          *plan.ServiceInternal
 	subscriptionService  *subscription.ServiceInternal
-	repositoryService    *repository_old.ServiceInternal
-	repositoryServiceN   *repository.ServiceInternal
+	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
 }
 
@@ -87,8 +86,7 @@ func NewApp(
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
-		repositoryService:        repository_old.NewService(log, state),
-		repositoryServiceN:       repository.NewService(log, config),
+		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
 	}
 }
@@ -101,12 +99,8 @@ func (a *App) BackupProfileService() *backup_profile.Service {
 	return a.backupProfileService.Service
 }
 
-func (a *App) RepositoryService() *repository_old.Service {
-	return a.repositoryService.Service
-}
-
 func (a *App) RepositoryServiceN() *repository.Service {
-	return a.repositoryServiceN.Service
+	return a.repositoryService.Service
 }
 
 func (a *App) AuthService() *auth.Service {
@@ -195,19 +189,10 @@ func (a *App) Startup(ctx context.Context) {
 	cloudRepositoryServiceO := repository_old.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryServiceO.Init(a.db, cloudRepositoryRPCClient)
 
-	// Initialize repository service with full dependencies
-	a.repositoryService.Init(
-		a.db,
-		a.borg,
-		a.config,
-		a.eventEmitter,
-		cloudRepositoryServiceO,
-	)
-
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
-	a.repositoryServiceN.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService)
+	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService)
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
@@ -233,9 +218,6 @@ func (a *App) Startup(ctx context.Context) {
 		a.log.Errorf("Failed to validate stored tokens: %v", err)
 		// Don't fail startup for token validation errors, just log them
 	}
-
-	// Save mount states
-	a.repositoryService.SetMountStates(a.ctx)
 
 	// Start ArcoCloud sync listener
 	go a.startArcoCloudSyncListener()
