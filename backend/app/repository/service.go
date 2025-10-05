@@ -351,6 +351,9 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			return nil, err
 		}
 
+		// We need to wait a bit otherwise it can create errors when initializing the repository
+		time.Sleep(500 * time.Millisecond)
+
 		status := s.borgClient.Init(ctx, repo.RepoUrl, password, false)
 		if status != nil && status.HasError() {
 			s.log.Errorf("Failed to initialize repository during initialization: %s", status.GetError())

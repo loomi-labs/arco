@@ -470,15 +470,10 @@ async function createRepository() {
   }
 }
 
-function onAuthenticated() {
+async function onAuthenticated() {
   // User authenticated via magic link - load subscription and continue flow
   transitionTo(ComponentState.SUBSCRIPTION_AUTHENTICATED);
-  loadUserSubscription();
-
-  // If user was trying to subscribe, complete the subscription after loading subscription
-  if (selectedPlan.value && !hasActiveSubscription.value) {
-    subscribeToPlan();
-  }
+  await loadUserSubscription();
 }
 
 
@@ -713,16 +708,19 @@ watch(isAuthenticated, async (authenticated) => {
           <div class='modal-action justify-start'>
             <button
               class='btn btn-outline'
+              :disabled='isCreatingRepository'
               @click.prevent='closeModal()'
             >
               Cancel
             </button>
             <button
               class='btn btn-secondary'
-              :disabled='!isRepoValid'
+              :class='{ "btn-disabled": !isRepoValid || isCreatingRepository }'
+              :disabled='!isRepoValid || isCreatingRepository'
               @click='createRepository()'
             >
-              Create Repository
+              <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
+              {{ isCreatingRepository ? 'Creating...' : 'Create Repository' }}
             </button>
           </div>
         </div>
