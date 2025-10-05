@@ -614,10 +614,33 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 		return nil
 	}
 
+	// Get operation before removing to check if we need to emit archive events
+	op := queue.GetOperationByID(operationID)
+
 	// Remove from queue if queued
 	err := queue.RemoveOperation(operationID)
 	if err != nil {
 		return fmt.Errorf("failed to cancel queued operation: %w", err)
+	}
+
+	// Emit archives changed event if this was an archive operation
+	if op != nil {
+		opType := statemachine.GetOperationType(op.Operation)
+		switch opType {
+		case statemachine.OperationTypeArchiveRename,
+			statemachine.OperationTypeArchiveDelete:
+			qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
+		case statemachine.OperationTypeBackup,
+			statemachine.OperationTypePrune,
+			statemachine.OperationTypeDelete,
+			statemachine.OperationTypeArchiveRefresh,
+			statemachine.OperationTypeMount,
+			statemachine.OperationTypeMountArchive,
+			statemachine.OperationTypeUnmount,
+			statemachine.OperationTypeUnmountArchive,
+			statemachine.OperationTypeExaminePrune:
+			// No archive event needed for these operations
+		}
 	}
 
 	// Check if this was the last queued operation and update state if needed
