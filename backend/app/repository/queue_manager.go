@@ -143,12 +143,6 @@ func (qm *QueueManager) GetQueue(repoID int) *RepositoryQueue {
 	return queue
 }
 
-// GetCurrentState returns the current repository state based on queue status
-//func (qm *QueueManager) GetCurrentState(repoID int) statemachine.RepositoryState {
-//	// TODO: Implement state calculation based on queue status
-//	return statemachine.CreateIdleState()
-//}
-
 // AddOperation adds an operation to the specified repository queue
 func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, error) {
 	// Get repository queue
@@ -156,9 +150,18 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 
 	// Check immediate flag requirements
 	if op.Immediate {
-		if qm.HasQueuedOperations(repoID) || queue.HasActiveOperation() {
-			return "", fmt.Errorf("cannot start immediate operation: repository has active or queued operations")
+		// Light operations can start if no operation is currently active
+		// Heavy operations need fully idle repository
+		opWeight := statemachine.GetOperationWeight(op.Operation)
+
+		if queue.HasActiveOperation() {
+			return "", fmt.Errorf("cannot start immediate operation: repository has active operation")
 		}
+
+		if opWeight == statemachine.WeightHeavy && qm.HasQueuedOperations(repoID) {
+			return "", fmt.Errorf("cannot start immediate heavy operation: repository has queued operations")
+		}
+
 		if !qm.CanStartOperation(repoID, op) {
 			return "", fmt.Errorf("cannot start immediate operation: concurrency limits exceeded")
 		}
@@ -170,11 +173,53 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 		return "", fmt.Errorf("failed to add operation to repository %d queue: %w", repoID, err)
 	}
 
-	// Emit repo changed event
+	// Attempt to start operation if possible
+	err = qm.processQueue(repoID)
+	if err != nil {
+		// Emit repo changed event even on error
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+		return operationID, err
+	}
+
+	// If operation wasn't started, ensure repository state reflects queued status
+	if queue.HasActiveOperation() {
+		// Another operation is active, check if we should be in queued state
+		currentState := qm.GetRepositoryState(repoID)
+		if _, isQueued := currentState.(statemachine.QueuedVariant); !isQueued {
+			if qm.HasQueuedOperations(repoID) {
+				// Only transition to queued state if next operation is heavy
+				nextOp := queue.GetNext()
+				queueLength := queue.GetQueueLength()
+				if nextOp != nil && statemachine.GetOperationWeight(nextOp.Operation) == statemachine.WeightHeavy {
+					targetState := statemachine.CreateQueuedState(nextOp.Operation, queueLength)
+					err = qm.stateMachine.Transition(repoID, currentState, targetState)
+					if err == nil {
+						qm.setRepositoryState(repoID, targetState)
+					}
+				}
+			}
+		}
+	} else if !queue.HasActiveOperation() && qm.HasQueuedOperations(repoID) {
+		// No active operation but operations are queued (concurrency limit reached)
+		currentState := qm.GetRepositoryState(repoID)
+		if _, isQueued := currentState.(statemachine.QueuedVariant); !isQueued {
+			// Only transition to queued state if next operation is heavy
+			nextOp := queue.GetNext()
+			queueLength := queue.GetQueueLength()
+			if nextOp != nil && statemachine.GetOperationWeight(nextOp.Operation) == statemachine.WeightHeavy {
+				targetState := statemachine.CreateQueuedState(nextOp.Operation, queueLength)
+				err = qm.stateMachine.Transition(repoID, currentState, targetState)
+				if err == nil {
+					qm.setRepositoryState(repoID, targetState)
+				}
+			}
+		}
+	}
+
+	// Emit repo changed event AFTER state update
 	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
 
-	// Attempt to start operation if possible
-	return operationID, qm.processQueue(repoID)
+	return operationID, nil
 }
 
 // RemoveOperation removes an operation from tracking
@@ -556,6 +601,15 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 
 		// Attempt to start next operation
 		qm.processQueue(repoID)
+
+		// If we cancelled a heavy operation, try to start waiting heavy operations on other repos
+		if weight == statemachine.WeightHeavy {
+			for otherRepoID := range qm.queues {
+				if otherRepoID != repoID {
+					qm.processQueue(otherRepoID)
+				}
+			}
+		}
 
 		return nil
 	}
