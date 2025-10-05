@@ -2,9 +2,10 @@ package borg
 
 import (
 	"context"
-	"github.com/loomi-labs/arco/backend/borg/types"
 	"os/exec"
 	"time"
+
+	"github.com/loomi-labs/arco/backend/borg/types"
 )
 
 func (b *borg) Init(ctx context.Context, repository, password string, noPassword bool) *types.Status {
