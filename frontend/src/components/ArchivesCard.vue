@@ -818,6 +818,33 @@ getOperations();
 updateQueuedArchiveDeletes();
 updateActiveArchiveDeletes();
 
+function setupEventListeners() {
+  // Clean up existing event listeners before setting up new ones
+  cleanupFunctions.forEach((cleanup) => cleanup());
+  cleanupFunctions.length = 0;
+
+  cleanupFunctions.push(
+    Events.On(archivesChanged(props.repoId), async () => {
+      await getPaginatedArchives();
+      await getOperations();
+      await updateQueuedArchiveDeletes();
+      await updateActiveArchiveDeletes();
+    })
+  );
+
+  cleanupFunctions.push(
+    Events.On(repoStateChangedEvent(props.repoId), async () => {
+      await getRepository();
+      await getOperations();
+      await updateQueuedArchiveDeletes();
+      await updateActiveArchiveDeletes();
+    })
+  );
+}
+
+// Set up event listeners initially
+setupEventListeners();
+
 watch([() => props.repoId], async () => {
   await getRepository();
   await getPaginatedArchives();
@@ -827,6 +854,9 @@ watch([() => props.repoId], async () => {
   await updateActiveArchiveDeletes();
   selectedArchives.value.clear();
   isAllSelected.value = false;
+
+  // Re-register event listeners with the new repoId
+  setupEventListeners();
 });
 
 watch([backupProfileFilter, search, dateRange], async () => {
@@ -834,24 +864,6 @@ watch([backupProfileFilter, search, dateRange], async () => {
   selectedArchives.value.clear();
   isAllSelected.value = false;
 });
-
-cleanupFunctions.push(
-  Events.On(archivesChanged(props.repoId), async () => {
-    await getPaginatedArchives();
-    await getOperations();
-    await updateQueuedArchiveDeletes();
-    await updateActiveArchiveDeletes();
-  })
-);
-
-cleanupFunctions.push(
-  Events.On(repoStateChangedEvent(props.repoId), async () => {
-    await getRepository();
-    await getOperations();
-    await updateQueuedArchiveDeletes();
-    await updateActiveArchiveDeletes();
-  })
-);
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
