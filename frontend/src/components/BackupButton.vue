@@ -171,6 +171,10 @@ const progress = computed(() => {
   if (!backupProg) {
     return 100;
   }
+  // If backup is not actively running (not in Abort state), show full circle
+  if (backupProg.totalFiles === 0 && buttonStatus.value !== repoModels.BackupButtonStatus.BackupButtonStatusAbort) {
+    return 100;
+  }
   if (backupProg.totalFiles === 0) {
     return 0;
   }
