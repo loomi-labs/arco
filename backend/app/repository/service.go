@@ -1946,12 +1946,16 @@ func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (
 
 // GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
 func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last notification for the backup profile and repository
+	// Get the last error notification for the backup profile and repository
 	lastNotification, err := s.db.Notification.
 		Query().
 		Where(notification.And(
 			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
 			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+			notification.TypeIn(
+				notification.TypeFailedBackupRun,
+				notification.TypeFailedPruningRun,
+			),
 		)).
 		Order(ent.Desc(notification.FieldCreatedAt)).
 		First(ctx)
@@ -1961,6 +1965,44 @@ func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types
 	if lastNotification != nil {
 		// Check if there is a new archive since the last notification
 		// If there is, we don't show the error message
+		exist, err := s.db.Archive.
+			Query().
+			Where(archive.And(
+				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+				archive.CreatedAtGT(lastNotification.CreatedAt),
+			)).
+			Exist(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return "", err
+		}
+		if !exist {
+			return lastNotification.Message, nil
+		}
+	}
+	return "", nil
+}
+
+func (s *Service) GetLastBackupWarningByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
+	// Get the last warning notification for the backup profile and repository
+	lastNotification, err := s.db.Notification.
+		Query().
+		Where(notification.And(
+			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
+			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
+			notification.TypeIn(
+				notification.TypeWarningBackupRun,
+				notification.TypeWarningPruningRun,
+			),
+		)).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", err
+	}
+	if lastNotification != nil {
+		// Check if there is a new archive since the last notification
+		// If there is, we don't show the warning message
 		exist, err := s.db.Archive.
 			Query().
 			Where(archive.And(

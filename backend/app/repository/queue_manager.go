@@ -893,9 +893,8 @@ func (qm *QueueManager) createErrorNotification(ctx context.Context, repoID int,
 	// Get backup profile ID from operation
 	backupProfileID := qm.getBackupProfileIDFromOperation(operation)
 
-	// Create rich error message with borg details
-	message := fmt.Sprintf("Operation %s failed: %s (Exit Code: %d, Category: %s)",
-		operationID, status.Error.Message, status.Error.ExitCode, status.Error.Category)
+	// Create user-friendly error message with exit code
+	message := fmt.Sprintf("%s (Exit Code: %d)", status.Error.Message, status.Error.ExitCode)
 
 	// Create notification in database
 	_, err := qm.db.Notification.Create().
@@ -929,9 +928,8 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 	// Get backup profile ID from operation
 	backupProfileID := qm.getBackupProfileIDFromOperation(operation)
 
-	// Create rich warning message with borg details
-	message := fmt.Sprintf("Operation %s completed with warning: %s (Exit Code: %d, Category: %s)",
-		operationID, status.Warning.Message, status.Warning.ExitCode, status.Warning.Category)
+	// Create user-friendly warning message with exit code
+	message := fmt.Sprintf("%s (Exit Code: %d)", status.Warning.Message, status.Warning.ExitCode)
 
 	// Create notification in database
 	_, err := qm.db.Notification.Create().
