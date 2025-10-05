@@ -4,11 +4,11 @@
       "command": "uv",
       "args": [
         "--directory",
-        "/home/rapha/repos/mcp/servers/src/sqlite",
+        "${ARCO_MCP_SQLITE_DIR}",
         "run",
         "mcp-server-sqlite",
         "--db-path",
-        "~/.config/arco/arco.db"
+        "${HOME}/.config/arco/arco.db"
       ]
     },
     "linear": {
