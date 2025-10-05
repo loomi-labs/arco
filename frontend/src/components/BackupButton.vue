@@ -13,7 +13,7 @@ import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/a
 import type * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 import type * as borgtypes from "../../bindings/github.com/loomi-labs/arco/backend/borg/types";
 import * as statemachine from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
-import {Events} from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 
 /************
  * Types
@@ -66,7 +66,7 @@ const errorTooltipText = computed(() => {
   if (!hasRepositoryErrors.value || !repositoryWithErrorId.value) {
     return "";
   }
-  
+
   return "Click to view repository error details";
 });
 
@@ -74,8 +74,8 @@ const repositoryWithErrorId = computed(() => {
   // Find the first repository ID that has an error
   let errorRepoId: number | null = null;
   repos.value.forEach((repo, repoId) => {
-    if (!errorRepoId && 
-        repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
+    if (!errorRepoId &&
+      repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError) {
       errorRepoId = repoId;
     }
   });
@@ -87,7 +87,7 @@ const buttonText = computed(() => {
   if (hasRepositoryErrors.value && repositoryWithErrorId.value) {
     return "Fix Errors";
   }
-  
+
   switch (buttonStatus.value) {
     case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return t("run_backup");
@@ -113,7 +113,7 @@ const buttonColor = computed(() => {
   if (hasRepositoryErrors.value) {
     return "btn-error";
   }
-  
+
   switch (buttonStatus.value) {
     case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "btn-success";
@@ -139,7 +139,7 @@ const buttonTextColor = computed(() => {
   if (hasRepositoryErrors.value) {
     return "text-error";
   }
-  
+
   switch (buttonStatus.value) {
     case repoModels.BackupButtonStatus.BackupButtonStatusRunBackup:
       return "text-success";
@@ -169,6 +169,10 @@ const isButtonDisabled = computed(() => {
 const progress = computed(() => {
   const backupProg = backupProgress.value;
   if (!backupProg) {
+    return 100;
+  }
+  // If backup is not actively running (not in Abort state), show full circle
+  if (backupProg.totalFiles === 0 && buttonStatus.value !== repoModels.BackupButtonStatus.BackupButtonStatusAbort) {
     return 100;
   }
   if (backupProg.totalFiles === 0) {
@@ -203,12 +207,12 @@ async function getRepositories() {
       const repo = await repoService.Get(backupId.repositoryId) ?? repoModels.Repository.createFrom();
       repos.value.set(backupId.repositoryId, repo);
     }
-    
+
     // Filter repositories that are mounted and belong to our backup IDs
     reposWithMounts.value = Array.from(repos.value.values())
       .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeMounted)
       .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
-      
+
     // Filter repositories that are locked and belong to our backup IDs
     lockedRepos.value = Array.from(repos.value.values())
       .filter(repo => repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError)
@@ -225,7 +229,7 @@ async function runButtonAction() {
     await router.push(withId(Page.Repository, repositoryWithErrorId.value));
     return;
   }
-  
+
   if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusRunBackup) {
     await runBackups();
   } else if (buttonStatus.value === repoModels.BackupButtonStatus.BackupButtonStatusAbort) {
@@ -297,6 +301,7 @@ for (const backupId of props.backupIds) {
 
   const handleRepoStateChanged = debounce(async () => {
     await getButtonStatus();
+    await getBackupProgress();
     await getRepositories();
   }, 200);
 
@@ -310,7 +315,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if='buttonStatus' 
+  <div v-if='buttonStatus'
        class='relative flex items-center justify-center w-[94px] h-[94px]'
        :class='hasRepositoryErrors ? "tooltip tooltip-left" : ""'
        :data-tip='errorTooltipText'>
@@ -373,7 +378,9 @@ onUnmounted(() => {
     <p class='mb-4'>Make sure that no other process (borg, arco, etc.) is running on this repository before removing the
       lock!</p>
     <p class='mb-4'>
-      {{ lockedRepos.length === 1 ? "Are you sure you want to remove the lock?" : "Are you sure you want to remove the locks?" }}</p>
+      {{
+        lockedRepos.length === 1 ? "Are you sure you want to remove the lock?" : "Are you sure you want to remove the locks?"
+      }}</p>
   </ConfirmModal>
 </template>
 

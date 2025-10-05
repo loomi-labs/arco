@@ -186,9 +186,12 @@ onUnmounted(() => {
         </span>
         <!-- Warning Badge -->
         <span v-if='repo.lastBackupWarning && !dismissedWarnings.has(props.repoId)'
-              class='badge badge-warning dark:border-warning dark:bg-transparent dark:text-warning truncate cursor-pointer ml-1'
-              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
-          Warning
+              class='tooltip tooltip-warning'
+              :data-tip='repo.lastBackupWarning'>
+          <span class='badge badge-warning dark:border-warning dark:bg-transparent dark:text-warning truncate cursor-pointer ml-1'
+                @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+            Warning
+          </span>
         </span>
       </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>

@@ -5,6 +5,7 @@ import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import ArcoCloudModal from "./ArcoCloudModal.vue";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
+import ArcoLogo from "./common/ArcoLogo.vue";
 import { useAuth } from "../common/auth";
 import { useFeatureFlags } from "../common/featureFlags";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -147,6 +148,7 @@ watch(() => props.existingRepos, (newRepos) => {
         @click='connectOrDisconnectRepo(repo)'
       >
         <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-12' />
+        <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud' class='size-12' svgClass='' />
         <GlobeEuropeAfricaIcon v-else class='size-12' />
         {{ repo.name }}
       </div>

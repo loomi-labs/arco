@@ -38,6 +38,7 @@ const { t: _t } = useI18n();
 const router = useRouter();
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string>("");
+const warningBackupRun = ref<string>("");
 const icon = ref<Icon>(getIcon(props.backup.icon));
 
 // Helper function to convert old repository to LocationUnion for badge styling
@@ -82,6 +83,24 @@ async function getFailedBackupRun() {
   }
 }
 
+async function getWarningBackupRun() {
+  for (const repoId of props.backup.edges?.repositories?.filter(r => r !== null).map((r) => r.id) ?? []) {
+    try {
+      const backupId = types.BackupId.createFrom();
+      backupId.backupProfileId = props.backup.id;
+      backupId.repositoryId = repoId;
+      warningBackupRun.value = await repoService.GetLastBackupWarningByBackupId(backupId);
+
+      // We only care about the first warning message.
+      if (warningBackupRun.value) {
+        break;
+      }
+    } catch (error: unknown) {
+      await showAndLogError("Failed to get last backup warning message", error);
+    }
+  }
+}
+
 async function getLastArchives() {
   try {
     let newLastArchive = undefined;
@@ -107,11 +126,13 @@ async function getLastArchives() {
  ************/
 
 getFailedBackupRun();
+getWarningBackupRun();
 getLastArchives();
 
 for (const backupId of bIds) {
   const handleRepoStateChanged = debounce(async () => {
     await getFailedBackupRun();
+    await getWarningBackupRun();
     await getLastArchives();
   }, 200);
 
@@ -140,6 +161,9 @@ onUnmounted(() => {
           <div>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
               <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent truncate cursor-pointer'>{{ $t("failed") }}</span>
+            </span>
+            <span v-else-if='warningBackupRun' class='tooltip tooltip-warning' :data-tip='warningBackupRun'>
+              <span class='badge badge-warning dark:border-warning dark:text-warning dark:bg-transparent truncate cursor-pointer'>{{ $t("warning") }}</span>
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>

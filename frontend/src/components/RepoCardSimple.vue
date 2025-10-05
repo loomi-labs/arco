@@ -2,7 +2,8 @@
 
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, CloudIcon } from "@heroicons/vue/24/solid";
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
+import ArcoLogo from "./common/ArcoLogo.vue";
 import { Page, withId } from "../router";
 import { toRepoTypeBadge } from "../common/badge";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
@@ -69,8 +70,9 @@ const repoTypeText = computed(() => {
 
     <ComputerDesktopIcon v-if='props.repo.type.type === LocationType.LocationTypeLocal'
                          class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50' />
-    <CloudIcon v-else-if='props.repo.type.type === LocationType.LocationTypeArcoCloud'
-               class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50' />
+    <ArcoLogo v-else-if='props.repo.type.type === LocationType.LocationTypeArcoCloud'
+              class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50'
+              svgClass='' />
     <GlobeEuropeAfricaIcon v-else
                            class='size-12 rounded-r-lg bg-primary text-primary-content h-full w-full max-w-40 py-6 group-hover/repo:bg-primary/50' />
   </div>

@@ -193,6 +193,10 @@ export function GetLastBackupErrorMsgByBackupId(bId: types$0.BackupId): $Cancell
     return $Call.ByID(4136556109, bId);
 }
 
+export function GetLastBackupWarningByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
+    return $Call.ByID(1506815150, bId);
+}
+
 /**
  * GetPaginatedArchives retrieves paginated archives for a repository
  */
