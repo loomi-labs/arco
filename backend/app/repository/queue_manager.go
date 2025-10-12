@@ -280,6 +280,19 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	default:
 		assert.Fail("Unknown operation")
 	}
+
+	// Check if queue is now empty and transition to idle if needed
+	if !queue.HasActiveOperation() && queue.GetQueueLength() == 0 {
+		currentState := qm.GetRepositoryState(repoID)
+		if _, isQueued := currentState.(statemachine.QueuedVariant); isQueued {
+			targetState := statemachine.CreateIdleState()
+			err := qm.stateMachine.Transition(repoID, currentState, targetState)
+			if err == nil {
+				qm.setRepositoryState(repoID, targetState)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -391,8 +404,23 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 			return
 		}
 
-		if status.HasError() {
-			// 1. ERROR BRANCH - Enhanced with conditional notification creation
+		if status.HasBeenCanceled {
+			// CANCELLATION BRANCH - Operation was canceled, clean up properly
+			qm.log.Infow("Borg operation was canceled",
+				"repoID", repoID,
+				"operationID", operationID,
+				"operationType", fmt.Sprintf("%T", op.Operation))
+
+			// Complete operation with cancellation (no error)
+			if completeErr := qm.CompleteOperation(application.Get().Context(), repoID, operationID, op.Operation, nil, ""); completeErr != nil {
+				qm.log.Warnw("Failed to complete canceled operation",
+					"repoID", repoID,
+					"operationID", operationID,
+					"completionError", completeErr.Error())
+			}
+
+		} else if status.HasError() {
+			// ERROR BRANCH - Enhanced with conditional notification creation
 			qm.log.Errorw("Borg operation failed",
 				"repoID", repoID,
 				"operationID", operationID,
@@ -507,13 +535,20 @@ func (qm *QueueManager) CompleteOperation(ctx context.Context, repoID int, opera
 		}
 	}
 
-	// Validate state transition
-	err = qm.stateMachine.Transition(repoID, currentState, targetState)
-	if err != nil {
-		return fmt.Errorf("failed to transition repository %d from %T to %T: %w", repoID, currentState, targetState, err)
+	// Only perform state transition if state types differ
+	// This avoids invalid transitions like Queued -> Queued when queue data changes
+	currentStateType := statemachine.GetRepositoryStateType(currentState)
+	targetStateType := statemachine.GetRepositoryStateType(targetState)
+
+	if currentStateType != targetStateType {
+		// Validate and perform state transition
+		err = qm.stateMachine.Transition(repoID, currentState, targetState)
+		if err != nil {
+			return fmt.Errorf("failed to transition repository %d from %T to %T: %w", repoID, currentState, targetState, err)
+		}
 	}
 
-	// Update repository state in memory
+	// Always update repository state in memory (even if types match, data like queue length may differ)
 	qm.setRepositoryState(repoID, targetState)
 
 	// Attempt to start next queued operation for this repo
@@ -545,117 +580,37 @@ func (qm *QueueManager) CancelOperation(repoID int, operationID string) error {
 	activeOp := queue.GetActive()
 	if activeOp != nil && activeOp.ID == operationID {
 		// Cancel active operation
-		weight := statemachine.GetOperationWeight(activeOp.Operation)
-
-		// Remove from active tracking
-		qm.mu.Lock()
-		if weight == statemachine.WeightHeavy {
-			delete(qm.activeHeavy, repoID)
-		} else {
-			delete(qm.activeLight, repoID)
-		}
-		qm.mu.Unlock()
-
-		// Cancel operation context if running
 		currentState := qm.GetRepositoryState(repoID)
+
+		// Check if operation can be canceled via context
 		if cancel, hasCancel := statemachine.GetCancel(currentState); hasCancel {
-			qm.log.Infow("Cancelling operation",
+			qm.log.Infow("Triggering cancellation for active operation",
 				"repoID", repoID,
 				"operationID", operationID,
 				"stateType", fmt.Sprintf("%T", currentState))
+
+			// Trigger cancellation and return
+			// The goroutine will handle all cleanup after borg process terminates
 			cancel()
+			return nil
 		}
 
-		// Complete with cancelled status
-		err := queue.CompleteActive("")
-		if err != nil {
-			return fmt.Errorf("failed to cancel active operation: %w", err)
-		}
+		// Operation doesn't support cancellation - proceed with immediate cleanup
+		qm.log.Infow("Operation doesn't support cancellation, performing immediate cleanup",
+			"repoID", repoID,
+			"operationID", operationID,
+			"stateType", fmt.Sprintf("%T", currentState))
 
-		// Transition repository state after cancellation
-		// Get current state from in-memory tracking
-		currentState = qm.GetRepositoryState(repoID)
-		var targetState statemachine.RepositoryState
-
-		// Determine next state after cancellation
-		if qm.HasQueuedOperations(repoID) {
-			nextOp := queue.GetNext()
-			queueLength := queue.GetQueueLength()
-			if nextOp != nil {
-				targetState = statemachine.CreateQueuedState(nextOp.Operation, queueLength)
-			} else {
-				targetState = statemachine.CreateIdleState()
-			}
-		} else {
-			targetState = statemachine.CreateIdleState()
-		}
-
-		// Validate and perform state transition
-		err = qm.stateMachine.Transition(repoID, currentState, targetState)
-		if err != nil {
-			return fmt.Errorf("failed to transition state after cancel: %w", err)
-		}
-
-		// Update repository state in memory
-		qm.setRepositoryState(repoID, targetState)
-
-		// Attempt to start next operation
-		qm.processQueue(repoID)
-
-		// If we cancelled a heavy operation, try to start waiting heavy operations on other repos
-		if weight == statemachine.WeightHeavy {
-			for otherRepoID := range qm.queues {
-				if otherRepoID != repoID {
-					qm.processQueue(otherRepoID)
-				}
-			}
+		// Complete operation with no error
+		if completeErr := qm.CompleteOperation(application.Get().Context(), repoID, operationID, activeOp.Operation, nil, ""); completeErr != nil {
+			return fmt.Errorf("failed to complete non-cancelable operation: %w", completeErr)
 		}
 
 		return nil
 	}
 
-	// Get operation before removing to check if we need to emit archive events
-	op := queue.GetOperationByID(operationID)
-
-	// Remove from queue if queued
-	err := queue.RemoveOperation(operationID)
-	if err != nil {
-		return fmt.Errorf("failed to cancel queued operation: %w", err)
-	}
-
-	// Emit archives changed event if this was an archive operation
-	if op != nil {
-		opType := statemachine.GetOperationType(op.Operation)
-		switch opType {
-		case statemachine.OperationTypeArchiveRename,
-			statemachine.OperationTypeArchiveDelete:
-			qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
-		case statemachine.OperationTypeBackup,
-			statemachine.OperationTypePrune,
-			statemachine.OperationTypeDelete,
-			statemachine.OperationTypeArchiveRefresh,
-			statemachine.OperationTypeMount,
-			statemachine.OperationTypeMountArchive,
-			statemachine.OperationTypeUnmount,
-			statemachine.OperationTypeUnmountArchive,
-			statemachine.OperationTypeExaminePrune:
-			// No archive event needed for these operations
-		}
-	}
-
-	// Check if this was the last queued operation and update state if needed
-	if !queue.HasActiveOperation() && queue.GetQueueLength() == 0 {
-		currentState := qm.GetRepositoryState(repoID)
-		if _, isQueued := currentState.(statemachine.QueuedVariant); isQueued {
-			targetState := statemachine.CreateIdleState()
-			err := qm.stateMachine.Transition(repoID, currentState, targetState)
-			if err == nil {
-				qm.setRepositoryState(repoID, targetState)
-			}
-		}
-	}
-
-	return nil
+	// Remove from queue (handles archive events and state transitions)
+	return qm.RemoveOperation(repoID, operationID)
 }
 
 // GetOperation retrieves an operation by ID
