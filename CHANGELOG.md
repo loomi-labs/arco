@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.2](https://github.com/loomi-labs/arco/compare/v0.15.1...v0.15.2) (2025-10-12)
+
+
+### Bug Fixes
+
+* **build:** prevent double 'v' prefix in version string ([#193](https://github.com/loomi-labs/arco/issues/193)) ([297b39a](https://github.com/loomi-labs/arco/commit/297b39ad921f9161d0cf0dc956ff48c82de481db))
+
 ## [0.15.1](https://github.com/loomi-labs/arco/compare/v0.15.0...v0.15.1) (2025-10-12)
 
 
