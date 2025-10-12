@@ -35,6 +35,42 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # Validate version for release builds
+      - name: Validate version for release
+        if: inputs.push_artifacts == true
+        run: |
+          VERSION="${{ inputs.version }}"
+
+          # Check if version is empty
+          if [ -z "$VERSION" ]; then
+            echo "::error::VERSION is required for release builds but was not provided"
+            echo "inputs.version: '${{ inputs.version }}'"
+            exit 1
+          fi
+
+          # Check if version is 'dev'
+          if [ "$VERSION" = "dev" ]; then
+            echo "::error::VERSION cannot be 'dev' for release builds"
+            echo "inputs.version: '$VERSION'"
+            exit 1
+          fi
+
+          # Check if version is v0.0.0
+          if [ "$VERSION" = "v0.0.0" ]; then
+            echo "::error::VERSION cannot be 'v0.0.0' for release builds"
+            echo "inputs.version: '$VERSION'"
+            exit 1
+          fi
+
+          # Validate version format (should start with 'v' and contain digits)
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::VERSION must be in format 'vX.Y.Z' (e.g., v1.2.3)"
+            echo "inputs.version: '$VERSION'"
+            exit 1
+          fi
+
+          echo "✅ Version validation passed: $VERSION"
+
       - name: Check for relevant changes
         uses: dorny/paths-filter@v3
         id: changes
