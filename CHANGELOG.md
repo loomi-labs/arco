@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/loomi-labs/arco/compare/v0.15.0...v0.15.1) (2025-10-12)
+
+
+### Bug Fixes
+
+* **build:** correct version injection in CI/CD pipeline ([#191](https://github.com/loomi-labs/arco/issues/191)) ([b04d192](https://github.com/loomi-labs/arco/commit/b04d19248c140da70b1dbd1904ffca87a077bd94))
+
 ## [0.15.0](https://github.com/loomi-labs/arco/compare/v0.14.1...v0.15.0) (2025-10-12)
 
 
