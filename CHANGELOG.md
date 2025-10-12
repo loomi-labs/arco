@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.3](https://github.com/loomi-labs/arco/compare/v0.15.2...v0.15.3) (2025-10-12)
+
+
+### Bug Fixes
+
+* **build:** eliminate race condition in darwin universal build ([#195](https://github.com/loomi-labs/arco/issues/195)) ([6d48dda](https://github.com/loomi-labs/arco/commit/6d48dda8f1308ae0fe81f105015d66622c1397df))
+
 ## [0.15.2](https://github.com/loomi-labs/arco/compare/v0.15.1...v0.15.2) (2025-10-12)
 
 
