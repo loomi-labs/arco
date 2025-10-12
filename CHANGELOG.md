@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.15.0](https://github.com/loomi-labs/arco/compare/v0.14.1...v0.15.0) (2025-10-12)
+
+
+### Features
+
+* add arco cloud repositories ([#180](https://github.com/loomi-labs/arco/issues/180)) ([a76538f](https://github.com/loomi-labs/arco/commit/a76538f07bac52badd7f3ceba872285858272728))
+* add polar integration ([#182](https://github.com/loomi-labs/arco/issues/182)) ([33d78b6](https://github.com/loomi-labs/arco/commit/33d78b6c8d857d2ce3ffe10d970829761aeb9b16))
+* add quequed operations ([#187](https://github.com/loomi-labs/arco/issues/187)) ([02aa04e](https://github.com/loomi-labs/arco/commit/02aa04ef7460f166d4a000aaac6de65fb29aa68c))
+* auto detect glibc version ([#181](https://github.com/loomi-labs/arco/issues/181)) ([edc893b](https://github.com/loomi-labs/arco/commit/edc893b04a9a9a034da3aba9ee08a95492360ad4))
+
+
+### Bug Fixes
+
+* allow light immediate operations when heavy ops queued ([af1734e](https://github.com/loomi-labs/arco/commit/af1734e30fd1f4f3bac935d4f80167c30166f295))
+* display warnings correctly in UI ([8c383a9](https://github.com/loomi-labs/arco/commit/8c383a90539851b5818129734e435750089f5264))
+* emit archivesChanged on cancel archive ops ([a063446](https://github.com/loomi-labs/arco/commit/a063446a69ee57379b647be40bb0d9c76006bfab))
+* improve cloud repository creation flow ([#188](https://github.com/loomi-labs/arco/issues/188)) ([5dfbb6b](https://github.com/loomi-labs/arco/commit/5dfbb6b4118a70c7ec10c8c69277c0cdc5c36c78))
+* re-register event listeners when repository changes in ArchivesCard ([73071b3](https://github.com/loomi-labs/arco/commit/73071b324273219733f9fdc762d056fe26554421))
+* refresh progress on repo state change ([c779b9c](https://github.com/loomi-labs/arco/commit/c779b9c6ea571b765b2951046964816f8e30539b))
+* remove multicurrency ([#175](https://github.com/loomi-labs/arco/issues/175)) ([d4d4442](https://github.com/loomi-labs/arco/commit/d4d44423cea2bbbebc0b5db12563702eff001a1a))
+* **repository:** ensure cancellation awaits process termination ([#190](https://github.com/loomi-labs/arco/issues/190)) ([1a8d1d4](https://github.com/loomi-labs/arco/commit/1a8d1d4eef4899f071975157fd85452a21dd5e70))
+* show full circle when backup cancelled ([64ee3ae](https://github.com/loomi-labs/arco/commit/64ee3ae66903c425554bc038cd908c0f1fe45df6))
+* use ArcoLogo for cloud repositories ([2a0ef16](https://github.com/loomi-labs/arco/commit/2a0ef1693e9f36f4809fb459144e8649d7bf2aaf))
+
 ## [0.14.1](https://github.com/loomi-labs/arco/compare/v0.14.0...v0.14.1) (2025-07-17)
 
 
