@@ -33,7 +33,8 @@ type Repository struct {
 	LastBackupTime    *time.Time `json:"lastBackupTime,omitempty"`
 	LastBackupError   string     `json:"lastBackupError,omitempty"`
 	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
-	StorageUsed       int64      `json:"storageUsed"`
+	SizeOnDisk        int64      `json:"sizeOnDisk"` // Actual storage used (deduplicated)
+	TotalSize         int64      `json:"totalSize"`  // Total size before deduplication
 }
 
 // GetID implements the statemachine.Repository interface
