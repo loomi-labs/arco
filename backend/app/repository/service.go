@@ -273,7 +273,8 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	}
 
 	// Calculate storage used from repository statistics
-	storageUsed := int64(repoEntity.StatsUniqueSize)
+	sizeOnDisk := int64(repoEntity.StatsUniqueSize) // Deduplicated storage
+	totalSize := int64(repoEntity.StatsTotalSize)   // Total uncompressed size
 
 	// Get last backup error and warning messages
 	lastBackupError := s.getLastError(ctx, repoEntity.ID)
@@ -289,7 +290,8 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		LastBackupTime:    lastBackupTime,
 		LastBackupError:   lastBackupError,
 		LastBackupWarning: lastBackupWarning,
-		StorageUsed:       storageUsed,
+		SizeOnDisk:        sizeOnDisk,
+		TotalSize:         totalSize,
 	}
 }
 
