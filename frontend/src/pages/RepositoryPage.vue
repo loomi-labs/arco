@@ -13,6 +13,7 @@ import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
+import { toHumanReadableSize } from "../common/repository";
 import {
   LocationType,
   Repository,
@@ -79,6 +80,9 @@ async function getRepo() {
   try {
     repo.value = (await repoService.Get(repoId)) ?? Repository.createFrom();
     name.value = repo.value.name;
+
+    totalSize.value = toHumanReadableSize(repo.value.totalSize);
+    sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
 
     deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter((r) => r !== null) ?? [];
   } catch (error: unknown) {

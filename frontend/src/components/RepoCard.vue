@@ -80,8 +80,8 @@ async function getRepo() {
   try {
     repo.value = await repoService.Get(props.repoId) ?? repoModels.Repository.createFrom();
     if (repo.value) {
-      totalSize.value = toHumanReadableSize(repo.value.storageUsed);
-      sizeOnDisk.value = toHumanReadableSize(repo.value.storageUsed); // Using storageUsed for both for now
+      totalSize.value = toHumanReadableSize(repo.value.totalSize);
+      sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
     }
 
     const archive = await repoService.GetLastArchiveByBackupId(backupId) ?? undefined;
