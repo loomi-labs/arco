@@ -954,7 +954,16 @@ export class Repository {
     "lastBackupTime"?: time$0.Time | null;
     "lastBackupError"?: string;
     "lastBackupWarning"?: string;
-    "storageUsed": number;
+
+    /**
+     * Actual storage used (deduplicated)
+     */
+    "sizeOnDisk": number;
+
+    /**
+     * Total size before deduplication
+     */
+    "totalSize": number;
 
     /** Creates a new Repository instance. */
     constructor($$source: Partial<Repository> = {}) {
@@ -976,8 +985,11 @@ export class Repository {
         if (!("archiveCount" in $$source)) {
             this["archiveCount"] = 0;
         }
-        if (!("storageUsed" in $$source)) {
-            this["storageUsed"] = 0;
+        if (!("sizeOnDisk" in $$source)) {
+            this["sizeOnDisk"] = 0;
+        }
+        if (!("totalSize" in $$source)) {
+            this["totalSize"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -1028,7 +1040,16 @@ export class RepositoryWithQueue {
     "lastBackupTime"?: time$0.Time | null;
     "lastBackupError"?: string;
     "lastBackupWarning"?: string;
-    "storageUsed": number;
+
+    /**
+     * Actual storage used (deduplicated)
+     */
+    "sizeOnDisk": number;
+
+    /**
+     * Total size before deduplication
+     */
+    "totalSize": number;
     "queuedOperations": (SerializableQueuedOperation | null)[];
     "activeOperation"?: SerializableQueuedOperation | null;
 
@@ -1052,8 +1073,11 @@ export class RepositoryWithQueue {
         if (!("archiveCount" in $$source)) {
             this["archiveCount"] = 0;
         }
-        if (!("storageUsed" in $$source)) {
-            this["storageUsed"] = 0;
+        if (!("sizeOnDisk" in $$source)) {
+            this["sizeOnDisk"] = 0;
+        }
+        if (!("totalSize" in $$source)) {
+            this["totalSize"] = 0;
         }
         if (!("queuedOperations" in $$source)) {
             this["queuedOperations"] = [];
@@ -1068,8 +1092,8 @@ export class RepositoryWithQueue {
     static createFrom($$source: any = {}): RepositoryWithQueue {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField10_0 = $$createType43;
-        const $$createField11_0 = $$createType42;
+        const $$createField11_0 = $$createType43;
+        const $$createField12_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1078,10 +1102,10 @@ export class RepositoryWithQueue {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField10_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField11_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField11_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField12_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
