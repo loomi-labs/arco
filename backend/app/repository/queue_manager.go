@@ -1925,7 +1925,6 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 
 	// Use repository path with archive glob pattern to list only the specific archive
 	listResponse, status := e.borgClient.List(ctx, repoPath, repo.Password, archiveName)
-
 	if status.HasError() {
 		return fmt.Errorf("failed to list archive %s: %w", archiveName, status.Error)
 	}
@@ -1948,7 +1947,7 @@ func (e *borgOperationExecutor) refreshRepositoryStats(ctx context.Context, repo
 
 	// Call borg info to get repository statistics
 	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password)
-	if status != nil && status.HasError() {
+	if status.HasError() {
 		return fmt.Errorf("failed to get repository info: %w", status.Error)
 	}
 

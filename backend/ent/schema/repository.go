@@ -1,11 +1,12 @@
 package schema
 
 import (
+	"regexp"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
-	"regexp"
 )
 
 // Repository holds the schema definition for the Repository entity.
