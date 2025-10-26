@@ -92,6 +92,14 @@ async function getRepo() {
   }
 }
 
+// Format deduplication ratio for display (only show if significant)
+function getDeduplicationBadge(): string | null {
+  if (repo.value?.deduplicationRatio > 1.5) {
+    return `${repo.value.deduplicationRatio.toFixed(1)}x`;
+  }
+  return null;
+}
+
 
 async function getBackupState() {
   try {
@@ -194,8 +202,12 @@ onUnmounted(() => {
           </span>
         </span>
       </p>
+      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}
+        <span v-if='getDeduplicationBadge()' class='badge badge-sm badge-success ml-2'>
+          {{ getDeduplicationBadge() }} dedup
+        </span>
+      </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
-      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
       <a class='link mt-auto'
          @click='router.push(withId(Page.Repository, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>
