@@ -80,8 +80,8 @@ async function getRepo() {
   try {
     repo.value = await repoService.Get(props.repoId) ?? repoModels.Repository.createFrom();
     if (repo.value) {
-      totalSize.value = toHumanReadableSize(repo.value.storageUsed);
-      sizeOnDisk.value = toHumanReadableSize(repo.value.storageUsed); // Using storageUsed for both for now
+      totalSize.value = toHumanReadableSize(repo.value.totalSize);
+      sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
     }
 
     const archive = await repoService.GetLastArchiveByBackupId(backupId) ?? undefined;
@@ -90,6 +90,14 @@ async function getRepo() {
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository", error);
   }
+}
+
+// Format deduplication ratio for display (only show if significant)
+function getDeduplicationBadge(): string | null {
+  if (repo.value?.deduplicationRatio > 1.5) {
+    return `${repo.value.deduplicationRatio.toFixed(1)}x`;
+  }
+  return null;
 }
 
 
@@ -194,8 +202,12 @@ onUnmounted(() => {
           </span>
         </span>
       </p>
+      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}
+        <span v-if='getDeduplicationBadge()' class='badge badge-sm badge-success ml-2'>
+          {{ getDeduplicationBadge() }} dedup
+        </span>
+      </p>
       <p>{{ $t("total_size") }}: {{ totalSize }}</p>
-      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
       <a class='link mt-auto'
          @click='router.push(withId(Page.Repository, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
     </div>

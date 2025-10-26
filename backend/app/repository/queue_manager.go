@@ -1263,6 +1263,15 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 		// Don't fail backup operation for refresh errors
 	}
 
+	// Refresh repository stats from borg info
+	err = e.refreshRepositoryStats(ctx, e.repoID)
+	if err != nil {
+		e.log.Errorw("Failed to refresh repository stats after backup",
+			"repoID", e.repoID,
+			"error", err.Error())
+		// Don't fail backup operation for stats refresh errors
+	}
+
 	// Return status directly (preserves rich error information)
 	_ = backupData // Use backupData to avoid unused variable warning
 	return status, nil
@@ -1447,6 +1456,15 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 		} else {
 			e.log.Warnw("Failed to list archives after prune", "repoID", e.repoID, "error", listStatus.Error)
 		}
+
+		// Refresh repository stats from borg info
+		err := e.refreshRepositoryStats(ctx, repo.ID)
+		if err != nil {
+			e.log.Errorw("Failed to refresh repository stats after prune",
+				"repoID", repo.ID,
+				"error", err.Error())
+			// Don't fail prune operation for stats refresh errors
+		}
 	}
 	return status, nil
 }
@@ -1577,6 +1595,15 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	err = e.syncArchivesToDatabase(ctx, refreshData.RepositoryID, listResponse.Archives)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync archives to database: %w", err)
+	}
+
+	// Refresh repository stats from borg info
+	err = e.refreshRepositoryStats(ctx, refreshData.RepositoryID)
+	if err != nil {
+		e.log.Errorw("Failed to refresh repository stats after archive refresh",
+			"repoID", refreshData.RepositoryID,
+			"error", err.Error())
+		// Don't fail refresh operation for stats refresh errors
 	}
 
 	// Return status directly (preserves rich error information)
@@ -1898,7 +1925,6 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 
 	// Use repository path with archive glob pattern to list only the specific archive
 	listResponse, status := e.borgClient.List(ctx, repoPath, repo.Password, archiveName)
-
 	if status.HasError() {
 		return fmt.Errorf("failed to list archive %s: %w", archiveName, status.Error)
 	}
@@ -1909,6 +1935,42 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 
 	// Sync only the single archive (no deletions)
 	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0])
+}
+
+// refreshRepositoryStats calls borg info to update repository statistics for local/remote repositories
+func (e *borgOperationExecutor) refreshRepositoryStats(ctx context.Context, repoID int) error {
+	// Get repository from database
+	repo, err := e.db.Repository.Get(ctx, repoID)
+	if err != nil {
+		return fmt.Errorf("repository %d not found: %w", repoID, err)
+	}
+
+	// Call borg info to get repository statistics
+	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password)
+	if status.HasError() {
+		return fmt.Errorf("failed to get repository info: %w", status.Error)
+	}
+
+	// Update repository stats in database
+	err = e.db.Repository.UpdateOneID(repoID).
+		SetStatsTotalChunks(infoResponse.Cache.Stats.TotalChunks).
+		SetStatsTotalSize(infoResponse.Cache.Stats.TotalSize).
+		SetStatsTotalCsize(infoResponse.Cache.Stats.TotalCSize).
+		SetStatsTotalUniqueChunks(infoResponse.Cache.Stats.TotalUniqueChunks).
+		SetStatsUniqueSize(infoResponse.Cache.Stats.UniqueSize).
+		SetStatsUniqueCsize(infoResponse.Cache.Stats.UniqueCSize).
+		Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to update repository stats: %w", err)
+	}
+
+	e.log.Debugw("Refreshed repository stats",
+		"repoID", repoID,
+		"uniqueSize", infoResponse.Cache.Stats.UniqueSize,
+		"totalSize", infoResponse.Cache.Stats.TotalSize)
+
+	return nil
 }
 
 // isCloudRepository checks if a repository is an ArcoCloud repository

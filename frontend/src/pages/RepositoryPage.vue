@@ -3,7 +3,7 @@ import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
-import { nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import * as zod from "zod";
@@ -13,6 +13,7 @@ import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent
 import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
+import { toHumanReadableSize } from "../common/repository";
 import {
   LocationType,
   Repository,
@@ -21,6 +22,7 @@ import {
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
+import TooltipIcon from "../components/common/TooltipIcon.vue";
 import { Anchor, Page } from "../router";
 import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
@@ -32,6 +34,9 @@ const loading = ref(true);
 
 const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
+const deduplicationRatio = ref<string>("-");
+const compressionRatio = ref<string>("-");
+const spaceSavings = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
@@ -71,6 +76,32 @@ const { meta, errors, defineField } = useForm({
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
+// Static tooltips (values already shown in UI)
+const sizeOnDiskTooltip = "How much space your backups actually use on your hard drive";
+const totalSizeTooltip = "If you added up all your backup files without any savings";
+
+// Dynamic tooltips with actual values and conditional logic
+const spaceSavingsTooltip = computed(() => {
+  if (spaceSavings.value === "-") {
+    return "No storage savings yet - this shows how much space you save by removing duplicate data and compression";
+  }
+  return `You're saving ${spaceSavings.value} of storage space by removing duplicate data and compression`;
+});
+
+const deduplicationTooltip = computed(() => {
+  if (deduplicationRatio.value === "-") {
+    return "No duplicate data found - this would show how much repeated data was removed";
+  }
+  return `You have ${deduplicationRatio.value} duplicate data. Without removing duplicates, you'd need ${deduplicationRatio.value} more space`;
+});
+
+const compressionTooltip = computed(() => {
+  if (compressionRatio.value === "-") {
+    return "No compression applied - this would show how much files were compressed";
+  }
+  return `Compression made files ${compressionRatio.value} smaller. Without compression, they'd take ${compressionRatio.value} more space`;
+});
+
 /************
  * Functions
  ************/
@@ -79,6 +110,26 @@ async function getRepo() {
   try {
     repo.value = (await repoService.Get(repoId)) ?? Repository.createFrom();
     name.value = repo.value.name;
+
+    totalSize.value = toHumanReadableSize(repo.value.totalSize);
+    sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
+
+    // Format deduplication ratio - round first, then check if > 1.0 to avoid showing "1.0x"
+    const dedupRounded = parseFloat(repo.value.deduplicationRatio.toFixed(1));
+    deduplicationRatio.value = dedupRounded > 1.0
+      ? `${dedupRounded.toFixed(1)}x`
+      : "-";
+
+    // Format compression ratio - round first, then check if > 1.0 to avoid showing "1.0x"
+    const compRounded = parseFloat(repo.value.compressionRatio.toFixed(1));
+    compressionRatio.value = compRounded > 1.0
+      ? `${compRounded.toFixed(1)}x`
+      : "-";
+
+    // Format space savings (e.g., "82%")
+    spaceSavings.value = repo.value.spaceSavingsPercent > 0
+      ? `${repo.value.spaceSavingsPercent.toFixed(0)}%`
+      : "-";
 
     deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter((r) => r !== null) ?? [];
   } catch (error: unknown) {
@@ -337,15 +388,43 @@ onUnmounted(() => {
       <!-- Storage Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
-          <h3 class='card-title text-lg'>Storage</h3>
+          <h3 class='card-title text-lg'>{{ $t("storage") }}</h3>
           <div class='space-y-2'>
             <div class='flex justify-between items-center'>
-              <span class='text-sm opacity-70'>{{ $t("total_size") }}</span>
-              <span class='font-semibold'>{{ totalSize }}</span>
+              <div class='flex items-center gap-1'>
+                <span class='text-sm opacity-70'>{{ $t("size_on_disk") }}</span>
+                <TooltipIcon :text="sizeOnDiskTooltip" />
+              </div>
+              <span class='font-semibold'>{{ sizeOnDisk }}</span>
             </div>
             <div class='flex justify-between items-center'>
-              <span class='text-sm opacity-70'>{{ $t("size_on_disk") }}</span>
-              <span class='font-semibold'>{{ sizeOnDisk }}</span>
+              <div class='flex items-center gap-1'>
+                <span class='text-sm opacity-70'>{{ $t("total_size") }}</span>
+                <TooltipIcon :text="totalSizeTooltip" />
+              </div>
+              <span class='font-semibold'>{{ totalSize }}</span>
+            </div>
+            <div class='divider my-1'></div>
+            <div class='flex justify-between items-center'>
+              <div class='flex items-center gap-1'>
+                <span class='text-sm opacity-70'>{{ $t("storage_efficiency") }}</span>
+                <TooltipIcon :text="spaceSavingsTooltip" />
+              </div>
+              <span class='font-semibold text-success'>{{ spaceSavings }}</span>
+            </div>
+            <div class='flex justify-between items-center'>
+              <div class='flex items-center gap-1'>
+                <span class='text-sm opacity-70'>{{ $t("deduplication_ratio") }}</span>
+                <TooltipIcon :text="deduplicationTooltip" />
+              </div>
+              <span class='font-semibold'>{{ deduplicationRatio }}</span>
+            </div>
+            <div class='flex justify-between items-center'>
+              <div class='flex items-center gap-1'>
+                <span class='text-sm opacity-70'>{{ $t("compression_ratio") }}</span>
+                <TooltipIcon :text="compressionTooltip" />
+              </div>
+              <span class='font-semibold'>{{ compressionRatio }}</span>
             </div>
           </div>
         </div>

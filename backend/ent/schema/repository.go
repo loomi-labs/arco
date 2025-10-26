@@ -1,11 +1,12 @@
 package schema
 
 import (
+	"regexp"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
-	"regexp"
 )
 
 // Repository holds the schema definition for the Repository entity.
@@ -49,22 +50,32 @@ func (Repository) Fields() []ent.Field {
 			Optional(),
 
 		// Stats
+		// Borg repository statistics from cache stats.
+		// "total" metrics = aggregate capacity with reference counts (what would be restored)
+		// "unique" metrics = deduplicated storage (actual disk usage after deduplication)
+		// Reference: https://borgbackup.readthedocs.io/en/stable/internals/frontends.html
 		field.Int("stats_total_chunks").
+			Comment("Total number of all chunks across all archives (including duplicates)").
 			Default(0).
 			StructTag(`json:"statsTotalChunks"`),
 		field.Int("stats_total_size").
+			Comment("Total uncompressed size of all chunks multiplied by their reference counts").
 			Default(0).
 			StructTag(`json:"statsTotalSize"`),
 		field.Int("stats_total_csize").
+			Comment("Total compressed size of all chunks multiplied by their reference counts (on-disk footprint with references)").
 			Default(0).
 			StructTag(`json:"statsTotalCsize"`),
 		field.Int("stats_total_unique_chunks").
+			Comment("Number of unique/deduplicated chunks").
 			Default(0).
 			StructTag(`json:"statsTotalUniqueChunks"`),
 		field.Int("stats_unique_size").
+			Comment("Uncompressed size of unique chunks only (raw deduplicated data volume)").
 			Default(0).
 			StructTag(`json:"statsUniqueSize"`),
 		field.Int("stats_unique_csize").
+			Comment("Compressed size of unique chunks only (actual storage consumed on disk)").
 			Default(0).
 			StructTag(`json:"statsUniqueCsize"`),
 	}
