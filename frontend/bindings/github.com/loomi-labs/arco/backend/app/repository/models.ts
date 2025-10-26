@@ -956,14 +956,30 @@ export class Repository {
     "lastBackupWarning"?: string;
 
     /**
-     * Actual storage used (deduplicated)
+     * Storage Statistics
+     * Actual storage used (compressed + deduplicated)
      */
     "sizeOnDisk": number;
 
     /**
-     * Total size before deduplication
+     * Total uncompressed size across all archives
      */
     "totalSize": number;
+
+    /**
+     * How much deduplication saved (totalSize / uniqueSize)
+     */
+    "deduplicationRatio": number;
+
+    /**
+     * How much compression saved (uniqueSize / uniqueCsize)
+     */
+    "compressionRatio": number;
+
+    /**
+     * Overall space savings percentage
+     */
+    "spaceSavingsPercent": number;
 
     /** Creates a new Repository instance. */
     constructor($$source: Partial<Repository> = {}) {
@@ -990,6 +1006,15 @@ export class Repository {
         }
         if (!("totalSize" in $$source)) {
             this["totalSize"] = 0;
+        }
+        if (!("deduplicationRatio" in $$source)) {
+            this["deduplicationRatio"] = 0;
+        }
+        if (!("compressionRatio" in $$source)) {
+            this["compressionRatio"] = 0;
+        }
+        if (!("spaceSavingsPercent" in $$source)) {
+            this["spaceSavingsPercent"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -1042,14 +1067,30 @@ export class RepositoryWithQueue {
     "lastBackupWarning"?: string;
 
     /**
-     * Actual storage used (deduplicated)
+     * Storage Statistics
+     * Actual storage used (compressed + deduplicated)
      */
     "sizeOnDisk": number;
 
     /**
-     * Total size before deduplication
+     * Total uncompressed size across all archives
      */
     "totalSize": number;
+
+    /**
+     * How much deduplication saved (totalSize / uniqueSize)
+     */
+    "deduplicationRatio": number;
+
+    /**
+     * How much compression saved (uniqueSize / uniqueCsize)
+     */
+    "compressionRatio": number;
+
+    /**
+     * Overall space savings percentage
+     */
+    "spaceSavingsPercent": number;
     "queuedOperations": (SerializableQueuedOperation | null)[];
     "activeOperation"?: SerializableQueuedOperation | null;
 
@@ -1079,6 +1120,15 @@ export class RepositoryWithQueue {
         if (!("totalSize" in $$source)) {
             this["totalSize"] = 0;
         }
+        if (!("deduplicationRatio" in $$source)) {
+            this["deduplicationRatio"] = 0;
+        }
+        if (!("compressionRatio" in $$source)) {
+            this["compressionRatio"] = 0;
+        }
+        if (!("spaceSavingsPercent" in $$source)) {
+            this["spaceSavingsPercent"] = 0;
+        }
         if (!("queuedOperations" in $$source)) {
             this["queuedOperations"] = [];
         }
@@ -1092,8 +1142,8 @@ export class RepositoryWithQueue {
     static createFrom($$source: any = {}): RepositoryWithQueue {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField11_0 = $$createType43;
-        const $$createField12_0 = $$createType42;
+        const $$createField14_0 = $$createType43;
+        const $$createField15_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1102,10 +1152,10 @@ export class RepositoryWithQueue {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField11_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField14_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField12_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField15_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
