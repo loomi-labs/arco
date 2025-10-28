@@ -7,105 +7,25 @@ import (
 
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
-	"github.com/loomi-labs/arco/backend/borg"
+	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
+	"github.com/loomi-labs/arco/backend/borg/mocks"
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/enttest"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // ============================================================================
-// MOCK STRUCTURES
-// ============================================================================
-
-// mockEventEmitter is a mock implementation of EventEmitter for testing
-type mockEventEmitter struct {
-	events []emittedEvent
-}
-
-type emittedEvent struct {
-	ctx   context.Context
-	event string
-	data  []string
-}
-
-func (m *mockEventEmitter) EmitEvent(ctx context.Context, event string, data ...string) {
-	m.events = append(m.events, emittedEvent{ctx, event, data})
-}
-
-// mockBorg is a mock implementation of Borg interface for testing
-// It returns success responses without executing actual borg commands
-type mockBorg struct{}
-
-func (m *mockBorg) Info(ctx context.Context, repository, password string) (*borgtypes.InfoResponse, *borgtypes.Status) {
-	return &borgtypes.InfoResponse{}, &borgtypes.Status{}
-}
-
-func (m *mockBorg) Init(ctx context.Context, repository, password string, noPassword bool) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) List(ctx context.Context, repository string, password string, glob string) (*borgtypes.ListResponse, *borgtypes.Status) {
-	return &borgtypes.ListResponse{}, &borgtypes.Status{}
-}
-
-func (m *mockBorg) Compact(ctx context.Context, repository string, password string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan borgtypes.BackupProgress) (string, *borgtypes.Status) {
-	return "test-archive", &borgtypes.Status{}
-}
-
-func (m *mockBorg) Rename(ctx context.Context, repository, archive, password, newName string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) DeleteArchive(ctx context.Context, repository string, archive string, password string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) DeleteArchives(ctx context.Context, repository, password, prefix string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) DeleteRepository(ctx context.Context, repository string, password string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) MountRepository(ctx context.Context, repository string, password string, mountPath string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) MountArchive(ctx context.Context, repository string, archive string, password string, mountPath string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) Umount(ctx context.Context, path string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan borgtypes.PruneResult) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-func (m *mockBorg) BreakLock(ctx context.Context, repository string, password string) *borgtypes.Status {
-	return &borgtypes.Status{}
-}
-
-// Ensure mockBorg implements borg.Borg interface at compile time
-var _ borg.Borg = (*mockBorg)(nil)
-
-// ============================================================================
 // TEST HELPERS
 // ============================================================================
 
 // newTestQueueManager creates a test queue manager with in-memory database for testing
-func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Context, *mockEventEmitter) {
+func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Context, *typesmocks.MockEventEmitter) {
 	// Initialize a minimal Wails application for testing
 	// This is needed because queue manager code calls application.Get().Context()
 	_ = application.New(application.Options{
@@ -118,10 +38,29 @@ func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Cont
 
 	ctx := context.Background()
 
+	// Create gomock controller and mock Borg client
+	ctrl := gomock.NewController(t)
+	mockBorgClient := mocks.NewMockBorg(ctrl)
+
+	// Set up default expectations: all borg operations return success
+	// Use AnyTimes() to allow any number of calls without failing
+	mockBorgClient.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&borgtypes.InfoResponse{}, &borgtypes.Status{}).AnyTimes()
+	mockBorgClient.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("test-archive", &borgtypes.Status{}).AnyTimes()
+	mockBorgClient.EXPECT().Prune(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&borgtypes.Status{}).AnyTimes()
+	mockBorgClient.EXPECT().Rename(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&borgtypes.Status{}).AnyTimes()
+	mockBorgClient.EXPECT().DeleteArchive(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&borgtypes.Status{}).AnyTimes()
+
+	// Create mock event emitter
+	mockEmitter := typesmocks.NewMockEventEmitter(ctrl)
+	mockEmitter.EXPECT().EmitEvent(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
 	log := zap.NewNop().Sugar()
 	stateMachine := statemachine.NewRepositoryStateMachine()
-	mockEmitter := &mockEventEmitter{}
-	mockBorgClient := &mockBorg{}
 
 	// Create queue manager
 	qm := NewQueueManager(log, stateMachine, 2) // max 2 heavy operations
