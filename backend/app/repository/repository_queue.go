@@ -57,14 +57,14 @@ func (q *RepositoryQueue) CreateQueuedOperation(operation statemachine.Operation
 }
 
 // AddOperation adds an operation to the queue with deduplication
-func (q *RepositoryQueue) AddOperation(op *QueuedOperation) (string, error) {
+func (q *RepositoryQueue) AddOperation(op *QueuedOperation) string {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	// Check for existing operation (idempotency)
 	canAdd, existingOpID := q.canAddOperationLocked(op.Operation)
 	if !canAdd {
-		return existingOpID, nil // Return existing operation ID
+		return existingOpID // Return existing operation ID
 	}
 
 	// Add to operations map
@@ -79,7 +79,7 @@ func (q *RepositoryQueue) AddOperation(op *QueuedOperation) (string, error) {
 	// Update positions for all queued operations
 	q.updatePositions()
 
-	return op.ID, nil
+	return op.ID
 }
 
 // GetOperations returns all operations in the queue (including active)

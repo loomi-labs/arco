@@ -168,13 +168,10 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	}
 
 	// Add operation to queue (handles idempotency internally)
-	operationID, err := queue.AddOperation(op)
-	if err != nil {
-		return "", fmt.Errorf("failed to add operation to repository %d queue: %w", repoID, err)
-	}
+	operationID := queue.AddOperation(op)
 
 	// Attempt to start operation if possible
-	err = qm.processQueue(repoID)
+	err := qm.processQueue(repoID)
 	if err != nil {
 		// Emit repo changed event even on error
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
