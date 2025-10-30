@@ -77,7 +77,7 @@ const { meta, errors, defineField } = useForm({
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 // Static tooltips (values already shown in UI)
-const sizeOnDiskTooltip = "How much space your backups actually use on your hard drive";
+const sizeOnDiskTooltip = "How much space your backups actually use on the hard drive";
 const totalSizeTooltip = "If you added up all your backup files without any savings";
 
 // Dynamic tooltips with actual values and conditional logic

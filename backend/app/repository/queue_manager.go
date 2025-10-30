@@ -168,13 +168,10 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	}
 
 	// Add operation to queue (handles idempotency internally)
-	operationID, err := queue.AddOperation(op)
-	if err != nil {
-		return "", fmt.Errorf("failed to add operation to repository %d queue: %w", repoID, err)
-	}
+	operationID := queue.AddOperation(op)
 
 	// Attempt to start operation if possible
-	err = qm.processQueue(repoID)
+	err := qm.processQueue(repoID)
 	if err != nil {
 		// Emit repo changed event even on error
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
@@ -182,24 +179,8 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	}
 
 	// If operation wasn't started, ensure repository state reflects queued status
-	if queue.HasActiveOperation() {
-		// Another operation is active, check if we should be in queued state
-		currentState := qm.GetRepositoryState(repoID)
-		if _, isQueued := currentState.(statemachine.QueuedVariant); !isQueued {
-			if qm.HasQueuedOperations(repoID) {
-				// Only transition to queued state if next operation is heavy
-				nextOp := queue.GetNext()
-				queueLength := queue.GetQueueLength()
-				if nextOp != nil && statemachine.GetOperationWeight(nextOp.Operation) == statemachine.WeightHeavy {
-					targetState := statemachine.CreateQueuedState(nextOp.Operation, queueLength)
-					err = qm.stateMachine.Transition(repoID, currentState, targetState)
-					if err == nil {
-						qm.setRepositoryState(repoID, targetState)
-					}
-				}
-			}
-		}
-	} else if !queue.HasActiveOperation() && qm.HasQueuedOperations(repoID) {
+	// Only transition to queued state if there's NO active operation
+	if !queue.HasActiveOperation() && qm.HasQueuedOperations(repoID) {
 		// No active operation but operations are queued (concurrency limit reached)
 		currentState := qm.GetRepositoryState(repoID)
 		if _, isQueued := currentState.(statemachine.QueuedVariant); !isQueued {
