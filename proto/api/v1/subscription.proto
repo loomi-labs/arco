@@ -89,6 +89,10 @@ message GetSubscriptionResponse {
   // The user's current subscription.
   // Null if the user has no active subscription.
   Subscription subscription = 1;
+
+  // Estimated charges for the current billing period.
+  // Null if the user has no active subscription.
+  CurrentPeriodCharges current_period_charges = 2;
 }
 
 // SubscriptionStatus represents the current state of a subscription.
@@ -173,6 +177,14 @@ message Subscription {
 
   // Overage rate per GB in cents.
   double overage_rate_per_gb_cents = 13;
+
+  // Current overage amount in GB (storage_used_gb - storage_limit_gb).
+  // Zero if not over limit.
+  double overage_gb = 14;
+
+  // Overage cost for the current billing period in cents.
+  // This reflects the actual metered billing amount for overage charges.
+  int64 overage_cost_cents = 15;
 }
 
 // CreateCheckoutSessionRequest initiates payment checkout for plan purchase.
@@ -342,4 +354,41 @@ message DowngradeSubscriptionResponse {
   // When the downgrade will take effect.
   // Always at the end of the current billing period.
   google.protobuf.Timestamp effective_date = 2;
+}
+
+// CurrentPeriodCharges represents estimated billing charges for the current billing period.
+//
+// These are estimates based on current usage and may differ from final invoice amounts.
+// Final amounts are calculated at the end of the billing period and may include adjustments
+// for taxes, discounts, and exact usage timing.
+message CurrentPeriodCharges {
+  // Base subscription price for the current period in cents.
+  // This is the recurring subscription fee.
+  int64 base_amount = 1;
+
+  // Estimated metered usage charges in cents.
+  // Calculated from current period usage events reported to billing system.
+  // This includes storage overage charges.
+  int64 usage_amount = 2;
+
+  // Discount amount applied to this period in cents.
+  // Includes promotional codes and subscription-level discounts.
+  int64 discount_amount = 3;
+
+  // Estimated tax amount in cents.
+  // May be zero if tax calculation is not available until invoice generation.
+  int64 tax_amount = 4;
+
+  // Total estimated amount for the period in cents.
+  // Calculated as: base_amount + usage_amount - discount_amount + tax_amount.
+  int64 total_amount = 5;
+
+  // Currency code for all amounts (e.g., "usd", "eur").
+  string currency = 6;
+
+  // Start of the billing period these charges cover.
+  google.protobuf.Timestamp period_start = 7;
+
+  // End of the billing period these charges cover.
+  google.protobuf.Timestamp period_end = 8;
 }

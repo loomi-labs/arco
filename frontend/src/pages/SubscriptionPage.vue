@@ -168,6 +168,21 @@ const storageUsagePercentage = computed(() => {
   return total > 0 ? Math.min((used / total) * 100, 100) : 0;
 });
 
+const isOverage = computed(() => {
+  if (!subscription.value) return false;
+  return (subscription.value.overage_gb ?? 0) > 0;
+});
+
+const overageGb = computed(() => {
+  return subscription.value?.overage_gb ?? 0;
+});
+
+const overageCostFormatted = computed(() => {
+  const cents = subscription.value?.overage_cost_cents ?? 0;
+  const dollars = cents / 100;
+  return `$${dollars.toFixed(2)}`;
+});
+
 const planFeatures = computed(() => {
   return getFeaturesByPlan(subscription.value?.plan ?? undefined);
 });
@@ -564,14 +579,26 @@ onMounted(async () => {
             <div class='space-y-4'>
               <div class='flex justify-between items-center'>
                 <h3 class='text-xl font-bold'>Storage Usage</h3>
-                <span class='text-lg font-semibold'>{{ Math.round(storageUsagePercentage) }}% used</span>
+                <span v-if='!isOverage' class='text-lg font-semibold'>{{ Math.round(storageUsagePercentage) }}% used</span>
+                <span v-else class='text-lg font-semibold text-error'>Over Limit</span>
               </div>
 
               <div class='text-3xl font-bold'>{{ storageUsageText }}</div>
 
               <div class='w-full bg-base-300 rounded-full h-4'>
-                <div class='bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all duration-500'
-                     :style='{ width: `${storageUsagePercentage}%` }'></div>
+                <div
+                  :class='[
+                    "h-4 rounded-full transition-all duration-500",
+                    isOverage ? "bg-gradient-to-r from-error to-warning" : "bg-gradient-to-r from-primary to-secondary"
+                  ]'
+                  :style='{ width: `${storageUsagePercentage}%` }'
+                ></div>
+              </div>
+
+              <!-- Overage Warning -->
+              <div v-if='isOverage' role='alert' class='alert alert-warning py-2 px-3'>
+                <ExclamationTriangleIcon class='h-5 w-5 shrink-0' />
+                <span class='text-sm font-medium'>{{ overageGb }} GB over limit</span>
               </div>
 
               <div class='grid grid-cols-2 gap-4 text-sm'>
@@ -634,6 +661,22 @@ onMounted(async () => {
                   </div>
                   <div class='text-lg font-bold'>{{ nextBillingDate }}</div>
                   <div class='text-sm text-base-content/70'>{{ billingPeriodText }}</div>
+                </div>
+              </div>
+
+              <!-- Overage Charges -->
+              <div v-if='isOverage' class='pt-4 border-t border-warning/30'>
+                <div class='bg-warning/10 rounded-lg p-4'>
+                  <div class='flex items-center justify-between'>
+                    <div>
+                      <div class='font-semibold text-sm text-warning'>Overage Charges</div>
+                      <div class='text-xs text-base-content/70 mt-1'>Additional storage usage beyond plan limit</div>
+                    </div>
+                    <div class='text-right'>
+                      <div class='text-2xl font-bold text-warning'>{{ overageCostFormatted }}</div>
+                      <div class='text-xs text-base-content/70'>for {{ overageGb }} GB</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
