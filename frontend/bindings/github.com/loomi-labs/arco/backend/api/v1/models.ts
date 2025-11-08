@@ -81,6 +81,83 @@ export class CreateCheckoutSessionResponse {
 }
 
 /**
+ * CurrentPeriodCharges represents estimated billing charges for the current billing period.
+ * 
+ * These are estimates based on current usage and may differ from final invoice amounts.
+ * Final amounts are calculated at the end of the billing period and may include adjustments
+ * for taxes, discounts, and exact usage timing.
+ */
+export class CurrentPeriodCharges {
+    /**
+     * Base subscription price for the current period in cents.
+     * This is the recurring subscription fee.
+     */
+    "base_amount"?: number;
+
+    /**
+     * Estimated metered usage charges in cents.
+     * Calculated from current period usage events reported to billing system.
+     * This includes storage overage charges.
+     */
+    "usage_amount"?: number;
+
+    /**
+     * Discount amount applied to this period in cents.
+     * Includes promotional codes and subscription-level discounts.
+     */
+    "discount_amount"?: number;
+
+    /**
+     * Estimated tax amount in cents.
+     * May be zero if tax calculation is not available until invoice generation.
+     */
+    "tax_amount"?: number;
+
+    /**
+     * Total estimated amount for the period in cents.
+     * Calculated as: base_amount + usage_amount - discount_amount + tax_amount.
+     */
+    "total_amount"?: number;
+
+    /**
+     * Currency code for all amounts (e.g., "usd", "eur").
+     */
+    "currency"?: string;
+
+    /**
+     * Start of the billing period these charges cover.
+     */
+    "period_start"?: timestamppb$0.Timestamp | null;
+
+    /**
+     * End of the billing period these charges cover.
+     */
+    "period_end"?: timestamppb$0.Timestamp | null;
+
+    /** Creates a new CurrentPeriodCharges instance. */
+    constructor($$source: Partial<CurrentPeriodCharges> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CurrentPeriodCharges instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CurrentPeriodCharges {
+        const $$createField6_0 = $$createType1;
+        const $$createField7_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("period_start" in $$parsedSource) {
+            $$parsedSource["period_start"] = $$createField6_0($$parsedSource["period_start"]);
+        }
+        if ("period_end" in $$parsedSource) {
+            $$parsedSource["period_end"] = $$createField7_0($$parsedSource["period_end"]);
+        }
+        return new CurrentPeriodCharges($$parsedSource as Partial<CurrentPeriodCharges>);
+    }
+}
+
+/**
  * DowngradeSubscriptionResponse confirms downgrade scheduling.
  * 
  * Indicates successful downgrade scheduling with effect at end of current billing period.
@@ -128,6 +205,12 @@ export class GetSubscriptionResponse {
      */
     "subscription"?: Subscription | null;
 
+    /**
+     * Estimated charges for the current billing period.
+     * Null if the user has no active subscription.
+     */
+    "current_period_charges"?: CurrentPeriodCharges | null;
+
     /** Creates a new GetSubscriptionResponse instance. */
     constructor($$source: Partial<GetSubscriptionResponse> = {}) {
 
@@ -139,9 +222,13 @@ export class GetSubscriptionResponse {
      */
     static createFrom($$source: any = {}): GetSubscriptionResponse {
         const $$createField0_0 = $$createType3;
+        const $$createField1_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("subscription" in $$parsedSource) {
             $$parsedSource["subscription"] = $$createField0_0($$parsedSource["subscription"]);
+        }
+        if ("current_period_charges" in $$parsedSource) {
+            $$parsedSource["current_period_charges"] = $$createField1_0($$parsedSource["current_period_charges"]);
         }
         return new GetSubscriptionResponse($$parsedSource as Partial<GetSubscriptionResponse>);
     }
@@ -340,6 +427,18 @@ export class Subscription {
      */
     "overage_rate_per_gb_cents"?: number;
 
+    /**
+     * Current overage amount in GB (storage_used_gb - storage_limit_gb).
+     * Zero if not over limit.
+     */
+    "overage_gb"?: number;
+
+    /**
+     * Overage cost for the current billing period in cents.
+     * This reflects the actual metered billing amount for overage charges.
+     */
+    "overage_cost_cents"?: number;
+
     /** Creates a new Subscription instance. */
     constructor($$source: Partial<Subscription> = {}) {
 
@@ -355,7 +454,7 @@ export class Subscription {
         const $$createField6_0 = $$createType1;
         const $$createField7_0 = $$createType1;
         const $$createField8_0 = $$createType1;
-        const $$createField9_0 = $$createType5;
+        const $$createField9_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current_period_start" in $$parsedSource) {
             $$parsedSource["current_period_start"] = $$createField3_0($$parsedSource["current_period_start"]);
@@ -479,5 +578,7 @@ const $$createType0 = timestamppb$0.Timestamp.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = Subscription.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = Plan.createFrom;
+const $$createType4 = CurrentPeriodCharges.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = Plan.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
