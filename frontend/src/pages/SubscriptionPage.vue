@@ -183,6 +183,25 @@ const overageCostFormatted = computed(() => {
   return `$${dollars.toFixed(2)}`;
 });
 
+const planStorageGb = computed(() => {
+  return Math.min(subscription.value?.storage_used_gb ?? 0, subscription.value?.storage_limit_gb ?? 0);
+});
+
+const planStoragePercentage = computed(() => {
+  if (!subscription.value) return 0;
+  const limit = subscription.value.storage_limit_gb ?? 0;
+  if (limit === 0) return 0;
+  const planUsage = planStorageGb.value;
+  return (planUsage / limit) * 100;
+});
+
+const overagePercentage = computed(() => {
+  if (!isOverage.value || !subscription.value) return 0;
+  const limit = subscription.value.storage_limit_gb ?? 0;
+  if (limit === 0) return 0;
+  return (overageGb.value / limit) * 100;
+});
+
 const planFeatures = computed(() => {
   return getFeaturesByPlan(subscription.value?.plan ?? undefined);
 });
@@ -579,32 +598,52 @@ onMounted(async () => {
             <div class='space-y-4'>
               <div class='flex justify-between items-center'>
                 <h3 class='text-xl font-bold'>Storage Usage</h3>
-                <span v-if='!isOverage' class='text-lg font-semibold'>{{ Math.round(storageUsagePercentage) }}% used</span>
-                <span v-else class='text-lg font-semibold text-info'>Additional Usage</span>
+                <span v-if='isOverage' class='text-lg font-semibold text-secondary'>Additional Usage</span>
               </div>
 
-              <div class='text-3xl font-bold'>{{ storageUsageText }}</div>
+              <!-- Total used -->
+              <div class='text-3xl font-bold'>
+                {{ subscription.storage_used_gb ?? 0 }} GB total used
+              </div>
 
-              <div class='w-full bg-base-300 rounded-full h-4'>
+              <!-- Segmented progress bar -->
+              <div class='w-full bg-base-300 rounded-full h-4 relative overflow-hidden'>
+                <!-- Plan storage portion (always shown) -->
                 <div
-                  :class='[
-                    "h-4 rounded-full transition-all duration-500",
-                    isOverage ? "bg-gradient-to-r from-info to-info/80" : "bg-gradient-to-r from-primary to-secondary"
-                  ]'
-                  :style='{ width: `${storageUsagePercentage}%` }'
+                  class='absolute left-0 top-0 h-4 bg-gradient-to-r from-primary to-secondary transition-all duration-500'
+                  :style='{
+                    width: `${planStoragePercentage}%`,
+                    borderRight: isOverage ? "2px solid oklch(var(--b1))" : "none"
+                  }'
+                ></div>
+                <!-- Additional usage portion (only when overage) -->
+                <div
+                  v-if='isOverage'
+                  class='absolute top-0 h-4 bg-gradient-to-r from-secondary to-secondary/80 transition-all duration-500'
+                  :style='{ left: `${planStoragePercentage}%`, width: `${overagePercentage}%` }'
                 ></div>
               </div>
 
-              <div class='grid grid-cols-2 gap-4 text-sm'>
-                <div>
-                  <div class='font-semibold'>Used</div>
-                  <div class='text-base-content/70'>{{ subscription.storage_used_gb ?? 0 }} GB</div>
+              <!-- Segment labels -->
+              <div v-if='isOverage' class='text-sm text-center text-base-content/70'>
+                ← {{ planStorageGb }} GB (Plan) → ← {{ overageGb }} GB (Additional) →
+              </div>
+
+              <!-- Breakdown -->
+              <div class='space-y-2 text-sm'>
+                <div class='flex items-center gap-2'>
+                  <span class='font-semibold'>Plan Limit:</span>
+                  <span class='text-base-content/70 ml-auto'>{{ subscription.storage_limit_gb ?? 0 }} GB</span>
                 </div>
-                <div>
-                  <div class='font-semibold'>Available</div>
-                  <div class='text-base-content/70'>
+                <div v-if='isOverage' class='flex items-center gap-2'>
+                  <span class='font-semibold'>Beyond Plan:</span>
+                  <span class='text-secondary ml-auto'>+{{ overageGb }} GB</span>
+                </div>
+                <div v-else class='flex items-center gap-2'>
+                  <span class='font-semibold'>Remaining:</span>
+                  <span class='text-base-content/70 ml-auto'>
                     {{ (subscription.storage_limit_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
-                  </div>
+                  </span>
                 </div>
               </div>
             </div>
