@@ -157,14 +157,14 @@ const isDowngrading = ref(false);
 const storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
   const used = subscription.value.storage_used_gb ?? 0;
-  const total = subscription.value.plan?.storage_gb ?? 0;
+  const total = subscription.value.storage_limit_gb ?? 0;
   return `${used} GB / ${total} GB`;
 });
 
 const storageUsagePercentage = computed(() => {
   if (!subscription.value) return 0;
   const used = subscription.value.storage_used_gb ?? 0;
-  const total = subscription.value.plan?.storage_gb ?? 0;
+  const total = subscription.value.storage_limit_gb ?? 0;
   return total > 0 ? Math.min((used / total) * 100, 100) : 0;
 });
 
@@ -580,7 +580,7 @@ onMounted(async () => {
               <div class='flex justify-between items-center'>
                 <h3 class='text-xl font-bold'>Storage Usage</h3>
                 <span v-if='!isOverage' class='text-lg font-semibold'>{{ Math.round(storageUsagePercentage) }}% used</span>
-                <span v-else class='text-lg font-semibold text-error'>Over Limit</span>
+                <span v-else class='text-lg font-semibold text-info'>Additional Usage</span>
               </div>
 
               <div class='text-3xl font-bold'>{{ storageUsageText }}</div>
@@ -589,16 +589,10 @@ onMounted(async () => {
                 <div
                   :class='[
                     "h-4 rounded-full transition-all duration-500",
-                    isOverage ? "bg-gradient-to-r from-error to-warning" : "bg-gradient-to-r from-primary to-secondary"
+                    isOverage ? "bg-gradient-to-r from-info to-info/80" : "bg-gradient-to-r from-primary to-secondary"
                   ]'
                   :style='{ width: `${storageUsagePercentage}%` }'
                 ></div>
-              </div>
-
-              <!-- Overage Warning -->
-              <div v-if='isOverage' role='alert' class='alert alert-warning py-2 px-3'>
-                <ExclamationTriangleIcon class='h-5 w-5 shrink-0' />
-                <span class='text-sm font-medium'>{{ overageGb }} GB over limit</span>
               </div>
 
               <div class='grid grid-cols-2 gap-4 text-sm'>
@@ -609,7 +603,7 @@ onMounted(async () => {
                 <div>
                   <div class='font-semibold'>Available</div>
                   <div class='text-base-content/70'>
-                    {{ (subscription.plan?.storage_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
+                    {{ (subscription.storage_limit_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
                   </div>
                 </div>
               </div>
