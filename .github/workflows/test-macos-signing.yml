@@ -81,6 +81,20 @@ jobs:
             "bin/Arco.dmg" \
             "bin/arco.app"
 
+      - name: Check notarization history
+        continue-on-error: true
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "=== Recent Notarization Submissions ==="
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            || echo "⚠️ Could not fetch history (this is optional and won't fail the build)"
+
       - name: Sign DMG
         run: |
           echo "Signing DMG..."
