@@ -1,12 +1,4 @@
 {
-  "source": ["./bin/Arco.dmg"],
-  "bundle_id": "com.arcobackup.arco",
-  "sign": {
-    "application_identity": "Developer ID Application"
-  },
-  "dmg": {
-    "sign": true
-  },
   "notarize": [{
     "path": "./bin/Arco.dmg",
     "bundle_id": "com.arcobackup.arco"
