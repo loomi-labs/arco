@@ -53,11 +53,16 @@ jobs:
       - name: Sign macOS app
         run: |
           echo "Signing .app bundle with hardened runtime..."
+          # Sign the .app bundle with:
+          # --deep: Sign nested code (frameworks, plugins)
+          # --force: Replace existing signature if present
+          # --options runtime: Enable hardened runtime (required for notarization)
+          # --timestamp: Add secure timestamp from Apple
           codesign --sign "Developer ID Application" \
-            --deep \         # Sign nested code (frameworks, plugins)
-            --force \        # Replace existing signature if present
-            --options runtime \  # Enable hardened runtime (required for notarization)
-            --timestamp \    # Add secure timestamp from Apple
+            --deep \
+            --force \
+            --options runtime \
+            --timestamp \
             bin/arco.app
 
       - name: Create DMG
