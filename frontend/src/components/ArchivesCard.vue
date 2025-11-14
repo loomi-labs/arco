@@ -870,7 +870,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class='ac-card p-10' :class="{ 'border-2 border-primary': props.highlight }">
+  <div class='ac-card p-10' :class="props.highlight ? 'ac-card-selected-highlight' : ''">
     <!-- Header Section -->
     <div class='mb-6'>
       <!-- Title Row -->

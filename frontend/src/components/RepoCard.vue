@@ -160,8 +160,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='flex justify-between ac-card p-10 border-2 h-full'
-       :class='{ "border-primary": props.highlight, "border-transparent": !props.highlight, "ac-card-hover": showHover && !props.highlight }'
+  <div class='flex justify-between ac-card p-10 h-full'
+       :class='[
+         props.highlight ? "ac-card-selected-highlight" : "border-2 border-transparent",
+         { "ac-card-hover": showHover && !props.highlight }
+       ]'
        @click='emits(emitClick)'>
     <div class='flex flex-col'>
       <h3 class='text-lg font-semibold'>{{ repo?.name || "" }}</h3>
