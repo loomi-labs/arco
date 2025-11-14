@@ -92,8 +92,7 @@ jobs:
           xcrun notarytool history \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            || echo "⚠️ Could not fetch history (this is optional and won't fail the build)"
+            --team-id "$APPLE_TEAM_ID"
 
       - name: Sign DMG
         run: |
