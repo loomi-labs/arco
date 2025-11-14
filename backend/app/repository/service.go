@@ -273,10 +273,10 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	}
 
 	// Calculate storage used from repository statistics
-	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)   // Compressed & deduplicated storage (actual disk usage)
-	totalSize := int64(repoEntity.StatsTotalSize)      // Total uncompressed size across all archives
-	uniqueSize := int64(repoEntity.StatsUniqueSize)    // Deduplicated uncompressed size
-	uniqueCsize := int64(repoEntity.StatsUniqueCsize)  // Deduplicated compressed size
+	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)  // Compressed & deduplicated storage (actual disk usage)
+	totalSize := int64(repoEntity.StatsTotalSize)     // Total uncompressed size across all archives
+	uniqueSize := int64(repoEntity.StatsUniqueSize)   // Deduplicated uncompressed size
+	uniqueCsize := int64(repoEntity.StatsUniqueCsize) // Deduplicated compressed size
 
 	// Calculate deduplication ratio (totalSize / uniqueSize)
 	dedupRatio := 0.0

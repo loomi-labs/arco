@@ -12,17 +12,17 @@ import (
 type Event string
 
 const (
-	EventStartupStateChanged   Event = "startupStateChanged"
-	EventNotificationAvailable Event = "notificationAvailable"
-	EventBackupStateChanged    Event = "backupStateChanged"
-	EventPruneStateChanged     Event = "pruneStateChanged"
-	EventRepoStateChanged      Event = "repoStateChanged"
-	EventArchivesChanged       Event = "archivesChanged"
-	EventBackupProfileDeleted  Event = "backupProfileDeleted"
-	EventAuthStateChanged      Event = "authStateChanged"
-	EventCheckoutStateChanged  Event = "checkoutStateChanged"
-	EventSubscriptionAdded     Event = "subscriptionAdded"
-	EventSubscriptionCancelled Event = "subscriptionCancelled"
+	EventStartupStateChanged    Event = "startupStateChanged"
+	EventNotificationAvailable  Event = "notificationAvailable"
+	EventBackupStateChanged     Event = "backupStateChanged"
+	EventPruneStateChanged      Event = "pruneStateChanged"
+	EventRepoStateChanged       Event = "repoStateChanged"
+	EventArchivesChanged        Event = "archivesChanged"
+	EventBackupProfileDeleted   Event = "backupProfileDeleted"
+	EventAuthStateChanged       Event = "authStateChanged"
+	EventCheckoutStateChanged   Event = "checkoutStateChanged"
+	EventSubscriptionAdded      Event = "subscriptionAdded"
+	EventSubscriptionCancelled  Event = "subscriptionCancelled"
 	EventOperationErrorOccurred Event = "operationErrorOccurred"
 )
 

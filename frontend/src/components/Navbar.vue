@@ -106,7 +106,7 @@ router.afterEach(() => {
         <!-- Theme toggle -->
         <label class='swap swap-rotate'>
           <!-- this hidden checkbox controls the state -->
-          <input type="checkbox" :value='isDark'/>
+          <input type="checkbox" :value='isDark' class='hidden'/>
 
           <SunIcon class='swap-off size-8' @click='toggleDark()' />
           <MoonIcon class='swap-on size-8' @click='toggleDark()' />
