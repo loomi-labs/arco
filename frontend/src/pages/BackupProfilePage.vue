@@ -7,9 +7,9 @@ import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
@@ -71,30 +71,30 @@ const scheduleSectionDetails = computed(() => {
   const schedule = backupProfile.value.edges.backupSchedule;
   const pruning = backupProfile.value.edges.pruningRule;
 
-if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
-  return "No schedules";
-}
+  if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
+    return "No schedules";
+  }
 
-let details = "";
-switch (schedule.mode) {
-  case backupschedule.Mode.ModeHourly:
-    details = "Backs up every hour";
-    break;
-  case backupschedule.Mode.ModeDaily:
-    details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
-    break;
-  case backupschedule.Mode.ModeWeekly:
-    details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
-    break;
-  case backupschedule.Mode.ModeMonthly:
-    details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
-    break;
-  case backupschedule.Mode.$zero:
-  case backupschedule.Mode.DefaultMode:
-  default:
-    details = "No schedule configured";
-    break;
-}
+  let details = "";
+  switch (schedule.mode) {
+    case backupschedule.Mode.ModeHourly:
+      details = "Backs up every hour";
+      break;
+    case backupschedule.Mode.ModeDaily:
+      details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
+      break;
+    case backupschedule.Mode.ModeWeekly:
+      details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
+      break;
+    case backupschedule.Mode.ModeMonthly:
+      details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
+      break;
+    case backupschedule.Mode.$zero:
+    case backupschedule.Mode.DefaultMode:
+    default:
+      details = "No schedule configured";
+      break;
+  }
 
   if (pruning?.isEnabled) {
     if (details) {
@@ -118,11 +118,11 @@ async function getData() {
 
     if (!selectedRepoId.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepoId.value)) {
       // Select the first repo by default
-      selectedRepoId.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0].id
+      selectedRepoId.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0].id;
     }
 
     // Get existing repositories
-    existingRepos.value = (await repoService.All()).filter(r => r !== null) ;
+    existingRepos.value = (await repoService.All()).filter(r => r !== null);
 
     dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
@@ -281,47 +281,53 @@ watch(loading, async () => {
         <span class='text-error'>{{ errors.name }}</span>
       </label>
 
-      <div class='flex items-center gap-1'>
-        <!-- Icon -->
-        <SelectIconModal v-if='backupProfile.icon' :icon=backupProfile.icon @select='saveIcon' />
+      <div class='flex items-center gap-4'>
+        <div class='flex items-center gap-1'>
+          <!-- Icon -->
+          <SelectIconModal v-if='backupProfile.icon' :icon=backupProfile.icon @select='saveIcon' />
 
-        <!-- Dropdown -->
-        <div class='dropdown dropdown-end'>
-          <div tabindex='0' role='button' class='btn btn-square'>
-            <EllipsisVerticalIcon class='size-6' />
+          <!-- Dropdown -->
+          <div class='dropdown dropdown-end'>
+            <div tabindex='0' role='button' class='btn btn-square'>
+              <EllipsisVerticalIcon class='size-6' />
+            </div>
+            <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
+              <li><a @click='showDeleteBackupProfileModal'>Delete
+                <TrashIcon class='size-4' />
+              </a></li>
+            </ul>
           </div>
-          <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
-            <li><a @click='showDeleteBackupProfileModal'>Delete
-              <TrashIcon class='size-4' />
-            </a></li>
-          </ul>
+          <ConfirmModal :ref='confirmDeleteModalKey'
+                        show-exclamation
+                        title='Delete backup profile'
+                        confirm-class='btn-error'
+                        :confirm-text='deleteArchives ? "Delete backup profile and archives" : "Delete backup profile"'
+                        @confirm='deleteBackupProfile'
+          >
+            <p>Are you sure you want to delete this backup profile?</p><br>
+            <div class='flex gap-4'>
+              <p>Delete archives</p>
+              <input type='checkbox' class='toggle toggle-error' v-model='deleteArchives' />
+            </div>
+            <br>
+            <p v-if='deleteArchives'>This will delete all archives associated with this backup profile!</p>
+            <p v-else>Archives will still be accessible via repository page.</p>
+          </ConfirmModal>
         </div>
-        <ConfirmModal :ref='confirmDeleteModalKey'
-                      show-exclamation
-                      title='Delete backup profile'
-                      confirm-class='btn-error'
-                      :confirm-text='deleteArchives ? "Delete backup profile and archives" : "Delete backup profile"'
-                      @confirm='deleteBackupProfile'
-        >
-          <p>Are you sure you want to delete this backup profile?</p><br>
-          <div class='flex gap-4'>
-            <p>Delete archives</p>
-            <input type='checkbox' class='toggle toggle-error' v-model='deleteArchives' />
-          </div>
-          <br>
-          <p v-if='deleteArchives'>This will delete all archives associated with this backup profile!</p>
-          <p v-else>Archives will still be accessible via repository page.</p>
-        </ConfirmModal>
       </div>
     </div>
 
     <!-- Data Section -->
-    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out' :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-           @click='toggleCollapse("data")'>
+    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
+         :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div
+        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
+        @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
         <span class='ml-2 transition-all duration-1000 ease-in-out'
-              :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{ dataSectionDetails }}</span>
+              :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{
+            dataSectionDetails
+          }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
@@ -346,12 +352,16 @@ watch(loading, async () => {
     </div>
 
     <!-- Schedule Section -->
-    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out' :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-           @click='toggleCollapse("schedule")'>
+    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
+         :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div
+        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
+        @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
         <span class='ml-2 transition-all duration-1000 ease-in-out'
-              :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{ scheduleSectionDetails }}</span>
+              :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{
+            scheduleSectionDetails
+          }}</span>
       </div>
 
       <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
@@ -387,7 +397,8 @@ watch(loading, async () => {
           </RepoCard>
         </div>
         <!-- Add Repository Card -->
-        <div @click='() => addRepoModal?.showModal()' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+        <div @click='() => addRepoModal?.showModal()'
+             class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
         </div>
@@ -412,7 +423,8 @@ watch(loading, async () => {
                 <div class='divider'></div>
 
                 <!-- Add new Repository -->
-                <div class='group flex justify-between items-end ac-card-hover w-96 p-10' @click='router.push(Page.AddRepository)'>
+                <div class='group flex justify-between items-end ac-card-hover w-96 p-10'
+                     @click='router.push(Page.AddRepository)'>
                   <p>Create new repository</p>
                   <div class='relative size-24 group-hover:text-arco-cloud-repo'>
                     <CircleStackIcon class='absolute inset-0 size-24 z-10' />
