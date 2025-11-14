@@ -31,7 +31,7 @@ jobs:
           version: 10
 
       - name: Install macOS signing tools
-        run: brew install mitchellh/gon/gon jq create-dmg
+        run: brew install create-dmg
 
       - name: Build universal binary
         env:
@@ -94,13 +94,12 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          # Update gon-dmg.json with credentials
-          jq '.apple_id.username = env.APPLE_ID | .apple_id.provider = env.APPLE_TEAM_ID' \
-            build/darwin/gon-dmg.json > build/darwin/gon-dmg-tmp.json
-          mv build/darwin/gon-dmg-tmp.json build/darwin/gon-dmg.json
-
-          echo "Notarizing DMG with Apple..."
-          gon -log-level=info ./build/darwin/gon-dmg.json
+          echo "Submitting DMG for notarization..."
+          xcrun notarytool submit bin/Arco.dmg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
 
           echo "Stapling notarization ticket to DMG..."
           xcrun stapler staple bin/Arco.dmg
