@@ -4,9 +4,8 @@ import { useToast } from "vue-toastification";
 import { showAndLogError } from "./common/logger";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
-import Navbar from "./components/Navbar.vue";
+import Sidebar from "./components/Sidebar.vue";
 import { computed, onUnmounted, ref, watchEffect } from "vue";
-import ArcoFooter from "./components/common/ArcoFooter.vue";
 import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -109,10 +108,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if='isInitialized' class='bg-base-200 min-w-svw min-h-svh flex flex-col'>
-    <Navbar></Navbar>
-    <RouterView class='flex-grow' />
-    <ArcoFooter />
+  <div v-if='isInitialized' class='bg-base-200 min-w-svw min-h-svh flex flex-row'>
+    <Sidebar />
+    <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden'>
+      <RouterView class='flex-grow' />
+    </div>
   </div>
   <div v-else class='bg-base-200 min-w-svw min-h-svh'>
     <div class='container mx-auto flex items-center justify-center h-svh'>

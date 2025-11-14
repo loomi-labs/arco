@@ -79,7 +79,7 @@ onUnmounted(() => {
 
 <template>
   <!-- Backups profiles -->
-  <div class='container mx-auto text-left py-10'>
+  <div class='text-left py-10 px-8'>
     <div class='flex items-center text-base-strong gap-2 pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup Profiles</h1>
       <span class='flex tooltip tooltip-info' data-tip='Defines the data and rules of your backups'>
@@ -104,7 +104,7 @@ onUnmounted(() => {
     <div class='divider pt-10 pb-8'></div>
 
     <!-- Repositories -->
-    <div class='container text-left mx-auto'>
+    <div class='text-left'>
       <div class='flex items-center text-base-strong gap-2 pb-2'>
         <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
         <span class='flex tooltip tooltip-info' data-tip='Defines where your backups are stored'>
