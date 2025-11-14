@@ -1,0 +1,110 @@
+name: Test macOS Code Signing
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test-macos-signing:
+    name: Test macOS Build & Sign
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install macOS signing tools
+        run: brew install mitchellh/gon/gon jq create-dmg
+
+      - name: Build universal binary
+        env:
+          PLATFORM: darwin/universal
+          VERSION: test-${{ github.sha }}
+          PRODUCTION: true
+        run: |
+          task build
+
+      - name: Create .app bundle
+        run: task darwin:create:app:bundle
+
+      - name: Import Code-Signing Certificates
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+
+      - name: Sign macOS app
+        run: |
+          echo "Signing .app bundle..."
+          gon -log-level=info ./build/darwin/gon-sign.json
+
+      - name: Create DMG
+        run: |
+          echo "Creating DMG installer..."
+          create-dmg \
+            --volname "Arco" \
+            --volicon "build/darwin/icons.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "arco.app" 175 190 \
+            --hide-extension "arco.app" \
+            --app-drop-link 425 190 \
+            --no-internet-enable \
+            "bin/Arco.dmg" \
+            "bin/arco.app"
+
+      - name: Sign and notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Update gon-dmg.json with credentials
+          jq '.apple_id.username = env.APPLE_ID | .apple_id.provider = env.APPLE_TEAM_ID' \
+            build/darwin/gon-dmg.json > build/darwin/gon-dmg-tmp.json
+          mv build/darwin/gon-dmg-tmp.json build/darwin/gon-dmg.json
+
+          echo "Signing and notarizing DMG..."
+          gon -log-level=info ./build/darwin/gon-dmg.json
+
+      - name: Verify DMG signature
+        run: |
+          echo "=== DMG Code Signature ==="
+          codesign -dv --verbose=4 bin/Arco.dmg
+
+          echo ""
+          echo "=== App Code Signature ==="
+          codesign -dv --verbose=4 bin/arco.app
+
+          echo ""
+          echo "=== Gatekeeper Assessment ==="
+          spctl -a -vv bin/Arco.dmg
+
+          echo ""
+          echo "=== Notarization Status ==="
+          stapler validate bin/Arco.dmg
+
+      - name: Upload signed DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: arco-macos-signed-test
+          path: bin/Arco.dmg
+          retention-days: 7

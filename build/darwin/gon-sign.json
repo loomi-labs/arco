@@ -1,0 +1,7 @@
+{
+  "source": ["./bin/arco.app"],
+  "bundle_id": "com.arcobackup.arco",
+  "sign": {
+    "application_identity": "Developer ID Application"
+  }
+}
