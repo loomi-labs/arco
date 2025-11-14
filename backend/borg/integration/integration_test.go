@@ -569,7 +569,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 				[]string{},
 				progressChan,
 			)
-				require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+			require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
 		}
 
 		// Prune repository (dry run)
