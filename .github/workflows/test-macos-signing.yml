@@ -53,7 +53,12 @@ jobs:
       - name: Sign macOS app
         run: |
           echo "Signing .app bundle..."
-          gon -log-level=info ./build/darwin/gon-sign.json
+          codesign --sign "Developer ID Application" \
+            --deep \
+            --force \
+            --options runtime \
+            --timestamp \
+            bin/arco.app
 
       - name: Create DMG
         run: |
