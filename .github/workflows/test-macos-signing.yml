@@ -103,6 +103,7 @@ jobs:
             bin/Arco.dmg
 
       - name: Notarize DMG
+        timeout-minutes: 10
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
