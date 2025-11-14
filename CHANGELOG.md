@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.0](https://github.com/loomi-labs/arco/compare/v0.15.3...v0.16.0) (2025-11-14)
+
+
+### Features
+
+* add overrage usage calculation ([#201](https://github.com/loomi-labs/arco/issues/201)) ([0395768](https://github.com/loomi-labs/arco/commit/0395768a47e1172088951b8d60b4b863c9906ff9))
+* calculate storage space ([#198](https://github.com/loomi-labs/arco/issues/198)) ([2879b66](https://github.com/loomi-labs/arco/commit/2879b666f87854674dfe1a7a8e1190ff6ba56f9f))
+
 ## [0.15.3](https://github.com/loomi-labs/arco/compare/v0.15.2...v0.15.3) (2025-10-12)
 
 
