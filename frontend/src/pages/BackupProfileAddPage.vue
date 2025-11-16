@@ -327,7 +327,7 @@ onBeforeRouteLeave(async (to, _from) => {
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
+        <button class='btn btn-outline min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
@@ -348,7 +348,7 @@ onBeforeRouteLeave(async (to, _from) => {
       </div>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
+        <button class='btn btn-outline min-w-24' @click='previousStep'>Back</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep2Valid' @click='nextStep'>Next</button>
       </div>
     </template>
@@ -364,7 +364,7 @@ onBeforeRouteLeave(async (to, _from) => {
       </ConnectRepo>
 
       <div class='flex justify-center gap-6 py-10'>
-        <button class='btn btn-outline btn-neutral min-w-24' @click='previousStep'>Back</button>
+        <button class='btn btn-outline min-w-24' @click='previousStep'>Back</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep3Valid' @click='nextStep'>Create</button>
       </div>
     </template>
