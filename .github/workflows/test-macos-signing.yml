@@ -50,6 +50,41 @@ jobs:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
+      - name: Check notarization history
+        continue-on-error: true
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "=== Recent Notarization Submissions ==="
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID"
+
+          echo ""
+          echo "=== Checking most recent Invalid submission for details ==="
+          RECENT_INVALID_ID=$(xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" 2>&1 | \
+            grep -A 3 "status: Invalid" | head -1 | awk '{print $2}')
+
+          if [ -n "$RECENT_INVALID_ID" ]; then
+            echo "Fetching detailed log for submission: $RECENT_INVALID_ID"
+            xcrun notarytool log "$RECENT_INVALID_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              developer_log.json || true
+
+            if [ -f developer_log.json ]; then
+              echo "=== Detailed Error Log ==="
+              cat developer_log.json
+            fi
+          fi
+
       - name: Sign macOS app
         run: |
           echo "Signing .app bundle with hardened runtime..."
@@ -81,19 +116,6 @@ jobs:
             "bin/Arco.dmg" \
             "bin/arco.app"
 
-      - name: Check notarization history
-        continue-on-error: true
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          echo "=== Recent Notarization Submissions ==="
-          xcrun notarytool history \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID"
-
       - name: Sign DMG
         run: |
           echo "Signing DMG..."
@@ -109,13 +131,46 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           echo "Submitting DMG for notarization..."
-          xcrun notarytool submit bin/Arco.dmg \
+
+          # Submit and capture full output including submission ID
+          SUBMIT_OUTPUT=$(xcrun notarytool submit bin/Arco.dmg \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --wait 2>&1)
 
-          echo "Stapling notarization ticket to DMG..."
+          echo "$SUBMIT_OUTPUT"
+
+          # Extract submission ID from output
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+          echo ""
+          echo "Submission ID: $SUBMISSION_ID"
+
+          # Check if notarization failed
+          if echo "$SUBMIT_OUTPUT" | grep -q "status: Invalid"; then
+            echo ""
+            echo "❌ Notarization FAILED - Fetching detailed error log..."
+            echo ""
+
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              notarization_log.json
+
+            echo "=== DETAILED NOTARIZATION ERROR LOG ==="
+            cat notarization_log.json
+            echo ""
+
+            # Extract and highlight critical errors
+            echo "=== CRITICAL ERRORS ==="
+            cat notarization_log.json | grep -A 5 '"severity":"error"' || echo "No specific errors found in log"
+
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Notarization successful - Stapling ticket to DMG..."
           xcrun stapler staple bin/Arco.dmg
 
       - name: Verify DMG signature
