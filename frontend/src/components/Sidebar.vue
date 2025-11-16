@@ -1,23 +1,10 @@
 <script setup lang='ts'>
 
-import { computed, onUnmounted, ref } from "vue";
+import { onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import {
-  HomeIcon,
-  FolderIcon,
-  CircleStackIcon,
-  UserCircleIcon,
-  MoonIcon,
-  SunIcon,
-  Bars3Icon,
-  PlusCircleIcon
-} from "@heroicons/vue/24/outline";
-import {
-  HomeIcon as HomeIconSolid,
-  FolderIcon as FolderIconSolid,
-  CircleStackIcon as CircleStackIconSolid
-} from "@heroicons/vue/24/solid";
+import { Bars3Icon, HomeIcon, MoonIcon, PlusIcon, SunIcon, UserCircleIcon } from "@heroicons/vue/24/outline";
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
@@ -29,6 +16,7 @@ import { getIcon } from "../common/icons";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
+import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Events } from "@wailsio/runtime";
 import { backupProfileDeletedEvent } from "../common/events";
@@ -102,6 +90,14 @@ function isActiveRepo(id: number): boolean {
   return route.path === withId(Page.Repository, id.toString());
 }
 
+function isActiveAddProfile(): boolean {
+  return route.path === Page.AddBackupProfile;
+}
+
+function isActiveAddRepo(): boolean {
+  return route.path === Page.AddRepository;
+}
+
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 }
@@ -167,7 +163,7 @@ onUnmounted(() => {
         :class='[
           "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors",
           isActiveRoute(Page.Dashboard)
-            ? "bg-primary text-primary-content font-semibold"
+            ? "bg-primary/20 border-l-4 border-primary font-semibold"
             : "hover:bg-base-200"
         ]'
       >
@@ -191,7 +187,7 @@ onUnmounted(() => {
             :class='[
               "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors",
               isActiveProfile(profile.id)
-                ? "bg-primary/10 border-l-4 border-primary"
+                ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
           >
@@ -202,9 +198,14 @@ onUnmounted(() => {
           <!-- New Profile Button -->
           <button
             @click='navigateTo(Page.AddBackupProfile)'
-            class='w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
+            :class='[
+              "w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isActiveAddProfile()
+                ? "bg-primary/20 border-l-4 border-primary"
+                : "hover:bg-base-200"
+            ]'
           >
-            <PlusCircleIcon class='size-4' />
+            <PlusIcon class='size-4' />
             <span>New Profile</span>
           </button>
         </div>
@@ -225,20 +226,27 @@ onUnmounted(() => {
             :class='[
               "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors",
               isActiveRepo(repo.id)
-                ? "bg-primary/10 border-l-4 border-primary"
+                ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
           >
-            <div class='w-2 h-2 rounded-full bg-current opacity-50'></div>
+            <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-4 flex-shrink-0' />
+            <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud' svgClass='size-4 flex-shrink-0' />
+            <GlobeEuropeAfricaIcon v-else class='size-4 flex-shrink-0' />
             <span class='truncate'>{{ repo.name }}</span>
           </button>
 
           <!-- New Repository Button -->
           <button
             @click='navigateTo(Page.AddRepository)'
-            class='w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
+            :class='[
+              "w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isActiveAddRepo()
+                ? "bg-primary/20 border-l-4 border-primary"
+                : "hover:bg-base-200"
+            ]'
           >
-            <PlusCircleIcon class='size-4' />
+            <PlusIcon class='size-4' />
             <span>New Repository</span>
           </button>
         </div>
