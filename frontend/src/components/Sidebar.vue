@@ -147,7 +147,7 @@ onUnmounted(() => {
   <!-- Sidebar -->
   <aside
     :class='[
-      "fixed xl:relative top-0 xl:top-auto h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
+      "fixed xl:sticky top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
       isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
     ]'
   >
