@@ -7,8 +7,6 @@ import {
   HomeIcon,
   FolderIcon,
   CircleStackIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
   UserCircleIcon,
   MoonIcon,
   SunIcon,
@@ -50,8 +48,6 @@ const { featureFlags } = useFeatureFlags();
 
 const backupProfiles = ref<ent.BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
-const isProfilesExpanded = ref(true);
-const isReposExpanded = ref(true);
 const isMobileMenuOpen = ref(false);
 
 const isDark = useDark({
@@ -106,14 +102,6 @@ function isActiveRepo(id: number): boolean {
   return route.path === withId(Page.Repository, id.toString());
 }
 
-function toggleProfiles() {
-  isProfilesExpanded.value = !isProfilesExpanded.value;
-}
-
-function toggleRepos() {
-  isReposExpanded.value = !isReposExpanded.value;
-}
-
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 }
@@ -143,7 +131,7 @@ onUnmounted(() => {
 
 <template>
   <!-- Mobile menu button -->
-  <div class='lg:hidden fixed top-4 left-4 z-50'>
+  <div class='xl:hidden fixed top-4 left-4 z-50'>
     <button @click='toggleMobileMenu' class='btn btn-circle btn-ghost'>
       <Bars3Icon class='size-6' />
     </button>
@@ -153,14 +141,14 @@ onUnmounted(() => {
   <div
     v-if='isMobileMenuOpen'
     @click='closeMobileMenu'
-    class='lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity'
+    class='xl:hidden fixed inset-0 bg-black/20 z-40 transition-opacity'
   ></div>
 
   <!-- Sidebar -->
   <aside
     :class='[
-      "fixed lg:sticky top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
-      isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      "fixed xl:relative top-0 xl:top-auto h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
+      isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
     ]'
   >
     <!-- Logo/Brand -->
@@ -189,19 +177,13 @@ onUnmounted(() => {
       </button>
 
       <!-- Backup Profiles Section -->
-      <div class='pt-2'>
-        <button
-          @click='toggleProfiles'
-          class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-base-200 transition-colors'
-        >
-          <FolderIcon class='size-5' />
-          <span class='flex-1'>Backup Profiles</span>
-          <ChevronDownIcon v-if='isProfilesExpanded' class='size-4 transition-transform' />
-          <ChevronRightIcon v-else class='size-4 transition-transform' />
-        </button>
+      <div class='pt-4'>
+        <h3 class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
+          Backup Profiles
+        </h3>
 
         <!-- Profiles list -->
-        <div v-if='isProfilesExpanded' class='ml-6 mt-1 space-y-1'>
+        <div class='mt-1 space-y-1'>
           <button
             v-for='profile in backupProfiles'
             :key='profile.id'
@@ -220,7 +202,7 @@ onUnmounted(() => {
           <!-- New Profile Button -->
           <button
             @click='navigateTo(Page.AddBackupProfile)'
-            class='w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
+            class='w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
           >
             <PlusCircleIcon class='size-4' />
             <span>New Profile</span>
@@ -229,19 +211,13 @@ onUnmounted(() => {
       </div>
 
       <!-- Repositories Section -->
-      <div class='pt-2'>
-        <button
-          @click='toggleRepos'
-          class='w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-base-200 transition-colors'
-        >
-          <CircleStackIcon class='size-5' />
-          <span class='flex-1'>Repositories</span>
-          <ChevronDownIcon v-if='isReposExpanded' class='size-4 transition-transform' />
-          <ChevronRightIcon v-else class='size-4 transition-transform' />
-        </button>
+      <div class='pt-4'>
+        <h3 class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
+          Repositories
+        </h3>
 
         <!-- Repos list -->
-        <div v-if='isReposExpanded' class='ml-6 mt-1 space-y-1'>
+        <div class='mt-1 space-y-1'>
           <button
             v-for='repo in repos'
             :key='repo.id'
@@ -260,7 +236,7 @@ onUnmounted(() => {
           <!-- New Repository Button -->
           <button
             @click='navigateTo(Page.AddRepository)'
-            class='w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
+            class='w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm border border-dashed border-base-300 hover:bg-base-200 transition-colors'
           >
             <PlusCircleIcon class='size-4' />
             <span>New Repository</span>
@@ -308,7 +284,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Footer -->
-    <div class='border-t border-base-300'>
+    <div>
       <ArcoFooter />
     </div>
   </aside>

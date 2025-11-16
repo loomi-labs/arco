@@ -110,8 +110,8 @@ onUnmounted(() => {
 <template>
   <div v-if='isInitialized' class='bg-base-200 min-w-svw min-h-svh flex flex-row'>
     <Sidebar />
-    <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden'>
-      <RouterView class='flex-grow' />
+    <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden pt-8 lg:pt-12'>
+      <RouterView class='container mx-auto flex-grow text-left pt-6 xl:pt-12' />
     </div>
   </div>
   <div v-else class='bg-base-200 min-w-svw min-h-svh'>

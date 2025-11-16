@@ -1166,7 +1166,7 @@ onUnmounted(() => {
   </div>
 
   <div v-if='progressSpinnerText'
-       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
+       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500/75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
       <p class='mb-4'>{{ progressSpinnerText }}</p>
       <span class='loading loading-dots loading-md' />
