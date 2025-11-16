@@ -3,7 +3,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as zod from "zod";
 import { object } from "zod";
-import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -62,6 +62,10 @@ const { meta, errors, defineField } = useForm({
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
+// Breakpoint detection for responsive Add Repository button placement
+type Breakpoint = "base" | "md" | "xl" | "2xl";
+const currentBreakpoint = ref<Breakpoint>("base");
+
 const dataSectionDetails = computed(() => {
   return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup,
   ${backupProfile.value.excludePaths?.length ?? 0} path${backupProfile.value.excludePaths?.length === 1 ? "" : "s"} excluded`;
@@ -105,6 +109,33 @@ const scheduleSectionDetails = computed(() => {
   }
 
   return details;
+});
+
+// Determine if Add Repository button should be in title (true) or as card (false)
+const shouldShowPlusInTitle = computed(() => {
+  const repoCount = backupProfile.value.edges.repositories?.filter(r => r !== null).length ?? 0;
+
+  // Determine columns based on current breakpoint
+  let columns = 1;
+  switch (currentBreakpoint.value) {
+    case "2xl":
+      columns = 4;
+      break;
+    case "xl":
+      columns = 3;
+      break;
+    case "md":
+      columns = 2;
+      break;
+    case "base":
+    default:
+      columns = 1;
+      break;
+  }
+
+  // Always show plus button in title for single-column layouts
+  // Or when Add button would be alone (when (repoCount + 1) % columns === 1)
+  return columns === 1 || (repoCount + 1) % columns === 1;
 });
 
 /************
@@ -252,11 +283,57 @@ function showDeleteBackupProfileModal() {
 
 getData();
 
+// Setup breakpoint detection
+const mediaQueries = {
+  "2xl": window.matchMedia("(min-width: 1536px)"),
+  xl: window.matchMedia("(min-width: 1280px) and (max-width: 1535px)"),
+  md: window.matchMedia("(min-width: 768px) and (max-width: 1279px)"),
+  base: window.matchMedia("(max-width: 767px)")
+};
+
+function updateBreakpoint() {
+  if (mediaQueries["2xl"].matches) {
+    currentBreakpoint.value = "2xl";
+  } else if (mediaQueries.xl.matches) {
+    currentBreakpoint.value = "xl";
+  } else if (mediaQueries.md.matches) {
+    currentBreakpoint.value = "md";
+  } else {
+    currentBreakpoint.value = "base";
+  }
+}
+
+// Initialize breakpoint
+updateBreakpoint();
+
+// Listen for breakpoint changes
+onMounted(() => {
+  Object.values(mediaQueries).forEach((mq) => {
+    mq.addEventListener("change", updateBreakpoint);
+  });
+});
+
+onUnmounted(() => {
+  Object.values(mediaQueries).forEach((mq) => {
+    mq.removeEventListener("change", updateBreakpoint);
+  });
+});
+
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
   await nextTick();
   resizeBackupNameWidth();
 });
+
+watch(
+  () => router.currentRoute.value.params.id,
+  async (newId, oldId) => {
+    if (newId !== oldId) {
+      loading.value = true;
+      await getData();
+    }
+  }
+);
 
 </script>
 
@@ -264,7 +341,7 @@ watch(loading, async () => {
   <div v-if='loading' class='flex items-center justify-center min-h-svh'>
     <div class='loading loading-ring loading-lg'></div>
   </div>
-  <div v-else class='container mx-auto text-left pt-10'>
+  <div v-else>
     <!-- Name and Menu Section -->
     <div class='flex items-center justify-between text-base-strong mb-4 pl-4'>
       <!-- Name -->
@@ -292,7 +369,7 @@ watch(loading, async () => {
               <EllipsisVerticalIcon class='size-6' />
             </div>
             <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
-              <li><a @click='showDeleteBackupProfileModal'>Delete
+              <li><a @click='showDeleteBackupProfileModal' class='text-error'>Delete
                 <TrashIcon class='size-4' />
               </a></li>
             </ul>
@@ -380,10 +457,20 @@ watch(loading, async () => {
 
     <!-- Repositories Section -->
     <div class='p-4'>
-      <h2 class='text-lg font-bold text-base-strong mb-4'>Stored on</h2>
-      <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
+      <div class='flex items-center justify-between mb-4'>
+        <h2 class='text-lg font-bold text-base-strong'>Stored on</h2>
+        <button
+          v-if='shouldShowPlusInTitle'
+          @click='() => addRepoModal?.showModal()'
+          class='btn btn-sm btn-ghost gap-1'
+        >
+          <PlusCircleIcon class='size-5' />
+          <span>Add Repository</span>
+        </button>
+      </div>
+      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 mb-4'>
         <!-- Repositories -->
-        <div v-for='repo in backupProfile.edges?.repositories?.filter(r => r !== null)' :key='repo.id'>
+        <div v-for='repo in backupProfile.edges?.repositories?.filter(r => r !== null)' :key='repo.id' class='min-w-80'>
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
@@ -397,10 +484,13 @@ watch(loading, async () => {
           </RepoCard>
         </div>
         <!-- Add Repository Card -->
-        <div @click='() => addRepoModal?.showModal()'
-             class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
-          <PlusCircleIcon class='size-12' />
-          <div class='pl-2 text-lg font-semibold'>Add Repository</div>
+        <div
+          v-if='!shouldShowPlusInTitle'
+          @click='() => addRepoModal?.showModal()'
+          class='flex justify-center items-center gap-2 w-full min-w-80 ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6'
+        >
+          <PlusCircleIcon class='size-8' />
+          <div class='text-base font-semibold'>Add Repository</div>
         </div>
 
         <dialog

@@ -29,7 +29,7 @@ import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loom
 const router = useRouter();
 const toast = useToast();
 const repo = ref<Repository>(Repository.createFrom());
-const repoId = parseInt(router.currentRoute.value.params.id as string) ?? 0;
+const repoId = computed(() => parseInt(router.currentRoute.value.params.id as string) ?? 0);
 const loading = ref(true);
 
 const totalSize = ref<string>("-");
@@ -108,7 +108,7 @@ const compressionTooltip = computed(() => {
 
 async function getRepo() {
   try {
-    repo.value = (await repoService.Get(repoId)) ?? Repository.createFrom();
+    repo.value = (await repoService.Get(repoId.value)) ?? Repository.createFrom();
     name.value = repo.value.name;
 
     totalSize.value = toHumanReadableSize(repo.value.totalSize);
@@ -131,7 +131,7 @@ async function getRepo() {
       ? `${repo.value.spaceSavingsPercent.toFixed(0)}%`
       : "-";
 
-    deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId)).filter((r) => r !== null) ?? [];
+    deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId.value)).filter((r) => r !== null) ?? [];
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository data", error);
   }
@@ -144,7 +144,7 @@ async function saveName() {
       const updateRequest = new UpdateRequest({
         name: name.value ?? ""
       });
-      const updatedRepo = await repoService.Update(repoId, updateRequest);
+      const updatedRepo = await repoService.Update(repoId.value, updateRequest);
       if (updatedRepo) {
         repo.value = updatedRepo;
       }
@@ -163,7 +163,7 @@ function resizeNameWidth() {
 
 async function removeRepo() {
   try {
-    await repoService.Remove(repoId);
+    await repoService.Remove(repoId.value);
     toast.success("Repository removal queued");
     await router.replace({
       path: Page.Dashboard,
@@ -176,7 +176,7 @@ async function removeRepo() {
 
 async function deleteRepo() {
   try {
-    await repoService.Delete(repoId);
+    await repoService.Delete(repoId.value);
     toast.success("Repository deleted");
     await router.replace({
       path: Page.Dashboard,
@@ -210,7 +210,7 @@ async function changePassphrase() {
 
   try {
     isChangingPassphrase.value = true;
-    const result = await repoService.FixStoredPassword(repoId, newPassphrase.value);
+    const result = await repoService.FixStoredPassword(repoId.value, newPassphrase.value);
 
     if (result.success) {
       toast.success("Password fixed successfully");
@@ -230,7 +230,7 @@ async function changePassphrase() {
 async function breakLock() {
   try {
     isBreakingLock.value = true;
-    await repoService.BreakLock(repoId);
+    await repoService.BreakLock(repoId.value);
     toast.success("Lock broken successfully");
 
     // Refresh repository after breaking lock
@@ -255,8 +255,15 @@ watch(loading, async () => {
 });
 
 cleanupFunctions.push(
-  Events.On(repoStateChangedEvent(repoId), async () => await getRepo())
+  Events.On(repoStateChangedEvent(repoId.value), async () => await getRepo())
 );
+
+watch(repoId, async (newId, oldId) => {
+  if (newId !== oldId && newId > 0) {
+    loading.value = true;
+    await getRepo();
+  }
+});
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -267,7 +274,7 @@ onUnmounted(() => {
   <div v-if='loading' class='flex items-center justify-center min-h-svh'>
     <div class='loading loading-ring loading-lg'></div>
   </div>
-  <div v-else class='container mx-auto text-left pt-10'>
+  <div v-else>
     <!-- Header Section -->
     <div class='flex items-center justify-between mb-8'>
       <!-- Name -->
