@@ -134,7 +134,8 @@ jobs:
       - name: Verify app signature
         run: |
           echo "=== Verifying .app bundle signature ==="
-          codesign --verify --deep --strict --verbose=4 bin/arco.app
+          # Verify signature without --deep (Apple recommended)
+          codesign --verify --strict --verbose=4 bin/arco.app
 
           echo ""
           echo "=== Checking signature details ==="
