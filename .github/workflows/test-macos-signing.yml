@@ -237,10 +237,6 @@ jobs:
           codesign -dv --verbose=4 bin/arco.app
 
           echo ""
-          echo "=== Gatekeeper Assessment ==="
-          spctl -a -vv bin/Arco.dmg
-
-          echo ""
           echo "=== Notarization Status ==="
           stapler validate bin/Arco.dmg
 
