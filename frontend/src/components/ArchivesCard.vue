@@ -874,7 +874,7 @@ onUnmounted(() => {
     <!-- Header Section -->
     <div class='mb-6'>
       <!-- Title Row -->
-      <div class='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4'>
+      <div class='flex flex-row items-center justify-between gap-4 mb-4'>
         <div>
           <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
           <h4 v-if='showName' class='text-base font-semibold'>{{ repo.name }}</h4>
