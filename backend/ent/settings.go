@@ -22,7 +22,11 @@ type Settings struct {
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
 	// ShowWelcome holds the value of the "show_welcome" field.
-	ShowWelcome  bool `json:"showWelcome"`
+	ShowWelcome bool `json:"showWelcome"`
+	// ExpertMode holds the value of the "expert_mode" field.
+	ExpertMode bool `json:"expertMode"`
+	// Theme holds the value of the "theme" field.
+	Theme        settings.Theme `json:"theme,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -31,10 +35,12 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldShowWelcome:
+		case settings.FieldShowWelcome, settings.FieldExpertMode:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
+		case settings.FieldTheme:
+			values[i] = new(sql.NullString)
 		case settings.FieldCreatedAt, settings.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
@@ -75,6 +81,18 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field show_welcome", values[i])
 			} else if value.Valid {
 				_m.ShowWelcome = value.Bool
+			}
+		case settings.FieldExpertMode:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field expert_mode", values[i])
+			} else if value.Valid {
+				_m.ExpertMode = value.Bool
+			}
+		case settings.FieldTheme:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field theme", values[i])
+			} else if value.Valid {
+				_m.Theme = settings.Theme(value.String)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -120,6 +138,12 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("show_welcome=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ShowWelcome))
+	builder.WriteString(", ")
+	builder.WriteString("expert_mode=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExpertMode))
+	builder.WriteString(", ")
+	builder.WriteString("theme=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Theme))
 	builder.WriteByte(')')
 	return builder.String()
 }

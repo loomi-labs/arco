@@ -258,6 +258,10 @@ func init() {
 	settingsDescShowWelcome := settingsFields[0].Descriptor()
 	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
 	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
+	// settingsDescExpertMode is the schema descriptor for expert_mode field.
+	settingsDescExpertMode := settingsFields[1].Descriptor()
+	// settings.DefaultExpertMode holds the default value on creation for the expert_mode field.
+	settings.DefaultExpertMode = settingsDescExpertMode.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0
