@@ -61,18 +61,18 @@ defineExpose({ showModal, close });
                     <div class='grid grid-cols-[1fr_auto] gap-6'>
                       <div>
                         <h4 class='font-semibold mb-1'>lz4</h4>
-                        <p class='text-sm text-base-content/70'>Fast compression with moderate ratio.</p>
+                        <p class='text-sm text-base-content/70'>Fast compression with low ratio.</p>
                       </div>
                       <div class='w-48 space-y-2'>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Speed:</span>
-                          <progress class="progress progress-success flex-1" value="90" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>90%</span>
+                          <progress class="progress progress-success flex-1" value="92" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>92%</span>
                         </div>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Ratio:</span>
-                          <progress class="progress progress-warning flex-1" value="40" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>40%</span>
+                          <progress class="progress progress-warning flex-1" value="35" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>35%</span>
                         </div>
                       </div>
                     </div>
@@ -87,13 +87,13 @@ defineExpose({ showModal, close });
                       <div class='w-48 space-y-2'>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Speed:</span>
-                          <progress class="progress progress-success flex-1" value="70" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>70%</span>
+                          <progress class="progress progress-success flex-1" value="85" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>85%</span>
                         </div>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Ratio:</span>
-                          <progress class="progress progress-warning flex-1" value="60" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>60%</span>
+                          <progress class="progress progress-warning flex-1" value="50" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>50%</span>
                         </div>
                       </div>
                     </div>
@@ -108,13 +108,13 @@ defineExpose({ showModal, close });
                       <div class='w-48 space-y-2'>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Speed:</span>
-                          <progress class="progress progress-warning flex-1" value="60" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>60%</span>
+                          <progress class="progress progress-error flex-1" value="20" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>20%</span>
                         </div>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Ratio:</span>
-                          <progress class="progress progress-warning flex-1" value="65" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>65%</span>
+                          <progress class="progress progress-warning flex-1" value="58" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>58%</span>
                         </div>
                       </div>
                     </div>
@@ -129,8 +129,8 @@ defineExpose({ showModal, close });
                       <div class='w-48 space-y-2'>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Speed:</span>
-                          <progress class="progress progress-error flex-1" value="30" max="100"></progress>
-                          <span class='text-xs w-10 text-right flex-shrink-0'>30%</span>
+                          <progress class="progress progress-error flex-1" value="5" max="100"></progress>
+                          <span class='text-xs w-10 text-right flex-shrink-0'>5%</span>
                         </div>
                         <div class='flex items-center gap-2'>
                           <span class='text-xs w-12 flex-shrink-0'>Ratio:</span>

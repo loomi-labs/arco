@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, useId, useTemplateRef } from "vue";
 import { InformationCircleIcon } from "@heroicons/vue/24/outline";
-import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
+import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import { useExpertMode } from "../common/expertMode";
 import CompressionInfoModal from "./CompressionInfoModal.vue";
 
@@ -84,8 +84,10 @@ const compressionLevelRange = computed(() => {
   const mode = props.compressionMode;
   if (mode === CompressionMode.CompressionModeZstd) {
     return { min: 1, max: 22, default: 3 };
-  } else if (mode === CompressionMode.CompressionModeZlib || mode === CompressionMode.CompressionModeLzma) {
+  } else if (mode === CompressionMode.CompressionModeZlib) {
     return { min: 0, max: 9, default: 6 };
+  } else if (mode === CompressionMode.CompressionModeLzma) {
+    return { min: 0, max: 6, default: 6 };
   } else {
     return { min: 0, max: 0, default: 0 };
   }
@@ -106,11 +108,6 @@ const isWarningLevel = computed(() => {
 
   // ZSTD levels 16-22: Very high memory usage (>1GB)
   if (mode === CompressionMode.CompressionModeZstd && level >= 16) {
-    return true;
-  }
-
-  // LZMA levels 7-9: Extreme memory usage (1-2GB+)
-  if (mode === CompressionMode.CompressionModeLzma && level >= 7) {
     return true;
   }
 
@@ -137,7 +134,7 @@ const algorithmExplanation = computed<{ name: string; description: string } | nu
       case CompressionPreset.None:
         return { name: 'None', description: 'No compression applied, fastest backup speed but largest backup size.' };
       case CompressionPreset.Fast:
-        return { name: 'Fast - lz4', description: 'Very fast compression with moderate compression ratio, ideal for most use cases.' };
+        return { name: 'Fast - lz4', description: 'Very fast compression with low compression ratio, ideal for quick backups.' };
       case CompressionPreset.Balanced:
         return { name: 'Balanced - zstd', description: 'Modern algorithm with good balance of speed and compression ratio.' };
       case CompressionPreset.Maximum:
@@ -159,7 +156,7 @@ const algorithmExplanation = computed<{ name: string; description: string } | nu
         return { name: 'none', description: 'No compression applied, fastest backup speed but largest backup size.' };
 
       case CompressionMode.CompressionModeLz4:
-        return { name: 'lz4', description: 'Very fast compression with moderate compression ratio, ideal for most use cases.' };
+        return { name: 'lz4', description: 'Very fast compression with low compression ratio, ideal for quick backups.' };
 
       case CompressionMode.CompressionModeZstd: {
         if (level === null || level === undefined) {
@@ -171,18 +168,22 @@ const algorithmExplanation = computed<{ name: string; description: string } | nu
         } else if (level >= 10 && level <= 15) {
           return { name: 'zstd', description: 'High compression with increased memory usage and slower speed.' };
         } else if (level >= 16 && level <= 22) {
-          return { name: 'zstd', description: 'Maximum compression with increased memory usage and slower speed. Reduce if performance is too weak!' };
+          return { name: 'zstd', description: 'Maximum compression with very high memory usage and much slower compression (but fast decompression). Use only if disk space is critical!' };
         }
         return { name: 'zstd', description: 'Modern algorithm offering configurable balance between speed and compression.' };
       }
 
       case CompressionMode.CompressionModeZlib: {
         if (level === null || level === undefined) {
-          return { name: 'zlib', description: 'Standard algorithm with wide compatibility and good compression.' };
+          return { name: 'zlib', description: 'Balanced algorithm with wide compatibility and good compression.' };
+        } else if (level >= 0 && level <= 3) {
+          return { name: 'zlib', description: 'Faster compression with moderate ratio, suitable for frequent backups.' };
+        } else if (level >= 4 && level <= 6) {
+          return { name: 'zlib', description: 'Balanced compression, good for general use.' };
         } else if (level >= 7 && level <= 9) {
           return { name: 'zlib', description: 'Slower compression with diminishing returns compared to lower levels.' };
         }
-        return { name: 'zlib', description: 'Standard algorithm with wide compatibility and good compression.' };
+        return { name: 'zlib', description: 'Balanced algorithm with wide compatibility and good compression.' };
       }
 
       case CompressionMode.CompressionModeLzma: {
@@ -192,8 +193,6 @@ const algorithmExplanation = computed<{ name: string; description: string } | nu
           return { name: 'lzma', description: 'Better compression than zstd but slower processing time.' };
         } else if (level >= 4 && level <= 6) {
           return { name: 'lzma', description: 'Standard archival compression with high ratio, slow but effective.' };
-        } else if (level >= 7 && level <= 9) {
-          return { name: 'lzma', description: 'Maximum compression with increased memory usage and slow decompression.' };
         }
         return { name: 'lzma', description: 'Highest compression ratio with slower processing time, best for long-term archives.' };
       }
