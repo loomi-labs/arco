@@ -108,6 +108,7 @@ import (
 
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -422,6 +423,8 @@ func TestBorgArchiveOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		archiveName := strings.Split(archivePath, "::")[1]
@@ -448,6 +451,8 @@ func TestBorgArchiveOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -485,6 +490,8 @@ func TestBorgDeleteOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -540,6 +547,8 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -567,6 +576,8 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 				fmt.Sprintf("test-archive-%d", i),
 				[]string{dataDir},
 				[]string{},
+				backupprofile.CompressionModeLz4,
+				nil,
 				progressChan,
 			)
 			require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -610,6 +621,8 @@ func TestBorgRenameOperation(t *testing.T) {
 		"prefix-",
 		[]string{dataDir},
 		[]string{},
+		backupprofile.CompressionModeLz4,
+		nil,
 		progressChan,
 	)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -668,6 +681,8 @@ func TestBorgMountOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -715,6 +730,8 @@ func TestBorgMountOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -802,6 +819,8 @@ func TestBorgDeleteArchives(t *testing.T) {
 			fmt.Sprintf("%s-%d", archivePrefix, i),
 			[]string{dataDir},
 			[]string{},
+			backupprofile.CompressionModeLz4,
+			nil,
 			progressChan,
 		)
 		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
@@ -816,6 +835,8 @@ func TestBorgDeleteArchives(t *testing.T) {
 		"other-archive-",
 		[]string{dataDir},
 		[]string{},
+		backupprofile.CompressionModeLz4,
+		nil,
 		progressChan,
 	)
 	require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
