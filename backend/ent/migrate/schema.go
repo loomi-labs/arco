@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -308,6 +309,10 @@ func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
 	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
+	BackupProfilesTable.Annotation = &entsql.Annotation{}
+	BackupProfilesTable.Annotation.Checks = map[string]string{
+		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode IN ('zlib', 'lzma') AND compression_level >= 0 AND compression_level <= 9)\n\t\t\t\t)",
+	}
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable

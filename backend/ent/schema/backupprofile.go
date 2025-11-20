@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
@@ -92,5 +93,21 @@ func (BackupProfile) Edges() []ent.Edge {
 		edge.From("notifications", Notification.Type).
 			StructTag(`json:"notifications,omitempty"`).
 			Ref("backup_profile"),
+	}
+}
+
+// Annotations of the BackupProfile.
+func (BackupProfile) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		&entsql.Annotation{
+			Checks: map[string]string{
+				"compression_level_valid": `(
+					(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR
+					(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR
+					(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR
+					(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)
+				)`,
+			},
+		},
 	}
 }

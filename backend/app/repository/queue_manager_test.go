@@ -46,7 +46,7 @@ func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Cont
 	// Use AnyTimes() to allow any number of calls without failing
 	mockBorgClient.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&borgtypes.InfoResponse{}, &borgtypes.Status{}).AnyTimes()
-	mockBorgClient.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	mockBorgClient.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("test-archive", &borgtypes.Status{}).AnyTimes()
 	mockBorgClient.EXPECT().Prune(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&borgtypes.Status{}).AnyTimes()
