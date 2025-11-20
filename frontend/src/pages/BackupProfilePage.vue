@@ -203,9 +203,9 @@ async function getData() {
     // Get existing repositories
     existingRepos.value = (await repoService.All()).filter(r => r !== null);
 
-    dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
-    scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
-    advancedSectionCollapsed.value = backupProfile.value.advancedSectionCollapsed;
+    dataSectionCollapsed.value = !!backupProfile.value.dataSectionCollapsed;
+    scheduleSectionCollapsed.value = !!backupProfile.value.scheduleSectionCollapsed;
+    advancedSectionCollapsed.value = !!backupProfile.value.advancedSectionCollapsed;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -323,9 +323,9 @@ async function toggleCollapse(type: "data" | "schedule" | "advanced") {
     advancedSectionCollapsed.value = !advancedSectionCollapsed.value;
   }
   try {
-    backupProfile.value.dataSectionCollapsed = dataSectionCollapsed.value;
-    backupProfile.value.scheduleSectionCollapsed = scheduleSectionCollapsed.value;
-    backupProfile.value.advancedSectionCollapsed = advancedSectionCollapsed.value;
+    backupProfile.value.dataSectionCollapsed = !!dataSectionCollapsed.value;
+    backupProfile.value.scheduleSectionCollapsed = !!scheduleSectionCollapsed.value;
+    backupProfile.value.advancedSectionCollapsed = !!advancedSectionCollapsed.value;
     await backupProfileService.UpdateBackupProfile(backupProfile.value);
   } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
