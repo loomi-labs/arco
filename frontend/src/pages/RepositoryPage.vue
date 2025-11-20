@@ -106,6 +106,17 @@ const compressionTooltip = computed(() => {
  * Functions
  ************/
 
+function registerRepoEventListener() {
+  // Clean up existing listener if any
+  cleanupFunctions.forEach((cleanup) => cleanup());
+  cleanupFunctions.length = 0;
+
+  // Register new listener for current repoId
+  cleanupFunctions.push(
+    Events.On(repoStateChangedEvent(repoId.value), async () => await getRepo())
+  );
+}
+
 async function getRepo() {
   try {
     repo.value = (await repoService.Get(repoId.value)) ?? Repository.createFrom();
@@ -248,19 +259,20 @@ async function breakLock() {
 
 getRepo();
 
+// Register initial event listener
+registerRepoEventListener();
+
 watch(loading, async () => {
   // Wait for the loading to finish before adjusting the name width
   await nextTick();
   resizeNameWidth();
 });
 
-cleanupFunctions.push(
-  Events.On(repoStateChangedEvent(repoId.value), async () => await getRepo())
-);
-
 watch(repoId, async (newId, oldId) => {
   if (newId !== oldId && newId > 0) {
     loading.value = true;
+    // Re-register event listener for new repo
+    registerRepoEventListener();
     await getRepo();
   }
 });
