@@ -106,12 +106,8 @@ const isWarningLevel = computed(() => {
 
   if (level === null || level === undefined) return false;
 
-  // ZSTD levels 16-22: Very high memory usage (>1GB)
-  if (mode === CompressionMode.CompressionModeZstd && level >= 16) {
-    return true;
-  }
-
-  return false;
+  // ZSTD levels 16-22: Very high memory usage
+  return mode === CompressionMode.CompressionModeZstd && level >= 16;
 });
 
 const customPresetLabel = computed(() => {
@@ -266,7 +262,7 @@ function toggleCompressionInfoModal() {
         </label>
         <select
           class='select select-bordered w-full'
-          :value='compressionMode || CompressionMode.CompressionModeLz4'
+          :value='props.compressionMode || CompressionMode.CompressionModeLz4'
           @change='(e) => onCompressionModeChange((e.target as HTMLSelectElement).value as CompressionMode)'>
           <option :value='CompressionMode.CompressionModeNone'>None</option>
           <option :value='CompressionMode.CompressionModeLz4'>Fast - lz4</option>
@@ -285,10 +281,10 @@ function toggleCompressionInfoModal() {
               type='range'
               :min='compressionLevelRange.min'
               :max='compressionLevelRange.max'
-              :value='compressionLevel ?? compressionLevelRange.default'
+              :value='props.compressionLevel ?? compressionLevelRange.default'
               @input='(e) => onCompressionLevelChange(parseInt((e.target as HTMLInputElement).value))'
               class='range range-secondary flex-1' />
-            <span class='label-text-alt'>{{ compressionLevel ?? compressionLevelRange.default }}</span>
+            <span class='label-text-alt'>{{ props.compressionLevel ?? compressionLevelRange.default }}</span>
           </div>
           <div class='flex justify-between text-xs text-base-content/70'>
             <span>Faster ({{ compressionLevelRange.min }})</span>
