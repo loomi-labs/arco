@@ -8,7 +8,7 @@ import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid }
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
-import { useDark, useToggle } from "@vueuse/core";
+import { useBreakpoints, useDark, useToggle } from "@vueuse/core";
 import { useAuth } from "../common/auth";
 import { useFeatureFlags } from "../common/featureFlags";
 import { showAndLogError } from "../common/logger";
@@ -17,7 +17,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Events } from "@wailsio/runtime";
 import { backupProfileDeletedEvent } from "../common/events";
 
@@ -44,6 +44,15 @@ const isDark = useDark({
   valueLight: "light"
 });
 const toggleDark = useToggle(isDark);
+
+// Workaround: Using reactive breakpoint detection to conditionally apply position classes.
+// Using 'fixed xl:sticky' directly in the template causes CSS conflicts in production builds
+// where the responsive 'sticky' class gets overridden by 'fixed'. By conditionally applying
+// the position class based on screen width, we avoid this conflict.
+const breakpoints = useBreakpoints({
+  xl: 1280  // Tailwind's xl breakpoint
+});
+const isDesktop = breakpoints.greaterOrEqual('xl');
 
 const authModal = ref<InstanceType<typeof AuthModal>>();
 const cleanupFunctions: (() => void)[] = [];
@@ -143,7 +152,8 @@ onUnmounted(() => {
   <!-- Sidebar -->
   <aside
     :class='[
-      "fixed xl:sticky top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
+      isDesktop ? "sticky" : "fixed",
+      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
       isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
     ]'
   >
