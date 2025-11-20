@@ -7719,6 +7719,8 @@ type SettingsMutation struct {
 	created_at    *time.Time
 	updated_at    *time.Time
 	show_welcome  *bool
+	expert_mode   *bool
+	theme         *settings.Theme
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Settings, error)
@@ -7931,6 +7933,78 @@ func (m *SettingsMutation) ResetShowWelcome() {
 	m.show_welcome = nil
 }
 
+// SetExpertMode sets the "expert_mode" field.
+func (m *SettingsMutation) SetExpertMode(b bool) {
+	m.expert_mode = &b
+}
+
+// ExpertMode returns the value of the "expert_mode" field in the mutation.
+func (m *SettingsMutation) ExpertMode() (r bool, exists bool) {
+	v := m.expert_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpertMode returns the old "expert_mode" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldExpertMode(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpertMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpertMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpertMode: %w", err)
+	}
+	return oldValue.ExpertMode, nil
+}
+
+// ResetExpertMode resets all changes to the "expert_mode" field.
+func (m *SettingsMutation) ResetExpertMode() {
+	m.expert_mode = nil
+}
+
+// SetTheme sets the "theme" field.
+func (m *SettingsMutation) SetTheme(s settings.Theme) {
+	m.theme = &s
+}
+
+// Theme returns the value of the "theme" field in the mutation.
+func (m *SettingsMutation) Theme() (r settings.Theme, exists bool) {
+	v := m.theme
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTheme returns the old "theme" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldTheme(ctx context.Context) (v settings.Theme, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTheme is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTheme requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTheme: %w", err)
+	}
+	return oldValue.Theme, nil
+}
+
+// ResetTheme resets all changes to the "theme" field.
+func (m *SettingsMutation) ResetTheme() {
+	m.theme = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -7965,7 +8039,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -7974,6 +8048,12 @@ func (m *SettingsMutation) Fields() []string {
 	}
 	if m.show_welcome != nil {
 		fields = append(fields, settings.FieldShowWelcome)
+	}
+	if m.expert_mode != nil {
+		fields = append(fields, settings.FieldExpertMode)
+	}
+	if m.theme != nil {
+		fields = append(fields, settings.FieldTheme)
 	}
 	return fields
 }
@@ -7989,6 +8069,10 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case settings.FieldShowWelcome:
 		return m.ShowWelcome()
+	case settings.FieldExpertMode:
+		return m.ExpertMode()
+	case settings.FieldTheme:
+		return m.Theme()
 	}
 	return nil, false
 }
@@ -8004,6 +8088,10 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldUpdatedAt(ctx)
 	case settings.FieldShowWelcome:
 		return m.OldShowWelcome(ctx)
+	case settings.FieldExpertMode:
+		return m.OldExpertMode(ctx)
+	case settings.FieldTheme:
+		return m.OldTheme(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -8033,6 +8121,20 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetShowWelcome(v)
+		return nil
+	case settings.FieldExpertMode:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpertMode(v)
+		return nil
+	case settings.FieldTheme:
+		v, ok := value.(settings.Theme)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTheme(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8091,6 +8193,12 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldShowWelcome:
 		m.ResetShowWelcome()
+		return nil
+	case settings.FieldExpertMode:
+		m.ResetExpertMode()
+		return nil
+	case settings.FieldTheme:
+		m.ResetTheme()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

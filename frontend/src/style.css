@@ -22,78 +22,96 @@
 
 @plugin "daisyui/theme" {
     name: "light";
-    /* DaisyUI colors */
-    --color-base-100: #FFFFFF;
-    --color-base-200: #F7F7F7;
-    --color-base-300: #E5E6E6;
-    --color-base-content: #272B35;
-    --color-primary: #4E1066;   /* --color-arco-purple-950 *!*/
-    --color-primary-content: oklch(96% 0.018 272.314);
-    --color-secondary: #F97316;
-    --color-secondary-content: oklch(94% 0.028 342.258);
-    --color-accent: oklch(85% 0.199 91.936);
-    --color-accent-content: oklch(37% 0.013 285.805);
-    --color-neutral: oklch(14% 0.005 285.823);
-    --color-neutral-content: oklch(92% 0.004 286.32);
-    --color-info: oklch(74% 0.16 232.661);
-    --color-info-content: oklch(29% 0.066 243.157);
-    --color-success: #16A34A;
-    --color-success-content: oklch(37% 0.077 168.94);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-warning-content: oklch(41% 0.112 45.904);
-    --color-error: #DC2626;
-    --color-error-content: oklch(94% 0.03 12.58);
-    /*--color-error-content: oklch(27% 0.105 12.094);*/
+    /* DaisyUI colors - Refined palette */
+    --color-base-100: #FAFAFA;
+    --color-base-200: #F5F5F5;
+    --color-base-300: #E8E8E8;
+    --color-base-content: #1F2937;
+    --color-primary: #5B1A73;   /* Slightly lighter purple */
+    --color-primary-content: oklch(98% 0.018 272.314);
+    --color-secondary: #FB923C;  /* Softer orange */
+    --color-secondary-content: oklch(96% 0.028 342.258);
+    --color-accent: oklch(88% 0.18 91.936);
+    --color-accent-content: oklch(35% 0.013 285.805);
+    --color-neutral: oklch(20% 0.005 285.823);
+    --color-neutral-content: oklch(95% 0.004 286.32);
+    --color-info: oklch(76% 0.15 232.661);
+    --color-info-content: oklch(25% 0.066 243.157);
+    --color-success: #22C55E;
+    --color-success-content: oklch(35% 0.077 168.94);
+    --color-warning: oklch(84% 0.18 84.429);
+    --color-warning-content: oklch(38% 0.112 45.904);
+    --color-error: #EF4444;
+    --color-error-content: oklch(96% 0.03 12.58);
 
     /* Custom colors */
-    --color-half-hidden: #8c8c8c;
+    --color-half-hidden: #9CA3AF;
 
-    --radius-selector: 2rem;
+    --radius-selector: 0.75rem;
     --radius-field: 0.5rem;
     --radius-box: 0.5rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
     --border: 1px;
-    --depth: 1;
+    --depth: 2;
 }
 @plugin "daisyui/theme" {
     name: "dark";
-    /* DaisyUI colors */
-    --color-base-100: #27242F;
-    --color-base-200: #121212;
-    --color-base-300: #1F1D20;
-    --color-base-content: #989EAC;
-    --color-primary: #4E1066;   /* --color-arco-purple-950 *!*/
-    --color-primary-content: oklch(96% 0.018 272.314);
-    --color-secondary: #F97316;
-    --color-secondary-content: oklch(94% 0.028 342.258);
-    --color-accent: oklch(85% 0.199 91.936);
-    --color-accent-content: oklch(37% 0.013 285.805);
-    --color-neutral: oklch(14% 0.005 285.823);
-    --color-neutral-content: oklch(92% 0.004 286.32);
-    --color-info: oklch(74% 0.16 232.661);
-    --color-info-content: oklch(29% 0.066 243.157);
-    --color-success: #16A34A;
-    --color-success-content: oklch(37% 0.077 168.94);
-    --color-warning: oklch(82% 0.189 84.429);
-    --color-warning-content: oklch(41% 0.112 45.904);
-    --color-error: #DC2626;
-    --color-error-content: oklch(94% 0.03 12.58);
-    /*--color-error-content: oklch(27% 0.105 12.094);*/
+    /* DaisyUI colors - Refined dark palette */
+    --color-base-100: #1F1F23;
+    --color-base-200: #18181B;
+    --color-base-300: #27272A;
+    --color-base-content: #A1A1AA;
+    --color-primary: #6B21A8;   /* Brighter purple for dark mode */
+    --color-primary-content: oklch(98% 0.018 272.314);
+    --color-secondary: #FB923C;
+    --color-secondary-content: oklch(96% 0.028 342.258);
+    --color-accent: oklch(88% 0.18 91.936);
+    --color-accent-content: oklch(35% 0.013 285.805);
+    --color-neutral: oklch(20% 0.005 285.823);
+    --color-neutral-content: oklch(95% 0.004 286.32);
+    --color-info: oklch(76% 0.15 232.661);
+    --color-info-content: oklch(25% 0.066 243.157);
+    --color-success: #22C55E;
+    --color-success-content: oklch(35% 0.077 168.94);
+    --color-warning: oklch(84% 0.18 84.429);
+    --color-warning-content: oklch(38% 0.112 45.904);
+    --color-error: #EF4444;
+    --color-error-content: oklch(96% 0.03 12.58);
 
     /* Custom colors */
-    --color-half-hidden: #8c8c8c;
+    --color-half-hidden: #71717A;
 
-    --radius-selector: 2rem;
+    --radius-selector: 0.75rem;
     --radius-field: 0.5rem;
     --radius-box: 0.5rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
     --border: 1px;
-    --depth: 1;
+    --depth: 2;
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Fix for webkit checkbox/toggle native appearance showing through */
+@layer base {
+    input[type="checkbox"].toggle,
+    input[type="checkbox"].checkbox,
+    input[type="radio"].radio {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: none !important;
+    }
+
+    /* Hide the browser's internal checkmark indicator (WebKit) */
+    input[type="checkbox"].toggle::-webkit-check,
+    input[type="checkbox"].checkbox::-webkit-check {
+        display: none;
+        opacity: 0;
+        background: none;
+    }
+}
 
 @source '../node_modules/vue-tailwind-datepicker/**/*.js';
 
@@ -102,17 +120,17 @@
     --font-sans: Nunito, sans-serif;
 
     /* Required by vue-tailwind-datepicker */
-    --color-vtd-primary-50: #fbf6fe;
-    --color-vtd-primary-100: #f6eafd;
-    --color-vtd-primary-200: #efd9fb;
-    --color-vtd-primary-300: #e3baf8;
-    --color-vtd-primary-400: #d18ef2;
-    --color-vtd-primary-500: #bf63e9;
-    --color-vtd-primary-600: #ac43da;
-    --color-vtd-primary-700: #9631bf;
-    --color-vtd-primary-800: #7d2d9c;
-    --color-vtd-primary-900: #66257e;
-    --color-vtd-primary-950: #4e1066;
+    --color-vtd-primary-50: #faf5ff;
+    --color-vtd-primary-100: #f3e8ff;
+    --color-vtd-primary-200: #e9d5ff;
+    --color-vtd-primary-300: #d8b4fe;
+    --color-vtd-primary-400: #c084fc;
+    --color-vtd-primary-500: #a855f7;
+    --color-vtd-primary-600: #9333ea;
+    --color-vtd-primary-700: #7e22ce;
+    --color-vtd-primary-800: #6b21a8;
+    --color-vtd-primary-900: #581c87;
+    --color-vtd-primary-950: #3b0764;
 
     /* Required by vue-tailwind-datepicker */
     --color-vtd-secondary-50: #f9fafb;
@@ -127,35 +145,40 @@
     --color-vtd-secondary-900: #111827;
     --color-vtd-secondary-950: #030712;
 
-    --color-arco-purple-50: #fbf6fe;
-    --color-arco-purple-100: #f6eafd;
-    --color-arco-purple-200: #efd9fb;
-    --color-arco-purple-300: #e3baf8;
-    --color-arco-purple-400: #d18ef2;
-    --color-arco-purple-500: #bf63e9;
-    --color-arco-purple-600: #ac43da;
-    --color-arco-purple-700: #9631bf;
-    --color-arco-purple-800: #7d2d9c;
-    --color-arco-purple-900: #66257e;
-    --color-arco-purple-950: #4e1066;
+    --color-arco-purple-50: #faf5ff;
+    --color-arco-purple-100: #f3e8ff;
+    --color-arco-purple-200: #e9d5ff;
+    --color-arco-purple-300: #d8b4fe;
+    --color-arco-purple-400: #c084fc;
+    --color-arco-purple-500: #a855f7;
+    --color-arco-purple-600: #9333ea;
+    --color-arco-purple-700: #7e22ce;
+    --color-arco-purple-800: #6b21a8;
+    --color-arco-purple-900: #581c87;
+    --color-arco-purple-950: #3b0764;
 
-    --color-half-hidden: #8c8c8c;
+    --color-half-hidden: #9CA3AF;
 }
 
-/* Custom styles */
+/* Custom styles - Refined with softer shadows */
 /* Use ac-prefix because card is already taken by daisUI */
 .ac-card {
-  @apply bg-base-100 shadow-lg rounded-lg;
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300;
 }
 .ac-card-hover {
-  @apply bg-base-100 shadow-lg rounded-lg cursor-pointer hover:bg-base-100/50;
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200;
 }
 .ac-card-selected {
-  @apply bg-base-100/50 shadow-lg rounded-lg;
+    @apply bg-base-100/80 shadow-lg rounded-xl border-2 border-primary/30;
 }
 .ac-card-dotted {
-  @apply bg-transparent shadow-lg rounded-lg  border-2 border-dashed border-neutral-500 text-neutral-500 hover:text-neutral-400 hover:border-neutral-400;
+    @apply bg-transparent shadow-sm rounded-xl border-2 border-dashed border-neutral-400 text-neutral-500 hover:text-neutral-600 hover:border-neutral-500 hover:shadow-md transition-all duration-200;
 }
 .text-base-strong {
-  @apply text-black dark:text-white;
+    @apply text-gray-900 dark:text-gray-50;
+}
+
+/* Selection highlight style */
+.ac-card-selected-highlight {
+    @apply border-l-4 border-primary bg-base-300/50 dark:bg-primary/5;
 }

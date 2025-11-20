@@ -9,7 +9,7 @@ import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Vue3Lottie } from "vue3-lottie";
-import { backupProfileDeletedEvent } from "../common/events";
+import * as EventHelpers from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
@@ -69,7 +69,15 @@ async function welcomeModalClosed() {
 
 getData();
 
-cleanupFunctions.push(Events.On(backupProfileDeletedEvent(), getData));
+// Listen for backup profile CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileUpdatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileDeletedEvent(), getData));
+
+// Listen for repository CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -79,7 +87,7 @@ onUnmounted(() => {
 
 <template>
   <!-- Backups profiles -->
-  <div class='container mx-auto text-left py-10'>
+  <div class='text-left py-10 px-8'>
     <div class='flex items-center text-base-strong gap-2 pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup Profiles</h1>
       <span class='flex tooltip tooltip-info' data-tip='Defines the data and rules of your backups'>
@@ -104,7 +112,7 @@ onUnmounted(() => {
     <div class='divider pt-10 pb-8'></div>
 
     <!-- Repositories -->
-    <div class='container text-left mx-auto'>
+    <div class='text-left'>
       <div class='flex items-center text-base-strong gap-2 pb-2'>
         <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
         <span class='flex tooltip tooltip-info' data-tip='Defines where your backups are stored'>
@@ -130,7 +138,7 @@ onUnmounted(() => {
       <Dialog class='relative z-10' @close='welcomeModalClosed'>
         <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100' leave='ease-in duration-200'
                          leave-from='opacity-100' leave-to='opacity-0'>
-          <div class='fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity' />
+          <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
         </TransitionChild>
 
         <div class='fixed inset-0 z-10 w-screen overflow-y-auto'>

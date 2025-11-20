@@ -870,11 +870,11 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class='ac-card p-10' :class="{ 'border-2 border-primary': props.highlight }">
+  <div class='ac-card p-10' :class="props.highlight ? 'ac-card-selected-highlight' : ''">
     <!-- Header Section -->
     <div class='mb-6'>
       <!-- Title Row -->
-      <div class='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4'>
+      <div class='flex flex-row items-center justify-between gap-4 mb-4'>
         <div>
           <h3 class='text-lg font-semibold text-base-content'>{{ $t("archives") }}</h3>
           <h4 v-if='showName' class='text-base font-semibold'>{{ repo.name }}</h4>
@@ -960,11 +960,11 @@ onUnmounted(() => {
         </label>
 
         <!-- Backup filter -->
-        <label v-if='isBackupProfileFilterVisible' class='form-control'>
+        <label v-if='isBackupProfileFilterVisible' class='form-control flex flex-col'>
           <span class='label'>
             <span class='label-text-alt'>Backup Profile</span>
           </span>
-          <select class='select select-bordered' v-model='backupProfileFilter'>
+          <select class='select select-bordered w-full' v-model='backupProfileFilter'>
             <option v-for='option in backupProfileFilterOptions' :key='option.id' :value='option'>
               {{ option.name }}
             </option>
@@ -972,11 +972,11 @@ onUnmounted(() => {
         </label>
 
         <!-- Search -->
-        <label class='form-control' :class='{ "lg:col-span-2": !isBackupProfileFilterVisible }'>
+        <label class='form-control flex flex-col' :class='{ "lg:col-span-2": !isBackupProfileFilterVisible }'>
           <span class='label'>
             <span class='label-text-alt'>Search</span>
           </span>
-          <label class='input input-bordered flex items-center gap-2'>
+          <label class='input input-bordered flex items-center gap-2 w-full'>
             <input type='text' class='grow' v-model='search' />
             <label class='swap swap-rotate' :class="{ 'swap-active': !!search }">
               <MagnifyingGlassIcon class='swap-off size-5' />
@@ -1166,7 +1166,7 @@ onUnmounted(() => {
   </div>
 
   <div v-if='progressSpinnerText'
-       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500 bg-opacity-75'>
+       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500/75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
       <p class='mb-4'>{{ progressSpinnerText }}</p>
       <span class='loading loading-dots loading-md' />

@@ -49,6 +49,34 @@ func (_u *SettingsUpdate) SetNillableShowWelcome(v *bool) *SettingsUpdate {
 	return _u
 }
 
+// SetExpertMode sets the "expert_mode" field.
+func (_u *SettingsUpdate) SetExpertMode(v bool) *SettingsUpdate {
+	_u.mutation.SetExpertMode(v)
+	return _u
+}
+
+// SetNillableExpertMode sets the "expert_mode" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableExpertMode(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetExpertMode(*v)
+	}
+	return _u
+}
+
+// SetTheme sets the "theme" field.
+func (_u *SettingsUpdate) SetTheme(v settings.Theme) *SettingsUpdate {
+	_u.mutation.SetTheme(v)
+	return _u
+}
+
+// SetNillableTheme sets the "theme" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableTheme(v *settings.Theme) *SettingsUpdate {
+	if v != nil {
+		_u.SetTheme(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -90,6 +118,16 @@ func (_u *SettingsUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *SettingsUpdate) check() error {
+	if v, ok := _u.mutation.Theme(); ok {
+		if err := settings.ThemeValidator(v); err != nil {
+			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -97,6 +135,9 @@ func (_u *SettingsUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *Setti
 }
 
 func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -110,6 +151,12 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ExpertMode(); ok {
+		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Theme(); ok {
+		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -149,6 +196,34 @@ func (_u *SettingsUpdateOne) SetShowWelcome(v bool) *SettingsUpdateOne {
 func (_u *SettingsUpdateOne) SetNillableShowWelcome(v *bool) *SettingsUpdateOne {
 	if v != nil {
 		_u.SetShowWelcome(*v)
+	}
+	return _u
+}
+
+// SetExpertMode sets the "expert_mode" field.
+func (_u *SettingsUpdateOne) SetExpertMode(v bool) *SettingsUpdateOne {
+	_u.mutation.SetExpertMode(v)
+	return _u
+}
+
+// SetNillableExpertMode sets the "expert_mode" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableExpertMode(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetExpertMode(*v)
+	}
+	return _u
+}
+
+// SetTheme sets the "theme" field.
+func (_u *SettingsUpdateOne) SetTheme(v settings.Theme) *SettingsUpdateOne {
+	_u.mutation.SetTheme(v)
+	return _u
+}
+
+// SetNillableTheme sets the "theme" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableTheme(v *settings.Theme) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetTheme(*v)
 	}
 	return _u
 }
@@ -207,6 +282,16 @@ func (_u *SettingsUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *SettingsUpdateOne) check() error {
+	if v, ok := _u.mutation.Theme(); ok {
+		if err := settings.ThemeValidator(v); err != nil {
+			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *SettingsUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -214,6 +299,9 @@ func (_u *SettingsUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *Se
 }
 
 func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(settings.Table, settings.Columns, sqlgraph.NewFieldSpec(settings.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -244,6 +332,12 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ExpertMode(); ok {
+		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Theme(); ok {
+		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}

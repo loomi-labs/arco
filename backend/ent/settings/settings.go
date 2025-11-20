@@ -3,6 +3,7 @@
 package settings
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -19,6 +20,10 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldShowWelcome holds the string denoting the show_welcome field in the database.
 	FieldShowWelcome = "show_welcome"
+	// FieldExpertMode holds the string denoting the expert_mode field in the database.
+	FieldExpertMode = "expert_mode"
+	// FieldTheme holds the string denoting the theme field in the database.
+	FieldTheme = "theme"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -29,6 +34,8 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldShowWelcome,
+	FieldExpertMode,
+	FieldTheme,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -50,7 +57,36 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultShowWelcome holds the default value on creation for the "show_welcome" field.
 	DefaultShowWelcome bool
+	// DefaultExpertMode holds the default value on creation for the "expert_mode" field.
+	DefaultExpertMode bool
 )
+
+// Theme defines the type for the "theme" enum field.
+type Theme string
+
+// ThemeSystem is the default value of the Theme enum.
+const DefaultTheme = ThemeSystem
+
+// Theme values.
+const (
+	ThemeLight  Theme = "light"
+	ThemeDark   Theme = "dark"
+	ThemeSystem Theme = "system"
+)
+
+func (t Theme) String() string {
+	return string(t)
+}
+
+// ThemeValidator is a validator for the "theme" field enum values. It is called by the builders before save.
+func ThemeValidator(t Theme) error {
+	switch t {
+	case ThemeLight, ThemeDark, ThemeSystem:
+		return nil
+	default:
+		return fmt.Errorf("settings: invalid enum value for theme field: %q", t)
+	}
+}
 
 // OrderOption defines the ordering options for the Settings queries.
 type OrderOption func(*sql.Selector)
@@ -73,4 +109,14 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByShowWelcome orders the results by the show_welcome field.
 func ByShowWelcome(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldShowWelcome, opts...).ToFunc()
+}
+
+// ByExpertMode orders the results by the expert_mode field.
+func ByExpertMode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpertMode, opts...).ToFunc()
+}
+
+// ByTheme orders the results by the theme field.
+func ByTheme(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTheme, opts...).ToFunc()
 }

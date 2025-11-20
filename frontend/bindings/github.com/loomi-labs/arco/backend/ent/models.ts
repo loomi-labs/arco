@@ -19,6 +19,9 @@ import * as cloudrepository$0 from "./cloudrepository/models.js";
 import * as notification$0 from "./notification/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as settings$0 from "./settings/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as time$0 from "../../../../../time/models.js";
 
 /**
@@ -926,32 +929,32 @@ export class Repository {
     "nextIntegrityCheck": time$0.Time | null;
 
     /**
-     * StatsTotalChunks holds the value of the "stats_total_chunks" field.
+     * Total number of all chunks across all archives (including duplicates)
      */
     "statsTotalChunks": number;
 
     /**
-     * StatsTotalSize holds the value of the "stats_total_size" field.
+     * Total uncompressed size of all chunks multiplied by their reference counts
      */
     "statsTotalSize": number;
 
     /**
-     * StatsTotalCsize holds the value of the "stats_total_csize" field.
+     * Total compressed size of all chunks multiplied by their reference counts (on-disk footprint with references)
      */
     "statsTotalCsize": number;
 
     /**
-     * StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
+     * Number of unique/deduplicated chunks
      */
     "statsTotalUniqueChunks": number;
 
     /**
-     * StatsUniqueSize holds the value of the "stats_unique_size" field.
+     * Uncompressed size of unique chunks only (raw deduplicated data volume)
      */
     "statsUniqueSize": number;
 
     /**
-     * StatsUniqueCsize holds the value of the "stats_unique_csize" field.
+     * Compressed size of unique chunks only (actual storage consumed on disk)
      */
     "statsUniqueCsize": number;
 
@@ -1101,6 +1104,16 @@ export class Settings {
      */
     "showWelcome": boolean;
 
+    /**
+     * ExpertMode holds the value of the "expert_mode" field.
+     */
+    "expertMode": boolean;
+
+    /**
+     * Theme holds the value of the "theme" field.
+     */
+    "theme"?: settings$0.Theme;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1111,6 +1124,9 @@ export class Settings {
         }
         if (!("showWelcome" in $$source)) {
             this["showWelcome"] = false;
+        }
+        if (!("expertMode" in $$source)) {
+            this["expertMode"] = false;
         }
 
         Object.assign(this, $$source);

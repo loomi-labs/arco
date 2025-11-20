@@ -18,7 +18,12 @@ const (
 	EventPruneStateChanged      Event = "pruneStateChanged"
 	EventRepoStateChanged       Event = "repoStateChanged"
 	EventArchivesChanged        Event = "archivesChanged"
+	EventBackupProfileCreated   Event = "backupProfileCreated"
+	EventBackupProfileUpdated   Event = "backupProfileUpdated"
 	EventBackupProfileDeleted   Event = "backupProfileDeleted"
+	EventRepositoryCreated      Event = "repositoryCreated"
+	EventRepositoryUpdated      Event = "repositoryUpdated"
+	EventRepositoryDeleted      Event = "repositoryDeleted"
 	EventAuthStateChanged       Event = "authStateChanged"
 	EventCheckoutStateChanged   Event = "checkoutStateChanged"
 	EventSubscriptionAdded      Event = "subscriptionAdded"
@@ -33,7 +38,12 @@ var AllEvents = []Event{
 	EventPruneStateChanged,
 	EventRepoStateChanged,
 	EventArchivesChanged,
+	EventBackupProfileCreated,
+	EventBackupProfileUpdated,
 	EventBackupProfileDeleted,
+	EventRepositoryCreated,
+	EventRepositoryUpdated,
+	EventRepositoryDeleted,
 	EventAuthStateChanged,
 	EventCheckoutStateChanged,
 	EventSubscriptionAdded,
@@ -71,6 +81,26 @@ func EventSubscriptionAddedString() string {
 
 func EventSubscriptionCancelledString() string {
 	return fmt.Sprintf("%s", EventSubscriptionCancelled.String())
+}
+
+func EventBackupProfileCreatedString() string {
+	return fmt.Sprintf("%s", EventBackupProfileCreated.String())
+}
+
+func EventBackupProfileUpdatedString() string {
+	return fmt.Sprintf("%s", EventBackupProfileUpdated.String())
+}
+
+func EventRepositoryCreatedString() string {
+	return fmt.Sprintf("%s", EventRepositoryCreated.String())
+}
+
+func EventRepositoryUpdatedString() string {
+	return fmt.Sprintf("%s", EventRepositoryUpdated.String())
+}
+
+func EventRepositoryDeletedString() string {
+	return fmt.Sprintf("%s", EventRepositoryDeleted.String())
 }
 
 type RuntimeEventEmitter struct{}

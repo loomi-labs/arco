@@ -348,6 +348,7 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, repoEntity), nil
 }
 
@@ -411,6 +412,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, entRepo), nil
 }
 
@@ -537,6 +539,7 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 		return nil, fmt.Errorf("failed to update repository %d: %w", repoId, err)
 	}
 
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryUpdatedString())
 	return s.Get(ctx, repoId)
 }
 
@@ -587,6 +590,10 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 
 		return nil
 	})
+	if err == nil {
+		s.eventEmitter.EmitEvent(ctx, types.EventRepositoryDeletedString())
+	}
+	return err
 }
 
 // Delete deletes a repository completely. This cancels all other operations
@@ -615,7 +622,11 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	// 3. Check if this is a cloud repository and handle accordingly
 	if repoEntity.Edges.CloudRepository != nil {
 		// For cloud repositories, delete directly via cloud service
-		return s.cloudRepoClient.DeleteCloudRepository(ctx, repoEntity.Edges.CloudRepository.CloudID)
+		if err := s.cloudRepoClient.DeleteCloudRepository(ctx, repoEntity.Edges.CloudRepository.CloudID); err != nil {
+			return err
+		}
+		s.eventEmitter.EmitEvent(ctx, types.EventRepositoryDeletedString())
+		return nil
 	}
 
 	// 4. For local repositories, queue a delete operation

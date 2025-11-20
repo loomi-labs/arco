@@ -286,7 +286,7 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
-	return s.db.BackupProfile.
+	profile, err := s.db.BackupProfile.
 		Create().
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
@@ -295,12 +295,17 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetIcon(backup.Icon).
 		AddRepositoryIDs(repositoryIds...).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileCreatedString())
+	return profile, nil
 }
 
 func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProfile) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
-	return s.db.BackupProfile.
+	profile, err := s.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetIcon(backup.Icon).
@@ -309,6 +314,11 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return profile, nil
 }
 
 // DeleteBackupProfile deletes a backup profile and optionally its archives
@@ -372,10 +382,15 @@ func (s *Service) AddRepositoryToBackupProfile(ctx context.Context, backupProfil
 			return fmt.Errorf("repository is already in the backup profile")
 		}
 	}
-	return s.db.BackupProfile.
+	err = s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		AddRepositoryIDs(repositoryId).
 		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return nil
 }
 
 // RemoveRepositoryFromBackupProfile removes a repository from a backup profile
@@ -441,10 +456,15 @@ func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupP
 		}
 	}
 
-	return s.db.BackupProfile.
+	err = s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
 		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return nil
 }
 
 type SelectDirectoryData struct {

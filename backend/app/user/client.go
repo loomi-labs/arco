@@ -92,6 +92,8 @@ func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) erro
 	return s.db.Settings.
 		Update().
 		SetShowWelcome(settings.ShowWelcome).
+		SetExpertMode(settings.ExpertMode).
+		SetTheme(settings.Theme).
 		Exec(ctx)
 }
 
