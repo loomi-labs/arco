@@ -29,3 +29,23 @@ export function subscriptionCancelledEvent(): string {
   return `${types.Event.EventSubscriptionCancelled}`;
 }
 
+export function backupProfileCreatedEvent(): string {
+  return `${types.Event.EventBackupProfileCreated}`;
+}
+
+export function backupProfileUpdatedEvent(): string {
+  return `${types.Event.EventBackupProfileUpdated}`;
+}
+
+export function repositoryCreatedEvent(): string {
+  return `${types.Event.EventRepositoryCreated}`;
+}
+
+export function repositoryUpdatedEvent(): string {
+  return `${types.Event.EventRepositoryUpdated}`;
+}
+
+export function repositoryDeletedEvent(): string {
+  return `${types.Event.EventRepositoryDeleted}`;
+}
+

@@ -19,7 +19,7 @@ import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/back
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Events } from "@wailsio/runtime";
-import { backupProfileDeletedEvent } from "../common/events";
+import * as EventHelpers from "../common/events";
 
 /************
  * Types
@@ -111,7 +111,15 @@ function navigateTo(path: string) {
 
 loadData();
 
-cleanupFunctions.push(Events.On(backupProfileDeletedEvent(), loadData));
+// Listen for backup profile CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), loadData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileUpdatedEvent(), loadData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileDeletedEvent(), loadData));
+
+// Listen for repository CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), loadData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), loadData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), loadData));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());

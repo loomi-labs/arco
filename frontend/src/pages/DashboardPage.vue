@@ -9,7 +9,7 @@ import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { Vue3Lottie } from "vue3-lottie";
-import { backupProfileDeletedEvent } from "../common/events";
+import * as EventHelpers from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
@@ -69,7 +69,15 @@ async function welcomeModalClosed() {
 
 getData();
 
-cleanupFunctions.push(Events.On(backupProfileDeletedEvent(), getData));
+// Listen for backup profile CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileUpdatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.backupProfileDeletedEvent(), getData));
+
+// Listen for repository CRUD events
+cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), getData));
+cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
