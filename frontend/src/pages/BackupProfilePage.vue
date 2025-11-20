@@ -184,7 +184,7 @@ const shouldShowPlusInTitle = computed(() => {
  ************/
 
 function handleKeyboardActivation(event: KeyboardEvent, action: () => void) {
-  if (event.key === 'Enter' || event.key === ' ') {
+  if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     action();
   }
@@ -533,7 +533,10 @@ watch(
           <CompressionCard
             :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
             :compression-level='backupProfile.compressionLevel'
-            @update:compression='({ mode, level }) => { backupProfile.compressionMode = mode; backupProfile.compressionLevel = level; saveBackupProfile(); }' />
+            @update:compression='({ mode, level }) => {
+              backupProfile.compressionMode = mode;
+              backupProfile.compressionLevel = level; saveBackupProfile();
+            }' />
         </div>
       </div>
     </div>
