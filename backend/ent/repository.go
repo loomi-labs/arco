@@ -30,17 +30,17 @@ type Repository struct {
 	Password string `json:"password"`
 	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
 	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
-	// StatsTotalChunks holds the value of the "stats_total_chunks" field.
+	// Total number of all chunks across all archives (including duplicates)
 	StatsTotalChunks int `json:"statsTotalChunks"`
-	// StatsTotalSize holds the value of the "stats_total_size" field.
+	// Total uncompressed size of all chunks multiplied by their reference counts
 	StatsTotalSize int `json:"statsTotalSize"`
-	// StatsTotalCsize holds the value of the "stats_total_csize" field.
+	// Total compressed size of all chunks multiplied by their reference counts (on-disk footprint with references)
 	StatsTotalCsize int `json:"statsTotalCsize"`
-	// StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
+	// Number of unique/deduplicated chunks
 	StatsTotalUniqueChunks int `json:"statsTotalUniqueChunks"`
-	// StatsUniqueSize holds the value of the "stats_unique_size" field.
+	// Uncompressed size of unique chunks only (raw deduplicated data volume)
 	StatsUniqueSize int `json:"statsUniqueSize"`
-	// StatsUniqueCsize holds the value of the "stats_unique_csize" field.
+	// Compressed size of unique chunks only (actual storage consumed on disk)
 	StatsUniqueCsize int `json:"statsUniqueCsize"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepositoryQuery when eager-loading is set.
