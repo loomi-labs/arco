@@ -240,6 +240,10 @@ func buildCompressionFlag(mode backupprofile.CompressionMode, level *int) string
 		return "--compression=zlib,6"
 	case backupprofile.CompressionModeLzma:
 		return "--compression=lzma,6"
+	case backupprofile.CompressionModeNone:
+		return ""
+	case backupprofile.CompressionModeLz4:
+		return "--compression=lz4"
 	}
 
 	// Fallback: just use the algorithm name
