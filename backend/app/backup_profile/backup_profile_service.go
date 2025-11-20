@@ -195,12 +195,15 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 	}
 
 	return &ent.BackupProfile{
-		ID:           0,
-		Name:         "",
-		Prefix:       "",
-		BackupPaths:  make([]string, 0),
-		ExcludePaths: make([]string, 0),
-		Icon:         selectedIcon,
+		ID:                       0,
+		Name:                     "",
+		Prefix:                   "",
+		BackupPaths:              make([]string, 0),
+		ExcludePaths:             make([]string, 0),
+		Icon:                     selectedIcon,
+		CompressionMode:          backupprofile.CompressionModeLz4, // Default compression
+		CompressionLevel:         nil,                              // lz4 doesn't use levels
+		AdvancedSectionCollapsed: true,                             // Collapsed by default
 		Edges: ent.BackupProfileEdges{
 			BackupSchedule: schedule,
 			PruningRule:    pruningRule,
@@ -286,6 +289,12 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
+
+	// Validate compression settings
+	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
+		return nil, fmt.Errorf("invalid compression settings: %w", err)
+	}
+
 	profile, err := s.db.BackupProfile.
 		Create().
 		SetName(backup.Name).
@@ -293,6 +302,9 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
 		SetIcon(backup.Icon).
+		SetCompressionMode(backup.CompressionMode).
+		SetNillableCompressionLevel(backup.CompressionLevel).
+		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed).
 		AddRepositoryIDs(repositoryIds...).
 		Save(ctx)
 	if err != nil {
@@ -305,6 +317,12 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProf
 func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProfile) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
+
+	// Validate compression settings
+	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
+		return nil, fmt.Errorf("invalid compression settings: %w", err)
+	}
+
 	profile, err := s.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
@@ -313,6 +331,9 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetExcludePaths(backup.ExcludePaths).
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
+		SetCompressionMode(backup.CompressionMode).
+		SetNillableCompressionLevel(backup.CompressionLevel).
+		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed).
 		Save(ctx)
 	if err != nil {
 		return nil, err
@@ -646,4 +667,41 @@ func (s *Service) sendPruningRuleChanged() {
 		return
 	}
 	s.pruningScheduleChangedCh <- struct{}{}
+}
+
+/***********************************/
+/********** Compression ************/
+/***********************************/
+
+// validateCompression validates compression mode and level combinations
+func validateCompression(mode backupprofile.CompressionMode, level *int) error {
+	// Modes that don't support levels
+	noLevelModes := map[backupprofile.CompressionMode]bool{
+		backupprofile.CompressionModeNone: true,
+		backupprofile.CompressionModeLz4:  true,
+	}
+
+	if noLevelModes[mode] && level != nil {
+		return fmt.Errorf("compression mode '%s' does not support compression level", mode)
+	}
+
+	// Validate level ranges for modes that support them
+	if level != nil {
+		switch mode {
+		case backupprofile.CompressionModeZstd:
+			if *level < 1 || *level > 22 {
+				return fmt.Errorf("zstd compression level must be between 1 and 22, got %d", *level)
+			}
+		case backupprofile.CompressionModeZlib:
+			if *level < 0 || *level > 9 {
+				return fmt.Errorf("zlib compression level must be between 0 and 9, got %d", *level)
+			}
+		case backupprofile.CompressionModeLzma:
+			if *level < 0 || *level > 9 {
+				return fmt.Errorf("lzma compression level must be between 0 and 9, got %d", *level)
+			}
+		}
+	}
+
+	return nil
 }

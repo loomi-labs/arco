@@ -179,7 +179,7 @@ func (a *App) Startup(ctx context.Context) {
 	)
 
 	// Initialize services with database and authenticated RPC clients
-	a.userService.Init(a.db)
+	a.userService.Init(a.db, a.eventEmitter)
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)

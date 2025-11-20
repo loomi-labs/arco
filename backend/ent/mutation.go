@@ -1372,8 +1372,12 @@ type BackupProfileMutation struct {
 	exclude_paths              *[]string
 	appendexclude_paths        []string
 	icon                       *backupprofile.Icon
+	compression_mode           *backupprofile.CompressionMode
+	compression_level          *int
+	addcompression_level       *int
 	data_section_collapsed     *bool
 	schedule_section_collapsed *bool
+	advanced_section_collapsed *bool
 	clearedFields              map[string]struct{}
 	repositories               map[int]struct{}
 	removedrepositories        map[int]struct{}
@@ -1793,6 +1797,112 @@ func (m *BackupProfileMutation) ResetIcon() {
 	m.icon = nil
 }
 
+// SetCompressionMode sets the "compression_mode" field.
+func (m *BackupProfileMutation) SetCompressionMode(bm backupprofile.CompressionMode) {
+	m.compression_mode = &bm
+}
+
+// CompressionMode returns the value of the "compression_mode" field in the mutation.
+func (m *BackupProfileMutation) CompressionMode() (r backupprofile.CompressionMode, exists bool) {
+	v := m.compression_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompressionMode returns the old "compression_mode" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldCompressionMode(ctx context.Context) (v backupprofile.CompressionMode, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompressionMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompressionMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompressionMode: %w", err)
+	}
+	return oldValue.CompressionMode, nil
+}
+
+// ResetCompressionMode resets all changes to the "compression_mode" field.
+func (m *BackupProfileMutation) ResetCompressionMode() {
+	m.compression_mode = nil
+}
+
+// SetCompressionLevel sets the "compression_level" field.
+func (m *BackupProfileMutation) SetCompressionLevel(i int) {
+	m.compression_level = &i
+	m.addcompression_level = nil
+}
+
+// CompressionLevel returns the value of the "compression_level" field in the mutation.
+func (m *BackupProfileMutation) CompressionLevel() (r int, exists bool) {
+	v := m.compression_level
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompressionLevel returns the old "compression_level" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldCompressionLevel(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompressionLevel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompressionLevel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompressionLevel: %w", err)
+	}
+	return oldValue.CompressionLevel, nil
+}
+
+// AddCompressionLevel adds i to the "compression_level" field.
+func (m *BackupProfileMutation) AddCompressionLevel(i int) {
+	if m.addcompression_level != nil {
+		*m.addcompression_level += i
+	} else {
+		m.addcompression_level = &i
+	}
+}
+
+// AddedCompressionLevel returns the value that was added to the "compression_level" field in this mutation.
+func (m *BackupProfileMutation) AddedCompressionLevel() (r int, exists bool) {
+	v := m.addcompression_level
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCompressionLevel clears the value of the "compression_level" field.
+func (m *BackupProfileMutation) ClearCompressionLevel() {
+	m.compression_level = nil
+	m.addcompression_level = nil
+	m.clearedFields[backupprofile.FieldCompressionLevel] = struct{}{}
+}
+
+// CompressionLevelCleared returns if the "compression_level" field was cleared in this mutation.
+func (m *BackupProfileMutation) CompressionLevelCleared() bool {
+	_, ok := m.clearedFields[backupprofile.FieldCompressionLevel]
+	return ok
+}
+
+// ResetCompressionLevel resets all changes to the "compression_level" field.
+func (m *BackupProfileMutation) ResetCompressionLevel() {
+	m.compression_level = nil
+	m.addcompression_level = nil
+	delete(m.clearedFields, backupprofile.FieldCompressionLevel)
+}
+
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
 func (m *BackupProfileMutation) SetDataSectionCollapsed(b bool) {
 	m.data_section_collapsed = &b
@@ -1863,6 +1973,42 @@ func (m *BackupProfileMutation) OldScheduleSectionCollapsed(ctx context.Context)
 // ResetScheduleSectionCollapsed resets all changes to the "schedule_section_collapsed" field.
 func (m *BackupProfileMutation) ResetScheduleSectionCollapsed() {
 	m.schedule_section_collapsed = nil
+}
+
+// SetAdvancedSectionCollapsed sets the "advanced_section_collapsed" field.
+func (m *BackupProfileMutation) SetAdvancedSectionCollapsed(b bool) {
+	m.advanced_section_collapsed = &b
+}
+
+// AdvancedSectionCollapsed returns the value of the "advanced_section_collapsed" field in the mutation.
+func (m *BackupProfileMutation) AdvancedSectionCollapsed() (r bool, exists bool) {
+	v := m.advanced_section_collapsed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAdvancedSectionCollapsed returns the old "advanced_section_collapsed" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldAdvancedSectionCollapsed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAdvancedSectionCollapsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAdvancedSectionCollapsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAdvancedSectionCollapsed: %w", err)
+	}
+	return oldValue.AdvancedSectionCollapsed, nil
+}
+
+// ResetAdvancedSectionCollapsed resets all changes to the "advanced_section_collapsed" field.
+func (m *BackupProfileMutation) ResetAdvancedSectionCollapsed() {
+	m.advanced_section_collapsed = nil
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
@@ -2139,7 +2285,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, backupprofile.FieldCreatedAt)
 	}
@@ -2161,11 +2307,20 @@ func (m *BackupProfileMutation) Fields() []string {
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
 	}
+	if m.compression_mode != nil {
+		fields = append(fields, backupprofile.FieldCompressionMode)
+	}
+	if m.compression_level != nil {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
+	}
 	if m.data_section_collapsed != nil {
 		fields = append(fields, backupprofile.FieldDataSectionCollapsed)
 	}
 	if m.schedule_section_collapsed != nil {
 		fields = append(fields, backupprofile.FieldScheduleSectionCollapsed)
+	}
+	if m.advanced_section_collapsed != nil {
+		fields = append(fields, backupprofile.FieldAdvancedSectionCollapsed)
 	}
 	return fields
 }
@@ -2189,10 +2344,16 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIcon:
 		return m.Icon()
+	case backupprofile.FieldCompressionMode:
+		return m.CompressionMode()
+	case backupprofile.FieldCompressionLevel:
+		return m.CompressionLevel()
 	case backupprofile.FieldDataSectionCollapsed:
 		return m.DataSectionCollapsed()
 	case backupprofile.FieldScheduleSectionCollapsed:
 		return m.ScheduleSectionCollapsed()
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		return m.AdvancedSectionCollapsed()
 	}
 	return nil, false
 }
@@ -2216,10 +2377,16 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
+	case backupprofile.FieldCompressionMode:
+		return m.OldCompressionMode(ctx)
+	case backupprofile.FieldCompressionLevel:
+		return m.OldCompressionLevel(ctx)
 	case backupprofile.FieldDataSectionCollapsed:
 		return m.OldDataSectionCollapsed(ctx)
 	case backupprofile.FieldScheduleSectionCollapsed:
 		return m.OldScheduleSectionCollapsed(ctx)
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		return m.OldAdvancedSectionCollapsed(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -2278,6 +2445,20 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIcon(v)
 		return nil
+	case backupprofile.FieldCompressionMode:
+		v, ok := value.(backupprofile.CompressionMode)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompressionMode(v)
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompressionLevel(v)
+		return nil
 	case backupprofile.FieldDataSectionCollapsed:
 		v, ok := value.(bool)
 		if !ok {
@@ -2292,6 +2473,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetScheduleSectionCollapsed(v)
 		return nil
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAdvancedSectionCollapsed(v)
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -2299,13 +2487,21 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *BackupProfileMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcompression_level != nil {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *BackupProfileMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backupprofile.FieldCompressionLevel:
+		return m.AddedCompressionLevel()
+	}
 	return nil, false
 }
 
@@ -2314,6 +2510,13 @@ func (m *BackupProfileMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BackupProfileMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case backupprofile.FieldCompressionLevel:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCompressionLevel(v)
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile numeric field %s", name)
 }
@@ -2324,6 +2527,9 @@ func (m *BackupProfileMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(backupprofile.FieldExcludePaths) {
 		fields = append(fields, backupprofile.FieldExcludePaths)
+	}
+	if m.FieldCleared(backupprofile.FieldCompressionLevel) {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
 	}
 	return fields
 }
@@ -2341,6 +2547,9 @@ func (m *BackupProfileMutation) ClearField(name string) error {
 	switch name {
 	case backupprofile.FieldExcludePaths:
 		m.ClearExcludePaths()
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		m.ClearCompressionLevel()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
@@ -2371,11 +2580,20 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
 		return nil
+	case backupprofile.FieldCompressionMode:
+		m.ResetCompressionMode()
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		m.ResetCompressionLevel()
+		return nil
 	case backupprofile.FieldDataSectionCollapsed:
 		m.ResetDataSectionCollapsed()
 		return nil
 	case backupprofile.FieldScheduleSectionCollapsed:
 		m.ResetScheduleSectionCollapsed()
+		return nil
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		m.ResetAdvancedSectionCollapsed()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)

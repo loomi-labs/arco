@@ -10,15 +10,16 @@ import (
 
 	gocmd "github.com/go-cmd/cmd"
 	"github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 )
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status) {
+func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
 	archivePath := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
-	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths)
+	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths, compressionMode, compressionLevel)
 	if err != nil {
 		return "", newStatusWithError(err)
 	}
@@ -27,13 +28,22 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	}
 
 	// Prepare backup command
-	cmdStr := append([]string{
+	cmdStr := []string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--progress", // Outputs continuous progress messages
 		"--log-json", // Outputs JSON log messages
-		archivePath,
-	}, backupPaths...,
-	)
+	}
+
+	// Add compression flag if enabled
+	if compressionFlag := buildCompressionFlag(compressionMode, compressionLevel); compressionFlag != "" {
+		cmdStr = append(cmdStr, compressionFlag)
+	}
+
+	// Add archive path and backup paths
+	cmdStr = append(cmdStr, archivePath)
+	cmdStr = append(cmdStr, backupPaths...)
+
+	// Add exclude paths
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
@@ -110,15 +120,24 @@ func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.Backup
 
 // countBackupFiles counts the number of files that will be backed up.
 // We use the --dry-run flag to simulate the backup and count the files.
-func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string) (int, *types.Status, error) {
-	cmdStr := append([]string{
+func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int) (int, *types.Status, error) {
+	cmdStr := []string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--dry-run",  // Simulate the backup
 		"--list",     // List the files and directories to be backed up
 		"--log-json", // Outputs JSON log messages
-		archiveName},
-		backupPaths...,
-	)
+	}
+
+	// Add compression flag if enabled
+	if compressionFlag := buildCompressionFlag(compressionMode, compressionLevel); compressionFlag != "" {
+		cmdStr = append(cmdStr, compressionFlag)
+	}
+
+	// Add archive name and backup paths
+	cmdStr = append(cmdStr, archiveName)
+	cmdStr = append(cmdStr, backupPaths...)
+
+	// Add exclude paths
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
 	}
@@ -193,4 +212,36 @@ func countFiles(cmd *gocmd.Cmd, fileCountChan chan int) {
 			return
 		}
 	}
+}
+
+// buildCompressionFlag builds the --compression flag for borg based on mode and level.
+// Returns empty string if compression is disabled (none or empty mode).
+func buildCompressionFlag(mode backupprofile.CompressionMode, level *int) string {
+	// No compression
+	if mode == backupprofile.CompressionModeNone || mode == "" {
+		return ""
+	}
+
+	// lz4 doesn't support levels
+	if mode == backupprofile.CompressionModeLz4 {
+		return "--compression=lz4"
+	}
+
+	// Algorithms with levels (zstd, zlib, lzma)
+	if level != nil {
+		return fmt.Sprintf("--compression=%s,%d", string(mode), *level)
+	}
+
+	// Default levels if not specified
+	switch mode {
+	case backupprofile.CompressionModeZstd:
+		return "--compression=zstd,3"
+	case backupprofile.CompressionModeZlib:
+		return "--compression=zlib,6"
+	case backupprofile.CompressionModeLzma:
+		return "--compression=lzma,6"
+	}
+
+	// Fallback: just use the algorithm name
+	return fmt.Sprintf("--compression=%s", string(mode))
 }

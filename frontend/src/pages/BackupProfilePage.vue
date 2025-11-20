@@ -24,7 +24,10 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
+import CompressionCard from "../components/CompressionCard.vue";
 import { format } from "@formkit/tempo";
+import { useExpertMode } from "../common/expertMode";
+import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 
 /************
  * Variables
@@ -39,6 +42,10 @@ const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
 const scheduleSectionCollapsed = ref(false);
+const advancedSectionCollapsed = ref(true);
+
+// Expert mode
+const { expertMode } = useExpertMode();
 
 const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -111,6 +118,35 @@ const scheduleSectionDetails = computed(() => {
   return details;
 });
 
+const advancedSectionDetails = computed(() => {
+  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
+  const level = backupProfile.value.compressionLevel;
+
+  if (!expertMode.value) {
+    // Simple mode presets
+    if (mode === CompressionMode.CompressionModeNone) return "Compression: Off";
+    if (mode === CompressionMode.CompressionModeLz4) return "Compression: Fast";
+    if (mode === CompressionMode.CompressionModeZstd && level === 3) return "Compression: Balanced";
+    if (mode === CompressionMode.CompressionModeLzma && level === 6) return "Compression: Maximum";
+    return "Compression: Custom"; // Custom settings
+  }
+
+  // Expert mode summary
+  if (mode === CompressionMode.CompressionModeNone) {
+    return "No compression";
+  }
+
+  if (mode === CompressionMode.CompressionModeLz4) {
+    return "Compression: lz4 (fast)";
+  }
+
+  if (level !== null && level !== undefined) {
+    return `Compression: ${mode}, level ${level}`;
+  }
+
+  return `Compression: ${mode}`;
+});
+
 // Computed property for safe repository access
 const profileRepos = computed(() =>
   backupProfile.value.edges?.repositories?.filter(r => r !== null) ?? []
@@ -169,6 +205,7 @@ async function getData() {
 
     dataSectionCollapsed.value = backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = backupProfile.value.scheduleSectionCollapsed;
+    advancedSectionCollapsed.value = backupProfile.value.advancedSectionCollapsed;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -240,6 +277,14 @@ async function saveIcon(icon: Icon) {
   }
 }
 
+async function saveBackupProfile() {
+  try {
+    await backupProfileService.UpdateBackupProfile(backupProfile.value);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to save backup profile", error);
+  }
+}
+
 async function setPruningRule(pruningRule: ent.PruningRule) {
   try {
     backupProfile.value.edges.pruningRule = pruningRule;
@@ -269,15 +314,18 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
   }
 }
 
-async function toggleCollapse(type: "data" | "schedule") {
+async function toggleCollapse(type: "data" | "schedule" | "advanced") {
   if (type === "data") {
     dataSectionCollapsed.value = !dataSectionCollapsed.value;
-  } else {
+  } else if (type === "schedule") {
     scheduleSectionCollapsed.value = !scheduleSectionCollapsed.value;
+  } else if (type === "advanced") {
+    advancedSectionCollapsed.value = !advancedSectionCollapsed.value;
   }
   try {
     backupProfile.value.dataSectionCollapsed = dataSectionCollapsed.value;
     backupProfile.value.scheduleSectionCollapsed = scheduleSectionCollapsed.value;
+    backupProfile.value.advancedSectionCollapsed = advancedSectionCollapsed.value;
     await backupProfileService.UpdateBackupProfile(backupProfile.value);
   } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
@@ -463,6 +511,29 @@ watch(
                        :ask-for-save-before-leaving='true'
                        @update:pruning-rule='setPruningRule'>
           </PruningCard>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Section -->
+    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
+         :class='advancedSectionCollapsed ? "collapse-close" : "collapse-open"'>
+      <div
+        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
+        @click='toggleCollapse("advanced")'>
+        <span class='text-lg font-bold text-base-strong'>Advanced</span>
+        <span class='ml-2 transition-all duration-1000 ease-in-out'
+              :class='{ "opacity-100": advancedSectionCollapsed, "opacity-0": !advancedSectionCollapsed }'>{{
+            advancedSectionDetails
+          }}</span>
+      </div>
+
+      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
+        <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
+          <CompressionCard
+            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+            :compression-level='backupProfile.compressionLevel'
+            @update:compression='({ mode, level }) => { backupProfile.compressionMode = mode; backupProfile.compressionLevel = level; saveBackupProfile(); }' />
         </div>
       </div>
     </div>

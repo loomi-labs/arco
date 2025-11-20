@@ -29,10 +29,16 @@ const (
 	FieldExcludePaths = "exclude_paths"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
+	// FieldCompressionMode holds the string denoting the compression_mode field in the database.
+	FieldCompressionMode = "compression_mode"
+	// FieldCompressionLevel holds the string denoting the compression_level field in the database.
+	FieldCompressionLevel = "compression_level"
 	// FieldDataSectionCollapsed holds the string denoting the data_section_collapsed field in the database.
 	FieldDataSectionCollapsed = "data_section_collapsed"
 	// FieldScheduleSectionCollapsed holds the string denoting the schedule_section_collapsed field in the database.
 	FieldScheduleSectionCollapsed = "schedule_section_collapsed"
+	// FieldAdvancedSectionCollapsed holds the string denoting the advanced_section_collapsed field in the database.
+	FieldAdvancedSectionCollapsed = "advanced_section_collapsed"
 	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
 	EdgeRepositories = "repositories"
 	// EdgeArchives holds the string denoting the archives edge name in mutations.
@@ -90,8 +96,11 @@ var Columns = []string{
 	FieldBackupPaths,
 	FieldExcludePaths,
 	FieldIcon,
+	FieldCompressionMode,
+	FieldCompressionLevel,
 	FieldDataSectionCollapsed,
 	FieldScheduleSectionCollapsed,
+	FieldAdvancedSectionCollapsed,
 }
 
 var (
@@ -125,10 +134,14 @@ var (
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
 	DefaultExcludePaths []string
+	// CompressionLevelValidator is a validator for the "compression_level" field. It is called by the builders before save.
+	CompressionLevelValidator func(int) error
 	// DefaultDataSectionCollapsed holds the default value on creation for the "data_section_collapsed" field.
 	DefaultDataSectionCollapsed bool
 	// DefaultScheduleSectionCollapsed holds the default value on creation for the "schedule_section_collapsed" field.
 	DefaultScheduleSectionCollapsed bool
+	// DefaultAdvancedSectionCollapsed holds the default value on creation for the "advanced_section_collapsed" field.
+	DefaultAdvancedSectionCollapsed bool
 )
 
 // Icon defines the type for the "icon" enum field.
@@ -155,6 +168,35 @@ func IconValidator(i Icon) error {
 		return nil
 	default:
 		return fmt.Errorf("backupprofile: invalid enum value for icon field: %q", i)
+	}
+}
+
+// CompressionMode defines the type for the "compression_mode" enum field.
+type CompressionMode string
+
+// CompressionModeLz4 is the default value of the CompressionMode enum.
+const DefaultCompressionMode = CompressionModeLz4
+
+// CompressionMode values.
+const (
+	CompressionModeNone CompressionMode = "none"
+	CompressionModeLz4  CompressionMode = "lz4"
+	CompressionModeZstd CompressionMode = "zstd"
+	CompressionModeZlib CompressionMode = "zlib"
+	CompressionModeLzma CompressionMode = "lzma"
+)
+
+func (cm CompressionMode) String() string {
+	return string(cm)
+}
+
+// CompressionModeValidator is a validator for the "compression_mode" field enum values. It is called by the builders before save.
+func CompressionModeValidator(cm CompressionMode) error {
+	switch cm {
+	case CompressionModeNone, CompressionModeLz4, CompressionModeZstd, CompressionModeZlib, CompressionModeLzma:
+		return nil
+	default:
+		return fmt.Errorf("backupprofile: invalid enum value for compression_mode field: %q", cm)
 	}
 }
 
@@ -191,6 +233,16 @@ func ByIcon(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIcon, opts...).ToFunc()
 }
 
+// ByCompressionMode orders the results by the compression_mode field.
+func ByCompressionMode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompressionMode, opts...).ToFunc()
+}
+
+// ByCompressionLevel orders the results by the compression_level field.
+func ByCompressionLevel(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompressionLevel, opts...).ToFunc()
+}
+
 // ByDataSectionCollapsed orders the results by the data_section_collapsed field.
 func ByDataSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDataSectionCollapsed, opts...).ToFunc()
@@ -199,6 +251,11 @@ func ByDataSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
 // ByScheduleSectionCollapsed orders the results by the schedule_section_collapsed field.
 func ByScheduleSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldScheduleSectionCollapsed, opts...).ToFunc()
+}
+
+// ByAdvancedSectionCollapsed orders the results by the advanced_section_collapsed field.
+func ByAdvancedSectionCollapsed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdvancedSectionCollapsed, opts...).ToFunc()
 }
 
 // ByRepositoriesCount orders the results by repositories count.

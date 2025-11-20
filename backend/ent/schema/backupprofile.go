@@ -48,12 +48,30 @@ func (BackupProfile) Fields() []ent.Field {
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),
+		field.Enum("compression_mode").
+			StructTag(`json:"compressionMode"`).
+			Values("none", "lz4", "zstd", "zlib", "lzma").
+			Default("lz4").
+			Comment("Compression algorithm for backups"),
+		field.Int("compression_level").
+			StructTag(`json:"compressionLevel"`).
+			Optional().
+			Nillable().
+			Comment("Compression level (algorithm-specific range)").
+			Min(0).
+			Max(22),
+
+		// UI States
 		field.Bool("data_section_collapsed").
 			StructTag(`json:"dataSectionCollapsed"`).
 			Default(false),
 		field.Bool("schedule_section_collapsed").
 			StructTag(`json:"scheduleSectionCollapsed"`).
 			Default(false),
+		field.Bool("advanced_section_collapsed").
+			StructTag(`json:"advancedSectionCollapsed"`).
+			Default(true).
+			Comment("UI state: whether advanced settings section is collapsed"),
 	}
 }
 

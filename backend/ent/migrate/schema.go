@@ -72,8 +72,11 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
+		{Name: "compression_mode", Type: field.TypeEnum, Enums: []string{"none", "lz4", "zstd", "zlib", "lzma"}, Default: "lz4"},
+		{Name: "compression_level", Type: field.TypeInt, Nullable: true},
 		{Name: "data_section_collapsed", Type: field.TypeBool, Default: false},
 		{Name: "schedule_section_collapsed", Type: field.TypeBool, Default: false},
+		{Name: "advanced_section_collapsed", Type: field.TypeBool, Default: true},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{

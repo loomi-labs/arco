@@ -99,6 +99,47 @@ func (_u *BackupProfileUpdate) SetNillableIcon(v *backupprofile.Icon) *BackupPro
 	return _u
 }
 
+// SetCompressionMode sets the "compression_mode" field.
+func (_u *BackupProfileUpdate) SetCompressionMode(v backupprofile.CompressionMode) *BackupProfileUpdate {
+	_u.mutation.SetCompressionMode(v)
+	return _u
+}
+
+// SetNillableCompressionMode sets the "compression_mode" field if the given value is not nil.
+func (_u *BackupProfileUpdate) SetNillableCompressionMode(v *backupprofile.CompressionMode) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetCompressionMode(*v)
+	}
+	return _u
+}
+
+// SetCompressionLevel sets the "compression_level" field.
+func (_u *BackupProfileUpdate) SetCompressionLevel(v int) *BackupProfileUpdate {
+	_u.mutation.ResetCompressionLevel()
+	_u.mutation.SetCompressionLevel(v)
+	return _u
+}
+
+// SetNillableCompressionLevel sets the "compression_level" field if the given value is not nil.
+func (_u *BackupProfileUpdate) SetNillableCompressionLevel(v *int) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetCompressionLevel(*v)
+	}
+	return _u
+}
+
+// AddCompressionLevel adds value to the "compression_level" field.
+func (_u *BackupProfileUpdate) AddCompressionLevel(v int) *BackupProfileUpdate {
+	_u.mutation.AddCompressionLevel(v)
+	return _u
+}
+
+// ClearCompressionLevel clears the value of the "compression_level" field.
+func (_u *BackupProfileUpdate) ClearCompressionLevel() *BackupProfileUpdate {
+	_u.mutation.ClearCompressionLevel()
+	return _u
+}
+
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
 func (_u *BackupProfileUpdate) SetDataSectionCollapsed(v bool) *BackupProfileUpdate {
 	_u.mutation.SetDataSectionCollapsed(v)
@@ -123,6 +164,20 @@ func (_u *BackupProfileUpdate) SetScheduleSectionCollapsed(v bool) *BackupProfil
 func (_u *BackupProfileUpdate) SetNillableScheduleSectionCollapsed(v *bool) *BackupProfileUpdate {
 	if v != nil {
 		_u.SetScheduleSectionCollapsed(*v)
+	}
+	return _u
+}
+
+// SetAdvancedSectionCollapsed sets the "advanced_section_collapsed" field.
+func (_u *BackupProfileUpdate) SetAdvancedSectionCollapsed(v bool) *BackupProfileUpdate {
+	_u.mutation.SetAdvancedSectionCollapsed(v)
+	return _u
+}
+
+// SetNillableAdvancedSectionCollapsed sets the "advanced_section_collapsed" field if the given value is not nil.
+func (_u *BackupProfileUpdate) SetNillableAdvancedSectionCollapsed(v *bool) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetAdvancedSectionCollapsed(*v)
 	}
 	return _u
 }
@@ -338,6 +393,16 @@ func (_u *BackupProfileUpdate) check() error {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CompressionMode(); ok {
+		if err := backupprofile.CompressionModeValidator(v); err != nil {
+			return &ValidationError{Name: "compression_mode", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.compression_mode": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CompressionLevel(); ok {
+		if err := backupprofile.CompressionLevelValidator(v); err != nil {
+			return &ValidationError{Name: "compression_level", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.compression_level": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -387,11 +452,26 @@ func (_u *BackupProfileUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
+	if value, ok := _u.mutation.CompressionMode(); ok {
+		_spec.SetField(backupprofile.FieldCompressionMode, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CompressionLevel(); ok {
+		_spec.SetField(backupprofile.FieldCompressionLevel, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCompressionLevel(); ok {
+		_spec.AddField(backupprofile.FieldCompressionLevel, field.TypeInt, value)
+	}
+	if _u.mutation.CompressionLevelCleared() {
+		_spec.ClearField(backupprofile.FieldCompressionLevel, field.TypeInt)
+	}
 	if value, ok := _u.mutation.DataSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.ScheduleSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AdvancedSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldAdvancedSectionCollapsed, field.TypeBool, value)
 	}
 	if _u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -672,6 +752,47 @@ func (_u *BackupProfileUpdateOne) SetNillableIcon(v *backupprofile.Icon) *Backup
 	return _u
 }
 
+// SetCompressionMode sets the "compression_mode" field.
+func (_u *BackupProfileUpdateOne) SetCompressionMode(v backupprofile.CompressionMode) *BackupProfileUpdateOne {
+	_u.mutation.SetCompressionMode(v)
+	return _u
+}
+
+// SetNillableCompressionMode sets the "compression_mode" field if the given value is not nil.
+func (_u *BackupProfileUpdateOne) SetNillableCompressionMode(v *backupprofile.CompressionMode) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetCompressionMode(*v)
+	}
+	return _u
+}
+
+// SetCompressionLevel sets the "compression_level" field.
+func (_u *BackupProfileUpdateOne) SetCompressionLevel(v int) *BackupProfileUpdateOne {
+	_u.mutation.ResetCompressionLevel()
+	_u.mutation.SetCompressionLevel(v)
+	return _u
+}
+
+// SetNillableCompressionLevel sets the "compression_level" field if the given value is not nil.
+func (_u *BackupProfileUpdateOne) SetNillableCompressionLevel(v *int) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetCompressionLevel(*v)
+	}
+	return _u
+}
+
+// AddCompressionLevel adds value to the "compression_level" field.
+func (_u *BackupProfileUpdateOne) AddCompressionLevel(v int) *BackupProfileUpdateOne {
+	_u.mutation.AddCompressionLevel(v)
+	return _u
+}
+
+// ClearCompressionLevel clears the value of the "compression_level" field.
+func (_u *BackupProfileUpdateOne) ClearCompressionLevel() *BackupProfileUpdateOne {
+	_u.mutation.ClearCompressionLevel()
+	return _u
+}
+
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
 func (_u *BackupProfileUpdateOne) SetDataSectionCollapsed(v bool) *BackupProfileUpdateOne {
 	_u.mutation.SetDataSectionCollapsed(v)
@@ -696,6 +817,20 @@ func (_u *BackupProfileUpdateOne) SetScheduleSectionCollapsed(v bool) *BackupPro
 func (_u *BackupProfileUpdateOne) SetNillableScheduleSectionCollapsed(v *bool) *BackupProfileUpdateOne {
 	if v != nil {
 		_u.SetScheduleSectionCollapsed(*v)
+	}
+	return _u
+}
+
+// SetAdvancedSectionCollapsed sets the "advanced_section_collapsed" field.
+func (_u *BackupProfileUpdateOne) SetAdvancedSectionCollapsed(v bool) *BackupProfileUpdateOne {
+	_u.mutation.SetAdvancedSectionCollapsed(v)
+	return _u
+}
+
+// SetNillableAdvancedSectionCollapsed sets the "advanced_section_collapsed" field if the given value is not nil.
+func (_u *BackupProfileUpdateOne) SetNillableAdvancedSectionCollapsed(v *bool) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetAdvancedSectionCollapsed(*v)
 	}
 	return _u
 }
@@ -924,6 +1059,16 @@ func (_u *BackupProfileUpdateOne) check() error {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.icon": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CompressionMode(); ok {
+		if err := backupprofile.CompressionModeValidator(v); err != nil {
+			return &ValidationError{Name: "compression_mode", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.compression_mode": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CompressionLevel(); ok {
+		if err := backupprofile.CompressionLevelValidator(v); err != nil {
+			return &ValidationError{Name: "compression_level", err: fmt.Errorf(`ent: validator failed for field "BackupProfile.compression_level": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -990,11 +1135,26 @@ func (_u *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupPro
 	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
+	if value, ok := _u.mutation.CompressionMode(); ok {
+		_spec.SetField(backupprofile.FieldCompressionMode, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CompressionLevel(); ok {
+		_spec.SetField(backupprofile.FieldCompressionLevel, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCompressionLevel(); ok {
+		_spec.AddField(backupprofile.FieldCompressionLevel, field.TypeInt, value)
+	}
+	if _u.mutation.CompressionLevelCleared() {
+		_spec.ClearField(backupprofile.FieldCompressionLevel, field.TypeInt)
+	}
 	if value, ok := _u.mutation.DataSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldDataSectionCollapsed, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.ScheduleSectionCollapsed(); ok {
 		_spec.SetField(backupprofile.FieldScheduleSectionCollapsed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AdvancedSectionCollapsed(); ok {
+		_spec.SetField(backupprofile.FieldAdvancedSectionCollapsed, field.TypeBool, value)
 	}
 	if _u.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
