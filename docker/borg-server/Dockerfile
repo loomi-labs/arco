@@ -30,7 +30,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/c
 FROM ubuntu:24.04
 
 # Build arguments for borg version
-ARG BORG_VERSION=1.4.1
+ARG BORG_VERSION=1.4.2
 
 # Install SSH and required packages
 RUN apt-get update && apt-get install -y \

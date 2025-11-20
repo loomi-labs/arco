@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        borg-version: ["1.4.0", "1.4.1"]
+        borg-version: ["1.4.0", "1.4.1", "1.4.2"]
         base-image: ["ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"]
     permissions:
       contents: read

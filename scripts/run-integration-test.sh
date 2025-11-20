@@ -36,7 +36,8 @@ print_usage() {
     echo "Examples:"
     echo "  $0 --client-version 1.4.0 --server-version 1.4.0"
     echo "  $0 --client-version 1.4.1 --server-version 1.4.1 --base-image ubuntu:22.04"
-    echo "  $0 --client-version 1.4.1 --server-version 1.4.1 --verbose"
+    echo "  $0 --client-version 1.4.2 --server-version 1.4.2"
+    echo "  $0 --client-version 1.4.2 --server-version 1.4.2 --verbose"
 }
 
 log_info() {
