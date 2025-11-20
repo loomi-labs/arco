@@ -10,6 +10,7 @@ import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
+import CompressionCard from "../components/CompressionCard.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
@@ -18,6 +19,7 @@ import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
+import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Browser } from "@wailsio/runtime";
@@ -119,6 +121,11 @@ function saveBackupPaths(paths: string[]) {
 
 function saveExcludePaths(paths: string[]) {
   backupProfile.value.excludePaths = paths;
+}
+
+function saveCompression({ mode, level }: { mode: CompressionMode; level: number | null }) {
+  backupProfile.value.compressionMode = mode;
+  backupProfile.value.compressionLevel = level;
 }
 
 function selectIcon(icon: Icon) {
@@ -294,7 +301,7 @@ onBeforeRouteLeave(async (to, _from) => {
             exclude the secretfolder in your home directory
           </li>
         </ul>
-        <!--        link to borg help -->
+        <!-- link to borg help -->
         <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
            class='link flex gap-1 pt-1'>
           Learn more about exclusion patterns
@@ -325,6 +332,13 @@ onBeforeRouteLeave(async (to, _from) => {
         <!-- Icon -->
         <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
       </div>
+
+      <!-- Compression Card -->
+      <h2 class='text-3xl pt-8 pb-4'>Compression</h2>
+      <CompressionCard
+        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+        :compression-level='backupProfile.compressionLevel'
+        @update:compression='saveCompression' />
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>

@@ -194,6 +194,16 @@ export class BackupProfile {
     "icon": backupprofile$0.Icon;
 
     /**
+     * Compression algorithm for backups
+     */
+    "compressionMode": backupprofile$0.CompressionMode;
+
+    /**
+     * Compression level (algorithm-specific range)
+     */
+    "compressionLevel": number | null;
+
+    /**
      * DataSectionCollapsed holds the value of the "data_section_collapsed" field.
      */
     "dataSectionCollapsed": boolean;
@@ -202,6 +212,11 @@ export class BackupProfile {
      * ScheduleSectionCollapsed holds the value of the "schedule_section_collapsed" field.
      */
     "scheduleSectionCollapsed": boolean;
+
+    /**
+     * UI state: whether advanced settings section is collapsed
+     */
+    "advancedSectionCollapsed": boolean;
 
     /**
      * Edges holds the relations/edges for other nodes in the graph.
@@ -235,11 +250,20 @@ export class BackupProfile {
         if (!("icon" in $$source)) {
             this["icon"] = backupprofile$0.Icon.$zero;
         }
+        if (!("compressionMode" in $$source)) {
+            this["compressionMode"] = backupprofile$0.CompressionMode.$zero;
+        }
+        if (!("compressionLevel" in $$source)) {
+            this["compressionLevel"] = null;
+        }
         if (!("dataSectionCollapsed" in $$source)) {
             this["dataSectionCollapsed"] = false;
         }
         if (!("scheduleSectionCollapsed" in $$source)) {
             this["scheduleSectionCollapsed"] = false;
+        }
+        if (!("advancedSectionCollapsed" in $$source)) {
+            this["advancedSectionCollapsed"] = false;
         }
         if (!("edges" in $$source)) {
             this["edges"] = (new BackupProfileEdges());
@@ -254,7 +278,7 @@ export class BackupProfile {
     static createFrom($$source: any = {}): BackupProfile {
         const $$createField5_0 = $$createType5;
         const $$createField6_0 = $$createType5;
-        const $$createField10_0 = $$createType6;
+        const $$createField13_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupPaths" in $$parsedSource) {
             $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
@@ -263,7 +287,7 @@ export class BackupProfile {
             $$parsedSource["excludePaths"] = $$createField6_0($$parsedSource["excludePaths"]);
         }
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField10_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
         }
         return new BackupProfile($$parsedSource as Partial<BackupProfile>);
     }

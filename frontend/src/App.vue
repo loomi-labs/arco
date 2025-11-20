@@ -13,6 +13,7 @@ import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
 import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
+import { initializeExpertMode, useExpertMode } from "./common/expertMode";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
@@ -90,6 +91,13 @@ useSubscriptionNotifications();
 
 // Initialize theme from user settings
 initializeTheme();
+
+// Initialize expert mode from user settings
+initializeExpertMode();
+
+// Setup expert mode settings listener
+const { setupSettingsListener } = useExpertMode();
+cleanupFunctions.push(setupSettingsListener());
 
 getStartupState();
 

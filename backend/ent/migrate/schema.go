@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -72,8 +73,11 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
+		{Name: "compression_mode", Type: field.TypeEnum, Enums: []string{"none", "lz4", "zstd", "zlib", "lzma"}, Default: "lz4"},
+		{Name: "compression_level", Type: field.TypeInt, Nullable: true},
 		{Name: "data_section_collapsed", Type: field.TypeBool, Default: false},
 		{Name: "schedule_section_collapsed", Type: field.TypeBool, Default: false},
+		{Name: "advanced_section_collapsed", Type: field.TypeBool, Default: true},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
@@ -305,6 +309,10 @@ func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
 	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
+	BackupProfilesTable.Annotation = &entsql.Annotation{}
+	BackupProfilesTable.Annotation.Checks = map[string]string{
+		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode IN ('zlib', 'lzma') AND compression_level >= 0 AND compression_level <= 9)\n\t\t\t\t)",
+	}
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable

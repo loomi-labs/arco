@@ -28,6 +28,7 @@ const (
 	EventCheckoutStateChanged   Event = "checkoutStateChanged"
 	EventSubscriptionAdded      Event = "subscriptionAdded"
 	EventSubscriptionCancelled  Event = "subscriptionCancelled"
+	EventSettingsChanged        Event = "settingsChanged"
 	EventOperationErrorOccurred Event = "operationErrorOccurred"
 )
 
@@ -48,6 +49,7 @@ var AllEvents = []Event{
 	EventCheckoutStateChanged,
 	EventSubscriptionAdded,
 	EventSubscriptionCancelled,
+	EventSettingsChanged,
 	EventOperationErrorOccurred,
 }
 
@@ -101,6 +103,10 @@ func EventRepositoryUpdatedString() string {
 
 func EventRepositoryDeletedString() string {
 	return fmt.Sprintf("%s", EventRepositoryDeleted.String())
+}
+
+func EventSettingsChangedString() string {
+	return fmt.Sprintf("%s", EventSettingsChanged.String())
 }
 
 type RuntimeEventEmitter struct{}
