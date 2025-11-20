@@ -12,6 +12,7 @@ import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types
 import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
 import { useSubscriptionNotifications } from "./common/subscription";
+import { initializeTheme } from "./common/theme";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
@@ -86,6 +87,9 @@ function toTitleCase(str: string | undefined): string {
 
 // Initialize global subscription notifications
 useSubscriptionNotifications();
+
+// Initialize theme from user settings
+initializeTheme();
 
 getStartupState();
 
