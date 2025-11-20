@@ -111,9 +111,14 @@ const scheduleSectionDetails = computed(() => {
   return details;
 });
 
+// Computed property for safe repository access
+const profileRepos = computed(() =>
+  backupProfile.value.edges?.repositories?.filter(r => r !== null) ?? []
+);
+
 // Determine if Add Repository button should be in title (true) or as card (false)
 const shouldShowPlusInTitle = computed(() => {
-  const repoCount = backupProfile.value.edges.repositories?.filter(r => r !== null).length ?? 0;
+  const repoCount = profileRepos.value.length;
 
   // Determine columns based on current breakpoint
   let columns = 1;
@@ -142,14 +147,21 @@ const shouldShowPlusInTitle = computed(() => {
  * Functions
  ************/
 
+function handleKeyboardActivation(event: KeyboardEvent, action: () => void) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    action();
+  }
+}
+
 async function getData() {
   try {
     backupProfile.value = await backupProfileService.GetBackupProfile(parseInt(router.currentRoute.value.params.id as string)) ?? BackupProfile.createFrom();
     name.value = backupProfile.value.name;
 
-    if (!selectedRepoId.value || !backupProfile.value.edges.repositories?.filter(r => r !== null).some(repo => repo.id === selectedRepoId.value)) {
+    if (!selectedRepoId.value || !profileRepos.value.some(repo => repo.id === selectedRepoId.value)) {
       // Select the first repo by default
-      selectedRepoId.value = backupProfile.value.edges.repositories?.filter(r => r !== null)[0].id;
+      selectedRepoId.value = profileRepos.value[0]?.id;
     }
 
     // Get existing repositories
@@ -470,14 +482,14 @@ watch(
       </div>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 mb-4'>
         <!-- Repositories -->
-        <div v-for='repo in backupProfile.edges?.repositories?.filter(r => r !== null)' :key='repo.id' class='min-w-80'>
+        <div v-for='repo in profileRepos' :key='repo.id' class='min-w-80'>
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
-            :highlight='(backupProfile.edges.repositories?.length ?? 0)  > 1 && repo.id === selectedRepoId'
-            :show-hover='(backupProfile.edges.repositories?.length ?? 0)  > 1'
+            :highlight='profileRepos.length > 1 && repo.id === selectedRepoId'
+            :show-hover='profileRepos.length > 1'
             :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
-            :is-delete-shown='(backupProfile.edges.repositories?.length ?? 0) > 1'
+            :is-delete-shown='profileRepos.length > 1'
             @click='() => selectedRepoId = repo.id'
             @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
           >
@@ -486,10 +498,14 @@ watch(
         <!-- Add Repository Card -->
         <div
           v-if='!shouldShowPlusInTitle'
-          @click='() => addRepoModal?.showModal()'
-          class='flex justify-center items-center gap-2 w-full min-w-80 ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6'
+          role='button'
+          tabindex='0'
+          @click='addRepoModal?.showModal()'
+          @keydown='(e) => handleKeyboardActivation(e, () => addRepoModal?.showModal())'
+          class='flex justify-center items-center gap-2 w-full min-w-80 ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+          aria-label='Add Repository'
         >
-          <PlusCircleIcon class='size-8' />
+          <PlusCircleIcon class='size-8' aria-hidden='true' />
           <div class='text-base font-semibold'>Add Repository</div>
         </div>
 
@@ -507,20 +523,26 @@ watch(
                 <ConnectRepo
                   :show-connected-repos='true'
                   :use-single-repo='true'
-                  :existing-repos='existingRepos.filter(r => !backupProfile.edges.repositories?.filter(repo => repo !== null).some(repo => repo.id === r.id))'
+                  :existing-repos='existingRepos.filter(r => !profileRepos.some(repo => repo.id === r.id))'
                   @click:repo='(repo) => addRepo(repo)' />
 
                 <div class='divider'></div>
 
                 <!-- Add new Repository -->
-                <div class='group flex justify-between items-end ac-card-hover w-96 p-10'
-                     @click='router.push(Page.AddRepository)'>
+                <div
+                  class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                  role='button'
+                  tabindex='0'
+                  @click='router.push(Page.AddRepository)'
+                  @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
+                  aria-label='Create new repository'
+                >
                   <p>Create new repository</p>
                   <div class='relative size-24 group-hover:text-arco-cloud-repo'>
-                    <CircleStackIcon class='absolute inset-0 size-24 z-10' />
+                    <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
                     <div
                       class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-                      <PlusCircleIcon class='size-10' />
+                      <PlusCircleIcon class='size-10' aria-hidden='true' />
                     </div>
                   </div>
                 </div>
