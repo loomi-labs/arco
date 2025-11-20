@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage.vue";
 import AddBackupProfilePage from "./pages/BackupProfileAddPage.vue";
 import AddRepositoryPage from "./pages/RepositoryAddPage.vue";
 import SubscriptionPage from "./pages/SubscriptionPage.vue";
+import SettingsPage from "./pages/SettingsPage.vue";
 
 // Pages
 export enum Page {
@@ -15,6 +16,7 @@ export enum Page {
   Repository = "/repository/:id",
   AddRepository = "/repository/new",
   Subscription = "/subscription",
+  Settings = "/settings",
 }
 
 // Anchors
@@ -30,6 +32,7 @@ const routes: RouteRecordRaw[] = [
   { path: Page.Repository, component: RepositoryPage },
   { path: Page.AddRepository, component: AddRepositoryPage },
   { path: Page.Subscription, component: SubscriptionPage },
+  { path: Page.Settings, component: SettingsPage },
   { path: "/", redirect: Page.Dashboard }
 ];
 
