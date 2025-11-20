@@ -29,7 +29,10 @@ import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loom
 const router = useRouter();
 const toast = useToast();
 const repo = ref<Repository>(Repository.createFrom());
-const repoId = computed(() => parseInt(router.currentRoute.value.params.id as string) ?? 0);
+const repoId = computed(() => {
+  const parsed = parseInt(router.currentRoute.value.params.id as string, 10);
+  return isNaN(parsed) ? 0 : parsed;
+});
 const loading = ref(true);
 
 const totalSize = ref<string>("-");
