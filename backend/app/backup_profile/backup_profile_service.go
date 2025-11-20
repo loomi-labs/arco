@@ -688,6 +688,19 @@ func validateCompression(mode backupprofile.CompressionMode, level *int) error {
 		return fmt.Errorf("compression mode '%s' does not support compression level", mode)
 	}
 
+	// Modes that require a level (database constraint)
+	requiresLevel := map[backupprofile.CompressionMode]bool{
+		backupprofile.CompressionModeNone: false,
+		backupprofile.CompressionModeLz4:  false,
+		backupprofile.CompressionModeZstd: true,
+		backupprofile.CompressionModeZlib: true,
+		backupprofile.CompressionModeLzma: true,
+	}
+
+	if requiresLevel[mode] && level == nil {
+		return fmt.Errorf("compression mode '%s' requires a compression level", mode)
+	}
+
 	// Validate level ranges for modes that support them
 	if level != nil {
 		switch mode {
@@ -700,8 +713,8 @@ func validateCompression(mode backupprofile.CompressionMode, level *int) error {
 				return fmt.Errorf("zlib compression level must be between 0 and 9, got %d", *level)
 			}
 		case backupprofile.CompressionModeLzma:
-			if *level < 0 || *level > 9 {
-				return fmt.Errorf("lzma compression level must be between 0 and 9, got %d", *level)
+			if *level < 0 || *level > 6 {
+				return fmt.Errorf("lzma compression level must be between 0 and 6, got %d", *level)
 			}
 		case backupprofile.CompressionModeNone, backupprofile.CompressionModeLz4:
 			// These modes don't support levels, already validated above
