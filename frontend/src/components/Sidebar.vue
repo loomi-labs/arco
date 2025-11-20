@@ -3,12 +3,12 @@
 import { onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { Bars3Icon, HomeIcon, MoonIcon, PlusIcon, SunIcon, UserCircleIcon } from "@heroicons/vue/24/outline";
+import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon } from "@heroicons/vue/24/outline";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
-import { useBreakpoints, useDark, useToggle } from "@vueuse/core";
+import { useBreakpoints } from "@vueuse/core";
 import { useAuth } from "../common/auth";
 import { useFeatureFlags } from "../common/featureFlags";
 import { showAndLogError } from "../common/logger";
@@ -31,19 +31,12 @@ import { backupProfileDeletedEvent } from "../common/events";
 
 const router = useRouter();
 const route = useRoute();
-const { isAuthenticated, logout, userEmail } = useAuth();
+const { isAuthenticated, userEmail } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
 const backupProfiles = ref<ent.BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
 const isMobileMenuOpen = ref(false);
-
-const isDark = useDark({
-  attribute: "data-theme",
-  valueDark: "dark",
-  valueLight: "light"
-});
-const toggleDark = useToggle(isDark);
 
 // Workaround: Using reactive breakpoint detection to conditionally apply position classes.
 // Using 'fixed xl:sticky' directly in the template causes CSS conflicts in production builds
@@ -68,14 +61,6 @@ function showAuthModal() {
 function onAuthenticated() {
   // User has successfully authenticated
   // No additional action needed - auth state will update automatically
-}
-
-async function handleLogout() {
-  try {
-    await logout();
-  } catch (_error) {
-    // Error is handled in auth composable
-  }
 }
 
 async function loadData() {
@@ -265,33 +250,52 @@ onUnmounted(() => {
 
     <!-- Bottom utilities -->
     <div class='p-4 border-t border-base-300 space-y-2'>
-      <!-- Theme toggle -->
-      <button
-        @click='toggleDark()'
-        class='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors'
-      >
-        <SunIcon v-if='isDark' class='size-5' />
-        <MoonIcon v-else class='size-5' />
-        <span>{{ isDark ? 'Light Mode' : 'Dark Mode' }}</span>
-      </button>
-
-      <!-- Auth Status (only show if login beta is enabled) -->
-      <template v-if='featureFlags.loginBetaEnabled'>
-        <div v-if='isAuthenticated' class='dropdown dropdown-top dropdown-end w-full'>
-          <div tabindex='0' role='button' class='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors'>
-            <div class='relative'>
-              <UserCircleIcon class='size-5' />
-              <span class='absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full'></span>
-            </div>
-            <span class='flex-1 truncate text-left'>{{ userEmail }}</span>
-          </div>
-          <ul tabindex='0' class='menu dropdown-content bg-base-100 rounded-box z-[1] mb-2 w-52 p-2 shadow border border-base-300'>
-            <li><a @click='navigateTo(Page.Subscription)'>Subscription</a></li>
-            <li><a @click='handleLogout'>Logout</a></li>
-          </ul>
-        </div>
+      <!-- Subscription (only show if authenticated and login beta is enabled) -->
+      <template v-if='featureFlags.loginBetaEnabled && isAuthenticated'>
         <button
-          v-else
+          @click='navigateTo(Page.Subscription)'
+          :class='[
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+            isActiveRoute(Page.Subscription)
+              ? "bg-primary/20 border-l-4 border-primary font-semibold"
+              : "hover:bg-base-200"
+          ]'
+        >
+          <CreditCardIcon class='size-5' />
+          <span>Subscription</span>
+        </button>
+      </template>
+
+      <!-- Settings (only show if login beta is enabled) -->
+      <template v-if='featureFlags.loginBetaEnabled'>
+        <button
+          @click='navigateTo(Page.Settings)'
+          :class='[
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+            isActiveRoute(Page.Settings)
+              ? "bg-primary/20 border-l-4 border-primary font-semibold"
+              : "hover:bg-base-200"
+          ]'
+        >
+          <Cog6ToothIcon class='size-5' />
+          <span>Settings</span>
+        </button>
+      </template>
+
+      <!-- User Email Display (only show if authenticated and login beta is enabled) -->
+      <template v-if='featureFlags.loginBetaEnabled && isAuthenticated'>
+        <div class='flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200'>
+          <div class='relative'>
+            <UserCircleIcon class='size-5' />
+            <span class='absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full'></span>
+          </div>
+          <span class='flex-1 truncate text-left text-sm'>{{ userEmail }}</span>
+        </div>
+      </template>
+
+      <!-- Login Button (only show if not authenticated and login beta is enabled) -->
+      <template v-if='featureFlags.loginBetaEnabled && !isAuthenticated'>
+        <button
           @click='showAuthModal'
           class='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors'
         >
