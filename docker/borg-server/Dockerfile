@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     ca-certificates \
     curl \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories (handle existing user/group conflicts)
