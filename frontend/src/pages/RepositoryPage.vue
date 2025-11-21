@@ -531,7 +531,7 @@ onUnmounted(() => {
             <div class='flex items-center gap-2'>
               <div v-if='hasCheckHistory' class='text-sm opacity-70 flex flex-col gap-1'>
                 <div v-if='repo.lastFullCheckAt' class='flex items-center gap-2'>
-                  <span class='tooltip' :data-tip='toLongDateString(repo.lastFullCheckAt)'>
+                  <span class='tooltip' :data-tip='toLongDateString(repo.lastFullCheckAt, true)'>
                     Last full check: {{ toRelativeTimeString(repo.lastFullCheckAt, true) }}
                   </span>
                   <div v-if='repo.fullCheckError && repo.fullCheckError.length > 0'
@@ -546,7 +546,7 @@ onUnmounted(() => {
                   </span>
                 </div>
                 <div v-if='shouldShowQuickCheck' class='flex items-center gap-2'>
-                  <span class='tooltip' :data-tip='toLongDateString(repo.lastQuickCheckAt!)'>
+                  <span class='tooltip' :data-tip='toLongDateString(repo.lastQuickCheckAt!, true)'>
                     Last quick check: {{ toRelativeTimeString(repo.lastQuickCheckAt!, true) }}
                   </span>
                   <div v-if='repo.quickCheckError && repo.quickCheckError.length > 0'
