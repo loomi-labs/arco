@@ -285,6 +285,13 @@ export function QueueBackups(backupIds: types$0.BackupId[]): $CancellablePromise
 }
 
 /**
+ * QueueCheck queues a repository integrity check operation
+ */
+export function QueueCheck(repoId: number, quickVerification: boolean): $CancellablePromise<string> {
+    return $Call.ByID(4176731931, repoId, quickVerification);
+}
+
+/**
  * QueuePrune queues a prune operation
  */
 export function QueuePrune(backupId: types$0.BackupId): $CancellablePromise<string> {

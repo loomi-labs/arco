@@ -956,6 +956,14 @@ export class Repository {
     "lastBackupWarning"?: string;
 
     /**
+     * Check tracking
+     */
+    "lastQuickCheckAt"?: time$0.Time | null;
+    "quickCheckError"?: string[];
+    "lastFullCheckAt"?: time$0.Time | null;
+    "fullCheckError"?: string[];
+
+    /**
      * Storage Statistics
      * Actual storage used (compressed + deduplicated)
      */
@@ -1026,12 +1034,20 @@ export class Repository {
     static createFrom($$source: any = {}): Repository {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
+        const $$createField10_0 = $$createType41;
+        const $$createField12_0 = $$createType41;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
         }
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
+        }
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField10_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField12_0($$parsedSource["fullCheckError"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }
@@ -1065,6 +1081,14 @@ export class RepositoryWithQueue {
     "lastBackupTime"?: time$0.Time | null;
     "lastBackupError"?: string;
     "lastBackupWarning"?: string;
+
+    /**
+     * Check tracking
+     */
+    "lastQuickCheckAt"?: time$0.Time | null;
+    "quickCheckError"?: string[];
+    "lastFullCheckAt"?: time$0.Time | null;
+    "fullCheckError"?: string[];
 
     /**
      * Storage Statistics
@@ -1142,8 +1166,10 @@ export class RepositoryWithQueue {
     static createFrom($$source: any = {}): RepositoryWithQueue {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField14_0 = $$createType43;
-        const $$createField15_0 = $$createType42;
+        const $$createField10_0 = $$createType41;
+        const $$createField12_0 = $$createType41;
+        const $$createField18_0 = $$createType44;
+        const $$createField19_0 = $$createType43;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1151,11 +1177,17 @@ export class RepositoryWithQueue {
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField10_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField12_0($$parsedSource["fullCheckError"]);
+        }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField14_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField18_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField15_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField19_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
@@ -1178,7 +1210,7 @@ export class Running {
      * Creates a new Running instance from a string or object.
      */
     static createFrom($$source: any = {}): Running {
-        const $$createField0_0 = $$createType45;
+        const $$createField0_0 = $$createType46;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("progress" in $$parsedSource) {
             $$parsedSource["progress"] = $$createField0_0($$parsedSource["progress"]);
@@ -1253,8 +1285,8 @@ export class SerializableQueuedOperation {
      * Creates a new SerializableQueuedOperation instance from a string or object.
      */
     static createFrom($$source: any = {}): SerializableQueuedOperation {
-        const $$createField3_0 = $$createType46;
-        const $$createField4_0 = $$createType47;
+        const $$createField3_0 = $$createType47;
+        const $$createField4_0 = $$createType48;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("operationUnion" in $$parsedSource) {
             $$parsedSource["operationUnion"] = $$createField3_0($$parsedSource["operationUnion"]);
@@ -1368,10 +1400,11 @@ const $$createType37 = PruningDate.createFrom;
 const $$createType38 = $Create.Array($$createType37);
 const $$createType39 = LocationUnion.createFrom;
 const $$createType40 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType41 = SerializableQueuedOperation.createFrom;
-const $$createType42 = $Create.Nullable($$createType41);
-const $$createType43 = $Create.Array($$createType42);
-const $$createType44 = Progress.createFrom;
-const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = statemachine$0.OperationUnion.createFrom;
-const $$createType47 = OperationStatusUnion.createFrom;
+const $$createType41 = $Create.Array($Create.Any);
+const $$createType42 = SerializableQueuedOperation.createFrom;
+const $$createType43 = $Create.Nullable($$createType42);
+const $$createType44 = $Create.Array($$createType43);
+const $$createType45 = Progress.createFrom;
+const $$createType46 = $Create.Nullable($$createType45);
+const $$createType47 = statemachine$0.OperationUnion.createFrom;
+const $$createType48 = OperationStatusUnion.createFrom;

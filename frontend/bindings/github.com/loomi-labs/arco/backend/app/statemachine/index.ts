@@ -7,6 +7,8 @@ export {
     ArchiveRename,
     BackingUp,
     Backup,
+    Check,
+    Checking,
     Delete,
     Deleting,
     Error,
