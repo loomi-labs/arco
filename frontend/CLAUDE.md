@@ -264,7 +264,8 @@ Use HeadlessUI's `Dialog` component from `@headlessui/vue` for all modal impleme
 - **Two Patterns Available**:
   - **`showAndLogError()`**: Shows toast notification + logs error (for immediate feedback)
   - **`logError()`**: Logs error without toast (for UI error display)
-- Never use `console.error` - always use one of the above logging methods
+- **Debug Logging**: Use `logDebug()` from `common/logger.ts` instead of `console.log` for debug messages
+- Never use `console.log` or `console.error` - always use logger functions
 - Choose pattern based on UX needs: toast for immediate feedback, UI display for persistent errors
 - Implement retry mechanisms for failed operations
 - Always await logging calls for proper error handling

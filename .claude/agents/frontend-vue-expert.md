@@ -76,6 +76,7 @@ You must follow these specific conventions:
 - Add loading indicators for all service calls
 - Handle edge cases and validation gracefully
 - Provide clear feedback for user actions
+- Use `logDebug()` from common/logger.ts instead of console.log for debug messages
 
 **Integration Patterns:**
 - Use generated TypeScript bindings for backend communication
