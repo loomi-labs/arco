@@ -143,7 +143,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
 		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
 		{Name: "notification_backup_profile", Type: field.TypeInt},
@@ -208,7 +208,10 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
-		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
+		{Name: "last_quick_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "quick_check_error", Type: field.TypeJSON, Nullable: true},
+		{Name: "last_full_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "full_check_error", Type: field.TypeJSON, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},
@@ -225,7 +228,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "repositories_cloud_repositories_repository",
-				Columns:    []*schema.Column{RepositoriesColumns[13]},
+				Columns:    []*schema.Column{RepositoriesColumns[16]},
 				RefColumns: []*schema.Column{CloudRepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -311,7 +314,7 @@ func init() {
 	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupProfilesTable.Annotation = &entsql.Annotation{}
 	BackupProfilesTable.Annotation.Checks = map[string]string{
-		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode IN ('zlib', 'lzma') AND compression_level >= 0 AND compression_level <= 9)\n\t\t\t\t)",
+		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR\n\t\t\t\t\t(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)\n\t\t\t\t)",
 	}
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable

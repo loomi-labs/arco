@@ -6472,7 +6472,12 @@ type RepositoryMutation struct {
 	name                         *string
 	url                          *string
 	password                     *string
-	next_integrity_check         *time.Time
+	last_quick_check_at          *time.Time
+	quick_check_error            *[]string
+	appendquick_check_error      []string
+	last_full_check_at           *time.Time
+	full_check_error             *[]string
+	appendfull_check_error       []string
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
 	stats_total_size             *int
@@ -6786,53 +6791,232 @@ func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (m *RepositoryMutation) SetNextIntegrityCheck(t time.Time) {
-	m.next_integrity_check = &t
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (m *RepositoryMutation) SetLastQuickCheckAt(t time.Time) {
+	m.last_quick_check_at = &t
 }
 
-// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
-func (m *RepositoryMutation) NextIntegrityCheck() (r time.Time, exists bool) {
-	v := m.next_integrity_check
+// LastQuickCheckAt returns the value of the "last_quick_check_at" field in the mutation.
+func (m *RepositoryMutation) LastQuickCheckAt() (r time.Time, exists bool) {
+	v := m.last_quick_check_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the Repository entity.
+// OldLastQuickCheckAt returns the old "last_quick_check_at" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
+func (m *RepositoryMutation) OldLastQuickCheckAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
+		return v, errors.New("OldLastQuickCheckAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
+		return v, errors.New("OldLastQuickCheckAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
+		return v, fmt.Errorf("querying old value for OldLastQuickCheckAt: %w", err)
 	}
-	return oldValue.NextIntegrityCheck, nil
+	return oldValue.LastQuickCheckAt, nil
 }
 
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (m *RepositoryMutation) ClearNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	m.clearedFields[repository.FieldNextIntegrityCheck] = struct{}{}
+// ClearLastQuickCheckAt clears the value of the "last_quick_check_at" field.
+func (m *RepositoryMutation) ClearLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	m.clearedFields[repository.FieldLastQuickCheckAt] = struct{}{}
 }
 
-// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
-func (m *RepositoryMutation) NextIntegrityCheckCleared() bool {
-	_, ok := m.clearedFields[repository.FieldNextIntegrityCheck]
+// LastQuickCheckAtCleared returns if the "last_quick_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastQuickCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastQuickCheckAt]
 	return ok
 }
 
-// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
-func (m *RepositoryMutation) ResetNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	delete(m.clearedFields, repository.FieldNextIntegrityCheck)
+// ResetLastQuickCheckAt resets all changes to the "last_quick_check_at" field.
+func (m *RepositoryMutation) ResetLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	delete(m.clearedFields, repository.FieldLastQuickCheckAt)
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (m *RepositoryMutation) SetQuickCheckError(s []string) {
+	m.quick_check_error = &s
+	m.appendquick_check_error = nil
+}
+
+// QuickCheckError returns the value of the "quick_check_error" field in the mutation.
+func (m *RepositoryMutation) QuickCheckError() (r []string, exists bool) {
+	v := m.quick_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuickCheckError returns the old "quick_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldQuickCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuickCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuickCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuickCheckError: %w", err)
+	}
+	return oldValue.QuickCheckError, nil
+}
+
+// AppendQuickCheckError adds s to the "quick_check_error" field.
+func (m *RepositoryMutation) AppendQuickCheckError(s []string) {
+	m.appendquick_check_error = append(m.appendquick_check_error, s...)
+}
+
+// AppendedQuickCheckError returns the list of values that were appended to the "quick_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedQuickCheckError() ([]string, bool) {
+	if len(m.appendquick_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendquick_check_error, true
+}
+
+// ClearQuickCheckError clears the value of the "quick_check_error" field.
+func (m *RepositoryMutation) ClearQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	m.clearedFields[repository.FieldQuickCheckError] = struct{}{}
+}
+
+// QuickCheckErrorCleared returns if the "quick_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) QuickCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldQuickCheckError]
+	return ok
+}
+
+// ResetQuickCheckError resets all changes to the "quick_check_error" field.
+func (m *RepositoryMutation) ResetQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	delete(m.clearedFields, repository.FieldQuickCheckError)
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (m *RepositoryMutation) SetLastFullCheckAt(t time.Time) {
+	m.last_full_check_at = &t
+}
+
+// LastFullCheckAt returns the value of the "last_full_check_at" field in the mutation.
+func (m *RepositoryMutation) LastFullCheckAt() (r time.Time, exists bool) {
+	v := m.last_full_check_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastFullCheckAt returns the old "last_full_check_at" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldLastFullCheckAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastFullCheckAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastFullCheckAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastFullCheckAt: %w", err)
+	}
+	return oldValue.LastFullCheckAt, nil
+}
+
+// ClearLastFullCheckAt clears the value of the "last_full_check_at" field.
+func (m *RepositoryMutation) ClearLastFullCheckAt() {
+	m.last_full_check_at = nil
+	m.clearedFields[repository.FieldLastFullCheckAt] = struct{}{}
+}
+
+// LastFullCheckAtCleared returns if the "last_full_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastFullCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastFullCheckAt]
+	return ok
+}
+
+// ResetLastFullCheckAt resets all changes to the "last_full_check_at" field.
+func (m *RepositoryMutation) ResetLastFullCheckAt() {
+	m.last_full_check_at = nil
+	delete(m.clearedFields, repository.FieldLastFullCheckAt)
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (m *RepositoryMutation) SetFullCheckError(s []string) {
+	m.full_check_error = &s
+	m.appendfull_check_error = nil
+}
+
+// FullCheckError returns the value of the "full_check_error" field in the mutation.
+func (m *RepositoryMutation) FullCheckError() (r []string, exists bool) {
+	v := m.full_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFullCheckError returns the old "full_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldFullCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFullCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFullCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFullCheckError: %w", err)
+	}
+	return oldValue.FullCheckError, nil
+}
+
+// AppendFullCheckError adds s to the "full_check_error" field.
+func (m *RepositoryMutation) AppendFullCheckError(s []string) {
+	m.appendfull_check_error = append(m.appendfull_check_error, s...)
+}
+
+// AppendedFullCheckError returns the list of values that were appended to the "full_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedFullCheckError() ([]string, bool) {
+	if len(m.appendfull_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendfull_check_error, true
+}
+
+// ClearFullCheckError clears the value of the "full_check_error" field.
+func (m *RepositoryMutation) ClearFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	m.clearedFields[repository.FieldFullCheckError] = struct{}{}
+}
+
+// FullCheckErrorCleared returns if the "full_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) FullCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldFullCheckError]
+	return ok
+}
+
+// ResetFullCheckError resets all changes to the "full_check_error" field.
+func (m *RepositoryMutation) ResetFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	delete(m.clearedFields, repository.FieldFullCheckError)
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
@@ -7406,7 +7590,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, repository.FieldCreatedAt)
 	}
@@ -7422,8 +7606,17 @@ func (m *RepositoryMutation) Fields() []string {
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
 	}
-	if m.next_integrity_check != nil {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.last_quick_check_at != nil {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.quick_check_error != nil {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.last_full_check_at != nil {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.full_check_error != nil {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	if m.stats_total_chunks != nil {
 		fields = append(fields, repository.FieldStatsTotalChunks)
@@ -7461,8 +7654,14 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case repository.FieldPassword:
 		return m.Password()
-	case repository.FieldNextIntegrityCheck:
-		return m.NextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		return m.LastQuickCheckAt()
+	case repository.FieldQuickCheckError:
+		return m.QuickCheckError()
+	case repository.FieldLastFullCheckAt:
+		return m.LastFullCheckAt()
+	case repository.FieldFullCheckError:
+		return m.FullCheckError()
 	case repository.FieldStatsTotalChunks:
 		return m.StatsTotalChunks()
 	case repository.FieldStatsTotalSize:
@@ -7494,8 +7693,14 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldURL(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
-	case repository.FieldNextIntegrityCheck:
-		return m.OldNextIntegrityCheck(ctx)
+	case repository.FieldLastQuickCheckAt:
+		return m.OldLastQuickCheckAt(ctx)
+	case repository.FieldQuickCheckError:
+		return m.OldQuickCheckError(ctx)
+	case repository.FieldLastFullCheckAt:
+		return m.OldLastFullCheckAt(ctx)
+	case repository.FieldFullCheckError:
+		return m.OldFullCheckError(ctx)
 	case repository.FieldStatsTotalChunks:
 		return m.OldStatsTotalChunks(ctx)
 	case repository.FieldStatsTotalSize:
@@ -7552,12 +7757,33 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPassword(v)
 		return nil
-	case repository.FieldNextIntegrityCheck:
+	case repository.FieldLastQuickCheckAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetNextIntegrityCheck(v)
+		m.SetLastQuickCheckAt(v)
+		return nil
+	case repository.FieldQuickCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuickCheckError(v)
+		return nil
+	case repository.FieldLastFullCheckAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastFullCheckAt(v)
+		return nil
+	case repository.FieldFullCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFullCheckError(v)
 		return nil
 	case repository.FieldStatsTotalChunks:
 		v, ok := value.(int)
@@ -7706,8 +7932,17 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.FieldCleared(repository.FieldLastQuickCheckAt) {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.FieldCleared(repository.FieldQuickCheckError) {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.FieldCleared(repository.FieldLastFullCheckAt) {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.FieldCleared(repository.FieldFullCheckError) {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	return fields
 }
@@ -7723,8 +7958,17 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
-	case repository.FieldNextIntegrityCheck:
-		m.ClearNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ClearLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ClearQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ClearLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ClearFullCheckError()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository nullable field %s", name)
@@ -7749,8 +7993,17 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldPassword:
 		m.ResetPassword()
 		return nil
-	case repository.FieldNextIntegrityCheck:
-		m.ResetNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ResetLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ResetQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ResetLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ResetFullCheckError()
 		return nil
 	case repository.FieldStatsTotalChunks:
 		m.ResetStatsTotalChunks()

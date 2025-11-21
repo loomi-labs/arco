@@ -24,8 +24,14 @@ const (
 	FieldURL = "url"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
-	// FieldNextIntegrityCheck holds the string denoting the next_integrity_check field in the database.
-	FieldNextIntegrityCheck = "next_integrity_check"
+	// FieldLastQuickCheckAt holds the string denoting the last_quick_check_at field in the database.
+	FieldLastQuickCheckAt = "last_quick_check_at"
+	// FieldQuickCheckError holds the string denoting the quick_check_error field in the database.
+	FieldQuickCheckError = "quick_check_error"
+	// FieldLastFullCheckAt holds the string denoting the last_full_check_at field in the database.
+	FieldLastFullCheckAt = "last_full_check_at"
+	// FieldFullCheckError holds the string denoting the full_check_error field in the database.
+	FieldFullCheckError = "full_check_error"
 	// FieldStatsTotalChunks holds the string denoting the stats_total_chunks field in the database.
 	FieldStatsTotalChunks = "stats_total_chunks"
 	// FieldStatsTotalSize holds the string denoting the stats_total_size field in the database.
@@ -84,7 +90,10 @@ var Columns = []string{
 	FieldName,
 	FieldURL,
 	FieldPassword,
-	FieldNextIntegrityCheck,
+	FieldLastQuickCheckAt,
+	FieldQuickCheckError,
+	FieldLastFullCheckAt,
+	FieldFullCheckError,
 	FieldStatsTotalChunks,
 	FieldStatsTotalSize,
 	FieldStatsTotalCsize,
@@ -176,9 +185,14 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
 }
 
-// ByNextIntegrityCheck orders the results by the next_integrity_check field.
-func ByNextIntegrityCheck(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNextIntegrityCheck, opts...).ToFunc()
+// ByLastQuickCheckAt orders the results by the last_quick_check_at field.
+func ByLastQuickCheckAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastQuickCheckAt, opts...).ToFunc()
+}
+
+// ByLastFullCheckAt orders the results by the last_full_check_at field.
+func ByLastFullCheckAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastFullCheckAt, opts...).ToFunc()
 }
 
 // ByStatsTotalChunks orders the results by the stats_total_chunks field.
