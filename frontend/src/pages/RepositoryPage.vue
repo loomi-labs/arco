@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
+import { isAfter } from "@formkit/tempo";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
@@ -60,7 +61,7 @@ const shouldShowQuickCheck = computed(() => {
   // Show quick check if no full check exists, OR if quick check is newer than full check
   if (!repo.value.lastQuickCheckAt) return false;
   if (!repo.value.lastFullCheckAt) return true;
-  return new Date(repo.value.lastQuickCheckAt) > new Date(repo.value.lastFullCheckAt);
+  return isAfter(repo.value.lastQuickCheckAt, repo.value.lastFullCheckAt);
 });
 
 const confirmRemoveModalKey = useId();
@@ -535,7 +536,7 @@ onUnmounted(() => {
                   </span>
                   <div v-if='repo.fullCheckError && repo.fullCheckError.length > 0'
                        class='tooltip tooltip-error'
-                       :data-tip='repo.fullCheckError.join("\\n")'>
+                       :data-tip='repo.fullCheckError.join(", ")'>
                     <span class='badge badge-error badge-sm cursor-help'>
                       {{ repo.fullCheckError.length }} error{{ repo.fullCheckError.length > 1 ? 's' : '' }}
                     </span>
@@ -550,7 +551,7 @@ onUnmounted(() => {
                   </span>
                   <div v-if='repo.quickCheckError && repo.quickCheckError.length > 0'
                        class='tooltip tooltip-error'
-                       :data-tip='repo.quickCheckError.join("\\n")'>
+                       :data-tip='repo.quickCheckError.join(", ")'>
                     <span class='badge badge-error badge-sm cursor-help'>
                       {{ repo.quickCheckError.length }} error{{ repo.quickCheckError.length > 1 ? 's' : '' }}
                     </span>
