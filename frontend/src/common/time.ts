@@ -213,8 +213,9 @@ function toPastString(date: Date, now: Date): string {
 }
 
 /**
- * toShortDateString converts a Date object to a human-readable string with a long date format.
+ * toLongDateString converts a Date object to a human-readable string with a long date format.
  * @param date The date to convert
+ * @param ignoreTz Whether to ignore timezone offset (default: false)
  */
 export function toLongDateString(date: Date, ignoreTz = false): string {
   if (!ignoreTz) {
