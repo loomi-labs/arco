@@ -122,6 +122,7 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 	case statemachine.RepositoryStateTypeIdle,
 		statemachine.RepositoryStateTypeQueued,
 		statemachine.RepositoryStateTypeDeleting,
+		statemachine.RepositoryStateTypeChecking,
 		statemachine.RepositoryStateTypeMounting,
 		statemachine.RepositoryStateTypeMounted,
 		statemachine.RepositoryStateTypeError:
@@ -252,6 +253,7 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 
 	// Non-archive-affecting operations - no action
 	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypePrune,
@@ -805,6 +807,9 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 	case statemachine.OperationTypeArchiveRefresh:
 		return statemachine.CreateRefreshingState(ctx), nil
 
+	case statemachine.OperationTypeCheck:
+		return statemachine.CreateCheckingState(ctx), nil
+
 	case statemachine.OperationTypeArchiveDelete:
 		deleteVariant := op.Operation.(statemachine.ArchiveDeleteVariant)
 		deleteData := deleteVariant()
@@ -884,6 +889,7 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		statemachine.OperationTypePrune,
 		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
 		statemachine.OperationTypeUnmount,
@@ -999,6 +1005,13 @@ func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int
 		message = fmt.Sprintf("Failed to unmount archive: %s", errorMsg)
 	case statemachine.OperationTypeExaminePrune:
 		message = fmt.Sprintf("Failed to examine prune: %s", errorMsg)
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			message = fmt.Sprintf("Repository quick check failed: %s", errorMsg)
+		} else {
+			message = fmt.Sprintf("Repository full check failed: %s", errorMsg)
+		}
 	default:
 		assert.Fail("Unhandled OperationType in sendFrontendNotification")
 	}
@@ -1021,6 +1034,13 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 		return notification.TypeFailedBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeFailedPruningRun
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			return notification.TypeFailedQuickCheck
+		} else {
+			return notification.TypeFailedFullCheck
+		}
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
@@ -1048,6 +1068,13 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		return notification.TypeWarningBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeWarningPruningRun
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			return notification.TypeWarningQuickCheck
+		} else {
+			return notification.TypeWarningFullCheck
+		}
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
@@ -1082,6 +1109,21 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 		examinePruneVariant := operation.(statemachine.ExaminePruneVariant)
 		examinePruneData := examinePruneVariant()
 		return examinePruneData.BackupID.BackupProfileId
+	case statemachine.OperationTypeCheck:
+		// Check is repository-wide, get first backup profile for the repository
+		checkVariant := operation.(statemachine.CheckVariant)
+		checkData := checkVariant()
+		// Query first backup profile for this repository
+		backupProfile, err := qm.db.BackupProfile.Query().
+			Where(backupprofile.HasRepositoriesWith(repository.ID(checkData.RepositoryID))).
+			First(context.Background())
+		if err != nil {
+			qm.log.Errorw("Failed to get backup profile for check notification",
+				"repositoryID", checkData.RepositoryID,
+				"error", err.Error())
+			return 0
+		}
+		return backupProfile.ID
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
@@ -1103,7 +1145,7 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 // shouldCreateNotification determines if error/warning notifications should be created for this operation type
 func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
 		return true
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
@@ -1173,6 +1215,8 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 		return e.executeArchiveDelete(ctx, operation.(statemachine.ArchiveDeleteVariant))
 	case statemachine.OperationTypeArchiveRefresh:
 		return e.executeArchiveRefresh(ctx, operation.(statemachine.ArchiveRefreshVariant))
+	case statemachine.OperationTypeCheck:
+		return e.executeCheck(ctx, operation.(statemachine.CheckVariant))
 	case statemachine.OperationTypeArchiveRename:
 		return e.executeArchiveRename(ctx, operation.(statemachine.ArchiveRenameVariant))
 	case statemachine.OperationTypeMount:
@@ -1593,6 +1637,56 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	return status, nil
 }
 
+// executeCheck performs a borg check operation to verify repository integrity
+func (e *borgOperationExecutor) executeCheck(ctx context.Context, checkOp statemachine.CheckVariant) (*borgtypes.Status, error) {
+	checkData := checkOp()
+
+	// Get repository from database using RepositoryID
+	repo, err := e.db.Repository.Get(ctx, checkData.RepositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("repository %d not found: %w", checkData.RepositoryID, err)
+	}
+
+	e.log.Infof("Starting %s check for repo %d", map[bool]string{true: "quick", false: "full"}[checkData.QuickVerification], repo.ID)
+
+	// Execute borg check command
+	result := e.borgClient.Check(ctx, repo.URL, repo.Password, checkData.QuickVerification)
+
+	// Extract error messages for logging and storage
+	errorMessages := make([]string, 0, len(result.ErrorLogs))
+	for _, msg := range result.ErrorLogs {
+		errorMessages = append(errorMessages, msg.Message)
+	}
+
+	// Log captured error messages
+	if len(result.ErrorLogs) > 0 {
+		e.log.Infow("Check operation found errors",
+			"repoID", repo.ID,
+			"checkType", map[bool]string{true: "quick", false: "full"}[checkData.QuickVerification],
+			"errorCount", len(result.ErrorLogs),
+			"errors", errorMessages)
+	}
+
+	// Update database fields based on check type and result
+	now := time.Now()
+	updateQuery := e.db.Repository.UpdateOne(repo)
+
+	if checkData.QuickVerification {
+		// Update quick check fields
+		updateQuery = updateQuery.
+			SetLastQuickCheckAt(now).
+			SetQuickCheckError(errorMessages) // Empty array if no errors
+	} else {
+		// Update full check fields
+		updateQuery = updateQuery.
+			SetLastFullCheckAt(now).
+			SetFullCheckError(errorMessages) // Empty array if no errors
+	}
+
+	// Save updates
+	return result.Status, updateQuery.Exec(ctx)
+}
+
 // executeArchiveRename performs a borg rename operation
 func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant) (*borgtypes.Status, error) {
 	renameData := renameOp()
@@ -1999,7 +2093,7 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 
 	// Now determine operation-specific behavior
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
 		// Critical operations - full error handling with persistent notifications
 		return OperationErrorResponse{
 			ErrorType:                 errorType,

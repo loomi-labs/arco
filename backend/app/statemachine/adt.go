@@ -8,162 +8,6 @@ import (
 	"github.com/negrel/assert"
 )
 
-// RepositoryStateType is the discriminator enum for RepositoryState
-type RepositoryStateType string
-
-const (
-	RepositoryStateTypeBackingUp  RepositoryStateType = "BackingUp"
-	RepositoryStateTypeDeleting   RepositoryStateType = "Deleting"
-	RepositoryStateTypeError      RepositoryStateType = "Error"
-	RepositoryStateTypeIdle       RepositoryStateType = "Idle"
-	RepositoryStateTypeMounted    RepositoryStateType = "Mounted"
-	RepositoryStateTypeMounting   RepositoryStateType = "Mounting"
-	RepositoryStateTypePruning    RepositoryStateType = "Pruning"
-	RepositoryStateTypeQueued     RepositoryStateType = "Queued"
-	RepositoryStateTypeRefreshing RepositoryStateType = "Refreshing"
-)
-
-// RepositoryState variant wrappers
-type BackingUpVariant adtenum.OneVariantValue[BackingUp]
-type DeletingVariant adtenum.OneVariantValue[Deleting]
-type ErrorVariant adtenum.OneVariantValue[Error]
-type IdleVariant adtenum.OneVariantValue[Idle]
-type MountedVariant adtenum.OneVariantValue[Mounted]
-type MountingVariant adtenum.OneVariantValue[Mounting]
-type PruningVariant adtenum.OneVariantValue[Pruning]
-type QueuedVariant adtenum.OneVariantValue[Queued]
-type RefreshingVariant adtenum.OneVariantValue[Refreshing]
-
-// RepositoryState constructors
-var NewRepositoryStateBackingUp = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
-var NewRepositoryStateDeleting = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
-var NewRepositoryStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
-var NewRepositoryStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
-var NewRepositoryStateMounted = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
-var NewRepositoryStateMounting = adtenum.CreateOneVariantValueConstructor[MountingVariant]()
-var NewRepositoryStatePruning = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
-var NewRepositoryStateQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
-var NewRepositoryStateRefreshing = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
-
-// EnumType methods for RepositoryState variants
-func (v BackingUpVariant) EnumType() RepositoryState  { return v }
-func (v DeletingVariant) EnumType() RepositoryState   { return v }
-func (v ErrorVariant) EnumType() RepositoryState      { return v }
-func (v IdleVariant) EnumType() RepositoryState       { return v }
-func (v MountedVariant) EnumType() RepositoryState    { return v }
-func (v MountingVariant) EnumType() RepositoryState   { return v }
-func (v PruningVariant) EnumType() RepositoryState    { return v }
-func (v QueuedVariant) EnumType() RepositoryState     { return v }
-func (v RefreshingVariant) EnumType() RepositoryState { return v }
-
-// GetRepositoryStateType returns the discriminator type for exhaustive switch checking
-func GetRepositoryStateType(enum RepositoryState) RepositoryStateType {
-	switch enum.(type) {
-	case IdleVariant:
-		return RepositoryStateTypeIdle
-	case QueuedVariant:
-		return RepositoryStateTypeQueued
-	case BackingUpVariant:
-		return RepositoryStateTypeBackingUp
-	case PruningVariant:
-		return RepositoryStateTypePruning
-	case DeletingVariant:
-		return RepositoryStateTypeDeleting
-	case RefreshingVariant:
-		return RepositoryStateTypeRefreshing
-	case MountingVariant:
-		return RepositoryStateTypeMounting
-	case MountedVariant:
-		return RepositoryStateTypeMounted
-	case ErrorVariant:
-		return RepositoryStateTypeError
-	default:
-		assert.Fail("Unhandled RepositoryState variant in GetRepositoryStateType")
-		return RepositoryStateTypeBackingUp
-	}
-}
-
-// RepositoryStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type RepositoryStateUnion struct {
-	Type RepositoryStateType `json:"type"` // Discriminator field
-
-	// Variant fields - only one will be non-nil
-	Idle       *Idle       `json:"idle,omitempty"`
-	Queued     *Queued     `json:"queued,omitempty"`
-	BackingUp  *BackingUp  `json:"backingUp,omitempty"`
-	Pruning    *Pruning    `json:"pruning,omitempty"`
-	Deleting   *Deleting   `json:"deleting,omitempty"`
-	Refreshing *Refreshing `json:"refreshing,omitempty"`
-	Mounting   *Mounting   `json:"mounting,omitempty"`
-	Mounted    *Mounted    `json:"mounted,omitempty"`
-	Error      *Error      `json:"error,omitempty"`
-}
-
-// ToRepositoryStateUnion converts an ADT RepositoryState to an RepositoryStateUnion
-func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
-	switch i := r.(type) {
-	case IdleVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type: RepositoryStateTypeIdle,
-			Idle: &data,
-		}
-	case QueuedVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:   RepositoryStateTypeQueued,
-			Queued: &data,
-		}
-	case BackingUpVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:      RepositoryStateTypeBackingUp,
-			BackingUp: &data,
-		}
-	case PruningVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:    RepositoryStateTypePruning,
-			Pruning: &data,
-		}
-	case DeletingVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:     RepositoryStateTypeDeleting,
-			Deleting: &data,
-		}
-	case RefreshingVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:       RepositoryStateTypeRefreshing,
-			Refreshing: &data,
-		}
-	case MountingVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:     RepositoryStateTypeMounting,
-			Mounting: &data,
-		}
-	case MountedVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:    RepositoryStateTypeMounted,
-			Mounted: &data,
-		}
-	case ErrorVariant:
-		data := i()
-		return RepositoryStateUnion{
-			Type:  RepositoryStateTypeError,
-			Error: &data,
-		}
-	default:
-		return RepositoryStateUnion{
-			Type:      RepositoryStateTypeBackingUp,
-			BackingUp: &BackingUp{},
-		}
-	}
-}
-
 // OperationType is the discriminator enum for Operation
 type OperationType string
 
@@ -172,6 +16,7 @@ const (
 	OperationTypeArchiveRefresh OperationType = "ArchiveRefresh"
 	OperationTypeArchiveRename  OperationType = "ArchiveRename"
 	OperationTypeBackup         OperationType = "Backup"
+	OperationTypeCheck          OperationType = "Check"
 	OperationTypeDelete         OperationType = "Delete"
 	OperationTypeExaminePrune   OperationType = "ExaminePrune"
 	OperationTypeMount          OperationType = "Mount"
@@ -186,6 +31,7 @@ type ArchiveDeleteVariant adtenum.OneVariantValue[ArchiveDelete]
 type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
 type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
 type BackupVariant adtenum.OneVariantValue[Backup]
+type CheckVariant adtenum.OneVariantValue[Check]
 type DeleteVariant adtenum.OneVariantValue[Delete]
 type ExaminePruneVariant adtenum.OneVariantValue[ExaminePrune]
 type MountVariant adtenum.OneVariantValue[Mount]
@@ -199,6 +45,7 @@ var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[Archive
 var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
 var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
 var NewOperationBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
+var NewOperationCheck = adtenum.CreateOneVariantValueConstructor[CheckVariant]()
 var NewOperationDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
 var NewOperationExaminePrune = adtenum.CreateOneVariantValueConstructor[ExaminePruneVariant]()
 var NewOperationMount = adtenum.CreateOneVariantValueConstructor[MountVariant]()
@@ -212,6 +59,7 @@ func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
 func (v ArchiveRefreshVariant) EnumType() Operation { return v }
 func (v ArchiveRenameVariant) EnumType() Operation  { return v }
 func (v BackupVariant) EnumType() Operation         { return v }
+func (v CheckVariant) EnumType() Operation          { return v }
 func (v DeleteVariant) EnumType() Operation         { return v }
 func (v ExaminePruneVariant) EnumType() Operation   { return v }
 func (v MountVariant) EnumType() Operation          { return v }
@@ -245,6 +93,8 @@ func GetOperationType(enum Operation) OperationType {
 		return OperationTypeUnmountArchive
 	case ExaminePruneVariant:
 		return OperationTypeExaminePrune
+	case CheckVariant:
+		return OperationTypeCheck
 	default:
 		assert.Fail("Unhandled Operation variant in GetOperationType")
 		return OperationTypeArchiveDelete
@@ -267,6 +117,7 @@ type OperationUnion struct {
 	Unmount        *Unmount        `json:"unmount,omitempty"`
 	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
 	ExaminePrune   *ExaminePrune   `json:"examinePrune,omitempty"`
+	Check          *Check          `json:"check,omitempty"`
 }
 
 // ToOperationUnion converts an ADT Operation to an OperationUnion
@@ -338,10 +189,185 @@ func ToOperationUnion(r Operation) OperationUnion {
 			Type:         OperationTypeExaminePrune,
 			ExaminePrune: &data,
 		}
+	case CheckVariant:
+		data := i()
+		return OperationUnion{
+			Type:  OperationTypeCheck,
+			Check: &data,
+		}
 	default:
 		return OperationUnion{
 			Type:          OperationTypeArchiveDelete,
 			ArchiveDelete: &ArchiveDelete{},
+		}
+	}
+}
+
+// RepositoryStateType is the discriminator enum for RepositoryState
+type RepositoryStateType string
+
+const (
+	RepositoryStateTypeBackingUp  RepositoryStateType = "BackingUp"
+	RepositoryStateTypeChecking   RepositoryStateType = "Checking"
+	RepositoryStateTypeDeleting   RepositoryStateType = "Deleting"
+	RepositoryStateTypeError      RepositoryStateType = "Error"
+	RepositoryStateTypeIdle       RepositoryStateType = "Idle"
+	RepositoryStateTypeMounted    RepositoryStateType = "Mounted"
+	RepositoryStateTypeMounting   RepositoryStateType = "Mounting"
+	RepositoryStateTypePruning    RepositoryStateType = "Pruning"
+	RepositoryStateTypeQueued     RepositoryStateType = "Queued"
+	RepositoryStateTypeRefreshing RepositoryStateType = "Refreshing"
+)
+
+// RepositoryState variant wrappers
+type BackingUpVariant adtenum.OneVariantValue[BackingUp]
+type CheckingVariant adtenum.OneVariantValue[Checking]
+type DeletingVariant adtenum.OneVariantValue[Deleting]
+type ErrorVariant adtenum.OneVariantValue[Error]
+type IdleVariant adtenum.OneVariantValue[Idle]
+type MountedVariant adtenum.OneVariantValue[Mounted]
+type MountingVariant adtenum.OneVariantValue[Mounting]
+type PruningVariant adtenum.OneVariantValue[Pruning]
+type QueuedVariant adtenum.OneVariantValue[Queued]
+type RefreshingVariant adtenum.OneVariantValue[Refreshing]
+
+// RepositoryState constructors
+var NewRepositoryStateBackingUp = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
+var NewRepositoryStateChecking = adtenum.CreateOneVariantValueConstructor[CheckingVariant]()
+var NewRepositoryStateDeleting = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
+var NewRepositoryStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
+var NewRepositoryStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
+var NewRepositoryStateMounted = adtenum.CreateOneVariantValueConstructor[MountedVariant]()
+var NewRepositoryStateMounting = adtenum.CreateOneVariantValueConstructor[MountingVariant]()
+var NewRepositoryStatePruning = adtenum.CreateOneVariantValueConstructor[PruningVariant]()
+var NewRepositoryStateQueued = adtenum.CreateOneVariantValueConstructor[QueuedVariant]()
+var NewRepositoryStateRefreshing = adtenum.CreateOneVariantValueConstructor[RefreshingVariant]()
+
+// EnumType methods for RepositoryState variants
+func (v BackingUpVariant) EnumType() RepositoryState  { return v }
+func (v CheckingVariant) EnumType() RepositoryState   { return v }
+func (v DeletingVariant) EnumType() RepositoryState   { return v }
+func (v ErrorVariant) EnumType() RepositoryState      { return v }
+func (v IdleVariant) EnumType() RepositoryState       { return v }
+func (v MountedVariant) EnumType() RepositoryState    { return v }
+func (v MountingVariant) EnumType() RepositoryState   { return v }
+func (v PruningVariant) EnumType() RepositoryState    { return v }
+func (v QueuedVariant) EnumType() RepositoryState     { return v }
+func (v RefreshingVariant) EnumType() RepositoryState { return v }
+
+// GetRepositoryStateType returns the discriminator type for exhaustive switch checking
+func GetRepositoryStateType(enum RepositoryState) RepositoryStateType {
+	switch enum.(type) {
+	case IdleVariant:
+		return RepositoryStateTypeIdle
+	case QueuedVariant:
+		return RepositoryStateTypeQueued
+	case BackingUpVariant:
+		return RepositoryStateTypeBackingUp
+	case PruningVariant:
+		return RepositoryStateTypePruning
+	case DeletingVariant:
+		return RepositoryStateTypeDeleting
+	case RefreshingVariant:
+		return RepositoryStateTypeRefreshing
+	case CheckingVariant:
+		return RepositoryStateTypeChecking
+	case MountingVariant:
+		return RepositoryStateTypeMounting
+	case MountedVariant:
+		return RepositoryStateTypeMounted
+	case ErrorVariant:
+		return RepositoryStateTypeError
+	default:
+		assert.Fail("Unhandled RepositoryState variant in GetRepositoryStateType")
+		return RepositoryStateTypeBackingUp
+	}
+}
+
+// RepositoryStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type RepositoryStateUnion struct {
+	Type RepositoryStateType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	Idle       *Idle       `json:"idle,omitempty"`
+	Queued     *Queued     `json:"queued,omitempty"`
+	BackingUp  *BackingUp  `json:"backingUp,omitempty"`
+	Pruning    *Pruning    `json:"pruning,omitempty"`
+	Deleting   *Deleting   `json:"deleting,omitempty"`
+	Refreshing *Refreshing `json:"refreshing,omitempty"`
+	Checking   *Checking   `json:"checking,omitempty"`
+	Mounting   *Mounting   `json:"mounting,omitempty"`
+	Mounted    *Mounted    `json:"mounted,omitempty"`
+	Error      *Error      `json:"error,omitempty"`
+}
+
+// ToRepositoryStateUnion converts an ADT RepositoryState to an RepositoryStateUnion
+func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
+	switch i := r.(type) {
+	case IdleVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type: RepositoryStateTypeIdle,
+			Idle: &data,
+		}
+	case QueuedVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:   RepositoryStateTypeQueued,
+			Queued: &data,
+		}
+	case BackingUpVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:      RepositoryStateTypeBackingUp,
+			BackingUp: &data,
+		}
+	case PruningVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:    RepositoryStateTypePruning,
+			Pruning: &data,
+		}
+	case DeletingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:     RepositoryStateTypeDeleting,
+			Deleting: &data,
+		}
+	case RefreshingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:       RepositoryStateTypeRefreshing,
+			Refreshing: &data,
+		}
+	case CheckingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:     RepositoryStateTypeChecking,
+			Checking: &data,
+		}
+	case MountingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:     RepositoryStateTypeMounting,
+			Mounting: &data,
+		}
+	case MountedVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:    RepositoryStateTypeMounted,
+			Mounted: &data,
+		}
+	case ErrorVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:  RepositoryStateTypeError,
+			Error: &data,
+		}
+	default:
+		return RepositoryStateUnion{
+			Type:      RepositoryStateTypeBackingUp,
+			BackingUp: &BackingUp{},
 		}
 	}
 }
