@@ -139,14 +139,14 @@ onUnmounted(() => {
   <div
     v-if='isMobileMenuOpen'
     @click='closeMobileMenu'
-    class='xl:hidden fixed inset-0 bg-black/20 z-40 transition-opacity'
+    class='xl:hidden fixed inset-0 bg-black/20 z-30 transition-opacity'
   ></div>
 
   <!-- Sidebar -->
   <aside
     :class='[
       isDesktop ? "sticky" : "fixed",
-      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
+      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-40 transition-transform duration-300",
       isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
     ]'
   >

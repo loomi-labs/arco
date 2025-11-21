@@ -343,7 +343,7 @@ onUnmounted(() => {
         <div tabindex='0' role='button' class='btn btn-square'>
           <EllipsisVerticalIcon class='size-6' />
         </div>
-        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
+        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm'>
           <li>
             <button @click='confirmRemoveModal?.showModal()'
                     class='text-error hover:bg-error hover:text-error-content'>
@@ -644,13 +644,13 @@ onUnmounted(() => {
 
     <!-- Verification Modal -->
     <TransitionRoot as='template' :show='showVerifyModal'>
-      <Dialog class='relative z-10' @close='showVerifyModal = false'>
+      <Dialog class='relative z-50' @close='showVerifyModal = false'>
         <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
                          leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
           <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
         </TransitionChild>
 
-        <div class='fixed inset-0 z-10 w-screen overflow-y-auto'>
+        <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
           <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
             <TransitionChild as='template' enter='ease-out duration-300'
                              enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
