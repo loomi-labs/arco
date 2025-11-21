@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.16.0](https://github.com/loomi-labs/arco/compare/v0.15.3...v0.16.0) (2025-11-21)
+
+
+### Features
+
+* add compression ([#205](https://github.com/loomi-labs/arco/issues/205)) ([c9a0733](https://github.com/loomi-labs/arco/commit/c9a0733f52727f263a8293dba688befeb39ee1f5))
+* add overrage usage calculation ([#201](https://github.com/loomi-labs/arco/issues/201)) ([0395768](https://github.com/loomi-labs/arco/commit/0395768a47e1172088951b8d60b4b863c9906ff9))
+* add repository verification ([#206](https://github.com/loomi-labs/arco/issues/206)) ([929d856](https://github.com/loomi-labs/arco/commit/929d856540471d20d1cfe442006ce8946be4ef41))
+* calculate storage space ([#198](https://github.com/loomi-labs/arco/issues/198)) ([2879b66](https://github.com/loomi-labs/arco/commit/2879b666f87854674dfe1a7a8e1190ff6ba56f9f))
+* redesign layout ([#204](https://github.com/loomi-labs/arco/issues/204)) ([1cd8bf9](https://github.com/loomi-labs/arco/commit/1cd8bf9357fa60a4104f452e8e041164214632d9))
+
 ## [0.15.3](https://github.com/loomi-labs/arco/compare/v0.15.2...v0.15.3) (2025-10-12)
 
 
