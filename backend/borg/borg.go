@@ -22,6 +22,7 @@ type Borg interface {
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
 	List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status)
 	Compact(ctx context.Context, repository string, password string) *types.Status
+	Check(ctx context.Context, repository, password string, quick bool) *types.CheckResult
 	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status)
 	Rename(ctx context.Context, repository, archive, password, newName string) *types.Status
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) *types.Status

@@ -57,6 +57,20 @@ func (mr *MockBorgMockRecorder) BreakLock(ctx, repository, password any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BreakLock", reflect.TypeOf((*MockBorg)(nil).BreakLock), ctx, repository, password)
 }
 
+// Check mocks base method.
+func (m *MockBorg) Check(ctx context.Context, repository, password string, quick bool) *types.CheckResult {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Check", ctx, repository, password, quick)
+	ret0, _ := ret[0].(*types.CheckResult)
+	return ret0
+}
+
+// Check indicates an expected call of Check.
+func (mr *MockBorgMockRecorder) Check(ctx, repository, password, quick any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockBorg)(nil).Check), ctx, repository, password, quick)
+}
+
 // Compact mocks base method.
 func (m *MockBorg) Compact(ctx context.Context, repository, password string) *types.Status {
 	m.ctrl.T.Helper()
