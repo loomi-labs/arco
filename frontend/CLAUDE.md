@@ -112,6 +112,44 @@ Follow DaisyUI conventions from https://daisyui.com/llms.txt:
 - Leverage variant classes: `btn-primary`, `btn-outline`, `alert-error`
 - Use utility classes for spacing and layout
 
+### Z-Index Hierarchy
+The project uses a standardized z-index scale to ensure proper UI element layering. Always use these predefined values:
+
+| Value | Purpose | Usage |
+|-------|---------|-------|
+| `z-10` | Dropdowns & Popovers | DaisyUI dropdown menus, tooltips, and other floating UI elements |
+| `z-20` | Progress Overlays | Loading spinners, progress indicators that cover content |
+| `z-30` | Mobile Nav Backdrop | Semi-transparent overlay behind mobile navigation |
+| `z-40` | Mobile Nav Panel | Mobile sidebar and navigation panels |
+| `z-50` | Modals & Dialogs | All modal dialogs (highest priority - always on top) |
+
+**Guidelines:**
+- **Never use custom z-index values** - always use the standardized scale above
+- **Modals must use z-50** to ensure they appear above all other UI elements
+- **Dropdowns use z-10** for consistency across all components
+- **Mobile navigation** uses z-30 (backdrop) and z-40 (panel) to stay above content but below modals
+- **Progress overlays** use z-20 to indicate loading states without blocking modals
+
+**Example Usage:**
+```vue
+<!-- Dropdown menu -->
+<ul class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm">
+  <!-- items -->
+</ul>
+
+<!-- Progress overlay -->
+<div v-if="isLoading" class="fixed inset-0 z-20 flex items-center justify-center bg-gray-500/75">
+  <span class="loading loading-dots loading-md"></span>
+</div>
+
+<!-- Modal dialog (using HeadlessUI) -->
+<Dialog class="relative z-50" @close="close">
+  <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
+    <!-- modal content -->
+  </div>
+</Dialog>
+```
+
 ### Import Organization
 Group imports in this order:
 1. Vue framework imports
@@ -143,10 +181,42 @@ import type { Plan } from "../../bindings/.../models";
 - Implement state machines for complex component states (see `ArcoCloudModal.vue`)
 
 ### Modal Management
-- Use DaisyUI modal classes with `<dialog>` element
-- Implement proper open/close lifecycle with `showModal()`/`close()`
-- Add animation delays for state resets to prevent flicker
-- Expose modal methods via `defineExpose()`
+
+**Prefer HeadlessUI Dialog for all modals** - The project standardizes on HeadlessUI's Dialog component for complex, accessible modals with proper animations and transitions.
+
+#### HeadlessUI Dialog Pattern
+
+Use HeadlessUI's `Dialog` component from `@headlessui/vue` for all modal implementations.
+
+**Component Structure:**
+```vue
+<TransitionRoot :show='isOpen'>
+  <Dialog class='relative z-50' @close='close'>
+    <!-- Backdrop with fade transition -->
+    <TransitionChild><div class='fixed inset-0 bg-gray-500/75' /></TransitionChild>
+
+    <!-- Modal container -->
+    <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+      <!-- Modal panel with slide-up transition -->
+      <TransitionChild>
+        <DialogPanel class='relative transform rounded-lg bg-base-100 shadow-xl'>
+          <DialogTitle>Title</DialogTitle>
+          <!-- Content -->
+        </DialogPanel>
+      </TransitionChild>
+    </div>
+  </Dialog>
+</TransitionRoot>
+```
+
+**Requirements:**
+- **Dialog must use `z-50`** (see Z-Index Hierarchy section)
+- Use `TransitionRoot` and `TransitionChild` for smooth animations
+- Expose `showModal()` and `close()` methods via `defineExpose()`
+- Add 200ms delay before resetting state in `close()` to allow animations
+- Include semi-transparent backdrop (`bg-gray-500/75`)
+
+**Reference:** See `frontend/src/components/common/ConfirmModal.vue` for complete implementation example.
 
 ### Form Handling
 - Use `FormField.vue` component for consistent styling
@@ -169,10 +239,26 @@ import type { Plan } from "../../bindings/.../models";
 - **TooltipIcon.vue**: Icon with hover tooltips
 
 ### Modal Components
-- Implement state machines for complex flows
+
+**Always use HeadlessUI Dialog** - All modals must use HeadlessUI's Dialog component as documented in the Modal Management section above.
+
+**Implementation Guidelines:**
+- Use **HeadlessUI Dialog** (not DaisyUI `<dialog>` element) for all modals
+- Always apply `z-50` class to the Dialog component
+- Implement state machines for complex modal flows (see `ArcoCloudModal.vue`)
 - Use semantic state enums instead of boolean flags
-- Handle close events properly with animation delays
+- Handle close events properly with animation delays (200ms)
 - Provide clear loading and error states
+- Expose `showModal()` and `close()` methods via `defineExpose()`
+
+**When to Use:**
+- **ConfirmModal.vue**: For simple confirmation dialogs (delete, remove, etc.)
+- **Custom Dialog**: For complex modals with forms, multi-step flows, or custom content
+
+**Example Modal Implementations:**
+- `ConfirmModal.vue` - Reusable confirmation dialog (canonical example)
+- `CompressionInfoModal.vue` - Information modal with read-only content
+- `ArcoCloudModal.vue` - Complex multi-state modal with forms
 
 ### Error Handling
 - **Two Patterns Available**:

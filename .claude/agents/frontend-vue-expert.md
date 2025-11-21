@@ -58,6 +58,19 @@ You must follow these specific conventions:
 - Use reactive refs for UI state management
 - Clean up event listeners and resources in lifecycle hooks
 
+**Z-Index and Modal Standards:**
+- **Always use HeadlessUI Dialog** from `@headlessui/vue` for modals (not DaisyUI `<dialog>`)
+- **Follow the standardized z-index hierarchy**:
+  - `z-10`: Dropdowns and popovers
+  - `z-20`: Progress overlays and loading spinners
+  - `z-30`: Mobile navigation backdrop
+  - `z-40`: Mobile navigation panels
+  - `z-50`: Modals and dialogs (highest priority)
+- **Never use custom z-index values** - always use the predefined scale
+- All modals must use `z-50` on the Dialog component
+- Include proper TransitionRoot/TransitionChild for smooth animations
+- Reference `frontend/CLAUDE.md` for complete z-index hierarchy and HeadlessUI Dialog documentation
+
 **Error Handling:**
 - Always implement user-friendly error messages
 - Add loading indicators for all service calls
