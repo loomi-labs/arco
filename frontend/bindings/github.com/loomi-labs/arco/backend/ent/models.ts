@@ -948,9 +948,24 @@ export class Repository {
     "password": string;
 
     /**
-     * NextIntegrityCheck holds the value of the "next_integrity_check" field.
+     * Timestamp of last quick check (--repository-only)
      */
-    "nextIntegrityCheck": time$0.Time | null;
+    "lastQuickCheckAt": time$0.Time | null;
+
+    /**
+     * Error messages from last quick check, empty array if successful
+     */
+    "quickCheckError": string[];
+
+    /**
+     * Timestamp of last full check (--verify-data)
+     */
+    "lastFullCheckAt": time$0.Time | null;
+
+    /**
+     * Error messages from last full check, empty array if successful
+     */
+    "fullCheckError": string[];
 
     /**
      * Total number of all chunks across all archives (including duplicates)
@@ -1008,8 +1023,17 @@ export class Repository {
         if (!("password" in $$source)) {
             this["password"] = "";
         }
-        if (!("nextIntegrityCheck" in $$source)) {
-            this["nextIntegrityCheck"] = null;
+        if (!("lastQuickCheckAt" in $$source)) {
+            this["lastQuickCheckAt"] = null;
+        }
+        if (!("quickCheckError" in $$source)) {
+            this["quickCheckError"] = [];
+        }
+        if (!("lastFullCheckAt" in $$source)) {
+            this["lastFullCheckAt"] = null;
+        }
+        if (!("fullCheckError" in $$source)) {
+            this["fullCheckError"] = [];
         }
         if (!("statsTotalChunks" in $$source)) {
             this["statsTotalChunks"] = 0;
@@ -1040,10 +1064,18 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField13_0 = $$createType22;
+        const $$createField7_0 = $$createType5;
+        const $$createField9_0 = $$createType5;
+        const $$createField16_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField7_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField9_0($$parsedSource["fullCheckError"]);
+        }
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField16_0($$parsedSource["edges"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }

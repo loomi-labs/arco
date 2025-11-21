@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -81,23 +82,79 @@ func (_u *RepositoryUpdate) SetNillablePassword(v *string) *RepositoryUpdate {
 	return _u
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (_u *RepositoryUpdate) SetNextIntegrityCheck(v time.Time) *RepositoryUpdate {
-	_u.mutation.SetNextIntegrityCheck(v)
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (_u *RepositoryUpdate) SetLastQuickCheckAt(v time.Time) *RepositoryUpdate {
+	_u.mutation.SetLastQuickCheckAt(v)
 	return _u
 }
 
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (_u *RepositoryUpdate) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryUpdate {
+// SetNillableLastQuickCheckAt sets the "last_quick_check_at" field if the given value is not nil.
+func (_u *RepositoryUpdate) SetNillableLastQuickCheckAt(v *time.Time) *RepositoryUpdate {
 	if v != nil {
-		_u.SetNextIntegrityCheck(*v)
+		_u.SetLastQuickCheckAt(*v)
 	}
 	return _u
 }
 
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (_u *RepositoryUpdate) ClearNextIntegrityCheck() *RepositoryUpdate {
-	_u.mutation.ClearNextIntegrityCheck()
+// ClearLastQuickCheckAt clears the value of the "last_quick_check_at" field.
+func (_u *RepositoryUpdate) ClearLastQuickCheckAt() *RepositoryUpdate {
+	_u.mutation.ClearLastQuickCheckAt()
+	return _u
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (_u *RepositoryUpdate) SetQuickCheckError(v []string) *RepositoryUpdate {
+	_u.mutation.SetQuickCheckError(v)
+	return _u
+}
+
+// AppendQuickCheckError appends value to the "quick_check_error" field.
+func (_u *RepositoryUpdate) AppendQuickCheckError(v []string) *RepositoryUpdate {
+	_u.mutation.AppendQuickCheckError(v)
+	return _u
+}
+
+// ClearQuickCheckError clears the value of the "quick_check_error" field.
+func (_u *RepositoryUpdate) ClearQuickCheckError() *RepositoryUpdate {
+	_u.mutation.ClearQuickCheckError()
+	return _u
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (_u *RepositoryUpdate) SetLastFullCheckAt(v time.Time) *RepositoryUpdate {
+	_u.mutation.SetLastFullCheckAt(v)
+	return _u
+}
+
+// SetNillableLastFullCheckAt sets the "last_full_check_at" field if the given value is not nil.
+func (_u *RepositoryUpdate) SetNillableLastFullCheckAt(v *time.Time) *RepositoryUpdate {
+	if v != nil {
+		_u.SetLastFullCheckAt(*v)
+	}
+	return _u
+}
+
+// ClearLastFullCheckAt clears the value of the "last_full_check_at" field.
+func (_u *RepositoryUpdate) ClearLastFullCheckAt() *RepositoryUpdate {
+	_u.mutation.ClearLastFullCheckAt()
+	return _u
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (_u *RepositoryUpdate) SetFullCheckError(v []string) *RepositoryUpdate {
+	_u.mutation.SetFullCheckError(v)
+	return _u
+}
+
+// AppendFullCheckError appends value to the "full_check_error" field.
+func (_u *RepositoryUpdate) AppendFullCheckError(v []string) *RepositoryUpdate {
+	_u.mutation.AppendFullCheckError(v)
+	return _u
+}
+
+// ClearFullCheckError clears the value of the "full_check_error" field.
+func (_u *RepositoryUpdate) ClearFullCheckError() *RepositoryUpdate {
+	_u.mutation.ClearFullCheckError()
 	return _u
 }
 
@@ -441,11 +498,39 @@ func (_u *RepositoryUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	if value, ok := _u.mutation.LastQuickCheckAt(); ok {
+		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)
 	}
-	if _u.mutation.NextIntegrityCheckCleared() {
-		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
+	if _u.mutation.LastQuickCheckAtCleared() {
+		_spec.ClearField(repository.FieldLastQuickCheckAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.QuickCheckError(); ok {
+		_spec.SetField(repository.FieldQuickCheckError, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedQuickCheckError(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, repository.FieldQuickCheckError, value)
+		})
+	}
+	if _u.mutation.QuickCheckErrorCleared() {
+		_spec.ClearField(repository.FieldQuickCheckError, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.LastFullCheckAt(); ok {
+		_spec.SetField(repository.FieldLastFullCheckAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastFullCheckAtCleared() {
+		_spec.ClearField(repository.FieldLastFullCheckAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FullCheckError(); ok {
+		_spec.SetField(repository.FieldFullCheckError, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedFullCheckError(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, repository.FieldFullCheckError, value)
+		})
+	}
+	if _u.mutation.FullCheckErrorCleared() {
+		_spec.ClearField(repository.FieldFullCheckError, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)
@@ -717,23 +802,79 @@ func (_u *RepositoryUpdateOne) SetNillablePassword(v *string) *RepositoryUpdateO
 	return _u
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (_u *RepositoryUpdateOne) SetNextIntegrityCheck(v time.Time) *RepositoryUpdateOne {
-	_u.mutation.SetNextIntegrityCheck(v)
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (_u *RepositoryUpdateOne) SetLastQuickCheckAt(v time.Time) *RepositoryUpdateOne {
+	_u.mutation.SetLastQuickCheckAt(v)
 	return _u
 }
 
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (_u *RepositoryUpdateOne) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryUpdateOne {
+// SetNillableLastQuickCheckAt sets the "last_quick_check_at" field if the given value is not nil.
+func (_u *RepositoryUpdateOne) SetNillableLastQuickCheckAt(v *time.Time) *RepositoryUpdateOne {
 	if v != nil {
-		_u.SetNextIntegrityCheck(*v)
+		_u.SetLastQuickCheckAt(*v)
 	}
 	return _u
 }
 
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (_u *RepositoryUpdateOne) ClearNextIntegrityCheck() *RepositoryUpdateOne {
-	_u.mutation.ClearNextIntegrityCheck()
+// ClearLastQuickCheckAt clears the value of the "last_quick_check_at" field.
+func (_u *RepositoryUpdateOne) ClearLastQuickCheckAt() *RepositoryUpdateOne {
+	_u.mutation.ClearLastQuickCheckAt()
+	return _u
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (_u *RepositoryUpdateOne) SetQuickCheckError(v []string) *RepositoryUpdateOne {
+	_u.mutation.SetQuickCheckError(v)
+	return _u
+}
+
+// AppendQuickCheckError appends value to the "quick_check_error" field.
+func (_u *RepositoryUpdateOne) AppendQuickCheckError(v []string) *RepositoryUpdateOne {
+	_u.mutation.AppendQuickCheckError(v)
+	return _u
+}
+
+// ClearQuickCheckError clears the value of the "quick_check_error" field.
+func (_u *RepositoryUpdateOne) ClearQuickCheckError() *RepositoryUpdateOne {
+	_u.mutation.ClearQuickCheckError()
+	return _u
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (_u *RepositoryUpdateOne) SetLastFullCheckAt(v time.Time) *RepositoryUpdateOne {
+	_u.mutation.SetLastFullCheckAt(v)
+	return _u
+}
+
+// SetNillableLastFullCheckAt sets the "last_full_check_at" field if the given value is not nil.
+func (_u *RepositoryUpdateOne) SetNillableLastFullCheckAt(v *time.Time) *RepositoryUpdateOne {
+	if v != nil {
+		_u.SetLastFullCheckAt(*v)
+	}
+	return _u
+}
+
+// ClearLastFullCheckAt clears the value of the "last_full_check_at" field.
+func (_u *RepositoryUpdateOne) ClearLastFullCheckAt() *RepositoryUpdateOne {
+	_u.mutation.ClearLastFullCheckAt()
+	return _u
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (_u *RepositoryUpdateOne) SetFullCheckError(v []string) *RepositoryUpdateOne {
+	_u.mutation.SetFullCheckError(v)
+	return _u
+}
+
+// AppendFullCheckError appends value to the "full_check_error" field.
+func (_u *RepositoryUpdateOne) AppendFullCheckError(v []string) *RepositoryUpdateOne {
+	_u.mutation.AppendFullCheckError(v)
+	return _u
+}
+
+// ClearFullCheckError clears the value of the "full_check_error" field.
+func (_u *RepositoryUpdateOne) ClearFullCheckError() *RepositoryUpdateOne {
+	_u.mutation.ClearFullCheckError()
 	return _u
 }
 
@@ -1107,11 +1248,39 @@ func (_u *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, 
 	if value, ok := _u.mutation.Password(); ok {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
+	if value, ok := _u.mutation.LastQuickCheckAt(); ok {
+		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)
 	}
-	if _u.mutation.NextIntegrityCheckCleared() {
-		_spec.ClearField(repository.FieldNextIntegrityCheck, field.TypeTime)
+	if _u.mutation.LastQuickCheckAtCleared() {
+		_spec.ClearField(repository.FieldLastQuickCheckAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.QuickCheckError(); ok {
+		_spec.SetField(repository.FieldQuickCheckError, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedQuickCheckError(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, repository.FieldQuickCheckError, value)
+		})
+	}
+	if _u.mutation.QuickCheckErrorCleared() {
+		_spec.ClearField(repository.FieldQuickCheckError, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.LastFullCheckAt(); ok {
+		_spec.SetField(repository.FieldLastFullCheckAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastFullCheckAtCleared() {
+		_spec.ClearField(repository.FieldLastFullCheckAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FullCheckError(); ok {
+		_spec.SetField(repository.FieldFullCheckError, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedFullCheckError(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, repository.FieldFullCheckError, value)
+		})
+	}
+	if _u.mutation.FullCheckErrorCleared() {
+		_spec.ClearField(repository.FieldFullCheckError, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)

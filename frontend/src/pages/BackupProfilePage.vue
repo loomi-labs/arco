@@ -428,7 +428,7 @@ watch(
             <div tabindex='0' role='button' class='btn btn-square'>
               <EllipsisVerticalIcon class='size-6' />
             </div>
-            <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
+            <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm'>
               <li><a @click='showDeleteBackupProfileModal' class='text-error'>Delete
                 <TrashIcon class='size-4' />
               </a></li>

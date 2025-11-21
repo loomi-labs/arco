@@ -1,5 +1,7 @@
 <script setup lang='ts'>
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
+import { isAfter } from "@formkit/tempo";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
@@ -47,6 +49,20 @@ const isRegeneratingSSH = ref(false);
 const isChangingPassphrase = ref(false);
 const isBreakingLock = ref(false);
 const newPassphrase = ref<string>("");
+
+// Verification state
+const isVerifying = computed(() => repo.value.state.type === RepositoryStateType.RepositoryStateTypeChecking);
+const showVerifyModal = ref(false);
+const verifyDepthQuick = ref(false);
+
+// Check history display logic
+const hasCheckHistory = computed(() => repo.value.lastQuickCheckAt !== null || repo.value.lastFullCheckAt !== null);
+const shouldShowQuickCheck = computed(() => {
+  // Show quick check if no full check exists, OR if quick check is newer than full check
+  if (!repo.value.lastQuickCheckAt) return false;
+  if (!repo.value.lastFullCheckAt) return true;
+  return isAfter(repo.value.lastQuickCheckAt, repo.value.lastFullCheckAt);
+});
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -256,6 +272,24 @@ async function breakLock() {
   }
 }
 
+function openVerifyModal() {
+  if (!repo.value) return;
+
+  verifyDepthQuick.value = false;  // Default to Full
+  showVerifyModal.value = true;
+}
+
+async function startVerification(quick: boolean) {
+  if (!repo.value) return;
+
+  try {
+    showVerifyModal.value = false;
+    await repoService.QueueCheck(repo.value.id, quick);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to start verification", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
@@ -310,7 +344,7 @@ onUnmounted(() => {
         <div tabindex='0' role='button' class='btn btn-square'>
           <EllipsisVerticalIcon class='size-6' />
         </div>
-        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
+        <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm'>
           <li>
             <button @click='confirmRemoveModal?.showModal()'
                     class='text-error hover:bg-error hover:text-error-content'>
@@ -464,7 +498,7 @@ onUnmounted(() => {
             </span>
             <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
-                  toRelativeTimeString(lastArchive.createdAt)
+                  toRelativeTimeString(lastArchive.createdAt, true)
                 }}</span>
             </span>
             <span v-else class='text-lg opacity-50'>-</span>
@@ -487,6 +521,54 @@ onUnmounted(() => {
                     repo.type.type === LocationType.LocationTypeArcoCloud ? $t("arcoCloud") :
                       $t("remote")
                 }}</span>
+            </div>
+          </div>
+
+          <div class='divider'></div>
+
+          <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
+            <span class='font-medium'>Integrity Verification</span>
+            <div class='flex items-center gap-2'>
+              <div v-if='hasCheckHistory' class='text-sm opacity-70 flex flex-col gap-1'>
+                <div v-if='repo.lastFullCheckAt' class='flex items-center gap-2'>
+                  <span class='tooltip' :data-tip='toLongDateString(repo.lastFullCheckAt, true)'>
+                    Last full check: {{ toRelativeTimeString(repo.lastFullCheckAt, true) }}
+                  </span>
+                  <div v-if='repo.fullCheckError && repo.fullCheckError.length > 0'
+                       class='tooltip tooltip-error'
+                       :data-tip='repo.fullCheckError.join(", ")'>
+                    <span class='badge badge-error badge-sm cursor-help'>
+                      {{ repo.fullCheckError.length }} error{{ repo.fullCheckError.length > 1 ? 's' : '' }}
+                    </span>
+                  </div>
+                  <span v-else class='badge badge-success badge-sm'>
+                    ✓ Success
+                  </span>
+                </div>
+                <div v-if='shouldShowQuickCheck' class='flex items-center gap-2'>
+                  <span class='tooltip' :data-tip='toLongDateString(repo.lastQuickCheckAt!, true)'>
+                    Last quick check: {{ toRelativeTimeString(repo.lastQuickCheckAt!, true) }}
+                  </span>
+                  <div v-if='repo.quickCheckError && repo.quickCheckError.length > 0'
+                       class='tooltip tooltip-error'
+                       :data-tip='repo.quickCheckError.join(", ")'>
+                    <span class='badge badge-error badge-sm cursor-help'>
+                      {{ repo.quickCheckError.length }} error{{ repo.quickCheckError.length > 1 ? 's' : '' }}
+                    </span>
+                  </div>
+                  <span v-else class='badge badge-success badge-sm'>
+                    ✓ Success
+                  </span>
+                </div>
+              </div>
+              <span v-else class='text-sm opacity-70'>Never verified</span>
+              <button
+                  class='btn btn-sm btn-outline btn-primary'
+                  :disabled='isVerifying || repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
+                  @click='openVerifyModal'>
+                <span v-if='isVerifying' class='loading loading-spinner loading-xs'></span>
+                {{ isVerifying ? "Verifying..." : "Verify Repository" }}
+              </button>
             </div>
           </div>
         </div>
@@ -560,6 +642,58 @@ onUnmounted(() => {
         </div>
       </template>
     </ConfirmModal>
+
+    <!-- Verification Modal -->
+    <TransitionRoot as='template' :show='showVerifyModal'>
+      <Dialog class='relative z-50' @close='showVerifyModal = false'>
+        <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+                         leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+          <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
+        </TransitionChild>
+
+        <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+          <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
+            <TransitionChild as='template' enter='ease-out duration-300'
+                             enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                             enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
+                             leave-from='opacity-100 translate-y-0 sm:scale-100'
+                             leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+              <DialogPanel
+                  class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
+                <div class='p-8'>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Verify Repository</DialogTitle>
+
+                  <div class='form-control'>
+                    <label class='label cursor-pointer justify-start gap-4'>
+                      <input type='radio' name='verify-depth' class='radio' :value='false' v-model='verifyDepthQuick' />
+                      <div>
+                        <div class='font-semibold'>Full Verification</div>
+                        <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
+                      </div>
+                    </label>
+
+                    <label class='label cursor-pointer justify-start gap-4 mt-2'>
+                      <input type='radio' name='verify-depth' class='radio' :value='true' v-model='verifyDepthQuick' />
+                      <div>
+                        <div class='font-semibold'>Quick Verification</div>
+                        <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div class='flex gap-3 pt-5'>
+                    <button class='btn btn-sm btn-outline' @click='showVerifyModal = false'>Cancel</button>
+                    <button class='btn btn-sm btn-primary' @click='startVerification(verifyDepthQuick)'>Start
+                      Verification
+                    </button>
+                  </div>
+                </div>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
+        </div>
+      </Dialog>
+    </TransitionRoot>
   </div>
 </template>
 

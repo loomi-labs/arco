@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -28,8 +29,14 @@ type Repository struct {
 	URL string `json:"url"`
 	// Password holds the value of the "password" field.
 	Password string `json:"password"`
-	// NextIntegrityCheck holds the value of the "next_integrity_check" field.
-	NextIntegrityCheck *time.Time `json:"nextIntegrityCheck"`
+	// Timestamp of last quick check (--repository-only)
+	LastQuickCheckAt *time.Time `json:"lastQuickCheckAt"`
+	// Error messages from last quick check, empty array if successful
+	QuickCheckError []string `json:"quickCheckError"`
+	// Timestamp of last full check (--verify-data)
+	LastFullCheckAt *time.Time `json:"lastFullCheckAt"`
+	// Error messages from last full check, empty array if successful
+	FullCheckError []string `json:"fullCheckError"`
 	// Total number of all chunks across all archives (including duplicates)
 	StatsTotalChunks int `json:"statsTotalChunks"`
 	// Total uncompressed size of all chunks multiplied by their reference counts
@@ -107,11 +114,13 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case repository.FieldQuickCheckError, repository.FieldFullCheckError:
+			values[i] = new([]byte)
 		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
 		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
 			values[i] = new(sql.NullString)
-		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldNextIntegrityCheck:
+		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldLastQuickCheckAt, repository.FieldLastFullCheckAt:
 			values[i] = new(sql.NullTime)
 		case repository.ForeignKeys[0]: // cloud_repository_repository
 			values[i] = new(sql.NullInt64)
@@ -166,12 +175,35 @@ func (_m *Repository) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Password = value.String
 			}
-		case repository.FieldNextIntegrityCheck:
+		case repository.FieldLastQuickCheckAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field next_integrity_check", values[i])
+				return fmt.Errorf("unexpected type %T for field last_quick_check_at", values[i])
 			} else if value.Valid {
-				_m.NextIntegrityCheck = new(time.Time)
-				*_m.NextIntegrityCheck = value.Time
+				_m.LastQuickCheckAt = new(time.Time)
+				*_m.LastQuickCheckAt = value.Time
+			}
+		case repository.FieldQuickCheckError:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field quick_check_error", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.QuickCheckError); err != nil {
+					return fmt.Errorf("unmarshal field quick_check_error: %w", err)
+				}
+			}
+		case repository.FieldLastFullCheckAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_full_check_at", values[i])
+			} else if value.Valid {
+				_m.LastFullCheckAt = new(time.Time)
+				*_m.LastFullCheckAt = value.Time
+			}
+		case repository.FieldFullCheckError:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field full_check_error", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.FullCheckError); err != nil {
+					return fmt.Errorf("unmarshal field full_check_error: %w", err)
+				}
 			}
 		case repository.FieldStatsTotalChunks:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -287,10 +319,21 @@ func (_m *Repository) String() string {
 	builder.WriteString("password=")
 	builder.WriteString(_m.Password)
 	builder.WriteString(", ")
-	if v := _m.NextIntegrityCheck; v != nil {
-		builder.WriteString("next_integrity_check=")
+	if v := _m.LastQuickCheckAt; v != nil {
+		builder.WriteString("last_quick_check_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("quick_check_error=")
+	builder.WriteString(fmt.Sprintf("%v", _m.QuickCheckError))
+	builder.WriteString(", ")
+	if v := _m.LastFullCheckAt; v != nil {
+		builder.WriteString("last_full_check_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("full_check_error=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FullCheckError))
 	builder.WriteString(", ")
 	builder.WriteString("stats_total_chunks=")
 	builder.WriteString(fmt.Sprintf("%v", _m.StatsTotalChunks))

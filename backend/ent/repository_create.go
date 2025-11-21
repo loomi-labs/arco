@@ -70,17 +70,43 @@ func (_c *RepositoryCreate) SetPassword(v string) *RepositoryCreate {
 	return _c
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (_c *RepositoryCreate) SetNextIntegrityCheck(v time.Time) *RepositoryCreate {
-	_c.mutation.SetNextIntegrityCheck(v)
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (_c *RepositoryCreate) SetLastQuickCheckAt(v time.Time) *RepositoryCreate {
+	_c.mutation.SetLastQuickCheckAt(v)
 	return _c
 }
 
-// SetNillableNextIntegrityCheck sets the "next_integrity_check" field if the given value is not nil.
-func (_c *RepositoryCreate) SetNillableNextIntegrityCheck(v *time.Time) *RepositoryCreate {
+// SetNillableLastQuickCheckAt sets the "last_quick_check_at" field if the given value is not nil.
+func (_c *RepositoryCreate) SetNillableLastQuickCheckAt(v *time.Time) *RepositoryCreate {
 	if v != nil {
-		_c.SetNextIntegrityCheck(*v)
+		_c.SetLastQuickCheckAt(*v)
 	}
+	return _c
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (_c *RepositoryCreate) SetQuickCheckError(v []string) *RepositoryCreate {
+	_c.mutation.SetQuickCheckError(v)
+	return _c
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (_c *RepositoryCreate) SetLastFullCheckAt(v time.Time) *RepositoryCreate {
+	_c.mutation.SetLastFullCheckAt(v)
+	return _c
+}
+
+// SetNillableLastFullCheckAt sets the "last_full_check_at" field if the given value is not nil.
+func (_c *RepositoryCreate) SetNillableLastFullCheckAt(v *time.Time) *RepositoryCreate {
+	if v != nil {
+		_c.SetLastFullCheckAt(*v)
+	}
+	return _c
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (_c *RepositoryCreate) SetFullCheckError(v []string) *RepositoryCreate {
+	_c.mutation.SetFullCheckError(v)
 	return _c
 }
 
@@ -399,9 +425,21 @@ func (_c *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
-	if value, ok := _c.mutation.NextIntegrityCheck(); ok {
-		_spec.SetField(repository.FieldNextIntegrityCheck, field.TypeTime, value)
-		_node.NextIntegrityCheck = &value
+	if value, ok := _c.mutation.LastQuickCheckAt(); ok {
+		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)
+		_node.LastQuickCheckAt = &value
+	}
+	if value, ok := _c.mutation.QuickCheckError(); ok {
+		_spec.SetField(repository.FieldQuickCheckError, field.TypeJSON, value)
+		_node.QuickCheckError = value
+	}
+	if value, ok := _c.mutation.LastFullCheckAt(); ok {
+		_spec.SetField(repository.FieldLastFullCheckAt, field.TypeTime, value)
+		_node.LastFullCheckAt = &value
+	}
+	if value, ok := _c.mutation.FullCheckError(); ok {
+		_spec.SetField(repository.FieldFullCheckError, field.TypeJSON, value)
+		_node.FullCheckError = value
 	}
 	if value, ok := _c.mutation.StatsTotalChunks(); ok {
 		_spec.SetField(repository.FieldStatsTotalChunks, field.TypeInt, value)

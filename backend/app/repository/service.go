@@ -310,6 +310,10 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		LastBackupTime:      lastBackupTime,
 		LastBackupError:     lastBackupError,
 		LastBackupWarning:   lastBackupWarning,
+		LastQuickCheckAt:    repoEntity.LastQuickCheckAt,
+		QuickCheckError:     repoEntity.QuickCheckError,
+		LastFullCheckAt:     repoEntity.LastFullCheckAt,
+		FullCheckError:      repoEntity.FullCheckError,
 		SizeOnDisk:          sizeOnDisk,
 		TotalSize:           totalSize,
 		DeduplicationRatio:  dedupRatio,
@@ -685,6 +689,34 @@ func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, erro
 		return "", fmt.Errorf("failed to queue archive refresh operation: %w", err)
 	}
 
+	return operationID, nil
+}
+
+// QueueCheck queues a repository integrity check operation
+func (s *Service) QueueCheck(ctx context.Context, repoId int, quickVerification bool) (string, error) {
+	// Create check operation
+	checkOp := statemachine.NewOperationCheck(statemachine.Check{
+		RepositoryID:      repoId,
+		QuickVerification: quickVerification,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		checkOp,
+		repoId,
+		nil,   // No backup profile for check (repository-wide operation)
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue check operation: %w", err)
+	}
+
+	s.log.Infof("Queued %s check for repo %d", map[bool]string{true: "quick", false: "full"}[quickVerification], repoId)
 	return operationID, nil
 }
 
@@ -1579,6 +1611,7 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
 		case statemachine.OperationTypeArchiveRefresh,
 			statemachine.OperationTypeBackup,
+			statemachine.OperationTypeCheck,
 			statemachine.OperationTypeDelete,
 			statemachine.OperationTypeExaminePrune,
 			statemachine.OperationTypeMount,
@@ -1806,6 +1839,7 @@ func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId type
 	case statemachine.RepositoryStateTypePruning,
 		statemachine.RepositoryStateTypeDeleting,
 		statemachine.RepositoryStateTypeRefreshing,
+		statemachine.RepositoryStateTypeChecking,
 		statemachine.RepositoryStateTypeMounting:
 		// Repository is busy with other operations
 		return BackupButtonStatusBusy, nil
