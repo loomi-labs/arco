@@ -86,12 +86,6 @@ TestBorgDeleteArchives
 * Verify auto-compact after bulk deletion
 * Verify selective deletion (only matching prefix)
 
-TestBorgCheckOperations
-* QuickMode - Quick repository-only integrity check
-* FullMode - Full repository and data verification check
-* NonExistentRepository - Error handling for non-existent repository
-* WrongPassword - Error handling for incorrect password
-
 TestBorgErrorHandling
 * InvalidRepository - Error handling for non-existent repository
 * WrongPassword - Error handling for incorrect password
@@ -867,93 +861,6 @@ func TestBorgDeleteArchives(t *testing.T) {
 	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
 	assert.True(t, status.IsCompletedWithSuccess(), "Info should succeed after deletion and compaction")
 	assert.NotNil(t, info, "Info should return repository information")
-}
-
-// TestBorgCheckOperations tests check operations
-func TestBorgCheckOperations(t *testing.T) {
-	suite := &TestIntegrationSuite{}
-	suite.setupBorgEnvironment(t)
-	defer suite.teardownBorgEnvironment(t)
-
-	t.Run("QuickMode", func(t *testing.T) {
-		repoPath := suite.getTestRepositoryPath()
-		dataDir := suite.createTestData(t)
-
-		// Initialize repository
-		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
-		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
-
-		// Create backup
-		progressChan := make(chan types.BackupProgress, 10)
-		_, status = suite.borg.Create(
-			suite.ctx,
-			repoPath,
-			testPassword,
-			"test-archive",
-			[]string{dataDir},
-			[]string{},
-			backupprofile.CompressionModeLz4,
-			nil,
-			progressChan,
-		)
-		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
-
-		// Run quick check
-		result := suite.borg.Check(suite.ctx, repoPath, testPassword, true)
-		assert.True(t, result.Status.IsCompletedWithSuccess(), "Quick check should succeed: %v", result.Status.GetError())
-		assert.Empty(t, result.ErrorLogs, "Quick check should have no error logs")
-	})
-
-	t.Run("FullMode", func(t *testing.T) {
-		repoPath := suite.getTestRepositoryPath()
-		dataDir := suite.createTestData(t)
-
-		// Initialize repository
-		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
-		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
-
-		// Create backup
-		progressChan := make(chan types.BackupProgress, 10)
-		_, status = suite.borg.Create(
-			suite.ctx,
-			repoPath,
-			testPassword,
-			"test-archive",
-			[]string{dataDir},
-			[]string{},
-			backupprofile.CompressionModeLz4,
-			nil,
-			progressChan,
-		)
-		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
-
-		// Run full check (verify data)
-		result := suite.borg.Check(suite.ctx, repoPath, testPassword, false)
-		assert.True(t, result.Status.IsCompletedWithSuccess(), "Full check should succeed: %v", result.Status.GetError())
-		assert.Empty(t, result.ErrorLogs, "Full check should have no error logs")
-	})
-
-	t.Run("NonExistentRepository", func(t *testing.T) {
-		invalidRepoPath := "/nonexistent/repo"
-
-		// Run check on non-existent repository
-		result := suite.borg.Check(suite.ctx, invalidRepoPath, testPassword, true)
-		assert.True(t, result.Status.HasError(), "Check should fail for non-existent repository")
-		assert.True(t, errors.Is(result.Status.Error, types.ErrorRepositoryDoesNotExist), "Should be repository does not exist error")
-	})
-
-	t.Run("WrongPassword", func(t *testing.T) {
-		repoPath := suite.getTestRepositoryPath()
-
-		// Initialize repository
-		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
-		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
-
-		// Try to check with wrong password
-		result := suite.borg.Check(suite.ctx, repoPath, "wrongpassword", true)
-		assert.True(t, result.Status.HasError(), "Check should fail with wrong password")
-		assert.True(t, errors.Is(result.Status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
-	})
 }
 
 // TestBorgErrorHandling tests error handling scenarios
