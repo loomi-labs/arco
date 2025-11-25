@@ -101,14 +101,36 @@ func init() {
 	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
 	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
 	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
+	// backupprofileDescCompressionLevel is the schema descriptor for compression_level field.
+	backupprofileDescCompressionLevel := backupprofileFields[7].Descriptor()
+	// backupprofile.CompressionLevelValidator is a validator for the "compression_level" field. It is called by the builders before save.
+	backupprofile.CompressionLevelValidator = func() func(int) error {
+		validators := backupprofileDescCompressionLevel.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(compression_level int) error {
+			for _, fn := range fns {
+				if err := fn(compression_level); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// backupprofileDescDataSectionCollapsed is the schema descriptor for data_section_collapsed field.
-	backupprofileDescDataSectionCollapsed := backupprofileFields[6].Descriptor()
+	backupprofileDescDataSectionCollapsed := backupprofileFields[8].Descriptor()
 	// backupprofile.DefaultDataSectionCollapsed holds the default value on creation for the data_section_collapsed field.
 	backupprofile.DefaultDataSectionCollapsed = backupprofileDescDataSectionCollapsed.Default.(bool)
 	// backupprofileDescScheduleSectionCollapsed is the schema descriptor for schedule_section_collapsed field.
-	backupprofileDescScheduleSectionCollapsed := backupprofileFields[7].Descriptor()
+	backupprofileDescScheduleSectionCollapsed := backupprofileFields[9].Descriptor()
 	// backupprofile.DefaultScheduleSectionCollapsed holds the default value on creation for the schedule_section_collapsed field.
 	backupprofile.DefaultScheduleSectionCollapsed = backupprofileDescScheduleSectionCollapsed.Default.(bool)
+	// backupprofileDescAdvancedSectionCollapsed is the schema descriptor for advanced_section_collapsed field.
+	backupprofileDescAdvancedSectionCollapsed := backupprofileFields[10].Descriptor()
+	// backupprofile.DefaultAdvancedSectionCollapsed holds the default value on creation for the advanced_section_collapsed field.
+	backupprofile.DefaultAdvancedSectionCollapsed = backupprofileDescAdvancedSectionCollapsed.Default.(bool)
 	backupscheduleMixin := schema.BackupSchedule{}.Mixin()
 	backupscheduleMixinFields0 := backupscheduleMixin[0].Fields()
 	_ = backupscheduleMixinFields0
@@ -216,27 +238,27 @@ func init() {
 		}
 	}()
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
-	repositoryDescStatsTotalChunks := repositoryFields[5].Descriptor()
+	repositoryDescStatsTotalChunks := repositoryFields[8].Descriptor()
 	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
 	repository.DefaultStatsTotalChunks = repositoryDescStatsTotalChunks.Default.(int)
 	// repositoryDescStatsTotalSize is the schema descriptor for stats_total_size field.
-	repositoryDescStatsTotalSize := repositoryFields[6].Descriptor()
+	repositoryDescStatsTotalSize := repositoryFields[9].Descriptor()
 	// repository.DefaultStatsTotalSize holds the default value on creation for the stats_total_size field.
 	repository.DefaultStatsTotalSize = repositoryDescStatsTotalSize.Default.(int)
 	// repositoryDescStatsTotalCsize is the schema descriptor for stats_total_csize field.
-	repositoryDescStatsTotalCsize := repositoryFields[7].Descriptor()
+	repositoryDescStatsTotalCsize := repositoryFields[10].Descriptor()
 	// repository.DefaultStatsTotalCsize holds the default value on creation for the stats_total_csize field.
 	repository.DefaultStatsTotalCsize = repositoryDescStatsTotalCsize.Default.(int)
 	// repositoryDescStatsTotalUniqueChunks is the schema descriptor for stats_total_unique_chunks field.
-	repositoryDescStatsTotalUniqueChunks := repositoryFields[8].Descriptor()
+	repositoryDescStatsTotalUniqueChunks := repositoryFields[11].Descriptor()
 	// repository.DefaultStatsTotalUniqueChunks holds the default value on creation for the stats_total_unique_chunks field.
 	repository.DefaultStatsTotalUniqueChunks = repositoryDescStatsTotalUniqueChunks.Default.(int)
 	// repositoryDescStatsUniqueSize is the schema descriptor for stats_unique_size field.
-	repositoryDescStatsUniqueSize := repositoryFields[9].Descriptor()
+	repositoryDescStatsUniqueSize := repositoryFields[12].Descriptor()
 	// repository.DefaultStatsUniqueSize holds the default value on creation for the stats_unique_size field.
 	repository.DefaultStatsUniqueSize = repositoryDescStatsUniqueSize.Default.(int)
 	// repositoryDescStatsUniqueCsize is the schema descriptor for stats_unique_csize field.
-	repositoryDescStatsUniqueCsize := repositoryFields[10].Descriptor()
+	repositoryDescStatsUniqueCsize := repositoryFields[13].Descriptor()
 	// repository.DefaultStatsUniqueCsize holds the default value on creation for the stats_unique_csize field.
 	repository.DefaultStatsUniqueCsize = repositoryDescStatsUniqueCsize.Default.(int)
 	settingsMixin := schema.Settings{}.Mixin()
@@ -258,6 +280,10 @@ func init() {
 	settingsDescShowWelcome := settingsFields[0].Descriptor()
 	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
 	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
+	// settingsDescExpertMode is the schema descriptor for expert_mode field.
+	settingsDescExpertMode := settingsFields[1].Descriptor()
+	// settings.DefaultExpertMode holds the default value on creation for the expert_mode field.
+	settings.DefaultExpertMode = settingsDescExpertMode.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

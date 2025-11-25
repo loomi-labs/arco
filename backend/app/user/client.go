@@ -7,14 +7,16 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
 
 // Service contains the business logic and provides methods exposed to the frontend
 type Service struct {
-	log   *zap.SugaredLogger
-	db    *ent.Client
-	state *state.State
+	log          *zap.SugaredLogger
+	db           *ent.Client
+	state        *state.State
+	eventEmitter types.EventEmitter
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -33,8 +35,9 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client) {
+func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter) {
 	si.db = db
+	si.eventEmitter = eventEmitter
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -89,10 +92,18 @@ func (s *Service) GetSettings(ctx context.Context) (*ent.Settings, error) {
 func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) error {
 	s.mustHaveDB()
 	s.log.Debugf("Saving settings: %s", settings)
-	return s.db.Settings.
+	err := s.db.Settings.
 		Update().
 		SetShowWelcome(settings.ShowWelcome).
+		SetExpertMode(settings.ExpertMode).
+		SetTheme(settings.Theme).
 		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	s.eventEmitter.EmitEvent(application.Get().Context(), types.EventSettingsChangedString())
+	return nil
 }
 
 type AppInfo struct {

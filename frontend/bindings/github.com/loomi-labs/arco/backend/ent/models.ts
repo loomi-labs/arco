@@ -19,6 +19,9 @@ import * as cloudrepository$0 from "./cloudrepository/models.js";
 import * as notification$0 from "./notification/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as settings$0 from "./settings/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as time$0 from "../../../../../time/models.js";
 
 /**
@@ -191,6 +194,16 @@ export class BackupProfile {
     "icon": backupprofile$0.Icon;
 
     /**
+     * Compression algorithm for backups
+     */
+    "compressionMode": backupprofile$0.CompressionMode;
+
+    /**
+     * Compression level (algorithm-specific range)
+     */
+    "compressionLevel": number | null;
+
+    /**
      * DataSectionCollapsed holds the value of the "data_section_collapsed" field.
      */
     "dataSectionCollapsed": boolean;
@@ -199,6 +212,11 @@ export class BackupProfile {
      * ScheduleSectionCollapsed holds the value of the "schedule_section_collapsed" field.
      */
     "scheduleSectionCollapsed": boolean;
+
+    /**
+     * UI state: whether advanced settings section is collapsed
+     */
+    "advancedSectionCollapsed": boolean;
 
     /**
      * Edges holds the relations/edges for other nodes in the graph.
@@ -232,11 +250,20 @@ export class BackupProfile {
         if (!("icon" in $$source)) {
             this["icon"] = backupprofile$0.Icon.$zero;
         }
+        if (!("compressionMode" in $$source)) {
+            this["compressionMode"] = backupprofile$0.CompressionMode.$zero;
+        }
+        if (!("compressionLevel" in $$source)) {
+            this["compressionLevel"] = null;
+        }
         if (!("dataSectionCollapsed" in $$source)) {
             this["dataSectionCollapsed"] = false;
         }
         if (!("scheduleSectionCollapsed" in $$source)) {
             this["scheduleSectionCollapsed"] = false;
+        }
+        if (!("advancedSectionCollapsed" in $$source)) {
+            this["advancedSectionCollapsed"] = false;
         }
         if (!("edges" in $$source)) {
             this["edges"] = (new BackupProfileEdges());
@@ -251,7 +278,7 @@ export class BackupProfile {
     static createFrom($$source: any = {}): BackupProfile {
         const $$createField5_0 = $$createType5;
         const $$createField6_0 = $$createType5;
-        const $$createField10_0 = $$createType6;
+        const $$createField13_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupPaths" in $$parsedSource) {
             $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
@@ -260,7 +287,7 @@ export class BackupProfile {
             $$parsedSource["excludePaths"] = $$createField6_0($$parsedSource["excludePaths"]);
         }
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField10_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
         }
         return new BackupProfile($$parsedSource as Partial<BackupProfile>);
     }
@@ -921,37 +948,52 @@ export class Repository {
     "password": string;
 
     /**
-     * NextIntegrityCheck holds the value of the "next_integrity_check" field.
+     * Timestamp of last quick check (--repository-only)
      */
-    "nextIntegrityCheck": time$0.Time | null;
+    "lastQuickCheckAt": time$0.Time | null;
 
     /**
-     * StatsTotalChunks holds the value of the "stats_total_chunks" field.
+     * Error messages from last quick check, empty array if successful
+     */
+    "quickCheckError": string[];
+
+    /**
+     * Timestamp of last full check (--verify-data)
+     */
+    "lastFullCheckAt": time$0.Time | null;
+
+    /**
+     * Error messages from last full check, empty array if successful
+     */
+    "fullCheckError": string[];
+
+    /**
+     * Total number of all chunks across all archives (including duplicates)
      */
     "statsTotalChunks": number;
 
     /**
-     * StatsTotalSize holds the value of the "stats_total_size" field.
+     * Total uncompressed size of all chunks multiplied by their reference counts
      */
     "statsTotalSize": number;
 
     /**
-     * StatsTotalCsize holds the value of the "stats_total_csize" field.
+     * Total compressed size of all chunks multiplied by their reference counts (on-disk footprint with references)
      */
     "statsTotalCsize": number;
 
     /**
-     * StatsTotalUniqueChunks holds the value of the "stats_total_unique_chunks" field.
+     * Number of unique/deduplicated chunks
      */
     "statsTotalUniqueChunks": number;
 
     /**
-     * StatsUniqueSize holds the value of the "stats_unique_size" field.
+     * Uncompressed size of unique chunks only (raw deduplicated data volume)
      */
     "statsUniqueSize": number;
 
     /**
-     * StatsUniqueCsize holds the value of the "stats_unique_csize" field.
+     * Compressed size of unique chunks only (actual storage consumed on disk)
      */
     "statsUniqueCsize": number;
 
@@ -981,8 +1023,17 @@ export class Repository {
         if (!("password" in $$source)) {
             this["password"] = "";
         }
-        if (!("nextIntegrityCheck" in $$source)) {
-            this["nextIntegrityCheck"] = null;
+        if (!("lastQuickCheckAt" in $$source)) {
+            this["lastQuickCheckAt"] = null;
+        }
+        if (!("quickCheckError" in $$source)) {
+            this["quickCheckError"] = [];
+        }
+        if (!("lastFullCheckAt" in $$source)) {
+            this["lastFullCheckAt"] = null;
+        }
+        if (!("fullCheckError" in $$source)) {
+            this["fullCheckError"] = [];
         }
         if (!("statsTotalChunks" in $$source)) {
             this["statsTotalChunks"] = 0;
@@ -1013,10 +1064,18 @@ export class Repository {
      * Creates a new Repository instance from a string or object.
      */
     static createFrom($$source: any = {}): Repository {
-        const $$createField13_0 = $$createType22;
+        const $$createField7_0 = $$createType5;
+        const $$createField9_0 = $$createType5;
+        const $$createField16_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField7_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField9_0($$parsedSource["fullCheckError"]);
+        }
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField16_0($$parsedSource["edges"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }
@@ -1101,6 +1160,16 @@ export class Settings {
      */
     "showWelcome": boolean;
 
+    /**
+     * ExpertMode holds the value of the "expert_mode" field.
+     */
+    "expertMode": boolean;
+
+    /**
+     * Theme holds the value of the "theme" field.
+     */
+    "theme"?: settings$0.Theme;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1111,6 +1180,9 @@ export class Settings {
         }
         if (!("showWelcome" in $$source)) {
             this["showWelcome"] = false;
+        }
+        if (!("expertMode" in $$source)) {
+            this["expertMode"] = false;
         }
 
         Object.assign(this, $$source);

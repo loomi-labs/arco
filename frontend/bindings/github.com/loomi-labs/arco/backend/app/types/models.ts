@@ -42,11 +42,17 @@ export enum Event {
     EventPruneStateChanged = "pruneStateChanged",
     EventRepoStateChanged = "repoStateChanged",
     EventArchivesChanged = "archivesChanged",
+    EventBackupProfileCreated = "backupProfileCreated",
+    EventBackupProfileUpdated = "backupProfileUpdated",
     EventBackupProfileDeleted = "backupProfileDeleted",
+    EventRepositoryCreated = "repositoryCreated",
+    EventRepositoryUpdated = "repositoryUpdated",
+    EventRepositoryDeleted = "repositoryDeleted",
     EventAuthStateChanged = "authStateChanged",
     EventCheckoutStateChanged = "checkoutStateChanged",
     EventSubscriptionAdded = "subscriptionAdded",
     EventSubscriptionCancelled = "subscriptionCancelled",
+    EventSettingsChanged = "settingsChanged",
     EventOperationErrorOccurred = "operationErrorOccurred",
 };
 

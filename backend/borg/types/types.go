@@ -245,6 +245,11 @@ type Stats struct {
 	UniqueCSize       int `json:"unique_csize"`        // Compressed and encrypted size of all chunks
 }
 
+type CheckResult struct {
+	Status    *Status      // Command execution status
+	ErrorLogs []LogMessage // Captured ERROR messages only
+}
+
 type Cache struct {
 	Path  string `json:"path"`
 	Stats Stats  `json:"stats"`

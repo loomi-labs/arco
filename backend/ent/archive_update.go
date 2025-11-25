@@ -259,7 +259,7 @@ func (_u *ArchiveUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,
@@ -272,7 +272,7 @@ func (_u *ArchiveUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,
@@ -565,7 +565,7 @@ func (_u *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err er
 	if _u.mutation.BackupProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,
@@ -578,7 +578,7 @@ func (_u *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err er
 	if nodes := _u.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,

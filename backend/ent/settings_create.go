@@ -62,6 +62,34 @@ func (_c *SettingsCreate) SetNillableShowWelcome(v *bool) *SettingsCreate {
 	return _c
 }
 
+// SetExpertMode sets the "expert_mode" field.
+func (_c *SettingsCreate) SetExpertMode(v bool) *SettingsCreate {
+	_c.mutation.SetExpertMode(v)
+	return _c
+}
+
+// SetNillableExpertMode sets the "expert_mode" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableExpertMode(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetExpertMode(*v)
+	}
+	return _c
+}
+
+// SetTheme sets the "theme" field.
+func (_c *SettingsCreate) SetTheme(v settings.Theme) *SettingsCreate {
+	_c.mutation.SetTheme(v)
+	return _c
+}
+
+// SetNillableTheme sets the "theme" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableTheme(v *settings.Theme) *SettingsCreate {
+	if v != nil {
+		_c.SetTheme(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -109,6 +137,14 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultShowWelcome
 		_c.mutation.SetShowWelcome(v)
 	}
+	if _, ok := _c.mutation.ExpertMode(); !ok {
+		v := settings.DefaultExpertMode
+		_c.mutation.SetExpertMode(v)
+	}
+	if _, ok := _c.mutation.Theme(); !ok {
+		v := settings.DefaultTheme
+		_c.mutation.SetTheme(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -121,6 +157,17 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.ShowWelcome(); !ok {
 		return &ValidationError{Name: "show_welcome", err: errors.New(`ent: missing required field "Settings.show_welcome"`)}
+	}
+	if _, ok := _c.mutation.ExpertMode(); !ok {
+		return &ValidationError{Name: "expert_mode", err: errors.New(`ent: missing required field "Settings.expert_mode"`)}
+	}
+	if _, ok := _c.mutation.Theme(); !ok {
+		return &ValidationError{Name: "theme", err: errors.New(`ent: missing required field "Settings.theme"`)}
+	}
+	if v, ok := _c.mutation.Theme(); ok {
+		if err := settings.ThemeValidator(v); err != nil {
+			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -159,6 +206,14 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ShowWelcome(); ok {
 		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 		_node.ShowWelcome = value
+	}
+	if value, ok := _c.mutation.ExpertMode(); ok {
+		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
+		_node.ExpertMode = value
+	}
+	if value, ok := _c.mutation.Theme(); ok {
+		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
+		_node.Theme = value
 	}
 	return _node, _spec
 }

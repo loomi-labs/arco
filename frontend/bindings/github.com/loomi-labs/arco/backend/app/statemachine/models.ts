@@ -144,6 +144,52 @@ export class Backup {
     }
 }
 
+export class Check {
+    "repositoryId": number;
+    "quickVerification": boolean;
+
+    /** Creates a new Check instance. */
+    constructor($$source: Partial<Check> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+        if (!("quickVerification" in $$source)) {
+            this["quickVerification"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Check instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Check {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Check($$parsedSource as Partial<Check>);
+    }
+}
+
+export class Checking {
+    "startedAt": time$0.Time;
+
+    /** Creates a new Checking instance. */
+    constructor($$source: Partial<Checking> = {}) {
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Checking instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Checking {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Checking($$parsedSource as Partial<Checking>);
+    }
+}
+
 export class Delete {
     "repositoryId": number;
 
@@ -462,6 +508,7 @@ export enum OperationType {
     OperationTypeArchiveRefresh = "ArchiveRefresh",
     OperationTypeArchiveRename = "ArchiveRename",
     OperationTypeBackup = "Backup",
+    OperationTypeCheck = "Check",
     OperationTypeDelete = "Delete",
     OperationTypeExaminePrune = "ExaminePrune",
     OperationTypeMount = "Mount",
@@ -494,6 +541,7 @@ export class OperationUnion {
     "unmount"?: Unmount | null;
     "unmountArchive"?: UnmountArchive | null;
     "examinePrune"?: ExaminePrune | null;
+    "check"?: Check | null;
 
     /** Creates a new OperationUnion instance. */
     constructor($$source: Partial<OperationUnion> = {}) {
@@ -519,6 +567,7 @@ export class OperationUnion {
         const $$createField9_0 = $$createType24;
         const $$createField10_0 = $$createType26;
         const $$createField11_0 = $$createType28;
+        const $$createField12_0 = $$createType30;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backup" in $$parsedSource) {
             $$parsedSource["backup"] = $$createField1_0($$parsedSource["backup"]);
@@ -552,6 +601,9 @@ export class OperationUnion {
         }
         if ("examinePrune" in $$parsedSource) {
             $$parsedSource["examinePrune"] = $$createField11_0($$parsedSource["examinePrune"]);
+        }
+        if ("check" in $$parsedSource) {
+            $$parsedSource["check"] = $$createField12_0($$parsedSource["check"]);
         }
         return new OperationUnion($$parsedSource as Partial<OperationUnion>);
     }
@@ -627,7 +679,7 @@ export class Queued {
      * Creates a new Queued instance from a string or object.
      */
     static createFrom($$source: any = {}): Queued {
-        const $$createField0_0 = $$createType29;
+        const $$createField0_0 = $$createType31;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("nextOperation" in $$parsedSource) {
             $$parsedSource["nextOperation"] = $$createField0_0($$parsedSource["nextOperation"]);
@@ -667,6 +719,7 @@ export enum RepositoryStateType {
     $zero = "",
 
     RepositoryStateTypeBackingUp = "BackingUp",
+    RepositoryStateTypeChecking = "Checking",
     RepositoryStateTypeDeleting = "Deleting",
     RepositoryStateTypeError = "Error",
     RepositoryStateTypeIdle = "Idle",
@@ -695,6 +748,7 @@ export class RepositoryStateUnion {
     "pruning"?: Pruning | null;
     "deleting"?: Deleting | null;
     "refreshing"?: Refreshing | null;
+    "checking"?: Checking | null;
     "mounting"?: Mounting | null;
     "mounted"?: Mounted | null;
     "error"?: Error | null;
@@ -712,15 +766,16 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType31;
-        const $$createField2_0 = $$createType33;
-        const $$createField3_0 = $$createType35;
-        const $$createField4_0 = $$createType37;
-        const $$createField5_0 = $$createType39;
-        const $$createField6_0 = $$createType41;
-        const $$createField7_0 = $$createType43;
-        const $$createField8_0 = $$createType45;
-        const $$createField9_0 = $$createType47;
+        const $$createField1_0 = $$createType33;
+        const $$createField2_0 = $$createType35;
+        const $$createField3_0 = $$createType37;
+        const $$createField4_0 = $$createType39;
+        const $$createField5_0 = $$createType41;
+        const $$createField6_0 = $$createType43;
+        const $$createField7_0 = $$createType45;
+        const $$createField8_0 = $$createType47;
+        const $$createField9_0 = $$createType49;
+        const $$createField10_0 = $$createType51;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -740,14 +795,17 @@ export class RepositoryStateUnion {
         if ("refreshing" in $$parsedSource) {
             $$parsedSource["refreshing"] = $$createField6_0($$parsedSource["refreshing"]);
         }
+        if ("checking" in $$parsedSource) {
+            $$parsedSource["checking"] = $$createField7_0($$parsedSource["checking"]);
+        }
         if ("mounting" in $$parsedSource) {
-            $$parsedSource["mounting"] = $$createField7_0($$parsedSource["mounting"]);
+            $$parsedSource["mounting"] = $$createField8_0($$parsedSource["mounting"]);
         }
         if ("mounted" in $$parsedSource) {
-            $$parsedSource["mounted"] = $$createField8_0($$parsedSource["mounted"]);
+            $$parsedSource["mounted"] = $$createField9_0($$parsedSource["mounted"]);
         }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField9_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField10_0($$parsedSource["error"]);
         }
         return new RepositoryStateUnion($$parsedSource as Partial<RepositoryStateUnion>);
     }
@@ -833,22 +891,26 @@ const $$createType25 = UnmountArchive.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
 const $$createType27 = ExaminePrune.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = OperationUnion.createFrom;
-const $$createType30 = Idle.createFrom;
-const $$createType31 = $Create.Nullable($$createType30);
-const $$createType32 = Queued.createFrom;
+const $$createType29 = Check.createFrom;
+const $$createType30 = $Create.Nullable($$createType29);
+const $$createType31 = OperationUnion.createFrom;
+const $$createType32 = Idle.createFrom;
 const $$createType33 = $Create.Nullable($$createType32);
-const $$createType34 = BackingUp.createFrom;
+const $$createType34 = Queued.createFrom;
 const $$createType35 = $Create.Nullable($$createType34);
-const $$createType36 = Pruning.createFrom;
+const $$createType36 = BackingUp.createFrom;
 const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = Deleting.createFrom;
+const $$createType38 = Pruning.createFrom;
 const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = Refreshing.createFrom;
+const $$createType40 = Deleting.createFrom;
 const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = Mounting.createFrom;
+const $$createType42 = Refreshing.createFrom;
 const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = Mounted.createFrom;
+const $$createType44 = Checking.createFrom;
 const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = Error.createFrom;
+const $$createType46 = Mounting.createFrom;
 const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = Mounted.createFrom;
+const $$createType49 = $Create.Nullable($$createType48);
+const $$createType50 = Error.createFrom;
+const $$createType51 = $Create.Nullable($$createType50);

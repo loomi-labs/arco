@@ -75,6 +75,11 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
+// CompressionLevel applies equality check predicate on the "compression_level" field. It's identical to CompressionLevelEQ.
+func CompressionLevel(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldCompressionLevel, v))
+}
+
 // DataSectionCollapsed applies equality check predicate on the "data_section_collapsed" field. It's identical to DataSectionCollapsedEQ.
 func DataSectionCollapsed(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldDataSectionCollapsed, v))
@@ -83,6 +88,11 @@ func DataSectionCollapsed(v bool) predicate.BackupProfile {
 // ScheduleSectionCollapsed applies equality check predicate on the "schedule_section_collapsed" field. It's identical to ScheduleSectionCollapsedEQ.
 func ScheduleSectionCollapsed(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldScheduleSectionCollapsed, v))
+}
+
+// AdvancedSectionCollapsed applies equality check predicate on the "advanced_section_collapsed" field. It's identical to AdvancedSectionCollapsedEQ.
+func AdvancedSectionCollapsed(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldAdvancedSectionCollapsed, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -325,6 +335,76 @@ func IconNotIn(vs ...Icon) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotIn(FieldIcon, vs...))
 }
 
+// CompressionModeEQ applies the EQ predicate on the "compression_mode" field.
+func CompressionModeEQ(v CompressionMode) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldCompressionMode, v))
+}
+
+// CompressionModeNEQ applies the NEQ predicate on the "compression_mode" field.
+func CompressionModeNEQ(v CompressionMode) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldCompressionMode, v))
+}
+
+// CompressionModeIn applies the In predicate on the "compression_mode" field.
+func CompressionModeIn(vs ...CompressionMode) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldIn(FieldCompressionMode, vs...))
+}
+
+// CompressionModeNotIn applies the NotIn predicate on the "compression_mode" field.
+func CompressionModeNotIn(vs ...CompressionMode) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNotIn(FieldCompressionMode, vs...))
+}
+
+// CompressionLevelEQ applies the EQ predicate on the "compression_level" field.
+func CompressionLevelEQ(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldCompressionLevel, v))
+}
+
+// CompressionLevelNEQ applies the NEQ predicate on the "compression_level" field.
+func CompressionLevelNEQ(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldCompressionLevel, v))
+}
+
+// CompressionLevelIn applies the In predicate on the "compression_level" field.
+func CompressionLevelIn(vs ...int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldIn(FieldCompressionLevel, vs...))
+}
+
+// CompressionLevelNotIn applies the NotIn predicate on the "compression_level" field.
+func CompressionLevelNotIn(vs ...int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNotIn(FieldCompressionLevel, vs...))
+}
+
+// CompressionLevelGT applies the GT predicate on the "compression_level" field.
+func CompressionLevelGT(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldGT(FieldCompressionLevel, v))
+}
+
+// CompressionLevelGTE applies the GTE predicate on the "compression_level" field.
+func CompressionLevelGTE(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldGTE(FieldCompressionLevel, v))
+}
+
+// CompressionLevelLT applies the LT predicate on the "compression_level" field.
+func CompressionLevelLT(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldLT(FieldCompressionLevel, v))
+}
+
+// CompressionLevelLTE applies the LTE predicate on the "compression_level" field.
+func CompressionLevelLTE(v int) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldLTE(FieldCompressionLevel, v))
+}
+
+// CompressionLevelIsNil applies the IsNil predicate on the "compression_level" field.
+func CompressionLevelIsNil() predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldIsNull(FieldCompressionLevel))
+}
+
+// CompressionLevelNotNil applies the NotNil predicate on the "compression_level" field.
+func CompressionLevelNotNil() predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNotNull(FieldCompressionLevel))
+}
+
 // DataSectionCollapsedEQ applies the EQ predicate on the "data_section_collapsed" field.
 func DataSectionCollapsedEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldDataSectionCollapsed, v))
@@ -343,6 +423,16 @@ func ScheduleSectionCollapsedEQ(v bool) predicate.BackupProfile {
 // ScheduleSectionCollapsedNEQ applies the NEQ predicate on the "schedule_section_collapsed" field.
 func ScheduleSectionCollapsedNEQ(v bool) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNEQ(FieldScheduleSectionCollapsed, v))
+}
+
+// AdvancedSectionCollapsedEQ applies the EQ predicate on the "advanced_section_collapsed" field.
+func AdvancedSectionCollapsedEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldAdvancedSectionCollapsed, v))
+}
+
+// AdvancedSectionCollapsedNEQ applies the NEQ predicate on the "advanced_section_collapsed" field.
+func AdvancedSectionCollapsedNEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldAdvancedSectionCollapsed, v))
 }
 
 // HasRepositories applies the HasEdge predicate on the "repositories" edge.

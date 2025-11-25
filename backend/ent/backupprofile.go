@@ -34,10 +34,16 @@ type BackupProfile struct {
 	ExcludePaths []string `json:"excludePaths"`
 	// Icon holds the value of the "icon" field.
 	Icon backupprofile.Icon `json:"icon"`
+	// Compression algorithm for backups
+	CompressionMode backupprofile.CompressionMode `json:"compressionMode"`
+	// Compression level (algorithm-specific range)
+	CompressionLevel *int `json:"compressionLevel"`
 	// DataSectionCollapsed holds the value of the "data_section_collapsed" field.
 	DataSectionCollapsed bool `json:"dataSectionCollapsed"`
 	// ScheduleSectionCollapsed holds the value of the "schedule_section_collapsed" field.
 	ScheduleSectionCollapsed bool `json:"scheduleSectionCollapsed"`
+	// UI state: whether advanced settings section is collapsed
+	AdvancedSectionCollapsed bool `json:"advancedSectionCollapsed"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BackupProfileQuery when eager-loading is set.
 	Edges        BackupProfileEdges `json:"edges"`
@@ -117,11 +123,11 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
-		case backupprofile.FieldDataSectionCollapsed, backupprofile.FieldScheduleSectionCollapsed:
+		case backupprofile.FieldDataSectionCollapsed, backupprofile.FieldScheduleSectionCollapsed, backupprofile.FieldAdvancedSectionCollapsed:
 			values[i] = new(sql.NullBool)
-		case backupprofile.FieldID:
+		case backupprofile.FieldID, backupprofile.FieldCompressionLevel:
 			values[i] = new(sql.NullInt64)
-		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon:
+		case backupprofile.FieldName, backupprofile.FieldPrefix, backupprofile.FieldIcon, backupprofile.FieldCompressionMode:
 			values[i] = new(sql.NullString)
 		case backupprofile.FieldCreatedAt, backupprofile.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -192,6 +198,19 @@ func (_m *BackupProfile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Icon = backupprofile.Icon(value.String)
 			}
+		case backupprofile.FieldCompressionMode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field compression_mode", values[i])
+			} else if value.Valid {
+				_m.CompressionMode = backupprofile.CompressionMode(value.String)
+			}
+		case backupprofile.FieldCompressionLevel:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field compression_level", values[i])
+			} else if value.Valid {
+				_m.CompressionLevel = new(int)
+				*_m.CompressionLevel = int(value.Int64)
+			}
 		case backupprofile.FieldDataSectionCollapsed:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field data_section_collapsed", values[i])
@@ -203,6 +222,12 @@ func (_m *BackupProfile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field schedule_section_collapsed", values[i])
 			} else if value.Valid {
 				_m.ScheduleSectionCollapsed = value.Bool
+			}
+		case backupprofile.FieldAdvancedSectionCollapsed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field advanced_section_collapsed", values[i])
+			} else if value.Valid {
+				_m.AdvancedSectionCollapsed = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -286,11 +311,22 @@ func (_m *BackupProfile) String() string {
 	builder.WriteString("icon=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Icon))
 	builder.WriteString(", ")
+	builder.WriteString("compression_mode=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CompressionMode))
+	builder.WriteString(", ")
+	if v := _m.CompressionLevel; v != nil {
+		builder.WriteString("compression_level=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("data_section_collapsed=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DataSectionCollapsed))
 	builder.WriteString(", ")
 	builder.WriteString("schedule_section_collapsed=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ScheduleSectionCollapsed))
+	builder.WriteString(", ")
+	builder.WriteString("advanced_section_collapsed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AdvancedSectionCollapsed))
 	builder.WriteByte(')')
 	return builder.String()
 }

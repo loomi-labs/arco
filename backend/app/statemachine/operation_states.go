@@ -68,6 +68,11 @@ type ExaminePrune struct {
 	ResultCh    chan borgtypes.PruneResult `json:"-"` // Channel to receive results
 }
 
+type Check struct {
+	RepositoryID      int  `json:"repositoryId"`
+	QuickVerification bool `json:"quickVerification"`
+}
+
 // Operation ADT definition
 type Operation adtenum.Enum[Operation]
 
@@ -83,6 +88,7 @@ func (MountArchive) isADTVariant() Operation   { var zero Operation; return zero
 func (Unmount) isADTVariant() Operation        { var zero Operation; return zero }
 func (UnmountArchive) isADTVariant() Operation { var zero Operation; return zero }
 func (ExaminePrune) isADTVariant() Operation   { var zero Operation; return zero }
+func (Check) isADTVariant() Operation          { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT
@@ -99,7 +105,7 @@ const (
 // GetOperationWeight determines operation weight for concurrency control
 func GetOperationWeight(op Operation) OperationWeight {
 	switch GetOperationType(op) {
-	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete:
+	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete, OperationTypeCheck:
 		return WeightHeavy
 	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
 		return WeightLight

@@ -22,6 +22,7 @@ VALUES
     (2, 1);  -- Work Backup -> Test Repo 1
 
 -- Insert archives
+-- Note: Using archive_backup_profile column as this represents state before October 2025 migration
 INSERT INTO `archives` (`id`, `created_at`, `updated_at`, `name`, `duration`, `borg_id`, `will_be_pruned`, `archive_repository`, `archive_backup_profile`)
 VALUES
     (1, '2024-01-01 12:00:00', '2024-01-01 12:00:00', 'home-2024-01-01', 120.5, 'abc123def456', false, 1, 1),

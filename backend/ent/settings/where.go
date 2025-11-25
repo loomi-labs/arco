@@ -69,6 +69,11 @@ func ShowWelcome(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
 }
 
+// ExpertMode applies equality check predicate on the "expert_mode" field. It's identical to ExpertModeEQ.
+func ExpertMode(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldExpertMode, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldCreatedAt, v))
@@ -157,6 +162,36 @@ func ShowWelcomeEQ(v bool) predicate.Settings {
 // ShowWelcomeNEQ applies the NEQ predicate on the "show_welcome" field.
 func ShowWelcomeNEQ(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldNEQ(FieldShowWelcome, v))
+}
+
+// ExpertModeEQ applies the EQ predicate on the "expert_mode" field.
+func ExpertModeEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldExpertMode, v))
+}
+
+// ExpertModeNEQ applies the NEQ predicate on the "expert_mode" field.
+func ExpertModeNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldExpertMode, v))
+}
+
+// ThemeEQ applies the EQ predicate on the "theme" field.
+func ThemeEQ(v Theme) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldTheme, v))
+}
+
+// ThemeNEQ applies the NEQ predicate on the "theme" field.
+func ThemeNEQ(v Theme) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldTheme, v))
+}
+
+// ThemeIn applies the In predicate on the "theme" field.
+func ThemeIn(vs ...Theme) predicate.Settings {
+	return predicate.Settings(sql.FieldIn(FieldTheme, vs...))
+}
+
+// ThemeNotIn applies the NotIn predicate on the "theme" field.
+func ThemeNotIn(vs ...Theme) predicate.Settings {
+	return predicate.Settings(sql.FieldNotIn(FieldTheme, vs...))
 }
 
 // And groups predicates with the AND operator between them.

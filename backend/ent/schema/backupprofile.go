@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
@@ -48,12 +49,30 @@ func (BackupProfile) Fields() []ent.Field {
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),
+		field.Enum("compression_mode").
+			StructTag(`json:"compressionMode"`).
+			Values("none", "lz4", "zstd", "zlib", "lzma").
+			Default("lz4").
+			Comment("Compression algorithm for backups"),
+		field.Int("compression_level").
+			StructTag(`json:"compressionLevel"`).
+			Optional().
+			Nillable().
+			Comment("Compression level (algorithm-specific range)").
+			Min(0).
+			Max(22),
+
+		// UI States
 		field.Bool("data_section_collapsed").
 			StructTag(`json:"dataSectionCollapsed"`).
 			Default(false),
 		field.Bool("schedule_section_collapsed").
 			StructTag(`json:"scheduleSectionCollapsed"`).
 			Default(false),
+		field.Bool("advanced_section_collapsed").
+			StructTag(`json:"advancedSectionCollapsed"`).
+			Default(true).
+			Comment("UI state: whether advanced settings section is collapsed"),
 	}
 }
 
@@ -74,5 +93,21 @@ func (BackupProfile) Edges() []ent.Edge {
 		edge.From("notifications", Notification.Type).
 			StructTag(`json:"notifications,omitempty"`).
 			Ref("backup_profile"),
+	}
+}
+
+// Annotations of the BackupProfile.
+func (BackupProfile) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		&entsql.Annotation{
+			Checks: map[string]string{
+				"compression_level_valid": `(
+					(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR
+					(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR
+					(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR
+					(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)
+				)`,
+			},
+		},
 	}
 }

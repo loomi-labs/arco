@@ -45,7 +45,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "backupprofile" package.
 	BackupProfileInverseTable = "backup_profiles"
 	// BackupProfileColumn is the table column denoting the backup_profile relation/edge.
-	BackupProfileColumn = "archive_backup_profile"
+	BackupProfileColumn = "backup_profile_archives"
 )
 
 // Columns holds all SQL columns for archive fields.
@@ -63,7 +63,6 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"archive_repository",
-	"archive_backup_profile",
 	"backup_profile_archives",
 }
 
@@ -155,6 +154,6 @@ func newBackupProfileStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackupProfileInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, BackupProfileTable, BackupProfileColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, BackupProfileTable, BackupProfileColumn),
 	)
 }

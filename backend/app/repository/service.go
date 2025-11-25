@@ -273,10 +273,10 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	}
 
 	// Calculate storage used from repository statistics
-	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)   // Compressed & deduplicated storage (actual disk usage)
-	totalSize := int64(repoEntity.StatsTotalSize)      // Total uncompressed size across all archives
-	uniqueSize := int64(repoEntity.StatsUniqueSize)    // Deduplicated uncompressed size
-	uniqueCsize := int64(repoEntity.StatsUniqueCsize)  // Deduplicated compressed size
+	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)  // Compressed & deduplicated storage (actual disk usage)
+	totalSize := int64(repoEntity.StatsTotalSize)     // Total uncompressed size across all archives
+	uniqueSize := int64(repoEntity.StatsUniqueSize)   // Deduplicated uncompressed size
+	uniqueCsize := int64(repoEntity.StatsUniqueCsize) // Deduplicated compressed size
 
 	// Calculate deduplication ratio (totalSize / uniqueSize)
 	dedupRatio := 0.0
@@ -310,6 +310,10 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		LastBackupTime:      lastBackupTime,
 		LastBackupError:     lastBackupError,
 		LastBackupWarning:   lastBackupWarning,
+		LastQuickCheckAt:    repoEntity.LastQuickCheckAt,
+		QuickCheckError:     repoEntity.QuickCheckError,
+		LastFullCheckAt:     repoEntity.LastFullCheckAt,
+		FullCheckError:      repoEntity.FullCheckError,
 		SizeOnDisk:          sizeOnDisk,
 		TotalSize:           totalSize,
 		DeduplicationRatio:  dedupRatio,
@@ -348,6 +352,7 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, repoEntity), nil
 }
 
@@ -411,6 +416,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, entRepo), nil
 }
 
@@ -537,6 +543,7 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 		return nil, fmt.Errorf("failed to update repository %d: %w", repoId, err)
 	}
 
+	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryUpdatedString())
 	return s.Get(ctx, repoId)
 }
 
@@ -587,6 +594,10 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 
 		return nil
 	})
+	if err == nil {
+		s.eventEmitter.EmitEvent(ctx, types.EventRepositoryDeletedString())
+	}
+	return err
 }
 
 // Delete deletes a repository completely. This cancels all other operations
@@ -615,7 +626,11 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	// 3. Check if this is a cloud repository and handle accordingly
 	if repoEntity.Edges.CloudRepository != nil {
 		// For cloud repositories, delete directly via cloud service
-		return s.cloudRepoClient.DeleteCloudRepository(ctx, repoEntity.Edges.CloudRepository.CloudID)
+		if err := s.cloudRepoClient.DeleteCloudRepository(ctx, repoEntity.Edges.CloudRepository.CloudID); err != nil {
+			return err
+		}
+		s.eventEmitter.EmitEvent(ctx, types.EventRepositoryDeletedString())
+		return nil
 	}
 
 	// 4. For local repositories, queue a delete operation
@@ -674,6 +689,34 @@ func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, erro
 		return "", fmt.Errorf("failed to queue archive refresh operation: %w", err)
 	}
 
+	return operationID, nil
+}
+
+// QueueCheck queues a repository integrity check operation
+func (s *Service) QueueCheck(ctx context.Context, repoId int, quickVerification bool) (string, error) {
+	// Create check operation
+	checkOp := statemachine.NewOperationCheck(statemachine.Check{
+		RepositoryID:      repoId,
+		QuickVerification: quickVerification,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		checkOp,
+		repoId,
+		nil,   // No backup profile for check (repository-wide operation)
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue check operation: %w", err)
+	}
+
+	s.log.Infof("Queued %s check for repo %d", map[bool]string{true: "quick", false: "full"}[quickVerification], repoId)
 	return operationID, nil
 }
 
@@ -1568,6 +1611,7 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
 		case statemachine.OperationTypeArchiveRefresh,
 			statemachine.OperationTypeBackup,
+			statemachine.OperationTypeCheck,
 			statemachine.OperationTypeDelete,
 			statemachine.OperationTypeExaminePrune,
 			statemachine.OperationTypeMount,
@@ -1795,6 +1839,7 @@ func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId type
 	case statemachine.RepositoryStateTypePruning,
 		statemachine.RepositoryStateTypeDeleting,
 		statemachine.RepositoryStateTypeRefreshing,
+		statemachine.RepositoryStateTypeChecking,
 		statemachine.RepositoryStateTypeMounting:
 		// Repository is busy with other operations
 		return BackupButtonStatusBusy, nil

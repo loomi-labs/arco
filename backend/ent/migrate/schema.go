@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -18,7 +19,6 @@ var (
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
 		{Name: "archive_repository", Type: field.TypeInt},
-		{Name: "archive_backup_profile", Type: field.TypeInt, Nullable: true},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
 	// ArchivesTable holds the schema information for the "archives" table.
@@ -34,14 +34,8 @@ var (
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "archives_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
-				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[9]},
+				Columns:    []*schema.Column{ArchivesColumns[8]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -72,8 +66,11 @@ var (
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
+		{Name: "compression_mode", Type: field.TypeEnum, Enums: []string{"none", "lz4", "zstd", "zlib", "lzma"}, Default: "lz4"},
+		{Name: "compression_level", Type: field.TypeInt, Nullable: true},
 		{Name: "data_section_collapsed", Type: field.TypeBool, Default: false},
 		{Name: "schedule_section_collapsed", Type: field.TypeBool, Default: false},
+		{Name: "advanced_section_collapsed", Type: field.TypeBool, Default: true},
 	}
 	// BackupProfilesTable holds the schema information for the "backup_profiles" table.
 	BackupProfilesTable = &schema.Table{
@@ -139,7 +136,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
 		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
 		{Name: "notification_backup_profile", Type: field.TypeInt},
@@ -204,7 +201,10 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
-		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
+		{Name: "last_quick_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "quick_check_error", Type: field.TypeJSON, Nullable: true},
+		{Name: "last_full_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "full_check_error", Type: field.TypeJSON, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},
@@ -221,7 +221,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "repositories_cloud_repositories_repository",
-				Columns:    []*schema.Column{RepositoriesColumns[13]},
+				Columns:    []*schema.Column{RepositoriesColumns[16]},
 				RefColumns: []*schema.Column{CloudRepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -233,6 +233,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "show_welcome", Type: field.TypeBool, Default: true},
+		{Name: "expert_mode", Type: field.TypeBool, Default: false},
+		{Name: "theme", Type: field.TypeEnum, Enums: []string{"light", "dark", "system"}, Default: "system"},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{
@@ -302,7 +304,10 @@ var (
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
-	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
+	BackupProfilesTable.Annotation = &entsql.Annotation{}
+	BackupProfilesTable.Annotation.Checks = map[string]string{
+		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR\n\t\t\t\t\t(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)\n\t\t\t\t)",
+	}
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[1].RefTable = RepositoriesTable

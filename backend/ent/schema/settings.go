@@ -23,6 +23,12 @@ func (Settings) Fields() []ent.Field {
 		field.Bool("show_welcome").
 			StructTag(`json:"showWelcome"`).
 			Default(true),
+		field.Bool("expert_mode").
+			StructTag(`json:"expertMode"`).
+			Default(false),
+		field.Enum("theme").
+			Values("light", "dark", "system").
+			Default("system"),
 	}
 }
 

@@ -195,12 +195,15 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 	}
 
 	return &ent.BackupProfile{
-		ID:           0,
-		Name:         "",
-		Prefix:       "",
-		BackupPaths:  make([]string, 0),
-		ExcludePaths: make([]string, 0),
-		Icon:         selectedIcon,
+		ID:                       0,
+		Name:                     "",
+		Prefix:                   "",
+		BackupPaths:              make([]string, 0),
+		ExcludePaths:             make([]string, 0),
+		Icon:                     selectedIcon,
+		CompressionMode:          backupprofile.CompressionModeLz4, // Default compression
+		CompressionLevel:         nil,                              // lz4 doesn't use levels
+		AdvancedSectionCollapsed: true,                             // Collapsed by default
 		Edges: ent.BackupProfileEdges{
 			BackupSchedule: schedule,
 			PruningRule:    pruningRule,
@@ -286,21 +289,41 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
-	return s.db.BackupProfile.
+
+	// Validate compression settings
+	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
+		return nil, fmt.Errorf("invalid compression settings: %w", err)
+	}
+
+	profile, err := s.db.BackupProfile.
 		Create().
 		SetName(backup.Name).
 		SetPrefix(backup.Prefix).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
 		SetIcon(backup.Icon).
+		SetCompressionMode(backup.CompressionMode).
+		SetNillableCompressionLevel(backup.CompressionLevel).
+		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed).
 		AddRepositoryIDs(repositoryIds...).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileCreatedString())
+	return profile, nil
 }
 
 func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProfile) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
-	return s.db.BackupProfile.
+
+	// Validate compression settings
+	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
+		return nil, fmt.Errorf("invalid compression settings: %w", err)
+	}
+
+	profile, err := s.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetIcon(backup.Icon).
@@ -308,7 +331,15 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetExcludePaths(backup.ExcludePaths).
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
+		SetCompressionMode(backup.CompressionMode).
+		SetNillableCompressionLevel(backup.CompressionLevel).
+		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return profile, nil
 }
 
 // DeleteBackupProfile deletes a backup profile and optionally its archives
@@ -372,10 +403,15 @@ func (s *Service) AddRepositoryToBackupProfile(ctx context.Context, backupProfil
 			return fmt.Errorf("repository is already in the backup profile")
 		}
 	}
-	return s.db.BackupProfile.
+	err = s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		AddRepositoryIDs(repositoryId).
 		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return nil
 }
 
 // RemoveRepositoryFromBackupProfile removes a repository from a backup profile
@@ -441,10 +477,15 @@ func (s *Service) RemoveRepositoryFromBackupProfile(ctx context.Context, backupP
 		}
 	}
 
-	return s.db.BackupProfile.
+	err = s.db.BackupProfile.
 		UpdateOneID(backupProfileId).
 		RemoveRepositoryIDs(repositoryId).
 		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	return nil
 }
 
 type SelectDirectoryData struct {
@@ -626,4 +667,59 @@ func (s *Service) sendPruningRuleChanged() {
 		return
 	}
 	s.pruningScheduleChangedCh <- struct{}{}
+}
+
+/***********************************/
+/********** Compression ************/
+/***********************************/
+
+// validateCompression validates compression mode and level combinations
+func validateCompression(mode backupprofile.CompressionMode, level *int) error {
+	// Modes that don't support levels
+	noLevelModes := map[backupprofile.CompressionMode]bool{
+		backupprofile.CompressionModeNone: true,
+		backupprofile.CompressionModeLz4:  true,
+		backupprofile.CompressionModeZstd: false,
+		backupprofile.CompressionModeZlib: false,
+		backupprofile.CompressionModeLzma: false,
+	}
+
+	if noLevelModes[mode] && level != nil {
+		return fmt.Errorf("compression mode '%s' does not support compression level", mode)
+	}
+
+	// Modes that require a level (database constraint)
+	requiresLevel := map[backupprofile.CompressionMode]bool{
+		backupprofile.CompressionModeNone: false,
+		backupprofile.CompressionModeLz4:  false,
+		backupprofile.CompressionModeZstd: true,
+		backupprofile.CompressionModeZlib: true,
+		backupprofile.CompressionModeLzma: true,
+	}
+
+	if requiresLevel[mode] && level == nil {
+		return fmt.Errorf("compression mode '%s' requires a compression level", mode)
+	}
+
+	// Validate level ranges for modes that support them
+	if level != nil {
+		switch mode {
+		case backupprofile.CompressionModeZstd:
+			if *level < 1 || *level > 22 {
+				return fmt.Errorf("zstd compression level must be between 1 and 22, got %d", *level)
+			}
+		case backupprofile.CompressionModeZlib:
+			if *level < 0 || *level > 9 {
+				return fmt.Errorf("zlib compression level must be between 0 and 9, got %d", *level)
+			}
+		case backupprofile.CompressionModeLzma:
+			if *level < 0 || *level > 6 {
+				return fmt.Errorf("lzma compression level must be between 0 and 6, got %d", *level)
+			}
+		case backupprofile.CompressionModeNone, backupprofile.CompressionModeLz4:
+			// These modes don't support levels, already validated above
+		}
+	}
+
+	return nil
 }

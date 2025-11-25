@@ -34,12 +34,18 @@ type Repository struct {
 	LastBackupError   string     `json:"lastBackupError,omitempty"`
 	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
 
+	// Check tracking
+	LastQuickCheckAt *time.Time `json:"lastQuickCheckAt,omitempty"`
+	QuickCheckError  []string   `json:"quickCheckError,omitempty"`
+	LastFullCheckAt  *time.Time `json:"lastFullCheckAt,omitempty"`
+	FullCheckError   []string   `json:"fullCheckError,omitempty"`
+
 	// Storage Statistics
-	SizeOnDisk           int64   `json:"sizeOnDisk"`           // Actual storage used (compressed + deduplicated)
-	TotalSize            int64   `json:"totalSize"`            // Total uncompressed size across all archives
-	DeduplicationRatio   float64 `json:"deduplicationRatio"`   // How much deduplication saved (totalSize / uniqueSize)
-	CompressionRatio     float64 `json:"compressionRatio"`     // How much compression saved (uniqueSize / uniqueCsize)
-	SpaceSavingsPercent  float64 `json:"spaceSavingsPercent"`  // Overall space savings percentage
+	SizeOnDisk          int64   `json:"sizeOnDisk"`          // Actual storage used (compressed + deduplicated)
+	TotalSize           int64   `json:"totalSize"`           // Total uncompressed size across all archives
+	DeduplicationRatio  float64 `json:"deduplicationRatio"`  // How much deduplication saved (totalSize / uniqueSize)
+	CompressionRatio    float64 `json:"compressionRatio"`    // How much compression saved (uniqueSize / uniqueCsize)
+	SpaceSavingsPercent float64 `json:"spaceSavingsPercent"` // Overall space savings percentage
 }
 
 // GetID implements the statemachine.Repository interface

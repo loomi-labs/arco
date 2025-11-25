@@ -154,14 +154,14 @@ const isReactivating = ref(false);
 const isUpgrading = ref(false);
 const isDowngrading = ref(false);
 
-const storageUsageText = computed(() => {
+const _storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
   const used = subscription.value.storage_used_gb ?? 0;
   const total = subscription.value.storage_limit_gb ?? 0;
   return `${used} GB / ${total} GB`;
 });
 
-const storageUsagePercentage = computed(() => {
+const _storageUsagePercentage = computed(() => {
   if (!subscription.value) return 0;
   const used = subscription.value.storage_used_gb ?? 0;
   const total = subscription.value.storage_limit_gb ?? 0;

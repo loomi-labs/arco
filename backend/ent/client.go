@@ -411,7 +411,7 @@ func (c *ArchiveClient) QueryBackupProfile(_m *Archive) *BackupProfileQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(archive.Table, archive.FieldID, id),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, archive.BackupProfileTable, archive.BackupProfileColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, archive.BackupProfileTable, archive.BackupProfileColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

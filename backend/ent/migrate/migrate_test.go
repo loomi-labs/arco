@@ -3,9 +3,12 @@ package migrate_test
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"testing"
 
 	"entgo.io/ent/dialect"
@@ -16,6 +19,100 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 )
+
+// TestSchemaCompleteness ensures that all schema entities are properly validated in TestMigrationDataIntegrity.
+// This test will fail when new schema files are added, forcing developers to update the migration test.
+func TestSchemaCompleteness(t *testing.T) {
+	// Known entities that are validated in TestMigrationDataIntegrity
+	// Update this list when adding new entities to the schema
+	knownEntities := []string{
+		"archive.go",
+		"authsession.go",
+		"backupprofile.go",
+		"backupschedule.go",
+		"cloudrepository.go",
+		"notification.go",
+		"pruningrule.go",
+		"repository.go",
+		"settings.go",
+		"user.go",
+	}
+
+	// Scan the schema directory for all .go files
+	schemaDir := filepath.Join("..", "schema")
+	entries, err := os.ReadDir(schemaDir)
+	if err != nil {
+		t.Fatalf("Failed to read schema directory: %v", err)
+	}
+
+	var foundEntities []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue // Skip directories like mixin/
+		}
+		if filepath.Ext(entry.Name()) == ".go" {
+			foundEntities = append(foundEntities, entry.Name())
+		}
+	}
+
+	// Sort both lists for comparison
+	sort.Strings(knownEntities)
+	sort.Strings(foundEntities)
+
+	// Check for new entities
+	var newEntities []string
+	for _, found := range foundEntities {
+		isKnown := false
+		for _, known := range knownEntities {
+			if found == known {
+				isKnown = true
+				break
+			}
+		}
+		if !isKnown {
+			newEntities = append(newEntities, found)
+		}
+	}
+
+	// Check for removed entities
+	var removedEntities []string
+	for _, known := range knownEntities {
+		isFound := false
+		for _, found := range foundEntities {
+			if known == found {
+				isFound = true
+				break
+			}
+		}
+		if !isFound {
+			removedEntities = append(removedEntities, known)
+		}
+	}
+
+	// Report findings
+	if len(newEntities) > 0 {
+		t.Errorf(`New schema entities detected: %v
+
+IMPORTANT: Please update TestMigrationDataIntegrity to validate these new entities:
+1. Add data capture for the new entity in captureState()
+2. Add validation logic for the new entity in validateMigration()
+3. Add the entity to seed_data.sql if needed
+4. Update the knownEntities list in TestSchemaCompleteness()
+
+This ensures that future migrations properly preserve data for all entities.`, newEntities)
+	}
+
+	if len(removedEntities) > 0 {
+		t.Errorf(`Schema entities removed: %v
+
+Please update the knownEntities list in TestSchemaCompleteness() to remove these entities.`, removedEntities)
+	}
+
+	if len(newEntities) > 0 || len(removedEntities) > 0 {
+		t.Logf("\nCurrent schema files: %v", foundEntities)
+		t.Logf("Known entities list: %v", knownEntities)
+	}
+}
 
 // TestMigrationDataIntegrity tests that migrations preserve all data and relationships
 // It migrates to an intermediate version, inserts test data, then applies remaining migrations
@@ -93,6 +190,10 @@ type MigrationState struct {
 	BackupProfileRepositories []ProfileRepositoryRelation
 	Archives                  []ArchiveRelation
 	Notifications             []NotificationRelation
+	BackupSchedules           []BackupScheduleRelation
+	PruningRules              []PruningRuleRelation
+	Repositories              []RepositoryData
+	BackupProfiles            []BackupProfileData
 	RepositoryCount           int
 	BackupProfileCount        int
 }
@@ -104,14 +205,57 @@ type ProfileRepositoryRelation struct {
 
 type ArchiveRelation struct {
 	ID           int
+	Name         string
+	Duration     float64
+	BorgID       string
+	WillBePruned bool
 	RepositoryID int
 	ProfileID    sql.NullInt64
 }
 
 type NotificationRelation struct {
 	ID           int
+	Message      string
+	Type         string
+	Seen         bool
 	ProfileID    int
 	RepositoryID int
+}
+
+type BackupScheduleRelation struct {
+	ID        int
+	Mode      string
+	ProfileID int
+}
+
+type PruningRuleRelation struct {
+	ID        int
+	IsEnabled bool
+	ProfileID int
+}
+
+type RepositoryData struct {
+	ID                     int
+	Name                   string
+	Location               string
+	Password               string
+	StatsTotalChunks       int
+	StatsTotalSize         int
+	StatsTotalCsize        int
+	StatsTotalUniqueChunks int
+	StatsUniqueSize        int
+	StatsUniqueCsize       int
+}
+
+type BackupProfileData struct {
+	ID                       int
+	Name                     string
+	Prefix                   string
+	BackupPaths              []string
+	ExcludePaths             []string
+	Icon                     string
+	DataSectionCollapsed     bool
+	ScheduleSectionCollapsed bool
 }
 
 // captureState captures the current state of the database
@@ -124,10 +268,58 @@ func captureState(db *sql.DB) (*MigrationState, error) {
 		return nil, fmt.Errorf("failed to count repositories: %w", err)
 	}
 
+	// Capture repository data
+	repoRows, err := db.Query(`SELECT id, name, location, password, stats_total_chunks, stats_total_size,
+		stats_total_csize, stats_total_unique_chunks, stats_unique_size, stats_unique_csize
+		FROM repositories ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query repositories: %w", err)
+	}
+	defer repoRows.Close()
+
+	for repoRows.Next() {
+		var repo RepositoryData
+		if err := repoRows.Scan(&repo.ID, &repo.Name, &repo.Location, &repo.Password,
+			&repo.StatsTotalChunks, &repo.StatsTotalSize, &repo.StatsTotalCsize,
+			&repo.StatsTotalUniqueChunks, &repo.StatsUniqueSize, &repo.StatsUniqueCsize); err != nil {
+			return nil, fmt.Errorf("failed to scan repository: %w", err)
+		}
+		state.Repositories = append(state.Repositories, repo)
+	}
+
 	// Count backup profiles
 	err = db.QueryRow("SELECT COUNT(*) FROM backup_profiles").Scan(&state.BackupProfileCount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count backup profiles: %w", err)
+	}
+
+	// Capture backup profile data
+	profileRows, err := db.Query(`SELECT id, name, prefix, backup_paths, exclude_paths, icon,
+		data_section_collapsed, schedule_section_collapsed
+		FROM backup_profiles ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query backup profiles: %w", err)
+	}
+	defer profileRows.Close()
+
+	for profileRows.Next() {
+		var profile BackupProfileData
+		var backupPathsJSON, excludePathsJSON string
+		if err := profileRows.Scan(&profile.ID, &profile.Name, &profile.Prefix, &backupPathsJSON,
+			&excludePathsJSON, &profile.Icon, &profile.DataSectionCollapsed,
+			&profile.ScheduleSectionCollapsed); err != nil {
+			return nil, fmt.Errorf("failed to scan backup profile: %w", err)
+		}
+
+		// Parse JSON arrays
+		if err := json.Unmarshal([]byte(backupPathsJSON), &profile.BackupPaths); err != nil {
+			return nil, fmt.Errorf("failed to parse backup_paths JSON: %w", err)
+		}
+		if err := json.Unmarshal([]byte(excludePathsJSON), &profile.ExcludePaths); err != nil {
+			return nil, fmt.Errorf("failed to parse exclude_paths JSON: %w", err)
+		}
+
+		state.BackupProfiles = append(state.BackupProfiles, profile)
 	}
 
 	// Capture backup_profile_repositories relationships
@@ -145,8 +337,9 @@ func captureState(db *sql.DB) (*MigrationState, error) {
 		state.BackupProfileRepositories = append(state.BackupProfileRepositories, rel)
 	}
 
-	// Capture archive relationships
-	rows, err = db.Query("SELECT id, archive_repository, archive_backup_profile FROM archives ORDER BY id")
+	// Capture archive data
+	rows, err = db.Query(`SELECT id, name, duration, borg_id, will_be_pruned,
+		archive_repository, archive_backup_profile FROM archives ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query archives: %w", err)
 	}
@@ -154,14 +347,16 @@ func captureState(db *sql.DB) (*MigrationState, error) {
 
 	for rows.Next() {
 		var archive ArchiveRelation
-		if err := rows.Scan(&archive.ID, &archive.RepositoryID, &archive.ProfileID); err != nil {
+		if err := rows.Scan(&archive.ID, &archive.Name, &archive.Duration, &archive.BorgID,
+			&archive.WillBePruned, &archive.RepositoryID, &archive.ProfileID); err != nil {
 			return nil, fmt.Errorf("failed to scan archive: %w", err)
 		}
 		state.Archives = append(state.Archives, archive)
 	}
 
-	// Capture notification relationships
-	rows, err = db.Query("SELECT id, notification_backup_profile, notification_repository FROM notifications ORDER BY id")
+	// Capture notification data
+	rows, err = db.Query(`SELECT id, message, type, seen,
+		notification_backup_profile, notification_repository FROM notifications ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query notifications: %w", err)
 	}
@@ -169,10 +364,41 @@ func captureState(db *sql.DB) (*MigrationState, error) {
 
 	for rows.Next() {
 		var notif NotificationRelation
-		if err := rows.Scan(&notif.ID, &notif.ProfileID, &notif.RepositoryID); err != nil {
+		if err := rows.Scan(&notif.ID, &notif.Message, &notif.Type, &notif.Seen,
+			&notif.ProfileID, &notif.RepositoryID); err != nil {
 			return nil, fmt.Errorf("failed to scan notification: %w", err)
 		}
 		state.Notifications = append(state.Notifications, notif)
+	}
+
+	// Capture backup schedule relationships
+	rows, err = db.Query("SELECT id, mode, backup_profile_backup_schedule FROM backup_schedules ORDER BY id")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query backup_schedules: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schedule BackupScheduleRelation
+		if err := rows.Scan(&schedule.ID, &schedule.Mode, &schedule.ProfileID); err != nil {
+			return nil, fmt.Errorf("failed to scan backup_schedule: %w", err)
+		}
+		state.BackupSchedules = append(state.BackupSchedules, schedule)
+	}
+
+	// Capture pruning rule relationships
+	rows, err = db.Query("SELECT id, is_enabled, backup_profile_pruning_rule FROM pruning_rules ORDER BY id")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pruning_rules: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var rule PruningRuleRelation
+		if err := rows.Scan(&rule.ID, &rule.IsEnabled, &rule.ProfileID); err != nil {
+			return nil, fmt.Errorf("failed to scan pruning_rule: %w", err)
+		}
+		state.PruningRules = append(state.PruningRules, rule)
 	}
 
 	return state, nil
@@ -205,7 +431,7 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 		return fmt.Errorf("backup profile count mismatch: expected %d, got %d", preMigrationState.BackupProfileCount, profileCount)
 	}
 
-	// Validate backup_profile_repositories relationships using Ent edges
+	// Validate backup profiles and their data
 	profiles, err := client.BackupProfile.Query().
 		WithRepositories().
 		Order(ent.Asc("id")).
@@ -214,6 +440,63 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 		return fmt.Errorf("failed to query backup profiles with repositories: %w", err)
 	}
 
+	if len(profiles) != len(preMigrationState.BackupProfiles) {
+		return fmt.Errorf("backup profiles count mismatch after detailed query: expected %d, got %d",
+			len(preMigrationState.BackupProfiles), len(profiles))
+	}
+
+	// Validate backup profile data
+	for i, profile := range profiles {
+		expected := preMigrationState.BackupProfiles[i]
+
+		if profile.Name != expected.Name {
+			return fmt.Errorf("backup profile %d: name mismatch: expected %q, got %q",
+				profile.ID, expected.Name, profile.Name)
+		}
+
+		if profile.Prefix != expected.Prefix {
+			return fmt.Errorf("backup profile %d: prefix mismatch: expected %q, got %q",
+				profile.ID, expected.Prefix, profile.Prefix)
+		}
+
+		if !reflect.DeepEqual(profile.BackupPaths, expected.BackupPaths) {
+			return fmt.Errorf("backup profile %d: backup_paths mismatch: expected %v, got %v",
+				profile.ID, expected.BackupPaths, profile.BackupPaths)
+		}
+
+		if !reflect.DeepEqual(profile.ExcludePaths, expected.ExcludePaths) {
+			return fmt.Errorf("backup profile %d: exclude_paths mismatch: expected %v, got %v",
+				profile.ID, expected.ExcludePaths, profile.ExcludePaths)
+		}
+
+		if string(profile.Icon) != expected.Icon {
+			return fmt.Errorf("backup profile %d: icon mismatch: expected %q, got %q",
+				profile.ID, expected.Icon, profile.Icon)
+		}
+
+		if profile.DataSectionCollapsed != expected.DataSectionCollapsed {
+			return fmt.Errorf("backup profile %d: data_section_collapsed mismatch: expected %t, got %t",
+				profile.ID, expected.DataSectionCollapsed, profile.DataSectionCollapsed)
+		}
+
+		if profile.ScheduleSectionCollapsed != expected.ScheduleSectionCollapsed {
+			return fmt.Errorf("backup profile %d: schedule_section_collapsed mismatch: expected %t, got %t",
+				profile.ID, expected.ScheduleSectionCollapsed, profile.ScheduleSectionCollapsed)
+		}
+
+		// Validate new fields have proper defaults
+		if string(profile.CompressionMode) != "lz4" {
+			return fmt.Errorf("backup profile %d: compression_mode should default to 'lz4', got %q",
+				profile.ID, profile.CompressionMode)
+		}
+
+		if profile.AdvancedSectionCollapsed != true {
+			return fmt.Errorf("backup profile %d: advanced_section_collapsed should default to true, got %t",
+				profile.ID, profile.AdvancedSectionCollapsed)
+		}
+	}
+
+	// Validate backup_profile_repositories relationships using Ent edges
 	var postMigrationRels []ProfileRepositoryRelation
 	for _, profile := range profiles {
 		repos, err := profile.Edges.RepositoriesOrErr()
@@ -256,12 +539,50 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 
 	for i, archive := range archives {
 		expected := preMigrationState.Archives[i]
+
+		// Validate basic fields
+		if archive.Name != expected.Name {
+			return fmt.Errorf("archive %d: name mismatch: expected %q, got %q",
+				archive.ID, expected.Name, archive.Name)
+		}
+
+		if archive.Duration != expected.Duration {
+			return fmt.Errorf("archive %d: duration mismatch: expected %f, got %f",
+				archive.ID, expected.Duration, archive.Duration)
+		}
+
+		if archive.BorgID != expected.BorgID {
+			return fmt.Errorf("archive %d: borg_id mismatch: expected %q, got %q",
+				archive.ID, expected.BorgID, archive.BorgID)
+		}
+
+		if archive.WillBePruned != expected.WillBePruned {
+			return fmt.Errorf("archive %d: will_be_pruned mismatch: expected %t, got %t",
+				archive.ID, expected.WillBePruned, archive.WillBePruned)
+		}
+
+		// Validate repository relationship
 		archiveRepoID, err := archive.QueryRepository().OnlyID(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get repository ID for archive %d: %w", archive.ID, err)
 		}
-		if archive.ID != expected.ID || archiveRepoID != expected.RepositoryID {
-			return fmt.Errorf("archive relationship mismatch at index %d", i)
+
+		if archiveRepoID != expected.RepositoryID {
+			return fmt.Errorf("archive %d: repository relationship mismatch: expected %d, got %d",
+				archive.ID, expected.RepositoryID, archiveRepoID)
+		}
+
+		// Validate backup profile relationship
+		if expected.ProfileID.Valid {
+			profileID, err := archive.QueryBackupProfile().OnlyID(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get backup profile ID for archive %d: %w", archive.ID, err)
+			}
+
+			if profileID != int(expected.ProfileID.Int64) {
+				return fmt.Errorf("archive %d: backup profile relationship mismatch: expected %d, got %d",
+					archive.ID, expected.ProfileID.Int64, profileID)
+			}
 		}
 	}
 
@@ -280,35 +601,105 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 
 	for i, notif := range notifications {
 		expected := preMigrationState.Notifications[i]
+
+		// Validate basic fields
+		if notif.Message != expected.Message {
+			return fmt.Errorf("notification %d: message mismatch: expected %q, got %q",
+				notif.ID, expected.Message, notif.Message)
+		}
+
+		if string(notif.Type) != expected.Type {
+			return fmt.Errorf("notification %d: type mismatch: expected %q, got %q",
+				notif.ID, expected.Type, notif.Type)
+		}
+
+		if notif.Seen != expected.Seen {
+			return fmt.Errorf("notification %d: seen mismatch: expected %t, got %t",
+				notif.ID, expected.Seen, notif.Seen)
+		}
+
+		// Validate relationships
 		profileID, err := notif.QueryBackupProfile().OnlyID(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get backup profile ID for notification %d: %w", notif.ID, err)
 		}
+
+		if profileID != expected.ProfileID {
+			return fmt.Errorf("notification %d: backup profile relationship mismatch: expected %d, got %d",
+				notif.ID, expected.ProfileID, profileID)
+		}
+
 		repoID, err := notif.QueryRepository().OnlyID(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get repository ID for notification %d: %w", notif.ID, err)
 		}
-		if notif.ID != expected.ID || profileID != expected.ProfileID || repoID != expected.RepositoryID {
-			return fmt.Errorf("notification relationship mismatch at index %d", i)
+
+		if repoID != expected.RepositoryID {
+			return fmt.Errorf("notification %d: repository relationship mismatch: expected %d, got %d",
+				notif.ID, expected.RepositoryID, repoID)
 		}
 	}
 
-	// Validate that 'url' column exists and has data (all repositories should have non-empty URL)
-	repos, err := client.Repository.Query().All(ctx)
+	// Validate repository data and transformation from 'location' to 'url'
+	repos, err := client.Repository.Query().Order(ent.Asc("id")).All(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to query repositories: %w", err)
 	}
 
-	urlCount := 0
-	for _, repo := range repos {
-		if repo.URL != "" {
-			urlCount++
-		}
+	if len(repos) != len(preMigrationState.Repositories) {
+		return fmt.Errorf("repository count mismatch after detailed query: expected %d, got %d",
+			len(preMigrationState.Repositories), len(repos))
 	}
 
-	if urlCount != preMigrationState.RepositoryCount {
-		return fmt.Errorf("url column validation failed: expected %d non-empty urls, got %d",
-			preMigrationState.RepositoryCount, urlCount)
+	for i, repo := range repos {
+		expected := preMigrationState.Repositories[i]
+
+		// Validate URL field was populated from location field
+		if repo.URL != expected.Location {
+			return fmt.Errorf("repository %d: url mismatch: expected %q (from location), got %q",
+				repo.ID, expected.Location, repo.URL)
+		}
+
+		// Validate basic fields
+		if repo.Name != expected.Name {
+			return fmt.Errorf("repository %d: name mismatch: expected %q, got %q",
+				repo.ID, expected.Name, repo.Name)
+		}
+
+		if repo.Password != expected.Password {
+			return fmt.Errorf("repository %d: password mismatch", repo.ID)
+		}
+
+		// Validate stats fields
+		if repo.StatsTotalChunks != expected.StatsTotalChunks {
+			return fmt.Errorf("repository %d: stats_total_chunks mismatch: expected %d, got %d",
+				repo.ID, expected.StatsTotalChunks, repo.StatsTotalChunks)
+		}
+
+		if repo.StatsTotalSize != expected.StatsTotalSize {
+			return fmt.Errorf("repository %d: stats_total_size mismatch: expected %d, got %d",
+				repo.ID, expected.StatsTotalSize, repo.StatsTotalSize)
+		}
+
+		if repo.StatsTotalCsize != expected.StatsTotalCsize {
+			return fmt.Errorf("repository %d: stats_total_csize mismatch: expected %d, got %d",
+				repo.ID, expected.StatsTotalCsize, repo.StatsTotalCsize)
+		}
+
+		if repo.StatsTotalUniqueChunks != expected.StatsTotalUniqueChunks {
+			return fmt.Errorf("repository %d: stats_total_unique_chunks mismatch: expected %d, got %d",
+				repo.ID, expected.StatsTotalUniqueChunks, repo.StatsTotalUniqueChunks)
+		}
+
+		if repo.StatsUniqueSize != expected.StatsUniqueSize {
+			return fmt.Errorf("repository %d: stats_unique_size mismatch: expected %d, got %d",
+				repo.ID, expected.StatsUniqueSize, repo.StatsUniqueSize)
+		}
+
+		if repo.StatsUniqueCsize != expected.StatsUniqueCsize {
+			return fmt.Errorf("repository %d: stats_unique_csize mismatch: expected %d, got %d",
+				repo.ID, expected.StatsUniqueCsize, repo.StatsUniqueCsize)
+		}
 	}
 
 	// Validate that 'location' column no longer exists (check via raw SQL)
@@ -336,6 +727,58 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 
 	if hasLocation {
 		return fmt.Errorf("'location' column still exists after migration")
+	}
+
+	// Validate backup schedules
+	schedules, err := client.BackupSchedule.Query().
+		Order(ent.Asc("id")).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query backup schedules: %w", err)
+	}
+
+	if len(schedules) != len(preMigrationState.BackupSchedules) {
+		return fmt.Errorf("backup_schedules count mismatch: expected %d, got %d",
+			len(preMigrationState.BackupSchedules), len(schedules))
+	}
+
+	for i, schedule := range schedules {
+		expected := preMigrationState.BackupSchedules[i]
+		profileID, err := schedule.QueryBackupProfile().OnlyID(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get backup profile ID for schedule %d: %w", schedule.ID, err)
+		}
+
+		if schedule.ID != expected.ID || profileID != expected.ProfileID || string(schedule.Mode) != expected.Mode {
+			return fmt.Errorf("backup_schedule relationship mismatch at index %d: expected (id=%d, profile=%d, mode=%s), got (id=%d, profile=%d, mode=%s)",
+				i, expected.ID, expected.ProfileID, expected.Mode, schedule.ID, profileID, schedule.Mode)
+		}
+	}
+
+	// Validate pruning rules
+	pruningRules, err := client.PruningRule.Query().
+		Order(ent.Asc("id")).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query pruning rules: %w", err)
+	}
+
+	if len(pruningRules) != len(preMigrationState.PruningRules) {
+		return fmt.Errorf("pruning_rules count mismatch: expected %d, got %d",
+			len(preMigrationState.PruningRules), len(pruningRules))
+	}
+
+	for i, rule := range pruningRules {
+		expected := preMigrationState.PruningRules[i]
+		profileID, err := rule.QueryBackupProfile().OnlyID(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get backup profile ID for pruning rule %d: %w", rule.ID, err)
+		}
+
+		if rule.ID != expected.ID || profileID != expected.ProfileID || rule.IsEnabled != expected.IsEnabled {
+			return fmt.Errorf("pruning_rule relationship mismatch at index %d: expected (id=%d, profile=%d, enabled=%t), got (id=%d, profile=%d, enabled=%t)",
+				i, expected.ID, expected.ProfileID, expected.IsEnabled, rule.ID, profileID, rule.IsEnabled)
+		}
 	}
 
 	return nil

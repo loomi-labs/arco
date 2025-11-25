@@ -6,6 +6,30 @@
 import { Create as $Create } from "@wailsio/runtime";
 
 /**
+ * CompressionMode defines the type for the "compression_mode" enum field.
+ */
+export enum CompressionMode {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * CompressionModeLz4 is the default value of the CompressionMode enum.
+     */
+    DefaultCompressionMode = "lz4",
+
+    /**
+     * CompressionMode values.
+     */
+    CompressionModeNone = "none",
+    CompressionModeLz4 = "lz4",
+    CompressionModeZstd = "zstd",
+    CompressionModeZlib = "zlib",
+    CompressionModeLzma = "lzma",
+};
+
+/**
  * Icon defines the type for the "icon" enum field.
  */
 export enum Icon {

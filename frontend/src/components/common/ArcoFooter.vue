@@ -46,8 +46,8 @@ getAppInfo();
 
 <template>
   <footer class="container mx-auto p-4 mt-10 text-base-content border-t border-base-300">
-    <div class="flex justify-end">
-      <div v-if="appInfo" class="dropdown dropdown-end dropdown-top flex items-center">
+    <div class="flex justify-start">
+      <div v-if="appInfo" class="dropdown dropdown-start dropdown-top flex items-center">
         <button tabindex="0" class="text-xs opacity-70 flex items-center gap-1 hover:opacity-100 transition-opacity cursor-pointer">
           <span>Built with</span>
           <span class="text-red-500">❤️</span>

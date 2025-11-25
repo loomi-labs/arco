@@ -1372,8 +1372,12 @@ type BackupProfileMutation struct {
 	exclude_paths              *[]string
 	appendexclude_paths        []string
 	icon                       *backupprofile.Icon
+	compression_mode           *backupprofile.CompressionMode
+	compression_level          *int
+	addcompression_level       *int
 	data_section_collapsed     *bool
 	schedule_section_collapsed *bool
+	advanced_section_collapsed *bool
 	clearedFields              map[string]struct{}
 	repositories               map[int]struct{}
 	removedrepositories        map[int]struct{}
@@ -1793,6 +1797,112 @@ func (m *BackupProfileMutation) ResetIcon() {
 	m.icon = nil
 }
 
+// SetCompressionMode sets the "compression_mode" field.
+func (m *BackupProfileMutation) SetCompressionMode(bm backupprofile.CompressionMode) {
+	m.compression_mode = &bm
+}
+
+// CompressionMode returns the value of the "compression_mode" field in the mutation.
+func (m *BackupProfileMutation) CompressionMode() (r backupprofile.CompressionMode, exists bool) {
+	v := m.compression_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompressionMode returns the old "compression_mode" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldCompressionMode(ctx context.Context) (v backupprofile.CompressionMode, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompressionMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompressionMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompressionMode: %w", err)
+	}
+	return oldValue.CompressionMode, nil
+}
+
+// ResetCompressionMode resets all changes to the "compression_mode" field.
+func (m *BackupProfileMutation) ResetCompressionMode() {
+	m.compression_mode = nil
+}
+
+// SetCompressionLevel sets the "compression_level" field.
+func (m *BackupProfileMutation) SetCompressionLevel(i int) {
+	m.compression_level = &i
+	m.addcompression_level = nil
+}
+
+// CompressionLevel returns the value of the "compression_level" field in the mutation.
+func (m *BackupProfileMutation) CompressionLevel() (r int, exists bool) {
+	v := m.compression_level
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompressionLevel returns the old "compression_level" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldCompressionLevel(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompressionLevel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompressionLevel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompressionLevel: %w", err)
+	}
+	return oldValue.CompressionLevel, nil
+}
+
+// AddCompressionLevel adds i to the "compression_level" field.
+func (m *BackupProfileMutation) AddCompressionLevel(i int) {
+	if m.addcompression_level != nil {
+		*m.addcompression_level += i
+	} else {
+		m.addcompression_level = &i
+	}
+}
+
+// AddedCompressionLevel returns the value that was added to the "compression_level" field in this mutation.
+func (m *BackupProfileMutation) AddedCompressionLevel() (r int, exists bool) {
+	v := m.addcompression_level
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCompressionLevel clears the value of the "compression_level" field.
+func (m *BackupProfileMutation) ClearCompressionLevel() {
+	m.compression_level = nil
+	m.addcompression_level = nil
+	m.clearedFields[backupprofile.FieldCompressionLevel] = struct{}{}
+}
+
+// CompressionLevelCleared returns if the "compression_level" field was cleared in this mutation.
+func (m *BackupProfileMutation) CompressionLevelCleared() bool {
+	_, ok := m.clearedFields[backupprofile.FieldCompressionLevel]
+	return ok
+}
+
+// ResetCompressionLevel resets all changes to the "compression_level" field.
+func (m *BackupProfileMutation) ResetCompressionLevel() {
+	m.compression_level = nil
+	m.addcompression_level = nil
+	delete(m.clearedFields, backupprofile.FieldCompressionLevel)
+}
+
 // SetDataSectionCollapsed sets the "data_section_collapsed" field.
 func (m *BackupProfileMutation) SetDataSectionCollapsed(b bool) {
 	m.data_section_collapsed = &b
@@ -1863,6 +1973,42 @@ func (m *BackupProfileMutation) OldScheduleSectionCollapsed(ctx context.Context)
 // ResetScheduleSectionCollapsed resets all changes to the "schedule_section_collapsed" field.
 func (m *BackupProfileMutation) ResetScheduleSectionCollapsed() {
 	m.schedule_section_collapsed = nil
+}
+
+// SetAdvancedSectionCollapsed sets the "advanced_section_collapsed" field.
+func (m *BackupProfileMutation) SetAdvancedSectionCollapsed(b bool) {
+	m.advanced_section_collapsed = &b
+}
+
+// AdvancedSectionCollapsed returns the value of the "advanced_section_collapsed" field in the mutation.
+func (m *BackupProfileMutation) AdvancedSectionCollapsed() (r bool, exists bool) {
+	v := m.advanced_section_collapsed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAdvancedSectionCollapsed returns the old "advanced_section_collapsed" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldAdvancedSectionCollapsed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAdvancedSectionCollapsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAdvancedSectionCollapsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAdvancedSectionCollapsed: %w", err)
+	}
+	return oldValue.AdvancedSectionCollapsed, nil
+}
+
+// ResetAdvancedSectionCollapsed resets all changes to the "advanced_section_collapsed" field.
+func (m *BackupProfileMutation) ResetAdvancedSectionCollapsed() {
+	m.advanced_section_collapsed = nil
 }
 
 // AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
@@ -2139,7 +2285,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, backupprofile.FieldCreatedAt)
 	}
@@ -2161,11 +2307,20 @@ func (m *BackupProfileMutation) Fields() []string {
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
 	}
+	if m.compression_mode != nil {
+		fields = append(fields, backupprofile.FieldCompressionMode)
+	}
+	if m.compression_level != nil {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
+	}
 	if m.data_section_collapsed != nil {
 		fields = append(fields, backupprofile.FieldDataSectionCollapsed)
 	}
 	if m.schedule_section_collapsed != nil {
 		fields = append(fields, backupprofile.FieldScheduleSectionCollapsed)
+	}
+	if m.advanced_section_collapsed != nil {
+		fields = append(fields, backupprofile.FieldAdvancedSectionCollapsed)
 	}
 	return fields
 }
@@ -2189,10 +2344,16 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.ExcludePaths()
 	case backupprofile.FieldIcon:
 		return m.Icon()
+	case backupprofile.FieldCompressionMode:
+		return m.CompressionMode()
+	case backupprofile.FieldCompressionLevel:
+		return m.CompressionLevel()
 	case backupprofile.FieldDataSectionCollapsed:
 		return m.DataSectionCollapsed()
 	case backupprofile.FieldScheduleSectionCollapsed:
 		return m.ScheduleSectionCollapsed()
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		return m.AdvancedSectionCollapsed()
 	}
 	return nil, false
 }
@@ -2216,10 +2377,16 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExcludePaths(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
+	case backupprofile.FieldCompressionMode:
+		return m.OldCompressionMode(ctx)
+	case backupprofile.FieldCompressionLevel:
+		return m.OldCompressionLevel(ctx)
 	case backupprofile.FieldDataSectionCollapsed:
 		return m.OldDataSectionCollapsed(ctx)
 	case backupprofile.FieldScheduleSectionCollapsed:
 		return m.OldScheduleSectionCollapsed(ctx)
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		return m.OldAdvancedSectionCollapsed(ctx)
 	}
 	return nil, fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -2278,6 +2445,20 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIcon(v)
 		return nil
+	case backupprofile.FieldCompressionMode:
+		v, ok := value.(backupprofile.CompressionMode)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompressionMode(v)
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompressionLevel(v)
+		return nil
 	case backupprofile.FieldDataSectionCollapsed:
 		v, ok := value.(bool)
 		if !ok {
@@ -2292,6 +2473,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetScheduleSectionCollapsed(v)
 		return nil
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAdvancedSectionCollapsed(v)
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
 }
@@ -2299,13 +2487,21 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *BackupProfileMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcompression_level != nil {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *BackupProfileMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case backupprofile.FieldCompressionLevel:
+		return m.AddedCompressionLevel()
+	}
 	return nil, false
 }
 
@@ -2314,6 +2510,13 @@ func (m *BackupProfileMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BackupProfileMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case backupprofile.FieldCompressionLevel:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCompressionLevel(v)
+		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile numeric field %s", name)
 }
@@ -2324,6 +2527,9 @@ func (m *BackupProfileMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(backupprofile.FieldExcludePaths) {
 		fields = append(fields, backupprofile.FieldExcludePaths)
+	}
+	if m.FieldCleared(backupprofile.FieldCompressionLevel) {
+		fields = append(fields, backupprofile.FieldCompressionLevel)
 	}
 	return fields
 }
@@ -2341,6 +2547,9 @@ func (m *BackupProfileMutation) ClearField(name string) error {
 	switch name {
 	case backupprofile.FieldExcludePaths:
 		m.ClearExcludePaths()
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		m.ClearCompressionLevel()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile nullable field %s", name)
@@ -2371,11 +2580,20 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
 		return nil
+	case backupprofile.FieldCompressionMode:
+		m.ResetCompressionMode()
+		return nil
+	case backupprofile.FieldCompressionLevel:
+		m.ResetCompressionLevel()
+		return nil
 	case backupprofile.FieldDataSectionCollapsed:
 		m.ResetDataSectionCollapsed()
 		return nil
 	case backupprofile.FieldScheduleSectionCollapsed:
 		m.ResetScheduleSectionCollapsed()
+		return nil
+	case backupprofile.FieldAdvancedSectionCollapsed:
+		m.ResetAdvancedSectionCollapsed()
 		return nil
 	}
 	return fmt.Errorf("unknown BackupProfile field %s", name)
@@ -6254,7 +6472,12 @@ type RepositoryMutation struct {
 	name                         *string
 	url                          *string
 	password                     *string
-	next_integrity_check         *time.Time
+	last_quick_check_at          *time.Time
+	quick_check_error            *[]string
+	appendquick_check_error      []string
+	last_full_check_at           *time.Time
+	full_check_error             *[]string
+	appendfull_check_error       []string
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
 	stats_total_size             *int
@@ -6568,53 +6791,232 @@ func (m *RepositoryMutation) ResetPassword() {
 	m.password = nil
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (m *RepositoryMutation) SetNextIntegrityCheck(t time.Time) {
-	m.next_integrity_check = &t
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (m *RepositoryMutation) SetLastQuickCheckAt(t time.Time) {
+	m.last_quick_check_at = &t
 }
 
-// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
-func (m *RepositoryMutation) NextIntegrityCheck() (r time.Time, exists bool) {
-	v := m.next_integrity_check
+// LastQuickCheckAt returns the value of the "last_quick_check_at" field in the mutation.
+func (m *RepositoryMutation) LastQuickCheckAt() (r time.Time, exists bool) {
+	v := m.last_quick_check_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the Repository entity.
+// OldLastQuickCheckAt returns the old "last_quick_check_at" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
+func (m *RepositoryMutation) OldLastQuickCheckAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
+		return v, errors.New("OldLastQuickCheckAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
+		return v, errors.New("OldLastQuickCheckAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
+		return v, fmt.Errorf("querying old value for OldLastQuickCheckAt: %w", err)
 	}
-	return oldValue.NextIntegrityCheck, nil
+	return oldValue.LastQuickCheckAt, nil
 }
 
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (m *RepositoryMutation) ClearNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	m.clearedFields[repository.FieldNextIntegrityCheck] = struct{}{}
+// ClearLastQuickCheckAt clears the value of the "last_quick_check_at" field.
+func (m *RepositoryMutation) ClearLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	m.clearedFields[repository.FieldLastQuickCheckAt] = struct{}{}
 }
 
-// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
-func (m *RepositoryMutation) NextIntegrityCheckCleared() bool {
-	_, ok := m.clearedFields[repository.FieldNextIntegrityCheck]
+// LastQuickCheckAtCleared returns if the "last_quick_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastQuickCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastQuickCheckAt]
 	return ok
 }
 
-// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
-func (m *RepositoryMutation) ResetNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	delete(m.clearedFields, repository.FieldNextIntegrityCheck)
+// ResetLastQuickCheckAt resets all changes to the "last_quick_check_at" field.
+func (m *RepositoryMutation) ResetLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	delete(m.clearedFields, repository.FieldLastQuickCheckAt)
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (m *RepositoryMutation) SetQuickCheckError(s []string) {
+	m.quick_check_error = &s
+	m.appendquick_check_error = nil
+}
+
+// QuickCheckError returns the value of the "quick_check_error" field in the mutation.
+func (m *RepositoryMutation) QuickCheckError() (r []string, exists bool) {
+	v := m.quick_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuickCheckError returns the old "quick_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldQuickCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuickCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuickCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuickCheckError: %w", err)
+	}
+	return oldValue.QuickCheckError, nil
+}
+
+// AppendQuickCheckError adds s to the "quick_check_error" field.
+func (m *RepositoryMutation) AppendQuickCheckError(s []string) {
+	m.appendquick_check_error = append(m.appendquick_check_error, s...)
+}
+
+// AppendedQuickCheckError returns the list of values that were appended to the "quick_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedQuickCheckError() ([]string, bool) {
+	if len(m.appendquick_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendquick_check_error, true
+}
+
+// ClearQuickCheckError clears the value of the "quick_check_error" field.
+func (m *RepositoryMutation) ClearQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	m.clearedFields[repository.FieldQuickCheckError] = struct{}{}
+}
+
+// QuickCheckErrorCleared returns if the "quick_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) QuickCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldQuickCheckError]
+	return ok
+}
+
+// ResetQuickCheckError resets all changes to the "quick_check_error" field.
+func (m *RepositoryMutation) ResetQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	delete(m.clearedFields, repository.FieldQuickCheckError)
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (m *RepositoryMutation) SetLastFullCheckAt(t time.Time) {
+	m.last_full_check_at = &t
+}
+
+// LastFullCheckAt returns the value of the "last_full_check_at" field in the mutation.
+func (m *RepositoryMutation) LastFullCheckAt() (r time.Time, exists bool) {
+	v := m.last_full_check_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastFullCheckAt returns the old "last_full_check_at" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldLastFullCheckAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastFullCheckAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastFullCheckAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastFullCheckAt: %w", err)
+	}
+	return oldValue.LastFullCheckAt, nil
+}
+
+// ClearLastFullCheckAt clears the value of the "last_full_check_at" field.
+func (m *RepositoryMutation) ClearLastFullCheckAt() {
+	m.last_full_check_at = nil
+	m.clearedFields[repository.FieldLastFullCheckAt] = struct{}{}
+}
+
+// LastFullCheckAtCleared returns if the "last_full_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastFullCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastFullCheckAt]
+	return ok
+}
+
+// ResetLastFullCheckAt resets all changes to the "last_full_check_at" field.
+func (m *RepositoryMutation) ResetLastFullCheckAt() {
+	m.last_full_check_at = nil
+	delete(m.clearedFields, repository.FieldLastFullCheckAt)
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (m *RepositoryMutation) SetFullCheckError(s []string) {
+	m.full_check_error = &s
+	m.appendfull_check_error = nil
+}
+
+// FullCheckError returns the value of the "full_check_error" field in the mutation.
+func (m *RepositoryMutation) FullCheckError() (r []string, exists bool) {
+	v := m.full_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFullCheckError returns the old "full_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldFullCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFullCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFullCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFullCheckError: %w", err)
+	}
+	return oldValue.FullCheckError, nil
+}
+
+// AppendFullCheckError adds s to the "full_check_error" field.
+func (m *RepositoryMutation) AppendFullCheckError(s []string) {
+	m.appendfull_check_error = append(m.appendfull_check_error, s...)
+}
+
+// AppendedFullCheckError returns the list of values that were appended to the "full_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedFullCheckError() ([]string, bool) {
+	if len(m.appendfull_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendfull_check_error, true
+}
+
+// ClearFullCheckError clears the value of the "full_check_error" field.
+func (m *RepositoryMutation) ClearFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	m.clearedFields[repository.FieldFullCheckError] = struct{}{}
+}
+
+// FullCheckErrorCleared returns if the "full_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) FullCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldFullCheckError]
+	return ok
+}
+
+// ResetFullCheckError resets all changes to the "full_check_error" field.
+func (m *RepositoryMutation) ResetFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	delete(m.clearedFields, repository.FieldFullCheckError)
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
@@ -7188,7 +7590,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, repository.FieldCreatedAt)
 	}
@@ -7204,8 +7606,17 @@ func (m *RepositoryMutation) Fields() []string {
 	if m.password != nil {
 		fields = append(fields, repository.FieldPassword)
 	}
-	if m.next_integrity_check != nil {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.last_quick_check_at != nil {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.quick_check_error != nil {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.last_full_check_at != nil {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.full_check_error != nil {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	if m.stats_total_chunks != nil {
 		fields = append(fields, repository.FieldStatsTotalChunks)
@@ -7243,8 +7654,14 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case repository.FieldPassword:
 		return m.Password()
-	case repository.FieldNextIntegrityCheck:
-		return m.NextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		return m.LastQuickCheckAt()
+	case repository.FieldQuickCheckError:
+		return m.QuickCheckError()
+	case repository.FieldLastFullCheckAt:
+		return m.LastFullCheckAt()
+	case repository.FieldFullCheckError:
+		return m.FullCheckError()
 	case repository.FieldStatsTotalChunks:
 		return m.StatsTotalChunks()
 	case repository.FieldStatsTotalSize:
@@ -7276,8 +7693,14 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldURL(ctx)
 	case repository.FieldPassword:
 		return m.OldPassword(ctx)
-	case repository.FieldNextIntegrityCheck:
-		return m.OldNextIntegrityCheck(ctx)
+	case repository.FieldLastQuickCheckAt:
+		return m.OldLastQuickCheckAt(ctx)
+	case repository.FieldQuickCheckError:
+		return m.OldQuickCheckError(ctx)
+	case repository.FieldLastFullCheckAt:
+		return m.OldLastFullCheckAt(ctx)
+	case repository.FieldFullCheckError:
+		return m.OldFullCheckError(ctx)
 	case repository.FieldStatsTotalChunks:
 		return m.OldStatsTotalChunks(ctx)
 	case repository.FieldStatsTotalSize:
@@ -7334,12 +7757,33 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPassword(v)
 		return nil
-	case repository.FieldNextIntegrityCheck:
+	case repository.FieldLastQuickCheckAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetNextIntegrityCheck(v)
+		m.SetLastQuickCheckAt(v)
+		return nil
+	case repository.FieldQuickCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuickCheckError(v)
+		return nil
+	case repository.FieldLastFullCheckAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastFullCheckAt(v)
+		return nil
+	case repository.FieldFullCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFullCheckError(v)
 		return nil
 	case repository.FieldStatsTotalChunks:
 		v, ok := value.(int)
@@ -7488,8 +7932,17 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.FieldCleared(repository.FieldLastQuickCheckAt) {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.FieldCleared(repository.FieldQuickCheckError) {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.FieldCleared(repository.FieldLastFullCheckAt) {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.FieldCleared(repository.FieldFullCheckError) {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	return fields
 }
@@ -7505,8 +7958,17 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
-	case repository.FieldNextIntegrityCheck:
-		m.ClearNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ClearLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ClearQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ClearLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ClearFullCheckError()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository nullable field %s", name)
@@ -7531,8 +7993,17 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldPassword:
 		m.ResetPassword()
 		return nil
-	case repository.FieldNextIntegrityCheck:
-		m.ResetNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ResetLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ResetQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ResetLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ResetFullCheckError()
 		return nil
 	case repository.FieldStatsTotalChunks:
 		m.ResetStatsTotalChunks()
@@ -7719,6 +8190,8 @@ type SettingsMutation struct {
 	created_at    *time.Time
 	updated_at    *time.Time
 	show_welcome  *bool
+	expert_mode   *bool
+	theme         *settings.Theme
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Settings, error)
@@ -7931,6 +8404,78 @@ func (m *SettingsMutation) ResetShowWelcome() {
 	m.show_welcome = nil
 }
 
+// SetExpertMode sets the "expert_mode" field.
+func (m *SettingsMutation) SetExpertMode(b bool) {
+	m.expert_mode = &b
+}
+
+// ExpertMode returns the value of the "expert_mode" field in the mutation.
+func (m *SettingsMutation) ExpertMode() (r bool, exists bool) {
+	v := m.expert_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpertMode returns the old "expert_mode" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldExpertMode(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpertMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpertMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpertMode: %w", err)
+	}
+	return oldValue.ExpertMode, nil
+}
+
+// ResetExpertMode resets all changes to the "expert_mode" field.
+func (m *SettingsMutation) ResetExpertMode() {
+	m.expert_mode = nil
+}
+
+// SetTheme sets the "theme" field.
+func (m *SettingsMutation) SetTheme(s settings.Theme) {
+	m.theme = &s
+}
+
+// Theme returns the value of the "theme" field in the mutation.
+func (m *SettingsMutation) Theme() (r settings.Theme, exists bool) {
+	v := m.theme
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTheme returns the old "theme" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldTheme(ctx context.Context) (v settings.Theme, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTheme is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTheme requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTheme: %w", err)
+	}
+	return oldValue.Theme, nil
+}
+
+// ResetTheme resets all changes to the "theme" field.
+func (m *SettingsMutation) ResetTheme() {
+	m.theme = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -7965,7 +8510,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -7974,6 +8519,12 @@ func (m *SettingsMutation) Fields() []string {
 	}
 	if m.show_welcome != nil {
 		fields = append(fields, settings.FieldShowWelcome)
+	}
+	if m.expert_mode != nil {
+		fields = append(fields, settings.FieldExpertMode)
+	}
+	if m.theme != nil {
+		fields = append(fields, settings.FieldTheme)
 	}
 	return fields
 }
@@ -7989,6 +8540,10 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case settings.FieldShowWelcome:
 		return m.ShowWelcome()
+	case settings.FieldExpertMode:
+		return m.ExpertMode()
+	case settings.FieldTheme:
+		return m.Theme()
 	}
 	return nil, false
 }
@@ -8004,6 +8559,10 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldUpdatedAt(ctx)
 	case settings.FieldShowWelcome:
 		return m.OldShowWelcome(ctx)
+	case settings.FieldExpertMode:
+		return m.OldExpertMode(ctx)
+	case settings.FieldTheme:
+		return m.OldTheme(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -8033,6 +8592,20 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetShowWelcome(v)
+		return nil
+	case settings.FieldExpertMode:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpertMode(v)
+		return nil
+	case settings.FieldTheme:
+		v, ok := value.(settings.Theme)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTheme(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8091,6 +8664,12 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldShowWelcome:
 		m.ResetShowWelcome()
+		return nil
+	case settings.FieldExpertMode:
+		m.ResetExpertMode()
+		return nil
+	case settings.FieldTheme:
+		m.ResetTheme()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

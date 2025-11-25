@@ -15,6 +15,7 @@ import (
 	reflect "reflect"
 
 	types "github.com/loomi-labs/arco/backend/borg/types"
+	backupprofile "github.com/loomi-labs/arco/backend/ent/backupprofile"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -56,6 +57,20 @@ func (mr *MockBorgMockRecorder) BreakLock(ctx, repository, password any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BreakLock", reflect.TypeOf((*MockBorg)(nil).BreakLock), ctx, repository, password)
 }
 
+// Check mocks base method.
+func (m *MockBorg) Check(ctx context.Context, repository, password string, quick bool) *types.CheckResult {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Check", ctx, repository, password, quick)
+	ret0, _ := ret[0].(*types.CheckResult)
+	return ret0
+}
+
+// Check indicates an expected call of Check.
+func (mr *MockBorgMockRecorder) Check(ctx, repository, password, quick any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockBorg)(nil).Check), ctx, repository, password, quick)
+}
+
 // Compact mocks base method.
 func (m *MockBorg) Compact(ctx context.Context, repository, password string) *types.Status {
 	m.ctrl.T.Helper()
@@ -71,18 +86,18 @@ func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.C
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, ch chan types.BackupProgress) (string, *types.Status) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, ch)
+	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backupPaths, excludePaths, ch any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repository, password, prefix, backupPaths, excludePaths, ch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch)
 }
 
 // DeleteArchive mocks base method.
