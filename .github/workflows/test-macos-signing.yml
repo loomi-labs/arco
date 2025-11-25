@@ -11,6 +11,57 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Check required secrets
+        run: |
+          echo "Checking required secrets..."
+          MISSING=""
+
+          if [ -z "${{ secrets.MACOS_CERTIFICATE }}" ]; then
+            echo "❌ MACOS_CERTIFICATE is not set"
+            MISSING="yes"
+          else
+            echo "✅ MACOS_CERTIFICATE is set (${#MACOS_CERTIFICATE_CHECK} chars)"
+          fi
+
+          if [ -z "${{ secrets.MACOS_CERTIFICATE_PASSWORD }}" ]; then
+            echo "❌ MACOS_CERTIFICATE_PASSWORD is not set"
+            MISSING="yes"
+          else
+            echo "✅ MACOS_CERTIFICATE_PASSWORD is set"
+          fi
+
+          if [ -z "${{ secrets.APPLE_ID }}" ]; then
+            echo "❌ APPLE_ID is not set"
+            MISSING="yes"
+          else
+            echo "✅ APPLE_ID is set"
+          fi
+
+          if [ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then
+            echo "❌ APPLE_APP_SPECIFIC_PASSWORD is not set"
+            MISSING="yes"
+          else
+            echo "✅ APPLE_APP_SPECIFIC_PASSWORD is set"
+          fi
+
+          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then
+            echo "❌ APPLE_TEAM_ID is not set"
+            MISSING="yes"
+          else
+            echo "✅ APPLE_TEAM_ID is set"
+          fi
+
+          if [ -n "$MISSING" ]; then
+            echo ""
+            echo "One or more required secrets are missing!"
+            exit 1
+          fi
+
+          echo ""
+          echo "All required secrets are configured."
+        env:
+          MACOS_CERTIFICATE_CHECK: ${{ secrets.MACOS_CERTIFICATE }}
+
       - name: Checkout code
         uses: actions/checkout@v4
 
