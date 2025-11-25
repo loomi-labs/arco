@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Arco Backup</title>
+    <organization>com.arcobackup</organization>
+    <domains enable_localSystem="false" enable_currentUserHome="false" enable_anywhere="true"/>
+    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.arcobackup.arco"/>
+        </line>
+    </choices-outline>
+
+    <choice id="default"/>
+    <choice id="com.arcobackup.arco" visible="false">
+        <pkg-ref id="com.arcobackup.arco"/>
+    </choice>
+
+    <pkg-ref id="com.arcobackup.arco">arco-component.pkg</pkg-ref>
+</installer-gui-script>

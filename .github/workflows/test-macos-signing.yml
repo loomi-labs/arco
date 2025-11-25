@@ -44,11 +44,30 @@ jobs:
       - name: Create .app bundle
         run: task darwin:create:app:bundle
 
+      - name: Download macFUSE
+        run: |
+          mkdir -p build/darwin/resources
+          curl -L https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.8.2/macfuse-4.8.2.dmg -o /tmp/macfuse.dmg
+          hdiutil attach /tmp/macfuse.dmg -mountpoint /tmp/macfuse-mount
+          cp "/tmp/macfuse-mount/Install macFUSE.pkg" build/darwin/resources/macFUSE.pkg
+          hdiutil detach /tmp/macfuse-mount
+          rm /tmp/macfuse.dmg
+
       - name: Import Code-Signing Certificates
         uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+
+      - name: Import Installer Certificate
+        if: ${{ secrets.MACOS_INSTALLER_CERTIFICATE != '' }}
+        continue-on-error: true
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.MACOS_INSTALLER_CERTIFICATE }}
+          p12-password: ${{ secrets.MACOS_INSTALLER_CERTIFICATE_PASSWORD }}
+          keychain: signing_temp
+          create-keychain: false
 
       - name: Verify imported certificates
         run: |
@@ -240,9 +259,91 @@ jobs:
           echo "=== Notarization Status ==="
           stapler validate bin/Arco.dmg
 
-      - name: Upload signed DMG
+      - name: Create PKG installer
+        run: |
+          # Prepare scripts directory
+          chmod +x build/darwin/scripts/postinstall
+
+          # Create component package
+          # Using $HOME/Applications for user-owned location (enables auto-update without admin)
+          pkgbuild \
+            --identifier com.arcobackup.arco \
+            --version "test-${{ github.sha }}" \
+            --install-location "$HOME/Applications" \
+            --scripts build/darwin/scripts \
+            --component bin/arco.app \
+            /tmp/arco-component.pkg
+
+          # Create distribution package with macFUSE
+          productbuild \
+            --distribution build/darwin/distribution.xml \
+            --resources build/darwin/resources \
+            --package-path /tmp \
+            bin/Arco-Installer.pkg
+
+          rm /tmp/arco-component.pkg
+
+      - name: Sign PKG installer
+        run: |
+          INSTALLER_IDENTITY=$(security find-identity -v | grep "Developer ID Installer" | head -1 | grep -o '"[^"]*"' | tr -d '"')
+
+          if [ -z "$INSTALLER_IDENTITY" ]; then
+            echo "WARNING: No Developer ID Installer certificate found, skipping PKG signing"
+          else
+            echo "Signing PKG with: $INSTALLER_IDENTITY"
+            productsign --sign "$INSTALLER_IDENTITY" \
+              bin/Arco-Installer.pkg \
+              bin/Arco-Installer-signed.pkg
+            mv bin/Arco-Installer-signed.pkg bin/Arco-Installer.pkg
+            echo "✅ PKG signed successfully"
+          fi
+
+      - name: Notarize PKG
+        timeout-minutes: 10
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "Submitting PKG for notarization..."
+
+          SUBMIT_OUTPUT=$(xcrun notarytool submit bin/Arco-Installer.pkg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait 2>&1)
+
+          echo "$SUBMIT_OUTPUT"
+
+          if echo "$SUBMIT_OUTPUT" | grep -q "status: Invalid"; then
+            SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+            echo ""
+            echo "❌ Notarization FAILED - Fetching error log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Notarization successful - Stapling ticket to PKG..."
+          xcrun stapler staple bin/Arco-Installer.pkg
+
+      - name: Verify PKG
+        run: |
+          echo "=== PKG Info ==="
+          pkgutil --check-signature bin/Arco-Installer.pkg || echo "PKG not signed (expected if no installer certificate)"
+
+          echo ""
+          echo "=== Stapler Validation ==="
+          stapler validate bin/Arco-Installer.pkg || echo "PKG not notarized (expected if notarization failed)"
+
+      - name: Upload signed artifacts
         uses: actions/upload-artifact@v4
         with:
           name: arco-macos-signed-test
-          path: bin/Arco.dmg
+          path: |
+            bin/Arco.dmg
+            bin/Arco-Installer.pkg
           retention-days: 7
