@@ -60,7 +60,6 @@ jobs:
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
       - name: Import Installer Certificate
-        if: ${{ secrets.MACOS_INSTALLER_CERTIFICATE != '' }}
         continue-on-error: true
         uses: apple-actions/import-codesign-certs@v2
         with:
