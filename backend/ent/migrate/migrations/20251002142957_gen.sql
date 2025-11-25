@@ -99,8 +99,10 @@ CREATE TABLE `notifications` (
 
 -- Restore all data
 INSERT INTO `backup_profile_repositories` SELECT * FROM `backup_profile_repositories_backup`;
-INSERT INTO `archives` SELECT * FROM `archives_backup`;
-INSERT INTO `notifications` SELECT * FROM `notifications_backup`;
+INSERT INTO `archives` (`id`, `created_at`, `updated_at`, `name`, `duration`, `borg_id`, `will_be_pruned`, `archive_repository`, `archive_backup_profile`, `backup_profile_archives`)
+SELECT `id`, `created_at`, `updated_at`, `name`, `duration`, `borg_id`, `will_be_pruned`, `archive_repository`, `archive_backup_profile`, `backup_profile_archives` FROM `archives_backup`;
+INSERT INTO `notifications` (`id`, `created_at`, `updated_at`, `message`, `type`, `seen`, `action`, `notification_backup_profile`, `notification_repository`)
+SELECT `id`, `created_at`, `updated_at`, `message`, `type`, `seen`, `action`, `notification_backup_profile`, `notification_repository` FROM `notifications_backup`;
 
 -- Clean up temporary tables
 DROP TABLE `backup_profile_repositories_backup`;

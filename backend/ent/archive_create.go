@@ -266,7 +266,7 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	if nodes := _c.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,
@@ -277,7 +277,7 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.archive_backup_profile = &nodes[0]
+		_node.backup_profile_archives = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

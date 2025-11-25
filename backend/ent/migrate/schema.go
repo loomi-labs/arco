@@ -19,7 +19,6 @@ var (
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
 		{Name: "archive_repository", Type: field.TypeInt},
-		{Name: "archive_backup_profile", Type: field.TypeInt, Nullable: true},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
 	// ArchivesTable holds the schema information for the "archives" table.
@@ -35,14 +34,8 @@ var (
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "archives_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
-				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[9]},
+				Columns:    []*schema.Column{ArchivesColumns[8]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -311,7 +304,6 @@ var (
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
-	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupProfilesTable.Annotation = &entsql.Annotation{}
 	BackupProfilesTable.Annotation.Checks = map[string]string{
 		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR\n\t\t\t\t\t(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)\n\t\t\t\t)",

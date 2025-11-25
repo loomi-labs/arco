@@ -373,7 +373,7 @@ func HasBackupProfile() predicate.Archive {
 	return predicate.Archive(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, BackupProfileTable, BackupProfileColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, BackupProfileTable, BackupProfileColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
