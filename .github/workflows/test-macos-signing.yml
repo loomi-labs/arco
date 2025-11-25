@@ -98,7 +98,7 @@ jobs:
       - name: Download macFUSE
         run: |
           mkdir -p build/darwin/resources
-          curl -L https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.8.2/macfuse-4.8.2.dmg -o /tmp/macfuse.dmg
+          curl -L https://github.com/macfuse/macfuse/releases/download/macfuse-5.1.2/macfuse-5.1.2.dmg -o /tmp/macfuse.dmg
           hdiutil attach /tmp/macfuse.dmg -mountpoint /tmp/macfuse-mount
           cp "/tmp/macfuse-mount/Install macFUSE.pkg" build/darwin/resources/macFUSE.pkg
           hdiutil detach /tmp/macfuse-mount

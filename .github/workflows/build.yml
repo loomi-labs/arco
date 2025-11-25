@@ -132,7 +132,7 @@ jobs:
         shell: bash
       - name: Install macOS Wails deps
         if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
-        run: brew install mitchellh/gon/gon jq
+        run: brew install create-dmg jq
         shell: bash
 
       # Building step
@@ -155,80 +155,144 @@ jobs:
         run: task darwin:create:app:bundle
         shell: bash
 
-      # Sign macOS app
-      - name: Import Code-Signing Certificates for macOS
-        if: runner.os == 'macOS' && inputs.push_artifacts == true
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
-          p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      # Download macFUSE for PKG installer
+      - name: Download macFUSE
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
+        run: |
+          mkdir -p build/darwin/resources
+          curl -L https://github.com/macfuse/macfuse/releases/download/macfuse-5.1.2/macfuse-5.1.2.dmg -o /tmp/macfuse.dmg
+          hdiutil attach /tmp/macfuse.dmg -mountpoint /tmp/macfuse-mount
+          cp "/tmp/macfuse-mount/Install macFUSE.pkg" build/darwin/resources/macFUSE.pkg
+          hdiutil detach /tmp/macfuse-mount
+          rm /tmp/macfuse.dmg
 
-      - name: Sign and notarize macOS app
+      # Setup keychain and import certificates for macOS signing
+      - name: Setup Keychain and Import Certificates
         if: runner.os == 'macOS' && inputs.push_artifacts == true
-        shell: bash
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_INSTALLER_CERTIFICATE: ${{ secrets.MACOS_INSTALLER_CERTIFICATE }}
+          MACOS_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_INSTALLER_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PASSWORD="actions"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
+
+          # Import Application certificate
+          echo "$MACOS_CERTIFICATE" | base64 --decode > /tmp/app_cert.p12
+          security import /tmp/app_cert.p12 -k "$KEYCHAIN_NAME" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/security
+          rm /tmp/app_cert.p12
+
+          # Import Installer certificate (if available)
+          if [ -n "$MACOS_INSTALLER_CERTIFICATE" ]; then
+            echo "$MACOS_INSTALLER_CERTIFICATE" | base64 --decode > /tmp/installer_cert.p12
+            security import /tmp/installer_cert.p12 -k "$KEYCHAIN_NAME" -P "$MACOS_INSTALLER_CERTIFICATE_PASSWORD" \
+              -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/security
+            rm /tmp/installer_cert.p12
+          fi
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security list-keychains -d user -s "$KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
+
+      # Sign, create DMG/PKG, and notarize macOS app
+      - name: Sign and package macOS app
+        if: runner.os == 'macOS' && inputs.push_artifacts == true
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VERSION: ${{ inputs.version }}
         run: |
-          # Update gon-notarize.json with credentials
-          jq '.apple_id.username = env.APPLE_ID | .apple_id.provider = env.APPLE_TEAM_ID' \
-            build/darwin/gon-notarize.json > build/darwin/gon-notarize-tmp.json
-          mv build/darwin/gon-notarize-tmp.json build/darwin/gon-notarize.json
+          CERT_IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | grep -o '"[^"]*"' | tr -d '"')
 
-          echo "Signing package..."
-          gon -log-level=info ./build/darwin/gon-sign.json
+          # Sign app
+          codesign --sign "$CERT_IDENTITY" --force --options runtime --timestamp --verbose bin/arco.app
+          codesign --verify --strict bin/arco.app
 
-          echo "Notarizing package..."
-          gon -log-level=info ./build/darwin/gon-notarize.json
+          # Create and sign DMG
+          create-dmg --volname "Arco" --volicon "build/darwin/icons.icns" \
+            --window-pos 200 120 --window-size 600 400 --icon-size 100 \
+            --icon "arco.app" 175 190 --hide-extension "arco.app" --app-drop-link 425 190 \
+            --no-internet-enable "bin/Arco.dmg" "bin/arco.app"
+          codesign --sign "$CERT_IDENTITY" --timestamp bin/Arco.dmg
 
-      # Compress build artifact
+          # Notarize DMG
+          xcrun notarytool submit bin/Arco.dmg --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          xcrun stapler staple bin/Arco.dmg
+
+          # Create PKG
+          chmod +x build/darwin/scripts/postinstall
+          pkgbuild --identifier com.arcobackup.arco --version "${VERSION#v}" \
+            --install-location "$HOME/Applications" --scripts build/darwin/scripts \
+            --component bin/arco.app /tmp/arco-component.pkg
+          productbuild --distribution build/darwin/distribution.xml \
+            --resources build/darwin/resources --package-path /tmp bin/Arco-Installer.pkg
+          rm /tmp/arco-component.pkg
+
+          # Sign PKG (if installer cert available)
+          INSTALLER_IDENTITY=$(security find-identity -v | grep "Developer ID Installer" | head -1 | grep -o '"[^"]*"' | tr -d '"')
+          if [ -n "$INSTALLER_IDENTITY" ]; then
+            productsign --sign "$INSTALLER_IDENTITY" bin/Arco-Installer.pkg bin/Arco-Installer-signed.pkg
+            mv bin/Arco-Installer-signed.pkg bin/Arco-Installer.pkg
+          fi
+
+          # Notarize PKG
+          xcrun notarytool submit bin/Arco-Installer.pkg --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          xcrun stapler staple bin/Arco-Installer.pkg
+
+      # Compress build artifact (Linux)
       - name: Compress build artifact (Linux)
-        if: steps.should-build.outputs.should_run == 'true' && runner.os != 'macOS'
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
         id: compress
         run: |
           cd ./bin
           ZIP_NAME="${{ matrix.build.zip-name }}.zip"
           zip -j "../$ZIP_NAME" arco
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
-          echo "zip_path=$(pwd)/../$ZIP_NAME" >> $GITHUB_OUTPUT
-
-      - name: Compress build artifact (macOS)
-        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
-        id: compress-macos
-        run: |
-          cd ./bin
-          ZIP_NAME="${{ matrix.build.zip-name }}.zip"
-          ditto -c -k arco.app "../$ZIP_NAME"
-          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
-          echo "zip_path=$(pwd)/../$ZIP_NAME" >> $GITHUB_OUTPUT
-
-      - name: Set artifact list
-        if: steps.should-build.outputs.should_run == 'true'
-        id: artifacts
-        run: |
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            echo "list=${{ steps.compress-macos.outputs.zip_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "list=${{ steps.compress.outputs.zip_name }}" >> $GITHUB_OUTPUT
-          fi
 
       # Upload build assets
-      - name: Upload build artifacts
-        if: steps.should-build.outputs.should_run == 'true'
+      - name: Upload build artifacts (Linux)
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
         uses: actions/upload-artifact@v4
-        id: upload
         with:
           name: ${{ steps.compress.outputs.zip_name }}
           path: ${{ steps.compress.outputs.zip_name }}
           retention-days: 30
 
+      - name: Upload build artifacts (macOS)
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: arco-macos
+          path: |
+            bin/Arco.dmg
+            bin/Arco-Installer.pkg
+          retention-days: 30
+
       # Upload to release if this is a release build
-      - name: Upload to release
-        if: steps.should-build.outputs.should_run == 'true' && inputs.push_artifacts && inputs.version != ''
+      - name: Upload to release (Linux)
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux' && inputs.push_artifacts && inputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
           files: ${{ steps.compress.outputs.zip_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload to release (macOS)
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS' && inputs.push_artifacts && inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            bin/Arco.dmg
+            bin/Arco-Installer.pkg
           draft: false
           prerelease: false
