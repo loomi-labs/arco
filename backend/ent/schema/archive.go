@@ -44,7 +44,8 @@ func (Archive) Edges() []ent.Edge {
 			Required().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Unique(),
-		edge.To("backup_profile", BackupProfile.Type).
+		edge.From("backup_profile", BackupProfile.Type).
+			Ref("archives").
 			StructTag(`json:"backupProfile,omitempty"`).
 			Unique(),
 	}

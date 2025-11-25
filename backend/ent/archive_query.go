@@ -100,7 +100,7 @@ func (_q *ArchiveQuery) QueryBackupProfile() *BackupProfileQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(archive.Table, archive.FieldID, selector),
 			sqlgraph.To(backupprofile.Table, backupprofile.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, archive.BackupProfileTable, archive.BackupProfileColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, archive.BackupProfileTable, archive.BackupProfileColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -493,10 +493,10 @@ func (_q *ArchiveQuery) loadBackupProfile(ctx context.Context, query *BackupProf
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Archive)
 	for i := range nodes {
-		if nodes[i].archive_backup_profile == nil {
+		if nodes[i].backup_profile_archives == nil {
 			continue
 		}
-		fk := *nodes[i].archive_backup_profile
+		fk := *nodes[i].backup_profile_archives
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -513,7 +513,7 @@ func (_q *ArchiveQuery) loadBackupProfile(ctx context.Context, query *BackupProf
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "archive_backup_profile" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "backup_profile_archives" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
