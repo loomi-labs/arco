@@ -210,8 +210,8 @@ jobs:
         run: |
           CERT_IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | grep -o '"[^"]*"' | tr -d '"')
 
-          # Sign app
-          codesign --sign "$CERT_IDENTITY" --force --options runtime --timestamp --verbose bin/arco.app
+          # Sign app with entitlements (required for WebView/Wails apps)
+          codesign --sign "$CERT_IDENTITY" --force --options runtime --timestamp --entitlements build/darwin/entitlements.plist --verbose bin/arco.app
           codesign --verify --strict bin/arco.app
 
           # Create and sign DMG

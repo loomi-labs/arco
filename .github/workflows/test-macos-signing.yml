@@ -223,11 +223,13 @@ jobs:
           # --force: Replace existing signature if present
           # --options runtime: Enable hardened runtime (required for notarization)
           # --timestamp: Add secure timestamp from Apple
+          # --entitlements: Required for WebView/Wails apps to work with hardened runtime
           # --verbose: Show detailed signing information
           codesign --sign "$CERT_IDENTITY" \
             --force \
             --options runtime \
             --timestamp \
+            --entitlements build/darwin/entitlements.plist \
             --verbose \
             bin/arco.app
 
