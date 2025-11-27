@@ -229,7 +229,7 @@ jobs:
           # Create PKG
           chmod +x build/darwin/scripts/postinstall
           pkgbuild --identifier com.arcobackup.arco --version "${VERSION#v}" \
-            --install-location "$HOME/Applications" --scripts build/darwin/scripts \
+            --install-location "Applications" --scripts build/darwin/scripts \
             --component bin/arco.app /tmp/arco-component.pkg
           productbuild --distribution build/darwin/distribution.xml \
             --resources build/darwin/resources --package-path /tmp bin/Arco-Installer.pkg

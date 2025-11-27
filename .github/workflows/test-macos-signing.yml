@@ -87,7 +87,7 @@ jobs:
       - name: Build universal binary
         env:
           PLATFORM: darwin/universal
-          VERSION: test-${{ github.sha }}
+          VERSION: v16.0.0
           PRODUCTION: true
         run: |
           task build
