@@ -347,6 +347,8 @@ jobs:
         run: |
           # Prepare scripts directory
           chmod +x build/darwin/scripts/postinstall
+          # Copy macFUSE.pkg to scripts dir so postinstall can find it via SCRIPT_DIR
+          cp build/darwin/resources/macFUSE.pkg build/darwin/scripts/
 
           # Create component package
           # Using relative "Applications" path - combined with enable_currentUserHome in distribution.xml,
