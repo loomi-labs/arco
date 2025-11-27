@@ -83,9 +83,10 @@ const (
 )
 
 type Icons struct {
-	AppIconDark  []byte
-	AppIconLight []byte
-	DarwinIcons  []byte
+	AppIconDark       []byte
+	AppIconLight      []byte
+	DarwinIcons       []byte
+	DarwinMenubarIcon []byte
 }
 
 type Config struct {

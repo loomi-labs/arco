@@ -248,14 +248,14 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	})
 
 	systray := wailsApp.SystemTray.New()
-	systray.SetLabel(app.Name)
 	if platform.IsMacOS() {
 		// Support for template icons on macOS
-		systray.SetTemplateIcon(config.Icons.DarwinIcons)
+		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
 	} else {
 		// Support for light/dark mode icons
 		systray.SetDarkModeIcon(config.Icons.AppIconDark)
 		systray.SetIcon(config.Icons.AppIconLight)
+		systray.SetLabel(app.Name)
 	}
 
 	// Add menu
