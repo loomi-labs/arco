@@ -32,6 +32,7 @@ import (
 	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/pkg/browser"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -117,6 +118,16 @@ func (a *App) SubscriptionService() *subscription.Service {
 func (a *App) Startup(ctx context.Context) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
+
+	// Check for macFUSE on macOS
+	if platform.IsMacOS() && !platform.IsMacFUSEInstalled() {
+		a.log.Warn("macFUSE is not installed")
+		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusUnknown,
+			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://osxfuse.github.io and restart Arco"))
+		// Open download page
+		_ = browser.OpenURL("https://osxfuse.github.io")
+		return // Stop startup but keep app open showing error
+	}
 
 	if a.config.CheckForUpdates {
 		// Update Arco binary if necessary

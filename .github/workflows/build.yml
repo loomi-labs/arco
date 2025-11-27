@@ -228,13 +228,11 @@ jobs:
 
           # Create PKG
           chmod +x build/darwin/scripts/postinstall
-          # Copy macFUSE.pkg to scripts dir so postinstall can find it via SCRIPT_DIR
-          cp build/darwin/resources/macFUSE.pkg build/darwin/scripts/
           pkgbuild --identifier com.arcobackup.arco --version "${VERSION#v}" \
             --install-location "Applications" --scripts build/darwin/scripts \
             --component bin/arco.app /tmp/arco-component.pkg
           productbuild --distribution build/darwin/distribution.xml \
-            --resources build/darwin/resources --package-path /tmp bin/Arco-Installer.pkg
+            --package-path /tmp bin/Arco-Installer.pkg
           rm /tmp/arco-component.pkg
 
           # Sign PKG (if installer cert available)

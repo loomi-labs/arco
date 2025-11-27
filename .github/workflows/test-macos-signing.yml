@@ -347,24 +347,21 @@ jobs:
         run: |
           # Prepare scripts directory
           chmod +x build/darwin/scripts/postinstall
-          # Copy macFUSE.pkg to scripts dir so postinstall can find it via SCRIPT_DIR
-          cp build/darwin/resources/macFUSE.pkg build/darwin/scripts/
 
           # Create component package
           # Using relative "Applications" path - combined with enable_currentUserHome in distribution.xml,
           # this installs to ~/Applications (resolved at install time, not build time)
           pkgbuild \
             --identifier com.arcobackup.arco \
-            --version "test-${{ github.sha }}" \
+            --version "v16.0.0" \
             --install-location "Applications" \
             --scripts build/darwin/scripts \
             --component bin/arco.app \
             /tmp/arco-component.pkg
 
-          # Create distribution package with macFUSE
+          # Create distribution package
           productbuild \
             --distribution build/darwin/distribution.xml \
-            --resources build/darwin/resources \
             --package-path /tmp \
             bin/Arco-Installer.pkg
 
