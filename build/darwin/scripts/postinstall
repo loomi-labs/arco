@@ -23,6 +23,7 @@ chown "$CURRENT_USER" "${USER_HOME}/Applications"
 mkdir -p "${USER_HOME}/Library/LaunchAgents"
 
 # 4. Create LaunchAgent plist
+# Use 'open' with the .app bundle so macOS shows "Arco" in Login Items, not the raw binary
 cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -32,7 +33,10 @@ cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
     <string>com.arcobackup.arco</string>
     <key>ProgramArguments</key>
     <array>
-        <string>${USER_HOME}/Applications/Arco.app/Contents/MacOS/arco</string>
+        <string>/usr/bin/open</string>
+        <string>-a</string>
+        <string>${USER_HOME}/Applications/Arco.app</string>
+        <string>--args</string>
         <string>--hidden</string>
     </array>
     <key>RunAtLoad</key>
