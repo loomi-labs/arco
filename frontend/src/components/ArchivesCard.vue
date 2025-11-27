@@ -1001,9 +1001,9 @@ onUnmounted(() => {
                    :disabled='archives.length === 0' />
           </th>
           <th class='min-w-32 sm:min-w-48'>{{ $t("name") }}</th>
-          <th v-if='showBackupProfileColumn' class='hidden lg:table-cell w-32'>Backup profile</th>
+          <th v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell] w-32'>Backup profile</th>
           <th class='min-w-24 sm:min-w-32 lg:min-w-40'>Creation time</th>
-          <th class='text-right hidden md:table-cell w-20'>Duration</th>
+          <th class='text-right [display:none] md:[display:table-cell] w-20'>Duration</th>
           <th class='min-w-16 sm:min-w-32 text-right'>{{ $t("action") }}</th>
         </tr>
         </thead>
@@ -1056,7 +1056,7 @@ onUnmounted(() => {
             </div>
           </td>
           <!-- Backup -->
-          <td v-if='showBackupProfileColumn' class='hidden lg:table-cell'>
+          <td v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell]'>
             <span>{{ archive?.edges.backupProfile?.name }}</span>
           </td>
           <!-- Creation time -->
@@ -1068,7 +1068,7 @@ onUnmounted(() => {
             </span>
           </td>
           <!-- Duration -->
-          <td class='hidden md:table-cell'>
+          <td class='[display:none] md:[display:table-cell]'>
             <p class='text-right'>{{ toDurationString(archive.duration) }}</p>
           </td>
           <!-- Action -->
