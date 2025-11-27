@@ -22,7 +22,7 @@ cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
     <array>
         <string>/usr/bin/open</string>
         <string>-a</string>
-        <string>${USER_HOME}/Applications/Arco.app</string>
+        <string>${USER_HOME}/Applications/arco.app</string>
         <string>--args</string>
         <string>--hidden</string>
     </array>
