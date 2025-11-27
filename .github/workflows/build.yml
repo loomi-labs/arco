@@ -247,6 +247,11 @@ jobs:
             --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
           xcrun stapler staple bin/Arco-Installer.pkg
 
+          # Create ZIP of signed .app bundle for auto-updater
+          cd bin
+          ditto -c -k --keepParent arco.app arco-macos.zip
+          cd ..
+
       # Compress build artifact (Linux)
       - name: Compress build artifact (Linux)
         if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
@@ -294,5 +299,6 @@ jobs:
           files: |
             bin/Arco.dmg
             bin/Arco-Installer.pkg
+            bin/arco-macos.zip
           draft: false
           prerelease: false
