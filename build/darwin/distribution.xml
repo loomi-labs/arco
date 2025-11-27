@@ -2,7 +2,8 @@
 <installer-gui-script minSpecVersion="1">
     <title>Arco Backup</title>
     <organization>com.arcobackup</organization>
-fix    <domains enable_localSystem="true" enable_currentUserHome="true" enable_anywhere="false"/>
+    <!-- User-home only (no system-wide option), but auth=root for macFUSE installation -->
+    <domains enable_localSystem="false" enable_currentUserHome="true" enable_anywhere="false"/>
     <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
 
     <choices-outline>
@@ -16,5 +17,6 @@ fix    <domains enable_localSystem="true" enable_currentUserHome="true" enable_a
         <pkg-ref id="com.arcobackup.arco"/>
     </choice>
 
-    <pkg-ref id="com.arcobackup.arco">arco-component.pkg</pkg-ref>
+    <!-- auth="root" ensures postinstall runs as root (needed for macFUSE) -->
+    <pkg-ref id="com.arcobackup.arco" auth="root">arco-component.pkg</pkg-ref>
 </installer-gui-script>
