@@ -349,11 +349,12 @@ jobs:
           chmod +x build/darwin/scripts/postinstall
 
           # Create component package
-          # Using $HOME/Applications for user-owned location (enables auto-update without admin)
+          # Using relative "Applications" path - combined with enable_currentUserHome in distribution.xml,
+          # this installs to ~/Applications (resolved at install time, not build time)
           pkgbuild \
             --identifier com.arcobackup.arco \
             --version "test-${{ github.sha }}" \
-            --install-location "$HOME/Applications" \
+            --install-location "Applications" \
             --scripts build/darwin/scripts \
             --component bin/arco.app \
             /tmp/arco-component.pkg
