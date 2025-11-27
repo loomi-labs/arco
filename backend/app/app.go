@@ -119,16 +119,6 @@ func (a *App) Startup(ctx context.Context) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
-	// Check for macFUSE on macOS
-	if platform.IsMacOS() && !platform.IsMacFUSEInstalled() {
-		a.log.Warn("macFUSE is not installed")
-		a.state.SetStartupStatus(a.ctx, appstate.StartupStatusUnknown,
-			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://osxfuse.github.io and restart Arco"))
-		// Open download page
-		_ = browser.OpenURL("https://osxfuse.github.io")
-		return // Stop startup but keep app open showing error
-	}
-
 	if a.config.CheckForUpdates {
 		// Update Arco binary if necessary
 		needsRestart, err := a.updateArco()
@@ -202,6 +192,16 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
+
+	// Check for macFUSE on macOS
+	if platform.IsMacOS() && !platform.IsMacFUSEInstalled() {
+		a.log.Warn("macFUSE is not installed")
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status,
+			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://osxfuse.github.io and restart Arco"))
+		// Open download page
+		_ = browser.OpenURL("https://osxfuse.github.io")
+		return // Stop startup but keep app open showing error
+	}
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
