@@ -64,6 +64,11 @@ export class Archive {
     "willBePruned": boolean;
 
     /**
+     * Comment stored with the archive in borg
+     */
+    "comment": string;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
@@ -92,6 +97,9 @@ export class Archive {
         if (!("willBePruned" in $$source)) {
             this["willBePruned"] = false;
         }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
         if (!("edges" in $$source)) {
             this["edges"] = (new ArchiveEdges());
         }
@@ -103,10 +111,10 @@ export class Archive {
      * Creates a new Archive instance from a string or object.
      */
     static createFrom($$source: any = {}): Archive {
-        const $$createField7_0 = $$createType0;
+        const $$createField8_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField8_0($$parsedSource["edges"]);
         }
         return new Archive($$parsedSource as Partial<Archive>);
     }

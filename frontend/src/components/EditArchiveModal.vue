@@ -11,7 +11,7 @@ import type { ArchiveWithPendingChanges } from "../../bindings/github.com/loomi-
  ************/
 
 interface Emits {
-  (event: "confirm", archiveId: number, newName: string): void;
+  (event: "confirm", archiveId: number, newName: string, newComment: string): void;
   (event: "close"): void;
 }
 
@@ -28,12 +28,31 @@ defineExpose({
 
 const dialog = ref<HTMLDialogElement>();
 const newName = ref<string>("");
+const newComment = ref<string>("");
 const nameError = ref<string | undefined>(undefined);
 const currentArchive = ref<ArchiveWithPendingChanges | undefined>(undefined);
+const originalName = ref<string>("");
+const originalComment = ref<string>("");
 
-const isValid = computed(() =>
+const isNameValid = computed(() =>
   newName.value.trim() !== "" &&
   !nameError.value
+);
+
+const hasNameChanged = computed(() =>
+  newName.value.trim() !== originalName.value
+);
+
+const hasCommentChanged = computed(() =>
+  newComment.value !== originalComment.value
+);
+
+const hasChanges = computed(() =>
+  hasNameChanged.value || hasCommentChanged.value
+);
+
+const isValid = computed(() =>
+  isNameValid.value && hasChanges.value
 );
 
 /************
@@ -43,6 +62,9 @@ const isValid = computed(() =>
 function showModal(archive: ArchiveWithPendingChanges, currentName: string) {
   currentArchive.value = archive;
   newName.value = currentName;
+  originalName.value = currentName;
+  newComment.value = archive.comment ?? "";
+  originalComment.value = archive.comment ?? "";
   nameError.value = undefined;
   dialog.value?.showModal();
 
@@ -64,6 +86,9 @@ function closeModal() {
 function resetState() {
   currentArchive.value = undefined;
   newName.value = "";
+  newComment.value = "";
+  originalName.value = "";
+  originalComment.value = "";
   nameError.value = undefined;
   emit("close");
 }
@@ -106,25 +131,30 @@ async function validateName() {
   }
 }
 
-async function confirmRename() {
+async function confirmChanges() {
   await validateName();
 
   if (!isValid.value || !currentArchive.value) {
     return;
   }
 
-  emit("confirm", currentArchive.value.id, newName.value.trim());
-  // Note: The parent component should handle closing the modal after successful rename
+  emit("confirm", currentArchive.value.id, newName.value.trim(), newComment.value.trim());
+  // Note: The parent component should handle closing the modal after successful operation
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Enter" && isValid.value) {
-    event.preventDefault();
-    confirmRename();
-  } else if (event.key === "Escape") {
+  if (event.key === "Escape") {
     event.preventDefault();
     closeModal();
   }
+}
+
+function handleNameKeydown(event: KeyboardEvent) {
+  if (event.key === "Enter" && isValid.value) {
+    event.preventDefault();
+    confirmChanges();
+  }
+  handleKeydown(event);
 }
 </script>
 
@@ -136,19 +166,29 @@ function handleKeydown(event: KeyboardEvent) {
   >
     <div class="modal-box flex flex-col text-left">
       <h2 class="text-2xl pb-2">
-        Rename Archive
+        Edit Archive
       </h2>
 
-
       <div class="flex flex-col gap-4">
-        <FormField label="New archive name" :error="nameError">
+        <FormField label="Archive name" :error="nameError">
           <input
             :class="formInputClass"
             type="text"
             v-model="newName"
             @input="validateName"
+            @keydown="handleNameKeydown"
+            placeholder="Enter archive name"
+          />
+        </FormField>
+
+        <FormField label="Comment (optional)">
+          <input
+            :class="formInputClass"
+            type='text'
+            v-model="newComment"
             @keydown="handleKeydown"
-            placeholder="Enter new archive name"
+            placeholder="Enter archive comment"
+            rows="3"
           />
         </FormField>
 
@@ -164,9 +204,9 @@ function handleKeydown(event: KeyboardEvent) {
             class="btn btn-primary"
             type="button"
             :disabled="!isValid"
-            @click="confirmRename"
+            @click="confirmChanges"
           >
-            Rename
+            Save
           </button>
         </div>
       </div>
