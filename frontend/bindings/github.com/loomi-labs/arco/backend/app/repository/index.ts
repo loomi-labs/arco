@@ -15,6 +15,7 @@ export {
     ArcoCloud,
     BackupButtonStatus,
     BackupProfileFilter,
+    ChangePassphraseResult,
     Completed,
     DeleteActive,
     DeleteNone,

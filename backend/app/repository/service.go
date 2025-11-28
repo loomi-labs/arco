@@ -319,6 +319,7 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		DeduplicationRatio:  dedupRatio,
 		CompressionRatio:    compressionRatio,
 		SpaceSavingsPercent: spaceSavingsPercent,
+		HasPassword:         repoEntity.Password != "",
 	}
 }
 
@@ -1487,6 +1488,74 @@ func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password st
 	}
 
 	return FixStoredPasswordResult{
+		Success:      true,
+		ErrorMessage: "",
+	}, nil
+}
+
+// ChangePassphrase changes the passphrase of a repository's encryption key
+func (s *Service) ChangePassphrase(ctx context.Context, repoId int, currentPassword, newPassword string) (ChangePassphraseResult, error) {
+	// Validate inputs
+	if currentPassword == "" {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "current password cannot be empty",
+		}, nil
+	}
+	if newPassword == "" {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "new password cannot be empty",
+		}, nil
+	}
+	if currentPassword == newPassword {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "new password must be different from current password",
+		}, nil
+	}
+
+	// Get repository from database
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Check repository is in Idle state
+	currentState := s.queueManager.GetRepositoryState(repoId)
+	if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "repository must be idle to change passphrase",
+		}, nil
+	}
+
+	// Call borg to change the passphrase
+	status := s.borgClient.ChangePassphrase(ctx, repoEntity.URL, currentPassword, newPassword)
+
+	// Check for errors
+	if status.HasError() {
+		if status.Error.ExitCode == borgtypes.ErrorPassphraseWrong.ExitCode {
+			return ChangePassphraseResult{
+				Success:      false,
+				ErrorMessage: "incorrect current password",
+			}, nil
+		}
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: status.GetError(),
+		}, nil
+	}
+
+	// Passphrase changed successfully, update in database
+	err = repoEntity.Update().
+		SetPassword(newPassword).
+		Exec(ctx)
+	if err != nil {
+		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to update password in database: %w", err)
+	}
+
+	return ChangePassphraseResult{
 		Success:      true,
 		ErrorMessage: "",
 	}, nil

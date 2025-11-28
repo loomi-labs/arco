@@ -57,6 +57,20 @@ func (mr *MockBorgMockRecorder) BreakLock(ctx, repository, password any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BreakLock", reflect.TypeOf((*MockBorg)(nil).BreakLock), ctx, repository, password)
 }
 
+// ChangePassphrase mocks base method.
+func (m *MockBorg) ChangePassphrase(ctx context.Context, repository, currentPassword, newPassword string) *types.Status {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ChangePassphrase", ctx, repository, currentPassword, newPassword)
+	ret0, _ := ret[0].(*types.Status)
+	return ret0
+}
+
+// ChangePassphrase indicates an expected call of ChangePassphrase.
+func (mr *MockBorgMockRecorder) ChangePassphrase(ctx, repository, currentPassword, newPassword any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangePassphrase", reflect.TypeOf((*MockBorg)(nil).ChangePassphrase), ctx, repository, currentPassword, newPassword)
+}
+
 // Check mocks base method.
 func (m *MockBorg) Check(ctx context.Context, repository, password string, quick bool) *types.CheckResult {
 	m.ctrl.T.Helper()

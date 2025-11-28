@@ -23,6 +23,7 @@ import {
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
+import ChangePassphraseModal from "../components/ChangePassphraseModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import TooltipIcon from "../components/common/TooltipIcon.vue";
 import { Anchor, Page } from "../router";
@@ -71,6 +72,10 @@ const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmDeleteModalKey
+);
+const changePassphraseModalKey = useId();
+const changePassphraseModal = useTemplateRef<InstanceType<typeof ChangePassphraseModal>>(
+  changePassphraseModalKey
 );
 
 // Session-based warning dismissal tracking
@@ -288,6 +293,10 @@ async function startVerification(quick: boolean) {
   } catch (error: unknown) {
     await showAndLogError("Failed to start verification", error);
   }
+}
+
+function onPassphraseChanged() {
+  toast.success("Passphrase changed successfully");
 }
 
 /************
@@ -571,6 +580,23 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+
+          <template v-if='repo.hasPassword'>
+            <div class='divider'></div>
+
+            <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
+              <span class='font-medium'>Passphrase</span>
+              <div class='flex items-center gap-2'>
+                <span class='text-sm opacity-70'>Change the repository encryption passphrase</span>
+                <button
+                    class='btn btn-sm btn-outline btn-primary'
+                    :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
+                    @click='changePassphraseModal?.showModal()'>
+                  Change Passphrase
+                </button>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -694,6 +720,11 @@ onUnmounted(() => {
         </div>
       </Dialog>
     </TransitionRoot>
+
+    <!-- Change Passphrase Modal -->
+    <ChangePassphraseModal :ref='changePassphraseModalKey'
+                           :repo-id='repo.id'
+                           @success='onPassphraseChanged' />
   </div>
 </template>
 

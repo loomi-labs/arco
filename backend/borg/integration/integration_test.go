@@ -76,6 +76,10 @@ TestBorgRenameOperation
 TestBorgBreakLockOperation
 * Break repository lock (should succeed even without lock)
 
+TestBorgChangePassphraseOperation
+* ChangePassphrase - Change repository passphrase and verify old/new passwords
+* WrongCurrentPassword - Error handling for incorrect current password
+
 TestBorgMountOperations
 * MountRepository - Mount entire repository to filesystem and verify access
 * MountArchive - Mount specific archive to filesystem and verify content
@@ -661,6 +665,49 @@ func TestBorgBreakLockOperation(t *testing.T) {
 	// Break lock (should succeed even if no lock exists)
 	status = suite.borg.BreakLock(suite.ctx, repoPath, testPassword)
 	assert.True(t, status.IsCompletedWithSuccess(), "Break lock should succeed: %v", status.GetError())
+}
+
+// TestBorgChangePassphraseOperation tests changing repository passphrase
+func TestBorgChangePassphraseOperation(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	t.Run("ChangePassphrase", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+		newPassword := "newPassword123"
+
+		// Initialize repository with original password
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Change passphrase
+		status = suite.borg.ChangePassphrase(suite.ctx, repoPath, testPassword, newPassword)
+		assert.True(t, status.IsCompletedWithSuccess(), "Change passphrase should succeed: %v", status.GetError())
+
+		// Verify old password no longer works
+		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword)
+		assert.True(t, status.HasError(), "Old password should no longer work")
+		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
+
+		// Verify new password works
+		info, status := suite.borg.Info(suite.ctx, repoPath, newPassword)
+		assert.True(t, status.IsCompletedWithSuccess(), "New password should work: %v", status.GetError())
+		assert.NotNil(t, info, "Info should return repository information")
+	})
+
+	t.Run("WrongCurrentPassword", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Try to change with wrong current password
+		status = suite.borg.ChangePassphrase(suite.ctx, repoPath, "wrongpassword", "newpassword")
+		assert.True(t, status.HasError(), "Change with wrong password should fail")
+		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
+	})
 }
 
 // TestBorgMountOperations tests mount and unmount operations

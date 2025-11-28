@@ -318,6 +318,31 @@ export class BackupProfileFilter {
     }
 }
 
+/**
+ * ChangePassphraseResult represents the result of changing repository passphrase
+ */
+export class ChangePassphraseResult {
+    "success": boolean;
+    "errorMessage"?: string;
+
+    /** Creates a new ChangePassphraseResult instance. */
+    constructor($$source: Partial<ChangePassphraseResult> = {}) {
+        if (!("success" in $$source)) {
+            this["success"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ChangePassphraseResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ChangePassphraseResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ChangePassphraseResult($$parsedSource as Partial<ChangePassphraseResult>);
+    }
+}
+
 export class Completed {
     "completedAt": time$0.Time;
 
@@ -989,6 +1014,12 @@ export class Repository {
      */
     "spaceSavingsPercent": number;
 
+    /**
+     * Security
+     * Whether repository has encryption passphrase
+     */
+    "hasPassword": boolean;
+
     /** Creates a new Repository instance. */
     constructor($$source: Partial<Repository> = {}) {
         if (!("id" in $$source)) {
@@ -1023,6 +1054,9 @@ export class Repository {
         }
         if (!("spaceSavingsPercent" in $$source)) {
             this["spaceSavingsPercent"] = 0;
+        }
+        if (!("hasPassword" in $$source)) {
+            this["hasPassword"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1115,6 +1149,12 @@ export class RepositoryWithQueue {
      * Overall space savings percentage
      */
     "spaceSavingsPercent": number;
+
+    /**
+     * Security
+     * Whether repository has encryption passphrase
+     */
+    "hasPassword": boolean;
     "queuedOperations": (SerializableQueuedOperation | null)[];
     "activeOperation"?: SerializableQueuedOperation | null;
 
@@ -1153,6 +1193,9 @@ export class RepositoryWithQueue {
         if (!("spaceSavingsPercent" in $$source)) {
             this["spaceSavingsPercent"] = 0;
         }
+        if (!("hasPassword" in $$source)) {
+            this["hasPassword"] = false;
+        }
         if (!("queuedOperations" in $$source)) {
             this["queuedOperations"] = [];
         }
@@ -1168,8 +1211,8 @@ export class RepositoryWithQueue {
         const $$createField4_0 = $$createType40;
         const $$createField10_0 = $$createType41;
         const $$createField12_0 = $$createType41;
-        const $$createField18_0 = $$createType44;
-        const $$createField19_0 = $$createType43;
+        const $$createField19_0 = $$createType44;
+        const $$createField20_0 = $$createType43;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1184,10 +1227,10 @@ export class RepositoryWithQueue {
             $$parsedSource["fullCheckError"] = $$createField12_0($$parsedSource["fullCheckError"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField18_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField19_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField19_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField20_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
