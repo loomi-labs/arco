@@ -33,6 +33,7 @@ type Borg interface {
 	Umount(ctx context.Context, path string) *types.Status
 	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status
 	BreakLock(ctx context.Context, repository string, password string) *types.Status
+	ChangePassphrase(ctx context.Context, repository, currentPassword, newPassword string) *types.Status
 }
 
 type borg struct {
@@ -103,6 +104,7 @@ func (z *CmdLogger) LogCmdStatus(ctx context.Context, result *types.Status, cmd 
 
 type Env struct {
 	password           *string
+	newPassword        *string
 	deleteConfirmation bool
 	sshPrivateKeys     []string
 }
@@ -115,6 +117,11 @@ func NewEnv(sshPrivateKeys []string) Env {
 
 func (e Env) WithPassword(password string) Env {
 	e.password = &password
+	return e
+}
+
+func (e Env) WithNewPassword(newPassword string) Env {
+	e.newPassword = &newPassword
 	return e
 }
 
@@ -140,6 +147,9 @@ func (e Env) AsList() []string {
 	)
 	if e.password != nil {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", *e.password))
+	}
+	if e.newPassword != nil {
+		env = append(env, fmt.Sprintf("BORG_NEW_PASSPHRASE=%s", *e.newPassword))
 	}
 	if e.deleteConfirmation {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")

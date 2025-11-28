@@ -46,6 +46,9 @@ type Repository struct {
 	DeduplicationRatio  float64 `json:"deduplicationRatio"`  // How much deduplication saved (totalSize / uniqueSize)
 	CompressionRatio    float64 `json:"compressionRatio"`    // How much compression saved (uniqueSize / uniqueCsize)
 	SpaceSavingsPercent float64 `json:"spaceSavingsPercent"` // Overall space savings percentage
+
+	// Security
+	HasPassword bool `json:"hasPassword"` // Whether repository has encryption passphrase
 }
 
 // GetID implements the statemachine.Repository interface
@@ -279,6 +282,12 @@ type UpdateRequest struct {
 
 // FixStoredPasswordResult represents the result of fixing stored repository password
 type FixStoredPasswordResult struct {
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+}
+
+// ChangePassphraseResult represents the result of changing repository passphrase
+type ChangePassphraseResult struct {
 	Success      bool   `json:"success"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
 }
