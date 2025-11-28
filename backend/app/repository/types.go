@@ -129,15 +129,17 @@ func (Expired) isADTVariant() OperationStatus   { var zero OperationStatus; retu
 // ARCHIVE OPERATION STATE ADTS
 // ============================================================================
 
-// Archive rename state variants
-type RenameNone struct{}
+// Archive edit state variants (combined rename + comment operations)
+type EditNone struct{}
 
-type RenameQueued struct {
-	NewName string `json:"newName"` // Full new name (prefix + name)
+type EditQueued struct {
+	NewName    *string `json:"newName,omitempty"`    // Full new name if rename queued
+	NewComment *string `json:"newComment,omitempty"` // New comment if comment change queued
 }
 
-type RenameActive struct {
-	NewName string `json:"newName"` // Full new name (prefix + name)
+type EditActive struct {
+	NewName    *string `json:"newName,omitempty"`    // Full new name if rename active
+	NewComment *string `json:"newComment,omitempty"` // New comment if comment change active
 }
 
 // Archive delete state variants
@@ -148,13 +150,13 @@ type DeleteQueued struct{}
 type DeleteActive struct{}
 
 // ADT definitions
-type ArchiveRenameState adtenum.Enum[ArchiveRenameState]
+type ArchiveEditState adtenum.Enum[ArchiveEditState]
 type ArchiveDeleteState adtenum.Enum[ArchiveDeleteState]
 
-// Implement adtVariant marker interface for rename states
-func (RenameNone) isADTVariant() ArchiveRenameState   { var zero ArchiveRenameState; return zero }
-func (RenameQueued) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
-func (RenameActive) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
+// Implement adtVariant marker interface for edit states
+func (EditNone) isADTVariant() ArchiveEditState   { var zero ArchiveEditState; return zero }
+func (EditQueued) isADTVariant() ArchiveEditState { var zero ArchiveEditState; return zero }
+func (EditActive) isADTVariant() ArchiveEditState { var zero ArchiveEditState; return zero }
 
 // Implement adtVariant marker interface for delete states
 func (DeleteNone) isADTVariant() ArchiveDeleteState   { var zero ArchiveDeleteState; return zero }
@@ -254,7 +256,7 @@ type PaginatedArchivesRequest struct {
 // ArchiveWithPendingChanges represents an archive with potential pending operations
 type ArchiveWithPendingChanges struct {
 	*ent.Archive
-	RenameStateUnion ArchiveRenameStateUnion `json:"renameStateUnion"` // Serializable rename operation state
+	EditStateUnion   ArchiveEditStateUnion   `json:"editStateUnion"`   // Serializable edit operation state (rename + comment)
 	DeleteStateUnion ArchiveDeleteStateUnion `json:"deleteStateUnion"` // Serializable delete operation state
 }
 

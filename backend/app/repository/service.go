@@ -966,6 +966,47 @@ func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, name st
 	return operationID, nil
 }
 
+// QueueArchiveComment queues an archive comment update operation
+func (s *Service) QueueArchiveComment(ctx context.Context, archiveId int, comment string) (string, error) {
+	// Get archive to determine repository ID
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Check if repository is mounted or mounting - cannot update comments in this state
+	if s.isRepositoryMountedOrMounting(archiveEntity.Edges.Repository.ID) {
+		return "", fmt.Errorf("cannot update archive comment while repository is mounted or mounting - please unmount the repository first")
+	}
+
+	// Create archive comment operation
+	archiveCommentOp := statemachine.NewOperationArchiveComment(statemachine.ArchiveComment{
+		ArchiveID: archiveId,
+		Comment:   comment,
+	})
+
+	// Create queued operation using factory method
+	queue := s.queueManager.GetQueue(archiveEntity.Edges.Repository.ID)
+	queuedOp := queue.CreateQueuedOperation(
+		archiveCommentOp,
+		archiveEntity.Edges.Repository.ID,
+		nil,   // no backup profile ID
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(archiveEntity.Edges.Repository.ID, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue archive comment operation: %w", err)
+	}
+
+	return operationID, nil
+}
+
 // ============================================================================
 // OPERATION MANAGEMENT
 // ============================================================================
@@ -1658,9 +1699,16 @@ func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.
 	return archiveEntity, nil
 }
 
+// editStateData holds the accumulated edit state data for an archive
+type editStateData struct {
+	newName    *string
+	newComment *string
+	isActive   bool
+}
+
 // getArchiveOperationStates returns maps of archive IDs to their operation states
-func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameState, map[int]ArchiveDeleteState) {
-	renameStates := make(map[int]ArchiveRenameState)
+func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveEditState, map[int]ArchiveDeleteState) {
+	editData := make(map[int]*editStateData) // Track edit data per archive
 	deleteStates := make(map[int]ArchiveDeleteState)
 
 	// Get the repository queue
@@ -1672,9 +1720,18 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 		case statemachine.OperationTypeArchiveRename:
 			renameOp := active.Operation.(statemachine.ArchiveRenameVariant)()
 			newName := renameOp.Prefix + renameOp.Name
-			renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameActive(RenameActive{
-				NewName: newName,
-			})
+			if editData[renameOp.ArchiveID] == nil {
+				editData[renameOp.ArchiveID] = &editStateData{}
+			}
+			editData[renameOp.ArchiveID].newName = &newName
+			editData[renameOp.ArchiveID].isActive = true
+		case statemachine.OperationTypeArchiveComment:
+			commentOp := active.Operation.(statemachine.ArchiveCommentVariant)()
+			if editData[commentOp.ArchiveID] == nil {
+				editData[commentOp.ArchiveID] = &editStateData{}
+			}
+			editData[commentOp.ArchiveID].newComment = &commentOp.Comment
+			editData[commentOp.ArchiveID].isActive = true
 		case statemachine.OperationTypeArchiveDelete:
 			deleteOp := active.Operation.(statemachine.ArchiveDeleteVariant)()
 			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
@@ -1688,7 +1745,7 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 			statemachine.OperationTypePrune,
 			statemachine.OperationTypeUnmount,
 			statemachine.OperationTypeUnmountArchive:
-			// These operations don't affect individual archive rename/delete states
+			// These operations don't affect individual archive edit/delete states
 		}
 	}
 
@@ -1698,9 +1755,27 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 	for _, queuedOp := range queuedRenames {
 		renameOp := queuedOp.Operation.(statemachine.ArchiveRenameVariant)()
 		newName := renameOp.Prefix + renameOp.Name
-		renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameQueued(RenameQueued{
-			NewName: newName,
-		})
+		if editData[renameOp.ArchiveID] == nil {
+			editData[renameOp.ArchiveID] = &editStateData{}
+		}
+		// Only set if not already active (active takes precedence)
+		if editData[renameOp.ArchiveID].newName == nil {
+			editData[renameOp.ArchiveID].newName = &newName
+		}
+	}
+
+	// Check queued comment operations
+	archiveCommentType := statemachine.OperationTypeArchiveComment
+	queuedComments := queue.GetQueuedOperations(&archiveCommentType)
+	for _, queuedOp := range queuedComments {
+		commentOp := queuedOp.Operation.(statemachine.ArchiveCommentVariant)()
+		if editData[commentOp.ArchiveID] == nil {
+			editData[commentOp.ArchiveID] = &editStateData{}
+		}
+		// Only set if not already active (active takes precedence)
+		if editData[commentOp.ArchiveID].newComment == nil {
+			editData[commentOp.ArchiveID].newComment = &commentOp.Comment
+		}
 	}
 
 	// Check queued delete operations
@@ -1711,7 +1786,23 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 		deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteQueued(DeleteQueued{})
 	}
 
-	return renameStates, deleteStates
+	// Convert editData to ArchiveEditState
+	editStates := make(map[int]ArchiveEditState)
+	for archiveID, data := range editData {
+		if data.isActive {
+			editStates[archiveID] = NewArchiveEditStateEditActive(EditActive{
+				NewName:    data.newName,
+				NewComment: data.newComment,
+			})
+		} else {
+			editStates[archiveID] = NewArchiveEditStateEditQueued(EditQueued{
+				NewName:    data.newName,
+				NewComment: data.newComment,
+			})
+		}
+	}
+
+	return editStates, deleteStates
 }
 
 // GetPaginatedArchives retrieves paginated archives for a repository
@@ -1783,7 +1874,7 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 	}
 
 	// Get pending operation states for this repository
-	renameStates, deleteStates := s.getArchiveOperationStates(req.RepositoryId)
+	editStates, deleteStates := s.getArchiveOperationStates(req.RepositoryId)
 
 	// Convert archives to enhanced archives with pending changes
 	enhancedArchives := make([]*ArchiveWithPendingChanges, len(archives))
@@ -1792,12 +1883,12 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 			Archive: archiveEntity,
 		}
 
-		// Set rename state (default to none if not found)
-		if renameState, exists := renameStates[archiveEntity.ID]; exists {
-			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(renameState)
+		// Set edit state (default to none if not found)
+		if editState, exists := editStates[archiveEntity.ID]; exists {
+			enhancedArchive.EditStateUnion = ToArchiveEditStateUnion(editState)
 		} else {
-			noneState := NewArchiveRenameStateRenameNone(RenameNone{})
-			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(noneState)
+			noneState := NewArchiveEditStateEditNone(EditNone{})
+			enhancedArchive.EditStateUnion = ToArchiveEditStateUnion(noneState)
 		}
 
 		// Set delete state (default to none if not found)
@@ -2298,6 +2389,7 @@ func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name s
 		Query().
 		Where(archive.Name(fullName)).
 		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
+		Where(archive.IDNEQ(archiveId)).
 		Exist(ctx)
 	if err != nil {
 		return "", err

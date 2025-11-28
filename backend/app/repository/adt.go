@@ -190,80 +190,80 @@ func ToOperationStatusUnion(r OperationStatus) OperationStatusUnion {
 	}
 }
 
-// ArchiveRenameStateType is the discriminator enum for ArchiveRenameState
-type ArchiveRenameStateType string
+// ArchiveEditStateType is the discriminator enum for ArchiveEditState
+type ArchiveEditStateType string
 
 const (
-	ArchiveRenameStateTypeRenameActive ArchiveRenameStateType = "RenameActive"
-	ArchiveRenameStateTypeRenameNone   ArchiveRenameStateType = "RenameNone"
-	ArchiveRenameStateTypeRenameQueued ArchiveRenameStateType = "RenameQueued"
+	ArchiveEditStateTypeEditActive ArchiveEditStateType = "EditActive"
+	ArchiveEditStateTypeEditNone   ArchiveEditStateType = "EditNone"
+	ArchiveEditStateTypeEditQueued ArchiveEditStateType = "EditQueued"
 )
 
-// ArchiveRenameState variant wrappers
-type RenameActiveVariant adtenum.OneVariantValue[RenameActive]
-type RenameNoneVariant adtenum.OneVariantValue[RenameNone]
-type RenameQueuedVariant adtenum.OneVariantValue[RenameQueued]
+// ArchiveEditState variant wrappers
+type EditActiveVariant adtenum.OneVariantValue[EditActive]
+type EditNoneVariant adtenum.OneVariantValue[EditNone]
+type EditQueuedVariant adtenum.OneVariantValue[EditQueued]
 
-// ArchiveRenameState constructors
-var NewArchiveRenameStateRenameActive = adtenum.CreateOneVariantValueConstructor[RenameActiveVariant]()
-var NewArchiveRenameStateRenameNone = adtenum.CreateOneVariantValueConstructor[RenameNoneVariant]()
-var NewArchiveRenameStateRenameQueued = adtenum.CreateOneVariantValueConstructor[RenameQueuedVariant]()
+// ArchiveEditState constructors
+var NewArchiveEditStateEditActive = adtenum.CreateOneVariantValueConstructor[EditActiveVariant]()
+var NewArchiveEditStateEditNone = adtenum.CreateOneVariantValueConstructor[EditNoneVariant]()
+var NewArchiveEditStateEditQueued = adtenum.CreateOneVariantValueConstructor[EditQueuedVariant]()
 
-// EnumType methods for ArchiveRenameState variants
-func (v RenameActiveVariant) EnumType() ArchiveRenameState { return v }
-func (v RenameNoneVariant) EnumType() ArchiveRenameState   { return v }
-func (v RenameQueuedVariant) EnumType() ArchiveRenameState { return v }
+// EnumType methods for ArchiveEditState variants
+func (v EditActiveVariant) EnumType() ArchiveEditState { return v }
+func (v EditNoneVariant) EnumType() ArchiveEditState   { return v }
+func (v EditQueuedVariant) EnumType() ArchiveEditState { return v }
 
-// GetArchiveRenameStateType returns the discriminator type for exhaustive switch checking
-func GetArchiveRenameStateType(enum ArchiveRenameState) ArchiveRenameStateType {
+// GetArchiveEditStateType returns the discriminator type for exhaustive switch checking
+func GetArchiveEditStateType(enum ArchiveEditState) ArchiveEditStateType {
 	switch enum.(type) {
-	case RenameNoneVariant:
-		return ArchiveRenameStateTypeRenameNone
-	case RenameQueuedVariant:
-		return ArchiveRenameStateTypeRenameQueued
-	case RenameActiveVariant:
-		return ArchiveRenameStateTypeRenameActive
+	case EditNoneVariant:
+		return ArchiveEditStateTypeEditNone
+	case EditQueuedVariant:
+		return ArchiveEditStateTypeEditQueued
+	case EditActiveVariant:
+		return ArchiveEditStateTypeEditActive
 	default:
-		assert.Fail("Unhandled ArchiveRenameState variant in GetArchiveRenameStateType")
-		return ArchiveRenameStateTypeRenameActive
+		assert.Fail("Unhandled ArchiveEditState variant in GetArchiveEditStateType")
+		return ArchiveEditStateTypeEditActive
 	}
 }
 
-// ArchiveRenameStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type ArchiveRenameStateUnion struct {
-	Type ArchiveRenameStateType `json:"type"` // Discriminator field
+// ArchiveEditStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type ArchiveEditStateUnion struct {
+	Type ArchiveEditStateType `json:"type"` // Discriminator field
 
 	// Variant fields - only one will be non-nil
-	RenameNone   *RenameNone   `json:"renameNone,omitempty"`
-	RenameQueued *RenameQueued `json:"renameQueued,omitempty"`
-	RenameActive *RenameActive `json:"renameActive,omitempty"`
+	EditNone   *EditNone   `json:"editNone,omitempty"`
+	EditQueued *EditQueued `json:"editQueued,omitempty"`
+	EditActive *EditActive `json:"editActive,omitempty"`
 }
 
-// ToArchiveRenameStateUnion converts an ADT ArchiveRenameState to an ArchiveRenameStateUnion
-func ToArchiveRenameStateUnion(r ArchiveRenameState) ArchiveRenameStateUnion {
+// ToArchiveEditStateUnion converts an ADT ArchiveEditState to an ArchiveEditStateUnion
+func ToArchiveEditStateUnion(r ArchiveEditState) ArchiveEditStateUnion {
 	switch i := r.(type) {
-	case RenameNoneVariant:
+	case EditNoneVariant:
 		data := i()
-		return ArchiveRenameStateUnion{
-			Type:       ArchiveRenameStateTypeRenameNone,
-			RenameNone: &data,
+		return ArchiveEditStateUnion{
+			Type:     ArchiveEditStateTypeEditNone,
+			EditNone: &data,
 		}
-	case RenameQueuedVariant:
+	case EditQueuedVariant:
 		data := i()
-		return ArchiveRenameStateUnion{
-			Type:         ArchiveRenameStateTypeRenameQueued,
-			RenameQueued: &data,
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditQueued,
+			EditQueued: &data,
 		}
-	case RenameActiveVariant:
+	case EditActiveVariant:
 		data := i()
-		return ArchiveRenameStateUnion{
-			Type:         ArchiveRenameStateTypeRenameActive,
-			RenameActive: &data,
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditActive,
+			EditActive: &data,
 		}
 	default:
-		return ArchiveRenameStateUnion{
-			Type:         ArchiveRenameStateTypeRenameActive,
-			RenameActive: &RenameActive{},
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditActive,
+			EditActive: &EditActive{},
 		}
 	}
 }
