@@ -58,6 +58,7 @@ type ArchiveMutation struct {
 	addduration           *float64
 	borg_id               *string
 	will_be_pruned        *bool
+	comment               *string
 	clearedFields         map[string]struct{}
 	repository            *int
 	clearedrepository     bool
@@ -408,6 +409,55 @@ func (m *ArchiveMutation) ResetWillBePruned() {
 	m.will_be_pruned = nil
 }
 
+// SetComment sets the "comment" field.
+func (m *ArchiveMutation) SetComment(s string) {
+	m.comment = &s
+}
+
+// Comment returns the value of the "comment" field in the mutation.
+func (m *ArchiveMutation) Comment() (r string, exists bool) {
+	v := m.comment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldComment returns the old "comment" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldComment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldComment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldComment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldComment: %w", err)
+	}
+	return oldValue.Comment, nil
+}
+
+// ClearComment clears the value of the "comment" field.
+func (m *ArchiveMutation) ClearComment() {
+	m.comment = nil
+	m.clearedFields[archive.FieldComment] = struct{}{}
+}
+
+// CommentCleared returns if the "comment" field was cleared in this mutation.
+func (m *ArchiveMutation) CommentCleared() bool {
+	_, ok := m.clearedFields[archive.FieldComment]
+	return ok
+}
+
+// ResetComment resets all changes to the "comment" field.
+func (m *ArchiveMutation) ResetComment() {
+	m.comment = nil
+	delete(m.clearedFields, archive.FieldComment)
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by id.
 func (m *ArchiveMutation) SetRepositoryID(id int) {
 	m.repository = &id
@@ -520,7 +570,7 @@ func (m *ArchiveMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArchiveMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, archive.FieldCreatedAt)
 	}
@@ -538,6 +588,9 @@ func (m *ArchiveMutation) Fields() []string {
 	}
 	if m.will_be_pruned != nil {
 		fields = append(fields, archive.FieldWillBePruned)
+	}
+	if m.comment != nil {
+		fields = append(fields, archive.FieldComment)
 	}
 	return fields
 }
@@ -559,6 +612,8 @@ func (m *ArchiveMutation) Field(name string) (ent.Value, bool) {
 		return m.BorgID()
 	case archive.FieldWillBePruned:
 		return m.WillBePruned()
+	case archive.FieldComment:
+		return m.Comment()
 	}
 	return nil, false
 }
@@ -580,6 +635,8 @@ func (m *ArchiveMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldBorgID(ctx)
 	case archive.FieldWillBePruned:
 		return m.OldWillBePruned(ctx)
+	case archive.FieldComment:
+		return m.OldComment(ctx)
 	}
 	return nil, fmt.Errorf("unknown Archive field %s", name)
 }
@@ -631,6 +688,13 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetWillBePruned(v)
 		return nil
+	case archive.FieldComment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetComment(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
 }
@@ -675,7 +739,11 @@ func (m *ArchiveMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ArchiveMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(archive.FieldComment) {
+		fields = append(fields, archive.FieldComment)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -688,6 +756,11 @@ func (m *ArchiveMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ArchiveMutation) ClearField(name string) error {
+	switch name {
+	case archive.FieldComment:
+		m.ClearComment()
+		return nil
+	}
 	return fmt.Errorf("unknown Archive nullable field %s", name)
 }
 
@@ -712,6 +785,9 @@ func (m *ArchiveMutation) ResetField(name string) error {
 		return nil
 	case archive.FieldWillBePruned:
 		m.ResetWillBePruned()
+		return nil
+	case archive.FieldComment:
+		m.ResetComment()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)

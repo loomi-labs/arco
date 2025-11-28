@@ -82,6 +82,20 @@ func (_c *ArchiveCreate) SetNillableWillBePruned(v *bool) *ArchiveCreate {
 	return _c
 }
 
+// SetComment sets the "comment" field.
+func (_c *ArchiveCreate) SetComment(v string) *ArchiveCreate {
+	_c.mutation.SetComment(v)
+	return _c
+}
+
+// SetNillableComment sets the "comment" field if the given value is not nil.
+func (_c *ArchiveCreate) SetNillableComment(v *string) *ArchiveCreate {
+	if v != nil {
+		_c.SetComment(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *ArchiveCreate) SetID(v int) *ArchiveCreate {
 	_c.mutation.SetID(v)
@@ -165,6 +179,10 @@ func (_c *ArchiveCreate) defaults() {
 		v := archive.DefaultWillBePruned
 		_c.mutation.SetWillBePruned(v)
 	}
+	if _, ok := _c.mutation.Comment(); !ok {
+		v := archive.DefaultComment
+		_c.mutation.SetComment(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -245,6 +263,10 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 		_node.WillBePruned = value
+	}
+	if value, ok := _c.mutation.Comment(); ok {
+		_spec.SetField(archive.FieldComment, field.TypeString, value)
+		_node.Comment = value
 	}
 	if nodes := _c.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

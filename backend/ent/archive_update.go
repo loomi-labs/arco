@@ -100,6 +100,26 @@ func (_u *ArchiveUpdate) SetNillableWillBePruned(v *bool) *ArchiveUpdate {
 	return _u
 }
 
+// SetComment sets the "comment" field.
+func (_u *ArchiveUpdate) SetComment(v string) *ArchiveUpdate {
+	_u.mutation.SetComment(v)
+	return _u
+}
+
+// SetNillableComment sets the "comment" field if the given value is not nil.
+func (_u *ArchiveUpdate) SetNillableComment(v *string) *ArchiveUpdate {
+	if v != nil {
+		_u.SetComment(*v)
+	}
+	return _u
+}
+
+// ClearComment clears the value of the "comment" field.
+func (_u *ArchiveUpdate) ClearComment() *ArchiveUpdate {
+	_u.mutation.ClearComment()
+	return _u
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
 func (_u *ArchiveUpdate) SetRepositoryID(id int) *ArchiveUpdate {
 	_u.mutation.SetRepositoryID(id)
@@ -226,6 +246,12 @@ func (_u *ArchiveUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Comment(); ok {
+		_spec.SetField(archive.FieldComment, field.TypeString, value)
+	}
+	if _u.mutation.CommentCleared() {
+		_spec.ClearField(archive.FieldComment, field.TypeString)
 	}
 	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -373,6 +399,26 @@ func (_u *ArchiveUpdateOne) SetNillableWillBePruned(v *bool) *ArchiveUpdateOne {
 	if v != nil {
 		_u.SetWillBePruned(*v)
 	}
+	return _u
+}
+
+// SetComment sets the "comment" field.
+func (_u *ArchiveUpdateOne) SetComment(v string) *ArchiveUpdateOne {
+	_u.mutation.SetComment(v)
+	return _u
+}
+
+// SetNillableComment sets the "comment" field if the given value is not nil.
+func (_u *ArchiveUpdateOne) SetNillableComment(v *string) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetComment(*v)
+	}
+	return _u
+}
+
+// ClearComment clears the value of the "comment" field.
+func (_u *ArchiveUpdateOne) ClearComment() *ArchiveUpdateOne {
+	_u.mutation.ClearComment()
 	return _u
 }
 
@@ -532,6 +578,12 @@ func (_u *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err er
 	}
 	if value, ok := _u.mutation.WillBePruned(); ok {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Comment(); ok {
+		_spec.SetField(archive.FieldComment, field.TypeString, value)
+	}
+	if _u.mutation.CommentCleared() {
+		_spec.ClearField(archive.FieldComment, field.TypeString)
 	}
 	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{

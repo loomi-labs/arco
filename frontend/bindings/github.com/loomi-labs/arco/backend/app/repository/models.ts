@@ -79,62 +79,62 @@ export class ArchiveDeleteStateUnion {
 }
 
 /**
- * ArchiveRenameStateType is the discriminator enum for ArchiveRenameState
+ * ArchiveEditStateType is the discriminator enum for ArchiveEditState
  */
-export enum ArchiveRenameStateType {
+export enum ArchiveEditStateType {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    ArchiveRenameStateTypeRenameActive = "RenameActive",
-    ArchiveRenameStateTypeRenameNone = "RenameNone",
-    ArchiveRenameStateTypeRenameQueued = "RenameQueued",
+    ArchiveEditStateTypeEditActive = "EditActive",
+    ArchiveEditStateTypeEditNone = "EditNone",
+    ArchiveEditStateTypeEditQueued = "EditQueued",
 };
 
 /**
- * ArchiveRenameStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ * ArchiveEditStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
  */
-export class ArchiveRenameStateUnion {
+export class ArchiveEditStateUnion {
     /**
      * Discriminator field
      */
-    "type": ArchiveRenameStateType;
+    "type": ArchiveEditStateType;
 
     /**
      * Variant fields - only one will be non-nil
      */
-    "renameNone"?: RenameNone | null;
-    "renameQueued"?: RenameQueued | null;
-    "renameActive"?: RenameActive | null;
+    "editNone"?: EditNone | null;
+    "editQueued"?: EditQueued | null;
+    "editActive"?: EditActive | null;
 
-    /** Creates a new ArchiveRenameStateUnion instance. */
-    constructor($$source: Partial<ArchiveRenameStateUnion> = {}) {
+    /** Creates a new ArchiveEditStateUnion instance. */
+    constructor($$source: Partial<ArchiveEditStateUnion> = {}) {
         if (!("type" in $$source)) {
-            this["type"] = ArchiveRenameStateType.$zero;
+            this["type"] = ArchiveEditStateType.$zero;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new ArchiveRenameStateUnion instance from a string or object.
+     * Creates a new ArchiveEditStateUnion instance from a string or object.
      */
-    static createFrom($$source: any = {}): ArchiveRenameStateUnion {
+    static createFrom($$source: any = {}): ArchiveEditStateUnion {
         const $$createField1_0 = $$createType7;
         const $$createField2_0 = $$createType9;
         const $$createField3_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("renameNone" in $$parsedSource) {
-            $$parsedSource["renameNone"] = $$createField1_0($$parsedSource["renameNone"]);
+        if ("editNone" in $$parsedSource) {
+            $$parsedSource["editNone"] = $$createField1_0($$parsedSource["editNone"]);
         }
-        if ("renameQueued" in $$parsedSource) {
-            $$parsedSource["renameQueued"] = $$createField2_0($$parsedSource["renameQueued"]);
+        if ("editQueued" in $$parsedSource) {
+            $$parsedSource["editQueued"] = $$createField2_0($$parsedSource["editQueued"]);
         }
-        if ("renameActive" in $$parsedSource) {
-            $$parsedSource["renameActive"] = $$createField3_0($$parsedSource["renameActive"]);
+        if ("editActive" in $$parsedSource) {
+            $$parsedSource["editActive"] = $$createField3_0($$parsedSource["editActive"]);
         }
-        return new ArchiveRenameStateUnion($$parsedSource as Partial<ArchiveRenameStateUnion>);
+        return new ArchiveEditStateUnion($$parsedSource as Partial<ArchiveEditStateUnion>);
     }
 }
 
@@ -178,15 +178,20 @@ export class ArchiveWithPendingChanges {
     "willBePruned": boolean;
 
     /**
+     * Comment stored with the archive in borg
+     */
+    "comment": string;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
     "edges": ent$0.ArchiveEdges;
 
     /**
-     * Serializable rename operation state
+     * Serializable edit operation state (rename + comment)
      */
-    "renameStateUnion": ArchiveRenameStateUnion;
+    "editStateUnion": ArchiveEditStateUnion;
 
     /**
      * Serializable delete operation state
@@ -216,11 +221,14 @@ export class ArchiveWithPendingChanges {
         if (!("willBePruned" in $$source)) {
             this["willBePruned"] = false;
         }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
         if (!("edges" in $$source)) {
             this["edges"] = (new ent$0.ArchiveEdges());
         }
-        if (!("renameStateUnion" in $$source)) {
-            this["renameStateUnion"] = (new ArchiveRenameStateUnion());
+        if (!("editStateUnion" in $$source)) {
+            this["editStateUnion"] = (new ArchiveEditStateUnion());
         }
         if (!("deleteStateUnion" in $$source)) {
             this["deleteStateUnion"] = (new ArchiveDeleteStateUnion());
@@ -233,18 +241,18 @@ export class ArchiveWithPendingChanges {
      * Creates a new ArchiveWithPendingChanges instance from a string or object.
      */
     static createFrom($$source: any = {}): ArchiveWithPendingChanges {
-        const $$createField7_0 = $$createType12;
-        const $$createField8_0 = $$createType13;
-        const $$createField9_0 = $$createType14;
+        const $$createField8_0 = $$createType12;
+        const $$createField9_0 = $$createType13;
+        const $$createField10_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField8_0($$parsedSource["edges"]);
         }
-        if ("renameStateUnion" in $$parsedSource) {
-            $$parsedSource["renameStateUnion"] = $$createField8_0($$parsedSource["renameStateUnion"]);
+        if ("editStateUnion" in $$parsedSource) {
+            $$parsedSource["editStateUnion"] = $$createField9_0($$parsedSource["editStateUnion"]);
         }
         if ("deleteStateUnion" in $$parsedSource) {
-            $$parsedSource["deleteStateUnion"] = $$createField9_0($$parsedSource["deleteStateUnion"]);
+            $$parsedSource["deleteStateUnion"] = $$createField10_0($$parsedSource["deleteStateUnion"]);
         }
         return new ArchiveWithPendingChanges($$parsedSource as Partial<ArchiveWithPendingChanges>);
     }
@@ -415,6 +423,78 @@ export class DeleteQueued {
     static createFrom($$source: any = {}): DeleteQueued {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new DeleteQueued($$parsedSource as Partial<DeleteQueued>);
+    }
+}
+
+export class EditActive {
+    /**
+     * Full new name if rename active
+     */
+    "newName"?: string | null;
+
+    /**
+     * New comment if comment change active
+     */
+    "newComment"?: string | null;
+
+    /** Creates a new EditActive instance. */
+    constructor($$source: Partial<EditActive> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditActive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditActive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditActive($$parsedSource as Partial<EditActive>);
+    }
+}
+
+/**
+ * Archive edit state variants (combined rename + comment operations)
+ */
+export class EditNone {
+
+    /** Creates a new EditNone instance. */
+    constructor($$source: Partial<EditNone> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditNone instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditNone {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditNone($$parsedSource as Partial<EditNone>);
+    }
+}
+
+export class EditQueued {
+    /**
+     * Full new name if rename queued
+     */
+    "newName"?: string | null;
+
+    /**
+     * New comment if comment change queued
+     */
+    "newComment"?: string | null;
+
+    /** Creates a new EditQueued instance. */
+    constructor($$source: Partial<EditQueued> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditQueued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditQueued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditQueued($$parsedSource as Partial<EditQueued>);
     }
 }
 
@@ -883,74 +963,6 @@ export class Remote {
     }
 }
 
-export class RenameActive {
-    /**
-     * Full new name (prefix + name)
-     */
-    "newName": string;
-
-    /** Creates a new RenameActive instance. */
-    constructor($$source: Partial<RenameActive> = {}) {
-        if (!("newName" in $$source)) {
-            this["newName"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameActive instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameActive {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameActive($$parsedSource as Partial<RenameActive>);
-    }
-}
-
-/**
- * Archive rename state variants
- */
-export class RenameNone {
-
-    /** Creates a new RenameNone instance. */
-    constructor($$source: Partial<RenameNone> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameNone instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameNone {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameNone($$parsedSource as Partial<RenameNone>);
-    }
-}
-
-export class RenameQueued {
-    /**
-     * Full new name (prefix + name)
-     */
-    "newName": string;
-
-    /** Creates a new RenameQueued instance. */
-    constructor($$source: Partial<RenameQueued> = {}) {
-        if (!("newName" in $$source)) {
-            this["newName"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameQueued instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameQueued {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameQueued($$parsedSource as Partial<RenameQueued>);
-    }
-}
-
 /**
  * Repository represents the consolidated repository data structure
  */
@@ -1408,14 +1420,14 @@ const $$createType2 = DeleteQueued.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = DeleteActive.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = RenameNone.createFrom;
+const $$createType6 = EditNone.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = RenameQueued.createFrom;
+const $$createType8 = EditQueued.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = RenameActive.createFrom;
+const $$createType10 = EditActive.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
 const $$createType12 = ent$0.ArchiveEdges.createFrom;
-const $$createType13 = ArchiveRenameStateUnion.createFrom;
+const $$createType13 = ArchiveEditStateUnion.createFrom;
 const $$createType14 = ArchiveDeleteStateUnion.createFrom;
 const $$createType15 = types$0.BackupId.createFrom;
 const $$createType16 = Local.createFrom;

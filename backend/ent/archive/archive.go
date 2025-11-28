@@ -26,6 +26,8 @@ const (
 	FieldBorgID = "borg_id"
 	// FieldWillBePruned holds the string denoting the will_be_pruned field in the database.
 	FieldWillBePruned = "will_be_pruned"
+	// FieldComment holds the string denoting the comment field in the database.
+	FieldComment = "comment"
 	// EdgeRepository holds the string denoting the repository edge name in mutations.
 	EdgeRepository = "repository"
 	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
@@ -57,6 +59,7 @@ var Columns = []string{
 	FieldDuration,
 	FieldBorgID,
 	FieldWillBePruned,
+	FieldComment,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "archives"
@@ -90,6 +93,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultWillBePruned holds the default value on creation for the "will_be_pruned" field.
 	DefaultWillBePruned bool
+	// DefaultComment holds the default value on creation for the "comment" field.
+	DefaultComment string
 )
 
 // OrderOption defines the ordering options for the Archive queries.
@@ -128,6 +133,11 @@ func ByBorgID(opts ...sql.OrderTermOption) OrderOption {
 // ByWillBePruned orders the results by the will_be_pruned field.
 func ByWillBePruned(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWillBePruned, opts...).ToFunc()
+}
+
+// ByComment orders the results by the comment field.
+func ByComment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldComment, opts...).ToFunc()
 }
 
 // ByRepositoryField orders the results by repository field.

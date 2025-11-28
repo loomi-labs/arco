@@ -264,6 +264,13 @@ export function MountArchive(archiveId: number): $CancellablePromise<string> {
 }
 
 /**
+ * QueueArchiveComment queues an archive comment update operation
+ */
+export function QueueArchiveComment(archiveId: number, comment: string): $CancellablePromise<string> {
+    return $Call.ByID(3108311810, archiveId, comment);
+}
+
+/**
  * QueueArchiveDelete queues an archive deletion operation
  */
 export function QueueArchiveDelete(archiveId: number): $CancellablePromise<string> {

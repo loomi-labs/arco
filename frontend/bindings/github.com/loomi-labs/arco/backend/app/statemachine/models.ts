@@ -18,6 +18,31 @@ import * as ent$0 from "../../ent/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
 
+export class ArchiveComment {
+    "archiveId": number;
+    "comment": string;
+
+    /** Creates a new ArchiveComment instance. */
+    constructor($$source: Partial<ArchiveComment> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveComment instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveComment {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArchiveComment($$parsedSource as Partial<ArchiveComment>);
+    }
+}
+
 export class ArchiveDelete {
     "archiveId": number;
 
@@ -504,6 +529,7 @@ export enum OperationType {
      */
     $zero = "",
 
+    OperationTypeArchiveComment = "ArchiveComment",
     OperationTypeArchiveDelete = "ArchiveDelete",
     OperationTypeArchiveRefresh = "ArchiveRefresh",
     OperationTypeArchiveRename = "ArchiveRename",
@@ -536,6 +562,7 @@ export class OperationUnion {
     "archiveRefresh"?: ArchiveRefresh | null;
     "archiveDelete"?: ArchiveDelete | null;
     "archiveRename"?: ArchiveRename | null;
+    "archiveComment"?: ArchiveComment | null;
     "mount"?: Mount | null;
     "mountArchive"?: MountArchive | null;
     "unmount"?: Unmount | null;
@@ -568,6 +595,7 @@ export class OperationUnion {
         const $$createField10_0 = $$createType26;
         const $$createField11_0 = $$createType28;
         const $$createField12_0 = $$createType30;
+        const $$createField13_0 = $$createType32;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backup" in $$parsedSource) {
             $$parsedSource["backup"] = $$createField1_0($$parsedSource["backup"]);
@@ -587,23 +615,26 @@ export class OperationUnion {
         if ("archiveRename" in $$parsedSource) {
             $$parsedSource["archiveRename"] = $$createField6_0($$parsedSource["archiveRename"]);
         }
+        if ("archiveComment" in $$parsedSource) {
+            $$parsedSource["archiveComment"] = $$createField7_0($$parsedSource["archiveComment"]);
+        }
         if ("mount" in $$parsedSource) {
-            $$parsedSource["mount"] = $$createField7_0($$parsedSource["mount"]);
+            $$parsedSource["mount"] = $$createField8_0($$parsedSource["mount"]);
         }
         if ("mountArchive" in $$parsedSource) {
-            $$parsedSource["mountArchive"] = $$createField8_0($$parsedSource["mountArchive"]);
+            $$parsedSource["mountArchive"] = $$createField9_0($$parsedSource["mountArchive"]);
         }
         if ("unmount" in $$parsedSource) {
-            $$parsedSource["unmount"] = $$createField9_0($$parsedSource["unmount"]);
+            $$parsedSource["unmount"] = $$createField10_0($$parsedSource["unmount"]);
         }
         if ("unmountArchive" in $$parsedSource) {
-            $$parsedSource["unmountArchive"] = $$createField10_0($$parsedSource["unmountArchive"]);
+            $$parsedSource["unmountArchive"] = $$createField11_0($$parsedSource["unmountArchive"]);
         }
         if ("examinePrune" in $$parsedSource) {
-            $$parsedSource["examinePrune"] = $$createField11_0($$parsedSource["examinePrune"]);
+            $$parsedSource["examinePrune"] = $$createField12_0($$parsedSource["examinePrune"]);
         }
         if ("check" in $$parsedSource) {
-            $$parsedSource["check"] = $$createField12_0($$parsedSource["check"]);
+            $$parsedSource["check"] = $$createField13_0($$parsedSource["check"]);
         }
         return new OperationUnion($$parsedSource as Partial<OperationUnion>);
     }
@@ -679,7 +710,7 @@ export class Queued {
      * Creates a new Queued instance from a string or object.
      */
     static createFrom($$source: any = {}): Queued {
-        const $$createField0_0 = $$createType31;
+        const $$createField0_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("nextOperation" in $$parsedSource) {
             $$parsedSource["nextOperation"] = $$createField0_0($$parsedSource["nextOperation"]);
@@ -766,16 +797,16 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType33;
-        const $$createField2_0 = $$createType35;
-        const $$createField3_0 = $$createType37;
-        const $$createField4_0 = $$createType39;
-        const $$createField5_0 = $$createType41;
-        const $$createField6_0 = $$createType43;
-        const $$createField7_0 = $$createType45;
-        const $$createField8_0 = $$createType47;
-        const $$createField9_0 = $$createType49;
-        const $$createField10_0 = $$createType51;
+        const $$createField1_0 = $$createType35;
+        const $$createField2_0 = $$createType37;
+        const $$createField3_0 = $$createType39;
+        const $$createField4_0 = $$createType41;
+        const $$createField5_0 = $$createType43;
+        const $$createField6_0 = $$createType45;
+        const $$createField7_0 = $$createType47;
+        const $$createField8_0 = $$createType49;
+        const $$createField9_0 = $$createType51;
+        const $$createField10_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -881,36 +912,38 @@ const $$createType15 = ArchiveDelete.createFrom;
 const $$createType16 = $Create.Nullable($$createType15);
 const $$createType17 = ArchiveRename.createFrom;
 const $$createType18 = $Create.Nullable($$createType17);
-const $$createType19 = Mount.createFrom;
+const $$createType19 = ArchiveComment.createFrom;
 const $$createType20 = $Create.Nullable($$createType19);
-const $$createType21 = MountArchive.createFrom;
+const $$createType21 = Mount.createFrom;
 const $$createType22 = $Create.Nullable($$createType21);
-const $$createType23 = Unmount.createFrom;
+const $$createType23 = MountArchive.createFrom;
 const $$createType24 = $Create.Nullable($$createType23);
-const $$createType25 = UnmountArchive.createFrom;
+const $$createType25 = Unmount.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
-const $$createType27 = ExaminePrune.createFrom;
+const $$createType27 = UnmountArchive.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = Check.createFrom;
+const $$createType29 = ExaminePrune.createFrom;
 const $$createType30 = $Create.Nullable($$createType29);
-const $$createType31 = OperationUnion.createFrom;
-const $$createType32 = Idle.createFrom;
-const $$createType33 = $Create.Nullable($$createType32);
-const $$createType34 = Queued.createFrom;
+const $$createType31 = Check.createFrom;
+const $$createType32 = $Create.Nullable($$createType31);
+const $$createType33 = OperationUnion.createFrom;
+const $$createType34 = Idle.createFrom;
 const $$createType35 = $Create.Nullable($$createType34);
-const $$createType36 = BackingUp.createFrom;
+const $$createType36 = Queued.createFrom;
 const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = Pruning.createFrom;
+const $$createType38 = BackingUp.createFrom;
 const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = Deleting.createFrom;
+const $$createType40 = Pruning.createFrom;
 const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = Refreshing.createFrom;
+const $$createType42 = Deleting.createFrom;
 const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = Checking.createFrom;
+const $$createType44 = Refreshing.createFrom;
 const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = Mounting.createFrom;
+const $$createType46 = Checking.createFrom;
 const $$createType47 = $Create.Nullable($$createType46);
-const $$createType48 = Mounted.createFrom;
+const $$createType48 = Mounting.createFrom;
 const $$createType49 = $Create.Nullable($$createType48);
-const $$createType50 = Error.createFrom;
+const $$createType50 = Mounted.createFrom;
 const $$createType51 = $Create.Nullable($$createType50);
+const $$createType52 = Error.createFrom;
+const $$createType53 = $Create.Nullable($$createType52);

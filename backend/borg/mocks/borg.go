@@ -242,6 +242,20 @@ func (mr *MockBorgMockRecorder) Prune(ctx, repository, password, prefix, pruneOp
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockBorg)(nil).Prune), ctx, repository, password, prefix, pruneOptions, isDryRun, ch)
 }
 
+// Recreate mocks base method.
+func (m *MockBorg) Recreate(ctx context.Context, repository, archive, password, comment string) *types.Status {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recreate", ctx, repository, archive, password, comment)
+	ret0, _ := ret[0].(*types.Status)
+	return ret0
+}
+
+// Recreate indicates an expected call of Recreate.
+func (mr *MockBorgMockRecorder) Recreate(ctx, repository, archive, password, comment any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recreate", reflect.TypeOf((*MockBorg)(nil).Recreate), ctx, repository, archive, password, comment)
+}
+
 // Rename mocks base method.
 func (m *MockBorg) Rename(ctx context.Context, repository, archive, password, newName string) *types.Status {
 	m.ctrl.T.Helper()

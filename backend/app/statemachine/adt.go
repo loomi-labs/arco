@@ -12,6 +12,7 @@ import (
 type OperationType string
 
 const (
+	OperationTypeArchiveComment OperationType = "ArchiveComment"
 	OperationTypeArchiveDelete  OperationType = "ArchiveDelete"
 	OperationTypeArchiveRefresh OperationType = "ArchiveRefresh"
 	OperationTypeArchiveRename  OperationType = "ArchiveRename"
@@ -27,6 +28,7 @@ const (
 )
 
 // Operation variant wrappers
+type ArchiveCommentVariant adtenum.OneVariantValue[ArchiveComment]
 type ArchiveDeleteVariant adtenum.OneVariantValue[ArchiveDelete]
 type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
 type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
@@ -41,6 +43,7 @@ type UnmountVariant adtenum.OneVariantValue[Unmount]
 type UnmountArchiveVariant adtenum.OneVariantValue[UnmountArchive]
 
 // Operation constructors
+var NewOperationArchiveComment = adtenum.CreateOneVariantValueConstructor[ArchiveCommentVariant]()
 var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
 var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
 var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
@@ -55,6 +58,7 @@ var NewOperationUnmount = adtenum.CreateOneVariantValueConstructor[UnmountVarian
 var NewOperationUnmountArchive = adtenum.CreateOneVariantValueConstructor[UnmountArchiveVariant]()
 
 // EnumType methods for Operation variants
+func (v ArchiveCommentVariant) EnumType() Operation { return v }
 func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
 func (v ArchiveRefreshVariant) EnumType() Operation { return v }
 func (v ArchiveRenameVariant) EnumType() Operation  { return v }
@@ -83,6 +87,8 @@ func GetOperationType(enum Operation) OperationType {
 		return OperationTypeArchiveDelete
 	case ArchiveRenameVariant:
 		return OperationTypeArchiveRename
+	case ArchiveCommentVariant:
+		return OperationTypeArchiveComment
 	case MountVariant:
 		return OperationTypeMount
 	case MountArchiveVariant:
@@ -97,7 +103,7 @@ func GetOperationType(enum Operation) OperationType {
 		return OperationTypeCheck
 	default:
 		assert.Fail("Unhandled Operation variant in GetOperationType")
-		return OperationTypeArchiveDelete
+		return OperationTypeArchiveComment
 	}
 }
 
@@ -112,6 +118,7 @@ type OperationUnion struct {
 	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
 	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
 	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
+	ArchiveComment *ArchiveComment `json:"archiveComment,omitempty"`
 	Mount          *Mount          `json:"mount,omitempty"`
 	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
 	Unmount        *Unmount        `json:"unmount,omitempty"`
@@ -159,6 +166,12 @@ func ToOperationUnion(r Operation) OperationUnion {
 			Type:          OperationTypeArchiveRename,
 			ArchiveRename: &data,
 		}
+	case ArchiveCommentVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeArchiveComment,
+			ArchiveComment: &data,
+		}
 	case MountVariant:
 		data := i()
 		return OperationUnion{
@@ -197,8 +210,8 @@ func ToOperationUnion(r Operation) OperationUnion {
 		}
 	default:
 		return OperationUnion{
-			Type:          OperationTypeArchiveDelete,
-			ArchiveDelete: &ArchiveDelete{},
+			Type:           OperationTypeArchiveComment,
+			ArchiveComment: &ArchiveComment{},
 		}
 	}
 }
