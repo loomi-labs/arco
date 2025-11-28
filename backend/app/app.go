@@ -197,9 +197,9 @@ func (a *App) Startup(ctx context.Context) {
 	if platform.IsMacOS() && !platform.IsMacFUSEInstalled() {
 		a.log.Warn("macFUSE is not installed")
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status,
-			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://osxfuse.github.io and restart Arco"))
+			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://macfuse.github.io and restart Arco"))
 		// Open download page
-		_ = browser.OpenURL("https://osxfuse.github.io")
+		_ = browser.OpenURL("https://macfuse.github.io")
 		return // Stop startup but keep app open showing error
 	}
 
