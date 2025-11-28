@@ -41,6 +41,10 @@ func init() {
 	archiveDescWillBePruned := archiveFields[4].Descriptor()
 	// archive.DefaultWillBePruned holds the default value on creation for the will_be_pruned field.
 	archive.DefaultWillBePruned = archiveDescWillBePruned.Default.(bool)
+	// archiveDescComment is the schema descriptor for comment field.
+	archiveDescComment := archiveFields[5].Descriptor()
+	// archive.DefaultComment holds the default value on creation for the comment field.
+	archive.DefaultComment = archiveDescComment.Default.(string)
 	authsessionMixin := schema.AuthSession{}.Mixin()
 	authsessionMixinFields0 := authsessionMixin[0].Fields()
 	_ = authsessionMixinFields0

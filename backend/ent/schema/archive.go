@@ -34,6 +34,11 @@ func (Archive) Fields() []ent.Field {
 		field.Bool("will_be_pruned").
 			StructTag(`json:"willBePruned"`).
 			Default(false),
+		field.String("comment").
+			StructTag(`json:"comment"`).
+			Optional().
+			Default("").
+			Comment("Comment stored with the archive in borg"),
 	}
 }
 

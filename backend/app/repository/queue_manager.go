@@ -247,6 +247,7 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	case statemachine.OperationTypeBackup,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeExaminePrune:
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
@@ -839,6 +840,10 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 		// ExaminePrune is a lightweight operation, treat as refreshing
 		return statemachine.CreateRefreshingState(ctx), nil
 
+	case statemachine.OperationTypeArchiveComment:
+		// Archive comment is a lightweight operation, treat as refreshing
+		return statemachine.CreateRefreshingState(ctx), nil
+
 	default:
 		assert.Fail("Unhandled OperationType in getTargetStateForOperation")
 		return nil, fmt.Errorf("unknown operation type: %T", op.Operation)
@@ -892,6 +897,7 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeUnmount,
 		statemachine.OperationTypeUnmountArchive,
 		statemachine.OperationTypeExaminePrune:
@@ -1005,6 +1011,8 @@ func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int
 		message = fmt.Sprintf("Failed to unmount archive: %s", errorMsg)
 	case statemachine.OperationTypeExaminePrune:
 		message = fmt.Sprintf("Failed to examine prune: %s", errorMsg)
+	case statemachine.OperationTypeArchiveComment:
+		message = fmt.Sprintf("Failed to update archive comment: %s", errorMsg)
 	case statemachine.OperationTypeCheck:
 		checkOp := operation.(statemachine.CheckVariant)()
 		if checkOp.QuickVerification {
@@ -1045,6 +1053,7 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
@@ -1079,6 +1088,7 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
@@ -1128,6 +1138,7 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -1151,6 +1162,7 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
@@ -1219,6 +1231,8 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 		return e.executeCheck(ctx, operation.(statemachine.CheckVariant))
 	case statemachine.OperationTypeArchiveRename:
 		return e.executeArchiveRename(ctx, operation.(statemachine.ArchiveRenameVariant))
+	case statemachine.OperationTypeArchiveComment:
+		return e.executeArchiveComment(ctx, operation.(statemachine.ArchiveCommentVariant))
 	case statemachine.OperationTypeMount:
 		return e.executeMount(ctx, operation.(statemachine.MountVariant))
 	case statemachine.OperationTypeMountArchive:
@@ -1725,6 +1739,40 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 	return status, nil
 }
 
+// executeArchiveComment performs a borg recreate --comment operation
+func (e *borgOperationExecutor) executeArchiveComment(ctx context.Context, commentOp statemachine.ArchiveCommentVariant) (*borgtypes.Status, error) {
+	commentData := commentOp()
+
+	// Get archive from database to get repository
+	archiveEntity, err := e.db.Archive.Query().
+		Where(archive.ID(commentData.ArchiveID)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("archive %d not found: %w", commentData.ArchiveID, err)
+	}
+
+	// Get repository from archive relationship
+	repo := archiveEntity.Edges.Repository
+
+	// Execute borg recreate --comment command
+	status := e.borgClient.Recreate(ctx, repo.URL, archiveEntity.Name, repo.Password, commentData.Comment)
+
+	// If the operation was successful, update the archive comment in the database
+	if status.IsCompletedWithSuccess() {
+		err := e.db.Archive.UpdateOneID(archiveEntity.ID).SetComment(commentData.Comment).Exec(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("borg recreate succeeded but failed to update archive comment in database: %w", err)
+		}
+
+		// Emit event for archive change
+		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repo.ID))
+	}
+
+	// Return status directly (preserves rich error information)
+	return status, nil
+}
+
 // executeMount performs a borg mount operation for a repository
 func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statemachine.MountVariant) (*borgtypes.Status, error) {
 	mountData := mountOp()
@@ -2105,6 +2153,7 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 
 	case statemachine.OperationTypeArchiveRename,
 		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeMount,

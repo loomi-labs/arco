@@ -41,6 +41,11 @@ type ArchiveRename struct {
 	Name      string `json:"name"`
 }
 
+type ArchiveComment struct {
+	ArchiveID int    `json:"archiveId"`
+	Comment   string `json:"comment"`
+}
+
 type Mount struct {
 	RepositoryID int    `json:"repositoryId"`
 	MountPath    string `json:"mountPath"`
@@ -83,6 +88,7 @@ func (Delete) isADTVariant() Operation         { var zero Operation; return zero
 func (ArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
 func (ArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
 func (ArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
+func (ArchiveComment) isADTVariant() Operation { var zero Operation; return zero }
 func (Mount) isADTVariant() Operation          { var zero Operation; return zero }
 func (MountArchive) isADTVariant() Operation   { var zero Operation; return zero }
 func (Unmount) isADTVariant() Operation        { var zero Operation; return zero }
@@ -107,7 +113,7 @@ func GetOperationWeight(op Operation) OperationWeight {
 	switch GetOperationType(op) {
 	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete, OperationTypeCheck:
 		return WeightHeavy
-	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
+	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeArchiveComment, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
 		return WeightLight
 	default:
 		assert.Fail("Unhandled OperationType in GetOperationWeight")

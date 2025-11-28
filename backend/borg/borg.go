@@ -34,6 +34,7 @@ type Borg interface {
 	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status
 	BreakLock(ctx context.Context, repository string, password string) *types.Status
 	ChangePassphrase(ctx context.Context, repository, currentPassword, newPassword string) *types.Status
+	Recreate(ctx context.Context, repository, archive, password, comment string) *types.Status
 }
 
 type borg struct {

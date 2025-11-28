@@ -18,6 +18,7 @@ var (
 		{Name: "duration", Type: field.TypeFloat64},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
+		{Name: "comment", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "archive_repository", Type: field.TypeInt},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
@@ -29,13 +30,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "archives_repositories_repository",
-				Columns:    []*schema.Column{ArchivesColumns[7]},
+				Columns:    []*schema.Column{ArchivesColumns[8]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
+				Columns:    []*schema.Column{ArchivesColumns[9]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
