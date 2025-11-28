@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import { ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import { logError } from "../common/logger";
 
@@ -27,11 +27,15 @@ const emit = defineEmits<Emits>();
 
 const isOpen = ref(false);
 const isLoading = ref(false);
+const isSuccess = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 
 const currentPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
+
+const showCurrentPassword = ref(false);
+const showNewPassword = ref(false); // Controls both new and confirm fields
 
 /************
  * Functions
@@ -57,6 +61,9 @@ function resetForm() {
   confirmPassword.value = "";
   errorMessage.value = undefined;
   isLoading.value = false;
+  isSuccess.value = false;
+  showCurrentPassword.value = false;
+  showNewPassword.value = false;
 }
 
 function close() {
@@ -66,6 +73,13 @@ function close() {
   setTimeout(() => {
     resetForm();
   }, 200);
+}
+
+function handleDialogClose() {
+  // Prevent closing via backdrop/escape on success screen - user must click the button
+  if (!isSuccess.value) {
+    close();
+  }
 }
 
 function showModal() {
@@ -82,17 +96,14 @@ async function changePassphrase() {
   try {
     const result = await repoService.ChangePassphrase(props.repoId, currentPassword.value, newPassword.value);
     if (result.success) {
-      isOpen.value = false;
+      isSuccess.value = true;
       emit("success");
-      setTimeout(() => {
-        resetForm();
-      }, 200);
     } else {
-      errorMessage.value = result.errorMessage ?? "Failed to change passphrase";
+      errorMessage.value = result.errorMessage ?? "Failed to change password";
     }
   } catch (error: unknown) {
     errorMessage.value = "An unexpected error occurred";
-    await logError("Failed to change passphrase", error);
+    await logError("Failed to change password", error);
   } finally {
     isLoading.value = false;
   }
@@ -111,7 +122,7 @@ defineExpose({
 
 <template>
   <TransitionRoot as='template' :show='isOpen'>
-    <Dialog class='relative z-50' @close='close'>
+    <Dialog class='relative z-50' @close='handleDialogClose'>
       <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
                        leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
         <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
@@ -127,86 +138,153 @@ defineExpose({
             <DialogPanel
               class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
               <div class='p-8'>
-                <DialogTitle as='h3' class='font-bold text-lg mb-4'>Change Passphrase</DialogTitle>
+                <!-- Success Confirmation View -->
+                <template v-if='isSuccess'>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Password Changed</DialogTitle>
 
-                <!-- Warning Alert -->
-                <div role='alert' class='alert alert-warning mb-6'>
-                  <ExclamationTriangleIcon class='h-6 w-6' />
-                  <div>
-                    <div class='font-semibold'>Important</div>
-                    <div class='text-sm'>Store your new passphrase safely in a password manager or write it down on paper. It cannot be recovered if lost.</div>
+                  <div role='alert' class='alert alert-success mb-6'>
+                    <CheckCircleIcon class='h-6 w-6' />
+                    <div>
+                      <div class='font-semibold'>Success</div>
+                      <div class='text-sm'>Your repository password has been updated.</div>
+                    </div>
                   </div>
-                </div>
 
-                <!-- Error Alert -->
-                <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
-                  <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none'
-                       viewBox='0 0 24 24'>
-                    <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                          d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
-                  </svg>
-                  <span>{{ errorMessage }}</span>
-                </div>
+                  <div role='alert' class='alert alert-warning mb-6'>
+                    <ExclamationTriangleIcon class='h-6 w-6' />
+                    <div>
+                      <div class='font-semibold'>Important Reminder</div>
+                      <div class='text-sm'>Make sure you have saved your new password in a password manager or written it down securely. It cannot be recovered if lost.</div>
+                    </div>
+                  </div>
 
-                <!-- Form -->
-                <div class='space-y-4'>
-                  <!-- Current Password -->
-                  <div class='form-control'>
+                  <!-- Password Display -->
+                  <div class='form-control mb-6'>
                     <label class='label'>
-                      <span class='label-text'>Current Passphrase</span>
+                      <span class='label-text'>Your New Password</span>
                     </label>
-                    <input type='password'
-                           v-model='currentPassword'
-                           class='input input-bordered w-full'
-                           :disabled='isLoading'
-                           placeholder='Enter current passphrase' />
+                    <div class='join w-full'>
+                      <input :type="showNewPassword ? 'text' : 'password'"
+                             :value='newPassword'
+                             readonly
+                             class='input input-bordered join-item flex-1 bg-base-200' />
+                      <button type='button'
+                              class='btn btn-square join-item'
+                              @click='showNewPassword = !showNewPassword'>
+                        <EyeIcon v-if='!showNewPassword' class='h-5 w-5' />
+                        <EyeSlashIcon v-else class='h-5 w-5' />
+                      </button>
+                    </div>
                   </div>
 
-                  <!-- New Password -->
-                  <div class='form-control'>
-                    <label class='label'>
-                      <span class='label-text'>New Passphrase</span>
-                    </label>
-                    <input type='password'
-                           v-model='newPassword'
-                           class='input input-bordered w-full'
-                           :disabled='isLoading'
-                           placeholder='Enter new passphrase' />
+                  <div class='flex justify-end'>
+                    <button type='button' class='btn btn-primary' @click='close'>
+                      I Saved My Password
+                    </button>
+                  </div>
+                </template>
+
+                <!-- Form View -->
+                <template v-else>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Change Password</DialogTitle>
+
+                  <!-- Warning Alert -->
+                  <div role='alert' class='alert alert-warning mb-6'>
+                    <ExclamationTriangleIcon class='h-6 w-6' />
+                    <div>
+                      <div class='font-semibold'>Important</div>
+                      <div class='text-sm'>Store your new password safely in a password manager or write it down on paper. It cannot be recovered if lost.</div>
+                    </div>
                   </div>
 
-                  <!-- Confirm New Password -->
-                  <div class='form-control'>
-                    <label class='label'>
-                      <span class='label-text'>Confirm New Passphrase</span>
-                    </label>
-                    <input type='password'
-                           v-model='confirmPassword'
-                           class='input input-bordered w-full'
-                           :class='{ "input-error": confirmPasswordError }'
-                           :disabled='isLoading'
-                           placeholder='Confirm new passphrase' />
-                    <label v-if='confirmPasswordError' class='label'>
-                      <span class='label-text-alt text-error'>{{ confirmPasswordError }}</span>
-                    </label>
+                  <!-- Error Alert -->
+                  <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none'
+                         viewBox='0 0 24 24'>
+                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                            d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                    <span>{{ errorMessage }}</span>
                   </div>
-                </div>
 
-                <!-- Actions -->
-                <div class='flex gap-3 pt-6'>
-                  <button type='button'
-                          class='btn btn-sm btn-outline'
-                          :disabled='isLoading'
-                          @click='close'>
-                    Cancel
-                  </button>
-                  <button type='button'
-                          class='btn btn-sm btn-primary'
-                          :disabled='!isValid || isLoading'
-                          @click='changePassphrase'>
-                    <span v-if='isLoading' class='loading loading-spinner loading-xs'></span>
-                    {{ isLoading ? "Changing..." : "Change Passphrase" }}
-                  </button>
-                </div>
+                  <!-- Form -->
+                  <div class='space-y-4'>
+                    <!-- Current Password -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Current Password</span>
+                      </label>
+                      <div class='join w-full'>
+                        <input :type="showCurrentPassword ? 'text' : 'password'"
+                               v-model='currentPassword'
+                               class='input input-bordered join-item flex-1'
+                               :disabled='isLoading'
+                               placeholder='Enter current password' />
+                        <button type='button'
+                                class='btn btn-square join-item'
+                                @click='showCurrentPassword = !showCurrentPassword'
+                                :disabled='isLoading'>
+                          <EyeIcon v-if='!showCurrentPassword' class='h-5 w-5' />
+                          <EyeSlashIcon v-else class='h-5 w-5' />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- New Password -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>New Password</span>
+                      </label>
+                      <div class='join w-full'>
+                        <input :type="showNewPassword ? 'text' : 'password'"
+                               v-model='newPassword'
+                               class='input input-bordered join-item flex-1'
+                               :disabled='isLoading'
+                               placeholder='Enter new password' />
+                        <button type='button'
+                                class='btn btn-square join-item'
+                                @click='showNewPassword = !showNewPassword'
+                                :disabled='isLoading'>
+                          <EyeIcon v-if='!showNewPassword' class='h-5 w-5' />
+                          <EyeSlashIcon v-else class='h-5 w-5' />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Confirm New Password -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Confirm New Password</span>
+                      </label>
+                      <input :type="showNewPassword ? 'text' : 'password'"
+                             v-model='confirmPassword'
+                             class='input input-bordered w-full'
+                             :class='{ "input-error": confirmPasswordError }'
+                             :disabled='isLoading'
+                             placeholder='Confirm new password' />
+                      <label v-if='confirmPasswordError' class='label'>
+                        <span class='label-text-alt text-error'>{{ confirmPasswordError }}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class='flex gap-3 pt-6'>
+                    <button type='button'
+                            class='btn btn-sm btn-outline'
+                            :disabled='isLoading'
+                            @click='close'>
+                      Cancel
+                    </button>
+                    <button type='button'
+                            class='btn btn-sm btn-primary'
+                            :disabled='!isValid || isLoading'
+                            @click='changePassphrase'>
+                      <span v-if='isLoading' class='loading loading-spinner loading-xs'></span>
+                      {{ isLoading ? "Changing..." : "Change Password" }}
+                    </button>
+                  </div>
+                </template>
               </div>
             </DialogPanel>
           </TransitionChild>
