@@ -44,7 +44,7 @@ const hasNameChanged = computed(() =>
 );
 
 const hasCommentChanged = computed(() =>
-  newComment.value !== originalComment.value
+  newComment.value.trim() !== originalComment.value
 );
 
 const hasChanges = computed(() =>
@@ -80,6 +80,9 @@ function showModal(archive: ArchiveWithPendingChanges, currentName: string) {
 
 function closeModal() {
   dialog.value?.close();
+}
+
+function handleDialogClose() {
   // Delay reset to allow fade animation to complete
   setTimeout(() => {
     resetState();
@@ -165,7 +168,7 @@ function handleNameKeydown(event: KeyboardEvent) {
   <dialog
     ref="dialog"
     class="modal"
-    @close="resetState();"
+    @close="handleDialogClose"
   >
     <div class="modal-box flex flex-col text-left">
       <h2 class="text-2xl pb-2">
