@@ -80,7 +80,10 @@ function showModal(archive: ArchiveWithPendingChanges, currentName: string) {
 
 function closeModal() {
   dialog.value?.close();
-  resetState();
+  // Delay reset to allow fade animation to complete
+  setTimeout(() => {
+    resetState();
+  }, 200);
 }
 
 function resetState() {
@@ -188,7 +191,6 @@ function handleNameKeydown(event: KeyboardEvent) {
             v-model="newComment"
             @keydown="handleKeydown"
             placeholder="Enter archive comment"
-            rows="3"
           />
         </FormField>
 

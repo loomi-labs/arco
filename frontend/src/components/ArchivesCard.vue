@@ -282,6 +282,11 @@ const isArchiveActivelyEditing = (archive: ArchiveWithPendingChanges) => {
   return archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive;
 };
 
+// Check if a specific archive is queued for editing (can be cancelled)
+const isArchiveQueuedForEditing = (archive: ArchiveWithPendingChanges) => {
+  return archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued;
+};
+
 // Get the pending new name for an archive being edited
 const getPendingArchiveName = (archive: ArchiveWithPendingChanges): string | null => {
   if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued) {
@@ -1151,15 +1156,15 @@ onUnmounted(() => {
 
             <!-- Edit/Cancel Edit Button -->
             <span class='tooltip'
-                  :class='isArchiveBeingEdited(archive) ? "tooltip-warning" : "tooltip-neutral"'
-                  :data-tip='isArchiveBeingEdited(archive) ? "Cancel edit" : (!isArchiveQueuedForDeletion(archive.id) && !isArchiveActivelyDeleting(archive.id) ? "Edit archive" : "")'>
+                  :class='isArchiveQueuedForEditing(archive) ? "tooltip-warning" : "tooltip-neutral"'
+                  :data-tip='isArchiveQueuedForEditing(archive) ? "Cancel edit" : (!isArchiveQueuedForDeletion(archive.id) && !isArchiveActivelyDeleting(archive.id) && !isArchiveActivelyEditing(archive) ? "Edit archive" : "")'>
               <button class='btn btn-sm btn-circle btn-outline'
                       :class='{
-                        "btn-warning": isArchiveBeingEdited(archive),
+                        "btn-warning": isArchiveQueuedForEditing(archive),
                       }'
-                      :disabled='!isArchiveBeingEdited(archive) && (isArchiveQueuedForDeletion(archive.id) || isArchiveActivelyDeleting(archive.id))'
-                      @click.stop='isArchiveBeingEdited(archive) ? cancelArchiveEdit(archive.id) : openRenameModal(archive)'>
-                <XMarkIcon v-if='isArchiveBeingEdited(archive)' class='size-4' />
+                      :disabled='!isArchiveQueuedForEditing(archive) && (isArchiveQueuedForDeletion(archive.id) || isArchiveActivelyDeleting(archive.id) || isArchiveActivelyEditing(archive))'
+                      @click.stop='isArchiveQueuedForEditing(archive) ? cancelArchiveEdit(archive.id) : openRenameModal(archive)'>
+                <XMarkIcon v-if='isArchiveQueuedForEditing(archive)' class='size-4' />
                 <PencilIcon v-else class='size-4' />
               </button>
             </span>
