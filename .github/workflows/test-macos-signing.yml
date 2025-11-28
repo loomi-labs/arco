@@ -1,9 +1,7 @@
 name: Test macOS Code Signing
 
 on:
-  push:
-    branches:
-      - '**'
+  workflow_dispatch:
 
 jobs:
   test-macos-signing:
