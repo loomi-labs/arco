@@ -1835,9 +1835,12 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 		// Filter all is implicit
 	}
 
-	// If a search term is specified, filter by it
+	// If a search term is specified, filter by name or comment
 	if req.Search != "" {
-		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+		archivePredicates = append(archivePredicates, archive.Or(
+			archive.NameContains(req.Search),
+			archive.CommentContains(req.Search),
+		))
 	}
 
 	// If start date is specified, filter by it

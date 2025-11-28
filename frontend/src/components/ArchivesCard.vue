@@ -298,6 +298,17 @@ const getPendingArchiveName = (archive: ArchiveWithPendingChanges): string | nul
   return null;
 };
 
+// Get the pending comment for an archive being edited
+const getPendingArchiveComment = (archive: ArchiveWithPendingChanges): string | null => {
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued) {
+    return archive.editStateUnion.editQueued?.newComment ?? null;
+  }
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive) {
+    return archive.editStateUnion.editActive?.newComment ?? null;
+  }
+  return null;
+};
+
 // Helper function to find the operation ID for a queued delete operation by archive ID
 const getQueuedDeleteOperationId = (archiveId: number): string | null => {
   for (const op of queuedOperations.value) {
@@ -1107,10 +1118,10 @@ onUnmounted(() => {
           </td>
           <!-- Comment -->
           <td class='[display:none] md:[display:table-cell]'>
-            <span v-if='archive.comment'
+            <span v-if='getPendingArchiveComment(archive) ?? archive.comment'
                   class='tooltip max-w-48 truncate'
-                  :data-tip='archive.comment'>
-              {{ archive.comment }}
+                  :data-tip='getPendingArchiveComment(archive) ?? archive.comment'>
+              {{ getPendingArchiveComment(archive) ?? archive.comment }}
             </span>
           </td>
           <!-- Backup -->
