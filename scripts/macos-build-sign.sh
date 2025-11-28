@@ -6,9 +6,9 @@ set -e
 #############################################
 # Fill in these variables before running:
 
-APPLE_ID="raphael.thurnherr1990@gmail.com"                    # Your Apple ID email
-APPLE_APP_SPECIFIC_PASSWORD="ylwr-ilaj-dekg-sxyt" # App-specific password from appleid.apple.com
-APPLE_TEAM_ID="YTFBQKVW3Y"               # Your Apple Developer Team ID
+APPLE_ID="${APPLE_ID:-}"                    # Your Apple ID email
+APPLE_APP_SPECIFIC_PASSWORD="${APPLE_APP_SPECIFIC_PASSWORD:-}" # App-specific password from appleid.apple.com
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"               # Your Apple Developer Team ID
 
 # Version to build (leave empty for dev)
 VERSION="${VERSION:-dev}"

@@ -458,6 +458,11 @@ func (a *App) extractAppBundle(zipReader *zip.Reader, appBundlePath string) erro
 		// The ZIP contains arco.app/... so we need to extract it to tempDir
 		destPath := filepath.Join(tempDir, file.Name)
 
+		// Validate path to prevent Zip Slip attacks
+		if !strings.HasPrefix(filepath.Clean(destPath), filepath.Clean(tempDir)+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid file path in zip: %s", file.Name)
+		}
+
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(destPath, file.Mode()); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", destPath, err)
