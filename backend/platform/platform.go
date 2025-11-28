@@ -2,6 +2,7 @@ package platform
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 )
 
@@ -32,4 +33,13 @@ func GetOpenFileManagerCmd() (string, error) {
 		return "open", nil
 	}
 	return "", fmt.Errorf("operating system %s is not supported", runtime.GOOS)
+}
+
+// IsMacFUSEInstalled checks if macFUSE is installed on macOS
+func IsMacFUSEInstalled() bool {
+	if !IsMacOS() {
+		return true // Not applicable on other platforms
+	}
+	_, err := os.Stat("/Library/Filesystems/macfuse.fs")
+	return err == nil
 }
