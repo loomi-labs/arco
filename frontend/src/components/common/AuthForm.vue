@@ -235,7 +235,7 @@ watch(isAuthenticated, (authenticated) => {
           Cancel
         </button>
         <button
-          class="btn btn-secondary"
+          class="btn btn-primary"
           :disabled="!isValid || isLoading"
           @click="sendMagicLink"
         >

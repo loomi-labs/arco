@@ -566,7 +566,7 @@ watch(isAuthenticated, async (authenticated) => {
           <!-- Open in Browser button -->
           <div class='flex justify-start'>
             <button
-              class='btn btn-secondary'
+              class='btn btn-primary'
               :disabled='!checkoutSession?.checkout_url'
               @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
             >
@@ -612,7 +612,7 @@ watch(isAuthenticated, async (authenticated) => {
           </button>
           <button
             v-if='!hasActiveSubscription'
-            class='btn btn-secondary'
+            class='btn btn-primary'
             :disabled='!selectedPlan'
             @click='subscribeToPlan()'
           >
@@ -714,7 +714,7 @@ watch(isAuthenticated, async (authenticated) => {
               Cancel
             </button>
             <button
-              class='btn btn-secondary'
+              class='btn btn-primary'
               :class='{ "btn-disabled": !isRepoValid || isCreatingRepository }'
               :disabled='!isRepoValid || isCreatingRepository'
               @click='createRepository()'

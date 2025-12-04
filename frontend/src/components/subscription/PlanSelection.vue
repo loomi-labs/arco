@@ -132,7 +132,7 @@ function subscribeToPlan() {
     <!-- Subscribe Button -->
     <div v-if='!hasActiveSubscription && !hideSubscribeButton' class='flex justify-start'>
       <button
-        class='btn btn-secondary btn-lg'
+        class='btn btn-primary btn-lg'
         :disabled='!internalSelectedPlan || disabled'
         @click='subscribeToPlan()'
       >
