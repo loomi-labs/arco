@@ -200,7 +200,7 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 		Prefix:                   "",
 		BackupPaths:              make([]string, 0),
 		ExcludePaths:             make([]string, 0),
-		ExcludeCaches:            false,
+		ExcludeCaches:            true,
 		Icon:                     selectedIcon,
 		CompressionMode:          backupprofile.CompressionModeLz4, // Default compression
 		CompressionLevel:         nil,                              // lz4 doesn't use levels
