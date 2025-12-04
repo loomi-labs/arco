@@ -146,11 +146,11 @@ defineExpose({ showModal, close });
                 <div class='bg-base-200 rounded-lg p-4'>
                   <h4 class='font-semibold mb-3'>Tips</h4>
                   <ul class='list-disc list-inside space-y-1 text-sm text-base-content/70'>
-                    <li>Higher compression levels use more CPU and memory</li>
-                    <li>Slow storage? Higher compression may help overall performance</li>
-                    <li>Compressing already-compressed data (videos, images) is pointless</li>
-                    <li>Compression settings only affect future backups, not existing archives</li>
-                    <li>You can change algorithms anytime and mix different compression between backups</li>
+                    <li>The level slider controls the speed vs. size trade-off: higher levels compress more but take longer</li>
+                    <li>Each algorithm has a different speed and compression ratio — the bars above show typical values at default level</li>
+                    <li>Already-compressed files (videos, images, archives) won't compress further</li>
+                    <li>Compression settings only affect new backups, not existing ones</li>
+                    <li>You can switch algorithms anytime — different backups can use different compression</li>
                   </ul>
                 </div>
 
