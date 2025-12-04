@@ -26,8 +26,12 @@ type Settings struct {
 	// ExpertMode holds the value of the "expert_mode" field.
 	ExpertMode bool `json:"expertMode"`
 	// Theme holds the value of the "theme" field.
-	Theme        settings.Theme `json:"theme,omitempty"`
-	selectValues sql.SelectValues
+	Theme settings.Theme `json:"theme,omitempty"`
+	// DisableTransitions holds the value of the "disable_transitions" field.
+	DisableTransitions bool `json:"disableTransitions"`
+	// DisableShadows holds the value of the "disable_shadows" field.
+	DisableShadows bool `json:"disableShadows"`
+	selectValues   sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -35,7 +39,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldShowWelcome, settings.FieldExpertMode:
+		case settings.FieldShowWelcome, settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -94,6 +98,18 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Theme = settings.Theme(value.String)
 			}
+		case settings.FieldDisableTransitions:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_transitions", values[i])
+			} else if value.Valid {
+				_m.DisableTransitions = value.Bool
+			}
+		case settings.FieldDisableShadows:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_shadows", values[i])
+			} else if value.Valid {
+				_m.DisableShadows = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -144,6 +160,12 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("theme=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Theme))
+	builder.WriteString(", ")
+	builder.WriteString("disable_transitions=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DisableTransitions))
+	builder.WriteString(", ")
+	builder.WriteString("disable_shadows=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DisableShadows))
 	builder.WriteByte(')')
 	return builder.String()
 }

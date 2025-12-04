@@ -448,7 +448,7 @@ watch(
         class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
         @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
+        <span class='ml-2 transition-all duration-700 ease-in-out'
               :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{
             dataSectionDetails
           }}</span>
@@ -495,7 +495,7 @@ watch(
         class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
         @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
+        <span class='ml-2 transition-all duration-700 ease-in-out'
               :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{
             scheduleSectionDetails
           }}</span>

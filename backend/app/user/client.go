@@ -97,6 +97,8 @@ func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) erro
 		SetShowWelcome(settings.ShowWelcome).
 		SetExpertMode(settings.ExpertMode).
 		SetTheme(settings.Theme).
+		SetDisableTransitions(settings.DisableTransitions).
+		SetDisableShadows(settings.DisableShadows).
 		Exec(ctx)
 	if err != nil {
 		return err

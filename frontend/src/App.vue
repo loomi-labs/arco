@@ -14,6 +14,7 @@ import { initializeFeatureFlags } from "./common/featureFlags";
 import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
+import { initializeReducedMotion, setupReducedMotionListener } from "./common/reducedMotion";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
@@ -95,9 +96,15 @@ initializeTheme();
 // Initialize expert mode from user settings
 initializeExpertMode();
 
+// Initialize reduced motion settings
+initializeReducedMotion();
+
 // Setup expert mode settings listener
 const { setupSettingsListener } = useExpertMode();
 cleanupFunctions.push(setupSettingsListener());
+
+// Setup reduced motion settings listener
+cleanupFunctions.push(setupReducedMotionListener());
 
 getStartupState();
 

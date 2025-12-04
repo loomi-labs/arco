@@ -292,6 +292,14 @@ func init() {
 	settingsDescExpertMode := settingsFields[1].Descriptor()
 	// settings.DefaultExpertMode holds the default value on creation for the expert_mode field.
 	settings.DefaultExpertMode = settingsDescExpertMode.Default.(bool)
+	// settingsDescDisableTransitions is the schema descriptor for disable_transitions field.
+	settingsDescDisableTransitions := settingsFields[3].Descriptor()
+	// settings.DefaultDisableTransitions holds the default value on creation for the disable_transitions field.
+	settings.DefaultDisableTransitions = settingsDescDisableTransitions.Default.(bool)
+	// settingsDescDisableShadows is the schema descriptor for disable_shadows field.
+	settingsDescDisableShadows := settingsFields[4].Descriptor()
+	// settings.DefaultDisableShadows holds the default value on creation for the disable_shadows field.
+	settings.DefaultDisableShadows = settingsDescDisableShadows.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

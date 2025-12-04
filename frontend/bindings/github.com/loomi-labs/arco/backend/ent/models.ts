@@ -1186,6 +1186,16 @@ export class Settings {
      */
     "theme"?: settings$0.Theme;
 
+    /**
+     * DisableTransitions holds the value of the "disable_transitions" field.
+     */
+    "disableTransitions": boolean;
+
+    /**
+     * DisableShadows holds the value of the "disable_shadows" field.
+     */
+    "disableShadows": boolean;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1199,6 +1209,12 @@ export class Settings {
         }
         if (!("expertMode" in $$source)) {
             this["expertMode"] = false;
+        }
+        if (!("disableTransitions" in $$source)) {
+            this["disableTransitions"] = false;
+        }
+        if (!("disableShadows" in $$source)) {
+            this["disableShadows"] = false;
         }
 
         Object.assign(this, $$source);

@@ -10,6 +10,20 @@
         font-display: swap;
         src: url('assets/fonts/nunito-v16-latin-regular.woff2') format('woff2');
     }
+
+    /* Reduced motion / accessibility utilities */
+    .no-transitions *,
+    .no-transitions *::before,
+    .no-transitions *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .no-shadows *,
+    .no-shadows *::before,
+    .no-shadows *::after {
+        box-shadow: none !important;
+    }
 }
 
 

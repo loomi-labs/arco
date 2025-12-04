@@ -29,6 +29,12 @@ func (Settings) Fields() []ent.Field {
 		field.Enum("theme").
 			Values("light", "dark", "system").
 			Default("system"),
+		field.Bool("disable_transitions").
+			StructTag(`json:"disableTransitions"`).
+			Default(false),
+		field.Bool("disable_shadows").
+			StructTag(`json:"disableShadows"`).
+			Default(false),
 	}
 }
 

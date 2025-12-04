@@ -24,6 +24,10 @@ const (
 	FieldExpertMode = "expert_mode"
 	// FieldTheme holds the string denoting the theme field in the database.
 	FieldTheme = "theme"
+	// FieldDisableTransitions holds the string denoting the disable_transitions field in the database.
+	FieldDisableTransitions = "disable_transitions"
+	// FieldDisableShadows holds the string denoting the disable_shadows field in the database.
+	FieldDisableShadows = "disable_shadows"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -36,6 +40,8 @@ var Columns = []string{
 	FieldShowWelcome,
 	FieldExpertMode,
 	FieldTheme,
+	FieldDisableTransitions,
+	FieldDisableShadows,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -59,6 +65,10 @@ var (
 	DefaultShowWelcome bool
 	// DefaultExpertMode holds the default value on creation for the "expert_mode" field.
 	DefaultExpertMode bool
+	// DefaultDisableTransitions holds the default value on creation for the "disable_transitions" field.
+	DefaultDisableTransitions bool
+	// DefaultDisableShadows holds the default value on creation for the "disable_shadows" field.
+	DefaultDisableShadows bool
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -119,4 +129,14 @@ func ByExpertMode(opts ...sql.OrderTermOption) OrderOption {
 // ByTheme orders the results by the theme field.
 func ByTheme(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTheme, opts...).ToFunc()
+}
+
+// ByDisableTransitions orders the results by the disable_transitions field.
+func ByDisableTransitions(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableTransitions, opts...).ToFunc()
+}
+
+// ByDisableShadows orders the results by the disable_shadows field.
+func ByDisableShadows(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableShadows, opts...).ToFunc()
 }
