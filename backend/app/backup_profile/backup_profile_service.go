@@ -320,6 +320,12 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
 
+	// Auto-clear compression level for modes that don't support it
+	if backup.CompressionMode == backupprofile.CompressionModeNone ||
+		backup.CompressionMode == backupprofile.CompressionModeLz4 {
+		backup.CompressionLevel = nil
+	}
+
 	// Validate compression settings
 	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
 		return nil, fmt.Errorf("invalid compression settings: %w", err)
