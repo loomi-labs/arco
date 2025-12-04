@@ -160,10 +160,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='flex justify-between ac-card p-10 h-full'
+  <div class='flex justify-between ac-card-selectable p-10 h-full'
        :class='[
-         props.highlight ? "ac-card-selected-highlight" : "border-2 border-transparent",
-         { "ac-card-hover": showHover && !props.highlight }
+         props.highlight ? "ac-card-selected-highlight" : "",
+         { "ac-card-selectable-hover": showHover && !props.highlight }
        ]'
        @click='emits(emitClick)'>
     <div class='flex flex-col'>

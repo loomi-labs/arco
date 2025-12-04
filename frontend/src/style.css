@@ -266,6 +266,13 @@
 .ac-card-dotted {
     @apply bg-transparent shadow-sm rounded-xl border-2 border-dashed border-neutral-400 text-neutral-500 hover:text-neutral-600 hover:border-neutral-500 hover:shadow-md transition-all duration-200;
 }
+/* Selectable card variants - consistent border-l-4 for selection highlight */
+.ac-card-selectable {
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 border-l-4 border-l-transparent;
+}
+.ac-card-selectable-hover {
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 border-l-4 border-l-transparent cursor-pointer hover:shadow-lg transition-all duration-200;
+}
 .text-base-strong {
     @apply text-gray-900 dark:text-gray-50;
 }
