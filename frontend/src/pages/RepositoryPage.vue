@@ -691,7 +691,7 @@ onUnmounted(() => {
 
                   <div class='form-control'>
                     <label class='label cursor-pointer justify-start gap-4'>
-                      <input type='radio' name='verify-depth' class='radio' :value='false' v-model='verifyDepthQuick' />
+                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='false' v-model='verifyDepthQuick' />
                       <div>
                         <div class='font-semibold'>Full Verification</div>
                         <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
@@ -699,7 +699,7 @@ onUnmounted(() => {
                     </label>
 
                     <label class='label cursor-pointer justify-start gap-4 mt-2'>
-                      <input type='radio' name='verify-depth' class='radio' :value='true' v-model='verifyDepthQuick' />
+                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='true' v-model='verifyDepthQuick' />
                       <div>
                         <div class='font-semibold'>Quick Verification</div>
                         <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
