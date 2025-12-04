@@ -1911,6 +1911,53 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 	}, nil
 }
 
+// GetFilteredArchiveIds retrieves all archive IDs matching the filter criteria (without pagination)
+// This is used for "select all across pages" functionality
+func (s *Service) GetFilteredArchiveIds(ctx context.Context, req *PaginatedArchivesRequest) ([]int, error) {
+	if req.RepositoryId <= 0 {
+		return nil, fmt.Errorf("repositoryId is required")
+	}
+
+	// Build filter predicates (same logic as GetPaginatedArchives)
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
+	}
+
+	if req.BackupProfileFilter != nil {
+		if req.BackupProfileFilter.Id != 0 {
+			archivePredicates = append(archivePredicates, archive.HasBackupProfileWith(backupprofile.ID(req.BackupProfileFilter.Id)))
+		} else if req.BackupProfileFilter.IsUnknownFilter {
+			archivePredicates = append(archivePredicates, archive.Not(archive.HasBackupProfile()))
+		}
+	}
+
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.Or(
+			archive.NameContains(req.Search),
+			archive.CommentContains(req.Search),
+		))
+	}
+
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
+	}
+
+	// Query only IDs
+	ids, err := s.db.Archive.
+		Query().
+		Where(archive.And(archivePredicates...)).
+		IDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
 // GetPruningDates retrieves pruning dates for specified archives
 func (s *Service) GetPruningDates(ctx context.Context, archiveIds []int) (PruningDates, error) {
 	var pruningDates PruningDates

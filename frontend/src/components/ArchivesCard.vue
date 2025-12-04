@@ -77,6 +77,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
 );
 const selectedArchives = ref<Set<number>>(new Set());
 const isAllSelected = ref<boolean>(false);
+const isAllPagesSelected = ref<boolean>(false);
 const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
@@ -750,6 +751,7 @@ async function validateName(archiveId: number) {
 function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedArchives.value.clear();
+    isAllPagesSelected.value = false;
   } else {
     archives.value.forEach((archive) => {
       selectedArchives.value.add(archive.id);
@@ -761,6 +763,7 @@ function toggleSelectAll() {
 function clearSelection() {
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 }
 
 function toggleArchiveSelection(archiveId: number) {
@@ -770,10 +773,46 @@ function toggleArchiveSelection(archiveId: number) {
     selectedArchives.value.add(archiveId);
   }
 
+  // Reset "all pages" selection when manually toggling
+  isAllPagesSelected.value = false;
+
   // Update the select all checkbox state
   isAllSelected.value =
     selectedArchives.value.size === archives.value.length &&
     archives.value.length > 0;
+}
+
+async function selectAllPages() {
+  try {
+    const request = PaginatedArchivesRequest.createFrom();
+    request.repositoryId = props.repoId;
+    // Page and pageSize not needed for this query but set them anyway
+    request.page = 1;
+    request.pageSize = pagination.value.total;
+
+    if (props.backupProfileId) {
+      request.backupProfileFilter = BackupProfileFilter.createFrom();
+      request.backupProfileFilter.id = props.backupProfileId;
+    } else {
+      request.backupProfileFilter = backupProfileFilter.value;
+    }
+    request.search = search.value;
+    request.startDate = dateRange.value.startDate
+      ? new Date(dateRange.value.startDate)
+      : undefined;
+    request.endDate = dateRange.value.endDate
+      ? dayEnd(new Date(dateRange.value.endDate))
+      : undefined;
+
+    const ids = await repoService.GetFilteredArchiveIds(request);
+    if (ids) {
+      selectedArchives.value = new Set(ids);
+      isAllPagesSelected.value = true;
+      isAllSelected.value = true;
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to select all archives", error);
+  }
 }
 
 async function deleteSelectedArchives() {
@@ -923,6 +962,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 });
 
 onUnmounted(() => {
@@ -1043,6 +1083,20 @@ onUnmounted(() => {
           </label>
         </label>
       </div>
+    </div>
+
+    <!-- Select all pages indicator -->
+    <div v-if='isAllSelected && pagination.total > archives.length && !isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ archives.length }} archives on this page are selected.
+      <a class='link link-primary' @click='selectAllPages'>
+        Select all {{ pagination.total }} archives
+      </a>
+    </div>
+    <div v-else-if='isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ pagination.total }} archives are selected.
+      <a class='link' @click='clearSelection'>Clear selection</a>
     </div>
 
     <div>
