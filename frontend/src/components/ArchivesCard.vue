@@ -996,7 +996,7 @@ onUnmounted(() => {
             </button>
           </span>
 
-          <button class='btn btn-ghost btn-circle btn-info'
+          <button class='btn btn-sm btn-circle btn-ghost'
                   :disabled='!isRepositoryIdle'
                   @click='refreshArchives'>
             <ArrowPathIcon class='size-6' />

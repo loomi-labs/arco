@@ -147,6 +147,13 @@
     }
 }
 
+/* Fix ghost button hover visibility in dark mode - subtle grey border */
+@utility btn-ghost {
+    &:where([data-theme=dark], [data-theme=dark] *):hover {
+        border-color: #A1A1AA;
+    }
+}
+
 /* Fix for webkit checkbox/toggle native appearance showing through */
 @layer base {
     input[type="checkbox"].toggle,
