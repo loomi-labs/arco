@@ -588,7 +588,7 @@ watch(isAuthenticated, async (authenticated) => {
         v-else-if='currentState === ComponentState.SUBSCRIPTION_SELECTION || currentState === ComponentState.SUBSCRIPTION_SELECTION_AUTH'>
         <!-- Login link for existing subscribers (only if not authenticated) -->
         <div v-if='currentState === ComponentState.SUBSCRIPTION_SELECTION' class='text-center mb-4'>
-          <a class='link link-sm text-base-content/70' @click='showLoginForSubscription()'>
+          <a class='link link-info link-sm' @click='showLoginForSubscription()'>
             Already have a subscription? Login here
           </a>
         </div>

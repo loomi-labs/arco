@@ -157,7 +157,7 @@ defineExpose({ showModal, close });
                 <!-- Learn More Link -->
                 <div class='mt-4'>
                   <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/internals/data-structures.html#data-compression")'
-                     class='link link-primary text-sm'>
+                     class='link link-info text-sm cursor-pointer'>
                     Learn more in Borg documentation →
                   </a>
                 </div>

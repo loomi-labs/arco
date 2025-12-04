@@ -303,7 +303,7 @@ onBeforeRouteLeave(async (to, _from) => {
         </ul>
         <!-- link to borg help -->
         <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
-           class='link flex gap-1 pt-1'>
+           class='link link-info flex gap-1 pt-1'>
           Learn more about exclusion patterns
           <QuestionMarkCircleIcon class='size-6' />
         </a>
