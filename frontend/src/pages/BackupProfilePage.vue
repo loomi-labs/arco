@@ -395,7 +395,7 @@ watch(
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary pl-0 shadow-none'
+               class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary -ml-3 shadow-none'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -477,6 +477,7 @@ watch(
         <!-- Compression Card on separate row -->
         <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
           <CompressionCard
+            :show-title='true'
             :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
             :compression-level='backupProfile.compressionLevel'
             @update:compression='({ mode, level }) => {
