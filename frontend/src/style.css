@@ -139,6 +139,14 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* Fix outline button hover visibility in dark mode - brighter border/text */
+@utility btn-outline {
+    &:where([data-theme=dark], [data-theme=dark] *):hover {
+        border-color: #ffffff;
+        color: #ffffff;
+    }
+}
+
 /* Fix for webkit checkbox/toggle native appearance showing through */
 @layer base {
     input[type="checkbox"].toggle,
@@ -164,6 +172,7 @@
         --input-color: var(--color-primary);
         outline-color: var(--color-primary);
     }
+
 }
 
 @source '../node_modules/vue-tailwind-datepicker/**/*.js';
