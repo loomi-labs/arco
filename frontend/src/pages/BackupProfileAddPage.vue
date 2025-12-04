@@ -280,15 +280,18 @@ onBeforeRouteLeave(async (to, _from) => {
     <!-- 1. Step - Data Selection -->
     <template v-if='currentStep === Step.SelectData'>
       <!-- Data to backup Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup</h2>
-      <p class='flex gap-2 mb-3'>
-        Select folders and files that you want to include in your backups.
-      </p>
+      <h2 class='text-3xl py-4'>Data to backup</h2>
+      <!-- Info box -->
+      <div role='alert' class='alert alert-soft alert-info mb-4'>
+        <InformationCircleIcon class='size-5 shrink-0' />
+        <div>Select the folders and files you want to include in your backups.</div>
+      </div>
       <DataSelection
         :paths='backupProfile.backupPaths ?? []'
         :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
+        :show-quick-add-home='true'
         :run-min-one-path-validation='true'
         :show-min-one-path-error-only-after-touch='true'
         @update:paths='saveBackupPaths'
@@ -407,5 +410,9 @@ onBeforeRouteLeave(async (to, _from) => {
 </template>
 
 <style scoped>
-
+/* Animated stepper - transition for step dots and lines */
+.steps .step::before,
+.steps .step::after {
+  transition: background-color 0.5s ease-in-out;
+}
 </style>
