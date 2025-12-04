@@ -331,7 +331,7 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		return nil, fmt.Errorf("invalid compression settings: %w", err)
 	}
 
-	profile, err := s.db.BackupProfile.
+	update := s.db.BackupProfile.
 		UpdateOneID(backup.ID).
 		SetName(backup.Name).
 		SetIcon(backup.Icon).
@@ -341,9 +341,17 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
 		SetCompressionMode(backup.CompressionMode).
-		SetNillableCompressionLevel(backup.CompressionLevel).
-		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed).
-		Save(ctx)
+		SetAdvancedSectionCollapsed(backup.AdvancedSectionCollapsed)
+
+	// Use ClearCompressionLevel for modes that don't support it (SetNillableCompressionLevel(nil) is a no-op)
+	if backup.CompressionMode == backupprofile.CompressionModeNone ||
+		backup.CompressionMode == backupprofile.CompressionModeLz4 {
+		update = update.ClearCompressionLevel()
+	} else {
+		update = update.SetNillableCompressionLevel(backup.CompressionLevel)
+	}
+
+	profile, err := update.Save(ctx)
 	if err != nil {
 		return nil, err
 	}
