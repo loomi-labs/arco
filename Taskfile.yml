@@ -22,6 +22,7 @@ tasks:
   build:
     desc: Builds the application
     cmds:
+      - rm -rf frontend/dist
       - task: '{{if eq .PLATFORM "darwin/universal"}}darwin:build:universal{{else}}{{OS}}:build{{end}}'
 
   package:
