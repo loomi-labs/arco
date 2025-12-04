@@ -4,6 +4,7 @@
   "storage": "Storage",
   "data_to_backup": "Data to backup",
   "data_to_ignore": "Data to ignore",
+  "exclude_cache_directories": "Exclude cache directories (CACHEDIR.TAG)",
   "schedule": "Schedule",
   "run_periodic_backups": "Run periodic backups",
   "every": "Every",

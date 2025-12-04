@@ -197,6 +197,11 @@ export class BackupProfile {
     "excludePaths": string[];
 
     /**
+     * Exclude directories containing CACHEDIR.TAG file
+     */
+    "excludeCaches": boolean;
+
+    /**
      * Icon holds the value of the "icon" field.
      */
     "icon": backupprofile$0.Icon;
@@ -255,6 +260,9 @@ export class BackupProfile {
         if (!("excludePaths" in $$source)) {
             this["excludePaths"] = [];
         }
+        if (!("excludeCaches" in $$source)) {
+            this["excludeCaches"] = false;
+        }
         if (!("icon" in $$source)) {
             this["icon"] = backupprofile$0.Icon.$zero;
         }
@@ -286,7 +294,7 @@ export class BackupProfile {
     static createFrom($$source: any = {}): BackupProfile {
         const $$createField5_0 = $$createType5;
         const $$createField6_0 = $$createType5;
-        const $$createField13_0 = $$createType6;
+        const $$createField14_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupPaths" in $$parsedSource) {
             $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
@@ -295,7 +303,7 @@ export class BackupProfile {
             $$parsedSource["excludePaths"] = $$createField6_0($$parsedSource["excludePaths"]);
         }
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField14_0($$parsedSource["edges"]);
         }
         return new BackupProfile($$parsedSource as Partial<BackupProfile>);
     }

@@ -27,6 +27,8 @@ const (
 	FieldBackupPaths = "backup_paths"
 	// FieldExcludePaths holds the string denoting the exclude_paths field in the database.
 	FieldExcludePaths = "exclude_paths"
+	// FieldExcludeCaches holds the string denoting the exclude_caches field in the database.
+	FieldExcludeCaches = "exclude_caches"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
 	// FieldCompressionMode holds the string denoting the compression_mode field in the database.
@@ -95,6 +97,7 @@ var Columns = []string{
 	FieldPrefix,
 	FieldBackupPaths,
 	FieldExcludePaths,
+	FieldExcludeCaches,
 	FieldIcon,
 	FieldCompressionMode,
 	FieldCompressionLevel,
@@ -134,6 +137,8 @@ var (
 	DefaultBackupPaths []string
 	// DefaultExcludePaths holds the default value on creation for the "exclude_paths" field.
 	DefaultExcludePaths []string
+	// DefaultExcludeCaches holds the default value on creation for the "exclude_caches" field.
+	DefaultExcludeCaches bool
 	// CompressionLevelValidator is a validator for the "compression_level" field. It is called by the builders before save.
 	CompressionLevelValidator func(int) error
 	// DefaultDataSectionCollapsed holds the default value on creation for the "data_section_collapsed" field.
@@ -226,6 +231,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByPrefix orders the results by the prefix field.
 func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
+}
+
+// ByExcludeCaches orders the results by the exclude_caches field.
+func ByExcludeCaches(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExcludeCaches, opts...).ToFunc()
 }
 
 // ByIcon orders the results by the icon field.

@@ -241,6 +241,15 @@ async function saveExcludePaths(paths: string[]) {
   }
 }
 
+async function saveExcludeCaches(excludeCaches: boolean) {
+  try {
+    backupProfile.value.excludeCaches = excludeCaches;
+    await backupProfileService.UpdateBackupProfile(backupProfile.value);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to save exclude caches setting", error);
+  }
+}
+
 async function saveSchedule(schedule: ent.BackupSchedule) {
   try {
     await backupProfileService.SaveBackupSchedule(backupProfile.value.id, schedule);
@@ -481,8 +490,10 @@ watch(
           <DataSelection
             show-title
             :paths='backupProfile.excludePaths ?? []'
+            :exclude-caches='backupProfile.excludeCaches ?? false'
             :is-backup-selection='false'
             @update:paths='saveExcludePaths'
+            @update:exclude-caches='saveExcludeCaches'
           />
         </div>
       </div>

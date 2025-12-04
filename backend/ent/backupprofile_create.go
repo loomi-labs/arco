@@ -77,6 +77,20 @@ func (_c *BackupProfileCreate) SetExcludePaths(v []string) *BackupProfileCreate 
 	return _c
 }
 
+// SetExcludeCaches sets the "exclude_caches" field.
+func (_c *BackupProfileCreate) SetExcludeCaches(v bool) *BackupProfileCreate {
+	_c.mutation.SetExcludeCaches(v)
+	return _c
+}
+
+// SetNillableExcludeCaches sets the "exclude_caches" field if the given value is not nil.
+func (_c *BackupProfileCreate) SetNillableExcludeCaches(v *bool) *BackupProfileCreate {
+	if v != nil {
+		_c.SetExcludeCaches(*v)
+	}
+	return _c
+}
+
 // SetIcon sets the "icon" field.
 func (_c *BackupProfileCreate) SetIcon(v backupprofile.Icon) *BackupProfileCreate {
 	_c.mutation.SetIcon(v)
@@ -293,6 +307,10 @@ func (_c *BackupProfileCreate) defaults() {
 		v := backupprofile.DefaultExcludePaths
 		_c.mutation.SetExcludePaths(v)
 	}
+	if _, ok := _c.mutation.ExcludeCaches(); !ok {
+		v := backupprofile.DefaultExcludeCaches
+		_c.mutation.SetExcludeCaches(v)
+	}
 	if _, ok := _c.mutation.CompressionMode(); !ok {
 		v := backupprofile.DefaultCompressionMode
 		_c.mutation.SetCompressionMode(v)
@@ -337,6 +355,9 @@ func (_c *BackupProfileCreate) check() error {
 	}
 	if _, ok := _c.mutation.BackupPaths(); !ok {
 		return &ValidationError{Name: "backup_paths", err: errors.New(`ent: missing required field "BackupProfile.backup_paths"`)}
+	}
+	if _, ok := _c.mutation.ExcludeCaches(); !ok {
+		return &ValidationError{Name: "exclude_caches", err: errors.New(`ent: missing required field "BackupProfile.exclude_caches"`)}
 	}
 	if _, ok := _c.mutation.Icon(); !ok {
 		return &ValidationError{Name: "icon", err: errors.New(`ent: missing required field "BackupProfile.icon"`)}
@@ -426,6 +447,10 @@ func (_c *BackupProfileCreate) createSpec() (*BackupProfile, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.ExcludePaths(); ok {
 		_spec.SetField(backupprofile.FieldExcludePaths, field.TypeJSON, value)
 		_node.ExcludePaths = value
+	}
+	if value, ok := _c.mutation.ExcludeCaches(); ok {
+		_spec.SetField(backupprofile.FieldExcludeCaches, field.TypeBool, value)
+		_node.ExcludeCaches = value
 	}
 	if value, ok := _c.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)

@@ -15,11 +15,11 @@ import (
 
 // Create creates a new backup in the repository.
 // It is long running and should be run in a goroutine.
-func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
+func (b *borg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, excludeCaches bool, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
 	archivePath := fmt.Sprintf("%s::%s%s", repository, prefix, time.Now().In(time.Local).Format("2006-01-02-15-04-05"))
 
 	// Count the total files to backup
-	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths, compressionMode, compressionLevel)
+	totalFiles, borgStatus, err := b.countBackupFiles(ctx, archivePath, password, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel)
 	if err != nil {
 		return "", newStatusWithError(err)
 	}
@@ -46,6 +46,11 @@ func (b *borg) Create(ctx context.Context, repository, password, prefix string, 
 	// Add exclude paths
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
+	}
+
+	// Add exclude caches flag
+	if excludeCaches {
+		cmdStr = append(cmdStr, "--exclude-caches")
 	}
 
 	options := gocmd.Options{Buffered: false, Streaming: true}
@@ -120,7 +125,7 @@ func decodeBackupProgress(cmd *gocmd.Cmd, totalFiles int, ch chan<- types.Backup
 
 // countBackupFiles counts the number of files that will be backed up.
 // We use the --dry-run flag to simulate the backup and count the files.
-func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int) (int, *types.Status, error) {
+func (b *borg) countBackupFiles(ctx context.Context, archiveName, password string, backupPaths, excludePaths []string, excludeCaches bool, compressionMode backupprofile.CompressionMode, compressionLevel *int) (int, *types.Status, error) {
 	cmdStr := []string{
 		"create",     // https://borgbackup.readthedocs.io/en/stable/usage/create.html#borg-create
 		"--dry-run",  // Simulate the backup
@@ -140,6 +145,11 @@ func (b *borg) countBackupFiles(ctx context.Context, archiveName, password strin
 	// Add exclude paths
 	for _, excludeDir := range excludePaths {
 		cmdStr = append(cmdStr, "--exclude", excludeDir) // Paths and files that will be ignored
+	}
+
+	// Add exclude caches flag
+	if excludeCaches {
+		cmdStr = append(cmdStr, "--exclude-caches")
 	}
 
 	options := gocmd.Options{Buffered: false, Streaming: true}
