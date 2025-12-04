@@ -1,8 +1,9 @@
 <script setup lang='ts'>
 
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, useId, useTemplateRef, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
-import { PlusIcon } from "@heroicons/vue/24/outline";
+import { InformationCircleIcon, PlusIcon } from "@heroicons/vue/24/outline";
+import ExcludePatternInfoModal from "./ExcludePatternInfoModal.vue";
 import type { FieldEntry} from "vee-validate";
 import { useFieldArray, useForm } from "vee-validate";
 import * as yup from "yup";
@@ -53,6 +54,8 @@ const emitUpdateExcludeCachesStr = "update:exclude-caches";
 const suggestions = ref<string[]>([]);
 const localExcludeCaches = ref(props.excludeCaches);
 const touched = ref(false);
+const excludePatternInfoModalKey = useId();
+const excludePatternInfoModal = useTemplateRef<InstanceType<typeof ExcludePatternInfoModal>>(excludePatternInfoModalKey);
 
 const { meta, errors, values, validate } = useForm({
   validationSchema: computed(() => yup.object({
@@ -111,6 +114,10 @@ const isValid = computed(() => meta.value.valid && !meta.value.pending);
 /************
  * Functions
  ************/
+
+function toggleExcludePatternInfoModal() {
+  excludePatternInfoModal.value?.showModal();
+}
 
 function getPathsFromProps() {
   const sug = suggestions.value.filter((s) => !props.paths.includes(s)) ?? [];
@@ -293,8 +300,13 @@ onMounted(() => {
 </script>
 <template>
   <div class='flex flex-col ac-card p-10'>
-    <h2 v-if='showTitle' class='text-lg font-semibold mb-4'>
-      {{ props.isBackupSelection ? $t("data_to_backup") : $t("data_to_ignore") }}</h2>
+    <div v-if='showTitle' class='flex items-center justify-between mb-4'>
+      <h2 class='text-lg font-semibold'>
+        {{ props.isBackupSelection ? $t("data_to_backup") : $t("data_to_ignore") }}</h2>
+      <button v-if='!props.isBackupSelection' @click='toggleExcludePatternInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+        <InformationCircleIcon class='size-6' />
+      </button>
+    </div>
 
     <div class='flex flex-col gap-2'>
       <!-- Paths -->
@@ -348,6 +360,8 @@ onMounted(() => {
     </div>
 
     <span v-if='showMinOnePathError' class='label text-sm text-error'>{{ errors.paths }}</span>
+
+    <ExcludePatternInfoModal :ref='excludePatternInfoModalKey' />
   </div>
 </template>
 

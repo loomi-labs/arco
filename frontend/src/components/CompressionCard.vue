@@ -20,6 +20,7 @@ enum CompressionPreset {
 interface Props {
   compressionMode: CompressionMode;
   compressionLevel: number | null;
+  showTitle: boolean;
 }
 
 /************
@@ -230,7 +231,7 @@ function toggleCompressionInfoModal() {
 
 <template>
   <div class='ac-card p-10'>
-    <div class='flex items-center justify-between mb-4'>
+    <div v-if='showTitle' class='flex items-center justify-between mb-4'>
       <h3 class='text-xl font-semibold'>Compression</h3>
       <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs'>
         <InformationCircleIcon class='size-6' />
@@ -304,6 +305,6 @@ function toggleCompressionInfoModal() {
     </div>
 
     <!-- Compression Info Modal -->
-    <CompressionInfoModal :ref='compressionInfoModalKey' />
+    <CompressionInfoModal v-if='showTitle' :ref='compressionInfoModalKey' />
   </div>
 </template>

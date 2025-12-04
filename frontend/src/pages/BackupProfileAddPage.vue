@@ -11,10 +11,12 @@ import { useForm } from "vee-validate";
 import * as yup from "yup";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import CompressionCard from "../components/CompressionCard.vue";
+import CompressionInfoModal from "../components/CompressionInfoModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
-import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
+import { InformationCircleIcon } from "@heroicons/vue/24/outline";
+import ExcludePatternInfoModal from "../components/ExcludePatternInfoModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
@@ -22,7 +24,6 @@ import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { Browser } from "@wailsio/runtime";
 
 /************
  * Types
@@ -53,6 +54,10 @@ const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(conf
 const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(true);
+const excludePatternInfoModalKey = useId();
+const excludePatternInfoModal = useTemplateRef<InstanceType<typeof ExcludePatternInfoModal>>(excludePatternInfoModalKey);
+const compressionInfoModalKey = useId();
+const compressionInfoModal = useTemplateRef<InstanceType<typeof CompressionInfoModal>>(compressionInfoModalKey);
 
 const step1Form = useForm({
   validationSchema: yup.object({
@@ -98,6 +103,14 @@ function getMaxWithPerStep(): string {
     default:
       return "max-w-[600px]";
   }
+}
+
+function toggleExcludePatternInfoModal() {
+  excludePatternInfoModal.value?.showModal();
+}
+
+function toggleCompressionInfoModal() {
+  compressionInfoModal.value?.showModal();
 }
 
 // Step 1
@@ -282,33 +295,17 @@ onBeforeRouteLeave(async (to, _from) => {
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
-      <div class='mb-4'>
-        <p>
-          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span>
-          that you don't want to include in your backups.<br>
-        </p>
-        <p class='pt-2'>Examples:</p>
-        <ul class='pl-4'>
-          <li class='flex gap-2'>
-            *.cache
-            <ArrowLongRightIcon class='size-6' />
-            exclude all .cache folders
-          </li>
-          <li class='flex gap-2'>
-            /home/secretfolder
-            <ArrowLongRightIcon class='size-6' />
-            exclude the secretfolder in your home directory
-          </li>
-        </ul>
-        <!-- link to borg help -->
-        <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
-           class='link link-info flex gap-1 pt-1'>
-          Learn more about exclusion patterns
-          <QuestionMarkCircleIcon class='size-6' />
-        </a>
+      <div class='flex items-center justify-between py-4'>
+        <h2 class='text-3xl'>Data to ignore</h2>
+        <button @click='toggleExcludePatternInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+          <InformationCircleIcon class='size-6' />
+        </button>
       </div>
-
+      <!-- Info box -->
+      <div role='alert' class='alert alert-soft alert-info mb-4'>
+        <InformationCircleIcon class='size-5 shrink-0' />
+        <div>Exclude files, folders, or patterns from backups.<br>Common exclusions: cache folders, temporary files, build outputs.</div>
+      </div>
       <DataSelection
         :paths='backupProfile.excludePaths ?? []'
         :exclude-caches='backupProfile.excludeCaches ?? false'
@@ -317,6 +314,19 @@ onBeforeRouteLeave(async (to, _from) => {
         @update:paths='saveExcludePaths'
         @update:exclude-caches='(val) => backupProfile.excludeCaches = val'
         @update:is-valid='(isValid) => isExcludePathsValid = isValid' />
+
+      <!-- Compression Card -->
+      <div class='flex items-center justify-between pt-8 pb-4'>
+        <h2 class='text-3xl'>Compression</h2>
+        <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+          <InformationCircleIcon class='size-6' />
+        </button>
+      </div>
+      <CompressionCard
+        :show-title='false'
+        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+        :compression-level='backupProfile.compressionLevel'
+        @update:compression='saveCompression' />
 
       <!-- Name and Logo Selection Card-->
       <h2 class='text-3xl pt-8 pb-4'>Name</h2>
@@ -334,13 +344,6 @@ onBeforeRouteLeave(async (to, _from) => {
         <!-- Icon -->
         <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
       </div>
-
-      <!-- Compression Card -->
-      <h2 class='text-3xl pt-8 pb-4'>Compression</h2>
-      <CompressionCard
-        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-        :compression-level='backupProfile.compressionLevel'
-        @update:compression='saveCompression' />
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
@@ -398,6 +401,9 @@ onBeforeRouteLeave(async (to, _from) => {
     <p>You did not finish your backup profile <span class='italic font-semibold'>{{ backupProfile.name }}</span></p>
     <p>Do you wan to discard your changes?</p>
   </ConfirmModal>
+
+  <ExcludePatternInfoModal :ref='excludePatternInfoModalKey' />
+  <CompressionInfoModal :ref='compressionInfoModalKey' />
 </template>
 
 <style scoped>
