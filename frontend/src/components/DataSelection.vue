@@ -2,7 +2,7 @@
 
 import { computed, onMounted, ref, useId, useTemplateRef, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/solid";
-import { InformationCircleIcon, PlusIcon } from "@heroicons/vue/24/outline";
+import { HomeIcon, InformationCircleIcon, PlusIcon } from "@heroicons/vue/24/outline";
 import ExcludePatternInfoModal from "./ExcludePatternInfoModal.vue";
 import type { FieldEntry} from "vee-validate";
 import { useFieldArray, useForm } from "vee-validate";
@@ -23,6 +23,7 @@ interface Props {
   suggestions?: string[];
   isBackupSelection: boolean;
   showTitle: boolean;
+  showQuickAddHome?: boolean;
   runMinOnePathValidation?: boolean;
   showMinOnePathErrorOnlyAfterTouch?: boolean;
   excludeCaches?: boolean;
@@ -41,6 +42,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(),
   {
     suggestions: () => [],
+    showQuickAddHome: false,
     runMinOnePathValidation: false,
     showMinOnePathErrorOnlyAfterTouch: false,
     excludeCaches: false
@@ -51,7 +53,6 @@ const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
 const emitUpdateExcludeCachesStr = "update:exclude-caches";
 
-const suggestions = ref<string[]>([]);
 const localExcludeCaches = ref(props.excludeCaches);
 const touched = ref(false);
 const excludePatternInfoModalKey = useId();
@@ -70,12 +71,7 @@ const { meta, errors, values, validate } = useForm({
         })
     ).test("minOnePath", "At least one path is required", (paths) => {
       if (props.runMinOnePathValidation) {
-        if (!paths || paths.length === 0) {
-          return false;
-        }
-
-        // Check if all paths are suggestions
-        return !paths.every((path) => suggestions.value.includes(path));
+        return paths !== undefined && paths.length > 0;
       }
       return true;
     })
@@ -120,24 +116,11 @@ function toggleExcludePatternInfoModal() {
 }
 
 function getPathsFromProps() {
-  const sug = suggestions.value.filter((s) => !props.paths.includes(s)) ?? [];
-  const all = sug.concat(props.paths);
-
-  // Compare newPaths with current paths if they are different replace them
   const paths = values.paths as string[];
-  if (!paths || paths.length !== all.length) {
-    replace(all);
+  if (!paths || !deepEqual(paths, props.paths)) {
+    replace(props.paths);
     meta.value.dirty = false;
   }
-  validate();
-}
-
-function getSuggestionsFromProps() {
-  suggestions.value = props.suggestions ?? [];
-  props.suggestions?.forEach((suggestion) => {
-    push(suggestion);
-    meta.value.dirty = false;
-  });
   validate();
 }
 
@@ -165,21 +148,8 @@ function isDuplicatePath(path: string | undefined, maxOccurrences = 1): boolean 
   return false;
 }
 
-async function removeField(field: FieldEntry<string>, index: number) {
-  const path = field.value as string;
-  suggestions.value = suggestions.value.filter((p) => p !== path);
+async function removeField(_field: FieldEntry<string>, index: number) {
   remove(index);
-  await newPathForm.validate();
-  await validate();
-  emitResults();
-}
-
-async function setAccepted(index: number) {
-  if (index < 0 || index >= suggestions.value.length) {
-    return;
-  }
-
-  suggestions.value.splice(index, 1);
   await newPathForm.validate();
   await validate();
   emitResults();
@@ -215,9 +185,36 @@ async function setTouched() {
   touched.value = true;
 }
 
-function isSuggestion(field: FieldEntry<string> | string): boolean {
-  const path = typeof field === "string" ? field : field.value;
-  return suggestions.value.includes(path);
+function isHomeSuggestion(path: string): boolean {
+  return path.includes("/home/") || path.startsWith("/Users/");
+}
+
+// Get the home path from suggestions (first one that matches home pattern)
+const homePath = computed(() => {
+  return props.suggestions?.find(isHomeSuggestion) ?? null;
+});
+
+// Check if home is already added to the fields
+const isHomeAdded = computed(() => {
+  if (!homePath.value) return false;
+  return fields.value.some((field) => field.value === homePath.value);
+});
+
+async function toggleHome() {
+  if (!homePath.value) return;
+
+  if (isHomeAdded.value) {
+    // Remove home from fields
+    const index = fields.value.findIndex((field) => field.value === homePath.value);
+    if (index >= 0) {
+      remove(index);
+    }
+  } else {
+    // Add home to fields
+    push(homePath.value);
+  }
+  await validate();
+  emitResults();
 }
 
 function getError(index: number): string {
@@ -227,9 +224,6 @@ function getError(index: number): string {
 function emitResults() {
   if (isValid.value) {
     const paths = fields.value.map((field) => field.value)
-      // filter out the suggestions
-      .filter((path) => !suggestions.value.includes(path))
-      // sanitize the paths if it's a backup selection
       .map((path) => props.isBackupSelection ? sanitizePath(path) : path);
 
     emit(emitUpdatePathsStr, paths);
@@ -237,8 +231,7 @@ function emitResults() {
   emit(emitIsValidStr, isValid.value);
 }
 
-async function onPathInput(index: number) {
-  await setAccepted(index);
+async function onPathInput() {
   await setTouched();
 }
 
@@ -259,13 +252,6 @@ function onExcludeCachesChange() {
 watch(() => props.paths, (newPaths, oldPaths) => {
   if (!deepEqual(newPaths, oldPaths)) {
     getPathsFromProps();
-  }
-});
-
-// Watch suggestions prop
-watch(() => props.suggestions, (newSuggestions, oldSuggestions) => {
-  if (!deepEqual(newSuggestions, oldSuggestions)) {
-    getSuggestionsFromProps();
   }
 });
 
@@ -294,7 +280,6 @@ watch(() => props.excludeCaches, (newValue) => {
 
 onMounted(() => {
   getPathsFromProps();
-  getSuggestionsFromProps();
 });
 
 </script>
@@ -308,6 +293,17 @@ onMounted(() => {
       </button>
     </div>
 
+    <!-- Quick-add Home button - only for new backup profiles -->
+    <div v-if='props.showQuickAddHome && props.isBackupSelection && homePath' class='mb-4'>
+      <button
+        class='btn btn-sm min-w-32'
+        :class='isHomeAdded ? "btn-success" : "btn-outline"'
+        @click='toggleHome'>
+        <HomeIcon class='size-4' />
+        {{ isHomeAdded ? 'Home Added' : 'Add Home' }}
+      </button>
+    </div>
+
     <div class='flex flex-col gap-2'>
       <!-- Paths -->
       <div class='flex gap-2' v-for='(field, index) in fields' :key='field.key'>
@@ -315,20 +311,16 @@ onMounted(() => {
           <FormField :size='Size.Small' :error='getError(index)'>
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
-                   @input='() => onPathInput(index)'
-                   :class='isSuggestion(field) ? `${formInputClass} text-half-hidden` : `${formInputClass}`' />
+                   @input='() => onPathInput()'
+                   :class='formInputClass' />
           </FormField>
         </div>
         <div class='text-right w-20'>
-          <label class='btn btn-sm btn-circle swap swap-rotate'
-                 :class='{"swap-active btn-outline btn-error": !isSuggestion(field), "btn-success": isSuggestion(field)}'
-                 @click='() => {
-                   isSuggestion(field) ? setAccepted(index) : removeField(field, index)
-                   setTouched();
-                 }'>
-            <PlusIcon class='swap-off size-4' />
-            <XMarkIcon class='swap-on size-4' />
-          </label>
+          <button
+            class='btn btn-sm btn-circle btn-outline btn-error'
+            @click='() => { removeField(field, index); setTouched(); }'>
+            <XMarkIcon class='size-4' />
+          </button>
         </div>
       </div>
 
@@ -346,6 +338,7 @@ onMounted(() => {
           </button>
         </div>
       </div>
+
     </div>
 
     <!-- Exclude Caches Toggle - only shown in exclude mode -->
