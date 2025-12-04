@@ -112,6 +112,11 @@ Follow DaisyUI conventions from https://daisyui.com/llms.txt:
 - Leverage variant classes: `btn-primary`, `btn-outline`, `alert-error`
 - Use utility classes for spacing and layout
 
+### Toggle Color Conventions
+Use semantic colors for toggle switches based on their purpose:
+- **`toggle-secondary` (orange)**: Feature toggles that enable/disable functionality (e.g., enable schedule, encryption)
+- **`toggle-error` (red)**: Destructive/danger options that could result in data loss (e.g., "delete archives" option)
+
 ### Z-Index Hierarchy
 The project uses a standardized z-index scale to ensure proper UI element layering. Always use these predefined values:
 

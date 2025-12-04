@@ -4,6 +4,7 @@ import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/
 
 /**
  * Returns the style for a badge based on the difference between the current date and the given date.
+ * Uses theme-aware colors that change between light/dark mode via CSS custom properties.
  * @param date The date to compare with the current date.
  */
 export function toCreationTimeBadge(date: Date | undefined): string {
@@ -17,26 +18,25 @@ export function toCreationTimeBadge(date: Date | undefined): string {
 
   const dHours = diffHours(now, date);
   if (dHours < 1) {
-    return "badge badge-warning dark:border-warning dark:bg-transparent dark:text-warning dark:badge-warning truncate cursor-pointer";
+    return "badge text-badge-fresh-text bg-badge-fresh-bg border border-badge-fresh-border truncate cursor-pointer";
   }
   const dDays = diffDays(now, date);
   if (dDays < 1) {
-    return "badge badge-success dark:border-success dark:bg-transparent dark:text-success truncate cursor-pointer";
+    return "badge text-badge-recent-text bg-badge-recent-bg border border-badge-recent-border truncate cursor-pointer";
   }
   if (dDays < 2) {
-    return "badge text-white bg-blue-600 dark:border-blue-500 dark:bg-transparent dark:text-blue-500 truncate cursor-pointer";
+    return "badge text-badge-days-text bg-badge-days-bg border border-badge-days-border truncate cursor-pointer";
   }
   if (dDays < 7) {
-    return "badge text-white bg-blue-900 dark:border-blue-400 dark:bg-transparent dark:text-blue-400 truncate cursor-pointer";
+    return "badge text-badge-week-text bg-badge-week-bg border border-badge-week-border truncate cursor-pointer";
   }
   if (dDays < 30) {
-    return "badge text-white bg-gray-700 dark:border-blue-200 dark:bg-transparent dark:text-blue-200 truncate cursor-pointer";
+    return "badge text-badge-month-text bg-badge-month-bg border border-badge-month-border truncate cursor-pointer";
   }
   if (dDays < 365) {
-    return "badge text-white bg-gray-500 dark:border-gray-400 dark:bg-transparent dark:text-gray-400 truncate cursor-pointer";
+    return "badge text-badge-year-text bg-badge-year-bg border border-badge-year-border truncate cursor-pointer";
   }
-
-  return "badge text-white bg-gray-300 dark:border-gray-500 dark:bg-transparent dark:text-gray-500 truncate cursor-pointer";
+  return "badge text-badge-old-text bg-badge-old-bg border border-badge-old-border truncate cursor-pointer";
 }
 
 /**
