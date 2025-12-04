@@ -1065,7 +1065,7 @@ onUnmounted(() => {
           <th v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell] w-32'>Backup profile</th>
           <th class='min-w-24 sm:min-w-32 lg:min-w-40'>Creation time</th>
           <th class='text-right [display:none] lg:[display:table-cell] w-20'>Duration</th>
-          <th class='min-w-16 sm:min-w-32 text-right'>{{ $t("action") }}</th>
+          <th class='min-w-16 sm:min-w-32 text-right'>Actions</th>
         </tr>
         </thead>
         <tbody>

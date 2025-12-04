@@ -4,8 +4,6 @@ import { onBeforeRouteLeave, useRouter } from "vue-router";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import { showAndLogError } from "../common/logger";
-import { formInputClass, Size } from "../common/form";
-import FormField from "./common/FormField.vue";
 import { useToast } from "vue-toastification";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
@@ -285,24 +283,19 @@ defineExpose({
           {{ pruningRule.keepWithinDays >= 1 ? `${pruningRule.keepWithinDays}` : "X" }}
           {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
       </TooltipTextIcon>
-      <div>
-        <FormField :size='Size.Medium'>
-          <input :class='formInputClass'
-                 class='w-12'
-                 min='0'
-                 max='999'
-                 type='number'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepWithinDays' />
-        </FormField>
-      </div>
+      <input type='number'
+             class='input input-sm w-16'
+             min='0'
+             max='999'
+             :disabled='!pruningRule.isEnabled'
+             v-model='pruningRule.keepWithinDays' />
     </div>
     <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon text='Number of archives to keep'>
         <p>Keep</p>
       </TooltipTextIcon>
-      <select class='select select-bordered w-32'
+      <select class='select select-sm w-32'
               :disabled='!pruningRule.isEnabled'
               v-model='selectedPruningOption'
               @change='toPruningRule'
@@ -318,66 +311,56 @@ defineExpose({
     <div class='flex items-start justify-between mb-5'>
       <p class='pt-1'>Custom</p>
       <div class='flex items-center gap-4'>
-        <div class='flex flex-col'>
-          <FormField :size='Size.Medium' label='Hourly'>
-            <input :class='formInputClass'
-                   class='w-10'
-                   min='0'
-                   max='99'
-                   type='number'
-                   :disabled='!pruningRule.isEnabled'
-                   v-model='pruningRule.keepHourly'
-                   @change='ruleToPruningOption(pruningRule)' />
-          </FormField>
-        </div>
-        <div class='flex flex-col'>
-          <FormField :size='Size.Medium' label='Daily'>
-            <input :class='formInputClass'
-                   class='w-10'
-                   min='0'
-                   max='99'
-                   type='number'
-                   :disabled='!pruningRule.isEnabled'
-                   v-model='pruningRule.keepDaily'
-                   @change='ruleToPruningOption(pruningRule)' />
-          </FormField>
-        </div>
-        <div class='flex flex-col'>
-          <FormField :size='Size.Medium' label='Weekly'>
-            <input :class='formInputClass'
-                   class='w-10'
-                   min='0'
-                   max='99'
-                   type='number'
-                   :disabled='!pruningRule.isEnabled'
-                   v-model='pruningRule.keepWeekly'
-                   @change='ruleToPruningOption(pruningRule)' />
-          </FormField>
-        </div>
-        <div class='flex flex-col'>
-          <FormField :size='Size.Medium' label='Monthly'>
-            <input :class='formInputClass'
-                   class='w-10'
-                   min='0'
-                   max='99'
-                   type='number'
-                   :disabled='!pruningRule.isEnabled'
-                   v-model='pruningRule.keepMonthly'
-                   @change='ruleToPruningOption(pruningRule)' />
-          </FormField>
-        </div>
-        <div class='flex flex-col'>
-          <FormField :size='Size.Medium' label='Yearly'>
-            <input :class='formInputClass'
-                   class='w-10'
-                   min='0'
-                   max='99'
-                   type='number'
-                   :disabled='!pruningRule.isEnabled'
-                   v-model='pruningRule.keepYearly'
-                   @change='ruleToPruningOption(pruningRule)' />
-          </FormField>
-        </div>
+        <fieldset class='fieldset'>
+          <legend class='fieldset-legend text-right'>Hourly</legend>
+          <input type='number'
+                 class='input input-sm w-14'
+                 min='0'
+                 max='99'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepHourly'
+                 @change='ruleToPruningOption(pruningRule)' />
+        </fieldset>
+        <fieldset class='fieldset'>
+          <legend class='fieldset-legend text-right'>Daily</legend>
+          <input type='number'
+                 class='input input-sm w-14'
+                 min='0'
+                 max='99'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepDaily'
+                 @change='ruleToPruningOption(pruningRule)' />
+        </fieldset>
+        <fieldset class='fieldset'>
+          <legend class='fieldset-legend text-right'>Weekly</legend>
+          <input type='number'
+                 class='input input-sm w-14'
+                 min='0'
+                 max='99'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepWeekly'
+                 @change='ruleToPruningOption(pruningRule)' />
+        </fieldset>
+        <fieldset class='fieldset'>
+          <legend class='fieldset-legend text-right'>Monthly</legend>
+          <input type='number'
+                 class='input input-sm w-14'
+                 min='0'
+                 max='99'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepMonthly'
+                 @change='ruleToPruningOption(pruningRule)' />
+        </fieldset>
+        <fieldset class='fieldset'>
+          <legend class='fieldset-legend text-right'>Yearly</legend>
+          <input type='number'
+                 class='input input-sm w-14'
+                 min='0'
+                 max='99'
+                 :disabled='!pruningRule.isEnabled'
+                 v-model='pruningRule.keepYearly'
+                 @change='ruleToPruningOption(pruningRule)' />
+        </fieldset>
       </div>
     </div>
 
