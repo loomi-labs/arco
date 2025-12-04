@@ -26,7 +26,6 @@ import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import CompressionCard from "../components/CompressionCard.vue";
 import { format } from "@formkit/tempo";
-import { useExpertMode } from "../common/expertMode";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 
 /************
@@ -42,10 +41,6 @@ const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
 const scheduleSectionCollapsed = ref(false);
-const advancedSectionCollapsed = ref(true);
-
-// Expert mode
-const { expertMode } = useExpertMode();
 
 const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -74,8 +69,26 @@ type Breakpoint = "base" | "md" | "xl" | "2xl";
 const currentBreakpoint = ref<Breakpoint>("base");
 
 const dataSectionDetails = computed(() => {
-  return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup,
-  ${backupProfile.value.excludePaths?.length ?? 0} path${backupProfile.value.excludePaths?.length === 1 ? "" : "s"} excluded`;
+  const pathsInfo = `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup, ${backupProfile.value.excludePaths?.length ?? 0} excluded`;
+
+  // Compression info (same logic as old advancedSectionDetails)
+  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
+  const level = backupProfile.value.compressionLevel;
+
+  let compressionInfo = "Compression: Fast";
+  if (mode === CompressionMode.CompressionModeNone) {
+    compressionInfo = "Compression: Off";
+  } else if (mode === CompressionMode.CompressionModeLz4) {
+    compressionInfo = "Compression: Fast";
+  } else if (mode === CompressionMode.CompressionModeZstd && level === 3) {
+    compressionInfo = "Compression: Balanced";
+  } else if (mode === CompressionMode.CompressionModeLzma && level === 6) {
+    compressionInfo = "Compression: Maximum";
+  } else {
+    compressionInfo = "Compression: Custom";
+  }
+
+  return `${pathsInfo}, ${compressionInfo}`;
 });
 
 const scheduleSectionDetails = computed(() => {
@@ -118,35 +131,6 @@ const scheduleSectionDetails = computed(() => {
   return details;
 });
 
-const advancedSectionDetails = computed(() => {
-  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
-  const level = backupProfile.value.compressionLevel;
-
-  if (!expertMode.value) {
-    // Simple mode presets
-    if (mode === CompressionMode.CompressionModeNone) return "Compression: Off";
-    if (mode === CompressionMode.CompressionModeLz4) return "Compression: Fast";
-    if (mode === CompressionMode.CompressionModeZstd && level === 3) return "Compression: Balanced";
-    if (mode === CompressionMode.CompressionModeLzma && level === 6) return "Compression: Maximum";
-    return "Compression: Custom"; // Custom settings
-  }
-
-  // Expert mode summary
-  if (mode === CompressionMode.CompressionModeNone) {
-    return "No compression";
-  }
-
-  if (mode === CompressionMode.CompressionModeLz4) {
-    return "Compression: lz4 (fast)";
-  }
-
-  if (level !== null && level !== undefined) {
-    return `Compression: ${mode}, level ${level}`;
-  }
-
-  return `Compression: ${mode}`;
-});
-
 // Computed property for safe repository access
 const profileRepos = computed(() =>
   backupProfile.value.edges?.repositories?.filter(r => r !== null) ?? []
@@ -156,12 +140,10 @@ const profileRepos = computed(() =>
 const shouldShowPlusInTitle = computed(() => {
   const repoCount = profileRepos.value.length;
 
-  // Determine columns based on current breakpoint
+  // Determine columns based on current breakpoint (max 3 columns)
   let columns = 1;
   switch (currentBreakpoint.value) {
     case "2xl":
-      columns = 4;
-      break;
     case "xl":
       columns = 3;
       break;
@@ -205,7 +187,6 @@ async function getData() {
 
     dataSectionCollapsed.value = !!backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = !!backupProfile.value.scheduleSectionCollapsed;
-    advancedSectionCollapsed.value = !!backupProfile.value.advancedSectionCollapsed;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -323,18 +304,15 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
   }
 }
 
-async function toggleCollapse(type: "data" | "schedule" | "advanced") {
+async function toggleCollapse(type: "data" | "schedule") {
   if (type === "data") {
     dataSectionCollapsed.value = !dataSectionCollapsed.value;
   } else if (type === "schedule") {
     scheduleSectionCollapsed.value = !scheduleSectionCollapsed.value;
-  } else if (type === "advanced") {
-    advancedSectionCollapsed.value = !advancedSectionCollapsed.value;
   }
   try {
     backupProfile.value.dataSectionCollapsed = !!dataSectionCollapsed.value;
     backupProfile.value.scheduleSectionCollapsed = !!scheduleSectionCollapsed.value;
-    backupProfile.value.advancedSectionCollapsed = !!advancedSectionCollapsed.value;
     await backupProfileService.UpdateBackupProfile(backupProfile.value);
   } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
@@ -496,6 +474,16 @@ watch(
             @update:exclude-caches='saveExcludeCaches'
           />
         </div>
+        <!-- Compression Card on separate row -->
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
+          <CompressionCard
+            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+            :compression-level='backupProfile.compressionLevel'
+            @update:compression='({ mode, level }) => {
+              backupProfile.compressionMode = mode;
+              backupProfile.compressionLevel = level; saveBackupProfile();
+            }' />
+        </div>
       </div>
     </div>
 
@@ -526,32 +514,6 @@ watch(
       </div>
     </div>
 
-    <!-- Advanced Section -->
-    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
-         :class='advancedSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div
-        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-        @click='toggleCollapse("advanced")'>
-        <span class='text-lg font-bold text-base-strong'>Advanced</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
-              :class='{ "opacity-100": advancedSectionCollapsed, "opacity-0": !advancedSectionCollapsed }'>{{
-            advancedSectionDetails
-          }}</span>
-      </div>
-
-      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
-        <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-          <CompressionCard
-            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-            :compression-level='backupProfile.compressionLevel'
-            @update:compression='({ mode, level }) => {
-              backupProfile.compressionMode = mode;
-              backupProfile.compressionLevel = level; saveBackupProfile();
-            }' />
-        </div>
-      </div>
-    </div>
-
     <!-- Repositories Section -->
     <div class='p-4'>
       <div class='flex items-center justify-between mb-4'>
@@ -565,9 +527,9 @@ watch(
           <span>Add Repository</span>
         </button>
       </div>
-      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 mb-4'>
+      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-4'>
         <!-- Repositories -->
-        <div v-for='repo in profileRepos' :key='repo.id' class='min-w-80'>
+        <div v-for='repo in profileRepos' :key='repo.id'>
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
@@ -587,7 +549,7 @@ watch(
           tabindex='0'
           @click='addRepoModal?.showModal()'
           @keydown='(e) => handleKeyboardActivation(e, () => addRepoModal?.showModal())'
-          class='flex justify-center items-center gap-2 w-full min-w-80 ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+          class='flex justify-center items-center gap-2 w-full ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
           aria-label='Add Repository'
         >
           <PlusCircleIcon class='size-8' aria-hidden='true' />
