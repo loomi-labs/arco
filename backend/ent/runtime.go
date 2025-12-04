@@ -105,8 +105,12 @@ func init() {
 	backupprofileDescExcludePaths := backupprofileFields[4].Descriptor()
 	// backupprofile.DefaultExcludePaths holds the default value on creation for the exclude_paths field.
 	backupprofile.DefaultExcludePaths = backupprofileDescExcludePaths.Default.([]string)
+	// backupprofileDescExcludeCaches is the schema descriptor for exclude_caches field.
+	backupprofileDescExcludeCaches := backupprofileFields[5].Descriptor()
+	// backupprofile.DefaultExcludeCaches holds the default value on creation for the exclude_caches field.
+	backupprofile.DefaultExcludeCaches = backupprofileDescExcludeCaches.Default.(bool)
 	// backupprofileDescCompressionLevel is the schema descriptor for compression_level field.
-	backupprofileDescCompressionLevel := backupprofileFields[7].Descriptor()
+	backupprofileDescCompressionLevel := backupprofileFields[8].Descriptor()
 	// backupprofile.CompressionLevelValidator is a validator for the "compression_level" field. It is called by the builders before save.
 	backupprofile.CompressionLevelValidator = func() func(int) error {
 		validators := backupprofileDescCompressionLevel.Validators
@@ -124,15 +128,15 @@ func init() {
 		}
 	}()
 	// backupprofileDescDataSectionCollapsed is the schema descriptor for data_section_collapsed field.
-	backupprofileDescDataSectionCollapsed := backupprofileFields[8].Descriptor()
+	backupprofileDescDataSectionCollapsed := backupprofileFields[9].Descriptor()
 	// backupprofile.DefaultDataSectionCollapsed holds the default value on creation for the data_section_collapsed field.
 	backupprofile.DefaultDataSectionCollapsed = backupprofileDescDataSectionCollapsed.Default.(bool)
 	// backupprofileDescScheduleSectionCollapsed is the schema descriptor for schedule_section_collapsed field.
-	backupprofileDescScheduleSectionCollapsed := backupprofileFields[9].Descriptor()
+	backupprofileDescScheduleSectionCollapsed := backupprofileFields[10].Descriptor()
 	// backupprofile.DefaultScheduleSectionCollapsed holds the default value on creation for the schedule_section_collapsed field.
 	backupprofile.DefaultScheduleSectionCollapsed = backupprofileDescScheduleSectionCollapsed.Default.(bool)
 	// backupprofileDescAdvancedSectionCollapsed is the schema descriptor for advanced_section_collapsed field.
-	backupprofileDescAdvancedSectionCollapsed := backupprofileFields[10].Descriptor()
+	backupprofileDescAdvancedSectionCollapsed := backupprofileFields[11].Descriptor()
 	// backupprofile.DefaultAdvancedSectionCollapsed holds the default value on creation for the advanced_section_collapsed field.
 	backupprofile.DefaultAdvancedSectionCollapsed = backupprofileDescAdvancedSectionCollapsed.Default.(bool)
 	backupscheduleMixin := schema.BackupSchedule{}.Mixin()

@@ -24,12 +24,13 @@ interface Props {
   showTitle: boolean;
   runMinOnePathValidation?: boolean;
   showMinOnePathErrorOnlyAfterTouch?: boolean;
+  excludeCaches?: boolean;
 }
 
 interface Emits {
   (event: typeof emitUpdatePathsStr, paths: string[]): void;
-
   (event: typeof emitIsValidStr, isValid: boolean): void;
+  (event: typeof emitUpdateExcludeCachesStr, excludeCaches: boolean): void;
 }
 
 /************
@@ -40,14 +41,17 @@ const props = withDefaults(defineProps<Props>(),
   {
     suggestions: () => [],
     runMinOnePathValidation: false,
-    showMinOnePathErrorOnlyAfterTouch: false
+    showMinOnePathErrorOnlyAfterTouch: false,
+    excludeCaches: false
   }
 );
 const emit = defineEmits<Emits>();
 const emitUpdatePathsStr = "update:paths";
 const emitIsValidStr = "update:is-valid";
+const emitUpdateExcludeCachesStr = "update:exclude-caches";
 
 const suggestions = ref<string[]>([]);
+const localExcludeCaches = ref(props.excludeCaches);
 const touched = ref(false);
 
 const { meta, errors, values, validate } = useForm({
@@ -236,6 +240,10 @@ async function onPathChange() {
   emitResults();
 }
 
+function onExcludeCachesChange() {
+  emit(emitUpdateExcludeCachesStr, localExcludeCaches.value);
+}
+
 /************
  * Lifecycle
  ************/
@@ -270,6 +278,11 @@ watch(newPath, async (newPath) => {
   if (!newPath && newPathForm.meta.value.dirty) {
     newPathForm.resetForm();
   }
+});
+
+// Watch excludeCaches prop
+watch(() => props.excludeCaches, (newValue) => {
+  localExcludeCaches.value = newValue;
 });
 
 onMounted(() => {
@@ -322,6 +335,18 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Exclude Caches Toggle - only shown in exclude mode -->
+    <div v-if='!props.isBackupSelection' class='form-control mt-4'>
+      <label class='label cursor-pointer justify-start gap-3'>
+        <input type='checkbox'
+               class='toggle toggle-secondary'
+               v-model='localExcludeCaches'
+               @change='onExcludeCachesChange' />
+        <span class='label-text'>{{ $t("exclude_cache_directories") }}</span>
+      </label>
+    </div>
+
     <span v-if='showMinOnePathError' class='label text-sm text-error'>{{ errors.paths }}</span>
   </div>
 </template>

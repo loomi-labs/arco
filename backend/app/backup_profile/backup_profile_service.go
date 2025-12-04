@@ -200,6 +200,7 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 		Prefix:                   "",
 		BackupPaths:              make([]string, 0),
 		ExcludePaths:             make([]string, 0),
+		ExcludeCaches:            false,
 		Icon:                     selectedIcon,
 		CompressionMode:          backupprofile.CompressionModeLz4, // Default compression
 		CompressionLevel:         nil,                              // lz4 doesn't use levels
@@ -301,6 +302,7 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetPrefix(backup.Prefix).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
+		SetExcludeCaches(backup.ExcludeCaches).
 		SetIcon(backup.Icon).
 		SetCompressionMode(backup.CompressionMode).
 		SetNillableCompressionLevel(backup.CompressionLevel).
@@ -329,6 +331,7 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		SetIcon(backup.Icon).
 		SetBackupPaths(backup.BackupPaths).
 		SetExcludePaths(backup.ExcludePaths).
+		SetExcludeCaches(backup.ExcludeCaches).
 		SetDataSectionCollapsed(backup.DataSectionCollapsed).
 		SetScheduleSectionCollapsed(backup.ScheduleSectionCollapsed).
 		SetCompressionMode(backup.CompressionMode).

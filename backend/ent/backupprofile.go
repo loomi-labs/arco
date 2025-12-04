@@ -32,6 +32,8 @@ type BackupProfile struct {
 	BackupPaths []string `json:"backupPaths"`
 	// ExcludePaths holds the value of the "exclude_paths" field.
 	ExcludePaths []string `json:"excludePaths"`
+	// Exclude directories containing CACHEDIR.TAG file
+	ExcludeCaches bool `json:"excludeCaches"`
 	// Icon holds the value of the "icon" field.
 	Icon backupprofile.Icon `json:"icon"`
 	// Compression algorithm for backups
@@ -123,7 +125,7 @@ func (*BackupProfile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backupprofile.FieldBackupPaths, backupprofile.FieldExcludePaths:
 			values[i] = new([]byte)
-		case backupprofile.FieldDataSectionCollapsed, backupprofile.FieldScheduleSectionCollapsed, backupprofile.FieldAdvancedSectionCollapsed:
+		case backupprofile.FieldExcludeCaches, backupprofile.FieldDataSectionCollapsed, backupprofile.FieldScheduleSectionCollapsed, backupprofile.FieldAdvancedSectionCollapsed:
 			values[i] = new(sql.NullBool)
 		case backupprofile.FieldID, backupprofile.FieldCompressionLevel:
 			values[i] = new(sql.NullInt64)
@@ -191,6 +193,12 @@ func (_m *BackupProfile) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.ExcludePaths); err != nil {
 					return fmt.Errorf("unmarshal field exclude_paths: %w", err)
 				}
+			}
+		case backupprofile.FieldExcludeCaches:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field exclude_caches", values[i])
+			} else if value.Valid {
+				_m.ExcludeCaches = value.Bool
 			}
 		case backupprofile.FieldIcon:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -307,6 +315,9 @@ func (_m *BackupProfile) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("exclude_paths=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ExcludePaths))
+	builder.WriteString(", ")
+	builder.WriteString("exclude_caches=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExcludeCaches))
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Icon))

@@ -46,6 +46,10 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"excludePaths"`).
 			Optional().
 			Default([]string{}),
+		field.Bool("exclude_caches").
+			StructTag(`json:"excludeCaches"`).
+			Default(false).
+			Comment("Exclude directories containing CACHEDIR.TAG file"),
 		field.Enum("icon").
 			StructTag(`json:"icon"`).
 			Values("home", "briefcase", "book", "envelope", "camera", "fire"),

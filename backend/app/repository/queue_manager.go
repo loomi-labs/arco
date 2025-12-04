@@ -1278,6 +1278,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 
 	backupPaths := profile.BackupPaths
 	excludePaths := profile.ExcludePaths
+	excludeCaches := profile.ExcludeCaches
 	prefix := profile.Prefix
 	compressionMode := profile.CompressionMode
 	compressionLevel := profile.CompressionLevel
@@ -1289,7 +1290,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	go e.monitorBackupProgress(ctx, progressCh)
 
 	// Execute borg create command
-	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, progressCh)
+	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, progressCh)
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}

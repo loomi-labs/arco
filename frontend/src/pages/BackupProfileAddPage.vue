@@ -311,9 +311,11 @@ onBeforeRouteLeave(async (to, _from) => {
 
       <DataSelection
         :paths='backupProfile.excludePaths ?? []'
+        :exclude-caches='backupProfile.excludeCaches ?? false'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'
+        @update:exclude-caches='(val) => backupProfile.excludeCaches = val'
         @update:is-valid='(isValid) => isExcludePathsValid = isValid' />
 
       <!-- Name and Logo Selection Card-->

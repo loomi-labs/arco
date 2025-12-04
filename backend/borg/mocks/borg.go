@@ -100,18 +100,18 @@ func (mr *MockBorgMockRecorder) Compact(ctx, repository, password any) *gomock.C
 }
 
 // Create mocks base method.
-func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
+func (m *MockBorg) Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, excludeCaches bool, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch)
+	ret := m.ctrl.Call(m, "Create", ctx, repository, password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, ch)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Create(ctx, repository, password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repository, password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, ch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockBorg)(nil).Create), ctx, repository, password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, ch)
 }
 
 // DeleteArchive mocks base method.

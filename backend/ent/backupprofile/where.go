@@ -75,6 +75,11 @@ func Prefix(v string) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldPrefix, v))
 }
 
+// ExcludeCaches applies equality check predicate on the "exclude_caches" field. It's identical to ExcludeCachesEQ.
+func ExcludeCaches(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldExcludeCaches, v))
+}
+
 // CompressionLevel applies equality check predicate on the "compression_level" field. It's identical to CompressionLevelEQ.
 func CompressionLevel(v int) predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldEQ(FieldCompressionLevel, v))
@@ -313,6 +318,16 @@ func ExcludePathsIsNil() predicate.BackupProfile {
 // ExcludePathsNotNil applies the NotNil predicate on the "exclude_paths" field.
 func ExcludePathsNotNil() predicate.BackupProfile {
 	return predicate.BackupProfile(sql.FieldNotNull(FieldExcludePaths))
+}
+
+// ExcludeCachesEQ applies the EQ predicate on the "exclude_caches" field.
+func ExcludeCachesEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldEQ(FieldExcludeCaches, v))
+}
+
+// ExcludeCachesNEQ applies the NEQ predicate on the "exclude_caches" field.
+func ExcludeCachesNEQ(v bool) predicate.BackupProfile {
+	return predicate.BackupProfile(sql.FieldNEQ(FieldExcludeCaches, v))
 }
 
 // IconEQ applies the EQ predicate on the "icon" field.
