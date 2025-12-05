@@ -199,9 +199,10 @@ async function validate(force = false) {
 
       isBorgRepo.value = result.isBorgRepo;
       needsPassword.value = result.needsPassword;
-      isEncrypted.value = result.needsPassword;
 
       if (result.isBorgRepo) {
+        // For existing borg repos, reflect actual encryption state
+        isEncrypted.value = result.needsPassword;
         if (!result.needsPassword) {
           // Unencrypted borg repo
           passwordError.value = undefined;
