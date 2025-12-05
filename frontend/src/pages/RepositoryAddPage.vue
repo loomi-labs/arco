@@ -26,7 +26,7 @@ const router = useRouter();
 <template>
   <div class='container mx-auto text-left flex flex-col max-w-[800px]'>
 
-    <h1 class='text-4xl font-bold text-center p-10'>New repository</h1>
+    <h1 class='text-4xl font-bold text-center p-10'>New Repository</h1>
 
     <ConnectRepo
       :show-add-repo='true'
