@@ -117,6 +117,23 @@ Use semantic colors for toggle switches based on their purpose:
 - **`toggle-secondary` (orange)**: Feature toggles that enable/disable functionality (e.g., enable schedule, encryption)
 - **`toggle-error` (red)**: Destructive/danger options that could result in data loss (e.g., "delete archives" option)
 
+### Inline Validation Messages
+Use icon + text with consistent styling for validation feedback:
+
+```vue
+<!-- Success -->
+<div class='flex items-center gap-1 mt-1 text-success text-sm'>
+  <CheckCircleIcon class='h-4 w-4' />
+  <span>Valid Borg repository</span>
+</div>
+
+<!-- Error -->
+<div class='flex items-center gap-1 mt-1 text-error text-sm'>
+  <XCircleIcon class='h-4 w-4' />
+  <span>Path does not exist</span>
+</div>
+```
+
 ### Z-Index Hierarchy
 The project uses a standardized z-index scale to ensure proper UI element layering. Always use these predefined values:
 
