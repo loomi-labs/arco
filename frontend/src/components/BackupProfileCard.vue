@@ -6,7 +6,7 @@ import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref } from "vue";
 import { Page, withId } from "../router";
 import { useRouter } from "vue-router";
-import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
+import { toCreationTimeBadge, toCreationTimeTooltip, toRepoTypeBadge } from "../common/badge";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import BackupButton from "./BackupButton.vue";
 import { repoStateChangedEvent } from "../common/events";
@@ -166,7 +166,7 @@ onUnmounted(() => {
             <span v-else-if='warningBackupRun' class='tooltip tooltip-warning' :data-tip='warningBackupRun'>
               <span class='badge badge-warning dark:border-warning dark:text-warning dark:bg-transparent truncate cursor-pointer'>{{ $t("warning") }}</span>
             </span>
-            <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
+            <span v-else-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
             </span>
             <span v-else>-</span>

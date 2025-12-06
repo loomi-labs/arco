@@ -6,7 +6,7 @@ import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
 import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
@@ -174,7 +174,7 @@ onUnmounted(() => {
               $t("failed")
             }}</span>
         </span>
-        <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
+        <span v-else-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)' :data-tip='toLongDateString(lastArchive.createdAt)'>
           <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
               toRelativeTimeString(lastArchive.createdAt)
             }}</span>
