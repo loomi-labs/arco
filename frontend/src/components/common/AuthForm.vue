@@ -209,7 +209,7 @@ watch(isAuthenticated, (authenticated) => {
     <!-- Switch mode link -->
     <p class="pb-4 text-sm text-base-content/70">
       {{ switchText }}
-      <a class="link link-info cursor-pointer" @click="toggleMode">{{ switchLinkText }}</a>
+      <a class="link link-secondary cursor-pointer" @click="toggleMode">{{ switchLinkText }}</a>
     </p>
 
     <div class="flex flex-col gap-4">

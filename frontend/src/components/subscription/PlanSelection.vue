@@ -1,14 +1,14 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
-import { CheckCircleIcon, CheckIcon, StarIcon } from "@heroicons/vue/24/outline";
+import { Browser } from "@wailsio/runtime";
+import { CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, FolderIcon, StarIcon } from "@heroicons/vue/24/outline";
 import type { Plan } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import { getFeaturesByPlan } from "../../common/features";
 
 /************
  * Types
  ************/
 
-type SubscriptionPlan = Plan & { recommended?: boolean };
+type SubscriptionPlan = Plan;
 
 interface Props {
   plans: SubscriptionPlan[];
@@ -66,6 +66,16 @@ function getPlanPrice(plan: SubscriptionPlan) {
   return (plan.price_cents / 100).toFixed(2);
 }
 
+function getMonthlyPrice(plan: SubscriptionPlan) {
+  if (plan.price_cents == null) return null;
+  return (plan.price_cents / 100 / 12).toFixed(2);
+}
+
+function getOveragePrice(plan: SubscriptionPlan) {
+  if (plan.overage_cents_per_gb == null || plan.overage_cents_per_gb === 0) return null;
+  return (plan.overage_cents_per_gb / 100).toFixed(2);
+}
+
 function subscribeToPlan() {
   if (!internalSelectedPlan.value) return;
   emit("subscribe-clicked", internalSelectedPlan.value);
@@ -85,7 +95,7 @@ function subscribeToPlan() {
            :class='[
              "border-2 rounded-lg p-4 cursor-pointer relative transition-all flex flex-col min-h-[340px]",
              userSubscriptionPlan === plan.name ? "border-success bg-success/5" :
-             internalSelectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
+             internalSelectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/70",
              hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : "",
              disabled ? "opacity-50 cursor-not-allowed" : ""
            ]'
@@ -97,28 +107,58 @@ function subscribeToPlan() {
           Active
         </div>
 
+        <!-- Popular badge -->
+        <div v-if='plan.popular && userSubscriptionPlan !== plan.name'
+             class='absolute -top-2 right-4 bg-warning text-warning-content px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1'>
+          <StarIcon class='size-3' />
+          Popular
+        </div>
+
         <div class='flex items-start justify-between mb-4'>
           <div class='flex-1'>
             <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
-            <p class='text-3xl font-bold mt-2'>
-              $ {{ getPlanPrice(plan) }}
-              <span class='text-sm font-normal text-base-content/70'>
-                /year
-              </span>
-            </p>
+            <div class='mt-2'>
+              <p class='text-3xl font-bold'>
+                ${{ getMonthlyPrice(plan) }}
+                <span class='text-sm font-normal text-base-content/70'>/mo</span>
+              </p>
+              <p class='text-xs text-base-content/60'>
+                Billed yearly at ${{ getPlanPrice(plan) }}
+              </p>
+            </div>
           </div>
-          <StarIcon v-if='plan.recommended' class='size-6 text-warning flex-shrink-0' />
         </div>
 
-        <p class='text-lg font-medium mb-4'>{{ plan.storage_gb ?? 0 }}GB storage</p>
+        <!-- Plan Features -->
+        <div class='space-y-3 flex-grow'>
+          <!-- Storage -->
+          <div class='flex items-center gap-3'>
+            <CircleStackIcon class='size-5 text-base-content/50' />
+            <div>
+              <p class='font-semibold'>{{ plan.storage_gb ?? 0 }} GB</p>
+              <p class='text-xs text-base-content/60'>Storage included</p>
+            </div>
+          </div>
 
-        <!-- Features list with flex-grow to push icon to bottom -->
-        <ul class='space-y-2 flex-grow'>
-          <li v-for='feature in getFeaturesByPlan(plan)' :key='feature.text' class='flex items-center gap-2'>
-            <CheckIcon class='size-4 text-success flex-shrink-0' />
-            <span :class='["text-sm", feature.highlight ? "font-semibold text-secondary" : ""]'>{{ feature.text }}</span>
-          </li>
-        </ul>
+          <!-- Repositories -->
+          <div class='flex items-center gap-3'>
+            <FolderIcon class='size-5 text-base-content/50' />
+            <div>
+              <p class='font-semibold'>{{ plan.allowed_repositories ?? 0 }}</p>
+              <p class='text-xs text-base-content/60'>Repositories</p>
+            </div>
+          </div>
+
+          <!-- Overage -->
+          <div class='flex items-center gap-3'>
+            <CurrencyDollarIcon class='size-5 text-base-content/50' />
+            <div>
+              <p class='font-semibold' v-if='getOveragePrice(plan)'>${{ getOveragePrice(plan) }}/GB</p>
+              <p class='font-semibold text-base-content/40' v-else>—</p>
+              <p class='text-xs text-base-content/60'>Overage pricing</p>
+            </div>
+          </div>
+        </div>
 
         <!-- Fixed height container for selection icon -->
         <div class='mt-4 flex justify-center h-8 items-center'>
@@ -138,6 +178,14 @@ function subscribeToPlan() {
       >
         Subscribe to {{ selectedPlanData?.name }}
       </button>
+    </div>
+
+    <!-- Learn more link -->
+    <div class='text-center'>
+      <a class='link link-info link-hover'
+         @click="Browser.OpenURL('https://arco-backup.com')">
+        Learn more about Arco Cloud
+      </a>
     </div>
   </div>
 </template>
