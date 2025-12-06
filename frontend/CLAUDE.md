@@ -294,6 +294,68 @@ Use HeadlessUI's `Dialog` component from `@headlessui/vue` for all modal impleme
 - `CompressionInfoModal.vue` - Information modal with read-only content
 - `ArcoCloudModal.vue` - Complex multi-state modal with forms
 
+### Modal Button Styling
+
+All modal action buttons follow a standardized layout and styling pattern:
+
+**Layout Rules:**
+- Use `flex justify-between` to position buttons (cancel on left, actions on right)
+- For 3+ buttons: group action buttons on the right with `<div class='flex gap-3'>`
+- Add `pt-5` or `pt-6` for spacing above button row
+
+**Button Sizing:**
+- **ConfirmModal and its custom slots**: Use `btn-sm` (small buttons)
+- **All other Dialog modals**: Use normal `btn` (no size modifier)
+
+**Button Colors:**
+| Action Type | Class | Example |
+|-------------|-------|---------|
+| Cancel/Close | `btn-outline` | Cancel, Close, Back |
+| Primary action | `btn-primary` | Save, Submit, Login |
+| Create action | `btn-success` | Create, Connect |
+| Secondary positive | `btn-success btn-outline` | Test Connection |
+| Destructive | `btn-error` | Delete |
+| Warning/Discard | `btn-warning` | Discard changes |
+
+**Standard Pattern (Dialog modals):**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <button class='btn btn-primary' :disabled='!isValid' @click='submit'>
+    Submit
+  </button>
+</div>
+```
+
+**Pattern with 3+ buttons:**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <div class='flex gap-3'>
+    <button class='btn btn-success btn-outline' @click='test'>
+      Test Connection
+    </button>
+    <button class='btn btn-success' @click='create'>
+      Create
+    </button>
+  </div>
+</div>
+```
+
+**ConfirmModal custom slot pattern (uses btn-sm):**
+```vue
+<template v-slot:actionButtons>
+  <div class='flex justify-between pt-5'>
+    <button class='btn btn-sm btn-outline' @click='cancel'>Cancel</button>
+    <button class='btn btn-sm btn-error' @click='delete'>Delete</button>
+  </div>
+</template>
+```
+
 ### Error Handling
 - **Two Patterns Available**:
   - **`showAndLogError()`**: Shows toast notification + logs error (for immediate feedback)
