@@ -167,6 +167,14 @@ const modalDescription = computed(() => {
   }
 });
 
+const modalMaxWidth = computed(() => {
+  // Wider for plan selection to fit 3-column grid
+  if (currentState.value === ComponentState.SUBSCRIPTION_SELECTION ||
+      currentState.value === ComponentState.SUBSCRIPTION_SELECTION_AUTH) {
+    return 'sm:max-w-4xl';
+  }
+  return 'sm:max-w-2xl';
+});
 
 const selectedPlanData = computed(() =>
   subscriptionPlans.value.find(plan => plan.name === selectedPlan.value)
@@ -528,7 +536,7 @@ watch(isAuthenticated, async (authenticated) => {
                            leave-from='opacity-100 translate-y-0 sm:scale-100'
                            leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
             <DialogPanel
-              class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl'>
+              :class="['relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full', modalMaxWidth]">
               <div class='p-10'>
 
                 <div class='flex items-start justify-between gap-4 pb-2'>

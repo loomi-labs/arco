@@ -56,7 +56,7 @@ function selectPlan(planName: string) {
   if (props.hasActiveSubscription && props.userSubscriptionPlan !== planName) {
     return; // Can't select different plan if user has active subscription
   }
-  
+
   internalSelectedPlan.value = planName;
   emit("plan-selected", planName);
 }
@@ -77,14 +77,14 @@ function subscribeToPlan() {
   <div class="space-y-6">
 
     <!-- Plan Cards -->
-    <div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
+    <div class='grid grid-cols-1 md:grid-cols-3 gap-4'>
       <div v-for='plan in plans' :key='plan.name ?? ""'
            role="button"
            :tabindex="disabled || (hasActiveSubscription && userSubscriptionPlan !== plan.name) ? -1 : 0"
            @keydown.enter.space="disabled ? null : selectPlan(plan.name ?? '')"
            :class='[
-             "border-2 rounded-lg p-6 cursor-pointer relative transition-all flex flex-col min-h-[400px]",
-             userSubscriptionPlan === plan.name ? "border-success bg-success/5" : 
+             "border-2 rounded-lg p-4 cursor-pointer relative transition-all flex flex-col min-h-[340px]",
+             userSubscriptionPlan === plan.name ? "border-success bg-success/5" :
              internalSelectedPlan === plan.name ? "border-secondary bg-secondary/5" : "border-base-300 hover:border-secondary/50",
              hasActiveSubscription && userSubscriptionPlan !== plan.name ? "opacity-50 cursor-not-allowed" : "",
              disabled ? "opacity-50 cursor-not-allowed" : ""
