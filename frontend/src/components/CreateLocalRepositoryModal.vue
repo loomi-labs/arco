@@ -360,13 +360,16 @@ watch([name, location, password, isEncrypted], async () => {
                         Encrypted
                       </span>
                     </label>
-                    <div class='join w-full '>
-                      <input :type="showPassword ? 'text' : 'password'"
-                             v-model='password'
-                             class='input join-item flex-1'
-                             :class='{ "input-error": passwordError }'
-                             :disabled='!isEncrypted'
-                             placeholder='Enter password' />
+                    <div class='join w-full'>
+                      <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": passwordError, "input-disabled": !isEncrypted }'>
+                        <input :type="showPassword ? 'text' : 'password'"
+                               v-model='password'
+                               class='grow p-0 [font:inherit]'
+                               :disabled='!isEncrypted'
+                               placeholder='Enter password' />
+                        <CheckCircleIcon v-if='!passwordError && isPasswordCorrect' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='passwordError' class='size-5 text-error' />
+                      </label>
                       <button type='button'
                               class='btn btn-square join-item'
                               @click='showPassword = !showPassword'

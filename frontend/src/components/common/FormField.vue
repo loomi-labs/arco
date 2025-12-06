@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { ExclamationCircleIcon } from "@heroicons/vue/24/outline";
+import { CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/vue/24/outline";
 import { computed } from "vue";
 import { Size } from "../../common/form";
 
@@ -20,6 +20,7 @@ interface Props {
   error?: string | undefined;
   errorRenderType?: ErrorRenderType;
   size?: Size;
+  isValid?: boolean;
 }
 
 /************
@@ -29,6 +30,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   errorRenderType: ErrorRenderType.RenderIfError,
   size: Size.Medium,
+  isValid: false,
 });
 
 const hideError = computed(() => {
@@ -72,7 +74,8 @@ const labelText = computed(() => {
   </label>
   <label :class='inputClass'>
     <slot />
-    <ExclamationCircleIcon v-if='error && !hideError' class='size-6 text-error' />
+    <CheckCircleIcon v-if='!error && isValid' class='size-5 text-success' />
+    <ExclamationCircleIcon v-if='error && !hideError' class='size-5 text-error' />
   </label>
   <div v-if='renderError' class='label max-h-9'>
     <span class='text-error text-sm min-h-5' :class='{"invisible": hideError}'>{{ error }}</span>

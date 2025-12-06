@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
+import { CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import { logError } from "../common/logger";
 
@@ -197,16 +197,6 @@ defineExpose({
                     </div>
                   </div>
 
-                  <!-- Error Alert -->
-                  <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
-                    <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none'
-                         viewBox='0 0 24 24'>
-                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                            d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
-                    </svg>
-                    <span>{{ errorMessage }}</span>
-                  </div>
-
                   <!-- Form -->
                   <div class='space-y-4'>
                     <!-- Current Password -->
@@ -215,11 +205,14 @@ defineExpose({
                         <span class='label-text'>Current Password</span>
                       </label>
                       <div class='join w-full'>
-                        <input :type="showCurrentPassword ? 'text' : 'password'"
-                               v-model='currentPassword'
-                               class='input input-bordered join-item flex-1'
-                               :disabled='isLoading'
-                               placeholder='Enter current password' />
+                        <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": errorMessage }'>
+                          <input :type="showCurrentPassword ? 'text' : 'password'"
+                                 v-model='currentPassword'
+                                 class='grow p-0 [font:inherit]'
+                                 :disabled='isLoading'
+                                 placeholder='Enter current password' />
+                          <ExclamationCircleIcon v-if='errorMessage' class='size-5 text-error' />
+                        </label>
                         <button type='button'
                                 class='btn btn-square join-item'
                                 @click='showCurrentPassword = !showCurrentPassword'
@@ -228,6 +221,7 @@ defineExpose({
                           <EyeSlashIcon v-else class='h-5 w-5' />
                         </button>
                       </div>
+                      <div v-if='errorMessage' class='text-error text-sm mt-1'>{{ errorMessage }}</div>
                     </div>
 
                     <!-- New Password -->
@@ -238,7 +232,7 @@ defineExpose({
                       <div class='join w-full'>
                         <input :type="showNewPassword ? 'text' : 'password'"
                                v-model='newPassword'
-                               class='input input-bordered join-item flex-1'
+                               class='input join-item flex-1'
                                :disabled='isLoading'
                                placeholder='Enter new password' />
                         <button type='button'
@@ -256,15 +250,16 @@ defineExpose({
                       <label class='label'>
                         <span class='label-text'>Confirm New Password</span>
                       </label>
-                      <input :type="showNewPassword ? 'text' : 'password'"
-                             v-model='confirmPassword'
-                             class='input input-bordered w-full'
-                             :class='{ "input-error": confirmPasswordError }'
-                             :disabled='isLoading'
-                             placeholder='Confirm new password' />
-                      <label v-if='confirmPasswordError' class='label'>
-                        <span class='label-text-alt text-error'>{{ confirmPasswordError }}</span>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError }'>
+                        <input :type="showNewPassword ? 'text' : 'password'"
+                               v-model='confirmPassword'
+                               class='grow p-0 [font:inherit]'
+                               :disabled='isLoading'
+                               placeholder='Confirm new password' />
+                        <CheckCircleIcon v-if='!confirmPasswordError && confirmPassword && newPassword === confirmPassword' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='confirmPasswordError' class='size-5 text-error' />
                       </label>
+                      <div v-if='confirmPasswordError' class='text-error text-sm mt-1'>{{ confirmPasswordError }}</div>
                     </div>
                   </div>
 

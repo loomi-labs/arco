@@ -308,7 +308,7 @@ onMounted(() => {
       <!-- Paths -->
       <div class='flex gap-2' v-for='(field, index) in fields' :key='field.key'>
         <div class='grow'>
-          <FormField :size='Size.Small' :error='getError(index)'>
+          <FormField :size='Size.Small' :error='getError(index)' :isValid='!getError(index) && !!field.value'>
             <input type='text' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput()'
