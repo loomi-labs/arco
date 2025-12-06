@@ -1089,7 +1089,7 @@ onUnmounted(() => {
     <div v-if='isAllSelected && pagination.total > archives.length && !isAllPagesSelected'
          class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
       All {{ archives.length }} archives on this page are selected.
-      <a class='link link-primary' @click='selectAllPages'>
+      <a class='link link-secondary' @click='selectAllPages'>
         Select all {{ pagination.total }} archives
       </a>
     </div>
