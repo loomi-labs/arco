@@ -424,7 +424,7 @@ watch([name, location, password, isEncrypted], async () => {
                 </div>
 
                   <!-- Actions -->
-                  <div class='flex gap-3 pt-6'>
+                  <div class='flex justify-between pt-6'>
                     <button type='button'
                             class='btn btn-outline'
                             :disabled='isCreating'
@@ -435,7 +435,7 @@ watch([name, location, password, isEncrypted], async () => {
                             class='btn btn-success'
                             :disabled='!isValid || isCreating'
                             @click='createRepo'>
-                      <span v-if='isCreating' class='loading loading-spinner loading-xs'></span>
+                      <span v-if='isCreating' class='loading loading-spinner loading-sm'></span>
                       {{ isBorgRepo ? "Connect" : "Create" }}
                     </button>
                   </div>

@@ -582,21 +582,17 @@ watch(isAuthenticated, async (authenticated) => {
                       <h3 class='text-lg font-semibold mb-2'>Checkout in Progress</h3>
                     </div>
 
-                    <!-- Open in Browser button -->
-                    <div class='flex justify-start'>
+                    <!-- Actions -->
+                    <div class='flex justify-between pt-6'>
+                      <button class='btn btn-outline' @click='closeModal()'>
+                        Close
+                      </button>
                       <button
                         class='btn btn-primary'
                         :disabled='!checkoutSession?.checkout_url'
                         @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
                       >
                         Open in Browser
-                      </button>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class='modal-action justify-end'>
-                      <button class='btn btn-outline' @click='closeModal()'>
-                        Close
                       </button>
                     </div>
                   </div>
@@ -748,7 +744,7 @@ watch(isAuthenticated, async (authenticated) => {
                   </div>
 
                   <!-- Actions -->
-                  <div class='flex gap-3 pt-6'>
+                  <div class='flex justify-between pt-6'>
                     <button
                       class='btn btn-outline'
                       :disabled='isCreatingRepository'

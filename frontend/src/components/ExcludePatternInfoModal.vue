@@ -107,7 +107,7 @@ defineExpose({ showModal, close });
 
                 <!-- Close Button -->
                 <div class='flex justify-end mt-6'>
-                  <button type='button' class='btn btn-sm btn-outline' @click='close'>
+                  <button type='button' class='btn btn-outline' @click='close'>
                     Close
                   </button>
                 </div>

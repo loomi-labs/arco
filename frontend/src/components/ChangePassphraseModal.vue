@@ -264,18 +264,18 @@ defineExpose({
                   </div>
 
                   <!-- Actions -->
-                  <div class='flex gap-3 pt-6'>
+                  <div class='flex justify-between pt-6'>
                     <button type='button'
-                            class='btn btn-sm btn-outline'
+                            class='btn btn-outline'
                             :disabled='isLoading'
                             @click='close'>
                       Cancel
                     </button>
                     <button type='button'
-                            class='btn btn-sm btn-primary'
+                            class='btn btn-primary'
                             :disabled='!isValid || isLoading'
                             @click='changePassphrase'>
-                      <span v-if='isLoading' class='loading loading-spinner loading-xs'></span>
+                      <span v-if='isLoading' class='loading loading-spinner loading-sm'></span>
                       {{ isLoading ? "Changing..." : "Change Password" }}
                     </button>
                   </div>

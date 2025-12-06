@@ -618,7 +618,7 @@ onUnmounted(() => {
         </div>
       </div>
       <template v-slot:actionButtons>
-        <div class='flex gap-3 pt-5'>
+        <div class='flex justify-between pt-5'>
           <button type='button' class='btn btn-sm btn-outline'
                   @click="confirmDeleteInput = ''; confirmDeleteModal?.close()">
             {{ $t("cancel") }}
@@ -681,10 +681,10 @@ onUnmounted(() => {
                     Full verification reads all backup data and can take a long time for large repositories.
                   </div>
 
-                  <div class='flex gap-3 pt-5'>
-                    <button class='btn btn-sm btn-outline' @click='showVerifyModal = false'>Cancel</button>
-                    <button class='btn btn-sm btn-primary' @click='startVerification(verifyDepthQuick)'>Start
-                      Verification
+                  <div class='flex justify-between pt-5'>
+                    <button class='btn btn-outline' @click='showVerifyModal = false'>Cancel</button>
+                    <button class='btn btn-primary' @click='startVerification(verifyDepthQuick)'>
+                      Start Verification
                     </button>
                   </div>
                 </div>

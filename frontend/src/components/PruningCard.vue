@@ -401,7 +401,7 @@ defineExpose({
     <p v-if='!isExaminingPrunes'>Do you want to apply them now?</p>
 
     <template v-slot:actionButtons>
-      <div class='flex gap-3 pt-4'>
+      <div class='flex justify-between pt-5'>
         <button
           value='false'
           class='btn btn-sm btn-outline'
@@ -409,20 +409,22 @@ defineExpose({
         >
           Cancel
         </button>
-        <button class='btn btn-sm btn-warning'
-                :disabled='isExaminingPrunes'
-                @click='() => discard(wantToGoRoute)'
-        >
-          Discard changes
-        </button>
-        <button
-          value='true'
-          class='btn btn-sm btn-success'
-          @click='() => save(wantToGoRoute)'
-          :disabled='isExaminingPrunes'
-        >
-          Apply changes
-        </button>
+        <div class='flex gap-3'>
+          <button class='btn btn-sm btn-warning'
+                  :disabled='isExaminingPrunes'
+                  @click='() => discard(wantToGoRoute)'
+          >
+            Discard changes
+          </button>
+          <button
+            value='true'
+            class='btn btn-sm btn-success'
+            @click='() => save(wantToGoRoute)'
+            :disabled='isExaminingPrunes'
+          >
+            Apply changes
+          </button>
+        </div>
       </div>
     </template>
   </ConfirmModal>

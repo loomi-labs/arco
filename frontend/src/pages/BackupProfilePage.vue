@@ -595,7 +595,7 @@ watch(
                   </div>
                 </div>
 
-                <div class='flex w-full justify-center gap-4'>
+                <div class='flex justify-end'>
                   <button
                     value='false'
                     class='btn btn-outline'

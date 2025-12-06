@@ -197,7 +197,7 @@ function handleNameKeydown(event: KeyboardEvent) {
           />
         </FormField>
 
-        <div class="modal-action justify-start">
+        <div class="modal-action justify-between">
           <button
             class="btn btn-outline"
             type="button"
