@@ -16,6 +16,7 @@ import { getIcon } from "../common/icons";
 import { LocationType, type LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 import {Events} from "@wailsio/runtime";
@@ -177,7 +178,7 @@ onUnmounted(() => {
             Automatic Backups
           </div>
           <div>
-            <ShieldCheckIcon v-if='props.backup.edges.backupSchedule' class='size-6 text-success'></ShieldCheckIcon>
+            <ShieldCheckIcon v-if='props.backup.edges.backupSchedule?.mode !== backupschedule.Mode.ModeDisabled' class='size-6 text-success'></ShieldCheckIcon>
             <NoSymbolIcon v-else class='size-6 text-error'></NoSymbolIcon>
           </div>
         </div>
