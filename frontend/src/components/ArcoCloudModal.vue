@@ -676,7 +676,7 @@ watch(isAuthenticated, async (authenticated) => {
             <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
               <input
                 type='text'
-                class='grow p-0'
+                class='grow p-0 [font:inherit]'
                 v-model='repoName'
                 @input='onRepoNameInput'
                 placeholder='my-project'
@@ -695,7 +695,7 @@ watch(isAuthenticated, async (authenticated) => {
             <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
               <input
                 type='password'
-                class='grow p-0'
+                class='grow p-0 [font:inherit]'
                 v-model='repoPassword'
                 @input='onRepoPasswordInput'
                 placeholder='Enter repository password'

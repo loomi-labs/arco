@@ -392,7 +392,7 @@ watch([name, location, password, isEncrypted], async () => {
                     </label>
                     <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
                       <input :type="showPassword ? 'text' : 'password'"
-                             class='grow p-0'
+                             class='grow p-0 [font:inherit]'
                              v-model='confirmPassword'
                              :disabled='!isEncrypted'
                              placeholder='Confirm password' />
@@ -409,7 +409,7 @@ watch([name, location, password, isEncrypted], async () => {
                     </label>
                     <label class='input flex items-center gap-2' :class='{ "input-error": nameError }'>
                       <input type='text'
-                             class='grow p-0'
+                             class='grow p-0 [font:inherit]'
                              v-model='name'
                              @input='isNameTouchedByUser = true'
                              placeholder='Repository name' />
