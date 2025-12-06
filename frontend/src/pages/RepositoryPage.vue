@@ -1,6 +1,13 @@
 <script setup lang='ts'>
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
+import {
+  ArrowTrendingUpIcon,
+  ChartPieIcon,
+  CircleStackIcon,
+  LockClosedIcon,
+  LockOpenIcon
+} from "@heroicons/vue/24/outline";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
@@ -399,8 +406,10 @@ onUnmounted(() => {
           <div class='flex flex-col gap-3'>
             <!-- Archives Row (static) -->
             <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' />
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' />
               </svg>
               <span class='flex-1 text-sm opacity-70'>Archives</span>
               <span class='font-bold'>{{ repo.archiveCount }}</span>
@@ -408,24 +417,33 @@ onUnmounted(() => {
 
             <!-- Last Backup Row (static) -->
             <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
               </svg>
               <span class='flex-1 text-sm opacity-70'>Last Backup</span>
               <span v-if='repo.lastBackupError' class='font-bold text-error'>Failed</span>
-              <span v-else-if='lastArchive' class='font-bold'>{{ toRelativeTimeString(lastArchive.createdAt, true) }}</span>
+              <span v-else-if='lastArchive' class='font-bold'>{{
+                  toRelativeTimeString(lastArchive.createdAt, true)
+                }}</span>
               <span v-else class='font-bold opacity-50'>-</span>
             </div>
 
             <!-- Location Row (interactive) -->
-            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all cursor-pointer'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' />
+            <div
+              class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all cursor-pointer'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' />
               </svg>
               <span class='flex-1 text-sm opacity-70 font-mono truncate'>{{ repo.url }}</span>
               <span :class='toRepoTypeBadge(repo.type)'>
-                {{ repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
-                   repo.type.type === LocationType.LocationTypeArcoCloud ? "ArcoCloud" : $t("remote") }}
+                {{
+                  repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
+                    repo.type.type === LocationType.LocationTypeArcoCloud ? "ArcoCloud" : $t("remote")
+                }}
               </span>
               <button class='btn btn-xs btn-outline w-32'
                       :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'>
@@ -441,20 +459,24 @@ onUnmounted(() => {
                      : "border-base-300 hover:border-base-content/30"
                  ]'
                  @click='openVerifyModal'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' />
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' />
               </svg>
               <div class='flex-1'>
                 <span class='text-sm opacity-70'>Integrity Verification</span>
                 <div class='flex gap-4 text-xs mt-1'>
                   <span>
                     <span class='opacity-50'>Quick:</span>
-                    <span v-if='repo.lastQuickCheckAt' class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
+                    <span v-if='repo.lastQuickCheckAt'
+                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
                   <span>
                     <span class='opacity-50'>Full:</span>
-                    <span v-if='repo.lastFullCheckAt' class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
+                    <span v-if='repo.lastFullCheckAt'
+                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
                 </div>
@@ -474,9 +496,7 @@ onUnmounted(() => {
                      : "border-base-300 hover:border-base-content/30"
                  ]'
                  @click='openPassphraseModal'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' />
-              </svg>
+              <LockClosedIcon class='h-5 w-5 opacity-50 shrink-0' />
               <span class='flex-1 text-sm opacity-70'>Encrypted</span>
               <button class='btn btn-xs btn-outline w-32'
                       :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
@@ -486,9 +506,7 @@ onUnmounted(() => {
             </div>
             <!-- Not encrypted state (static) -->
             <div v-else class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z' />
-              </svg>
+              <LockOpenIcon class='h-5 w-5 opacity-50 shrink-0' />
               <span class='flex-1 text-sm opacity-70'>Not Encrypted</span>
             </div>
           </div>
@@ -502,11 +520,9 @@ onUnmounted(() => {
           <div class='flex flex-col gap-3'>
             <!-- Size on Disk -->
             <div class='tooltip cursor-help' :data-tip='sizeOnDiskTooltip'>
-              <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z' />
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 12h8' />
-                </svg>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <ChartPieIcon class='h-5 w-5 opacity-50 shrink-0' />
                 <span class='flex-1 text-sm opacity-70'>Size on Disk</span>
                 <span class='font-bold'>{{ sizeOnDisk }}</span>
               </div>
@@ -514,10 +530,9 @@ onUnmounted(() => {
 
             <!-- Total Size -->
             <div class='tooltip cursor-help' :data-tip='totalSizeTooltip'>
-              <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' />
-                </svg>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <CircleStackIcon class='h-5 w-5 opacity-50 shrink-0' />
                 <span class='flex-1 text-sm opacity-70'>Total Size</span>
                 <span class='font-bold'>{{ totalSize }}</span>
               </div>
@@ -528,16 +543,19 @@ onUnmounted(() => {
               <div class='tooltip-content text-left px-4 py-2'>
                 <p class='font-semibold mb-2'>Saving {{ spaceSavings }} of storage</p>
                 <p class='text-xs font-medium'>Deduplication ({{ deduplicationRatio }})</p>
-                <p class='text-xs opacity-70 mb-1'>Without removing duplicates, you'd need {{ deduplicationRatio }} more space</p>
+                <p class='text-xs opacity-70 mb-1'>Without removing duplicates, you'd need {{ deduplicationRatio }} more
+                  space</p>
                 <p v-if="compressionRatio !== '-'" class='text-xs font-medium'>Compression ({{ compressionRatio }})</p>
-                <p v-if="compressionRatio !== '-'" class='text-xs opacity-70'>Without compression, files would take {{ compressionRatio }} more space</p>
+                <p v-if="compressionRatio !== '-'" class='text-xs opacity-70'>Without compression, files would take
+                  {{ compressionRatio }} more space</p>
                 <p v-else class='text-xs font-medium'>Compression: Not enabled for this repository</p>
               </div>
-              <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 17h8m0 0V9m0 8l-8-8-4 4-6-6' />
-                </svg>
-                <span class='flex-1 text-sm opacity-70'>Storage Efficiency ({{ deduplicationRatio }} dedupplicaton, {{ compressionRatio }} compression)</span>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <span class='flex-1 text-sm opacity-70'>Storage Efficiency ({{
+                    deduplicationRatio
+                  }} dedupplicaton, {{ compressionRatio }} compression)</span>
                 <span class='font-bold'>{{ spaceSavings }}</span>
               </div>
             </div>
@@ -630,13 +648,14 @@ onUnmounted(() => {
                              leave-from='opacity-100 translate-y-0 sm:scale-100'
                              leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
               <DialogPanel
-                  class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
+                class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
                 <div class='p-8'>
                   <DialogTitle as='h3' class='font-bold text-lg mb-4'>Verify Repository</DialogTitle>
 
                   <div class='form-control'>
                     <label class='label cursor-pointer justify-start gap-4'>
-                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='true' v-model='verifyDepthQuick' />
+                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='true'
+                             v-model='verifyDepthQuick' />
                       <div>
                         <div class='font-semibold'>Quick Verification</div>
                         <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
@@ -644,7 +663,8 @@ onUnmounted(() => {
                     </label>
 
                     <label class='label cursor-pointer justify-start gap-4 mt-2'>
-                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='false' v-model='verifyDepthQuick' />
+                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='false'
+                             v-model='verifyDepthQuick' />
                       <div>
                         <div class='font-semibold'>Full Verification</div>
                         <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
@@ -653,7 +673,8 @@ onUnmounted(() => {
                   </div>
 
                   <div v-if='!verifyDepthQuick' class='alert alert-warning text-sm mt-4'>
-                    <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-5 w-5' fill='none' viewBox='0 0 24 24'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-5 w-5' fill='none'
+                         viewBox='0 0 24 24'>
                       <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
                             d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
                     </svg>
