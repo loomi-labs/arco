@@ -3,7 +3,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import ArcoCloudModal from "./ArcoCloudModal.vue";
+import CreateArcoCloudModal from "./CreateArcoCloudModal.vue";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import { useAuth } from "../common/auth";
@@ -65,7 +65,7 @@ const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepos
 const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
 const arcoCloudModalKey = useId();
-const arcoCloudModal = useTemplateRef<InstanceType<typeof ArcoCloudModal>>(arcoCloudModalKey);
+const arcoCloudModal = useTemplateRef<InstanceType<typeof CreateArcoCloudModal>>(arcoCloudModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
 // noinspection JSUnusedGlobalSymbols
@@ -178,7 +178,7 @@ watch(() => props.existingRepos, (newRepos) => {
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
 
-    <ArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
+    <CreateArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
                     @close='onArcoCloudModalClose'
                     @repo-created='(repo) => addRepo(repo)' />
   </div>
