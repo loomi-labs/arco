@@ -3,7 +3,7 @@ import { showAndLogError } from "../common/logger";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import { CheckCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon, XCircleIcon } from "@heroicons/vue/24/outline";
+import { CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon, FolderPlusIcon, LockClosedIcon, LockOpenIcon, XCircleIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
@@ -124,7 +124,7 @@ async function createRepo() {
     const repo = await repoService.Create(
       name.value!,
       location.value!,
-      password.value!,
+      noPassword ? "" : password.value!,
       noPassword
     );
     if (repo) {
@@ -303,7 +303,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <div class='join w-full'>
                       <input type='text'
                              v-model='location'
-                             class='input input-bordered join-item w-full'
+                             class='input join-item w-full'
                              placeholder='Select or enter a directory' />
                       <button type='button'
                               class='btn btn-success join-item'
@@ -314,7 +314,6 @@ watch([name, location, password, isEncrypted], async () => {
                     </div>
                     <div v-if='locationError' class='flex items-center gap-3 mt-1 text-sm'>
                       <div class='flex items-center gap-1 text-error'>
-                        <XCircleIcon class='h-4 w-4' />
                         <span>{{ locationError }}</span>
                       </div>
                       <button v-if='locationError === pathDoesNotExistMsg'
@@ -361,10 +360,10 @@ watch([name, location, password, isEncrypted], async () => {
                         Encrypted
                       </span>
                     </label>
-                    <div class='join w-full'>
+                    <div class='join w-full '>
                       <input :type="showPassword ? 'text' : 'password'"
                              v-model='password'
-                             class='input input-bordered join-item flex-1'
+                             class='input join-item flex-1'
                              :class='{ "input-error": passwordError }'
                              :disabled='!isEncrypted'
                              placeholder='Enter password' />
@@ -387,19 +386,20 @@ watch([name, location, password, isEncrypted], async () => {
                   </div>
 
                   <!-- Confirm Password (only for new repos) -->
-                  <div v-if='!isBorgRepo' class='form-control'>
+                  <div v-if='!isBorgRepo'>
                     <label class='label'>
                       <span class='label-text'>Confirm Password</span>
                     </label>
-                    <input :type="showPassword ? 'text' : 'password'"
-                           v-model='confirmPassword'
-                           class='input input-bordered w-full'
-                           :class='{ "input-error": confirmPasswordError }'
-                           :disabled='!isEncrypted'
-                           placeholder='Confirm password' />
-                    <label v-if='confirmPasswordError' class='label'>
-                      <span class='label-text-alt text-error'>{{ confirmPasswordError }}</span>
+                    <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
+                      <input :type="showPassword ? 'text' : 'password'"
+                             class='grow p-0'
+                             v-model='confirmPassword'
+                             :disabled='!isEncrypted'
+                             placeholder='Confirm password' />
+                      <CheckCircleIcon v-if='!confirmPasswordError && confirmPassword && password === confirmPassword' class='size-5 text-success' />
+                      <ExclamationCircleIcon v-if='confirmPasswordError' class='size-5 text-error' />
                     </label>
+                    <div v-if='confirmPasswordError' class='text-error text-sm mt-1'>{{ confirmPasswordError }}</div>
                   </div>
 
                   <!-- Name -->
@@ -407,15 +407,16 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='label'>
                       <span class='label-text'>Name</span>
                     </label>
-                    <input type='text'
-                           v-model='name'
-                           class='input input-bordered w-full'
-                           :class='{ "input-error": nameError }'
-                           @input='isNameTouchedByUser = true'
-                           placeholder='Repository name' />
-                    <label v-if='nameError' class='label'>
-                      <span class='label-text-alt text-error'>{{ nameError }}</span>
+                    <label class='input flex items-center gap-2' :class='{ "input-error": nameError }'>
+                      <input type='text'
+                             class='grow p-0'
+                             v-model='name'
+                             @input='isNameTouchedByUser = true'
+                             placeholder='Repository name' />
+                      <CheckCircleIcon v-if='!nameError && name' class='size-5 text-success' />
+                      <ExclamationCircleIcon v-if='nameError' class='size-5 text-error' />
                     </label>
+                    <div v-if='nameError' class='text-error text-sm mt-1'>{{ nameError }}</div>
                   </div>
                 </div>
 
