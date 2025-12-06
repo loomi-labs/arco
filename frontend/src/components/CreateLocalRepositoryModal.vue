@@ -387,7 +387,7 @@ watch([name, location, password, isEncrypted], async () => {
                   </div>
 
                   <!-- Confirm Password (only for new repos) -->
-                  <div v-if='!isBorgRepo && isEncrypted' class='form-control'>
+                  <div v-if='!isBorgRepo' class='form-control'>
                     <label class='label'>
                       <span class='label-text'>Confirm Password</span>
                     </label>
@@ -395,6 +395,7 @@ watch([name, location, password, isEncrypted], async () => {
                            v-model='confirmPassword'
                            class='input input-bordered w-full'
                            :class='{ "input-error": confirmPasswordError }'
+                           :disabled='!isEncrypted'
                            placeholder='Confirm password' />
                     <label v-if='confirmPasswordError' class='label'>
                       <span class='label-text-alt text-error'>{{ confirmPasswordError }}</span>
