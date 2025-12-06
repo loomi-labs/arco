@@ -226,7 +226,7 @@ watch(isAuthenticated, (authenticated) => {
         <EnvelopeIcon v-else class="size-6 text-base-content/50" />
       </FormField>
 
-      <div class="modal-action justify-start">
+      <div class="flex justify-between pt-6">
         <button
           class="btn btn-outline"
           @click.prevent="closeModal"
@@ -240,7 +240,7 @@ watch(isAuthenticated, (authenticated) => {
           @click="sendMagicLink"
         >
           {{ submitButtonText }}
-          <span v-if="isLoading" class="loading loading-spinner"></span>
+          <span v-if="isLoading" class="loading loading-spinner loading-sm"></span>
         </button>
       </div>
     </div>
@@ -271,23 +271,21 @@ watch(isAuthenticated, (authenticated) => {
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-2">
-        <button
-          class="btn btn-outline btn-sm"
-          @click="closeModal"
-          :disabled="isLoading"
-        >
-          Close
-        </button>
-        <button
-          class="btn btn-ghost btn-sm"
-          @click="resendMagicLink"
-          :disabled="isResendDisabled || isLoading"
-        >
-          {{ isResendDisabled ? `Resend Link (${resendTimer}s)` : "Resend Link" }}
-        </button>
-      </div>
+    <div class="flex justify-between">
+      <button
+        class="btn btn-outline"
+        @click="closeModal"
+        :disabled="isLoading"
+      >
+        Close
+      </button>
+      <button
+        class="btn btn-ghost"
+        @click="resendMagicLink"
+        :disabled="isResendDisabled || isLoading"
+      >
+        {{ isResendDisabled ? `Resend Link (${resendTimer}s)` : "Resend Link" }}
+      </button>
     </div>
 
     <!-- Help Text -->
