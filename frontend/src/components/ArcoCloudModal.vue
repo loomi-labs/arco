@@ -97,7 +97,7 @@ const locationOptions = [
   },
   {
     value: RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_US,
-    label: "United States", 
+    label: "United States",
     emoji: "🇺🇸"
   }
 ];
@@ -170,10 +170,10 @@ const modalDescription = computed(() => {
 const modalMaxWidth = computed(() => {
   // Wider for plan selection to fit 3-column grid
   if (currentState.value === ComponentState.SUBSCRIPTION_SELECTION ||
-      currentState.value === ComponentState.SUBSCRIPTION_SELECTION_AUTH) {
-    return 'sm:max-w-4xl';
+    currentState.value === ComponentState.SUBSCRIPTION_SELECTION_AUTH) {
+    return "sm:max-w-4xl";
   }
-  return 'sm:max-w-2xl';
+  return "sm:max-w-2xl";
 });
 
 const selectedPlanData = computed(() =>
@@ -193,15 +193,15 @@ const activePlanName = computed(() => {
 
 const subscriptionEndDate = computed(() => {
   if (!userSubscription.value?.current_period_end) return "Active";
-  
+
   try {
     // Parse the protobuf timestamp and format as readable date
     const seconds = userSubscription.value.current_period_end.seconds ?? 0;
     if (seconds <= 0) return "Active";
     const endDate = new Date(seconds * 1000);
-    return `Active until ${endDate.toLocaleDateString('en-US', { 
-      month: 'short', 
-      year: 'numeric' 
+    return `Active until ${endDate.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric"
     })}`;
   } catch (_error) {
     return "Active";
@@ -378,10 +378,10 @@ async function subscribeToPlan() {
   try {
     // Set up event listener before creating checkout session
     setupCheckoutEventListener();
-    
+
     // Create checkout session
     await SubscriptionService.CreateCheckoutSession(selectedPlanData.value?.id ?? "");
-    
+
     // Get checkout session data from backend
     const sessionData = await SubscriptionService.GetCheckoutSession();
     if (sessionData) {
@@ -426,7 +426,7 @@ function setupCheckoutEventListener() {
     try {
       // Refresh subscription status when subscription is added
       await loadUserSubscription();
-      
+
       // If user now has a subscription, transition to appropriate state
       if (hasActiveSubscription.value) {
         transitionTo(ComponentState.REPOSITORY_CREATION);
@@ -440,13 +440,13 @@ function setupCheckoutEventListener() {
       goToSubscriptionSelection();
     }
   });
-  
+
   // Store cleanup function
   cleanupFunctions.push(checkoutCleanup);
 }
 
 function openCheckoutUrl(url: string) {
-  Browser.OpenURL(url)
+  Browser.OpenURL(url);
 }
 
 async function createRepository() {
@@ -565,204 +565,210 @@ watch(isAuthenticated, async (authenticated) => {
                 </div>
                 <div class='pb-4'></div>
 
-      <!-- Loading Initial State -->
-      <div v-if='currentState === ComponentState.LOADING_INITIAL'>
-        <div class='text-center py-8'>
-          <div class='loading loading-spinner loading-lg'></div>
-          <p class='mt-2 text-base-content/70'>Loading Arco Cloud...</p>
-        </div>
-      </div>
+                <!-- Loading Initial State -->
+                <div v-if='currentState === ComponentState.LOADING_INITIAL'>
+                  <div class='text-center py-8'>
+                    <div class='loading loading-spinner loading-lg'></div>
+                    <p class='mt-2 text-base-content/70'>Loading Arco Cloud...</p>
+                  </div>
+                </div>
 
-      <!-- Checkout Processing State -->
-      <div v-else-if='currentState === ComponentState.CHECKOUT_PROCESSING'>
-        <div class='space-y-6'>
-          <!-- Status indicator -->
-          <div class='text-left'>
-            <div class='loading loading-spinner loading-lg mb-4'></div>
-            <h3 class='text-lg font-semibold mb-2'>Checkout in Progress</h3>
-          </div>
+                <!-- Checkout Processing State -->
+                <div v-else-if='currentState === ComponentState.CHECKOUT_PROCESSING'>
+                  <div class='space-y-6'>
+                    <!-- Status indicator -->
+                    <div class='text-left'>
+                      <div class='loading loading-spinner loading-lg mb-4'></div>
+                      <h3 class='text-lg font-semibold mb-2'>Checkout in Progress</h3>
+                    </div>
 
-          <!-- Open in Browser button -->
-          <div class='flex justify-start'>
-            <button
-              class='btn btn-primary'
-              :disabled='!checkoutSession?.checkout_url'
-              @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
-            >
-              Open in Browser
-            </button>
-          </div>
+                    <!-- Open in Browser button -->
+                    <div class='flex justify-start'>
+                      <button
+                        class='btn btn-primary'
+                        :disabled='!checkoutSession?.checkout_url'
+                        @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
+                      >
+                        Open in Browser
+                      </button>
+                    </div>
 
-          <!-- Actions -->
-          <div class='modal-action justify-end'>
-            <button class='btn btn-outline' @click='closeModal()'>
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
+                    <!-- Actions -->
+                    <div class='modal-action justify-end'>
+                      <button class='btn btn-outline' @click='closeModal()'>
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-      <!-- Subscription Selection States -->
-      <div
-        v-else-if='currentState === ComponentState.SUBSCRIPTION_SELECTION || currentState === ComponentState.SUBSCRIPTION_SELECTION_AUTH'>
-        <!-- Login link for existing subscribers (only if not authenticated) -->
-        <div v-if='currentState === ComponentState.SUBSCRIPTION_SELECTION' class='text-center mb-4'>
-          <a class='link link-secondary link-sm' @click='showLoginForSubscription()'>
-            Already have a subscription? Login here
-          </a>
-        </div>
+                <!-- Subscription Selection States -->
+                <div
+                  v-else-if='currentState === ComponentState.SUBSCRIPTION_SELECTION || currentState === ComponentState.SUBSCRIPTION_SELECTION_AUTH'>
+                  <!-- Login link for existing subscribers (only if not authenticated) -->
+                  <div v-if='currentState === ComponentState.SUBSCRIPTION_SELECTION' class='text-center mb-4'>
+                    <a class='link link-secondary link-sm' @click='showLoginForSubscription()'>
+                      Already have a subscription? Login here
+                    </a>
+                  </div>
 
-        <!-- Plan Selection Component -->
-        <PlanSelection
-          :plans='subscriptionPlans'
-          :selected-plan='selectedPlan'
-          :is-yearly-billing='isYearlyBilling'
-          :has-active-subscription='hasActiveSubscription'
-          :user-subscription-plan='userSubscriptionPlan'
-          :hide-subscribe-button='true'
-          @plan-selected='onPlanSelected'
-          @billing-cycle-changed='onBillingCycleChanged'
-          @subscribe-clicked='onSubscribeClicked'
-        />
+                  <!-- Plan Selection Component -->
+                  <PlanSelection
+                    :plans='subscriptionPlans'
+                    :selected-plan='selectedPlan'
+                    :is-yearly-billing='isYearlyBilling'
+                    :has-active-subscription='hasActiveSubscription'
+                    :user-subscription-plan='userSubscriptionPlan'
+                    :hide-subscribe-button='true'
+                    @plan-selected='onPlanSelected'
+                    @billing-cycle-changed='onBillingCycleChanged'
+                    @subscribe-clicked='onSubscribeClicked'
+                  />
 
-        <div class='modal-action justify-between mt-6'>
-          <button class='btn btn-outline' @click='closeModal()'>
-            Cancel
-          </button>
-          <button
-            v-if='!hasActiveSubscription'
-            class='btn btn-primary'
-            :disabled='!selectedPlan'
-            @click='subscribeToPlan()'
-          >
-            Subscribe to {{ selectedPlanData?.name }}
-          </button>
-        </div>
-      </div>
+                  <div class='modal-action justify-between mt-6'>
+                    <button class='btn btn-outline' @click='closeModal()'>
+                      Cancel
+                    </button>
+                    <button
+                      v-if='!hasActiveSubscription'
+                      class='btn btn-primary'
+                      :disabled='!selectedPlan'
+                      @click='subscribeToPlan()'
+                    >
+                      Subscribe to {{ selectedPlanData?.name }}
+                    </button>
+                  </div>
+                </div>
 
-      <!-- Login States -->
-      <div v-else-if='currentState === ComponentState.LOGIN_EMAIL || currentState === ComponentState.LOGIN_WAITING'>
-        <AuthForm
-          ref='authForm'
-          @authenticated='onAuthenticated'
-          @close='closeModal'
-        />
-      </div>
+                <!-- Login States -->
+                <div
+                  v-else-if='currentState === ComponentState.LOGIN_EMAIL || currentState === ComponentState.LOGIN_WAITING'>
+                  <AuthForm
+                    ref='authForm'
+                    @authenticated='onAuthenticated'
+                    @close='closeModal'
+                  />
+                </div>
 
-      <!-- Error States -->
-      <div
-        v-else-if='currentState === ComponentState.ERROR_PLANS || currentState === ComponentState.ERROR_SUBSCRIPTION || currentState === ComponentState.ERROR_CHECKOUT'>
-        <div role="alert" class="alert alert-error alert-vertical sm:alert-horizontal mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{{ errorMessage }}</span>
-          <div>
-            <button class='btn btn-sm btn-outline'
-                    @click='currentState === ComponentState.ERROR_PLANS ? retryLoadPlans() : currentState === ComponentState.ERROR_SUBSCRIPTION ? retryLoadSubscription() : goToSubscriptionSelection()'>
-              {{ currentState === ComponentState.ERROR_CHECKOUT ? "Back" : "Retry" }}
-            </button>
-          </div>
-        </div>
-      </div>
+                <!-- Error States -->
+                <div
+                  v-else-if='currentState === ComponentState.ERROR_PLANS || currentState === ComponentState.ERROR_SUBSCRIPTION || currentState === ComponentState.ERROR_CHECKOUT'>
+                  <div role='alert' class='alert alert-error alert-vertical sm:alert-horizontal mb-6'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none'
+                         viewBox='0 0 24 24'>
+                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                            d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                    <span>{{ errorMessage }}</span>
+                    <div>
+                      <button class='btn btn-sm btn-outline'
+                              @click='currentState === ComponentState.ERROR_PLANS ? retryLoadPlans() : currentState === ComponentState.ERROR_SUBSCRIPTION ? retryLoadSubscription() : goToSubscriptionSelection()'>
+                        {{ currentState === ComponentState.ERROR_CHECKOUT ? "Back" : "Retry" }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-      <!-- Create Repository State -->
-      <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION'>
-        <!-- Error Alert for Repository Creation -->
-        <div v-if='errorMessage' role="alert" class="alert alert-error mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{{ errorMessage }}</span>
-        </div>
-        
-        <div class='flex flex-col gap-4'>
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Repository Name</span>
-            </label>
-            <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
-              <input
-                type='text'
-                class='grow p-0 [font:inherit]'
-                v-model='repoName'
-                @input='onRepoNameInput'
-                placeholder='my-project'
-                :disabled='isLoading'
-              />
-              <CheckCircleIcon v-if='!repoNameError && repoName.length >= 3' class='size-5 text-success' />
-              <ExclamationCircleIcon v-if='repoNameError' class='size-5 text-error' />
-            </label>
-            <div v-if='repoNameError' class='text-error text-sm mt-1'>{{ repoNameError }}</div>
-          </div>
+                <!-- Create Repository State -->
+                <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION'>
+                  <!-- Error Alert for Repository Creation -->
+                  <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none'
+                         viewBox='0 0 24 24'>
+                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                            d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                    <span>{{ errorMessage }}</span>
+                  </div>
 
-          <div class='form-control'>
-            <label class='label'>
-              <span class='label-text'>Password</span>
-            </label>
-            <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
-              <input
-                type='password'
-                class='grow p-0 [font:inherit]'
-                v-model='repoPassword'
-                @input='onRepoPasswordInput'
-                placeholder='Enter repository password'
-                :disabled='isLoading'
-              />
-              <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0' class='size-5 text-success' />
-              <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
-            </label>
-            <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
-          </div>
+                  <div class='flex flex-col gap-4'>
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Repository Name</span>
+                      </label>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
+                        <input
+                          type='text'
+                          class='grow p-0 [font:inherit]'
+                          v-model='repoName'
+                          @input='onRepoNameInput'
+                          placeholder='my-project'
+                          :disabled='isLoading'
+                        />
+                        <CheckCircleIcon v-if='!repoNameError && repoName.length >= 3' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='repoNameError' class='size-5 text-error' />
+                      </label>
+                      <div v-if='repoNameError' class='text-error text-sm mt-1'>{{ repoNameError }}</div>
+                    </div>
 
-          <div>
-            <label class='label'>
-              <span class='label-text'>Location</span>
-            </label>
-            <div class='flex gap-3'>
-              <div 
-                v-for='option in locationOptions' 
-                :key='option.value'
-                class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
-                :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
-                @click='selectedLocation = option.value'
-              >
-                <input
-                  type='radio'
-                  :value='option.value'
-                  v-model='selectedLocation'
-                  class='radio radio-secondary radio-sm'
-                  :disabled='isLoading'
-                />
-                <span class='text-base'>{{ option.emoji }}</span>
-                <span class='font-medium text-sm'>{{ option.label }}</span>
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Password</span>
+                      </label>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
+                        <input
+                          type='password'
+                          class='grow p-0 [font:inherit]'
+                          v-model='repoPassword'
+                          @input='onRepoPasswordInput'
+                          placeholder='Enter repository password'
+                          :disabled='isLoading'
+                        />
+                        <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
+                                         class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
+                      </label>
+                      <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
+                    </div>
+
+                    <div>
+                      <label class='label'>
+                        <span class='label-text'>Location</span>
+                      </label>
+                      <div class='flex gap-3'>
+                        <div
+                          v-for='option in locationOptions'
+                          :key='option.value'
+                          class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
+                          :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
+                          @click='selectedLocation = option.value'
+                        >
+                          <input
+                            type='radio'
+                            :value='option.value'
+                            v-model='selectedLocation'
+                            class='radio radio-secondary radio-sm'
+                            :disabled='isLoading'
+                          />
+                          <span class='text-base'>{{ option.emoji }}</span>
+                          <span class='font-medium text-sm'>{{ option.label }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class='flex gap-3 pt-6'>
+                    <button
+                      class='btn btn-outline'
+                      :disabled='isCreatingRepository'
+                      @click.prevent='closeModal()'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class='btn btn-success'
+                      :disabled='!isRepoValid || isCreatingRepository'
+                      @click='createRepository()'
+                    >
+                      <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
+                      {{ isCreatingRepository ? "Creating..." : "Create Repository" }}
+                    </button>
+                  </div>
+                </div>
+
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class='flex gap-3 pt-6'>
-          <button
-            class='btn btn-outline'
-            :disabled='isCreatingRepository'
-            @click.prevent='closeModal()'
-          >
-            Cancel
-          </button>
-          <button
-            class='btn btn-success'
-            :disabled='!isRepoValid || isCreatingRepository'
-            @click='createRepository()'
-          >
-            <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
-            {{ isCreatingRepository ? 'Creating...' : 'Create Repository' }}
-          </button>
-        </div>
-      </div>
-
-            </div>
-          </DialogPanel>
+            </DialogPanel>
           </TransitionChild>
         </div>
       </div>
