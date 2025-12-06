@@ -1,10 +1,9 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { CloudIcon } from "@heroicons/vue/24/outline";
-import FormField from "./common/FormField.vue";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
+import { CheckCircleIcon, CloudIcon, ExclamationCircleIcon } from "@heroicons/vue/24/outline";
 import AuthForm from "./common/AuthForm.vue";
 import PlanSelection from "./subscription/PlanSelection.vue";
-import { formInputClass } from "../common/form";
 import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
@@ -58,7 +57,7 @@ defineExpose({
 const { isAuthenticated } = useAuth();
 useSubscriptionNotifications(); // Initialize global subscription notifications
 
-const dialog = ref<HTMLDialogElement>();
+const isOpen = ref(false);
 const authForm = ref<InstanceType<typeof AuthForm>>();
 
 // State machine
@@ -277,7 +276,7 @@ async function loadUserSubscription() {
 }
 
 async function showModal() {
-  dialog.value?.showModal();
+  isOpen.value = true;
 
   // Reset to initial loading state
   transitionTo(ComponentState.LOADING_INITIAL);
@@ -306,12 +305,12 @@ function resetAll() {
 }
 
 function closeModal() {
-  dialog.value?.close();
-  
+  isOpen.value = false;
+
   // Clean up any active checkout event listeners
   cleanupFunctions.forEach(cleanup => cleanup());
   cleanupFunctions.length = 0;
-  
+
   // Delay reset to allow modal fade animation to complete
   setTimeout(() => {
     resetAll();
@@ -514,37 +513,49 @@ watch(isAuthenticated, async (authenticated) => {
 </script>
 
 <template>
-  <dialog
-    ref='dialog'
-    class='modal'
-  >
-    <div class='modal-box max-w-2xl'>
+  <TransitionRoot as='template' :show='isOpen'>
+    <Dialog class='relative z-50' @close='closeModal'>
+      <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+                       leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+        <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
+      </TransitionChild>
 
-      <div class='flex items-start justify-between gap-4 pb-2'>
-        <div class='flex-1'>
-          <h2 class='text-2xl font-semibold'>{{ modalTitle }}</h2>
-          <p v-if='modalDescription' class='pt-2 text-base-content/70'>{{ modalDescription }}</p>
-        </div>
-        <!-- Loading subscription status -->
-        <div v-if='currentState === ComponentState.SUBSCRIPTION_AUTHENTICATED'
-             class='bg-base-200 border border-base-300 rounded-lg px-3 py-2 flex-shrink-0'>
-          <div class='flex items-center gap-2'>
-            <div class='loading loading-spinner loading-sm'></div>
-            <span class='text-sm'>Checking subscription...</span>
-          </div>
-        </div>
+      <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+        <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
+          <TransitionChild as='template' enter='ease-out duration-300'
+                           enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                           enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
+                           leave-from='opacity-100 translate-y-0 sm:scale-100'
+                           leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+            <DialogPanel
+              class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl'>
+              <div class='p-10'>
 
-        <!-- Active subscription badge for Create Repository state -->
-        <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
-             class='bg-success/10 border border-success/20 rounded-lg px-3 py-2 flex-shrink-0'>
-          <div class='flex items-center gap-2 mb-1'>
-            <CloudIcon class='size-4 text-success' />
-            <span class='text-sm font-medium text-success'>{{ activePlanName }} Plan</span>
-          </div>
-          <p class='text-xs text-base-content/60'>{{ subscriptionEndDate }}</p>
-        </div>
-      </div>
-      <div class='pb-4'></div>
+                <div class='flex items-start justify-between gap-4 pb-2'>
+                  <div class='flex-1'>
+                    <DialogTitle as='h3' class='font-bold text-xl'>{{ modalTitle }}</DialogTitle>
+                    <p v-if='modalDescription' class='pt-2 text-base-content/70'>{{ modalDescription }}</p>
+                  </div>
+                  <!-- Loading subscription status -->
+                  <div v-if='currentState === ComponentState.SUBSCRIPTION_AUTHENTICATED'
+                       class='bg-base-200 border border-base-300 rounded-lg px-3 py-2 flex-shrink-0'>
+                    <div class='flex items-center gap-2'>
+                      <div class='loading loading-spinner loading-sm'></div>
+                      <span class='text-sm'>Checking subscription...</span>
+                    </div>
+                  </div>
+
+                  <!-- Active subscription badge for Create Repository state -->
+                  <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
+                       class='bg-success/10 border border-success/20 rounded-lg px-3 py-2 flex-shrink-0'>
+                    <div class='flex items-center gap-2 mb-1'>
+                      <CloudIcon class='size-4 text-success' />
+                      <span class='text-sm font-medium text-success'>{{ activePlanName }} Plan</span>
+                    </div>
+                    <p class='text-xs text-base-content/60'>{{ subscriptionEndDate }}</p>
+                  </div>
+                </div>
+                <div class='pb-4'></div>
 
       <!-- Loading Initial State -->
       <div v-if='currentState === ComponentState.LOADING_INITIAL'>
@@ -588,7 +599,7 @@ watch(isAuthenticated, async (authenticated) => {
         v-else-if='currentState === ComponentState.SUBSCRIPTION_SELECTION || currentState === ComponentState.SUBSCRIPTION_SELECTION_AUTH'>
         <!-- Login link for existing subscribers (only if not authenticated) -->
         <div v-if='currentState === ComponentState.SUBSCRIPTION_SELECTION' class='text-center mb-4'>
-          <a class='link link-info link-sm' @click='showLoginForSubscription()'>
+          <a class='link link-secondary link-sm' @click='showLoginForSubscription()'>
             Already have a subscription? Login here
           </a>
         </div>
@@ -657,28 +668,44 @@ watch(isAuthenticated, async (authenticated) => {
           <span>{{ errorMessage }}</span>
         </div>
         
-        <div class='flex flex-col gap-4 mb-6'>
-          <FormField label='Repository Name' :error='repoNameError'>
-            <input
-              :class='formInputClass'
-              type='text'
-              v-model='repoName'
-              @input='onRepoNameInput'
-              placeholder='my-project'
-              :disabled='isLoading'
-            />
-          </FormField>
+        <div class='flex flex-col gap-4'>
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Repository Name</span>
+            </label>
+            <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
+              <input
+                type='text'
+                class='grow p-0'
+                v-model='repoName'
+                @input='onRepoNameInput'
+                placeholder='my-project'
+                :disabled='isLoading'
+              />
+              <CheckCircleIcon v-if='!repoNameError && repoName.length >= 3' class='size-5 text-success' />
+              <ExclamationCircleIcon v-if='repoNameError' class='size-5 text-error' />
+            </label>
+            <div v-if='repoNameError' class='text-error text-sm mt-1'>{{ repoNameError }}</div>
+          </div>
 
-          <FormField label='Password' :error='repoPasswordError'>
-            <input
-              :class='formInputClass'
-              type='password'
-              v-model='repoPassword'
-              @input='onRepoPasswordInput'
-              placeholder='Enter repository password'
-              :disabled='isLoading'
-            />
-          </FormField>
+          <div class='form-control'>
+            <label class='label'>
+              <span class='label-text'>Password</span>
+            </label>
+            <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
+              <input
+                type='password'
+                class='grow p-0'
+                v-model='repoPassword'
+                @input='onRepoPasswordInput'
+                placeholder='Enter repository password'
+                :disabled='isLoading'
+              />
+              <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0' class='size-5 text-success' />
+              <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
+            </label>
+            <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
+          </div>
 
           <div>
             <label class='label'>
@@ -704,28 +731,34 @@ watch(isAuthenticated, async (authenticated) => {
               </div>
             </div>
           </div>
+        </div>
 
-          <div class='modal-action justify-start'>
-            <button
-              class='btn btn-outline'
-              :disabled='isCreatingRepository'
-              @click.prevent='closeModal()'
-            >
-              Cancel
-            </button>
-            <button
-              class='btn btn-primary'
-              :class='{ "btn-disabled": !isRepoValid || isCreatingRepository }'
-              :disabled='!isRepoValid || isCreatingRepository'
-              @click='createRepository()'
-            >
-              <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
-              {{ isCreatingRepository ? 'Creating...' : 'Create Repository' }}
-            </button>
-          </div>
+        <!-- Actions -->
+        <div class='flex gap-3 pt-6'>
+          <button
+            class='btn btn-outline'
+            :disabled='isCreatingRepository'
+            @click.prevent='closeModal()'
+          >
+            Cancel
+          </button>
+          <button
+            class='btn btn-success'
+            :disabled='!isRepoValid || isCreatingRepository'
+            @click='createRepository()'
+          >
+            <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
+            {{ isCreatingRepository ? 'Creating...' : 'Create Repository' }}
+          </button>
         </div>
       </div>
-    </div>
-  </dialog>
+
+            </div>
+          </DialogPanel>
+          </TransitionChild>
+        </div>
+      </div>
+    </Dialog>
+  </TransitionRoot>
 </template>
 
