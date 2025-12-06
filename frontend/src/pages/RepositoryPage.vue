@@ -427,9 +427,9 @@ onUnmounted(() => {
                 {{ repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
                    repo.type.type === LocationType.LocationTypeArcoCloud ? "ArcoCloud" : $t("remote") }}
               </span>
-              <button class='btn btn-xs btn-outline w-28'
+              <button class='btn btn-xs btn-outline w-32'
                       :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'>
-                Change Path
+                Change path
               </button>
             </div>
 
@@ -459,7 +459,7 @@ onUnmounted(() => {
                   </span>
                 </div>
               </div>
-              <button class='btn btn-xs btn-outline w-28' :disabled='isVerifying' @click.stop='openVerifyModal'>
+              <button class='btn btn-xs btn-outline w-32' :disabled='isVerifying' @click.stop='openVerifyModal'>
                 {{ isVerifying ? "Verifying..." : "Verify" }}
               </button>
             </div>
@@ -478,7 +478,7 @@ onUnmounted(() => {
                 <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' />
               </svg>
               <span class='flex-1 text-sm opacity-70'>Encrypted</span>
-              <button class='btn btn-xs btn-outline w-28'
+              <button class='btn btn-xs btn-outline w-32'
                       :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
                       @click.stop='openPassphraseModal'>
                 Change password
@@ -498,7 +498,7 @@ onUnmounted(() => {
       <!-- Storage Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
-          <h3 class='card-title text-lg'>Storage</h3>
+          <h3 class='card-title text-lg'>Storage Statistics</h3>
           <div class='flex flex-col gap-3'>
             <!-- Size on Disk -->
             <div class='tooltip cursor-help' :data-tip='sizeOnDiskTooltip'>
