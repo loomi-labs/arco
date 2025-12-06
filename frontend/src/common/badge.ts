@@ -40,6 +40,43 @@ export function toCreationTimeBadge(date: Date | undefined): string {
 }
 
 /**
+ * Returns the tooltip class for a tooltip based on the difference between the current date and the given date.
+ * Uses the same color scheme as toCreationTimeBadge.
+ * @param date The date to compare with the current date.
+ */
+export function toCreationTimeTooltip(date: Date | undefined): string {
+  if (!date) {
+    return "tooltip";
+  }
+
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
+
+  const dHours = diffHours(now, date);
+  if (dHours < 1) {
+    return "tooltip tooltip-badge-fresh";
+  }
+  const dDays = diffDays(now, date);
+  if (dDays < 1) {
+    return "tooltip tooltip-badge-recent";
+  }
+  if (dDays < 2) {
+    return "tooltip tooltip-badge-days";
+  }
+  if (dDays < 7) {
+    return "tooltip tooltip-badge-week";
+  }
+  if (dDays < 30) {
+    return "tooltip tooltip-badge-month";
+  }
+  if (dDays < 365) {
+    return "tooltip tooltip-badge-year";
+  }
+  return "tooltip tooltip-badge-old";
+}
+
+/**
  * Returns the style for a badge based on the given repository type.
  * @param type The repository type.
  */

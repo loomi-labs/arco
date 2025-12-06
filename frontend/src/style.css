@@ -301,3 +301,41 @@
 .ac-card-selected-highlight {
     @apply border-l-4 border-primary bg-base-300/50 dark:bg-primary/5;
 }
+
+/* Custom tooltip colors matching badge colors - use border color for bg (always solid in both themes) */
+.tooltip-badge-fresh::before {
+    @apply bg-badge-fresh-border text-white;
+}
+.tooltip-badge-recent::before {
+    @apply bg-badge-recent-border text-white;
+}
+.tooltip-badge-recent:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-days::before {
+    @apply bg-badge-days-border text-white;
+}
+.tooltip-badge-week::before {
+    @apply bg-badge-week-border text-white;
+}
+.tooltip-badge-week:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-month::before {
+    @apply bg-badge-month-border text-white;
+}
+.tooltip-badge-month:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-year::before {
+    @apply bg-badge-year-border text-white;
+}
+.tooltip-badge-year:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-old::before {
+    @apply bg-badge-old-border text-gray-900;
+}
+.tooltip-badge-old:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-white;
+}

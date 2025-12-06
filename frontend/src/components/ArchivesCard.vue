@@ -17,7 +17,7 @@ import {
   XMarkIcon
 } from "@heroicons/vue/24/solid";
 import { isInPast, toDurationString, toLongDateString, toRelativeTimeString } from "../common/time";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import EditArchiveModal from "./EditArchiveModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
@@ -1182,7 +1182,7 @@ onUnmounted(() => {
           </td>
           <!-- Creation time -->
           <td>
-            <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
+            <span :class='toCreationTimeTooltip(archive.createdAt)' :data-tip='toLongDateString(archive.createdAt)'>
               <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
                   toRelativeTimeString(archive.createdAt)
                 }}</span>
