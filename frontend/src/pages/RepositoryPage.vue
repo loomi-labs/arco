@@ -391,7 +391,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Two-column grid -->
-    <div class='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8'>
+    <div class='grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 mb-8'>
       <!-- Repository Info Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
