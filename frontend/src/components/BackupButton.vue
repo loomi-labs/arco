@@ -317,7 +317,7 @@ onUnmounted(() => {
 <template>
   <div v-if='buttonStatus'
        class='relative flex items-center justify-center w-[94px] h-[94px]'
-       :class='hasRepositoryErrors ? "tooltip tooltip-left" : ""'
+       :class='hasRepositoryErrors ? "tooltip tooltip-left tooltip-error" : ""'
        :data-tip='errorTooltipText'>
     <div class='absolute radial-progress'
          :class='[buttonTextColor, hasRepositoryErrors ? "bg-error/20" : "bg-transparent"]'

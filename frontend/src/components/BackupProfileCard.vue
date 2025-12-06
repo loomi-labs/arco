@@ -159,17 +159,17 @@ onUnmounted(() => {
         <!-- Info -->
         <div class='flex justify-between'>
           <p>{{ $t("last_backup") }}</p>
-          <div>
+          <div class='flex items-center gap-2'>
             <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
               <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent truncate cursor-pointer'>{{ $t("failed") }}</span>
             </span>
             <span v-else-if='warningBackupRun' class='tooltip tooltip-warning' :data-tip='warningBackupRun'>
               <span class='badge badge-warning dark:border-warning dark:text-warning dark:bg-transparent truncate cursor-pointer'>{{ $t("warning") }}</span>
             </span>
-            <span v-else-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)' :data-tip='toLongDateString(lastArchive.createdAt)'>
+            <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)' :data-tip='toLongDateString(lastArchive.createdAt)'>
               <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
             </span>
-            <span v-else>-</span>
+            <span v-else-if='!failedBackupRun && !warningBackupRun'>-</span>
           </div>
         </div>
         <div class='divider'></div>
