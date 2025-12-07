@@ -35,20 +35,6 @@ func (_u *SettingsUpdate) SetUpdatedAt(v time.Time) *SettingsUpdate {
 	return _u
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (_u *SettingsUpdate) SetShowWelcome(v bool) *SettingsUpdate {
-	_u.mutation.SetShowWelcome(v)
-	return _u
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_u *SettingsUpdate) SetNillableShowWelcome(v *bool) *SettingsUpdate {
-	if v != nil {
-		_u.SetShowWelcome(*v)
-	}
-	return _u
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (_u *SettingsUpdate) SetExpertMode(v bool) *SettingsUpdate {
 	_u.mutation.SetExpertMode(v)
@@ -177,9 +163,6 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
-	}
 	if value, ok := _u.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
 	}
@@ -217,20 +200,6 @@ type SettingsUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *SettingsUpdateOne) SetUpdatedAt(v time.Time) *SettingsUpdateOne {
 	_u.mutation.SetUpdatedAt(v)
-	return _u
-}
-
-// SetShowWelcome sets the "show_welcome" field.
-func (_u *SettingsUpdateOne) SetShowWelcome(v bool) *SettingsUpdateOne {
-	_u.mutation.SetShowWelcome(v)
-	return _u
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_u *SettingsUpdateOne) SetNillableShowWelcome(v *bool) *SettingsUpdateOne {
-	if v != nil {
-		_u.SetShowWelcome(*v)
-	}
 	return _u
 }
 
@@ -391,9 +360,6 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)

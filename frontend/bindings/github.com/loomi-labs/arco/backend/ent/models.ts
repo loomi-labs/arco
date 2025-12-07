@@ -1172,11 +1172,6 @@ export class Settings {
     "updatedAt": time$0.Time;
 
     /**
-     * ShowWelcome holds the value of the "show_welcome" field.
-     */
-    "showWelcome": boolean;
-
-    /**
      * ExpertMode holds the value of the "expert_mode" field.
      */
     "expertMode": boolean;
@@ -1203,9 +1198,6 @@ export class Settings {
         }
         if (!("updatedAt" in $$source)) {
             this["updatedAt"] = null;
-        }
-        if (!("showWelcome" in $$source)) {
-            this["showWelcome"] = false;
         }
         if (!("expertMode" in $$source)) {
             this["expertMode"] = false;

@@ -18,8 +18,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldShowWelcome holds the string denoting the show_welcome field in the database.
-	FieldShowWelcome = "show_welcome"
 	// FieldExpertMode holds the string denoting the expert_mode field in the database.
 	FieldExpertMode = "expert_mode"
 	// FieldTheme holds the string denoting the theme field in the database.
@@ -37,7 +35,6 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldShowWelcome,
 	FieldExpertMode,
 	FieldTheme,
 	FieldDisableTransitions,
@@ -61,8 +58,6 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// DefaultShowWelcome holds the default value on creation for the "show_welcome" field.
-	DefaultShowWelcome bool
 	// DefaultExpertMode holds the default value on creation for the "expert_mode" field.
 	DefaultExpertMode bool
 	// DefaultDisableTransitions holds the default value on creation for the "disable_transitions" field.
@@ -114,11 +109,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByShowWelcome orders the results by the show_welcome field.
-func ByShowWelcome(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldShowWelcome, opts...).ToFunc()
 }
 
 // ByExpertMode orders the results by the expert_mode field.

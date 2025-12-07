@@ -48,20 +48,6 @@ func (_c *SettingsCreate) SetNillableUpdatedAt(v *time.Time) *SettingsCreate {
 	return _c
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (_c *SettingsCreate) SetShowWelcome(v bool) *SettingsCreate {
-	_c.mutation.SetShowWelcome(v)
-	return _c
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_c *SettingsCreate) SetNillableShowWelcome(v *bool) *SettingsCreate {
-	if v != nil {
-		_c.SetShowWelcome(*v)
-	}
-	return _c
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (_c *SettingsCreate) SetExpertMode(v bool) *SettingsCreate {
 	_c.mutation.SetExpertMode(v)
@@ -161,10 +147,6 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := _c.mutation.ShowWelcome(); !ok {
-		v := settings.DefaultShowWelcome
-		_c.mutation.SetShowWelcome(v)
-	}
 	if _, ok := _c.mutation.ExpertMode(); !ok {
 		v := settings.DefaultExpertMode
 		_c.mutation.SetExpertMode(v)
@@ -190,9 +172,6 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Settings.updated_at"`)}
-	}
-	if _, ok := _c.mutation.ShowWelcome(); !ok {
-		return &ValidationError{Name: "show_welcome", err: errors.New(`ent: missing required field "Settings.show_welcome"`)}
 	}
 	if _, ok := _c.mutation.ExpertMode(); !ok {
 		return &ValidationError{Name: "expert_mode", err: errors.New(`ent: missing required field "Settings.expert_mode"`)}
@@ -244,10 +223,6 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if value, ok := _c.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
-		_node.ShowWelcome = value
 	}
 	if value, ok := _c.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)

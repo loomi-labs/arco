@@ -8319,7 +8319,6 @@ type SettingsMutation struct {
 	id                  *int
 	created_at          *time.Time
 	updated_at          *time.Time
-	show_welcome        *bool
 	expert_mode         *bool
 	theme               *settings.Theme
 	disable_transitions *bool
@@ -8500,42 +8499,6 @@ func (m *SettingsMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (m *SettingsMutation) SetShowWelcome(b bool) {
-	m.show_welcome = &b
-}
-
-// ShowWelcome returns the value of the "show_welcome" field in the mutation.
-func (m *SettingsMutation) ShowWelcome() (r bool, exists bool) {
-	v := m.show_welcome
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldShowWelcome returns the old "show_welcome" field's value of the Settings entity.
-// If the Settings object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SettingsMutation) OldShowWelcome(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldShowWelcome is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldShowWelcome requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldShowWelcome: %w", err)
-	}
-	return oldValue.ShowWelcome, nil
-}
-
-// ResetShowWelcome resets all changes to the "show_welcome" field.
-func (m *SettingsMutation) ResetShowWelcome() {
-	m.show_welcome = nil
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (m *SettingsMutation) SetExpertMode(b bool) {
 	m.expert_mode = &b
@@ -8714,15 +8677,12 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, settings.FieldUpdatedAt)
-	}
-	if m.show_welcome != nil {
-		fields = append(fields, settings.FieldShowWelcome)
 	}
 	if m.expert_mode != nil {
 		fields = append(fields, settings.FieldExpertMode)
@@ -8748,8 +8708,6 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case settings.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case settings.FieldShowWelcome:
-		return m.ShowWelcome()
 	case settings.FieldExpertMode:
 		return m.ExpertMode()
 	case settings.FieldTheme:
@@ -8771,8 +8729,6 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldCreatedAt(ctx)
 	case settings.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case settings.FieldShowWelcome:
-		return m.OldShowWelcome(ctx)
 	case settings.FieldExpertMode:
 		return m.OldExpertMode(ctx)
 	case settings.FieldTheme:
@@ -8803,13 +8759,6 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
-		return nil
-	case settings.FieldShowWelcome:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetShowWelcome(v)
 		return nil
 	case settings.FieldExpertMode:
 		v, ok := value.(bool)
@@ -8893,9 +8842,6 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldUpdatedAt:
 		m.ResetUpdatedAt()
-		return nil
-	case settings.FieldShowWelcome:
-		m.ResetShowWelcome()
 		return nil
 	case settings.FieldExpertMode:
 		m.ResetExpertMode()

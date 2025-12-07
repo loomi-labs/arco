@@ -284,20 +284,16 @@ func init() {
 	settings.DefaultUpdatedAt = settingsDescUpdatedAt.Default.(func() time.Time)
 	// settings.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	settings.UpdateDefaultUpdatedAt = settingsDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// settingsDescShowWelcome is the schema descriptor for show_welcome field.
-	settingsDescShowWelcome := settingsFields[0].Descriptor()
-	// settings.DefaultShowWelcome holds the default value on creation for the show_welcome field.
-	settings.DefaultShowWelcome = settingsDescShowWelcome.Default.(bool)
 	// settingsDescExpertMode is the schema descriptor for expert_mode field.
-	settingsDescExpertMode := settingsFields[1].Descriptor()
+	settingsDescExpertMode := settingsFields[0].Descriptor()
 	// settings.DefaultExpertMode holds the default value on creation for the expert_mode field.
 	settings.DefaultExpertMode = settingsDescExpertMode.Default.(bool)
 	// settingsDescDisableTransitions is the schema descriptor for disable_transitions field.
-	settingsDescDisableTransitions := settingsFields[3].Descriptor()
+	settingsDescDisableTransitions := settingsFields[2].Descriptor()
 	// settings.DefaultDisableTransitions holds the default value on creation for the disable_transitions field.
 	settings.DefaultDisableTransitions = settingsDescDisableTransitions.Default.(bool)
 	// settingsDescDisableShadows is the schema descriptor for disable_shadows field.
-	settingsDescDisableShadows := settingsFields[4].Descriptor()
+	settingsDescDisableShadows := settingsFields[3].Descriptor()
 	// settings.DefaultDisableShadows holds the default value on creation for the disable_shadows field.
 	settings.DefaultDisableShadows = settingsDescDisableShadows.Default.(bool)
 	userMixin := schema.User{}.Mixin()

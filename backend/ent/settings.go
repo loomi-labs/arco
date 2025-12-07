@@ -21,8 +21,6 @@ type Settings struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updatedAt"`
-	// ShowWelcome holds the value of the "show_welcome" field.
-	ShowWelcome bool `json:"showWelcome"`
 	// ExpertMode holds the value of the "expert_mode" field.
 	ExpertMode bool `json:"expertMode"`
 	// Theme holds the value of the "theme" field.
@@ -39,7 +37,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldShowWelcome, settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows:
+		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -79,12 +77,6 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
-			}
-		case settings.FieldShowWelcome:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field show_welcome", values[i])
-			} else if value.Valid {
-				_m.ShowWelcome = value.Bool
 			}
 		case settings.FieldExpertMode:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -151,9 +143,6 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("show_welcome=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ShowWelcome))
 	builder.WriteString(", ")
 	builder.WriteString("expert_mode=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ExpertMode))

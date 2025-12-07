@@ -64,11 +64,6 @@ func UpdatedAt(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// ShowWelcome applies equality check predicate on the "show_welcome" field. It's identical to ShowWelcomeEQ.
-func ShowWelcome(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
-}
-
 // ExpertMode applies equality check predicate on the "expert_mode" field. It's identical to ExpertModeEQ.
 func ExpertMode(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldExpertMode, v))
@@ -162,16 +157,6 @@ func UpdatedAtLT(v time.Time) predicate.Settings {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldLTE(FieldUpdatedAt, v))
-}
-
-// ShowWelcomeEQ applies the EQ predicate on the "show_welcome" field.
-func ShowWelcomeEQ(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
-}
-
-// ShowWelcomeNEQ applies the NEQ predicate on the "show_welcome" field.
-func ShowWelcomeNEQ(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldNEQ(FieldShowWelcome, v))
 }
 
 // ExpertModeEQ applies the EQ predicate on the "expert_mode" field.
