@@ -54,14 +54,6 @@ defineExpose({ showModal, close });
 
                   <div class='border border-base-300 rounded-lg p-4'>
                     <div class='flex items-center gap-3'>
-                      <code class='bg-base-200 px-2 py-1 rounded text-sm font-mono'>*.cache</code>
-                      <ArrowLongRightIcon class='size-5 text-base-content/50 shrink-0' />
-                      <span class='text-sm text-base-content/70'>Exclude all .cache folders</span>
-                    </div>
-                  </div>
-
-                  <div class='border border-base-300 rounded-lg p-4'>
-                    <div class='flex items-center gap-3'>
                       <code class='bg-base-200 px-2 py-1 rounded text-sm font-mono'>/home/user/Downloads</code>
                       <ArrowLongRightIcon class='size-5 text-base-content/50 shrink-0' />
                       <span class='text-sm text-base-content/70'>Exclude a specific folder</span>
