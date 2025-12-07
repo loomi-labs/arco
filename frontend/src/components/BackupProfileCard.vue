@@ -1,25 +1,21 @@
 <script setup lang='ts'>
-import { useI18n } from "vue-i18n";
-import { NoSymbolIcon, ShieldCheckIcon } from "@heroicons/vue/24/solid";
-import { isAfter } from "@formkit/tempo";
-import { showAndLogError } from "../common/logger";
-import { onUnmounted, ref } from "vue";
-import { Page, withId } from "../router";
+import { computed, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { toCreationTimeBadge, toCreationTimeTooltip, toRepoTypeBadge } from "../common/badge";
-import { toLongDateString, toRelativeTimeString } from "../common/time";
-import BackupButton from "./BackupButton.vue";
-import { repoStateChangedEvent } from "../common/events";
+import { CheckCircleIcon } from "@heroicons/vue/24/solid";
+import { isAfter } from "@formkit/tempo";
 import { debounce } from "lodash";
-import type { Icon } from "../common/icons";
+import { Events } from "@wailsio/runtime";
+import BackupButton from "./BackupButton.vue";
 import { getIcon } from "../common/icons";
-import { LocationType, type LocationUnion } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
+import { showAndLogError } from "../common/logger";
+import { repoStateChangedEvent } from "../common/events";
+import { Page, withId } from "../router";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
-
-import {Events} from "@wailsio/runtime";
 
 /************
  * Types
@@ -34,50 +30,77 @@ interface Props {
  ************/
 
 const props = defineProps<Props>();
-
-const { t: _t } = useI18n();
 const router = useRouter();
+
+const icon = computed(() => getIcon(props.backup.icon));
+
+const hasSchedule = computed(() => {
+  return props.backup.edges?.backupSchedule?.mode !== backupschedule.Mode.ModeDisabled;
+});
+
+const scheduleMode = computed(() => {
+  const mode = props.backup.edges?.backupSchedule?.mode;
+  switch (mode) {
+    case backupschedule.Mode.ModeHourly:
+      return "Hourly";
+    case backupschedule.Mode.ModeDaily:
+      return "Daily";
+    case backupschedule.Mode.ModeWeekly:
+      return "Weekly";
+    case backupschedule.Mode.ModeMonthly:
+      return "Monthly";
+    default:
+      return "Disabled";
+  }
+});
+
+const hasPruning = computed(() => {
+  return props.backup.edges?.pruningRule?.isEnabled ?? false;
+});
+
+const repositories = computed(() => {
+  return props.backup.edges?.repositories?.filter(r => r !== null) ?? [];
+});
+
+const archiveCount = computed(() => {
+  return props.backup.edges?.archives?.length ?? 0;
+});
+
+// Build backup IDs for BackupButton
+const backupIds = computed(() => {
+  return repositories.value.map(repo => {
+    const backupId = types.BackupId.createFrom();
+    backupId.backupProfileId = props.backup.id;
+    backupId.repositoryId = repo.id;
+    return backupId;
+  });
+});
+
+// Async data
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const failedBackupRun = ref<string>("");
 const warningBackupRun = ref<string>("");
-const icon = ref<Icon>(getIcon(props.backup.icon));
-
-// Helper function to convert old repository to LocationUnion for badge styling
-// TODO: refactor this
-function getLocationUnionFromUrl(url: string): LocationUnion {
-  if (url.startsWith("/")) {
-    return { type: LocationType.LocationTypeLocal, local: {}, remote: null, arcoCloud: null };
-  } else {
-    return { type: LocationType.LocationTypeRemote, local: null, remote: {}, arcoCloud: null };
-  }
-}
-
-const bIds = props.backup.edges?.repositories?.filter((r) => r !== null)
-  .map((r) => {
-    const backupId = types.BackupId.createFrom();
-    backupId.backupProfileId = props.backup.id;
-    backupId.repositoryId = r.id;
-    return backupId;
-  }) ?? [];
-
 const cleanupFunctions: (() => void)[] = [];
+
+const lastBackupStatus = computed<"success" | "warning" | "error" | "none">(() => {
+  if (failedBackupRun.value) return "error";
+  if (warningBackupRun.value) return "warning";
+  if (lastArchive.value) return "success";
+  return "none";
+});
 
 /************
  * Functions
  ************/
 
 async function getFailedBackupRun() {
-  for (const repoId of props.backup.edges?.repositories?.filter(r => r !== null).map((r) => r.id) ?? []) {
+  for (const repo of repositories.value) {
     try {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repoId;
+      backupId.repositoryId = repo.id;
       failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
-
-      // We only care about the first error message.
-      if (failedBackupRun.value) {
-        break;
-      }
+      if (failedBackupRun.value) break;
     } catch (error: unknown) {
       await showAndLogError("Failed to get last backup error message", error);
     }
@@ -85,17 +108,13 @@ async function getFailedBackupRun() {
 }
 
 async function getWarningBackupRun() {
-  for (const repoId of props.backup.edges?.repositories?.filter(r => r !== null).map((r) => r.id) ?? []) {
+  for (const repo of repositories.value) {
     try {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repoId;
+      backupId.repositoryId = repo.id;
       warningBackupRun.value = await repoService.GetLastBackupWarningByBackupId(backupId);
-
-      // We only care about the first warning message.
-      if (warningBackupRun.value) {
-        break;
-      }
+      if (warningBackupRun.value) break;
     } catch (error: unknown) {
       await showAndLogError("Failed to get last backup warning message", error);
     }
@@ -104,8 +123,8 @@ async function getWarningBackupRun() {
 
 async function getLastArchives() {
   try {
-    let newLastArchive = undefined;
-    for (const repo of props.backup.edges?.repositories?.filter(r => r !== null) ?? []) {
+    let newLastArchive: ent.Archive | undefined = undefined;
+    for (const repo of repositories.value) {
       const backupId = types.BackupId.createFrom();
       backupId.backupProfileId = props.backup.id;
       backupId.repositoryId = repo.id;
@@ -122,6 +141,10 @@ async function getLastArchives() {
   }
 }
 
+function navigateToProfile() {
+  router.push(withId(Page.BackupProfile, props.backup.id.toString()));
+}
+
 /************
  * Lifecycle
  ************/
@@ -130,7 +153,8 @@ getFailedBackupRun();
 getWarningBackupRun();
 getLastArchives();
 
-for (const backupId of bIds) {
+// Listen for repo state changes
+for (const backupId of backupIds.value) {
   const handleRepoStateChanged = debounce(async () => {
     await getFailedBackupRun();
     await getWarningBackupRun();
@@ -147,61 +171,79 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full'
-       @click='router.push(withId(Page.BackupProfile, backup.id.toString()))'>
+  <div class='group ac-card-hover h-full w-full cursor-pointer' @click='navigateToProfile'>
+    <!-- Header -->
     <div
       class='flex justify-between rounded-t-lg bg-primary text-primary-content px-6 pt-4 pb-2 group-hover:bg-primary/50'>
-      {{ props.backup.name }}
+      {{ backup.name }}
       <component :is='icon.html' class='size-8' />
     </div>
-    <div class='flex justify-between items-center p-6'>
-      <div class='w-full pr-6'>
-        <!-- Info -->
+
+    <!-- Two-column content -->
+    <div class='flex'>
+      <!-- Left Column: Info -->
+      <div class='flex-1 p-4 space-y-2 text-sm'>
+        <!-- Automatic Backups -->
         <div class='flex justify-between'>
-          <p>{{ $t("last_backup") }}</p>
-          <div class='flex items-center gap-2'>
-            <span v-if='failedBackupRun' class='tooltip tooltip-error' :data-tip='failedBackupRun'>
-              <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent truncate cursor-pointer'>{{ $t("failed") }}</span>
-            </span>
-            <span v-else-if='warningBackupRun' class='tooltip tooltip-warning' :data-tip='warningBackupRun'>
-              <span class='badge badge-warning dark:border-warning dark:text-warning dark:bg-transparent truncate cursor-pointer'>{{ $t("warning") }}</span>
-            </span>
-            <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)' :data-tip='toLongDateString(lastArchive.createdAt)'>
-              <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
-            </span>
-            <span v-else-if='!failedBackupRun && !warningBackupRun'>-</span>
-          </div>
+          <span class='text-base-content/60'>Automatic Backups</span>
+          <span :class='hasSchedule ? "font-medium text-base-content" : "text-base-content/40"'>
+            {{ hasSchedule ? scheduleMode : "Disabled" }}
+          </span>
         </div>
-        <div class='divider'></div>
+
+        <!-- Automatic Cleanup -->
         <div class='flex justify-between'>
-          <div>
-            Automatic Backups
-          </div>
-          <div>
-            <ShieldCheckIcon v-if='props.backup.edges.backupSchedule?.mode !== backupschedule.Mode.ModeDisabled' class='size-6 text-success'></ShieldCheckIcon>
-            <NoSymbolIcon v-else class='size-6 text-error'></NoSymbolIcon>
-          </div>
+          <span class='text-base-content/60'>Automatic Cleanup</span>
+          <CheckCircleIcon v-if='hasPruning' class='size-5 text-success' />
+          <span v-else class='text-base-content/40'>Disabled</span>
         </div>
-        <div class='divider'></div>
+
+        <!-- Archives -->
+        <div class='flex justify-between'>
+          <span class='text-base-content/60'>Archives</span>
+          <span class='font-medium'>{{ archiveCount }}</span>
+        </div>
+
+        <!-- Last backup -->
         <div class='flex justify-between items-center'>
-          <div>
-            Repositories
+          <span class='text-base-content/60'>Last backup</span>
+          <div class='flex items-center gap-2'>
+            <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-left tooltip-error'
+                  :data-tip='failedBackupRun'>
+              <span class='badge badge-error badge-xs'>!</span>
+            </span>
+            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-left tooltip-warning'
+                  :data-tip='warningBackupRun'>
+              <span class='badge badge-warning badge-xs'>!</span>
+            </span>
+            <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
+                  :data-tip='toLongDateString(lastArchive.createdAt)'>
+              <span :class='toCreationTimeBadge(lastArchive.createdAt)'>{{
+                  toRelativeTimeString(lastArchive.createdAt)
+                }}</span>
+            </span>
+            <span v-else>-</span>
           </div>
-          <ul class='text-right'>
-            <li v-for='repo in props.backup.edges?.repositories?.filter(r => r !== null) ?? []' :key='repo.id'
-                class='mx-1'
-                :class='`${toRepoTypeBadge(getLocationUnionFromUrl(repo.url))}`'
-            >
-              {{ repo.name }}
-            </li>
-          </ul>
         </div>
       </div>
-      <BackupButton :backup-ids='bIds' />
+
+      <!-- Right Column: Action -->
+      <div class='flex items-center justify-center px-6 border-l border-base-300'>
+        <BackupButton :backup-ids='backupIds' @click.stop />
+      </div>
+    </div>
+
+    <!-- Footer: Repositories -->
+    <div class='px-4 py-3 bg-base-200 rounded-b-lg text-sm'>
+      <div class='flex items-center gap-2'>
+        <span class='text-base-content/60'>Repositories:</span>
+        <div class='flex flex-wrap gap-1'>
+          <span v-for='repo in repositories' :key='repo.id' class='badge badge-outline badge-sm'>
+            {{ repo.name }}
+          </span>
+          <span v-if='repositories.length === 0' class='text-base-content/40'>None</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-
-</style>
