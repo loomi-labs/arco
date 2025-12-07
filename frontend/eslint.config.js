@@ -51,7 +51,8 @@ export default [
         process: 'readonly',
         navigator: 'readonly',
         document: 'readonly',
-        window: 'readonly'
+        window: 'readonly',
+        structuredClone: 'readonly'
       }
     },
     plugins: {

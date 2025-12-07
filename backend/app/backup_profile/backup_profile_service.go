@@ -537,9 +537,34 @@ func (s *Service) SelectDirectory(data SelectDirectoryData) (string, error) {
 /********** Backup Schedule ********/
 /***********************************/
 
+// applyScheduleDefaults ensures all schedule fields have valid values.
+// This prevents validation errors when fields are empty/zero.
+func applyScheduleDefaults(schedule *ent.BackupSchedule) {
+	defaultTime := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
+
+	if schedule.Weekday == "" {
+		schedule.Weekday = backupschedule.WeekdayMonday
+	}
+	if schedule.Monthday == 0 {
+		schedule.Monthday = 1
+	}
+	if schedule.DailyAt.IsZero() {
+		schedule.DailyAt = defaultTime
+	}
+	if schedule.WeeklyAt.IsZero() {
+		schedule.WeeklyAt = defaultTime
+	}
+	if schedule.MonthlyAt.IsZero() {
+		schedule.MonthlyAt = defaultTime
+	}
+}
+
 func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, schedule ent.BackupSchedule) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Saving backup schedule for backup profile %d", backupProfileId))
+
+	// Apply defaults to ensure all fields have valid values
+	applyScheduleDefaults(&schedule)
 
 	defer s.sendBackupScheduleChanged()
 	doesExist, err := s.db.BackupSchedule.
