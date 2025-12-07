@@ -339,3 +339,26 @@
 .tooltip-badge-old:where([data-theme=dark], [data-theme=dark] *)::before {
     @apply text-white;
 }
+
+/* Tooltip arrow colors - ::after is the arrow in DaisyUI tooltips */
+.tooltip-badge-fresh::after {
+    @apply bg-badge-fresh-border;
+}
+.tooltip-badge-recent::after {
+    @apply bg-badge-recent-border;
+}
+.tooltip-badge-days::after {
+    @apply bg-badge-days-border;
+}
+.tooltip-badge-week::after {
+    @apply bg-badge-week-border;
+}
+.tooltip-badge-month::after {
+    @apply bg-badge-month-border;
+}
+.tooltip-badge-year::after {
+    @apply bg-badge-year-border;
+}
+.tooltip-badge-old::after {
+    @apply bg-badge-old-border;
+}
