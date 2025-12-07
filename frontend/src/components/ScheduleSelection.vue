@@ -129,28 +129,28 @@ watchEffect(() => {
       <div role='tablist' class='tabs tabs-box'>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active": isHourly}'
+                :class='{"tab-active bg-secondary/20": isHourly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeHourly)'>
           {{ $t("hour") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active": isDaily}'
+                :class='{"tab-active bg-secondary/20": isDaily}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeDaily)'>
           {{ $t("day") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active": isWeekly}'
+                :class='{"tab-active bg-secondary/20": isWeekly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeWeekly)'>
           {{ $t("week") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active": isMonthly}'
+                :class='{"tab-active bg-secondary/20": isMonthly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeMonthly)'>
           {{ $t("month") }}
