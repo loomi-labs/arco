@@ -94,6 +94,7 @@
 }
 @plugin "daisyui/theme" {
     name: "dark";
+    color-scheme: dark;
     /* DaisyUI colors - Refined dark palette */
     --color-base-100: #1F1F23;
     --color-base-200: #18181B;
