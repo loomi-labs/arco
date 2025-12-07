@@ -44,7 +44,7 @@ const renderError = computed(() => {
 });
 
 const inputClass = computed(() => {
-  let iClass = `input input-bordered flex items-center gap-2 ${props.size}`;
+  let iClass = `input input-bordered flex items-center gap-2 w-full ${props.size}`;
   if (props.error) {
     iClass += " input-error";
   }
