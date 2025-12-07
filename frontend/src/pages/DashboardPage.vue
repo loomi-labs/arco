@@ -1,24 +1,24 @@
 <script setup lang='ts'>
 import { useRouter } from "vue-router";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
 import { showAndLogError } from "../common/logger";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { InformationCircleIcon } from "@heroicons/vue/24/outline";
+import { FolderIcon, CircleStackIcon, InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
+import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
+import EmptyStateCard from "../components/EmptyStateCard.vue";
 import { Vue3Lottie } from "vue3-lottie";
-import * as EventHelpers from "../common/events";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
-import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
+import * as EventHelpers from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import {Events} from "@wailsio/runtime";
+import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { Events } from "@wailsio/runtime";
 
 /************
  * Types
@@ -29,12 +29,16 @@ import {Events} from "@wailsio/runtime";
  ************/
 
 const router = useRouter();
+const isDark = useDark();
 const backupProfiles = ref<ent.BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
-const showWelcomeModal = computed(() => settings.value.showWelcome && backupProfiles.value.length === 0 && repos.value.length === 0);
-const settings = ref<ent.Settings>(ent.Settings.createFrom());
-const isDark = useDark();
+const backupConceptsInfoModalKey = useId();
+const backupConceptsInfoModal = useTemplateRef<InstanceType<typeof BackupConceptsInfoModal>>(backupConceptsInfoModalKey);
 
+// Empty state computeds
+const isEmpty = computed(() => backupProfiles.value.length === 0 && repos.value.length === 0);
+const hasNoProfiles = computed(() => backupProfiles.value.length === 0);
+const hasNoRepos = computed(() => repos.value.length === 0);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -46,21 +50,13 @@ async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
-    settings.value = await userService.GetSettings() ?? ent.Settings.createFrom();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
   }
 }
 
-async function welcomeModalClosed() {
-  if (settings.value.showWelcome) {
-    settings.value.showWelcome = false;
-    try {
-      await userService.SaveSettings(settings.value);
-    } catch (error: unknown) {
-      await showAndLogError("Failed to save settings", error);
-    }
-  }
+function showBackupConceptsInfoModal() {
+  backupConceptsInfoModal.value?.showModal();
 }
 
 /************
@@ -86,24 +82,56 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Backups profiles -->
   <div class='text-left py-10 px-8'>
-    <div class='flex items-center text-base-strong gap-2 pb-2'>
+    <!-- Welcome Banner: shown when both backup profiles and repos are empty -->
+    <div v-if='isEmpty' class='ac-card p-8 mb-8'>
+      <div class='flex flex-col items-center text-center gap-4'>
+        <div class='w-24'>
+          <Vue3Lottie v-if='isDark' :animationData='RocketDarkJson' />
+          <Vue3Lottie v-else :animationData='RocketLightJson' />
+        </div>
+        <h1 class='text-2xl font-bold text-base-strong'>Welcome to Arco</h1>
+        <p class='max-w-xl text-base-content/80'>
+          Start by creating a backup profile to define your backup strategy<br><br>
+          Or add an existing repository if you've used Arco or Borg Backup before.
+        </p>
+      </div>
+    </div>
+
+    <!-- Backup Profiles Section -->
+    <div class='flex items-center gap-2 text-base-strong pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup Profiles</h1>
-      <span class='flex tooltip tooltip-info' data-tip='Defines the data and rules of your backups'>
-        <span class='cursor-help hover:text-info'>
-          <InformationCircleIcon class='size-8' />
-        </span>
-      </span>
+      <button @click='showBackupConceptsInfoModal' class='btn btn-circle btn-ghost btn-sm'>
+        <InformationCircleIcon class='size-8' />
+      </button>
     </div>
 
     <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
-      <!-- Backup Card -->
+      <!-- Backup Profile Cards -->
       <div v-for='backup in backupProfiles' :key='backup.id'>
         <BackupProfileCard :backup='backup' />
       </div>
-      <!-- Add Backup Card -->
-      <div @click='router.push(Page.AddBackupProfile)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+
+      <!-- Empty State Card for Backup Profiles -->
+      <EmptyStateCard
+        v-if='hasNoProfiles'
+        title='No Backup Profiles Yet'
+        description='Backup profiles define what folders to backup, how often, and where to store them.'
+        buttonText='Create Your First Backup Profile'
+        :showInfoButton='false'
+        @action='router.push(Page.AddBackupProfile)'
+      >
+        <template #icon>
+          <FolderIcon class='size-6' />
+        </template>
+      </EmptyStateCard>
+
+      <!-- Add Backup Card (when has profiles already) -->
+      <div
+        v-else
+        @click='router.push(Page.AddBackupProfile)'
+        class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'
+      >
         <PlusCircleIcon class='size-12' />
         <div class='pl-2 text-lg font-semibold'>Add Backup Profile</div>
       </div>
@@ -111,67 +139,41 @@ onUnmounted(() => {
 
     <div class='divider pt-10 pb-8'></div>
 
-    <!-- Repositories -->
+    <!-- Repositories Section -->
     <div class='text-left'>
-      <div class='flex items-center text-base-strong gap-2 pb-2'>
-        <h1 class='text-4xl font-bold' :id='Anchor.Repositories'>Repositories</h1>
-        <span class='flex tooltip tooltip-info' data-tip='Defines where your backups are stored'>
-        <span class='cursor-help hover:text-info'>
-          <InformationCircleIcon class='size-8' />
-        </span>
-      </span>
-      </div>
+      <h1 class='text-4xl font-bold text-base-strong pb-2' :id='Anchor.Repositories'>Repositories</h1>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
-        <!-- Repository Card -->
+        <!-- Repository Cards -->
         <div v-for='repo in repos' :key='repo.id'>
           <RepoCardSimple :repo='repo' />
         </div>
-        <!-- Add Repository Card -->
-        <div @click='router.push(Page.AddRepository)' class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'>
+
+        <!-- Empty State Card for Repositories -->
+        <EmptyStateCard
+          v-if='hasNoRepos'
+          title='No Repositories Yet'
+          description='Repositories store your backup archives.'
+          buttonText='Add Your First Repository'
+          @action='router.push(Page.AddRepository)'
+        >
+          <template #icon>
+            <CircleStackIcon class='size-6' />
+          </template>
+        </EmptyStateCard>
+
+        <!-- Add Repository Card (when has repos already) -->
+        <div
+          v-else
+          @click='router.push(Page.AddRepository)'
+          class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'
+        >
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
         </div>
       </div>
     </div>
 
-    <TransitionRoot as='template' :show='showWelcomeModal'>
-      <Dialog class='relative z-50' @close='welcomeModalClosed'>
-        <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100' leave='ease-in duration-200'
-                         leave-from='opacity-100' leave-to='opacity-0'>
-          <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
-        </TransitionChild>
-
-        <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
-          <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
-            <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
-                             enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
-                             leave-from='opacity-100 translate-y-0 sm:scale-100' leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
-              <DialogPanel
-                class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
-                <div class='flex p-8'>
-                  <div class='pl-4'>
-                    <div class='flex flex-col items-center text-center gap-1'>
-                      <div class='w-1/4'>
-                        <Vue3Lottie v-if='isDark' :animationData='RocketDarkJson' />
-                        <Vue3Lottie v-else :animationData='RocketLightJson' />
-                      </div>
-                      <DialogTitle as='h3' class='text-lg font-semibold dark:text-white'>Welcome to Arco</DialogTitle>
-                      <p>Start by adding your first <span class='font-semibold dark:text-white'>backup profile</span>.</p>
-                      <p class='pt-2'>If you used <span class='font-semibold dark:text-white'>Arco</span> or <span
-                        class='font-semibold dark:text-white'>Borg Backup</span> before you
-                        can add your previous <span class='font-semibold dark:text-white'>repositories</span>.</p>
-                      <div class='pt-4'>
-                        <button type='button' class='btn btn-sm btn-success' @click='welcomeModalClosed'>Okay let's start</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </DialogPanel>
-            </TransitionChild>
-          </div>
-        </div>
-      </Dialog>
-    </TransitionRoot>
+    <BackupConceptsInfoModal :ref='backupConceptsInfoModalKey' />
   </div>
 </template>
 
