@@ -87,13 +87,13 @@ function navigateToRepo() {
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full cursor-pointer flex overflow-hidden' @click='navigateToRepo'>
+  <div class='group ac-card-hover h-full w-full cursor-pointer flex' @click='navigateToRepo'>
     <!-- Content -->
     <div class='flex-1 p-5'>
       <!-- Name & Encryption -->
       <div class='flex justify-between items-center mb-4'>
         <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
-        <span v-if='repo.hasPassword' class='tooltip tooltip-left' data-tip='Repository is encrypted with a password'>
+        <span v-if='repo.hasPassword' class='tooltip' data-tip='Repository is encrypted with a password'>
           <LockClosedIcon class='size-5 text-base-content/60 cursor-pointer' />
         </span>
         <span v-else class='text-xs text-base-content/40'>No encryption</span>
@@ -116,11 +116,11 @@ function navigateToRepo() {
           <span class='text-base-content/60'>Last Backup</span>
           <div class='flex items-center gap-1'>
             <CheckCircleIcon v-if='lastBackupStatus === "success"' class='size-4 text-success' />
-            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-left tooltip-warning'
+            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
                   :data-tip='repo.lastBackupWarning'>
               <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
-            <span v-else-if='lastBackupStatus === "error"' class='tooltip tooltip-left tooltip-error'
+            <span v-else-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
                   :data-tip='repo.lastBackupError'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
@@ -132,7 +132,7 @@ function navigateToRepo() {
           <span class='text-base-content/60'>Last Healthcheck</span>
           <div class='flex items-center gap-1'>
             <CheckCircleIcon v-if='lastCheckStatus === "success"' class='size-4 text-success' />
-            <span v-else-if='lastCheckStatus === "error"' class='tooltip tooltip-left tooltip-error'
+            <span v-else-if='lastCheckStatus === "error"' class='tooltip tooltip-top tooltip-error'
                   :data-tip='repo.quickCheckError'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>

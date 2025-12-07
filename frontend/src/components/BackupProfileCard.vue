@@ -212,11 +212,11 @@ onUnmounted(() => {
         <div class='flex justify-between items-center'>
           <span class='text-base-content/60'>Last backup</span>
           <div class='flex items-center gap-2'>
-            <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-left tooltip-error'
+            <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
                   :data-tip='failedBackupRun'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
-            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-left tooltip-warning'
+            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
                   :data-tip='warningBackupRun'>
               <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
