@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { CheckCircleIcon } from "@heroicons/vue/24/solid";
+import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/solid";
 import { isAfter } from "@formkit/tempo";
 import { debounce } from "lodash";
 import { Events } from "@wailsio/runtime";
@@ -214,11 +214,11 @@ onUnmounted(() => {
           <div class='flex items-center gap-2'>
             <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-left tooltip-error'
                   :data-tip='failedBackupRun'>
-              <span class='badge badge-error badge-xs'>!</span>
+              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
             <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-left tooltip-warning'
                   :data-tip='warningBackupRun'>
-              <span class='badge badge-warning badge-xs'>!</span>
+              <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
             <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
                   :data-tip='toLongDateString(lastArchive.createdAt)'>

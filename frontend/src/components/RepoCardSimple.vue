@@ -2,11 +2,10 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from '@heroicons/vue/24/outline';
-import { ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/vue/24/solid';
+import { CheckCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/vue/24/solid';
 import ArcoCloudIcon from './common/ArcoCloudIcon.vue';
 import { toHumanReadableSize } from '../common/repository';
-import { toLongDateString, toRelativeTimeString } from '../common/time';
-import { toCreationTimeBadge, toCreationTimeTooltip } from '../common/badge';
+import { toRelativeTimeString } from '../common/time';
 import { Page, withId } from '../router';
 import type * as repoModels from '../../bindings/github.com/loomi-labs/arco/backend/app/repository/models';
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -95,7 +94,7 @@ function navigateToRepo() {
       <div class='flex justify-between items-center mb-4'>
         <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
         <span v-if='repo.hasPassword' class='tooltip tooltip-left' data-tip='Repository is encrypted with a password'>
-          <LockClosedIcon class='size-5 text-base-content/60 cursor-help' />
+          <LockClosedIcon class='size-5 text-base-content/60 cursor-pointer' />
         </span>
         <span v-else class='text-xs text-base-content/40'>No encryption</span>
       </div>
@@ -116,23 +115,28 @@ function navigateToRepo() {
         <div class='flex justify-between items-center'>
           <span class='text-base-content/60'>Last Backup</span>
           <div class='flex items-center gap-1'>
-            <ExclamationTriangleIcon v-if='lastBackupStatus === "warning"' class='size-4 text-warning' />
-            <ExclamationTriangleIcon v-else-if='lastBackupStatus === "error"' class='size-4 text-error' />
-            <span v-if='repo.lastBackupTime' :class='toCreationTimeTooltip(repo.lastBackupTime)' :data-tip='toLongDateString(repo.lastBackupTime)'>
-              <span :class='toCreationTimeBadge(repo.lastBackupTime)'>{{ formattedLastBackupTime }}</span>
+            <CheckCircleIcon v-if='lastBackupStatus === "success"' class='size-4 text-success' />
+            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-left tooltip-warning'
+                  :data-tip='repo.lastBackupWarning'>
+              <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
-            <span v-else>Never</span>
+            <span v-else-if='lastBackupStatus === "error"' class='tooltip tooltip-left tooltip-error'
+                  :data-tip='repo.lastBackupError'>
+              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
+            </span>
+            <span>{{ formattedLastBackupTime || 'Never' }}</span>
           </div>
         </div>
-        <!-- Last Check -->
+        <!-- Last Healthcheck -->
         <div class='flex justify-between items-center'>
-          <span class='text-base-content/60'>Last Check</span>
+          <span class='text-base-content/60'>Last Healthcheck</span>
           <div class='flex items-center gap-1'>
-            <ExclamationTriangleIcon v-if='lastCheckStatus === "error"' class='size-4 text-error' />
-            <span v-if='repo.lastQuickCheckAt' :class='toCreationTimeTooltip(repo.lastQuickCheckAt)' :data-tip='toLongDateString(repo.lastQuickCheckAt)'>
-              <span :class='toCreationTimeBadge(repo.lastQuickCheckAt)'>{{ formattedLastCheckTime }}</span>
+            <CheckCircleIcon v-if='lastCheckStatus === "success"' class='size-4 text-success' />
+            <span v-else-if='lastCheckStatus === "error"' class='tooltip tooltip-left tooltip-error'
+                  :data-tip='repo.quickCheckError'>
+              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
-            <span v-else>Never</span>
+            <span>{{ formattedLastCheckTime || 'Never' }}</span>
           </div>
         </div>
       </div>

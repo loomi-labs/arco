@@ -56,10 +56,10 @@ const isChangingPassphrase = ref(false);
 const isBreakingLock = ref(false);
 const newPassphrase = ref<string>("");
 
-// Verification state
-const isVerifying = computed(() => repo.value.state.type === RepositoryStateType.RepositoryStateTypeChecking);
-const showVerifyModal = ref(false);
-const verifyDepthQuick = ref(false);
+// Healthcheck state
+const isCheckingHealth = computed(() => repo.value.state.type === RepositoryStateType.RepositoryStateTypeChecking);
+const showHealthcheckModal = ref(false);
+const healthcheckDepthQuick = ref(false);
 
 // Passphrase modal state
 const showPassphraseModal = ref(false);
@@ -197,21 +197,21 @@ async function deleteRepo() {
   }
 }
 
-function openVerifyModal() {
+function openHealthcheckModal() {
   if (!repo.value) return;
 
-  verifyDepthQuick.value = true;  // Default to Quick
-  showVerifyModal.value = true;
+  healthcheckDepthQuick.value = true;  // Default to Quick
+  showHealthcheckModal.value = true;
 }
 
-async function startVerification(quick: boolean) {
+async function startHealthcheck(quick: boolean) {
   if (!repo.value) return;
 
   try {
-    showVerifyModal.value = false;
+    showHealthcheckModal.value = false;
     await repoService.QueueCheck(repo.value.id, quick);
   } catch (error: unknown) {
-    await showAndLogError("Failed to start verification", error);
+    await showAndLogError("Failed to start healthcheck", error);
   }
 }
 
@@ -451,21 +451,21 @@ onUnmounted(() => {
               </button>
             </div>
 
-            <!-- Verification Row (interactive) -->
+            <!-- Healthcheck Row (interactive) -->
             <div :class='[
                    "border rounded-lg p-3 flex items-center gap-3 transition-all cursor-pointer",
-                   showVerifyModal
+                   showHealthcheckModal
                      ? "border-secondary bg-secondary/10"
                      : "border-base-300 hover:border-base-content/30"
                  ]'
-                 @click='openVerifyModal'>
+                 @click='openHealthcheckModal'>
               <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
                    viewBox='0 0 24 24' stroke='currentColor'>
                 <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
                       d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' />
               </svg>
               <div class='flex-1'>
-                <span class='text-sm opacity-70'>Integrity Verification</span>
+                <span class='text-sm opacity-70'>Healthcheck</span>
                 <div class='flex gap-4 text-xs mt-1'>
                   <span>
                     <span class='opacity-50'>Quick:</span>
@@ -481,8 +481,8 @@ onUnmounted(() => {
                   </span>
                 </div>
               </div>
-              <button class='btn btn-xs btn-outline w-32' :disabled='isVerifying' @click.stop='openVerifyModal'>
-                {{ isVerifying ? "Verifying..." : "Verify" }}
+              <button class='btn btn-xs btn-outline w-32' :disabled='isCheckingHealth' @click.stop='openHealthcheckModal'>
+                {{ isCheckingHealth ? "Checking..." : "Healthcheck" }}
               </button>
             </div>
 
@@ -632,9 +632,9 @@ onUnmounted(() => {
       </template>
     </ConfirmModal>
 
-    <!-- Verification Modal -->
-    <TransitionRoot as='template' :show='showVerifyModal'>
-      <Dialog class='relative z-50' @close='showVerifyModal = false'>
+    <!-- Healthcheck Modal -->
+    <TransitionRoot as='template' :show='showHealthcheckModal'>
+      <Dialog class='relative z-50' @close='showHealthcheckModal = false'>
         <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
                          leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
           <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
@@ -650,41 +650,41 @@ onUnmounted(() => {
               <DialogPanel
                 class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
                 <div class='p-8'>
-                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Verify Repository</DialogTitle>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Repository Healthcheck</DialogTitle>
 
                   <div class='form-control'>
                     <label class='label cursor-pointer justify-start gap-4'>
-                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='true'
-                             v-model='verifyDepthQuick' />
+                      <input type='radio' name='healthcheck-depth' class='radio radio-secondary' :value='true'
+                             v-model='healthcheckDepthQuick' />
                       <div>
-                        <div class='font-semibold'>Quick Verification</div>
+                        <div class='font-semibold'>Quick Check</div>
                         <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
                       </div>
                     </label>
 
                     <label class='label cursor-pointer justify-start gap-4 mt-2'>
-                      <input type='radio' name='verify-depth' class='radio radio-secondary' :value='false'
-                             v-model='verifyDepthQuick' />
+                      <input type='radio' name='healthcheck-depth' class='radio radio-secondary' :value='false'
+                             v-model='healthcheckDepthQuick' />
                       <div>
-                        <div class='font-semibold'>Full Verification</div>
+                        <div class='font-semibold'>Full Check</div>
                         <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
                       </div>
                     </label>
                   </div>
 
-                  <div v-if='!verifyDepthQuick' class='alert alert-warning text-sm mt-4'>
+                  <div v-if='!healthcheckDepthQuick' class='alert alert-warning text-sm mt-4'>
                     <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-5 w-5' fill='none'
                          viewBox='0 0 24 24'>
                       <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
                             d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
                     </svg>
-                    Full verification reads all backup data and can take a long time for large repositories.
+                    Full check reads all backup data and can take a long time for large repositories.
                   </div>
 
                   <div class='flex justify-between pt-5'>
-                    <button class='btn btn-outline' @click='showVerifyModal = false'>Cancel</button>
-                    <button class='btn btn-primary' @click='startVerification(verifyDepthQuick)'>
-                      Start Verification
+                    <button class='btn btn-outline' @click='showHealthcheckModal = false'>Cancel</button>
+                    <button class='btn btn-primary' @click='startHealthcheck(healthcheckDepthQuick)'>
+                      Start Healthcheck
                     </button>
                   </div>
                 </div>
