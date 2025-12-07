@@ -163,15 +163,23 @@
     }
 }
 
-/* Fix for webkit checkbox/toggle native appearance showing through */
 @layer base {
+    /* Fix for webkit checkbox/toggle native appearance showing through */
     input[type="checkbox"].toggle,
     input[type="checkbox"].checkbox,
     input[type="radio"].radio {
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
-        background-image: none !important;
+        background-image: none;
+    }
+
+    /* Fix toggle/radio/checkbox/range background in dark mode */
+    [data-theme=dark] input[type="checkbox"].toggle:not(:checked),
+    [data-theme=dark] input[type="checkbox"].checkbox:not(:checked),
+    [data-theme=dark] input[type="radio"].radio:not(:checked),
+    [data-theme=dark] input[type="range"].range {
+        background-color: var(--color-base-100);
     }
 
     /* Hide the browser's internal checkmark indicator (WebKit) */
