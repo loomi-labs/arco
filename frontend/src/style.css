@@ -305,7 +305,7 @@
 
 /* Custom tooltip colors matching badge colors - use border color for bg (always solid in both themes) */
 .tooltip-badge-fresh::before {
-    @apply bg-badge-fresh-border text-white;
+    @apply bg-badge-fresh-border text-gray-900;
 }
 .tooltip-badge-recent::before {
     @apply bg-badge-recent-border text-white;
