@@ -198,6 +198,7 @@ type ArchiveList struct {
 	Name     string     `json:"name"`
 	Start    StringTime `json:"start"`
 	End      StringTime `json:"end"`
+	Comment  string     `json:"comment"`
 }
 
 type Limits struct {

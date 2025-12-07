@@ -1903,23 +1903,38 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 		return fmt.Errorf("failed to query existing archives: %w", err)
 	}
 
-	// Create map of existing borg IDs for faster lookup
-	existingBorgIds := make(map[string]bool)
+	// Create map of existing archives by borg ID for faster lookup
+	existingArchiveMap := make(map[string]*ent.Archive)
 	for _, arch := range existingArchives {
-		existingBorgIds[arch.BorgID] = true
+		existingArchiveMap[arch.BorgID] = arch
 	}
 
-	// Create new archives for those not already in database
+	// Create or update archives
 	newArchiveCount := 0
+	updatedArchiveCount := 0
 	for _, arch := range archives {
-		if existingBorgIds[arch.ID] {
-			continue // Archive already exists, skip
-		}
-
 		// Calculate duration from start to end time
 		startTime := time.Time(arch.Start)
 		endTime := time.Time(arch.End)
 		duration := endTime.Sub(startTime)
+
+		if existingArch, exists := existingArchiveMap[arch.ID]; exists {
+			// Check if any field has changed
+			if existingArch.Name != arch.Name ||
+				existingArch.Comment != arch.Comment ||
+				existingArch.Duration != duration.Seconds() {
+				_, err := existingArch.Update().
+					SetName(arch.Name).
+					SetComment(arch.Comment).
+					SetDuration(duration.Seconds()).
+					Save(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to update archive %s: %w", arch.Name, err)
+				}
+				updatedArchiveCount++
+			}
+			continue
+		}
 
 		// Create base archive creation query
 		createQuery := e.db.Archive.Create().
@@ -1927,7 +1942,8 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 			SetName(arch.Name).
 			SetCreatedAt(startTime).
 			SetDuration(duration.Seconds()).
-			SetRepositoryID(repositoryID)
+			SetRepositoryID(repositoryID).
+			SetComment(arch.Comment)
 
 		// Find matching backup profile by prefix
 		for _, backupProfile := range repo.Edges.BackupProfiles {
@@ -1950,8 +1966,12 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 		e.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
 	}
 
-	// Emit event if any archives were changed (deleted or created)
-	if deletedCount > 0 || newArchiveCount > 0 {
+	if updatedArchiveCount > 0 {
+		e.log.Infow("Updated existing archives", "count", updatedArchiveCount, "repositoryID", repositoryID)
+	}
+
+	// Emit event if any archives were changed (deleted, created, or updated)
+	if deletedCount > 0 || newArchiveCount > 0 || updatedArchiveCount > 0 {
 		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repositoryID))
 	}
 
@@ -1994,6 +2014,7 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 		_, err := existingArchive.Update().
 			SetName(archiveData.Name).
 			SetDuration(duration.Seconds()).
+			SetComment(archiveData.Comment).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to update archive %s: %w", archiveData.Name, err)
@@ -2010,7 +2031,8 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			SetName(archiveData.Name).
 			SetCreatedAt(startTime).
 			SetDuration(duration.Seconds()).
-			SetRepositoryID(repositoryID)
+			SetRepositoryID(repositoryID).
+			SetComment(archiveData.Comment)
 
 		// Find matching backup profile by prefix
 		for _, backupProfile := range repo.Edges.BackupProfiles {
