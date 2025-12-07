@@ -49,6 +49,10 @@ const scheduleMode = computed(() => {
       return "Weekly";
     case backupschedule.Mode.ModeMonthly:
       return "Monthly";
+    case backupschedule.Mode.ModeDisabled:
+    case backupschedule.Mode.DefaultMode:
+    case backupschedule.Mode.$zero:
+    case undefined:
     default:
       return "Disabled";
   }

@@ -31,6 +31,7 @@ const typeLabel = computed(() => {
     case LocationType.LocationTypeLocal: return 'Local';
     case LocationType.LocationTypeRemote: return 'Remote';
     case LocationType.LocationTypeArcoCloud: return 'Arco Cloud';
+    case LocationType.$zero:
     default: return 'Unknown';
   }
 });
@@ -40,6 +41,7 @@ const typeIcon = computed(() => {
     case LocationType.LocationTypeLocal: return ComputerDesktopIcon;
     case LocationType.LocationTypeRemote: return GlobeEuropeAfricaIcon;
     case LocationType.LocationTypeArcoCloud: return ArcoCloudIcon;
+    case LocationType.$zero:
     default: return ComputerDesktopIcon;
   }
 });
