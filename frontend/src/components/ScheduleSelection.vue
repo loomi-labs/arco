@@ -75,11 +75,20 @@ function setMode(mode: backupschedule.Mode) {
   schedule.value.mode = mode;
 
   // Ensure defaults when switching to modes that need them
+  if (mode === backupschedule.Mode.ModeDaily && !schedule.value.dailyAt) {
+    setTime((d) => schedule.value.dailyAt = d, "09:00");
+  }
   if (mode === backupschedule.Mode.ModeWeekly && !schedule.value.weekday) {
     schedule.value.weekday = backupschedule.Weekday.WeekdayMonday;
   }
+  if (mode === backupschedule.Mode.ModeWeekly && !schedule.value.weeklyAt) {
+    setTime((d) => schedule.value.weeklyAt = d, "09:00");
+  }
   if (mode === backupschedule.Mode.ModeMonthly && !schedule.value.monthday) {
     schedule.value.monthday = 1;
+  }
+  if (mode === backupschedule.Mode.ModeMonthly && !schedule.value.monthlyAt) {
+    setTime((d) => schedule.value.monthlyAt = d, "09:00");
   }
 }
 
