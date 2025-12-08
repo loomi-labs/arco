@@ -555,7 +555,7 @@ onUnmounted(() => {
                 <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
                 <span class='flex-1 text-sm opacity-70'>Storage Efficiency ({{
                     deduplicationRatio
-                  }} dedupplicaton, {{ compressionRatio }} compression)</span>
+                  }} deduplication, {{ compressionRatio }} compression)</span>
                 <span class='font-bold'>{{ spaceSavings }}</span>
               </div>
             </div>
