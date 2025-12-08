@@ -273,7 +273,7 @@
     @apply bg-base-100 shadow-md rounded-xl border border-base-300;
 }
 .ac-card-hover {
-    @apply bg-base-100 shadow-md rounded-xl border border-base-300 cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200;
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 cursor-pointer hover:bg-base-200 hover:shadow-lg transition-all duration-200;
 }
 .ac-card-hover-secondary {
     @apply bg-base-100 shadow-md rounded-xl border border-transparent cursor-pointer hover:shadow-lg hover:border-secondary transition-all duration-200;
