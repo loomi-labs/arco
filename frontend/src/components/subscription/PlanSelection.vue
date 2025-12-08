@@ -81,6 +81,11 @@ function subscribeToPlan() {
   emit("subscribe-clicked", internalSelectedPlan.value);
 }
 
+function subscribeToTrialPlan(planName: string) {
+  internalSelectedPlan.value = planName;
+  emit("subscribe-clicked", planName);
+}
+
 </script>
 
 <template>
@@ -105,6 +110,12 @@ function subscribeToPlan() {
         <div v-if='userSubscriptionPlan === plan.name'
              class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
           Active
+        </div>
+
+        <!-- Trial available badge -->
+        <div v-else-if='(plan.trial_days ?? 0) > 0'
+             class='absolute -top-2 left-4 bg-primary text-primary-content px-3 py-1 text-xs rounded-full font-medium'>
+          {{ plan.trial_days }}-day free trial
         </div>
 
         <!-- Popular badge -->
@@ -160,11 +171,24 @@ function subscribeToPlan() {
           </div>
         </div>
 
-        <!-- Fixed height container for selection icon -->
-        <div class='mt-4 flex justify-center h-8 items-center'>
-          <CheckCircleIcon v-if='userSubscriptionPlan === plan.name' class='size-8 text-success' />
-          <CheckCircleIcon v-else-if='internalSelectedPlan === plan.name && !hasActiveSubscription'
-                           class='size-8 text-secondary' />
+        <!-- Card footer -->
+        <div class='mt-4 space-y-2'>
+          <!-- Selection icon -->
+          <div class='flex justify-center h-8 items-center'>
+            <CheckCircleIcon v-if='userSubscriptionPlan === plan.name' class='size-8 text-success' />
+            <CheckCircleIcon v-else-if='internalSelectedPlan === plan.name && !hasActiveSubscription'
+                             class='size-8 text-secondary' />
+          </div>
+
+          <!-- Trial button -->
+          <button
+            v-if='(plan.trial_days ?? 0) > 0 && !hasActiveSubscription'
+            class='btn btn-primary btn-sm w-full'
+            :disabled='disabled'
+            @click.stop='subscribeToTrialPlan(plan.name ?? "")'
+          >
+            Start Free Trial
+          </button>
         </div>
       </div>
     </div>

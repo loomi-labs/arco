@@ -281,6 +281,13 @@ export class Plan {
      */
     "overage_cents_per_gb"?: number;
 
+    /**
+     * Number of free trial days for this plan (0 if no trial).
+     * Trials are configured in Polar and allow users to try the plan
+     * before being charged.
+     */
+    "trial_days"?: number;
+
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
 
