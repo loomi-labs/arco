@@ -10,7 +10,6 @@ import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
-import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
@@ -65,7 +64,7 @@ const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 
 const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
-const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(confirmRemoveRepoModalKey);
+const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveRepoModalKey);
 
 // Session-based warning dismissal tracking
 const dismissedWarnings = ref<Set<number>>(new Set());
