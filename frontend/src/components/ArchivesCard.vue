@@ -701,7 +701,7 @@ async function handleRenameConfirm(archiveId: number, newName: string, newCommen
     inputValues.value[archive.id] = newName;
     pendingComment.value = newComment;
     confirmUnmountRenameModal.value?.showModal();
-    editArchiveModal.value?.closeModal();
+    editArchiveModal.value?.close();
     (document.activeElement as HTMLElement)?.blur();
     return;
   }
@@ -717,7 +717,7 @@ async function handleRenameConfirm(archiveId: number, newName: string, newCommen
   }
 
   // Close modal on successful operation
-  editArchiveModal.value?.closeModal();
+  editArchiveModal.value?.close();
   (document.activeElement as HTMLElement)?.blur();
 }
 

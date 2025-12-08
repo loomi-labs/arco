@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import { computed, ref } from "vue";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import FormField from "./common/FormField.vue";
 import { formInputClass } from "../common/form";
 import { showAndLogError } from "../common/logger";
@@ -23,10 +24,10 @@ const emit = defineEmits<Emits>();
 
 defineExpose({
   showModal,
-  closeModal
+  close
 });
 
-const dialog = ref<HTMLDialogElement>();
+const isOpen = ref(false);
 const newName = ref<string>("");
 const newComment = ref<string>("");
 const nameError = ref<string | undefined>(undefined);
@@ -66,11 +67,11 @@ function showModal(archive: ArchiveWithPendingChanges, currentName: string) {
   newComment.value = archive.comment ?? "";
   originalComment.value = archive.comment ?? "";
   nameError.value = undefined;
-  dialog.value?.showModal();
+  isOpen.value = true;
 
   // Focus and select input on next tick
   setTimeout(() => {
-    const input = dialog.value?.querySelector('input[type="text"]') as HTMLInputElement;
+    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
     if (input) {
       input.focus();
       input.select();
@@ -78,11 +79,8 @@ function showModal(archive: ArchiveWithPendingChanges, currentName: string) {
   }, 0);
 }
 
-function closeModal() {
-  dialog.value?.close();
-}
-
-function handleDialogClose() {
+function close() {
+  isOpen.value = false;
   // Delay reset to allow fade animation to complete
   setTimeout(() => {
     resetState();
@@ -151,7 +149,7 @@ async function confirmChanges() {
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === "Escape") {
     event.preventDefault();
-    closeModal();
+    close();
   }
 }
 
@@ -165,56 +163,85 @@ function handleNameKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <dialog
-    ref="dialog"
-    class="modal"
-    @close="handleDialogClose"
-  >
-    <div class="modal-box flex flex-col text-left">
-      <h2 class="text-2xl pb-2">
-        Edit Archive
-      </h2>
+  <TransitionRoot as='template' :show='isOpen'>
+    <Dialog class='relative z-50' @close='close'>
+      <!-- Backdrop -->
+      <TransitionChild
+        as='template'
+        enter='ease-out duration-300'
+        enter-from='opacity-0'
+        enter-to='opacity-100'
+        leave='ease-in duration-200'
+        leave-from='opacity-100'
+        leave-to='opacity-0'
+      >
+        <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
+      </TransitionChild>
 
-      <div class="flex flex-col gap-4">
-        <FormField label="Archive name" :error="nameError">
-          <input
-            :class="formInputClass"
-            type="text"
-            v-model="newName"
-            @input="validateName"
-            @keydown="handleNameKeydown"
-            placeholder="Enter archive name"
-          />
-        </FormField>
-
-        <FormField label="Comment (optional)">
-          <input
-            :class="formInputClass"
-            type='text'
-            v-model="newComment"
-            @keydown="handleKeydown"
-            placeholder="Enter archive comment"
-          />
-        </FormField>
-
-        <div class="modal-action justify-between">
-          <button
-            class="btn btn-outline"
-            type="button"
-            @click="closeModal"
+      <!-- Modal Container -->
+      <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+        <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
+          <!-- Modal Panel -->
+          <TransitionChild
+            as='template'
+            enter='ease-out duration-300'
+            enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+            enter-to='opacity-100 translate-y-0 sm:scale-100'
+            leave='ease-in duration-200'
+            leave-from='opacity-100 translate-y-0 sm:scale-100'
+            leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
           >
-            Cancel
-          </button>
-          <button
-            class="btn btn-primary"
-            type="button"
-            :disabled="!isValid"
-            @click="confirmChanges"
-          >
-            Save
-          </button>
+            <DialogPanel class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
+              <div class='p-8'>
+                <DialogTitle as='h3' class='text-xl font-bold'>
+                  Edit Archive
+                </DialogTitle>
+
+                <div class='flex flex-col gap-4 mt-4'>
+                  <FormField label="Archive name" :error="nameError">
+                    <input
+                      :class="formInputClass"
+                      type="text"
+                      v-model="newName"
+                      @input="validateName"
+                      @keydown="handleNameKeydown"
+                      placeholder="Enter archive name"
+                    />
+                  </FormField>
+
+                  <FormField label="Comment (optional)">
+                    <input
+                      :class="formInputClass"
+                      type='text'
+                      v-model="newComment"
+                      @keydown="handleKeydown"
+                      placeholder="Enter archive comment"
+                    />
+                  </FormField>
+
+                  <div class='flex justify-between pt-6'>
+                    <button
+                      class='btn btn-outline'
+                      type='button'
+                      @click='close'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class='btn btn-primary'
+                      type='button'
+                      :disabled='!isValid'
+                      @click='confirmChanges'
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </DialogPanel>
+          </TransitionChild>
         </div>
       </div>
-    </div>
-  </dialog>
+    </Dialog>
+  </TransitionRoot>
 </template>
