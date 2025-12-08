@@ -43,11 +43,20 @@ export function CreateCheckoutSession(planId: string): $CancellablePromise<arcov
 }
 
 /**
+ * CreateCustomerPortalSession creates a pre-authenticated session URL for the Polar customer portal
+ */
+export function CreateCustomerPortalSession(): $CancellablePromise<arcov1$0.CreateCustomerPortalSessionResponse | null> {
+    return $Call.ByID(1820936521).then(($result: any) => {
+        return $$createType5($result);
+    });
+}
+
+/**
  * DowngradeSubscription schedules a plan downgrade for end of billing period
  */
 export function DowngradeSubscription(subscriptionID: string, planID: string): $CancellablePromise<arcov1$0.DowngradeSubscriptionResponse | null> {
     return $Call.ByID(4264812557, subscriptionID, planID).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType7($result);
     });
 }
 
@@ -56,7 +65,7 @@ export function DowngradeSubscription(subscriptionID: string, planID: string): $
  */
 export function GetCheckoutResult(): $CancellablePromise<state$0.CheckoutResult | null> {
     return $Call.ByID(3825337690).then(($result: any) => {
-        return $$createType7($result);
+        return $$createType9($result);
     });
 }
 
@@ -74,7 +83,7 @@ export function GetCheckoutSession(): $CancellablePromise<arcov1$0.CreateCheckou
  */
 export function GetSubscription(): $CancellablePromise<arcov1$0.GetSubscriptionResponse | null> {
     return $Call.ByID(3325132602).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType11($result);
     });
 }
 
@@ -83,7 +92,7 @@ export function GetSubscription(): $CancellablePromise<arcov1$0.GetSubscriptionR
  */
 export function ReactivateSubscription(subscriptionID: string): $CancellablePromise<arcov1$0.ReactivateSubscriptionResponse | null> {
     return $Call.ByID(1542251936, subscriptionID).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType13($result);
     });
 }
 
@@ -92,7 +101,7 @@ export function ReactivateSubscription(subscriptionID: string): $CancellableProm
  */
 export function UpgradeSubscription(subscriptionID: string, planID: string): $CancellablePromise<arcov1$0.UpgradeSubscriptionResponse | null> {
     return $Call.ByID(3859866138, subscriptionID, planID).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType15($result);
     });
 }
 
@@ -101,13 +110,15 @@ const $$createType0 = arcov1$0.CancelSubscriptionResponse.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = arcov1$0.CreateCheckoutSessionResponse.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = arcov1$0.DowngradeSubscriptionResponse.createFrom;
+const $$createType4 = arcov1$0.CreateCustomerPortalSessionResponse.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = state$0.CheckoutResult.createFrom;
+const $$createType6 = arcov1$0.DowngradeSubscriptionResponse.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = arcov1$0.GetSubscriptionResponse.createFrom;
+const $$createType8 = state$0.CheckoutResult.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = arcov1$0.ReactivateSubscriptionResponse.createFrom;
+const $$createType10 = arcov1$0.GetSubscriptionResponse.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = arcov1$0.UpgradeSubscriptionResponse.createFrom;
+const $$createType12 = arcov1$0.ReactivateSubscriptionResponse.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
+const $$createType14 = arcov1$0.UpgradeSubscriptionResponse.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);

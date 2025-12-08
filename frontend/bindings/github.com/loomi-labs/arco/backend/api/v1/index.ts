@@ -4,6 +4,7 @@
 export {
     CancelSubscriptionResponse,
     CreateCheckoutSessionResponse,
+    CreateCustomerPortalSessionResponse,
     CurrentPeriodCharges,
     DowngradeSubscriptionResponse,
     GetSubscriptionResponse,

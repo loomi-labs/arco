@@ -54,6 +54,9 @@ const (
 	// SubscriptionServiceDowngradeSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's DowngradeSubscription RPC.
 	SubscriptionServiceDowngradeSubscriptionProcedure = "/api.v1.SubscriptionService/DowngradeSubscription"
+	// SubscriptionServiceCreateCustomerPortalSessionProcedure is the fully-qualified name of the
+	// SubscriptionService's CreateCustomerPortalSession RPC.
+	SubscriptionServiceCreateCustomerPortalSessionProcedure = "/api.v1.SubscriptionService/CreateCustomerPortalSession"
 )
 
 // SubscriptionServiceClient is a client for the api.v1.SubscriptionService service.
@@ -116,6 +119,13 @@ type SubscriptionServiceClient interface {
 	//
 	// Requires active subscription and authentication.
 	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
+	// CreateCustomerPortalSession creates a pre-authenticated customer portal session.
+	//
+	// Generates a URL that allows users to access the Polar customer portal
+	// to manage their subscription, view invoices, and update payment methods.
+	//
+	// Requires authentication and active subscription.
+	CreateCustomerPortalSession(context.Context, *connect.Request[v1.CreateCustomerPortalSessionRequest]) (*connect.Response[v1.CreateCustomerPortalSessionResponse], error)
 }
 
 // NewSubscriptionServiceClient constructs a client for the api.v1.SubscriptionService service. By
@@ -171,18 +181,25 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("DowngradeSubscription")),
 			connect.WithClientOptions(opts...),
 		),
+		createCustomerPortalSession: connect.NewClient[v1.CreateCustomerPortalSessionRequest, v1.CreateCustomerPortalSessionResponse](
+			httpClient,
+			baseURL+SubscriptionServiceCreateCustomerPortalSessionProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("CreateCustomerPortalSession")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription           *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
-	createCheckoutSession     *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
-	waitForCheckoutCompletion *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
-	cancelSubscription        *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
-	reactivateSubscription    *connect.Client[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse]
-	upgradeSubscription       *connect.Client[v1.UpgradeSubscriptionRequest, v1.UpgradeSubscriptionResponse]
-	downgradeSubscription     *connect.Client[v1.DowngradeSubscriptionRequest, v1.DowngradeSubscriptionResponse]
+	getSubscription             *connect.Client[v1.GetSubscriptionRequest, v1.GetSubscriptionResponse]
+	createCheckoutSession       *connect.Client[v1.CreateCheckoutSessionRequest, v1.CreateCheckoutSessionResponse]
+	waitForCheckoutCompletion   *connect.Client[v1.WaitForCheckoutCompletionRequest, v1.WaitForCheckoutCompletionResponse]
+	cancelSubscription          *connect.Client[v1.CancelSubscriptionRequest, v1.CancelSubscriptionResponse]
+	reactivateSubscription      *connect.Client[v1.ReactivateSubscriptionRequest, v1.ReactivateSubscriptionResponse]
+	upgradeSubscription         *connect.Client[v1.UpgradeSubscriptionRequest, v1.UpgradeSubscriptionResponse]
+	downgradeSubscription       *connect.Client[v1.DowngradeSubscriptionRequest, v1.DowngradeSubscriptionResponse]
+	createCustomerPortalSession *connect.Client[v1.CreateCustomerPortalSessionRequest, v1.CreateCustomerPortalSessionResponse]
 }
 
 // GetSubscription calls api.v1.SubscriptionService.GetSubscription.
@@ -218,6 +235,11 @@ func (c *subscriptionServiceClient) UpgradeSubscription(ctx context.Context, req
 // DowngradeSubscription calls api.v1.SubscriptionService.DowngradeSubscription.
 func (c *subscriptionServiceClient) DowngradeSubscription(ctx context.Context, req *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error) {
 	return c.downgradeSubscription.CallUnary(ctx, req)
+}
+
+// CreateCustomerPortalSession calls api.v1.SubscriptionService.CreateCustomerPortalSession.
+func (c *subscriptionServiceClient) CreateCustomerPortalSession(ctx context.Context, req *connect.Request[v1.CreateCustomerPortalSessionRequest]) (*connect.Response[v1.CreateCustomerPortalSessionResponse], error) {
+	return c.createCustomerPortalSession.CallUnary(ctx, req)
 }
 
 // SubscriptionServiceHandler is an implementation of the api.v1.SubscriptionService service.
@@ -280,6 +302,13 @@ type SubscriptionServiceHandler interface {
 	//
 	// Requires active subscription and authentication.
 	DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error)
+	// CreateCustomerPortalSession creates a pre-authenticated customer portal session.
+	//
+	// Generates a URL that allows users to access the Polar customer portal
+	// to manage their subscription, view invoices, and update payment methods.
+	//
+	// Requires authentication and active subscription.
+	CreateCustomerPortalSession(context.Context, *connect.Request[v1.CreateCustomerPortalSessionRequest]) (*connect.Response[v1.CreateCustomerPortalSessionResponse], error)
 }
 
 // NewSubscriptionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -331,6 +360,12 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("DowngradeSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	subscriptionServiceCreateCustomerPortalSessionHandler := connect.NewUnaryHandler(
+		SubscriptionServiceCreateCustomerPortalSessionProcedure,
+		svc.CreateCustomerPortalSession,
+		connect.WithSchema(subscriptionServiceMethods.ByName("CreateCustomerPortalSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SubscriptionServiceGetSubscriptionProcedure:
@@ -347,6 +382,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceUpgradeSubscriptionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceDowngradeSubscriptionProcedure:
 			subscriptionServiceDowngradeSubscriptionHandler.ServeHTTP(w, r)
+		case SubscriptionServiceCreateCustomerPortalSessionProcedure:
+			subscriptionServiceCreateCustomerPortalSessionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -382,4 +419,8 @@ func (UnimplementedSubscriptionServiceHandler) UpgradeSubscription(context.Conte
 
 func (UnimplementedSubscriptionServiceHandler) DowngradeSubscription(context.Context, *connect.Request[v1.DowngradeSubscriptionRequest]) (*connect.Response[v1.DowngradeSubscriptionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.DowngradeSubscription is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) CreateCustomerPortalSession(context.Context, *connect.Request[v1.CreateCustomerPortalSessionRequest]) (*connect.Response[v1.CreateCustomerPortalSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.SubscriptionService.CreateCustomerPortalSession is not implemented"))
 }

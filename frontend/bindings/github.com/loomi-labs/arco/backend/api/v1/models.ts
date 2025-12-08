@@ -81,6 +81,33 @@ export class CreateCheckoutSessionResponse {
 }
 
 /**
+ * CreateCustomerPortalSessionResponse contains the customer portal session details.
+ * 
+ * Provides the portal URL for the customer to manage their subscription.
+ */
+export class CreateCustomerPortalSessionResponse {
+    /**
+     * Portal URL for the customer to access their account.
+     * This is a pre-authenticated URL that grants immediate access.
+     */
+    "portal_url"?: string;
+
+    /** Creates a new CreateCustomerPortalSessionResponse instance. */
+    constructor($$source: Partial<CreateCustomerPortalSessionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CreateCustomerPortalSessionResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CreateCustomerPortalSessionResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CreateCustomerPortalSessionResponse($$parsedSource as Partial<CreateCustomerPortalSessionResponse>);
+    }
+}
+
+/**
  * CurrentPeriodCharges represents estimated billing charges for the current billing period.
  * 
  * These are estimates based on current usage and may differ from final invoice amounts.

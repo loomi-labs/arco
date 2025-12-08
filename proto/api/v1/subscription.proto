@@ -76,6 +76,14 @@ service SubscriptionService {
   //
   // Requires active subscription and authentication.
   rpc DowngradeSubscription(DowngradeSubscriptionRequest) returns (DowngradeSubscriptionResponse) {}
+
+  // CreateCustomerPortalSession creates a pre-authenticated customer portal session.
+  //
+  // Generates a URL that allows users to access the Polar customer portal
+  // to manage their subscription, view invoices, and update payment methods.
+  //
+  // Requires authentication and active subscription.
+  rpc CreateCustomerPortalSession(CreateCustomerPortalSessionRequest) returns (CreateCustomerPortalSessionResponse) {}
 }
 
 // GetSubscriptionRequest initiates retrieval of the current user's subscription.
@@ -391,4 +399,18 @@ message CurrentPeriodCharges {
 
   // End of the billing period these charges cover.
   google.protobuf.Timestamp period_end = 8;
+}
+
+// CreateCustomerPortalSessionRequest initiates customer portal session creation.
+//
+// Creates a pre-authenticated session URL for accessing the Polar customer portal.
+message CreateCustomerPortalSessionRequest {}
+
+// CreateCustomerPortalSessionResponse contains the customer portal session details.
+//
+// Provides the portal URL for the customer to manage their subscription.
+message CreateCustomerPortalSessionResponse {
+  // Portal URL for the customer to access their account.
+  // This is a pre-authenticated URL that grants immediate access.
+  string portal_url = 1;
 }
