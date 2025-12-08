@@ -143,7 +143,7 @@ function navigateToRepo() {
     </div>
 
     <!-- Right Accent Panel -->
-    <div class='w-20 bg-primary text-primary-content flex flex-col items-center justify-center gap-2 group-hover:bg-primary/70 shrink-0'>
+    <div class='w-20 bg-primary text-primary-content flex flex-col items-center justify-center gap-2 group-hover:bg-primary/70 shrink-0 rounded-r-xl'>
       <component :is='typeIcon' class='size-8' />
       <span class='text-xs font-medium text-center'>{{ typeLabel }}</span>
     </div>
