@@ -569,7 +569,7 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 	}
 
 	// 3. Remove repository and backup profiles in a transaction
-	return database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+	err = database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
 		// Delete backup profiles that only have this repository
 		if len(backupProfiles) > 0 {
 			bpIds := make([]int, 0, len(backupProfiles))
