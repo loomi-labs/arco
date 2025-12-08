@@ -165,7 +165,7 @@ onUnmounted(() => {
         <div
           v-else
           @click='router.push(Page.AddRepository)'
-          class='flex justify-center items-center h-full w-full ac-card-dotted min-h-60'
+          class='flex justify-center items-center h-full w-full ac-card-dotted min-h-46'
         >
           <PlusCircleIcon class='size-12' />
           <div class='pl-2 text-lg font-semibold'>Add Repository</div>
