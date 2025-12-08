@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
-import { onBeforeRouteLeave, useRouter } from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import { showAndLogError } from "../common/logger";
@@ -254,6 +254,23 @@ onBeforeRouteLeave(async (to, _from) => {
 
     showApplyModal(false).then(r => r);
     wantToGoRoute.value = to.path;
+    return false;
+  }
+  return true;
+});
+
+// If the user navigates to another backup profile with unsaved changes, show a modal to confirm/discard the changes
+// This is needed because onBeforeRouteLeave doesn't fire when only route params change
+onBeforeRouteUpdate(async (to, _from) => {
+  if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
+    // If pruning is disabled, just save the rule
+    if (!pruningRule.value.isEnabled) {
+      await save();
+      return true;
+    }
+
+    showApplyModal(false).then(r => r);
+    wantToGoRoute.value = to.fullPath;
     return false;
   }
   return true;
