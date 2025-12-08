@@ -112,6 +112,40 @@ Follow DaisyUI conventions from https://daisyui.com/llms.txt:
 - Leverage variant classes: `btn-primary`, `btn-outline`, `alert-error`
 - Use utility classes for spacing and layout
 
+### Toggle Color Conventions
+Use semantic colors for toggle switches based on their purpose:
+- **`toggle-secondary` (orange)**: Feature toggles that enable/disable functionality (e.g., enable schedule, encryption)
+- **`toggle-error` (red)**: Destructive/danger options that could result in data loss (e.g., "delete archives" option)
+
+### Input Validation
+Use icons inside inputs for validation feedback:
+
+```vue
+<div class='form-control'>
+  <label class='label'>
+    <span class='label-text'>Location</span>
+  </label>
+  <label class='input flex items-center gap-2' :class='{ "input-error": error }'>
+    <input type='text' class='grow p-0 [font:inherit]' v-model='value' placeholder='path/to/repo' />
+    <!-- Valid: green checkmark inside input -->
+    <CheckCircleIcon v-if='!error && isValid' class='size-5 text-success' />
+    <!-- Error: red exclamation inside input -->
+    <ExclamationCircleIcon v-if='error' class='size-5 text-error' />
+  </label>
+  <!-- Error text below with tight spacing -->
+  <div v-if='error' class='text-error text-sm mt-1'>Path does not exist</div>
+</div>
+```
+
+**Key points:**
+- Icons appear INSIDE the input (not below)
+- Valid state: green checkmark only (no text)
+- Error state: red exclamation + error text below with `mt-1`
+- Inner input uses `class='grow p-0 [font:inherit]'`:
+  - `grow` to fill available space
+  - `p-0` to remove default padding (parent label provides padding via input class)
+  - `[font:inherit]` to inherit font-size and font-weight from parent
+
 ### Z-Index Hierarchy
 The project uses a standardized z-index scale to ensure proper UI element layering. Always use these predefined values:
 
@@ -259,6 +293,68 @@ Use HeadlessUI's `Dialog` component from `@headlessui/vue` for all modal impleme
 - `ConfirmModal.vue` - Reusable confirmation dialog (canonical example)
 - `CompressionInfoModal.vue` - Information modal with read-only content
 - `ArcoCloudModal.vue` - Complex multi-state modal with forms
+
+### Modal Button Styling
+
+All modal action buttons follow a standardized layout and styling pattern:
+
+**Layout Rules:**
+- Use `flex justify-between` to position buttons (cancel on left, actions on right)
+- For 3+ buttons: group action buttons on the right with `<div class='flex gap-3'>`
+- Add `pt-5` or `pt-6` for spacing above button row
+
+**Button Sizing:**
+- **ConfirmModal and its custom slots**: Use `btn-sm` (small buttons)
+- **All other Dialog modals**: Use normal `btn` (no size modifier)
+
+**Button Colors:**
+| Action Type | Class | Example |
+|-------------|-------|---------|
+| Cancel/Close | `btn-outline` | Cancel, Close, Back |
+| Primary action | `btn-primary` | Save, Submit, Login |
+| Create action | `btn-success` | Create, Connect |
+| Secondary positive | `btn-success btn-outline` | Test Connection |
+| Destructive | `btn-error` | Delete |
+| Warning/Discard | `btn-warning` | Discard changes |
+
+**Standard Pattern (Dialog modals):**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <button class='btn btn-primary' :disabled='!isValid' @click='submit'>
+    Submit
+  </button>
+</div>
+```
+
+**Pattern with 3+ buttons:**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <div class='flex gap-3'>
+    <button class='btn btn-success btn-outline' @click='test'>
+      Test Connection
+    </button>
+    <button class='btn btn-success' @click='create'>
+      Create
+    </button>
+  </div>
+</div>
+```
+
+**ConfirmModal custom slot pattern (uses btn-sm):**
+```vue
+<template v-slot:actionButtons>
+  <div class='flex justify-between pt-5'>
+    <button class='btn btn-sm btn-outline' @click='cancel'>Cancel</button>
+    <button class='btn btn-sm btn-error' @click='delete'>Delete</button>
+  </div>
+</template>
+```
 
 ### Error Handling
 - **Two Patterns Available**:

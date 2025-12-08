@@ -105,15 +105,17 @@ defineExpose({
                     </div>
                   </div>
                   <slot name='actionButtons'>
-                    <div class='flex gap-3 pt-5'>
+                    <div class='flex justify-between pt-5'>
                       <button type='button' class='btn btn-sm' :class='[cancelClass ?? "btn-outline"]' @click='close'>{{ cancelText ?? $t("cancel") }}
                       </button>
-                      <button type='button' class='btn btn-sm' :class='[confirmClass ?? "btn-success"]' @click='confirm'>
-                        {{ confirmText ?? $t("confirm") }}
-                      </button>
-                      <button v-if='secondaryOptionText' type='button' class='btn btn-sm' :class='[secondaryOptionClass ?? "btn-secondary"]'
-                              @click='secondary'>{{ secondaryOptionText }}
-                      </button>
+                      <div class='flex gap-3'>
+                        <button v-if='secondaryOptionText' type='button' class='btn btn-sm' :class='[secondaryOptionClass ?? "btn-secondary"]'
+                                @click='secondary'>{{ secondaryOptionText }}
+                        </button>
+                        <button type='button' class='btn btn-sm' :class='[confirmClass ?? "btn-success"]' @click='confirm'>
+                          {{ confirmText ?? $t("confirm") }}
+                        </button>
+                      </div>
                     </div>
                   </slot>
                 </div>

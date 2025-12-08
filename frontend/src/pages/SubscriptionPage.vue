@@ -12,7 +12,7 @@ import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import type { Plan, Subscription } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { SubscriptionStatus } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import ArcoCloudModal from "../components/ArcoCloudModal.vue";
+import CreateArcoCloudModal from "../components/CreateArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
 
@@ -41,7 +41,7 @@ const currentPageState = ref<PageState>(PageState.LOADING);
 const isCanceling = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 const cancelConfirmModal = ref<HTMLDialogElement>();
-const cloudModal = ref<InstanceType<typeof ArcoCloudModal>>();
+const cloudModal = ref<InstanceType<typeof CreateArcoCloudModal>>();
 
 // Plan selection state
 const selectedPlan = ref<string | undefined>(undefined);
@@ -883,6 +883,6 @@ onMounted(async () => {
     </dialog>
 
     <!-- Subscription Modal -->
-    <ArcoCloudModal ref='cloudModal' @close='() => {}' @repo-created='onRepoCreated' />
+    <CreateArcoCloudModal ref='cloudModal' @close='() => {}' @repo-created='onRepoCreated' />
   </div>
 </template>

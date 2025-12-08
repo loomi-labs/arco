@@ -1,7 +1,13 @@
 <script setup lang='ts'>
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
-import { isAfter } from "@formkit/tempo";
+import {
+  ArrowTrendingUpIcon,
+  ChartPieIcon,
+  CircleStackIcon,
+  LockClosedIcon,
+  LockOpenIcon
+} from "@heroicons/vue/24/outline";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
@@ -12,7 +18,7 @@ import * as zod from "zod";
 import { object } from "zod";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { toCreationTimeBadge, toRepoTypeBadge } from "../common/badge";
+import { toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
@@ -21,11 +27,10 @@ import {
   Repository,
   UpdateRequest
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import { toLongDateString, toRelativeTimeString } from "../common/time";
+import { toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ChangePassphraseModal from "../components/ChangePassphraseModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
-import TooltipIcon from "../components/common/TooltipIcon.vue";
 import { Anchor, Page } from "../router";
 import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 
@@ -51,19 +56,13 @@ const isChangingPassphrase = ref(false);
 const isBreakingLock = ref(false);
 const newPassphrase = ref<string>("");
 
-// Verification state
-const isVerifying = computed(() => repo.value.state.type === RepositoryStateType.RepositoryStateTypeChecking);
-const showVerifyModal = ref(false);
-const verifyDepthQuick = ref(false);
+// Healthcheck state
+const isCheckingHealth = computed(() => repo.value.state.type === RepositoryStateType.RepositoryStateTypeChecking);
+const showHealthcheckModal = ref(false);
+const healthcheckDepthQuick = ref(false);
 
-// Check history display logic
-const hasCheckHistory = computed(() => repo.value.lastQuickCheckAt !== null || repo.value.lastFullCheckAt !== null);
-const shouldShowQuickCheck = computed(() => {
-  // Show quick check if no full check exists, OR if quick check is newer than full check
-  if (!repo.value.lastQuickCheckAt) return false;
-  if (!repo.value.lastFullCheckAt) return true;
-  return isAfter(repo.value.lastQuickCheckAt, repo.value.lastFullCheckAt);
-});
+// Passphrase modal state
+const showPassphraseModal = ref(false);
 
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
@@ -74,12 +73,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmDeleteModalKey
 );
 const changePassphraseModalKey = useId();
-const changePassphraseModal = useTemplateRef<InstanceType<typeof ChangePassphraseModal>>(
-  changePassphraseModalKey
-);
-
-// Session-based warning dismissal tracking
-const isWarningDismissed = ref(false);
+const changePassphraseModal = useTemplateRef<InstanceType<typeof ChangePassphraseModal>>(changePassphraseModalKey);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -100,31 +94,9 @@ const { meta, errors, defineField } = useForm({
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
-// Static tooltips (values already shown in UI)
+// Static tooltips
 const sizeOnDiskTooltip = "How much space your backups actually use on the hard drive";
-const totalSizeTooltip = "If you added up all your backup files without any savings";
-
-// Dynamic tooltips with actual values and conditional logic
-const spaceSavingsTooltip = computed(() => {
-  if (spaceSavings.value === "-") {
-    return "No storage savings yet - this shows how much space you save by removing duplicate data and compression";
-  }
-  return `You're saving ${spaceSavings.value} of storage space by removing duplicate data and compression`;
-});
-
-const deduplicationTooltip = computed(() => {
-  if (deduplicationRatio.value === "-") {
-    return "No duplicate data found - this would show how much repeated data was removed";
-  }
-  return `You have ${deduplicationRatio.value} duplicate data. Without removing duplicates, you'd need ${deduplicationRatio.value} more space`;
-});
-
-const compressionTooltip = computed(() => {
-  if (compressionRatio.value === "-") {
-    return "No compression applied - this would show how much files were compressed";
-  }
-  return `Compression made files ${compressionRatio.value} smaller. Without compression, they'd take ${compressionRatio.value} more space`;
-});
+const totalSizeTooltip = "The original size of all backed up data before deduplication and compression";
 
 /************
  * Functions
@@ -167,6 +139,9 @@ async function getRepo() {
       : "-";
 
     deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId.value)).filter((r) => r !== null) ?? [];
+
+    // Fetch last archive for "Last Backup" display
+    lastArchive.value = (await repoService.GetLastArchiveByRepoId(repoId.value)) ?? undefined;
   } catch (error: unknown) {
     await showAndLogError("Failed to get repository data", error);
   }
@@ -222,13 +197,43 @@ async function deleteRepo() {
   }
 }
 
-async function regenerateSSHKey() {
+function openHealthcheckModal() {
+  if (!repo.value) return;
+
+  healthcheckDepthQuick.value = true;  // Default to Quick
+  showHealthcheckModal.value = true;
+}
+
+async function startHealthcheck(quick: boolean) {
+  if (!repo.value) return;
+
   try {
-    isRegeneratingSSH.value = true;
+    showHealthcheckModal.value = false;
+    await repoService.QueueCheck(repo.value.id, quick);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to start healthcheck", error);
+  }
+}
+
+function openPassphraseModal() {
+  showPassphraseModal.value = true;
+  changePassphraseModal.value?.showModal();
+}
+
+function onPassphraseModalClose() {
+  showPassphraseModal.value = false;
+}
+
+function onPassphraseChanged() {
+  showPassphraseModal.value = false;
+  toast.success("Passphrase changed successfully");
+}
+
+async function regenerateSSHKey() {
+  isRegeneratingSSH.value = true;
+  try {
     await repoService.RegenerateSSHKey();
     toast.success("SSH key regenerated successfully");
-
-    // Refresh repository after SSH key regeneration
     await getRepo();
   } catch (error: unknown) {
     await showAndLogError("Failed to regenerate SSH key", error);
@@ -237,7 +242,7 @@ async function regenerateSSHKey() {
   }
 }
 
-async function changePassphrase() {
+async function fixStoredPassword() {
   if (!newPassphrase.value.trim()) {
     toast.error("Please enter a new passphrase");
     return;
@@ -250,7 +255,6 @@ async function changePassphrase() {
     if (result.success) {
       toast.success("Password fixed successfully");
       newPassphrase.value = "";
-      // Refresh repository after password fix
       await getRepo();
     } else {
       toast.error(result.errorMessage ?? "Failed to fix password");
@@ -263,40 +267,16 @@ async function changePassphrase() {
 }
 
 async function breakLock() {
+  isBreakingLock.value = true;
   try {
-    isBreakingLock.value = true;
     await repoService.BreakLock(repoId.value);
     toast.success("Lock broken successfully");
-
-    // Refresh repository after breaking lock
     await getRepo();
   } catch (error: unknown) {
     await showAndLogError("Failed to break lock", error);
   } finally {
     isBreakingLock.value = false;
   }
-}
-
-function openVerifyModal() {
-  if (!repo.value) return;
-
-  verifyDepthQuick.value = false;  // Default to Full
-  showVerifyModal.value = true;
-}
-
-async function startVerification(quick: boolean) {
-  if (!repo.value) return;
-
-  try {
-    showVerifyModal.value = false;
-    await repoService.QueueCheck(repo.value.id, quick);
-  } catch (error: unknown) {
-    await showAndLogError("Failed to start verification", error);
-  }
-}
-
-function onPassphraseChanged() {
-  toast.success("Passphrase changed successfully");
 }
 
 /************
@@ -333,18 +313,18 @@ onUnmounted(() => {
     <div class='loading loading-ring loading-lg'></div>
   </div>
   <div v-else>
-    <!-- Header Section -->
-    <div class='flex items-center justify-between mb-8'>
+    <!-- Name and Menu Section -->
+    <div class='flex items-center justify-between mb-4'>
       <!-- Name -->
-      <label class='flex items-center gap-2' :class='`text-arco-purple-500`'>
+      <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-3xl font-bold bg-transparent border-transparent w-10'
+               class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary -ml-3 shadow-none'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveName'
                @input='resizeNameWidth' />
-        <PencilIcon class='size-5' />
+        <PencilIcon class='size-4' />
         <span class='text-error text-sm'>{{ errors.name }}</span>
       </label>
 
@@ -370,11 +350,9 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Error Alert Banner -->
-    <div
-      v-if='repo.state.type === RepositoryStateType.RepositoryStateTypeError && repo.state.error !== null'
-      role='alert'
-      class='alert alert-error mb-4'>
+    <!-- Error Banner (full-width) -->
+    <div v-if='repo.state.type === RepositoryStateType.RepositoryStateTypeError && repo.state.error !== null'
+         role='alert' class='alert alert-error mb-4'>
       <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none' viewBox='0 0 24 24'>
         <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
               d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
@@ -393,7 +371,7 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Change Passphrase Button -->
+      <!-- Change Passphrase Button (for error state) -->
       <div v-if='repo.state.error?.action === ErrorAction.ErrorActionChangePassphrase' class='flex-none flex gap-2'>
         <input v-model='newPassphrase'
                type='password'
@@ -402,7 +380,7 @@ onUnmounted(() => {
                :disabled='isChangingPassphrase' />
         <button class='btn btn-sm btn-outline btn-error-content'
                 :disabled='isChangingPassphrase || !newPassphrase.trim()'
-                @click='changePassphrase'>
+                @click='fixStoredPassword'>
           <span v-if='isChangingPassphrase' class='loading loading-spinner loading-xs'></span>
           {{ isChangingPassphrase ? "Changing..." : "Change Passphrase" }}
         </button>
@@ -419,189 +397,174 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Warning Alert Banner -->
-    <div v-if='repo.lastBackupWarning && !isWarningDismissed'
-         role='alert'
-         class='alert alert-warning mb-4'>
-      <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-6 w-6' fill='none' viewBox='0 0 24 24'>
-        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-              d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
-      </svg>
-      <div class='flex-1'>
-        <div class='font-bold'>Warning</div>
-        <div class='text-sm'>{{ repo.lastBackupWarning }}</div>
-      </div>
-      <button class='btn btn-sm btn-ghost' @click='isWarningDismissed = true'>
-        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-          <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12' />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Repository Info Cards -->
-    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
-      <!-- Archives Card -->
+    <!-- Two-column grid -->
+    <div class='grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 mb-8'>
+      <!-- Repository Info Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
-          <h3 class='card-title text-lg'>{{ $t("archives") }}</h3>
-          <p class='text-3xl font-bold text-primary dark:text-white'>
-            {{ repo.archiveCount }}
-          </p>
+          <h3 class='card-title text-lg'>Overview</h3>
+          <div class='flex flex-col gap-3'>
+            <!-- Archives Row (static) -->
+            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' />
+              </svg>
+              <span class='flex-1 text-sm opacity-70'>Archives</span>
+              <span class='font-bold'>{{ repo.archiveCount }}</span>
+            </div>
+
+            <!-- Last Backup Row (static) -->
+            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+              </svg>
+              <span class='flex-1 text-sm opacity-70'>Last Backup</span>
+              <span v-if='repo.lastBackupError' class='font-bold text-error'>Failed</span>
+              <span v-else-if='lastArchive' class='font-bold'>{{
+                  toRelativeTimeString(lastArchive.createdAt, true)
+                }}</span>
+              <span v-else class='font-bold opacity-50'>-</span>
+            </div>
+
+            <!-- Location Row (interactive) -->
+            <div
+              class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all cursor-pointer'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' />
+              </svg>
+              <span class='flex-1 text-sm opacity-70 font-mono truncate'>{{ repo.url }}</span>
+              <span :class='toRepoTypeBadge(repo.type)'>
+                {{
+                  repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
+                    repo.type.type === LocationType.LocationTypeArcoCloud ? "ArcoCloud" : $t("remote")
+                }}
+              </span>
+              <button class='btn btn-xs btn-outline w-32'
+                      :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'>
+                Change path
+              </button>
+            </div>
+
+            <!-- Healthcheck Row (interactive) -->
+            <div :class='[
+                   "border rounded-lg p-3 flex items-center gap-3 transition-all cursor-pointer",
+                   showHealthcheckModal
+                     ? "border-secondary bg-secondary/10"
+                     : "border-base-300 hover:border-base-content/30"
+                 ]'
+                 @click='openHealthcheckModal'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' />
+              </svg>
+              <div class='flex-1'>
+                <span class='text-sm opacity-70'>Healthcheck</span>
+                <div class='flex gap-4 text-xs mt-1'>
+                  <span>
+                    <span class='opacity-50'>Quick:</span>
+                    <span v-if='repo.lastQuickCheckAt'
+                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
+                    <span v-else class='opacity-50 ml-1'>Never</span>
+                  </span>
+                  <span>
+                    <span class='opacity-50'>Full:</span>
+                    <span v-if='repo.lastFullCheckAt'
+                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
+                    <span v-else class='opacity-50 ml-1'>Never</span>
+                  </span>
+                </div>
+              </div>
+              <button class='btn btn-xs btn-outline w-32' :disabled='isCheckingHealth' @click.stop='openHealthcheckModal'>
+                {{ isCheckingHealth ? "Checking..." : "Healthcheck" }}
+              </button>
+            </div>
+
+            <!-- Encryption Row (always shown) -->
+            <!-- Encrypted state (interactive) -->
+            <div v-if='repo.hasPassword'
+                 :class='[
+                   "border rounded-lg p-3 flex items-center gap-3 transition-all cursor-pointer",
+                   showPassphraseModal
+                     ? "border-secondary bg-secondary/10"
+                     : "border-base-300 hover:border-base-content/30"
+                 ]'
+                 @click='openPassphraseModal'>
+              <LockClosedIcon class='h-5 w-5 opacity-50 shrink-0' />
+              <span class='flex-1 text-sm opacity-70'>Encrypted</span>
+              <button class='btn btn-xs btn-outline w-32'
+                      :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
+                      @click.stop='openPassphraseModal'>
+                Change password
+              </button>
+            </div>
+            <!-- Not encrypted state (static) -->
+            <div v-else class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
+              <LockOpenIcon class='h-5 w-5 opacity-50 shrink-0' />
+              <span class='flex-1 text-sm opacity-70'>Not Encrypted</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Storage Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
-          <h3 class='card-title text-lg'>{{ $t("storage") }}</h3>
-          <div class='space-y-2'>
-            <div class='flex justify-between items-center'>
-              <div class='flex items-center gap-1'>
-                <span class='text-sm opacity-70'>{{ $t("size_on_disk") }}</span>
-                <TooltipIcon :text="sizeOnDiskTooltip" />
+          <h3 class='card-title text-lg'>Storage Statistics</h3>
+          <div class='flex flex-col gap-3'>
+            <!-- Size on Disk -->
+            <div class='tooltip cursor-help' :data-tip='sizeOnDiskTooltip'>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <ChartPieIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <span class='flex-1 text-sm opacity-70'>Size on Disk</span>
+                <span class='font-bold'>{{ sizeOnDisk }}</span>
               </div>
-              <span class='font-semibold'>{{ sizeOnDisk }}</span>
             </div>
-            <div class='flex justify-between items-center'>
-              <div class='flex items-center gap-1'>
-                <span class='text-sm opacity-70'>{{ $t("total_size") }}</span>
-                <TooltipIcon :text="totalSizeTooltip" />
-              </div>
-              <span class='font-semibold'>{{ totalSize }}</span>
-            </div>
-            <div class='divider my-1'></div>
-            <div class='flex justify-between items-center'>
-              <div class='flex items-center gap-1'>
-                <span class='text-sm opacity-70'>{{ $t("storage_efficiency") }}</span>
-                <TooltipIcon :text="spaceSavingsTooltip" />
-              </div>
-              <span class='font-semibold text-success'>{{ spaceSavings }}</span>
-            </div>
-            <div class='flex justify-between items-center'>
-              <div class='flex items-center gap-1'>
-                <span class='text-sm opacity-70'>{{ $t("deduplication_ratio") }}</span>
-                <TooltipIcon :text="deduplicationTooltip" />
-              </div>
-              <span class='font-semibold'>{{ deduplicationRatio }}</span>
-            </div>
-            <div class='flex justify-between items-center'>
-              <div class='flex items-center gap-1'>
-                <span class='text-sm opacity-70'>{{ $t("compression_ratio") }}</span>
-                <TooltipIcon :text="compressionTooltip" />
-              </div>
-              <span class='font-semibold'>{{ compressionRatio }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Last Backup Card -->
-      <div class='card bg-base-100 shadow-xl'>
-        <div class='card-body'>
-          <h3 class='card-title text-lg'>{{ $t("last_backup") }}</h3>
-          <div class='flex items-center h-full'>
-            <span v-if='repo.lastBackupError' class='tooltip tooltip-error' :data-tip='repo.lastBackupError'>
-              <span class='badge badge-error'>{{
-                  $t("failed")
-                }}</span>
-            </span>
-            <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-              <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
-                  toRelativeTimeString(lastArchive.createdAt, true)
-                }}</span>
-            </span>
-            <span v-else class='text-lg opacity-50'>-</span>
+            <!-- Total Size -->
+            <div class='tooltip cursor-help' :data-tip='totalSizeTooltip'>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <CircleStackIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <span class='flex-1 text-sm opacity-70'>Total Size</span>
+                <span class='font-bold'>{{ totalSize }}</span>
+              </div>
+            </div>
+
+            <!-- Single compact line for savings -->
+            <div class='tooltip cursor-help'>
+              <div class='tooltip-content text-left px-4 py-2'>
+                <p class='font-semibold mb-2'>Saving {{ spaceSavings }} of storage</p>
+                <p class='text-xs font-medium'>Deduplication ({{ deduplicationRatio }})</p>
+                <p class='text-xs opacity-70 mb-1'>Without removing duplicates, you'd need {{ deduplicationRatio }} more
+                  space</p>
+                <p v-if="compressionRatio !== '-'" class='text-xs font-medium'>Compression ({{ compressionRatio }})</p>
+                <p v-if="compressionRatio !== '-'" class='text-xs opacity-70'>Without compression, files would take
+                  {{ compressionRatio }} more space</p>
+                <p v-else class='text-xs font-medium'>Compression: Not enabled for this repository</p>
+              </div>
+              <div
+                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <span class='flex-1 text-sm opacity-70'>Storage Efficiency ({{
+                    deduplicationRatio
+                  }} deduplication, {{ compressionRatio }} compression)</span>
+                <span class='font-bold'>{{ spaceSavings }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Repository Details Card -->
-    <div class='card bg-base-100 shadow-xl mb-8'>
-      <div class='card-body'>
-        <h3 class='card-title mb-4'>Repository Details</h3>
-        <div class='space-y-4'>
-          <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
-            <span class='font-medium'>{{ $t("location") }}</span>
-            <div class='flex items-center gap-2'>
-              <span class='text-sm opacity-70 break-all'>{{ repo.url }}</span>
-              <span :class='toRepoTypeBadge(repo.type)'>{{
-                  repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
-                    repo.type.type === LocationType.LocationTypeArcoCloud ? $t("arcoCloud") :
-                      $t("remote")
-                }}</span>
-            </div>
-          </div>
-
-          <div class='divider'></div>
-
-          <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
-            <span class='font-medium'>Integrity Verification</span>
-            <div class='flex items-center gap-2'>
-              <div v-if='hasCheckHistory' class='text-sm opacity-70 flex flex-col gap-1'>
-                <div v-if='repo.lastFullCheckAt' class='flex items-center gap-2'>
-                  <span class='tooltip' :data-tip='toLongDateString(repo.lastFullCheckAt, true)'>
-                    Last full check: {{ toRelativeTimeString(repo.lastFullCheckAt, true) }}
-                  </span>
-                  <div v-if='repo.fullCheckError && repo.fullCheckError.length > 0'
-                       class='tooltip tooltip-error'
-                       :data-tip='repo.fullCheckError.join(", ")'>
-                    <span class='badge badge-error badge-sm cursor-help'>
-                      {{ repo.fullCheckError.length }} error{{ repo.fullCheckError.length > 1 ? 's' : '' }}
-                    </span>
-                  </div>
-                  <span v-else class='badge badge-success badge-sm'>
-                    ✓ Success
-                  </span>
-                </div>
-                <div v-if='shouldShowQuickCheck' class='flex items-center gap-2'>
-                  <span class='tooltip' :data-tip='toLongDateString(repo.lastQuickCheckAt!, true)'>
-                    Last quick check: {{ toRelativeTimeString(repo.lastQuickCheckAt!, true) }}
-                  </span>
-                  <div v-if='repo.quickCheckError && repo.quickCheckError.length > 0'
-                       class='tooltip tooltip-error'
-                       :data-tip='repo.quickCheckError.join(", ")'>
-                    <span class='badge badge-error badge-sm cursor-help'>
-                      {{ repo.quickCheckError.length }} error{{ repo.quickCheckError.length > 1 ? 's' : '' }}
-                    </span>
-                  </div>
-                  <span v-else class='badge badge-success badge-sm'>
-                    ✓ Success
-                  </span>
-                </div>
-              </div>
-              <span v-else class='text-sm opacity-70'>Never verified</span>
-              <button
-                  class='btn btn-sm btn-outline btn-primary'
-                  :disabled='isVerifying || repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
-                  @click='openVerifyModal'>
-                <span v-if='isVerifying' class='loading loading-spinner loading-xs'></span>
-                {{ isVerifying ? "Verifying..." : "Verify Repository" }}
-              </button>
-            </div>
-          </div>
-
-          <template v-if='repo.hasPassword'>
-            <div class='divider'></div>
-
-            <div class='flex flex-col sm:flex-row sm:justify-between gap-2'>
-              <span class='font-medium'>Passphrase</span>
-              <div class='flex items-center gap-2'>
-                <span class='text-sm opacity-70'>Change the repository encryption passphrase</span>
-                <button
-                    class='btn btn-sm btn-outline btn-primary'
-                    :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'
-                    @click='changePassphraseModal?.showModal()'>
-                  Change Passphrase
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- Archives Section -->
+    <!-- ARCHIVES CARD -->
     <ArchivesCard :repo-id='repo.id'
                   :highlight='false'
                   :show-backup-profile-column='true' />
@@ -655,7 +618,7 @@ onUnmounted(() => {
         </div>
       </div>
       <template v-slot:actionButtons>
-        <div class='flex gap-3 pt-5'>
+        <div class='flex justify-between pt-5'>
           <button type='button' class='btn btn-sm btn-outline'
                   @click="confirmDeleteInput = ''; confirmDeleteModal?.close()">
             {{ $t("cancel") }}
@@ -669,9 +632,9 @@ onUnmounted(() => {
       </template>
     </ConfirmModal>
 
-    <!-- Verification Modal -->
-    <TransitionRoot as='template' :show='showVerifyModal'>
-      <Dialog class='relative z-50' @close='showVerifyModal = false'>
+    <!-- Healthcheck Modal -->
+    <TransitionRoot as='template' :show='showHealthcheckModal'>
+      <Dialog class='relative z-50' @close='showHealthcheckModal = false'>
         <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
                          leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
           <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
@@ -685,32 +648,43 @@ onUnmounted(() => {
                              leave-from='opacity-100 translate-y-0 sm:scale-100'
                              leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
               <DialogPanel
-                  class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
+                class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
                 <div class='p-8'>
-                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Verify Repository</DialogTitle>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Repository Healthcheck</DialogTitle>
 
                   <div class='form-control'>
                     <label class='label cursor-pointer justify-start gap-4'>
-                      <input type='radio' name='verify-depth' class='radio' :value='false' v-model='verifyDepthQuick' />
+                      <input type='radio' name='healthcheck-depth' class='radio radio-secondary' :value='true'
+                             v-model='healthcheckDepthQuick' />
                       <div>
-                        <div class='font-semibold'>Full Verification</div>
-                        <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
+                        <div class='font-semibold'>Quick Check</div>
+                        <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
                       </div>
                     </label>
 
                     <label class='label cursor-pointer justify-start gap-4 mt-2'>
-                      <input type='radio' name='verify-depth' class='radio' :value='true' v-model='verifyDepthQuick' />
+                      <input type='radio' name='healthcheck-depth' class='radio radio-secondary' :value='false'
+                             v-model='healthcheckDepthQuick' />
                       <div>
-                        <div class='font-semibold'>Quick Verification</div>
-                        <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
+                        <div class='font-semibold'>Full Check</div>
+                        <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
                       </div>
                     </label>
                   </div>
 
-                  <div class='flex gap-3 pt-5'>
-                    <button class='btn btn-sm btn-outline' @click='showVerifyModal = false'>Cancel</button>
-                    <button class='btn btn-sm btn-primary' @click='startVerification(verifyDepthQuick)'>Start
-                      Verification
+                  <div v-if='!healthcheckDepthQuick' class='alert alert-warning text-sm mt-4'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='stroke-current shrink-0 h-5 w-5' fill='none'
+                         viewBox='0 0 24 24'>
+                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                            d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
+                    </svg>
+                    Full check reads all backup data and can take a long time for large repositories.
+                  </div>
+
+                  <div class='flex justify-between pt-5'>
+                    <button class='btn btn-outline' @click='showHealthcheckModal = false'>Cancel</button>
+                    <button class='btn btn-primary' @click='startHealthcheck(healthcheckDepthQuick)'>
+                      Start Healthcheck
                     </button>
                   </div>
                 </div>
@@ -724,7 +698,8 @@ onUnmounted(() => {
     <!-- Change Passphrase Modal -->
     <ChangePassphraseModal :ref='changePassphraseModalKey'
                            :repo-id='repo.id'
-                           @success='onPassphraseChanged' />
+                           @success='onPassphraseChanged'
+                           @close='onPassphraseModalClose' />
   </div>
 </template>
 

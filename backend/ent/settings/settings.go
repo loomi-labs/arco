@@ -18,12 +18,14 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldShowWelcome holds the string denoting the show_welcome field in the database.
-	FieldShowWelcome = "show_welcome"
 	// FieldExpertMode holds the string denoting the expert_mode field in the database.
 	FieldExpertMode = "expert_mode"
 	// FieldTheme holds the string denoting the theme field in the database.
 	FieldTheme = "theme"
+	// FieldDisableTransitions holds the string denoting the disable_transitions field in the database.
+	FieldDisableTransitions = "disable_transitions"
+	// FieldDisableShadows holds the string denoting the disable_shadows field in the database.
+	FieldDisableShadows = "disable_shadows"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -33,9 +35,10 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldShowWelcome,
 	FieldExpertMode,
 	FieldTheme,
+	FieldDisableTransitions,
+	FieldDisableShadows,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -55,10 +58,12 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// DefaultShowWelcome holds the default value on creation for the "show_welcome" field.
-	DefaultShowWelcome bool
 	// DefaultExpertMode holds the default value on creation for the "expert_mode" field.
 	DefaultExpertMode bool
+	// DefaultDisableTransitions holds the default value on creation for the "disable_transitions" field.
+	DefaultDisableTransitions bool
+	// DefaultDisableShadows holds the default value on creation for the "disable_shadows" field.
+	DefaultDisableShadows bool
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -106,11 +111,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByShowWelcome orders the results by the show_welcome field.
-func ByShowWelcome(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldShowWelcome, opts...).ToFunc()
-}
-
 // ByExpertMode orders the results by the expert_mode field.
 func ByExpertMode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpertMode, opts...).ToFunc()
@@ -119,4 +119,14 @@ func ByExpertMode(opts ...sql.OrderTermOption) OrderOption {
 // ByTheme orders the results by the theme field.
 func ByTheme(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTheme, opts...).ToFunc()
+}
+
+// ByDisableTransitions orders the results by the disable_transitions field.
+func ByDisableTransitions(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableTransitions, opts...).ToFunc()
+}
+
+// ByDisableShadows orders the results by the disable_shadows field.
+func ByDisableShadows(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableShadows, opts...).ToFunc()
 }

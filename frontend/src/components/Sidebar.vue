@@ -3,7 +3,7 @@
 import { onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon } from "@heroicons/vue/24/outline";
+import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, XMarkIcon } from "@heroicons/vue/24/outline";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
@@ -129,9 +129,12 @@ onUnmounted(() => {
 
 <template>
   <!-- Mobile menu button -->
-  <div class='xl:hidden fixed top-4 left-4 z-50'>
+  <div :class='[
+    "xl:hidden fixed top-4 z-50 transition-all duration-300",
+    isMobileMenuOpen ? "left-46" : "left-4"
+  ]'>
     <button @click='toggleMobileMenu' class='btn btn-circle btn-ghost'>
-      <Bars3Icon class='size-6' />
+      <component :is='isMobileMenuOpen ? XMarkIcon : Bars3Icon' class='size-6' />
     </button>
   </div>
 

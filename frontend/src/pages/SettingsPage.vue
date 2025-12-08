@@ -40,6 +40,8 @@ const isDark = useTheme();
 // Theme selection
 const selectedTheme = ref<Theme>(Theme.ThemeSystem);
 const expertMode = ref(false);
+const disableTransitions = ref(false);
+const disableShadows = ref(false);
 
 /************
  * Functions
@@ -54,6 +56,8 @@ async function loadSettings() {
     if (result) {
       settings.value = result;
       expertMode.value = result.expertMode ?? false;
+      disableTransitions.value = result.disableTransitions ?? false;
+      disableShadows.value = result.disableShadows ?? false;
 
       // Load theme from backend and apply it
       if (result.theme) {
@@ -79,6 +83,8 @@ async function saveSettings() {
 
   try {
     settings.value.expertMode = expertMode.value;
+    settings.value.disableTransitions = disableTransitions.value;
+    settings.value.disableShadows = disableShadows.value;
     await userService.SaveSettings(settings.value);
   } catch (error: unknown) {
     errorMessage.value = "Failed to save settings";
@@ -116,10 +122,6 @@ async function applyTheme(theme: Theme, saveToBackend: boolean = true) {
     settings.value.theme = theme;
     await saveSettings();
   }
-}
-
-async function handleExpertModeToggle() {
-  await saveSettings();
 }
 
 /************
@@ -254,6 +256,44 @@ onMounted(async () => {
                   <span class='text-sm font-medium'>System</span>
                 </button>
               </div>
+
+              <!-- Reduced Motion Options -->
+              <div class='divider'></div>
+              <p class='text-sm text-base-content/70'>Reduce visual effects for better performance or accessibility</p>
+
+              <!-- Disable Transitions Toggle -->
+              <div class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Disable Transitions</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Remove all animations and transitions
+                  </p>
+                </div>
+                <input
+                  type='checkbox'
+                  v-model='disableTransitions'
+                  @change='saveSettings'
+                  class='toggle toggle-secondary'
+                  :disabled='isSaving'
+                />
+              </div>
+
+              <!-- Disable Shadows Toggle -->
+              <div class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Disable Shadows</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Remove all box shadows from the interface
+                  </p>
+                </div>
+                <input
+                  type='checkbox'
+                  v-model='disableShadows'
+                  @change='saveSettings'
+                  class='toggle toggle-secondary'
+                  :disabled='isSaving'
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -278,7 +318,7 @@ onMounted(async () => {
                 <input
                   type='checkbox'
                   v-model='expertMode'
-                  @change='handleExpertModeToggle'
+                  @change='saveSettings'
                   class='toggle toggle-secondary'
                   :disabled='isSaving'
                 />

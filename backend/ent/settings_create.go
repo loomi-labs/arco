@@ -48,20 +48,6 @@ func (_c *SettingsCreate) SetNillableUpdatedAt(v *time.Time) *SettingsCreate {
 	return _c
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (_c *SettingsCreate) SetShowWelcome(v bool) *SettingsCreate {
-	_c.mutation.SetShowWelcome(v)
-	return _c
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_c *SettingsCreate) SetNillableShowWelcome(v *bool) *SettingsCreate {
-	if v != nil {
-		_c.SetShowWelcome(*v)
-	}
-	return _c
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (_c *SettingsCreate) SetExpertMode(v bool) *SettingsCreate {
 	_c.mutation.SetExpertMode(v)
@@ -86,6 +72,34 @@ func (_c *SettingsCreate) SetTheme(v settings.Theme) *SettingsCreate {
 func (_c *SettingsCreate) SetNillableTheme(v *settings.Theme) *SettingsCreate {
 	if v != nil {
 		_c.SetTheme(*v)
+	}
+	return _c
+}
+
+// SetDisableTransitions sets the "disable_transitions" field.
+func (_c *SettingsCreate) SetDisableTransitions(v bool) *SettingsCreate {
+	_c.mutation.SetDisableTransitions(v)
+	return _c
+}
+
+// SetNillableDisableTransitions sets the "disable_transitions" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableDisableTransitions(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetDisableTransitions(*v)
+	}
+	return _c
+}
+
+// SetDisableShadows sets the "disable_shadows" field.
+func (_c *SettingsCreate) SetDisableShadows(v bool) *SettingsCreate {
+	_c.mutation.SetDisableShadows(v)
+	return _c
+}
+
+// SetNillableDisableShadows sets the "disable_shadows" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableDisableShadows(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetDisableShadows(*v)
 	}
 	return _c
 }
@@ -133,10 +147,6 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := _c.mutation.ShowWelcome(); !ok {
-		v := settings.DefaultShowWelcome
-		_c.mutation.SetShowWelcome(v)
-	}
 	if _, ok := _c.mutation.ExpertMode(); !ok {
 		v := settings.DefaultExpertMode
 		_c.mutation.SetExpertMode(v)
@@ -144,6 +154,14 @@ func (_c *SettingsCreate) defaults() {
 	if _, ok := _c.mutation.Theme(); !ok {
 		v := settings.DefaultTheme
 		_c.mutation.SetTheme(v)
+	}
+	if _, ok := _c.mutation.DisableTransitions(); !ok {
+		v := settings.DefaultDisableTransitions
+		_c.mutation.SetDisableTransitions(v)
+	}
+	if _, ok := _c.mutation.DisableShadows(); !ok {
+		v := settings.DefaultDisableShadows
+		_c.mutation.SetDisableShadows(v)
 	}
 }
 
@@ -155,9 +173,6 @@ func (_c *SettingsCreate) check() error {
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Settings.updated_at"`)}
 	}
-	if _, ok := _c.mutation.ShowWelcome(); !ok {
-		return &ValidationError{Name: "show_welcome", err: errors.New(`ent: missing required field "Settings.show_welcome"`)}
-	}
 	if _, ok := _c.mutation.ExpertMode(); !ok {
 		return &ValidationError{Name: "expert_mode", err: errors.New(`ent: missing required field "Settings.expert_mode"`)}
 	}
@@ -168,6 +183,12 @@ func (_c *SettingsCreate) check() error {
 		if err := settings.ThemeValidator(v); err != nil {
 			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DisableTransitions(); !ok {
+		return &ValidationError{Name: "disable_transitions", err: errors.New(`ent: missing required field "Settings.disable_transitions"`)}
+	}
+	if _, ok := _c.mutation.DisableShadows(); !ok {
+		return &ValidationError{Name: "disable_shadows", err: errors.New(`ent: missing required field "Settings.disable_shadows"`)}
 	}
 	return nil
 }
@@ -203,10 +224,6 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := _c.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
-		_node.ShowWelcome = value
-	}
 	if value, ok := _c.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
 		_node.ExpertMode = value
@@ -214,6 +231,14 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
 		_node.Theme = value
+	}
+	if value, ok := _c.mutation.DisableTransitions(); ok {
+		_spec.SetField(settings.FieldDisableTransitions, field.TypeBool, value)
+		_node.DisableTransitions = value
+	}
+	if value, ok := _c.mutation.DisableShadows(); ok {
+		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
+		_node.DisableShadows = value
 	}
 	return _node, _spec
 }

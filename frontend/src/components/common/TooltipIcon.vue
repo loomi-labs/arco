@@ -28,7 +28,7 @@ defineProps<Props>();
 
 <template>
   <span class='tooltip' :data-tip='text'>
-    <QuestionMarkCircleIcon class='size-6 text-gray-500' />
+    <QuestionMarkCircleIcon class='size-4 text-gray-500' />
   </span>
 </template>
 

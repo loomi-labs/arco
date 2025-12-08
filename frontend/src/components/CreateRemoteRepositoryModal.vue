@@ -2,9 +2,8 @@
 import { showAndLogError } from "../common/logger";
 import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
-import FormField from "./common/FormField.vue";
-import { formInputClass } from "../common/form";
-import { CheckCircleIcon, LockClosedIcon, LockOpenIcon } from "@heroicons/vue/24/outline";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
+import { CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, LockOpenIcon, XCircleIcon } from "@heroicons/vue/24/outline";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -16,6 +15,7 @@ import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backe
 
 interface Emits {
   (event: typeof emitCreateRepoStr, repo: Repository): void;
+  (event: "close"): void;
 }
 
 /************
@@ -26,17 +26,20 @@ const emit = defineEmits<Emits>();
 const emitCreateRepoStr = "update:repo-created";
 
 defineExpose({
-  showModal
+  showModal,
+  close
 });
 
 const toast = useToast();
+const isOpen = ref(false);
 const isCreating = ref(false);
-const isValidating = ref(false);
-const dialog = ref<HTMLDialogElement>();
+const isTesting = ref(false);
+const isSuccess = ref(false);
 const isBorgRepo = ref(false);
 const isEncrypted = ref(true);
 const needsPassword = ref(false);
-const lastTestConnectionValues = ref<[string | undefined, string | undefined] | undefined>(undefined);
+const showPassword = ref(false);
+const connectionTested = ref(false);
 
 // password state can be correct, incorrect or we don't know yet
 const isPasswordCorrect = ref<boolean | undefined>(undefined);
@@ -47,42 +50,75 @@ const hosts = ref<string[]>([]);
 const name = ref<string | undefined>(undefined);
 const location = ref<string | undefined>(undefined);
 const password = ref<string | undefined>(undefined);
+const confirmPassword = ref<string | undefined>(undefined);
 const nameError = ref<string | undefined>(undefined);
 const locationError = ref<string | undefined>(undefined);
 const passwordError = ref<string | undefined>(undefined);
+
+const confirmPasswordError = computed(() => {
+  // Only validate confirm password when creating new repo (not connecting existing)
+  if (!isBorgRepo.value && isEncrypted.value && confirmPassword.value && password.value !== confirmPassword.value) {
+    return "Passwords do not match";
+  }
+  return undefined;
+});
 
 const isValid = computed(() =>
   !nameError.value &&
   !locationError.value &&
   !passwordError.value &&
-  // If the repo is a borg repo, we need to check if the password is correct
-  // If it's not a borg repo, we can't check the password (it is therefore undefined)
-  isPasswordCorrect.value === undefined || isPasswordCorrect.value
+  !confirmPasswordError.value &&
+  // If connection was tested and it's a borg repo, password must be correct (or not needed)
+  (!connectionTested.value || !isBorgRepo.value || isPasswordCorrect.value === undefined || isPasswordCorrect.value) &&
+  // For new repos, confirm password must match
+  (isBorgRepo.value || !isEncrypted.value || password.value === confirmPassword.value)
 );
-
 
 /************
  * Functions
  ************/
 
 function showModal() {
-  dialog.value?.showModal();
+  isOpen.value = true;
+  getConnectedRemoteHosts();
+}
+
+function handleDialogClose() {
+  // Prevent closing via backdrop/escape on success screen
+  if (!isSuccess.value) {
+    close();
+  }
+}
+
+function close() {
+  isOpen.value = false;
+  emit("close");
+  // Reset form after animation completes
+  setTimeout(() => {
+    resetAll();
+  }, 200);
 }
 
 function resetAll() {
+  isSuccess.value = false;
   isEncrypted.value = true;
   isNameTouchedByUser.value = false;
+  showPassword.value = false;
+  connectionTested.value = false;
+  isBorgRepo.value = false;
+  needsPassword.value = false;
+  isPasswordCorrect.value = undefined;
   name.value = undefined;
   location.value = undefined;
   password.value = undefined;
+  confirmPassword.value = undefined;
   nameError.value = undefined;
   locationError.value = undefined;
   passwordError.value = undefined;
 }
 
 async function createRepo() {
-  await simpleValidate(true);
-  await fullValidate(true);
+  await validate(true);
   if (!isValid.value) {
     return;
   }
@@ -93,14 +129,20 @@ async function createRepo() {
     const repo = await repoService.Create(
       name.value!,
       location.value!,
-      password.value!,
+      noPassword ? "" : password.value!,
       noPassword
     );
     if (repo) {
       emit(emitCreateRepoStr, repo);
     }
     toast.success("Repository created");
-    dialog.value?.close();
+
+    // Show success confirmation for new encrypted repos
+    if (isEncrypted.value && !isBorgRepo.value) {
+      isSuccess.value = true;
+    } else {
+      close();
+    }
   } catch (error: unknown) {
     await showAndLogError("Failed to init new repository", error);
   }
@@ -135,7 +177,7 @@ async function setNameFromLocation() {
   }
 }
 
-async function simpleValidate(force = false) {
+async function validate(force = false) {
   try {
     if (name.value !== undefined || force) {
       nameError.value = await repoService.ValidateRepoName(name.value ?? "");
@@ -144,55 +186,65 @@ async function simpleValidate(force = false) {
       locationError.value = await repoService.ValidateRepoPath(location.value ?? "", false);
     }
 
-    if (location.value === undefined || locationError.value) {
-      // Can't be a borg repo if the location is invalid
-      isBorgRepo.value = false;
-    }
-  } catch (error: unknown) {
-    await showAndLogError("Failed to run validation", error);
-  }
-}
-
-async function fullValidate(force = false) {
-  isValidating.value = true;
-  try {
-    if (lastTestConnectionValues.value?.[0] !== location.value || lastTestConnectionValues.value?.[1] !== password.value) {
-      lastTestConnectionValues.value = [location.value, password.value];
-
-      const result = await repoService.TestRepoConnection(location.value ?? "", password.value ?? "");
-
-      isBorgRepo.value = result.isBorgRepo;
-
-      if (result.isBorgRepo) {
-        if (password.value || force) {
-          if (result.needsPassword && !result.success) {
-            passwordError.value = password.value ? "Incorrect password" : "Enter a password for this repository";
-          } else if (result.success) {
-            passwordError.value = undefined;
-          }
-        }
-
-        isPasswordCorrect.value = result.success;
-        isEncrypted.value = result.needsPassword;
-        needsPassword.value = result.needsPassword;
-      } else {
-        needsPassword.value = false;
-        isPasswordCorrect.value = undefined;
-
-        if (!isEncrypted.value) {
-          passwordError.value = undefined;
-        } else if (password.value !== undefined || force) {
-          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
-        }
+    // Basic password validation (without SSH test)
+    if (!connectionTested.value || !isBorgRepo.value) {
+      if (!isEncrypted.value) {
+        passwordError.value = undefined;
+      } else if (password.value !== undefined || force) {
+        passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
       }
     }
   } catch (error: unknown) {
     await showAndLogError("Failed to run validation", error);
-  } finally {
-    isValidating.value = false;
   }
 }
 
+async function testConnection() {
+  if (!location.value || locationError.value) {
+    return;
+  }
+
+  isTesting.value = true;
+  try {
+    const result = await repoService.TestRepoConnection(location.value, password.value ?? "");
+
+    connectionTested.value = true;
+    isBorgRepo.value = result.isBorgRepo;
+    needsPassword.value = result.needsPassword;
+
+    if (result.isBorgRepo) {
+      // For existing borg repos, reflect actual encryption state
+      isEncrypted.value = result.needsPassword;
+      if (!result.needsPassword) {
+        // Unencrypted borg repo
+        passwordError.value = undefined;
+        isPasswordCorrect.value = true;
+      } else if (!password.value) {
+        // Encrypted borg repo, no password entered yet
+        passwordError.value = undefined;
+        isPasswordCorrect.value = false;
+      } else if (!result.isPasswordValid) {
+        // Password entered but wrong
+        passwordError.value = "Password is wrong";
+        isPasswordCorrect.value = false;
+      } else {
+        // Password correct
+        passwordError.value = undefined;
+        isPasswordCorrect.value = true;
+      }
+    } else {
+      // Not a borg repo - reset state
+      needsPassword.value = false;
+      isPasswordCorrect.value = undefined;
+    }
+
+    await setNameFromLocation();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to test connection", error);
+  } finally {
+    isTesting.value = false;
+  }
+}
 
 async function getConnectedRemoteHosts() {
   try {
@@ -206,94 +258,223 @@ async function getConnectedRemoteHosts() {
  * Lifecycle
  ************/
 
-getConnectedRemoteHosts();
-
-// When the location changes, we want to set the name based on the last part of the path
-watch(location, async () => await setNameFromLocation());
+// When the location changes, reset connection test state
+watch(location, () => {
+  connectionTested.value = false;
+  isBorgRepo.value = false;
+  needsPassword.value = false;
+  isPasswordCorrect.value = undefined;
+});
 
 watch([name, location, password, isEncrypted], async () => {
-  await simpleValidate();
+  await validate();
 });
 
 </script>
 
 <template>
-  <dialog
-    ref='dialog'
-    class='modal'
-    @close='resetAll();'
-  >
-    <div class='modal-box flex flex-col text-left'>
-      <h2 class='text-2xl pb-2'>Add a remote repository</h2>
-      <p>You can create a new repository or you can connect an existing one.</p>
-      <div v-if='isBorgRepo' role='alert' class='alert alert-info py-2 my-2'>
-        <span>Existing repository found.</span>
+  <TransitionRoot as='template' :show='isOpen'>
+    <Dialog class='relative z-50' @close='handleDialogClose'>
+      <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+                       leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+        <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
+      </TransitionChild>
+
+      <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+        <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
+          <TransitionChild as='template' enter='ease-out duration-300'
+                           enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                           enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
+                           leave-from='opacity-100 translate-y-0 sm:scale-100'
+                           leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+            <DialogPanel
+              class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
+              <div class='p-10'>
+                <!-- Success View -->
+                <div v-if='isSuccess' class='flex flex-col items-center text-center'>
+                  <div class='w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4'>
+                    <ExclamationTriangleIcon class='h-8 w-8 text-warning' />
+                  </div>
+                  <h3 class='font-bold text-xl mb-2'>Save Your Password</h3>
+                  <p class='text-base-content/70 mb-6'>
+                    Your repository has been created successfully. Please make sure to store your password safely
+                    in a password manager or write it down. It cannot be recovered if lost.
+                  </p>
+                  <button type='button'
+                          class='btn btn-success'
+                          @click='close'>
+                    I Saved My Password
+                  </button>
+                </div>
+
+                <!-- Form View -->
+                <template v-else>
+                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add a remote repository</DialogTitle>
+                  <p class='text-base-content/70 mb-4'>You can create a new repository or connect an existing one.</p>
+
+                  <div v-if='isBorgRepo' role='alert' class='alert alert-soft alert-info py-2 mb-4'>
+                    <span>Existing repository found.</span>
+                  </div>
+
+                  <div class='space-y-4'>
+                    <!-- Location -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Location</span>
+                      </label>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": locationError }'>
+                        <input type='text'
+                               class='grow p-0 [font:inherit]'
+                               v-model='location'
+                               placeholder='user@host:path/to/repo'
+                               list='remote-locations' />
+                        <CheckCircleIcon v-if='!locationError && isBorgRepo' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='locationError' class='size-5 text-error' />
+                      </label>
+                      <datalist id='remote-locations'>
+                        <option v-for='host in hosts'
+                                :key='host'
+                                :value='host' />
+                      </datalist>
+                      <div v-if='locationError' class='text-error text-sm mt-1'>{{ locationError }}</div>
+                      <div v-else-if='isBorgRepo' class='flex items-center gap-1 mt-1 text-success text-sm'>
+                        <CheckCircleIcon class='h-4 w-4' />
+                        <span>Valid Borg repository</span>
+                      </div>
+                    </div>
+
+                    <!-- Encryption Toggle -->
+                    <div class='pt-2'>
+                      <p v-if='!isBorgRepo' class='text-sm text-base-content/70 mb-2'>
+                        You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.
+                      </p>
+                      <p v-else-if='needsPassword' class='text-sm text-base-content/70 mb-2'>
+                        This repository is encrypted and requires a password.
+                      </p>
+                      <p v-else class='text-sm text-base-content/70 mb-2'>
+                        This repository is not encrypted.
+                      </p>
+                      <div class='form-control w-52'>
+                        <label class='label cursor-pointer'>
+                          <span class='label-text'>Encrypt repository</span>
+                          <input type='checkbox' class='toggle toggle-secondary' v-model='isEncrypted' :disabled='isBorgRepo' />
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Password</span>
+                        <span v-if='!isEncrypted' class='label-text-alt flex items-center gap-1'>
+                          <LockOpenIcon class='h-4 w-4' />
+                          No encryption
+                        </span>
+                        <span v-else class='label-text-alt flex items-center gap-1'>
+                          <LockClosedIcon class='h-4 w-4' />
+                          Encrypted
+                        </span>
+                      </label>
+                      <div class='join w-full'>
+                        <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": passwordError, "input-disabled": !isEncrypted }'>
+                          <input :type="showPassword ? 'text' : 'password'"
+                                 v-model='password'
+                                 class='grow p-0 [font:inherit]'
+                                 :disabled='!isEncrypted'
+                                 placeholder='Enter password' />
+                          <CheckCircleIcon v-if='!passwordError && isPasswordCorrect' class='size-5 text-success' />
+                          <ExclamationCircleIcon v-if='passwordError' class='size-5 text-error' />
+                        </label>
+                        <button type='button'
+                                class='btn btn-square join-item'
+                                @click='showPassword = !showPassword'
+                                :disabled='!isEncrypted'>
+                          <EyeIcon v-if='!showPassword' class='h-5 w-5' />
+                          <EyeSlashIcon v-else class='h-5 w-5' />
+                        </button>
+                      </div>
+                      <div v-if='passwordError' class='flex items-center gap-1 mt-1 text-error text-sm'>
+                        <XCircleIcon class='h-4 w-4' />
+                        <span>{{ passwordError }}</span>
+                      </div>
+                      <div v-else-if='needsPassword && !password' class='flex items-center gap-1 mt-1 text-warning text-sm'>
+                        <ExclamationTriangleIcon class='h-4 w-4' />
+                        <span>Enter password to connect</span>
+                      </div>
+                      <div v-else-if='needsPassword && isPasswordCorrect' class='flex items-center gap-1 mt-1 text-success text-sm'>
+                        <CheckCircleIcon class='h-4 w-4' />
+                        <span>Password correct</span>
+                      </div>
+                    </div>
+
+                    <!-- Confirm Password (only for new repos) -->
+                    <div v-if='!isBorgRepo' class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Confirm Password</span>
+                      </label>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
+                        <input :type="showPassword ? 'text' : 'password'"
+                               class='grow p-0 [font:inherit]'
+                               v-model='confirmPassword'
+                               :disabled='!isEncrypted'
+                               placeholder='Confirm password' />
+                        <CheckCircleIcon v-if='!confirmPasswordError && confirmPassword && password === confirmPassword' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='confirmPasswordError' class='size-5 text-error' />
+                      </label>
+                      <div v-if='confirmPasswordError' class='text-error text-sm mt-1'>{{ confirmPasswordError }}</div>
+                    </div>
+
+                    <!-- Name -->
+                    <div class='form-control'>
+                      <label class='label'>
+                        <span class='label-text'>Name</span>
+                      </label>
+                      <label class='input flex items-center gap-2' :class='{ "input-error": nameError }'>
+                        <input type='text'
+                               class='grow p-0 [font:inherit]'
+                               v-model='name'
+                               @input='isNameTouchedByUser = true'
+                               placeholder='Repository name' />
+                        <CheckCircleIcon v-if='!nameError && name' class='size-5 text-success' />
+                        <ExclamationCircleIcon v-if='nameError' class='size-5 text-error' />
+                      </label>
+                      <div v-if='nameError' class='text-error text-sm mt-1'>{{ nameError }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class='flex justify-between pt-6'>
+                    <button type='button'
+                            class='btn btn-outline'
+                            :disabled='isCreating'
+                            @click='close'>
+                      Cancel
+                    </button>
+                    <div class='flex gap-3'>
+                      <button type='button'
+                              class='btn btn-success btn-outline'
+                              :disabled='!location || !!locationError || isTesting'
+                              @click.prevent='testConnection'>
+                        <span v-if='isTesting' class='loading loading-spinner loading-sm'></span>
+                        Test Connection
+                      </button>
+                      <button type='button'
+                              class='btn btn-success'
+                              :disabled='!isValid || isCreating'
+                              @click='createRepo'>
+                        <span v-if='isCreating' class='loading loading-spinner loading-sm'></span>
+                        {{ isBorgRepo ? "Connect" : "Create" }}
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </DialogPanel>
+          </TransitionChild>
+        </div>
       </div>
-      <div class='flex flex-col gap-2 pt-2'>
-        <div class='flex justify-between items-start gap-4 pb-4'>
-          <div class='flex flex-col w-full'>
-            <FormField label='Location' :error='locationError'>
-              <input :class='formInputClass'
-                     type='text' v-model='location'
-                     placeholder='user@host:path/to/repo'
-                     list='locations'
-                     @change='fullValidate()'
-              />
-              <CheckCircleIcon v-if='isBorgRepo' class='size-6 text-success' />
-            </FormField>
-            <datalist id='locations'>
-              <option v-for='host in hosts'
-                      :key='host'
-                      :value='host' />
-            </datalist>
-          </div>
-        </div>
-
-        <p v-if='!isBorgRepo'>You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.</p>
-        <p v-if='isBorgRepo && needsPassword'>This repository is encrypted and requires a password.</p>
-
-        <div class='form-control w-52'>
-          <label class='label cursor-pointer'>
-            <span class='label-text'>Encrypt repository</span>
-            <input type='checkbox' class='toggle toggle-secondary' v-model='isEncrypted' :disabled='isBorgRepo || isValidating' />
-          </label>
-        </div>
-
-        <div class='flex justify-between items-start gap-4'>
-          <div class='flex flex-col w-full'>
-            <FormField label='Password' :error='passwordError'>
-              <input :class='formInputClass'
-                     type='password'
-                     v-model='password'
-                     @change='fullValidate()'
-                     :disabled='!isEncrypted' />
-              <CheckCircleIcon v-if='needsPassword && isPasswordCorrect' class='size-6 text-success' />
-              <LockClosedIcon class='size-6' v-if='isEncrypted' />
-              <LockOpenIcon class='size-6' v-else />
-            </FormField>
-          </div>
-        </div>
-
-        <div>
-          <FormField label='Name' :error='nameError'>
-            <input :class='formInputClass' v-model='name' @input='isNameTouchedByUser = true' @change='fullValidate()' />
-          </FormField>
-        </div>
-
-        <div class='modal-action justify-start'>
-          <button class='btn btn-outline' type='reset'
-                  @click.prevent='dialog?.close();'>
-            Cancel
-          </button>
-          <button class='btn btn-success' type='submit' :disabled='!isValid || isCreating || isValidating'
-                  @click='createRepo()'>
-            {{ isBorgRepo ? "Connect" : "Create" }}
-            <span v-if='isCreating || isValidating' class='loading loading-spinner'></span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </dialog>
+    </Dialog>
+  </TransitionRoot>
 </template>
 
 <style scoped>

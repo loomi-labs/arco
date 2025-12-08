@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/borg/types"
-	"github.com/loomi-labs/arco/backend/borg/utils"
 	"os/exec"
 	"time"
+
+	"github.com/loomi-labs/arco/backend/borg/types"
+	"github.com/loomi-labs/arco/backend/borg/utils"
 )
 
 func (b *borg) List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status) {
 	// Build command arguments
-	args := []string{"list", "--json", "--format", "`{end}`"}
+	args := []string{"list", "--json", "--format", "`{end}{comment}`"}
 
 	// Add glob filtering if provided
 	if glob != "" {

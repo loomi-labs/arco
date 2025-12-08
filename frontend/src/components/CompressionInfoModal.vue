@@ -146,25 +146,25 @@ defineExpose({ showModal, close });
                 <div class='bg-base-200 rounded-lg p-4'>
                   <h4 class='font-semibold mb-3'>Tips</h4>
                   <ul class='list-disc list-inside space-y-1 text-sm text-base-content/70'>
-                    <li>Higher compression levels use more CPU and memory</li>
-                    <li>Slow storage? Higher compression may help overall performance</li>
-                    <li>Compressing already-compressed data (videos, images) is pointless</li>
-                    <li>Compression settings only affect future backups, not existing archives</li>
-                    <li>You can change algorithms anytime and mix different compression between backups</li>
+                    <li>The level slider controls the speed vs size trade-off. Higher levels compress more but take longer</li>
+                    <li>Each algorithm has a different speed and compression ratio. The bars above show typical values at default level</li>
+                    <li>Already-compressed files (videos, images, archives) won't compress further</li>
+                    <li>Compression settings only affect new backups, not existing ones</li>
+                    <li>You can switch algorithms anytime. Different backups can use different compressions</li>
                   </ul>
                 </div>
 
                 <!-- Learn More Link -->
                 <div class='mt-4'>
                   <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/internals/data-structures.html#data-compression")'
-                     class='link link-primary text-sm'>
+                     class='link link-info text-sm cursor-pointer'>
                     Learn more in Borg documentation →
                   </a>
                 </div>
 
                 <!-- Close Button -->
                 <div class='flex justify-end mt-6'>
-                  <button type='button' class='btn btn-sm' @click='close'>
+                  <button type='button' class='btn btn-outline' @click='close'>
                     Close
                   </button>
                 </div>

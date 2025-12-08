@@ -17,7 +17,7 @@ import {
   XMarkIcon
 } from "@heroicons/vue/24/solid";
 import { isInPast, toDurationString, toLongDateString, toRelativeTimeString } from "../common/time";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import EditArchiveModal from "./EditArchiveModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
@@ -77,6 +77,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
 );
 const selectedArchives = ref<Set<number>>(new Set());
 const isAllSelected = ref<boolean>(false);
+const isAllPagesSelected = ref<boolean>(false);
 const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
@@ -700,7 +701,7 @@ async function handleRenameConfirm(archiveId: number, newName: string, newCommen
     inputValues.value[archive.id] = newName;
     pendingComment.value = newComment;
     confirmUnmountRenameModal.value?.showModal();
-    editArchiveModal.value?.closeModal();
+    editArchiveModal.value?.close();
     (document.activeElement as HTMLElement)?.blur();
     return;
   }
@@ -716,7 +717,7 @@ async function handleRenameConfirm(archiveId: number, newName: string, newCommen
   }
 
   // Close modal on successful operation
-  editArchiveModal.value?.closeModal();
+  editArchiveModal.value?.close();
   (document.activeElement as HTMLElement)?.blur();
 }
 
@@ -750,6 +751,7 @@ async function validateName(archiveId: number) {
 function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedArchives.value.clear();
+    isAllPagesSelected.value = false;
   } else {
     archives.value.forEach((archive) => {
       selectedArchives.value.add(archive.id);
@@ -761,6 +763,7 @@ function toggleSelectAll() {
 function clearSelection() {
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 }
 
 function toggleArchiveSelection(archiveId: number) {
@@ -770,10 +773,46 @@ function toggleArchiveSelection(archiveId: number) {
     selectedArchives.value.add(archiveId);
   }
 
+  // Reset "all pages" selection when manually toggling
+  isAllPagesSelected.value = false;
+
   // Update the select all checkbox state
   isAllSelected.value =
     selectedArchives.value.size === archives.value.length &&
     archives.value.length > 0;
+}
+
+async function selectAllPages() {
+  try {
+    const request = PaginatedArchivesRequest.createFrom();
+    request.repositoryId = props.repoId;
+    // Page and pageSize not needed for this query but set them anyway
+    request.page = 1;
+    request.pageSize = pagination.value.total;
+
+    if (props.backupProfileId) {
+      request.backupProfileFilter = BackupProfileFilter.createFrom();
+      request.backupProfileFilter.id = props.backupProfileId;
+    } else {
+      request.backupProfileFilter = backupProfileFilter.value;
+    }
+    request.search = search.value;
+    request.startDate = dateRange.value.startDate
+      ? new Date(dateRange.value.startDate)
+      : undefined;
+    request.endDate = dateRange.value.endDate
+      ? dayEnd(new Date(dateRange.value.endDate))
+      : undefined;
+
+    const ids = await repoService.GetFilteredArchiveIds(request);
+    if (ids) {
+      selectedArchives.value = new Set(ids);
+      isAllPagesSelected.value = true;
+      isAllSelected.value = true;
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to select all archives", error);
+  }
 }
 
 async function deleteSelectedArchives() {
@@ -923,6 +962,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 });
 
 onUnmounted(() => {
@@ -960,13 +1000,12 @@ onUnmounted(() => {
           <!-- Mount Status Indicator -->
           <div v-if='archiveMountCount > 0' class='flex items-center gap-1 text-sm'>
             <span v-if='archiveMountCount > 0'
-                  class='tooltip tooltip-info'
+                  class='tooltip'
                   :data-tip='canPerformOperations ? `Unmount ${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""}` : ""'>
-              <button class='btn btn-sm btn-info btn-outline text-info rounded-full'
+              <button class='btn btn-sm btn-circle btn-outline'
                       :disabled='!canPerformOperations'
                       @click='unmountAll()'>
                 <CloudArrowDownIcon class='size-4' />
-                <span class='text-xs'>{{ archiveMountCount }}</span>
               </button>
             </span>
           </div>
@@ -974,9 +1013,9 @@ onUnmounted(() => {
           <!-- Repository Browse and Mount Actions -->
           <!-- Unmount Repository Button (only when mounted) -->
           <span v-if='hasRepositoryMountActive'
-                class='tooltip tooltip-info'
+                class='tooltip'
                 :data-tip='canPerformOperations ? `Unmount repository from ${repositoryMountInfo?.mountPath}` : ""'>
-            <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+            <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations'
                     @click='unmountRepository()'>
               <CloudArrowDownIcon class='size-4' />
@@ -984,23 +1023,22 @@ onUnmounted(() => {
           </span>
 
           <!-- Browse Repository Button (always visible) -->
-          <span class='tooltip tooltip-info'
+          <span class='tooltip'
                 :data-tip='canPerformOperations && archiveMountCount === 0 ? (hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository") : ""'>
-            <button :class="{
-                      'btn btn-sm btn-info btn-circle btn-outline': true,
-                      'text-info': !(!canPerformOperations || archiveMountCount > 0)
-                    }"
+            <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations || archiveMountCount > 0'
                     @click='mountRepository()'>
               <DocumentMagnifyingGlassIcon class='size-4' />
             </button>
           </span>
 
-          <button class='btn btn-ghost btn-circle btn-info'
-                  :disabled='!isRepositoryIdle'
-                  @click='refreshArchives'>
-            <ArrowPathIcon class='size-6' />
-          </button>
+          <span class='tooltip' data-tip='Refresh archives'>
+            <button class='btn btn-sm btn-circle btn-outline'
+                    :disabled='!isRepositoryIdle'
+                    @click='refreshArchives'>
+              <ArrowPathIcon class='size-4' />
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -1032,7 +1070,7 @@ onUnmounted(() => {
         </label>
 
         <!-- Search -->
-        <label class='form-control flex flex-col' :class='{ "lg:col-span-2": !isBackupProfileFilterVisible }'>
+        <label class='form-control flex flex-col'>
           <span class='label'>
             <span class='label-text-alt'>Search</span>
           </span>
@@ -1045,6 +1083,20 @@ onUnmounted(() => {
           </label>
         </label>
       </div>
+    </div>
+
+    <!-- Select all pages indicator -->
+    <div v-if='isAllSelected && pagination.total > archives.length && !isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ archives.length }} archives on this page are selected.
+      <a class='link link-secondary' @click='selectAllPages'>
+        Select all {{ pagination.total }} archives
+      </a>
+    </div>
+    <div v-else-if='isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ pagination.total }} archives are selected.
+      <a class='link' @click='clearSelection'>Clear selection</a>
     </div>
 
     <div>
@@ -1065,7 +1117,7 @@ onUnmounted(() => {
           <th v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell] w-32'>Backup profile</th>
           <th class='min-w-24 sm:min-w-32 lg:min-w-40'>Creation time</th>
           <th class='text-right [display:none] lg:[display:table-cell] w-20'>Duration</th>
-          <th class='min-w-16 sm:min-w-32 text-right'>{{ $t("action") }}</th>
+          <th class='min-w-16 sm:min-w-32 text-right'>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -1130,7 +1182,7 @@ onUnmounted(() => {
           </td>
           <!-- Creation time -->
           <td>
-            <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
+            <span :class='toCreationTimeTooltip(archive.createdAt)' :data-tip='toLongDateString(archive.createdAt)'>
               <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
                   toRelativeTimeString(archive.createdAt)
                 }}</span>
@@ -1144,21 +1196,18 @@ onUnmounted(() => {
           <td class='flex items-center gap-1 sm:gap-2 justify-end min-w-16 sm:min-w-32'>
             <!-- Unmount Archive Button (only when mounted) -->
             <span v-if='isArchiveMounted(archive.id)'
-                  class='tooltip tooltip-info'
+                  class='tooltip'
                   :data-tip='`Unmount archive from ${getArchiveMountInfo(archive.id)?.mountPath}`'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+              <button class='btn btn-sm btn-circle btn-outline'
                       @click.stop='unmountArchive(archive.id)'>
                 <CloudArrowDownIcon class='size-4' />
               </button>
             </span>
 
             <!-- Browse Archive Button (always visible) -->
-            <span class='tooltip tooltip-info'
+            <span class='tooltip'
                   :data-tip='canPerformOperations && (isArchiveMounted(archive.id) || hasRepositoryMountActive || canMountNewArchive) ? (isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive") : ""'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline'
-                      :class="{
-                        'text-info': !(!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive))
-                      }"
+              <button class='btn btn-sm btn-circle btn-outline'
                       :disabled='!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive)'
                       @click.stop='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4' />

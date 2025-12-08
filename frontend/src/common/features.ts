@@ -49,7 +49,7 @@ export function getFeaturesByPlan(plan: Plan | undefined): PlanFeature[] {
     },
     ...(isProPlan ? [{
       text: "Overage pricing beyond base storage",
-      highlight: true
+      highlight: false
     }] : [])
   ];
 }

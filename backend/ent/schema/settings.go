@@ -20,15 +20,18 @@ func (Settings) Mixin() []ent.Mixin {
 // Fields of the Settings.
 func (Settings) Fields() []ent.Field {
 	return []ent.Field{
-		field.Bool("show_welcome").
-			StructTag(`json:"showWelcome"`).
-			Default(true),
 		field.Bool("expert_mode").
 			StructTag(`json:"expertMode"`).
 			Default(false),
 		field.Enum("theme").
 			Values("light", "dark", "system").
 			Default("system"),
+		field.Bool("disable_transitions").
+			StructTag(`json:"disableTransitions"`).
+			Default(false),
+		field.Bool("disable_shadows").
+			StructTag(`json:"disableShadows"`).
+			Default(false),
 	}
 }
 

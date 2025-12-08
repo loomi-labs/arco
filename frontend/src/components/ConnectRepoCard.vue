@@ -37,37 +37,37 @@ const emitClick = "click";
 <template>
   <!-- Local Repository Card -->
   <div v-if='locationType === LocationType.LocationTypeLocal'
-       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
-       :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected  }'
+       class='group flex flex-col ac-card-hover-secondary p-10 w-full min-h-[300px]'
+       :class='{ "ac-card-selected-secondary text-secondary": isSelected }'
        @click='emit(emitClick)'>
     <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
                          :class='{"text-secondary": isSelected}' />
-    <p class='text-lg font-semibold mb-2'>Local Repository</p>
+    <p class='text-lg font-semibold mb-2 group-hover:text-secondary'>Local Repository</p>
     <div class='divider'></div>
-    <p class='text-sm text-base-content/70'>Store your backups on a local drive.</p>
+    <p class='text-sm text-base-content/70 group-hover:text-secondary'>Store your backups on a local drive.</p>
   </div>
   <!-- Remote Repository Card -->
   <div v-if='locationType === LocationType.LocationTypeRemote'
-       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
-       :class='{ "ac-card-selected ": isSelected, "border-transparent": !isSelected }'
+       class='group flex flex-col ac-card-hover-secondary p-10 w-full min-h-[300px]'
+       :class='{ "ac-card-selected-secondary text-secondary": isSelected }'
        @click='emit(emitClick)'>
     <GlobeEuropeAfricaIcon class='size-24 self-center group-hover:text-secondary mb-4'
                            :class='{"text-secondary": isSelected}' />
-    <p class='text-lg font-semibold mb-2'>Remote Repository</p>
+    <p class='text-lg font-semibold mb-2 group-hover:text-secondary'>Remote Repository</p>
     <div class='divider'></div>
-    <p class='text-sm text-base-content/70'>Store your backups on a remote server.</p>
+    <p class='text-sm text-base-content/70 group-hover:text-secondary'>Store your backups on a remote server.</p>
   </div>
   <!-- Arco Cloud Card -->
   <div v-if='locationType === LocationType.LocationTypeArcoCloud'
-       class='group flex flex-col ac-card-hover border border-secondary p-10 w-full min-h-[300px]'
-       :class='{ "ac-card-selected": isSelected, "border-transparent": !isSelected }'
+       class='group flex flex-col ac-card-hover-secondary p-10 w-full min-h-[300px]'
+       :class='{ "ac-card-selected-secondary text-secondary": isSelected }'
        @click='emit(emitClick)'>
     <ArcoLogo class='size-24 self-center group-hover:text-secondary mb-4'
               :class='{"text-secondary": isSelected}'
               svgClass='' />
-    <p class='text-lg font-semibold mb-2'>Arco Cloud</p>
+    <p class='text-lg font-semibold mb-2 group-hover:text-secondary'>Arco Cloud</p>
     <div class='divider'></div>
-    <p class='text-sm text-base-content/70'>Store your backups in Arco Cloud.</p>
+    <p class='text-sm text-base-content/70 group-hover:text-secondary'>Store your backups in Arco Cloud.</p>
   </div>
 </template>
 

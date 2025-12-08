@@ -234,9 +234,10 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "show_welcome", Type: field.TypeBool, Default: true},
 		{Name: "expert_mode", Type: field.TypeBool, Default: false},
 		{Name: "theme", Type: field.TypeEnum, Enums: []string{"light", "dark", "system"}, Default: "system"},
+		{Name: "disable_transitions", Type: field.TypeBool, Default: false},
+		{Name: "disable_shadows", Type: field.TypeBool, Default: false},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{

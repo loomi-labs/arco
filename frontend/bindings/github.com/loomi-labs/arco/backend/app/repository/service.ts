@@ -178,11 +178,21 @@ export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
 }
 
 /**
+ * GetFilteredArchiveIds retrieves all archive IDs matching the filter criteria (without pagination)
+ * This is used for "select all across pages" functionality
+ */
+export function GetFilteredArchiveIds(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<number[]> {
+    return $Call.ByID(2154529177, req).then(($result: any) => {
+        return $$createType17($result);
+    });
+}
+
+/**
  * GetLastArchiveByBackupId gets last archive for backup profile
  */
 export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(2844713878, backupId).then(($result: any) => {
-        return $$createType18($result);
+        return $$createType19($result);
     });
 }
 
@@ -191,7 +201,7 @@ export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $Cancellab
  */
 export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(3556071828, repoId).then(($result: any) => {
-        return $$createType18($result);
+        return $$createType19($result);
     });
 }
 
@@ -211,7 +221,7 @@ export function GetLastBackupWarningByBackupId(bId: types$0.BackupId): $Cancella
  */
 export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<$models.PaginatedArchivesResponse | null> {
     return $Call.ByID(3644900762, req).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType21($result);
     });
 }
 
@@ -220,7 +230,7 @@ export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | nul
  */
 export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$models.PruningDates> {
     return $Call.ByID(2102076250, archiveIds).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType22($result);
     });
 }
 
@@ -229,7 +239,7 @@ export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$mode
  */
 export function GetQueuedOperations(repoId: number, operationType: statemachine$0.OperationType | null): $CancellablePromise<($models.SerializableQueuedOperation | null)[]> {
     return $Call.ByID(1376269121, repoId, operationType).then(($result: any) => {
-        return $$createType22($result);
+        return $$createType23($result);
     });
 }
 
@@ -238,7 +248,7 @@ export function GetQueuedOperations(repoId: number, operationType: statemachine$
  */
 export function GetWithQueue(repoId: number): $CancellablePromise<$models.RepositoryWithQueue | null> {
     return $Call.ByID(144266353, repoId).then(($result: any) => {
-        return $$createType24($result);
+        return $$createType25($result);
     });
 }
 
@@ -340,7 +350,7 @@ export function Remove(id: number): $CancellablePromise<void> {
  */
 export function TestRepoConnection(path: string, password: string): $CancellablePromise<$models.TestRepoConnectionResult> {
     return $Call.ByID(1151269054, path, password).then(($result: any) => {
-        return $$createType25($result);
+        return $$createType26($result);
     });
 }
 
@@ -356,7 +366,7 @@ export function Unmount(repoId: number): $CancellablePromise<string> {
  */
 export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<any[]> {
     return $Call.ByID(1105783937, repoIds).then(($result: any) => {
-        return $$createType26($result);
+        return $$createType27($result);
     });
 }
 
@@ -415,13 +425,14 @@ const $$createType13 = $Create.Nullable($$createType12);
 const $$createType14 = types$1.BackupProgress.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
 const $$createType16 = $Create.Array($Create.Any);
-const $$createType17 = ent$0.Archive.createFrom;
-const $$createType18 = $Create.Nullable($$createType17);
-const $$createType19 = $models.PaginatedArchivesResponse.createFrom;
-const $$createType20 = $Create.Nullable($$createType19);
-const $$createType21 = $models.PruningDates.createFrom;
-const $$createType22 = $Create.Array($$createType8);
-const $$createType23 = $models.RepositoryWithQueue.createFrom;
-const $$createType24 = $Create.Nullable($$createType23);
-const $$createType25 = $models.TestRepoConnectionResult.createFrom;
-const $$createType26 = $Create.Array($Create.Any);
+const $$createType17 = $Create.Array($Create.Any);
+const $$createType18 = ent$0.Archive.createFrom;
+const $$createType19 = $Create.Nullable($$createType18);
+const $$createType20 = $models.PaginatedArchivesResponse.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = $models.PruningDates.createFrom;
+const $$createType23 = $Create.Array($$createType8);
+const $$createType24 = $models.RepositoryWithQueue.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);
+const $$createType26 = $models.TestRepoConnectionResult.createFrom;
+const $$createType27 = $Create.Array($Create.Any);
