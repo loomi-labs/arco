@@ -153,6 +153,7 @@ const currentPrice = computed(() => {
 const isReactivating = ref(false);
 const isUpgrading = ref(false);
 const isDowngrading = ref(false);
+const isOpeningPortal = ref(false);
 
 const _storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
@@ -481,6 +482,19 @@ async function downgradeSubscription() {
   }
 }
 
+async function openCustomerPortal() {
+  isOpeningPortal.value = true;
+  try {
+    await SubscriptionService.CreateCustomerPortalSession();
+    // Browser opens automatically via backend
+  } catch (_error) {
+    errorMessage.value = "Failed to open billing portal.";
+    await showAndLogError("Failed to open billing portal", _error);
+  } finally {
+    isOpeningPortal.value = false;
+  }
+}
+
 
 /************
  * Lifecycle
@@ -711,6 +725,18 @@ onMounted(async () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Billing Portal Button -->
+              <div class='pt-4 border-t border-base-300'>
+                <button
+                  class='btn btn-outline btn-sm'
+                  @click='openCustomerPortal'
+                  :disabled='isOpeningPortal'
+                >
+                  <span v-if='isOpeningPortal' class='loading loading-spinner loading-xs'></span>
+                  Billing Portal
+                </button>
               </div>
 
             </div>

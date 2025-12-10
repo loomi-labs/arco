@@ -81,6 +81,33 @@ export class CreateCheckoutSessionResponse {
 }
 
 /**
+ * CreateCustomerPortalSessionResponse contains the customer portal session details.
+ * 
+ * Provides the portal URL for the customer to manage their subscription.
+ */
+export class CreateCustomerPortalSessionResponse {
+    /**
+     * Portal URL for the customer to access their account.
+     * This is a pre-authenticated URL that grants immediate access.
+     */
+    "portal_url"?: string;
+
+    /** Creates a new CreateCustomerPortalSessionResponse instance. */
+    constructor($$source: Partial<CreateCustomerPortalSessionResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CreateCustomerPortalSessionResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CreateCustomerPortalSessionResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CreateCustomerPortalSessionResponse($$parsedSource as Partial<CreateCustomerPortalSessionResponse>);
+    }
+}
+
+/**
  * CurrentPeriodCharges represents estimated billing charges for the current billing period.
  * 
  * These are estimates based on current usage and may differ from final invoice amounts.
@@ -280,6 +307,13 @@ export class Plan {
      * Overage pricing per GB in cents for usage beyond base storage limit.
      */
     "overage_cents_per_gb"?: number;
+
+    /**
+     * Number of free trial days for this plan (0 if no trial).
+     * Trials are configured in Polar and allow users to try the plan
+     * before being charged.
+     */
+    "trial_days"?: number;
 
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
