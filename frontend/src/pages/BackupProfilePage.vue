@@ -7,8 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef,
 import { useRouter } from "vue-router";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
@@ -92,8 +91,8 @@ const dataSectionDetails = computed(() => {
 });
 
 const scheduleSectionDetails = computed(() => {
-  const schedule = backupProfile.value.edges.backupSchedule;
-  const pruning = backupProfile.value.edges.pruningRule;
+  const schedule = backupProfile.value.backupSchedule;
+  const pruning = backupProfile.value.pruningRule;
 
   if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
     return "No schedules";
@@ -133,7 +132,7 @@ const scheduleSectionDetails = computed(() => {
 
 // Computed property for safe repository access
 const profileRepos = computed(() =>
-  backupProfile.value.edges?.repositories?.filter(r => r !== null) ?? []
+  backupProfile.value.repositories?.filter(r => r !== null) ?? []
 );
 
 // Determine if Add Repository button should be in title (true) or as card (false)
@@ -231,10 +230,10 @@ async function saveExcludeCaches(excludeCaches: boolean) {
   }
 }
 
-async function saveSchedule(schedule: ent.BackupSchedule) {
+async function saveSchedule(schedule: BackupSchedule) {
   try {
     await backupProfileService.SaveBackupSchedule(backupProfile.value.id, schedule);
-    backupProfile.value.edges.backupSchedule = schedule;
+    backupProfile.value.backupSchedule = schedule;
   } catch (error: unknown) {
     await showAndLogError("Failed to save schedule", error);
   }
@@ -275,9 +274,9 @@ async function saveBackupProfile() {
   }
 }
 
-async function setPruningRule(pruningRule: ent.PruningRule) {
+async function setPruningRule(pruningRule: PruningRule) {
   try {
-    backupProfile.value.edges.pruningRule = pruningRule;
+    backupProfile.value.pruningRule = pruningRule;
   } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);
   }
@@ -503,11 +502,11 @@ watch(
 
       <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
         <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-          <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
+          <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
                              @update:schedule='saveSchedule' />
 
           <PruningCard :backup-profile-id='backupProfile.id'
-                       :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
+                       :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
                        :ask-for-save-before-leaving='true'
                        @update:pruning-rule='setPruningRule'>
           </PruningCard>
@@ -536,7 +535,7 @@ watch(
             :backup-profile-id='backupProfile.id'
             :highlight='profileRepos.length > 1 && repo.id === selectedRepoId'
             :show-hover='profileRepos.length > 1'
-            :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
+            :is-pruning-shown='backupProfile.pruningRule?.isEnabled ?? false'
             :is-delete-shown='profileRepos.length > 1'
             @click='() => selectedRepoId = repo.id'
             @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
@@ -614,7 +613,7 @@ watch(
       <ArchivesCard v-if='selectedRepoId'
                     :backup-profile-id='backupProfile.id'
                     :repo-id='selectedRepoId'
-                    :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
+                    :highlight='(backupProfile.repositories?.length ?? 0) > 1'
                     :show-name='true'>
       </ArchivesCard>
     </div>

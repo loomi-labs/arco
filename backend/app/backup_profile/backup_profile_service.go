@@ -81,7 +81,8 @@ func (s *Service) mustHaveDB() {
 /********** Backup Profile *********/
 /***********************************/
 
-func (s *Service) GetBackupProfile(ctx context.Context, id int) (*ent.BackupProfile, error) {
+// getBackupProfileEnt is an internal method that returns the raw ent.BackupProfile
+func (s *Service) getBackupProfileEnt(ctx context.Context, id int) (*ent.BackupProfile, error) {
 	s.mustHaveDB()
 	return s.db.BackupProfile.
 		Query().
@@ -92,9 +93,17 @@ func (s *Service) GetBackupProfile(ctx context.Context, id int) (*ent.BackupProf
 		Only(ctx)
 }
 
-func (s *Service) GetBackupProfiles(ctx context.Context) ([]*ent.BackupProfile, error) {
+func (s *Service) GetBackupProfile(ctx context.Context, id int) (*BackupProfile, error) {
+	entProfile, err := s.getBackupProfileEnt(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.toBackupProfile(ctx, entProfile)
+}
+
+func (s *Service) GetBackupProfiles(ctx context.Context) ([]*BackupProfile, error) {
 	s.mustHaveDB()
-	return s.db.BackupProfile.
+	entProfiles, err := s.db.BackupProfile.
 		Query().
 		WithRepositories().
 		WithBackupSchedule().
@@ -104,6 +113,10 @@ func (s *Service) GetBackupProfiles(ctx context.Context) ([]*ent.BackupProfile, 
 			sel.OrderExpr(sql.Expr(fmt.Sprintf("%s COLLATE NOCASE", backupprofile.FieldName)))
 		}).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.toBackupProfiles(ctx, entProfiles)
 }
 
 type BackupProfileFilter struct {
@@ -151,7 +164,7 @@ func (s *Service) GetBackupProfileFilterOptions(ctx context.Context, repoId int)
 	return filters, nil
 }
 
-func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, error) {
+func (s *Service) NewBackupProfile(ctx context.Context) (*BackupProfile, error) {
 	s.mustHaveDB()
 	// Choose the first icon that is not already in use
 	all, err := s.db.BackupProfile.
@@ -175,7 +188,7 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 
 	// We only care about the hour, minute, second and nanosecond (in local time for display purpose)
 	firstDayOfMonthAtNine := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
-	schedule := &ent.BackupSchedule{
+	schedule := &BackupSchedule{
 		Mode:      backupschedule.ModeHourly,
 		DailyAt:   firstDayOfMonthAtNine,
 		Weekday:   backupschedule.WeekdayMonday,
@@ -184,7 +197,7 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 		MonthlyAt: firstDayOfMonthAtNine,
 	}
 
-	pruningRule := &ent.PruningRule{
+	pruningRule := &PruningRule{
 		IsEnabled:      false,
 		KeepHourly:     defaultPruningOption.KeepHourly,
 		KeepDaily:      defaultPruningOption.KeepDaily,
@@ -194,7 +207,7 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 		KeepWithinDays: 30,
 	}
 
-	return &ent.BackupProfile{
+	return &BackupProfile{
 		ID:                       0,
 		Name:                     "",
 		Prefix:                   "",
@@ -205,10 +218,10 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*ent.BackupProfile, err
 		CompressionMode:          backupprofile.CompressionModeLz4, // Default compression
 		CompressionLevel:         nil,                              // lz4 doesn't use levels
 		AdvancedSectionCollapsed: true,                             // Collapsed by default
-		Edges: ent.BackupProfileEdges{
-			BackupSchedule: schedule,
-			PruningRule:    pruningRule,
-		},
+		Repositories:             make([]RepositorySummary, 0),
+		BackupSchedule:           schedule,
+		PruningRule:              pruningRule,
+		ArchiveCount:             0,
 	}, nil
 }
 
@@ -287,7 +300,7 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 	return fullPrefix, nil
 }
 
-func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProfile, repositoryIds []int) (*ent.BackupProfile, error) {
+func (s *Service) CreateBackupProfile(ctx context.Context, backup BackupProfile, repositoryIds []int) (*BackupProfile, error) {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Creating backup profile %d", backup.ID))
 
@@ -313,10 +326,10 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup ent.BackupProf
 		return nil, err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileCreatedString())
-	return profile, nil
+	return s.toBackupProfile(ctx, profile)
 }
 
-func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProfile) (*ent.BackupProfile, error) {
+func (s *Service) UpdateBackupProfile(ctx context.Context, backup BackupProfile) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Updating backup profile %d", backup.ID))
 
@@ -328,7 +341,7 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 
 	// Validate compression settings
 	if err := validateCompression(backup.CompressionMode, backup.CompressionLevel); err != nil {
-		return nil, fmt.Errorf("invalid compression settings: %w", err)
+		return fmt.Errorf("invalid compression settings: %w", err)
 	}
 
 	update := s.db.BackupProfile.
@@ -351,12 +364,12 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup ent.BackupProf
 		update = update.SetNillableCompressionLevel(backup.CompressionLevel)
 	}
 
-	profile, err := update.Save(ctx)
+	err := update.Exec(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
-	return profile, nil
+	return nil
 }
 
 // DeleteBackupProfile deletes a backup profile and optionally its archives
@@ -369,7 +382,7 @@ func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, 
 
 	// If deleteArchives is true, queue archive deletions for each repository
 	if deleteArchives && s.repositoryService != nil {
-		for _, repo := range backupProfile.Edges.Repositories {
+		for _, repo := range backupProfile.Repositories {
 			// Query archives for this backup profile and repository
 			archives, err := s.db.Archive.Query().
 				Where(
@@ -414,8 +427,8 @@ func (s *Service) AddRepositoryToBackupProfile(ctx context.Context, backupProfil
 	if err != nil {
 		return err
 	}
-	assert.NotNil(bs.Edges.Repositories, "backup profile does not have repositories")
-	for _, r := range bs.Edges.Repositories {
+	assert.NotNil(bs.Repositories, "backup profile does not have repositories")
+	for _, r := range bs.Repositories {
 		if r.ID == repositoryId {
 			return fmt.Errorf("repository is already in the backup profile")
 		}
@@ -539,7 +552,7 @@ func (s *Service) SelectDirectory(data SelectDirectoryData) (string, error) {
 
 // applyScheduleDefaults ensures all schedule fields have valid values.
 // This prevents validation errors when fields are empty/zero.
-func applyScheduleDefaults(schedule *ent.BackupSchedule) {
+func applyScheduleDefaultsEnt(schedule *ent.BackupSchedule) {
 	defaultTime := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
 
 	if schedule.Weekday == "" {
@@ -559,12 +572,15 @@ func applyScheduleDefaults(schedule *ent.BackupSchedule) {
 	}
 }
 
-func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, schedule ent.BackupSchedule) error {
+func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, schedule BackupSchedule) error {
 	s.mustHaveDB()
 	s.log.Debug(fmt.Sprintf("Saving backup schedule for backup profile %d", backupProfileId))
 
+	// Convert to ent type for internal operations
+	entSchedule := schedule.ToEnt()
+
 	// Apply defaults to ensure all fields have valid values
-	applyScheduleDefaults(&schedule)
+	applyScheduleDefaultsEnt(entSchedule)
 
 	defer s.sendBackupScheduleChanged()
 	doesExist, err := s.db.BackupSchedule.
@@ -576,8 +592,8 @@ func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, s
 	}
 
 	var nextRun *time.Time
-	if schedule.Mode != backupschedule.ModeDisabled {
-		nr, err := getNextBackupTime(&schedule, time.Now())
+	if entSchedule.Mode != backupschedule.ModeDisabled {
+		nr, err := getNextBackupTime(entSchedule, time.Now())
 		if err != nil {
 			return err
 		}
@@ -589,24 +605,24 @@ func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, s
 		return s.db.BackupSchedule.
 			Update().
 			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
-			SetMode(schedule.Mode).
-			SetDailyAt(schedule.DailyAt).
-			SetWeeklyAt(schedule.WeeklyAt).
-			SetWeekday(schedule.Weekday).
-			SetMonthlyAt(schedule.MonthlyAt).
-			SetMonthday(schedule.Monthday).
+			SetMode(entSchedule.Mode).
+			SetDailyAt(entSchedule.DailyAt).
+			SetWeeklyAt(entSchedule.WeeklyAt).
+			SetWeekday(entSchedule.Weekday).
+			SetMonthlyAt(entSchedule.MonthlyAt).
+			SetMonthday(entSchedule.Monthday).
 			ClearNextRun().
 			SetNillableNextRun(nextRun).
 			Exec(ctx)
 	}
 	return s.db.BackupSchedule.
 		Create().
-		SetMode(schedule.Mode).
-		SetDailyAt(schedule.DailyAt).
-		SetWeeklyAt(schedule.WeeklyAt).
-		SetWeekday(schedule.Weekday).
-		SetMonthlyAt(schedule.MonthlyAt).
-		SetMonthday(schedule.Monthday).
+		SetMode(entSchedule.Mode).
+		SetDailyAt(entSchedule.DailyAt).
+		SetWeeklyAt(entSchedule.WeeklyAt).
+		SetWeekday(entSchedule.Weekday).
+		SetMonthlyAt(entSchedule.MonthlyAt).
+		SetMonthday(entSchedule.Monthday).
 		SetNillableNextRun(nextRun).
 		SetBackupProfileID(backupProfileId).
 		Exec(ctx)
@@ -662,7 +678,7 @@ func (s *Service) GetPruningOptions() GetPruningOptionsResponse {
 	return GetPruningOptionsResponse{Options: PruningOptions}
 }
 
-func (s *Service) SavePruningRule(ctx context.Context, backupId int, rule ent.PruningRule) (*ent.PruningRule, error) {
+func (s *Service) SavePruningRule(ctx context.Context, backupId int, rule PruningRule) (*PruningRule, error) {
 	s.mustHaveDB()
 	defer s.sendPruningRuleChanged()
 
@@ -671,13 +687,19 @@ func (s *Service) SavePruningRule(ctx context.Context, backupId int, rule ent.Pr
 		return nil, err
 	}
 
-	nextRun := getNextPruneTime(backupProfile.Edges.BackupSchedule, time.Now())
+	// Convert custom BackupSchedule to ent for getNextPruneTime
+	var entSchedule *ent.BackupSchedule
+	if backupProfile.BackupSchedule != nil {
+		entSchedule = backupProfile.BackupSchedule.ToEnt()
+	}
+	nextRun := getNextPruneTime(entSchedule, time.Now())
 
-	if backupProfile.Edges.PruningRule != nil {
+	var savedRule *ent.PruningRule
+	if backupProfile.PruningRule != nil {
 		s.log.Debug(fmt.Sprintf("Updating pruning rule %d for backup profile %d", rule.ID, backupId))
-		return s.db.PruningRule.
+		savedRule, err = s.db.PruningRule.
 			// We ignore the ID from the given rule and get it from the db directly
-			UpdateOneID(backupProfile.Edges.PruningRule.ID).
+			UpdateOneID(backupProfile.PruningRule.ID).
 			SetIsEnabled(rule.IsEnabled).
 			SetKeepHourly(rule.KeepHourly).
 			SetKeepDaily(rule.KeepDaily).
@@ -687,20 +709,25 @@ func (s *Service) SavePruningRule(ctx context.Context, backupId int, rule ent.Pr
 			SetKeepWithinDays(rule.KeepWithinDays).
 			SetNextRun(nextRun).
 			Save(ctx)
+	} else {
+		s.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
+		savedRule, err = s.db.PruningRule.
+			Create().
+			SetIsEnabled(rule.IsEnabled).
+			SetKeepHourly(rule.KeepHourly).
+			SetKeepDaily(rule.KeepDaily).
+			SetKeepWeekly(rule.KeepWeekly).
+			SetKeepMonthly(rule.KeepMonthly).
+			SetKeepYearly(rule.KeepYearly).
+			SetKeepWithinDays(rule.KeepWithinDays).
+			SetBackupProfileID(backupId).
+			SetNextRun(nextRun).
+			Save(ctx)
 	}
-	s.log.Debug(fmt.Sprintf("Creating pruning rule for backup profile %d", backupId))
-	return s.db.PruningRule.
-		Create().
-		SetIsEnabled(rule.IsEnabled).
-		SetKeepHourly(rule.KeepHourly).
-		SetKeepDaily(rule.KeepDaily).
-		SetKeepWeekly(rule.KeepWeekly).
-		SetKeepMonthly(rule.KeepMonthly).
-		SetKeepYearly(rule.KeepYearly).
-		SetKeepWithinDays(rule.KeepWithinDays).
-		SetBackupProfileID(backupId).
-		SetNextRun(nextRun).
-		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toPruningRule(savedRule), nil
 }
 
 func (s *Service) sendPruningRuleChanged() {
@@ -709,6 +736,216 @@ func (s *Service) sendPruningRuleChanged() {
 		return
 	}
 	s.pruningScheduleChangedCh <- struct{}{}
+}
+
+/***********************************/
+/********** Custom Types ***********/
+/***********************************/
+
+// RepositorySummary contains minimal repository info for BackupProfile display
+type RepositorySummary struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// BackupSchedule is a standalone view of ent.BackupSchedule without back-edges
+type BackupSchedule struct {
+	ID            int                    `json:"id"`
+	CreatedAt     time.Time              `json:"createdAt"`
+	UpdatedAt     time.Time              `json:"updatedAt"`
+	Mode          backupschedule.Mode    `json:"mode"`
+	DailyAt       time.Time              `json:"dailyAt"`
+	Weekday       backupschedule.Weekday `json:"weekday"`
+	WeeklyAt      time.Time              `json:"weeklyAt"`
+	Monthday      uint8                  `json:"monthday"`
+	MonthlyAt     time.Time              `json:"monthlyAt"`
+	NextRun       time.Time              `json:"nextRun"`
+	LastRun       *time.Time             `json:"lastRun"`
+	LastRunStatus *string                `json:"lastRunStatus"`
+}
+
+// PruningRule is a standalone view of ent.PruningRule without back-edges
+type PruningRule struct {
+	ID             int        `json:"id"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+	IsEnabled      bool       `json:"isEnabled"`
+	KeepHourly     int        `json:"keepHourly"`
+	KeepDaily      int        `json:"keepDaily"`
+	KeepWeekly     int        `json:"keepWeekly"`
+	KeepMonthly    int        `json:"keepMonthly"`
+	KeepYearly     int        `json:"keepYearly"`
+	KeepWithinDays int        `json:"keepWithinDays"`
+	NextRun        time.Time  `json:"nextRun"`
+	LastRun        *time.Time `json:"lastRun"`
+	LastRunStatus  *string    `json:"lastRunStatus"`
+}
+
+// BackupProfile is a flattened view of ent.BackupProfile with edges as direct properties.
+type BackupProfile struct {
+	ID                       int                           `json:"id"`
+	CreatedAt                time.Time                     `json:"createdAt"`
+	UpdatedAt                time.Time                     `json:"updatedAt"`
+	Name                     string                        `json:"name"`
+	Prefix                   string                        `json:"prefix"`
+	BackupPaths              []string                      `json:"backupPaths"`
+	ExcludePaths             []string                      `json:"excludePaths"`
+	ExcludeCaches            bool                          `json:"excludeCaches"`
+	Icon                     backupprofile.Icon            `json:"icon"`
+	CompressionMode          backupprofile.CompressionMode `json:"compressionMode"`
+	CompressionLevel         *int                          `json:"compressionLevel"`
+	DataSectionCollapsed     bool                          `json:"dataSectionCollapsed"`
+	ScheduleSectionCollapsed bool                          `json:"scheduleSectionCollapsed"`
+	AdvancedSectionCollapsed bool                          `json:"advancedSectionCollapsed"`
+
+	// Flattened edges (direct properties instead of .Edges.X)
+	Repositories   []RepositorySummary `json:"repositories"`
+	BackupSchedule *BackupSchedule     `json:"backupSchedule"`
+	PruningRule    *PruningRule        `json:"pruningRule"`
+
+	// Computed field
+	ArchiveCount int `json:"archiveCount"`
+}
+
+// toBackupSchedule converts an ent.BackupSchedule to the custom BackupSchedule type
+func toBackupSchedule(es *ent.BackupSchedule) *BackupSchedule {
+	if es == nil {
+		return nil
+	}
+	return &BackupSchedule{
+		ID:            es.ID,
+		CreatedAt:     es.CreatedAt,
+		UpdatedAt:     es.UpdatedAt,
+		Mode:          es.Mode,
+		DailyAt:       es.DailyAt,
+		Weekday:       es.Weekday,
+		WeeklyAt:      es.WeeklyAt,
+		Monthday:      es.Monthday,
+		MonthlyAt:     es.MonthlyAt,
+		NextRun:       es.NextRun,
+		LastRun:       es.LastRun,
+		LastRunStatus: es.LastRunStatus,
+	}
+}
+
+// toPruningRule converts an ent.PruningRule to the custom PruningRule type
+func toPruningRule(ep *ent.PruningRule) *PruningRule {
+	if ep == nil {
+		return nil
+	}
+	return &PruningRule{
+		ID:             ep.ID,
+		CreatedAt:      ep.CreatedAt,
+		UpdatedAt:      ep.UpdatedAt,
+		IsEnabled:      ep.IsEnabled,
+		KeepHourly:     ep.KeepHourly,
+		KeepDaily:      ep.KeepDaily,
+		KeepWeekly:     ep.KeepWeekly,
+		KeepMonthly:    ep.KeepMonthly,
+		KeepYearly:     ep.KeepYearly,
+		KeepWithinDays: ep.KeepWithinDays,
+		NextRun:        ep.NextRun,
+		LastRun:        ep.LastRun,
+		LastRunStatus:  ep.LastRunStatus,
+	}
+}
+
+// toBackupProfile converts an ent.BackupProfile to the custom BackupProfile type
+func (s *Service) toBackupProfile(ctx context.Context, ep *ent.BackupProfile) (*BackupProfile, error) {
+	// Convert repositories to summaries
+	repos := make([]RepositorySummary, 0)
+	if ep.Edges.Repositories != nil {
+		for _, r := range ep.Edges.Repositories {
+			if r != nil {
+				repos = append(repos, RepositorySummary{ID: r.ID, Name: r.Name})
+			}
+		}
+	}
+
+	// Get archive count
+	archiveCount, err := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(ep.ID))).
+		Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count archives: %w", err)
+	}
+
+	return &BackupProfile{
+		ID:                       ep.ID,
+		CreatedAt:                ep.CreatedAt,
+		UpdatedAt:                ep.UpdatedAt,
+		Name:                     ep.Name,
+		Prefix:                   ep.Prefix,
+		BackupPaths:              ep.BackupPaths,
+		ExcludePaths:             ep.ExcludePaths,
+		ExcludeCaches:            ep.ExcludeCaches,
+		Icon:                     ep.Icon,
+		CompressionMode:          ep.CompressionMode,
+		CompressionLevel:         ep.CompressionLevel,
+		DataSectionCollapsed:     ep.DataSectionCollapsed,
+		ScheduleSectionCollapsed: ep.ScheduleSectionCollapsed,
+		AdvancedSectionCollapsed: ep.AdvancedSectionCollapsed,
+		Repositories:             repos,
+		BackupSchedule:           toBackupSchedule(ep.Edges.BackupSchedule),
+		PruningRule:              toPruningRule(ep.Edges.PruningRule),
+		ArchiveCount:             archiveCount,
+	}, nil
+}
+
+// toBackupProfiles converts a slice of ent.BackupProfile to custom BackupProfile types
+func (s *Service) toBackupProfiles(ctx context.Context, entProfiles []*ent.BackupProfile) ([]*BackupProfile, error) {
+	profiles := make([]*BackupProfile, 0, len(entProfiles))
+	for _, ep := range entProfiles {
+		p, err := s.toBackupProfile(ctx, ep)
+		if err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, p)
+	}
+	return profiles, nil
+}
+
+// ToEnt converts a BackupSchedule to ent.BackupSchedule for save operations
+func (s *BackupSchedule) ToEnt() *ent.BackupSchedule {
+	if s == nil {
+		return nil
+	}
+	return &ent.BackupSchedule{
+		ID:            s.ID,
+		CreatedAt:     s.CreatedAt,
+		UpdatedAt:     s.UpdatedAt,
+		Mode:          s.Mode,
+		DailyAt:       s.DailyAt,
+		Weekday:       s.Weekday,
+		WeeklyAt:      s.WeeklyAt,
+		Monthday:      s.Monthday,
+		MonthlyAt:     s.MonthlyAt,
+		NextRun:       s.NextRun,
+		LastRun:       s.LastRun,
+		LastRunStatus: s.LastRunStatus,
+	}
+}
+
+// ToEnt converts a PruningRule to ent.PruningRule for save operations
+func (p *PruningRule) ToEnt() *ent.PruningRule {
+	if p == nil {
+		return nil
+	}
+	return &ent.PruningRule{
+		ID:             p.ID,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+		IsEnabled:      p.IsEnabled,
+		KeepHourly:     p.KeepHourly,
+		KeepDaily:      p.KeepDaily,
+		KeepWeekly:     p.KeepWeekly,
+		KeepMonthly:    p.KeepMonthly,
+		KeepYearly:     p.KeepYearly,
+		KeepWithinDays: p.KeepWithinDays,
+		NextRun:        p.NextRun,
+		LastRun:        p.LastRun,
+		LastRunStatus:  p.LastRunStatus,
+	}
 }
 
 /***********************************/

@@ -17,7 +17,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 
@@ -34,7 +34,7 @@ const route = useRoute();
 const { isAuthenticated, userEmail } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
-const backupProfiles = ref<ent.BackupProfile[]>([]);
+const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
 const isMobileMenuOpen = ref(false);
 
@@ -65,7 +65,7 @@ function onAuthenticated() {
 
 async function loadData() {
   try {
-    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
+    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
   } catch (error: unknown) {
     await showAndLogError("Failed to load sidebar data", error);

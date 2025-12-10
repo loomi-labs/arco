@@ -7,7 +7,7 @@ import { showAndLogError } from "../common/logger";
 import { useToast } from "vue-toastification";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import type { PruningOption } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import type { ExaminePruningResult } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
@@ -30,12 +30,12 @@ interface CleanupImpactRow {
 
 interface Props {
   backupProfileId: number;
-  pruningRule: ent.PruningRule;
+  pruningRule: PruningRule;
   askForSaveBeforeLeaving: boolean;
 }
 
 interface Emits {
-  (event: typeof emitUpdatePruningRule, rule: ent.PruningRule): void;
+  (event: typeof emitUpdatePruningRule, rule: PruningRule): void;
 }
 
 
@@ -50,7 +50,7 @@ const emitUpdatePruningRule = "update:pruningRule";
 
 const router = useRouter();
 const toast = useToast();
-const pruningRule = ref<ent.PruningRule>(ent.PruningRule.createFrom());
+const pruningRule = ref<PruningRule>(PruningRule.createFrom());
 const pruningOptions = ref<PruningOption[]>([]);
 const selectedPruningOption = ref<PruningOption | undefined>(undefined);
 const confirmSaveModalKey = useId();
@@ -93,7 +93,7 @@ async function getPruningOptions() {
   }
 }
 
-function isAllZero(rule: ent.PruningRule) {
+function isAllZero(rule: PruningRule) {
   return rule.keepHourly === 0 && rule.keepDaily === 0 && rule.keepWeekly === 0 && rule.keepMonthly === 0 && rule.keepYearly === 0;
 }
 
@@ -108,7 +108,7 @@ function copyCurrentPruningRule() {
   ruleToPruningOption(props.pruningRule);
 }
 
-function ruleToPruningOption(rule: ent.PruningRule) {
+function ruleToPruningOption(rule: PruningRule) {
   for (const option of pruningOptions.value) {
     if (rule.keepHourly === option.keepHourly &&
       rule.keepDaily === option.keepDaily &&
@@ -132,7 +132,7 @@ function toPruningRule() {
 
 async function savePruningRule() {
   try {
-    const result = await backupProfileService.SavePruningRule(props.backupProfileId, pruningRule.value) ?? ent.PruningRule.createFrom();
+    const result = await backupProfileService.SavePruningRule(props.backupProfileId, pruningRule.value) ?? PruningRule.createFrom();
     emits(emitUpdatePruningRule, result);
   } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);

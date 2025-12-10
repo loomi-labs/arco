@@ -13,6 +13,7 @@ import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
 import { Page, withId } from "../router";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -22,7 +23,7 @@ import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/ty
  ************/
 
 interface Props {
-  backup: ent.BackupProfile;
+  backup: BackupProfile;
 }
 
 /************
@@ -35,11 +36,11 @@ const router = useRouter();
 const icon = computed(() => getIcon(props.backup.icon));
 
 const hasSchedule = computed(() => {
-  return props.backup.edges?.backupSchedule?.mode !== backupschedule.Mode.ModeDisabled;
+  return props.backup.backupSchedule?.mode !== backupschedule.Mode.ModeDisabled;
 });
 
 const scheduleMode = computed(() => {
-  const mode = props.backup.edges?.backupSchedule?.mode;
+  const mode = props.backup.backupSchedule?.mode;
   switch (mode) {
     case backupschedule.Mode.ModeHourly:
       return "Hourly";
@@ -59,15 +60,15 @@ const scheduleMode = computed(() => {
 });
 
 const hasPruning = computed(() => {
-  return props.backup.edges?.pruningRule?.isEnabled ?? false;
+  return props.backup.pruningRule?.isEnabled ?? false;
 });
 
 const repositories = computed(() => {
-  return props.backup.edges?.repositories?.filter(r => r !== null) ?? [];
+  return props.backup.repositories ?? [];
 });
 
 const archiveCount = computed(() => {
-  return props.backup.edges?.archives?.length ?? 0;
+  return props.backup.archiveCount ?? 0;
 });
 
 // Build backup IDs for BackupButton

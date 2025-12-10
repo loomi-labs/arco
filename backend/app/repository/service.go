@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	backupprofileservice "github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/database"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -1350,7 +1351,7 @@ func (s *Service) clearWillBePrunedFlags(ctx context.Context, backupProfile *ent
 }
 
 // ExaminePrunes analyzes what would be pruned with given rules
-func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
+func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *backupprofileservice.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
 	backupProfile, err := s.db.BackupProfile.
 		Query().
 		WithRepositories().
@@ -1360,8 +1361,11 @@ func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, prunin
 		return []ExaminePruningResult{{Error: err}}, nil
 	}
 
+	// Convert custom type to ent type for internal use
+	entPruningRule := pruningRule.ToEnt()
+
 	// If pruning is disabled and we're saving results, just clear all WillBePruned flags
-	if !pruningRule.IsEnabled && saveResults {
+	if !entPruningRule.IsEnabled && saveResults {
 		s.log.Infow("Pruning rule is disabled, clearing all WillBePruned flags",
 			"backupProfileId", backupProfileId)
 		err := s.clearWillBePrunedFlags(ctx, backupProfile)
@@ -1381,7 +1385,7 @@ func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, prunin
 	for _, repo := range backupProfile.Edges.Repositories {
 		wg.Add(1)
 		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		go s.startExaminePrune(ctx, bId, pruningRule, saveResults, &wg, resultCh)
+		go s.startExaminePrune(ctx, bId, entPruningRule, saveResults, &wg, resultCh)
 	}
 
 	// Wait for all examine prune jobs to finish
