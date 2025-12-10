@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed, ref, toRaw, watchEffect } from "vue";
+import { computed, ref, toRaw, watch } from "vue";
 import { isEqual } from "@formkit/tempo";
 import { getTime, setTime } from "../common/time";
 import type { BackupSchedule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
@@ -113,12 +113,12 @@ function isScheduleEqual(s1: BackupSchedule, s2: BackupSchedule): boolean {
  * Lifecycle
  ************/
 
-watchEffect(() => {
-  if (isScheduleEqual(schedule.value, originalSchedule.value)) {
+watch(schedule, (newSchedule) => {
+  if (isScheduleEqual(newSchedule, originalSchedule.value)) {
     return;
   }
-  emit("update:schedule", schedule.value);
-});
+  emit("update:schedule", newSchedule);
+}, { deep: true });
 
 </script>
 
