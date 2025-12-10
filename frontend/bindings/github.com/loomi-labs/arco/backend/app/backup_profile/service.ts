@@ -12,17 +12,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as ent$0 from "../../ent/models.js";
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
 export function AddRepositoryToBackupProfile(backupProfileId: number, repositoryId: number): $CancellablePromise<void> {
     return $Call.ByID(3526086703, backupProfileId, repositoryId);
 }
 
-export function CreateBackupProfile(backup: ent$0.BackupProfile, repositoryIds: number[]): $CancellablePromise<ent$0.BackupProfile | null> {
+export function CreateBackupProfile(backup: $models.BackupProfile, repositoryIds: number[]): $CancellablePromise<$models.BackupProfile | null> {
     return $Call.ByID(2577817897, backup, repositoryIds).then(($result: any) => {
         return $$createType1($result);
     });
@@ -43,7 +39,7 @@ export function DoesPathExist(path: string): $CancellablePromise<boolean> {
     return $Call.ByID(994840831, path);
 }
 
-export function GetBackupProfile(id: number): $CancellablePromise<ent$0.BackupProfile | null> {
+export function GetBackupProfile(id: number): $CancellablePromise<$models.BackupProfile | null> {
     return $Call.ByID(3013370265, id).then(($result: any) => {
         return $$createType1($result);
     });
@@ -55,7 +51,7 @@ export function GetBackupProfileFilterOptions(repoId: number): $CancellablePromi
     });
 }
 
-export function GetBackupProfiles(): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
+export function GetBackupProfiles(): $CancellablePromise<($models.BackupProfile | null)[]> {
     return $Call.ByID(2838373214).then(($result: any) => {
         return $$createType4($result);
     });
@@ -85,7 +81,7 @@ export function IsDirectoryEmpty(path: string): $CancellablePromise<boolean> {
     return $Call.ByID(508393962, path);
 }
 
-export function NewBackupProfile(): $CancellablePromise<ent$0.BackupProfile | null> {
+export function NewBackupProfile(): $CancellablePromise<$models.BackupProfile | null> {
     return $Call.ByID(1625183835).then(($result: any) => {
         return $$createType1($result);
     });
@@ -98,11 +94,11 @@ export function RemoveRepositoryFromBackupProfile(backupProfileId: number, repos
     return $Call.ByID(1486652365, backupProfileId, repositoryId, deleteArchives);
 }
 
-export function SaveBackupSchedule(backupProfileId: number, schedule: ent$0.BackupSchedule): $CancellablePromise<void> {
+export function SaveBackupSchedule(backupProfileId: number, schedule: $models.BackupSchedule): $CancellablePromise<void> {
     return $Call.ByID(1589423160, backupProfileId, schedule);
 }
 
-export function SavePruningRule(backupId: number, rule: ent$0.PruningRule): $CancellablePromise<ent$0.PruningRule | null> {
+export function SavePruningRule(backupId: number, rule: $models.PruningRule): $CancellablePromise<$models.PruningRule | null> {
     return $Call.ByID(2170098212, backupId, rule).then(($result: any) => {
         return $$createType8($result);
     });
@@ -120,19 +116,17 @@ export function StartScheduleChangeListener(): $CancellablePromise<void> {
     return $Call.ByID(4010538815);
 }
 
-export function UpdateBackupProfile(backup: ent$0.BackupProfile): $CancellablePromise<ent$0.BackupProfile | null> {
-    return $Call.ByID(3631835510, backup).then(($result: any) => {
-        return $$createType1($result);
-    });
+export function UpdateBackupProfile(backup: $models.BackupProfile): $CancellablePromise<void> {
+    return $Call.ByID(3631835510, backup);
 }
 
 // Private type creation functions
-const $$createType0 = ent$0.BackupProfile.createFrom;
+const $$createType0 = $models.BackupProfile.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $models.BackupProfileFilter.createFrom;
 const $$createType3 = $Create.Array($$createType2);
 const $$createType4 = $Create.Array($$createType1);
 const $$createType5 = $Create.Array($Create.Any);
 const $$createType6 = $models.GetPruningOptionsResponse.createFrom;
-const $$createType7 = ent$0.PruningRule.createFrom;
+const $$createType7 = $models.PruningRule.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);

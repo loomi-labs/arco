@@ -1,8 +1,8 @@
 <script setup lang='ts'>
-import { computed, ref, toRaw, watchEffect } from "vue";
+import { computed, ref, toRaw, watch } from "vue";
 import { isEqual } from "@formkit/tempo";
 import { getTime, setTime } from "../common/time";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { BackupSchedule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 
 /************
@@ -10,11 +10,11 @@ import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backe
  ************/
 
 interface Props {
-  schedule: ent.BackupSchedule;
+  schedule: BackupSchedule;
 }
 
 interface Emits {
-  (event: "update:schedule", schedule: ent.BackupSchedule): void;
+  (event: "update:schedule", schedule: BackupSchedule): void;
 }
 
 /************
@@ -25,8 +25,8 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // Use structuredClone for clean deep copy
-const schedule = ref<ent.BackupSchedule>(structuredClone(toRaw(props.schedule)));
-const originalSchedule = ref<ent.BackupSchedule>(structuredClone(toRaw(props.schedule)));
+const schedule = ref<BackupSchedule>(structuredClone(toRaw(props.schedule)));
+const originalSchedule = ref<BackupSchedule>(structuredClone(toRaw(props.schedule)));
 
 // Mode computed properties
 const isScheduleEnabled = computed(() => schedule.value.mode !== backupschedule.Mode.ModeDisabled);
@@ -100,7 +100,7 @@ function toggleScheduleEnabled() {
   }
 }
 
-function isScheduleEqual(s1: ent.BackupSchedule, s2: ent.BackupSchedule): boolean {
+function isScheduleEqual(s1: BackupSchedule, s2: BackupSchedule): boolean {
   return s1.mode === s2.mode &&
     isEqual(s1.dailyAt, s2.dailyAt) &&
     isEqual(s1.weeklyAt, s2.weeklyAt) &&
@@ -113,12 +113,12 @@ function isScheduleEqual(s1: ent.BackupSchedule, s2: ent.BackupSchedule): boolea
  * Lifecycle
  ************/
 
-watchEffect(() => {
-  if (isScheduleEqual(schedule.value, originalSchedule.value)) {
+watch(schedule, (newSchedule) => {
+  if (isScheduleEqual(newSchedule, originalSchedule.value)) {
     return;
   }
-  emit("update:schedule", schedule.value);
-});
+  emit("update:schedule", newSchedule);
+}, { deep: true });
 
 </script>
 

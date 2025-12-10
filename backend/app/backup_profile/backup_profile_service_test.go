@@ -123,8 +123,8 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 	var service *Service
 	var db *ent.Client
 	var ctx context.Context
-	var profile *ent.BackupProfile
-	var bs *ent.BackupSchedule
+	var profile *BackupProfile
+	var bs *BackupSchedule
 	var now = time.Now()
 
 	setup := func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 		assert.NoError(t, err, "Failed to create new backup profile")
 		p.Name = "Test profile"
 		p.Prefix = "test-"
-		bs = p.Edges.BackupSchedule
+		bs = p.BackupSchedule
 
 		// Create a repository
 		r, err := db.Repository.Create().
@@ -150,7 +150,7 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 		assert.NotNil(t, profile, "Expected backup profile, got nil")
 	}
 
-	newBackupSchedule := func(overrides ent.BackupSchedule) ent.BackupSchedule {
+	newBackupSchedule := func(overrides BackupSchedule) BackupSchedule {
 		if overrides.Mode != "" {
 			bs.Mode = overrides.Mode
 		}
@@ -174,72 +174,72 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		schedule ent.BackupSchedule
+		schedule BackupSchedule
 		wantErr  bool
 	}{
 		{
 			name:     "SaveBackupSchedule with invalid schedule",
-			schedule: ent.BackupSchedule{Mode: "invalid"},
+			schedule: BackupSchedule{Mode: "invalid"},
 			wantErr:  true,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
+			schedule: BackupSchedule{Mode: backupschedule.ModeHourly},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with daily schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with weekly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with invalid weekly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: "invalid", WeeklyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: "invalid", WeeklyAt: now},
 			wantErr:  true,
 		},
 		{
 			name:     "SaveBackupSchedule with monthly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{1}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{1}[0], MonthlyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with invalid monthly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{32}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMonthly, Monthday: []uint8{32}[0], MonthlyAt: now},
 			wantErr:  true,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and daily schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, DailyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, DailyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and weekly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and monthly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly, Monthday: []uint8{1}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, Monthday: []uint8{1}[0], MonthlyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with daily and weekly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with daily and monthly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeDaily, DailyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with weekly and monthly schedule",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeWeekly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now, Monthday: []uint8{1}[0], MonthlyAt: now},
 			wantErr:  false,
 		},
 	}

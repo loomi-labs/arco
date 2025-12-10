@@ -15,6 +15,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as arcov1$0 from "../../api/v1/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as backup_profile$0 from "../backup_profile/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as statemachine$0 from "../statemachine/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -104,7 +107,7 @@ export function Delete(id: number): $CancellablePromise<void> {
 /**
  * ExaminePrunes analyzes what would be pruned with given rules
  */
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+export function ExaminePrunes(backupProfileId: number, pruningRule: backup_profile$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
     return $Call.ByID(166629156, backupProfileId, pruningRule, saveResults).then(($result: any) => {
         return $$createType5($result);
     });

@@ -15,9 +15,9 @@ import RocketDarkJson from "../assets/animations/rocket-dark.json";
 import { useDark } from "@vueuse/core";
 import * as EventHelpers from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Events } from "@wailsio/runtime";
 
 /************
@@ -30,7 +30,7 @@ import { Events } from "@wailsio/runtime";
 
 const router = useRouter();
 const isDark = useDark();
-const backupProfiles = ref<ent.BackupProfile[]>([]);
+const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
 const backupConceptsInfoModalKey = useId();
 const backupConceptsInfoModal = useTemplateRef<InstanceType<typeof BackupConceptsInfoModal>>(backupConceptsInfoModalKey);
@@ -48,7 +48,7 @@ const cleanupFunctions: (() => void)[] = [];
 
 async function getData() {
   try {
-    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
+    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);

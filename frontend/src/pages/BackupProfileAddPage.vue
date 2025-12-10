@@ -23,7 +23,7 @@ import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 /************
  * Types
@@ -81,7 +81,7 @@ const isStep1Valid = computed(() => {
 const isStep2Valid = computed(() => {
   return pruningCardRef.value?.isValid ?? false;
 });
-const pruningCardRef = ref();
+const pruningCardRef = ref<InstanceType<typeof PruningCard> | null>(null);
 
 // Step 3
 const connectedRepos = ref<Repository[]>([]);
@@ -163,8 +163,8 @@ async function getExistingRepositories() {
 }
 
 // Step 2
-function saveSchedule(schedule: BackupSchedule | undefined) {
-  backupProfile.value.edges.backupSchedule = schedule;
+function saveSchedule(schedule: BackupSchedule | null) {
+  backupProfile.value.backupSchedule = schedule;
 }
 
 // Step 3
@@ -175,18 +175,17 @@ const connectRepos = (repos: Repository[]) => {
 async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupProfileService.GetPrefixSuggestion(backupProfile.value.name);
-    backupProfile.value.edges = backupProfile.value.edges ?? {};
     const savedBackupProfile = await backupProfileService.CreateBackupProfile(
       backupProfile.value,
       (connectedRepos.value ?? []).filter((r) => r !== null).map((r) => r.id)
     ) ?? BackupProfile.createFrom();
 
-    if (backupProfile.value.edges.backupSchedule) {
-      await backupProfileService.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
+    if (backupProfile.value.backupSchedule) {
+      await backupProfileService.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.backupSchedule);
     }
 
-    if (backupProfile.value.edges.pruningRule) {
-      await backupProfileService.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
+    if (backupProfile.value.pruningRule) {
+      await backupProfileService.SavePruningRule(savedBackupProfile.id, backupProfile.value.pruningRule);
     }
 
     backupProfile.value = await backupProfileService.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
@@ -215,7 +214,7 @@ const nextStep = async () => {
       if (!isStep2Valid.value) {
         return;
       }
-      backupProfile.value.edges.pruningRule = pruningCardRef.value.pruningRule;
+      backupProfile.value.pruningRule = pruningCardRef.value?.pruningRule ?? null;
       currentStep.value++;
       break;
     case Step.Repository:
@@ -358,13 +357,13 @@ onBeforeRouteLeave(async (to, _from) => {
     <template v-if='currentStep === Step.Schedule'>
       <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
       <div class='flex flex-col gap-10'>
-        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? BackupSchedule.createFrom()'
+        <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
                            @update:schedule='saveSchedule'
-                           @delete:schedule='() => saveSchedule(undefined)' />
+                           @delete:schedule='() => saveSchedule(null)' />
 
         <PruningCard ref='pruningCardRef'
                      :backup-profile-id='backupProfile.id'
-                     :pruning-rule='backupProfile.edges.pruningRule ?? PruningRule.createFrom()'
+                     :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
                      :ask-for-save-before-leaving='false'>
         </PruningCard>
       </div>
