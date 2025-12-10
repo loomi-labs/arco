@@ -81,7 +81,7 @@ const isStep1Valid = computed(() => {
 const isStep2Valid = computed(() => {
   return pruningCardRef.value?.isValid ?? false;
 });
-const pruningCardRef = ref();
+const pruningCardRef = ref<InstanceType<typeof PruningCard> | null>(null);
 
 // Step 3
 const connectedRepos = ref<Repository[]>([]);
@@ -214,7 +214,7 @@ const nextStep = async () => {
       if (!isStep2Valid.value) {
         return;
       }
-      backupProfile.value.pruningRule = pruningCardRef.value.pruningRule;
+      backupProfile.value.pruningRule = pruningCardRef.value?.pruningRule ?? null;
       currentStep.value++;
       break;
     case Step.Repository:
