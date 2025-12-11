@@ -7,7 +7,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import { UpdateRequest } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { SelectDirectoryData } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import { logError, showAndLogError } from "../common/logger";
+import { logError } from "../common/logger";
 
 /************
  * Types
@@ -129,7 +129,7 @@ async function testConnection() {
   errorMessage.value = undefined;
 
   try {
-    const result = await repoService.ValidatePathChange(
+    const result = await repoService.TestPathConnection(
       props.repoId,
       newPath.value,
       password.value
@@ -143,15 +143,15 @@ async function testConnection() {
     } else {
       validationResult.value = {
         isValid: false,
-        errorMessage: "Failed to validate path"
+        errorMessage: "Failed to test connection"
       };
     }
   } catch (error: unknown) {
     validationResult.value = {
       isValid: false,
-      errorMessage: "Failed to validate path"
+      errorMessage: "Failed to test connection"
     };
-    await logError("Failed to validate path change", error);
+    await logError("Failed to test path connection", error);
   } finally {
     isValidating.value = false;
   }
@@ -175,8 +175,8 @@ async function changePath() {
       errorMessage.value = "Failed to update repository path";
     }
   } catch (error: unknown) {
-    errorMessage.value = "Failed to change repository path";
-    await showAndLogError("Failed to change repository path", error);
+    errorMessage.value = error instanceof Error ? error.message : "Failed to change repository path";
+    await logError("Failed to change repository path", error);
   } finally {
     isLoading.value = false;
   }
@@ -212,15 +212,6 @@ defineExpose({
               class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
               <div class='p-8'>
                 <DialogTitle as='h3' class='font-bold text-lg mb-4'>Change Repository Path</DialogTitle>
-
-                <!-- Info Alert -->
-                <div role='alert' class='alert alert-info mb-6'>
-                  <ExclamationTriangleIcon class='h-6 w-6' />
-                  <div>
-                    <div class='font-semibold'>Important</div>
-                    <div class='text-sm'>Use the "Test Connection" button to verify the new path can be accessed. You can still change the path even if the test fails.</div>
-                  </div>
-                </div>
 
                 <!-- Form -->
                 <div class='space-y-4'>
