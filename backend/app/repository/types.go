@@ -280,6 +280,14 @@ type PruningDate struct {
 // UpdateRequest represents fields that can be updated for a repository
 type UpdateRequest struct {
 	Name string `json:"name,omitempty"` // Repository name
+	URL  string `json:"url,omitempty"`  // Repository path/URL (local or remote)
+}
+
+// ValidatePathChangeResult represents the result of validating a repository path change
+type ValidatePathChangeResult struct {
+	IsValid           bool   `json:"isValid"`
+	ErrorMessage      string `json:"errorMessage,omitempty"`      // Error that blocks path change
+	ConnectionWarning string `json:"connectionWarning,omitempty"` // Warning if connection test fails (path change still allowed)
 }
 
 // FixStoredPasswordResult represents the result of fixing stored repository password

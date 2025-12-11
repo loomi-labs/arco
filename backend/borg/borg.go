@@ -18,7 +18,7 @@ import (
 //go:generate mockgen -destination=mocks/borg.go -package=mocks . Borg,CommandRunner
 
 type Borg interface {
-	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status)
+	Info(ctx context.Context, repository, password string, allowRelocated bool) (*types.InfoResponse, *types.Status)
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
 	List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status)
 	Compact(ctx context.Context, repository string, password string) *types.Status
@@ -104,10 +104,11 @@ func (z *CmdLogger) LogCmdStatus(ctx context.Context, result *types.Status, cmd 
 }
 
 type Env struct {
-	password           *string
-	newPassword        *string
-	deleteConfirmation bool
-	sshPrivateKeys     []string
+	password            *string
+	newPassword         *string
+	deleteConfirmation  bool
+	relocatedRepoAccess bool
+	sshPrivateKeys      []string
 }
 
 func NewEnv(sshPrivateKeys []string) Env {
@@ -128,6 +129,11 @@ func (e Env) WithNewPassword(newPassword string) Env {
 
 func (e Env) WithDeleteConfirmation() Env {
 	e.deleteConfirmation = true
+	return e
+}
+
+func (e Env) WithRelocatedRepoAccess() Env {
+	e.relocatedRepoAccess = true
 	return e
 }
 
@@ -154,6 +160,9 @@ func (e Env) AsList() []string {
 	}
 	if e.deleteConfirmation {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
+	}
+	if e.relocatedRepoAccess {
+		env = append(env, "BORG_RELOCATED_REPO_ACCESS_IS_OK=yes")
 	}
 	return env
 }

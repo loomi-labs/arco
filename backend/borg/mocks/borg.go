@@ -157,18 +157,18 @@ func (mr *MockBorgMockRecorder) DeleteRepository(ctx, repository, password any) 
 }
 
 // Info mocks base method.
-func (m *MockBorg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status) {
+func (m *MockBorg) Info(ctx context.Context, repository, password string, allowRelocated bool) (*types.InfoResponse, *types.Status) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Info", ctx, repository, password)
+	ret := m.ctrl.Call(m, "Info", ctx, repository, password, allowRelocated)
 	ret0, _ := ret[0].(*types.InfoResponse)
 	ret1, _ := ret[1].(*types.Status)
 	return ret0, ret1
 }
 
 // Info indicates an expected call of Info.
-func (mr *MockBorgMockRecorder) Info(ctx, repository, password any) *gomock.Call {
+func (mr *MockBorgMockRecorder) Info(ctx, repository, password, allowRelocated any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), ctx, repository, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBorg)(nil).Info), ctx, repository, password, allowRelocated)
 }
 
 // Init mocks base method.

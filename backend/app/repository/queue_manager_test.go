@@ -44,7 +44,7 @@ func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Cont
 
 	// Set up default expectations: all borg operations return success
 	// Use AnyTimes() to allow any number of calls without failing
-	mockBorgClient.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).
+	mockBorgClient.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&borgtypes.InfoResponse{}, &borgtypes.Status{}).AnyTimes()
 	mockBorgClient.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("test-archive", &borgtypes.Status{}).AnyTimes()
