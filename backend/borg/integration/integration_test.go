@@ -1085,9 +1085,14 @@ func TestBorgErrorHandling(t *testing.T) {
 		}
 		privateKeyPath := filepath.Join(sshKeysDir, "borg_test_key")
 
-		// Verify SSH key exists before deletion
-		_, err := os.Stat(privateKeyPath)
-		require.NoError(t, err, "SSH key should exist before test")
+		// Read the key content before deleting so we can restore it
+		keyContent, err := os.ReadFile(privateKeyPath)
+		require.NoError(t, err, "Should be able to read SSH key")
+
+		// Restore key after test (even if test fails)
+		t.Cleanup(func() {
+			_ = os.WriteFile(privateKeyPath, keyContent, 0600)
+		})
 
 		// Delete the SSH private key
 		err = os.Remove(privateKeyPath)
