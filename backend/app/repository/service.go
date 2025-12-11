@@ -538,6 +538,12 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 
 	// Handle URL update with validation
 	if updateReq.URL != "" {
+		// Check repository is in Idle state before allowing path changes
+		currentState := s.queueManager.GetRepositoryState(repoId)
+		if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+			return nil, errors.New("repository must be idle to change path")
+		}
+
 		result, err := s.ValidatePathChange(ctx, repoId, updateReq.URL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate path change: %w", err)
