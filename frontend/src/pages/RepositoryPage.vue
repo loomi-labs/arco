@@ -30,6 +30,7 @@ import {
 import { toRelativeTimeString } from "../common/time";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ChangePassphraseModal from "../components/ChangePassphraseModal.vue";
+import ChangePathModal from "../components/ChangePathModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { Anchor, Page } from "../router";
 import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
@@ -64,6 +65,16 @@ const healthcheckDepthQuick = ref(false);
 // Passphrase modal state
 const showPassphraseModal = ref(false);
 
+// Path change computed properties
+const canChangePath = computed(() => {
+  return repo.value.type.type !== LocationType.LocationTypeArcoCloud &&
+         repo.value.state.type === RepositoryStateType.RepositoryStateTypeIdle;
+});
+
+const isLocalRepo = computed(() => {
+  return repo.value.type.type === LocationType.LocationTypeLocal;
+});
+
 const confirmRemoveModalKey = useId();
 const confirmRemoveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmRemoveModalKey
@@ -74,6 +85,8 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
 );
 const changePassphraseModalKey = useId();
 const changePassphraseModal = useTemplateRef<InstanceType<typeof ChangePassphraseModal>>(changePassphraseModalKey);
+const changePathModalKey = useId();
+const changePathModal = useTemplateRef<InstanceType<typeof ChangePathModal>>(changePathModalKey);
 
 const cleanupFunctions: (() => void)[] = [];
 
@@ -227,6 +240,15 @@ function onPassphraseModalClose() {
 function onPassphraseChanged() {
   showPassphraseModal.value = false;
   toast.success("Passphrase changed successfully");
+}
+
+function openChangePathModal() {
+  changePathModal.value?.showModal();
+}
+
+function onPathChanged(updatedRepo: Repository) {
+  repo.value = updatedRepo;
+  toast.success("Repository path changed successfully");
 }
 
 async function regenerateSSHKey() {
@@ -432,7 +454,8 @@ onUnmounted(() => {
 
             <!-- Location Row (interactive) -->
             <div
-              class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all cursor-pointer'>
+              class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all cursor-pointer'
+              @click='canChangePath && openChangePathModal()'>
               <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
                    viewBox='0 0 24 24' stroke='currentColor'>
                 <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
@@ -446,7 +469,8 @@ onUnmounted(() => {
                 }}
               </span>
               <button class='btn btn-xs btn-outline w-32'
-                      :disabled='repo.state.type !== RepositoryStateType.RepositoryStateTypeIdle'>
+                      :disabled='!canChangePath'
+                      @click.stop='openChangePathModal'>
                 Change path
               </button>
             </div>
@@ -700,6 +724,15 @@ onUnmounted(() => {
                            :repo-id='repo.id'
                            @success='onPassphraseChanged'
                            @close='onPassphraseModalClose' />
+
+    <!-- Change Path Modal -->
+    <ChangePathModal :ref='changePathModalKey'
+                     :repo-id='repo.id'
+                     :current-path='repo.url'
+                     :is-local='isLocalRepo'
+                     :has-password='repo.hasPassword'
+                     @success='onPathChanged'
+                     @close='() => {}' />
   </div>
 </template>
 

@@ -536,6 +536,26 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 		updateQuery = updateQuery.SetName(updateReq.Name)
 	}
 
+	// Handle URL update with validation
+	if updateReq.URL != "" {
+		// Check repository is in Idle state before allowing path changes
+		currentState := s.queueManager.GetRepositoryState(repoId)
+		if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+			return nil, errors.New("repository must be idle to change path")
+		}
+
+		result, err := s.ValidatePathChange(ctx, repoId, updateReq.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate path change: %w", err)
+		}
+		if !result.IsValid {
+			return nil, errors.New(result.ErrorMessage)
+		}
+
+		// Update the URL
+		updateQuery = updateQuery.SetURL(updateReq.URL)
+	}
+
 	// Execute the update
 	_, err := updateQuery.Save(ctx)
 	if err != nil {
@@ -1485,7 +1505,7 @@ func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password st
 	}
 
 	// Test the new password by calling borg info
-	_, status := s.borgClient.Info(ctx, repoEntity.URL, password)
+	_, status := s.borgClient.Info(ctx, repoEntity.URL, password, false)
 
 	// Check if password is wrong
 	if status.HasError() {
@@ -2376,6 +2396,149 @@ func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal boo
 	return "", nil
 }
 
+// ValidatePathChange validates path format and uniqueness (no connection test).
+// Returns:
+// - IsValid=false + ErrorMessage: Blocking errors (cannot proceed)
+// - IsValid=true: Path is valid (connection not tested)
+func (s *Service) ValidatePathChange(ctx context.Context, repoId int, newPath string) (*ValidatePathChangeResult, error) {
+	// Get existing repository with cloud association
+	repoEntity, err := s.db.Repository.Query().
+		Where(repository.ID(repoId)).
+		WithCloudRepository().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Repository not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// 1. Check not ArcoCloud
+	if repoEntity.Edges.CloudRepository != nil {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Cannot change path for ArcoCloud repositories",
+		}, nil
+	}
+
+	// Determine if current repo is local (path starts with /)
+	isCurrentLocal := strings.HasPrefix(repoEntity.URL, "/")
+	isNewLocal := strings.HasPrefix(newPath, "/")
+
+	// 2. Validate path format matches repo type
+	if isCurrentLocal != isNewLocal {
+		if isCurrentLocal {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "New path must be a local path (starting with /)",
+			}, nil
+		}
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "New path must be a remote path (SSH format)",
+		}, nil
+	}
+
+	// 3. For local paths, validate path exists
+	if isNewLocal {
+		expandedPath := util.ExpandPath(newPath)
+		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Path does not exist",
+			}, nil
+		}
+		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Path is not a folder",
+			}, nil
+		}
+	}
+
+	// 4. Check path uniqueness (excluding current repo)
+	exists, err := s.db.Repository.Query().
+		Where(
+			repository.URL(newPath),
+			repository.IDNEQ(repoId),
+		).
+		Exist(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check path uniqueness: %w", err)
+	}
+	if exists {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Path is already used by another repository",
+		}, nil
+	}
+
+	return &ValidatePathChangeResult{
+		IsValid: true,
+	}, nil
+}
+
+// TestPathConnection tests if a path can connect to a valid borg repository.
+// Requires repository to be in Idle state (for borg call).
+// Returns:
+// - IsValid=false + ErrorMessage: Not idle (blocking)
+// - IsValid=true + ConnectionWarning: Connection failed (can proceed with warning)
+// - IsValid=true: Connection successful
+func (s *Service) TestPathConnection(ctx context.Context, repoId int, newPath string, password string) (*ValidatePathChangeResult, error) {
+	// Get existing repository
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Repository not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Check repository is Idle (required for borg call)
+	currentState := s.queueManager.GetRepositoryState(repoId)
+	if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Repository must be idle to test connection",
+		}, nil
+	}
+
+	// Test connection with borg info
+	expandedPath := util.ExpandPath(newPath)
+	usePassword := password
+	if usePassword == "" {
+		usePassword = repoEntity.Password
+	}
+	_, status := s.borgClient.Info(ctx, expandedPath, usePassword, true)
+	if status != nil && status.HasError() {
+		// Check for common errors and return as warnings
+		var warning string
+		if errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) ||
+			errors.Is(status.Error, borgtypes.ErrorRepositoryInvalidRepository) {
+			warning = "Path is not a valid Borg repository"
+		} else if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
+			warning = "Invalid password"
+		} else {
+			warning = fmt.Sprintf("Failed to connect: %s", status.Error.Error())
+		}
+		return &ValidatePathChangeResult{
+			IsValid:           true,
+			ConnectionWarning: warning,
+		}, nil
+	}
+
+	// Connection successful
+	return &ValidatePathChangeResult{
+		IsValid: true,
+	}, nil
+}
+
 // ValidateArchiveName validates an archive name
 func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name string) (string, error) {
 	if name == "" {
@@ -2466,7 +2629,7 @@ func (s *Service) testRepoConnection(ctx context.Context, path, password string)
 		IsBorgRepo:      false,
 	}
 
-	_, status := s.borgClient.Info(ctx, path, password)
+	_, status := s.borgClient.Info(ctx, path, password, false)
 	if status == nil {
 		result.Success = true
 		result.IsPasswordValid = true

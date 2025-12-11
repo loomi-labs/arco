@@ -1398,6 +1398,11 @@ export class UpdateRequest {
      */
     "name"?: string;
 
+    /**
+     * Repository path/URL (local or remote)
+     */
+    "url"?: string;
+
     /** Creates a new UpdateRequest instance. */
     constructor($$source: Partial<UpdateRequest> = {}) {
 
@@ -1410,6 +1415,40 @@ export class UpdateRequest {
     static createFrom($$source: any = {}): UpdateRequest {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new UpdateRequest($$parsedSource as Partial<UpdateRequest>);
+    }
+}
+
+/**
+ * ValidatePathChangeResult represents the result of validating a repository path change
+ */
+export class ValidatePathChangeResult {
+    "isValid": boolean;
+
+    /**
+     * Error that blocks path change
+     */
+    "errorMessage"?: string;
+
+    /**
+     * Warning if connection test fails (path change still allowed)
+     */
+    "connectionWarning"?: string;
+
+    /** Creates a new ValidatePathChangeResult instance. */
+    constructor($$source: Partial<ValidatePathChangeResult> = {}) {
+        if (!("isValid" in $$source)) {
+            this["isValid"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ValidatePathChangeResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ValidatePathChangeResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ValidatePathChangeResult($$parsedSource as Partial<ValidatePathChangeResult>);
     }
 }
 

@@ -323,7 +323,7 @@ func TestBorgInfo(t *testing.T) {
 			setup(t, tt.cmdResult, nil)
 
 			// ACT
-			result, status := b.Info(context.Background(), "test-repo", "test-password")
+			result, status := b.Info(context.Background(), "test-repo", "test-password", false)
 
 			// ASSERT
 			if tt.wantErr {

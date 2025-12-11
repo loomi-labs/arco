@@ -2094,7 +2094,7 @@ func (e *borgOperationExecutor) refreshRepositoryStats(ctx context.Context, repo
 	}
 
 	// Call borg info to get repository statistics
-	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password)
+	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password, false)
 	if status.HasError() {
 		return fmt.Errorf("failed to get repository info: %w", status.Error)
 	}

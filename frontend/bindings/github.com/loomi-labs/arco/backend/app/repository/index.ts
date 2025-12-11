@@ -44,5 +44,6 @@ export {
     Running,
     SerializableQueuedOperation,
     TestRepoConnectionResult,
-    UpdateRequest
+    UpdateRequest,
+    ValidatePathChangeResult
 } from "./models.js";
