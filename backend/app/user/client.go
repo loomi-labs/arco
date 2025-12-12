@@ -80,7 +80,7 @@ func (s *Service) GetEnvVars(ctx context.Context) Env {
 	return Env{
 		Debug:            types.EnvVarDebug.Bool(),
 		StartPage:        types.EnvVarStartPage.String(),
-		LoginBetaEnabled: types.EnvVarEnableLoginBeta.Bool(),
+		LoginBetaEnabled: true,
 	}
 }
 
