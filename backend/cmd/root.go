@@ -76,6 +76,21 @@ func getConfigDir() (path string, err error) {
 	if err != nil {
 		return
 	}
+	if platform.IsMacOS() {
+		// TODO: this can be removed in a future release (assuming all users have migrated)
+		newPath := filepath.Join(dir, "Library", "Application Support", "Arco")
+		oldPath := filepath.Join(dir, ".config", "arco")
+
+		// Migrate from old location if it exists and new doesn't
+		if _, err := os.Stat(oldPath); err == nil {
+			if _, err := os.Stat(newPath); os.IsNotExist(err) {
+				// Old exists, new doesn't - migrate
+				_ = os.MkdirAll(filepath.Dir(newPath), 0755)
+				_ = os.Rename(oldPath, newPath)
+			}
+		}
+		return newPath, nil
+	}
 	return filepath.Join(dir, ".config", "arco"), nil
 }
 
@@ -169,6 +184,9 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 }
 
 func showOrCreateMainWindow(config *types.Config) {
+	// Show dock icon when opening a window on macOS
+	platform.ShowDockIcon()
+
 	wailsApp := application.Get()
 	window, ok := wailsApp.Window.GetByName(types.WindowTitle)
 	if ok {
@@ -177,7 +195,7 @@ func showOrCreateMainWindow(config *types.Config) {
 		return
 	}
 
-	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	newWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  types.WindowTitle,
 		Title: types.WindowTitle,
 		Mac: application.MacWindow{
@@ -193,6 +211,11 @@ func showOrCreateMainWindow(config *types.Config) {
 		StartState:       application.WindowStateMinimised,
 		MaxWidth:         3840,
 		MaxHeight:        3840,
+	})
+
+	// Hide dock icon when window is closed on macOS
+	newWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		platform.HideDockIcon()
 	})
 }
 
@@ -226,14 +249,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
+			ActivationPolicy:                                application.ActivationPolicyAccessory,
 		},
 		Linux: application.LinuxOptions{
 			DisableQuitOnLastWindowClosed: true,
 		},
 		LogLevel: slog.Level(log.Level() * 4), // slog uses a multiplier of 4
-		ShouldQuit: func() bool {
-			return arco.ShouldQuit()
-		},
 		OnShutdown: func() {
 			arco.Shutdown()
 		},
