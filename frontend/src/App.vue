@@ -90,15 +90,6 @@ function toTitleCase(str: string | undefined): string {
 // Initialize global subscription notifications
 useSubscriptionNotifications();
 
-// Initialize theme from user settings
-initializeTheme();
-
-// Initialize expert mode from user settings
-initializeExpertMode();
-
-// Initialize reduced motion settings
-initializeReducedMotion();
-
 // Setup expert mode settings listener
 const { setupSettingsListener } = useExpertMode();
 cleanupFunctions.push(setupSettingsListener());
@@ -108,9 +99,15 @@ cleanupFunctions.push(setupReducedMotionListener());
 
 getStartupState();
 
-watchEffect(() => {
+watchEffect(async () => {
   if (isInitialized.value) {
-    goToNextPage();
+    // Initialize settings-dependent features only after startup is complete
+    // These require the database to be initialized
+    await initializeTheme();
+    await initializeExpertMode();
+    await initializeReducedMotion();
+
+    await goToNextPage();
   }
 });
 

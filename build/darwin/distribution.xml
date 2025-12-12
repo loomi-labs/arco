@@ -2,9 +2,10 @@
 <installer-gui-script minSpecVersion="1">
     <title>Arco Backup</title>
     <organization>com.arcobackup</organization>
-    <!-- User-home only, no admin required -->
-    <domains enable_localSystem="false" enable_currentUserHome="true" enable_anywhere="false"/>
+    <!-- Install to /Applications with user ownership for auto-updates -->
+    <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
     <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <license file="LICENSE"/>
 
     <choices-outline>
         <line choice="default">

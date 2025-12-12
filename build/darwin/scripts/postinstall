@@ -1,17 +1,64 @@
 #!/bin/bash
-set -e
 
-CURRENT_USER=$(stat -f "%Su" /dev/console)
-USER_HOME=$(eval echo ~$CURRENT_USER)
-USER_ID=$(id -u "$CURRENT_USER")
+# Log function for debugging
+log() {
+    echo "[postinstall] $1" >> /tmp/arco-postinstall.log 2>&1
+    echo "[postinstall] $1"
+}
 
-# 1. Ensure ~/Applications exists
-mkdir -p "${USER_HOME}/Applications"
+log "Starting postinstall script"
 
-# 2. Create LaunchAgent
-mkdir -p "${USER_HOME}/Library/LaunchAgents"
-# Use 'open' with the .app bundle so macOS shows "Arco" in Login Items
-cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
+# Detect current user - try multiple methods
+CURRENT_USER=""
+
+# Method 1: stat /dev/console (works for GUI installs)
+if [ -z "$CURRENT_USER" ]; then
+    CURRENT_USER=$(stat -f "%Su" /dev/console 2>/dev/null || true)
+    log "Method 1 (stat /dev/console): '$CURRENT_USER'"
+fi
+
+# Method 2: scutil (System Configuration)
+if [ -z "$CURRENT_USER" ] || [ "$CURRENT_USER" = "root" ]; then
+    CURRENT_USER=$(scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ { print $3 }' 2>/dev/null || true)
+    log "Method 2 (scutil): '$CURRENT_USER'"
+fi
+
+# Method 3: Last logged in user from defaults
+if [ -z "$CURRENT_USER" ] || [ "$CURRENT_USER" = "root" ]; then
+    CURRENT_USER=$(defaults read /Library/Preferences/com.apple.loginwindow lastUserName 2>/dev/null || true)
+    log "Method 3 (defaults): '$CURRENT_USER'"
+fi
+
+# Validate we have a valid user
+if [ -z "$CURRENT_USER" ] || [ "$CURRENT_USER" = "root" ] || [ "$CURRENT_USER" = "loginwindow" ]; then
+    log "ERROR: Could not determine current user. Skipping user-specific setup."
+    exit 0  # Exit successfully - app is installed, just skip user setup
+fi
+
+log "Using user: $CURRENT_USER"
+
+USER_HOME=$(eval echo ~"$CURRENT_USER" 2>/dev/null || echo "/Users/$CURRENT_USER")
+USER_ID=$(id -u "$CURRENT_USER" 2>/dev/null || echo "")
+
+log "User home: $USER_HOME, User ID: $USER_ID"
+
+# 1. Set user ownership for auto-updates (non-critical)
+if [ -d "/Applications/arco.app" ]; then
+    if chown -R "$CURRENT_USER" /Applications/arco.app 2>/dev/null; then
+        log "Set ownership on /Applications/arco.app"
+    else
+        log "WARNING: Failed to set ownership on /Applications/arco.app"
+    fi
+else
+    log "WARNING: /Applications/arco.app not found"
+fi
+
+# 2. Create LaunchAgent (non-critical)
+LAUNCH_AGENTS_DIR="${USER_HOME}/Library/LaunchAgents"
+PLIST_PATH="${LAUNCH_AGENTS_DIR}/com.arcobackup.arco.plist"
+
+if mkdir -p "$LAUNCH_AGENTS_DIR" 2>/dev/null; then
+    cat > "$PLIST_PATH" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -22,7 +69,7 @@ cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
     <array>
         <string>/usr/bin/open</string>
         <string>-a</string>
-        <string>${USER_HOME}/Applications/arco.app</string>
+        <string>/Applications/arco.app</string>
         <string>--args</string>
         <string>--hidden</string>
     </array>
@@ -34,10 +81,23 @@ cat > "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" <<EOF
 </plist>
 EOF
 
-chmod 644 "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist"
+    if [ -f "$PLIST_PATH" ]; then
+        chmod 644 "$PLIST_PATH"
+        chown "$CURRENT_USER" "$PLIST_PATH" 2>/dev/null || true
+        log "Created LaunchAgent plist"
+    else
+        log "WARNING: Failed to create LaunchAgent plist"
+    fi
+else
+    log "WARNING: Failed to create LaunchAgents directory"
+fi
 
-# 3. Load LaunchAgent (start the app)
-launchctl bootstrap "gui/${USER_ID}" \
-    "${USER_HOME}/Library/LaunchAgents/com.arcobackup.arco.plist" 2>/dev/null || true
+# 3. Load LaunchAgent (non-critical, may fail if no GUI session)
+if [ -n "$USER_ID" ] && [ -f "$PLIST_PATH" ]; then
+    launchctl bootstrap "gui/${USER_ID}" "$PLIST_PATH" 2>/dev/null || {
+        log "NOTE: launchctl bootstrap skipped (no GUI session or already loaded)"
+    }
+fi
 
+log "Postinstall completed successfully"
 exit 0

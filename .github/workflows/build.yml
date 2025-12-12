@@ -155,17 +155,6 @@ jobs:
         run: task darwin:create:app:bundle
         shell: bash
 
-      # Download macFUSE for PKG installer
-      - name: Download macFUSE
-        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
-        run: |
-          mkdir -p build/darwin/resources
-          curl -L https://github.com/macfuse/macfuse/releases/download/macfuse-5.1.2/macfuse-5.1.2.dmg -o /tmp/macfuse.dmg
-          hdiutil attach /tmp/macfuse.dmg -mountpoint /tmp/macfuse-mount
-          cp "/tmp/macfuse-mount/Install macFUSE.pkg" build/darwin/resources/macFUSE.pkg
-          hdiutil detach /tmp/macfuse-mount
-          rm /tmp/macfuse.dmg
-
       # Setup keychain and import certificates for macOS signing
       - name: Setup Keychain and Import Certificates
         if: runner.os == 'macOS' && inputs.push_artifacts == true
@@ -214,11 +203,22 @@ jobs:
           codesign --sign "$CERT_IDENTITY" --force --options runtime --timestamp --entitlements build/darwin/entitlements.plist --verbose bin/arco.app
           codesign --verify --strict bin/arco.app
 
+          # Prepare DMG contents
+          mkdir -p bin/dmg-staging
+          cp -R bin/arco.app bin/dmg-staging/
+          cp -R "build/darwin/Uninstall Arco.app" bin/dmg-staging/
+
+          # Sign uninstall app
+          chmod +x "bin/dmg-staging/Uninstall Arco.app/Contents/MacOS/uninstall"
+          codesign --sign "$CERT_IDENTITY" --force --options runtime --timestamp "bin/dmg-staging/Uninstall Arco.app"
+
           # Create and sign DMG
           create-dmg --volname "Arco" --volicon "build/darwin/icons.icns" \
-            --window-pos 200 120 --window-size 600 400 --icon-size 100 \
-            --icon "arco.app" 175 190 --hide-extension "arco.app" --app-drop-link 425 190 \
-            --no-internet-enable "bin/Arco.dmg" "bin/arco.app"
+            --window-pos 200 120 --window-size 660 400 --icon-size 80 \
+            --icon "arco.app" 140 190 --hide-extension "arco.app" \
+            --icon "Uninstall Arco.app" 330 190 --hide-extension "Uninstall Arco.app" \
+            --app-drop-link 520 190 \
+            --no-internet-enable "bin/Arco.dmg" "bin/dmg-staging"
           codesign --sign "$CERT_IDENTITY" --timestamp bin/Arco.dmg
 
           # Notarize DMG
@@ -231,7 +231,9 @@ jobs:
           pkgbuild --identifier com.arcobackup.arco --version "${VERSION#v}" \
             --install-location "Applications" --scripts build/darwin/scripts \
             --component bin/arco.app /tmp/arco-component.pkg
+          cp LICENSE build/darwin/resources/LICENSE
           productbuild --distribution build/darwin/distribution.xml \
+            --resources build/darwin/resources \
             --package-path /tmp bin/Arco-Installer.pkg
           rm /tmp/arco-component.pkg
 

@@ -252,11 +252,6 @@ func (a *App) SetQuit() {
 	a.shouldQuit = true
 }
 
-func (a *App) ShouldQuit() bool {
-	a.log.Debug("ShouldQuit called")
-	return a.state.GetStartupState().Error != "" || a.shouldQuit
-}
-
 func (a *App) startArcoCloudSyncListener() {
 	a.log.Debug("Starting ArcoCloud sync listener")
 
@@ -287,6 +282,9 @@ func (a *App) startArcoCloudSyncListener() {
 }
 
 func (a *App) updateArco() (bool, error) {
+	// Clean up any old app bundles from previous updates
+	a.cleanupOldAppBundles()
+
 	if types.EnvVarDevelopment.Bool() {
 		a.log.Info("Development mode enabled, skipping update check")
 		return false, nil
@@ -349,7 +347,7 @@ func (a *App) getLatestRelease(client *github.Client) (*github.RepositoryRelease
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()
 
-	release, _, err := client.Repositories.GetLatestRelease(ctx, "loomi-labs", "arco")
+	release, _, err := client.Repositories.GetLatestRelease(ctx, "shifty11", "arco-test")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest release: %w", err)
 	}
@@ -370,7 +368,7 @@ func (a *App) findReleaseAsset(release *github.RepositoryRelease) (*github.Relea
 
 func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset, path string) error {
 	httpClient := &http.Client{Timeout: time.Second * 60}
-	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *asset.ID, httpClient)
+	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "shifty11", "arco-test", *asset.ID, httpClient)
 	if err != nil {
 		return fmt.Errorf("failed to download release asset: %w", err)
 	}
@@ -423,6 +421,36 @@ func (a *App) extractBinary(zipReader *zip.Reader, path string) error {
 		return fmt.Errorf("failed to write to file %s: %w", path, err)
 	}
 	return nil
+}
+
+// cleanupOldAppBundles removes any leftover .app.old bundles from previous updates.
+// This is called at startup to clean up after a successful update.
+func (a *App) cleanupOldAppBundles() {
+	if !platform.IsMacOS() {
+		return
+	}
+	execPath, err := os.Executable()
+	if err != nil {
+		a.log.Debugf("cleanupOldAppBundles: os.Executable failed: %v", err)
+		return
+	}
+	path, err := filepath.EvalSymlinks(execPath)
+	if err != nil {
+		a.log.Debugf("cleanupOldAppBundles: EvalSymlinks failed: %v", err)
+		return
+	}
+	appBundlePath := a.resolveAppBundlePath(path)
+	if !strings.HasSuffix(appBundlePath, ".app") {
+		a.log.Debugf("cleanupOldAppBundles: skip; not an app bundle path: %s", appBundlePath)
+		return
+	}
+	oldAppPath := appBundlePath + ".old"
+	if _, err := os.Stat(oldAppPath); err == nil {
+		a.log.Infof("Cleaning up old app bundle: %s", oldAppPath)
+		if err := os.RemoveAll(oldAppPath); err != nil {
+			a.log.Warnf("Failed to clean up old app bundle: %v", err)
+		}
+	}
 }
 
 // resolveAppBundlePath resolves the binary path to the .app bundle path on macOS.
@@ -500,10 +528,21 @@ func (a *App) extractAppBundle(zipReader *zip.Reader, appBundlePath string) erro
 		return fmt.Errorf("extracted ZIP does not contain arco.app bundle")
 	}
 
-	// Remove old app bundle
-	a.log.Debugf("Removing old app bundle at %s", appBundlePath)
-	if err := os.RemoveAll(appBundlePath); err != nil {
-		return fmt.Errorf("failed to remove old app bundle: %w", err)
+	// Rename old app bundle to .old (instead of deleting, which fails on macOS due to code signature protection)
+	// The running app continues via inodes even after its path is renamed.
+	// The .old bundle will be cleaned up on next startup.
+	if !strings.HasSuffix(appBundlePath, ".app") {
+		return fmt.Errorf("refusing to replace non-.app path on macOS: %s", appBundlePath)
+	}
+	oldAppPath := appBundlePath + ".old"
+	if _, err := os.Stat(appBundlePath); err == nil {
+		_ = os.RemoveAll(oldAppPath) // best-effort cleanup of previous .old
+		a.log.Debugf("Renaming old app bundle from %s to %s", appBundlePath, oldAppPath)
+		if err := os.Rename(appBundlePath, oldAppPath); err != nil {
+			return fmt.Errorf("failed to rename old app bundle: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to stat existing app bundle: %w", err)
 	}
 
 	// Move new app bundle into place
