@@ -431,13 +431,19 @@ func (a *App) cleanupOldAppBundles() {
 	}
 	execPath, err := os.Executable()
 	if err != nil {
+		a.log.Debugf("cleanupOldAppBundles: os.Executable failed: %v", err)
 		return
 	}
 	path, err := filepath.EvalSymlinks(execPath)
 	if err != nil {
+		a.log.Debugf("cleanupOldAppBundles: EvalSymlinks failed: %v", err)
 		return
 	}
 	appBundlePath := a.resolveAppBundlePath(path)
+	if !strings.HasSuffix(appBundlePath, ".app") {
+		a.log.Debugf("cleanupOldAppBundles: skip; not an app bundle path: %s", appBundlePath)
+		return
+	}
 	oldAppPath := appBundlePath + ".old"
 	if _, err := os.Stat(oldAppPath); err == nil {
 		a.log.Infof("Cleaning up old app bundle: %s", oldAppPath)
@@ -525,11 +531,18 @@ func (a *App) extractAppBundle(zipReader *zip.Reader, appBundlePath string) erro
 	// Rename old app bundle to .old (instead of deleting, which fails on macOS due to code signature protection)
 	// The running app continues via inodes even after its path is renamed.
 	// The .old bundle will be cleaned up on next startup.
+	if !strings.HasSuffix(appBundlePath, ".app") {
+		return fmt.Errorf("refusing to replace non-.app path on macOS: %s", appBundlePath)
+	}
 	oldAppPath := appBundlePath + ".old"
-	os.RemoveAll(oldAppPath) // Ignore error - may not exist
-	a.log.Debugf("Renaming old app bundle from %s to %s", appBundlePath, oldAppPath)
-	if err := os.Rename(appBundlePath, oldAppPath); err != nil {
-		return fmt.Errorf("failed to rename old app bundle: %w", err)
+	if _, err := os.Stat(appBundlePath); err == nil {
+		_ = os.RemoveAll(oldAppPath) // best-effort cleanup of previous .old
+		a.log.Debugf("Renaming old app bundle from %s to %s", appBundlePath, oldAppPath)
+		if err := os.Rename(appBundlePath, oldAppPath); err != nil {
+			return fmt.Errorf("failed to rename old app bundle: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to stat existing app bundle: %w", err)
 	}
 
 	// Move new app bundle into place

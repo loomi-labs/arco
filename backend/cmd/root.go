@@ -77,16 +77,20 @@ func getConfigDir() (path string, err error) {
 		return
 	}
 	if platform.IsMacOS() {
-		// TODO: this can be removed in a future release (assuming all users have migrated)
 		newPath := filepath.Join(dir, "Library", "Application Support", "Arco")
 		oldPath := filepath.Join(dir, ".config", "arco")
 
+		// TODO: this can be removed in a future release (assuming all users have migrated)
 		// Migrate from old location if it exists and new doesn't
 		if _, err := os.Stat(oldPath); err == nil {
 			if _, err := os.Stat(newPath); os.IsNotExist(err) {
 				// Old exists, new doesn't - migrate
-				_ = os.MkdirAll(filepath.Dir(newPath), 0755)
-				_ = os.Rename(oldPath, newPath)
+				if err := os.MkdirAll(filepath.Dir(newPath), 0755); err != nil {
+					return "", fmt.Errorf("failed to create config directory during migration: %w", err)
+				}
+				if err := os.Rename(oldPath, newPath); err != nil {
+					return "", fmt.Errorf("failed to migrate config from %q to %q: %w", oldPath, newPath, err)
+				}
 			}
 		}
 		return newPath, nil
