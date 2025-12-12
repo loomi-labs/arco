@@ -21,3 +21,4 @@ jobs:
     with:
       push_artifacts: ${{ needs.release-please.outputs.release_created == 'true' }}
       version: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
