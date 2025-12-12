@@ -1,0 +1,16 @@
+#!/bin/bash
+# Uninstall Arco
+
+# Stop app if running
+osascript -e 'quit app "arco"' 2>/dev/null
+sleep 1
+
+# Remove LaunchAgent
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.arcobackup.arco.plist 2>/dev/null
+rm -f ~/Library/LaunchAgents/com.arcobackup.arco.plist
+
+# Remove app
+rm -rf /Applications/arco.app
+
+# Show completion dialog
+osascript -e 'display dialog "Arco has been uninstalled." buttons {"OK"} default button "OK" with title "Uninstall Complete"'
