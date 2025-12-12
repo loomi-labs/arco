@@ -335,24 +335,28 @@ jobs:
           stapler validate bin/Arco.dmg
 
       - name: Create PKG installer
+        env:
+          VERSION: v20.0.0
         run: |
           # Prepare scripts directory
           chmod +x build/darwin/scripts/postinstall
 
           # Create component package
-          # Using relative "Applications" path - combined with enable_currentUserHome in distribution.xml,
-          # this installs to ~/Applications (resolved at install time, not build time)
           pkgbuild \
             --identifier com.arcobackup.arco \
-            --version "v16.0.0" \
+            --version "${VERSION#v}" \
             --install-location "Applications" \
             --scripts build/darwin/scripts \
             --component bin/arco.app \
             /tmp/arco-component.pkg
 
-          # Create distribution package
+          # Copy LICENSE to resources
+          cp LICENSE build/darwin/resources/LICENSE
+
+          # Create distribution package with resources
           productbuild \
             --distribution build/darwin/distribution.xml \
+            --resources build/darwin/resources \
             --package-path /tmp \
             bin/Arco-Installer.pkg
 
