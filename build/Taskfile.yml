@@ -74,4 +74,4 @@ tasks:
     desc: Updates the build assets
     dir: build
     cmds:
-      - go tool wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -productversion "{{.VERSION}}" -config config.yml -dir .
+      - go tool wails3 update build-assets -name "Arco" -binaryname "{{.APP_NAME}}" -productversion "{{.VERSION}}" -config config.yml -dir .
