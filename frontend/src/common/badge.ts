@@ -92,25 +92,25 @@ export function toCreationTimeIconColor(date: Date | undefined): string {
 
   const dHours = diffHours(now, date);
   if (dHours < 1) {
-    return "text-badge-fresh-text";
+    return "text-badge-fresh-border";
   }
   const dDays = diffDays(now, date);
   if (dDays < 1) {
-    return "text-badge-recent-text";
+    return "text-badge-recent-border";
   }
   if (dDays < 2) {
-    return "text-badge-days-text";
+    return "text-badge-days-border";
   }
   if (dDays < 7) {
-    return "text-badge-week-text";
+    return "text-badge-week-border";
   }
   if (dDays < 30) {
-    return "text-badge-month-text";
+    return "text-badge-month-border";
   }
   if (dDays < 365) {
-    return "text-badge-year-text";
+    return "text-badge-year-border";
   }
-  return "text-badge-old-text";
+  return "text-badge-old-border";
 }
 
 /**
