@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from "@heroicons/vue/24/solid";
+import { ClockIcon } from "@heroicons/vue/24/outline";
 import { isAfter } from "@formkit/tempo";
 import { debounce } from "lodash";
 import { Events } from "@wailsio/runtime";
@@ -9,7 +10,7 @@ import BackupButton from "./BackupButton.vue";
 import ErrorTooltip from "./common/ErrorTooltip.vue";
 import { getIcon } from "../common/icons";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
-import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
+import { toCreationTimeIconColor, toCreationTimeTooltip } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
 import { Page, withId } from "../router";
@@ -242,9 +243,10 @@ onUnmounted(() => {
           <span class='text-base-content/60'>Last Backup</span>
           <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
                 :data-tip='toLongDateString(lastArchive.createdAt)'>
-            <span :class='toCreationTimeBadge(lastArchive.createdAt)'>{{
-                toRelativeTimeString(lastArchive.createdAt)
-              }}</span>
+            <span class='flex items-center gap-1.5'>
+              <ClockIcon :class='["size-4", toCreationTimeIconColor(lastArchive.createdAt)]' />
+              <span>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+            </span>
           </span>
           <span v-else>-</span>
         </div>

@@ -363,3 +363,20 @@
 .tooltip-badge-old::after {
     @apply bg-badge-old-border;
 }
+
+/* Collapse animation utilities for Vue Transition */
+.ac-collapse-enter-active,
+.ac-collapse-leave-active {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 400ms ease-out;
+}
+
+.ac-collapse-enter-from,
+.ac-collapse-leave-to {
+    grid-template-rows: 0fr;
+}
+
+.ac-collapse-content {
+    overflow: hidden;
+}

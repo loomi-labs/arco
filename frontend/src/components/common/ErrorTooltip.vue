@@ -55,7 +55,7 @@ const tooltipPositionClass = computed(() => {
 </script>
 
 <template>
-  <div class='tooltip tooltip-error cursor-help' :class='tooltipPositionClass'>
+  <div class='tooltip tooltip-error' :class='tooltipPositionClass'>
     <div class='tooltip-content text-left px-3 py-2 max-w-xs'>
       <ul class='space-y-1'>
         <li v-for='(error, index) in groupedErrors' :key='index' class='text-xs'>

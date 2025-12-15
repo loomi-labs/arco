@@ -1,14 +1,14 @@
 <script setup lang='ts'>
 import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from '@heroicons/vue/24/outline';
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon, ExclamationTriangleIcon, LockClosedIcon, XCircleIcon } from '@heroicons/vue/24/solid';
 import { Events } from "@wailsio/runtime";
 import ArcoCloudIcon from './common/ArcoCloudIcon.vue';
 import ErrorTooltip from './common/ErrorTooltip.vue';
 import { toHumanReadableSize } from '../common/repository';
 import { toLongDateString, toRelativeTimeString } from '../common/time';
-import { toCreationTimeBadge, toCreationTimeTooltip } from '../common/badge';
+import { toCreationTimeIconColor, toCreationTimeTooltip } from '../common/badge';
 import { showAndLogError } from '../common/logger';
 import * as EventHelpers from '../common/events';
 import { Page, withId } from '../router';
@@ -195,7 +195,10 @@ onUnmounted(() => {
           <span class='text-base-content/60'>Last Backup</span>
           <span v-if='repo.lastBackup?.timestamp' :class='toCreationTimeTooltip(repo.lastBackup.timestamp)'
                 :data-tip='toLongDateString(repo.lastBackup.timestamp)'>
-            <span :class='toCreationTimeBadge(repo.lastBackup.timestamp)'>{{ formattedLastBackupTime }}</span>
+            <span class='flex items-center gap-1.5'>
+              <ClockIcon :class='["size-4", toCreationTimeIconColor(repo.lastBackup.timestamp)]' />
+              <span>{{ formattedLastBackupTime }}</span>
+            </span>
           </span>
           <span v-else>Never</span>
         </div>

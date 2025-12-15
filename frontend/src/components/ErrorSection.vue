@@ -149,42 +149,46 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Error List -->
-    <div v-if='isExpanded' class='border border-t-0 border-error/30 rounded-b-lg divide-y divide-base-300 max-h-64 overflow-y-auto'>
-      <div
-        v-for='error in filteredErrors'
-        :key='error.id'
-        class='flex items-start justify-between p-4 hover:bg-base-200/50'
-      >
-        <div class='flex-1 min-w-0'>
-          <div class='flex items-center gap-2 text-sm'>
-            <span class='badge badge-error badge-sm'>{{ getErrorTypeLabel(error.type) }}</span>
-            <span class='text-base-content/60'>{{ toRelativeTimeString(new Date(error.createdAt)) }}</span>
-          </div>
-          <p class='mt-1 text-sm text-base-content truncate'>{{ error.message }}</p>
-          <div class='mt-1 flex items-center gap-2 text-xs text-base-content/60'>
+    <!-- Error List with collapse animation -->
+    <Transition name='ac-collapse'>
+      <div v-if='isExpanded' class='ac-collapse-content'>
+        <div class='border border-t-0 border-error/30 rounded-b-lg divide-y divide-base-300 max-h-64 overflow-y-auto'>
+          <div
+            v-for='error in filteredErrors'
+            :key='error.id'
+            class='flex items-start justify-between p-4 hover:bg-base-200/50'
+          >
+            <div class='flex-1 min-w-0'>
+              <div class='flex items-center gap-2 text-sm'>
+                <span class='badge badge-error badge-sm'>{{ getErrorTypeLabel(error.type) }}</span>
+                <span class='text-base-content/60'>{{ toRelativeTimeString(new Date(error.createdAt)) }}</span>
+              </div>
+              <p class='mt-1 text-sm text-base-content truncate'>{{ error.message }}</p>
+              <div class='mt-1 flex items-center gap-2 text-xs text-base-content/60'>
+                <button
+                  class='link link-hover'
+                  @click='navigateToProfile(error.backupProfileId, $event)'
+                >
+                  {{ error.backupProfileName }}
+                </button>
+                <span>/</span>
+                <button
+                  class='link link-hover'
+                  @click='navigateToRepo(error.repositoryId, $event)'
+                >
+                  {{ error.repositoryName }}
+                </button>
+              </div>
+            </div>
             <button
-              class='link link-hover'
-              @click='navigateToProfile(error.backupProfileId, $event)'
+              class='btn btn-ghost btn-xs ml-2'
+              @click='dismissError(error.id, $event)'
             >
-              {{ error.backupProfileName }}
-            </button>
-            <span>/</span>
-            <button
-              class='link link-hover'
-              @click='navigateToRepo(error.repositoryId, $event)'
-            >
-              {{ error.repositoryName }}
+              <XMarkIcon class='size-4' />
             </button>
           </div>
         </div>
-        <button
-          class='btn btn-ghost btn-xs ml-2'
-          @click='dismissError(error.id, $event)'
-        >
-          <XMarkIcon class='size-4' />
-        </button>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
