@@ -59,6 +59,7 @@ type ArchiveMutation struct {
 	borg_id               *string
 	will_be_pruned        *bool
 	comment               *string
+	warning_message       *string
 	clearedFields         map[string]struct{}
 	repository            *int
 	clearedrepository     bool
@@ -458,6 +459,55 @@ func (m *ArchiveMutation) ResetComment() {
 	delete(m.clearedFields, archive.FieldComment)
 }
 
+// SetWarningMessage sets the "warning_message" field.
+func (m *ArchiveMutation) SetWarningMessage(s string) {
+	m.warning_message = &s
+}
+
+// WarningMessage returns the value of the "warning_message" field in the mutation.
+func (m *ArchiveMutation) WarningMessage() (r string, exists bool) {
+	v := m.warning_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWarningMessage returns the old "warning_message" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldWarningMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWarningMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWarningMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWarningMessage: %w", err)
+	}
+	return oldValue.WarningMessage, nil
+}
+
+// ClearWarningMessage clears the value of the "warning_message" field.
+func (m *ArchiveMutation) ClearWarningMessage() {
+	m.warning_message = nil
+	m.clearedFields[archive.FieldWarningMessage] = struct{}{}
+}
+
+// WarningMessageCleared returns if the "warning_message" field was cleared in this mutation.
+func (m *ArchiveMutation) WarningMessageCleared() bool {
+	_, ok := m.clearedFields[archive.FieldWarningMessage]
+	return ok
+}
+
+// ResetWarningMessage resets all changes to the "warning_message" field.
+func (m *ArchiveMutation) ResetWarningMessage() {
+	m.warning_message = nil
+	delete(m.clearedFields, archive.FieldWarningMessage)
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by id.
 func (m *ArchiveMutation) SetRepositoryID(id int) {
 	m.repository = &id
@@ -570,7 +620,7 @@ func (m *ArchiveMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArchiveMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, archive.FieldCreatedAt)
 	}
@@ -591,6 +641,9 @@ func (m *ArchiveMutation) Fields() []string {
 	}
 	if m.comment != nil {
 		fields = append(fields, archive.FieldComment)
+	}
+	if m.warning_message != nil {
+		fields = append(fields, archive.FieldWarningMessage)
 	}
 	return fields
 }
@@ -614,6 +667,8 @@ func (m *ArchiveMutation) Field(name string) (ent.Value, bool) {
 		return m.WillBePruned()
 	case archive.FieldComment:
 		return m.Comment()
+	case archive.FieldWarningMessage:
+		return m.WarningMessage()
 	}
 	return nil, false
 }
@@ -637,6 +692,8 @@ func (m *ArchiveMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldWillBePruned(ctx)
 	case archive.FieldComment:
 		return m.OldComment(ctx)
+	case archive.FieldWarningMessage:
+		return m.OldWarningMessage(ctx)
 	}
 	return nil, fmt.Errorf("unknown Archive field %s", name)
 }
@@ -695,6 +752,13 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetComment(v)
 		return nil
+	case archive.FieldWarningMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWarningMessage(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
 }
@@ -743,6 +807,9 @@ func (m *ArchiveMutation) ClearedFields() []string {
 	if m.FieldCleared(archive.FieldComment) {
 		fields = append(fields, archive.FieldComment)
 	}
+	if m.FieldCleared(archive.FieldWarningMessage) {
+		fields = append(fields, archive.FieldWarningMessage)
+	}
 	return fields
 }
 
@@ -759,6 +826,9 @@ func (m *ArchiveMutation) ClearField(name string) error {
 	switch name {
 	case archive.FieldComment:
 		m.ClearComment()
+		return nil
+	case archive.FieldWarningMessage:
+		m.ClearWarningMessage()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive nullable field %s", name)
@@ -788,6 +858,9 @@ func (m *ArchiveMutation) ResetField(name string) error {
 		return nil
 	case archive.FieldComment:
 		m.ResetComment()
+		return nil
+	case archive.FieldWarningMessage:
+		m.ResetWarningMessage()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)

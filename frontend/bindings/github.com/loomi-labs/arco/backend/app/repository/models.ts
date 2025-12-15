@@ -183,6 +183,11 @@ export class ArchiveWithPendingChanges {
     "comment": string;
 
     /**
+     * Warning message from the backup operation that created this archive
+     */
+    "warningMessage"?: string | null;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
@@ -241,18 +246,18 @@ export class ArchiveWithPendingChanges {
      * Creates a new ArchiveWithPendingChanges instance from a string or object.
      */
     static createFrom($$source: any = {}): ArchiveWithPendingChanges {
-        const $$createField8_0 = $$createType12;
-        const $$createField9_0 = $$createType13;
-        const $$createField10_0 = $$createType14;
+        const $$createField9_0 = $$createType12;
+        const $$createField10_0 = $$createType13;
+        const $$createField11_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField8_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField9_0($$parsedSource["edges"]);
         }
         if ("editStateUnion" in $$parsedSource) {
-            $$parsedSource["editStateUnion"] = $$createField9_0($$parsedSource["editStateUnion"]);
+            $$parsedSource["editStateUnion"] = $$createField10_0($$parsedSource["editStateUnion"]);
         }
         if ("deleteStateUnion" in $$parsedSource) {
-            $$parsedSource["deleteStateUnion"] = $$createField10_0($$parsedSource["deleteStateUnion"]);
+            $$parsedSource["deleteStateUnion"] = $$createField11_0($$parsedSource["deleteStateUnion"]);
         }
         return new ArchiveWithPendingChanges($$parsedSource as Partial<ArchiveWithPendingChanges>);
     }

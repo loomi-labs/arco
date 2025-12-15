@@ -29,7 +29,7 @@ func (Notification) Fields() []ent.Field {
 			Immutable(),
 		field.Enum("type").
 			StructTag(`json:"type"`).
-			Values("failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check").
+			Values("failed_backup_run", "failed_pruning_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check").
 			Immutable(),
 		field.Bool("seen").
 			StructTag(`json:"seen"`).

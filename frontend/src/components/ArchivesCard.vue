@@ -10,6 +10,7 @@ import {
   ClockIcon,
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
+  ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   ScissorsIcon,
@@ -1182,11 +1183,19 @@ onUnmounted(() => {
           </td>
           <!-- Creation time -->
           <td>
-            <span :class='toCreationTimeTooltip(archive.createdAt)' :data-tip='toLongDateString(archive.createdAt)'>
-              <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
-                  toRelativeTimeString(archive.createdAt)
-                }}</span>
-            </span>
+            <div class='flex items-center justify-between gap-2'>
+              <span :class='toCreationTimeTooltip(archive.createdAt)' :data-tip='toLongDateString(archive.createdAt)'>
+                <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
+                    toRelativeTimeString(archive.createdAt)
+                  }}</span>
+              </span>
+              <!-- Warning indicator -->
+              <span v-if='archive.warningMessage'
+                    class='tooltip tooltip-warning'
+                    :data-tip='archive.warningMessage'>
+                <ExclamationTriangleIcon class='size-4 text-warning' />
+              </span>
+            </div>
           </td>
           <!-- Duration -->
           <td class='[display:none] lg:[display:table-cell]'>

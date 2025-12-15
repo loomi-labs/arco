@@ -100,7 +100,6 @@ type Type string
 const (
 	TypeFailedBackupRun   Type = "failed_backup_run"
 	TypeFailedPruningRun  Type = "failed_pruning_run"
-	TypeWarningBackupRun  Type = "warning_backup_run"
 	TypeWarningPruningRun Type = "warning_pruning_run"
 	TypeFailedQuickCheck  Type = "failed_quick_check"
 	TypeFailedFullCheck   Type = "failed_full_check"
@@ -115,7 +114,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeFailedBackupRun, TypeFailedPruningRun, TypeWarningBackupRun, TypeWarningPruningRun, TypeFailedQuickCheck, TypeFailedFullCheck, TypeWarningQuickCheck, TypeWarningFullCheck:
+	case TypeFailedBackupRun, TypeFailedPruningRun, TypeWarningPruningRun, TypeFailedQuickCheck, TypeFailedFullCheck, TypeWarningQuickCheck, TypeWarningFullCheck:
 		return nil
 	default:
 		return fmt.Errorf("notification: invalid enum value for type field: %q", _type)

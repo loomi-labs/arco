@@ -28,6 +28,8 @@ const (
 	FieldWillBePruned = "will_be_pruned"
 	// FieldComment holds the string denoting the comment field in the database.
 	FieldComment = "comment"
+	// FieldWarningMessage holds the string denoting the warning_message field in the database.
+	FieldWarningMessage = "warning_message"
 	// EdgeRepository holds the string denoting the repository edge name in mutations.
 	EdgeRepository = "repository"
 	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
@@ -60,6 +62,7 @@ var Columns = []string{
 	FieldBorgID,
 	FieldWillBePruned,
 	FieldComment,
+	FieldWarningMessage,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "archives"
@@ -138,6 +141,11 @@ func ByWillBePruned(opts ...sql.OrderTermOption) OrderOption {
 // ByComment orders the results by the comment field.
 func ByComment(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldComment, opts...).ToFunc()
+}
+
+// ByWarningMessage orders the results by the warning_message field.
+func ByWarningMessage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWarningMessage, opts...).ToFunc()
 }
 
 // ByRepositoryField orders the results by repository field.

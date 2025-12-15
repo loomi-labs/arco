@@ -34,7 +34,6 @@ export enum Type {
      */
     TypeFailedBackupRun = "failed_backup_run",
     TypeFailedPruningRun = "failed_pruning_run",
-    TypeWarningBackupRun = "warning_backup_run",
     TypeWarningPruningRun = "warning_pruning_run",
     TypeFailedQuickCheck = "failed_quick_check",
     TypeFailedFullCheck = "failed_full_check",

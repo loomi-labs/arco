@@ -90,6 +90,11 @@ func Comment(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldComment, v))
 }
 
+// WarningMessage applies equality check predicate on the "warning_message" field. It's identical to WarningMessageEQ.
+func WarningMessage(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldEQ(FieldWarningMessage, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Archive {
 	return predicate.Archive(sql.FieldEQ(FieldCreatedAt, v))
@@ -423,6 +428,81 @@ func CommentEqualFold(v string) predicate.Archive {
 // CommentContainsFold applies the ContainsFold predicate on the "comment" field.
 func CommentContainsFold(v string) predicate.Archive {
 	return predicate.Archive(sql.FieldContainsFold(FieldComment, v))
+}
+
+// WarningMessageEQ applies the EQ predicate on the "warning_message" field.
+func WarningMessageEQ(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldEQ(FieldWarningMessage, v))
+}
+
+// WarningMessageNEQ applies the NEQ predicate on the "warning_message" field.
+func WarningMessageNEQ(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldNEQ(FieldWarningMessage, v))
+}
+
+// WarningMessageIn applies the In predicate on the "warning_message" field.
+func WarningMessageIn(vs ...string) predicate.Archive {
+	return predicate.Archive(sql.FieldIn(FieldWarningMessage, vs...))
+}
+
+// WarningMessageNotIn applies the NotIn predicate on the "warning_message" field.
+func WarningMessageNotIn(vs ...string) predicate.Archive {
+	return predicate.Archive(sql.FieldNotIn(FieldWarningMessage, vs...))
+}
+
+// WarningMessageGT applies the GT predicate on the "warning_message" field.
+func WarningMessageGT(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldGT(FieldWarningMessage, v))
+}
+
+// WarningMessageGTE applies the GTE predicate on the "warning_message" field.
+func WarningMessageGTE(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldGTE(FieldWarningMessage, v))
+}
+
+// WarningMessageLT applies the LT predicate on the "warning_message" field.
+func WarningMessageLT(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldLT(FieldWarningMessage, v))
+}
+
+// WarningMessageLTE applies the LTE predicate on the "warning_message" field.
+func WarningMessageLTE(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldLTE(FieldWarningMessage, v))
+}
+
+// WarningMessageContains applies the Contains predicate on the "warning_message" field.
+func WarningMessageContains(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldContains(FieldWarningMessage, v))
+}
+
+// WarningMessageHasPrefix applies the HasPrefix predicate on the "warning_message" field.
+func WarningMessageHasPrefix(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldHasPrefix(FieldWarningMessage, v))
+}
+
+// WarningMessageHasSuffix applies the HasSuffix predicate on the "warning_message" field.
+func WarningMessageHasSuffix(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldHasSuffix(FieldWarningMessage, v))
+}
+
+// WarningMessageIsNil applies the IsNil predicate on the "warning_message" field.
+func WarningMessageIsNil() predicate.Archive {
+	return predicate.Archive(sql.FieldIsNull(FieldWarningMessage))
+}
+
+// WarningMessageNotNil applies the NotNil predicate on the "warning_message" field.
+func WarningMessageNotNil() predicate.Archive {
+	return predicate.Archive(sql.FieldNotNull(FieldWarningMessage))
+}
+
+// WarningMessageEqualFold applies the EqualFold predicate on the "warning_message" field.
+func WarningMessageEqualFold(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldEqualFold(FieldWarningMessage, v))
+}
+
+// WarningMessageContainsFold applies the ContainsFold predicate on the "warning_message" field.
+func WarningMessageContainsFold(v string) predicate.Archive {
+	return predicate.Archive(sql.FieldContainsFold(FieldWarningMessage, v))
 }
 
 // HasRepository applies the HasEdge predicate on the "repository" edge.

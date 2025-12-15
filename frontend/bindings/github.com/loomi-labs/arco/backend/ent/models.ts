@@ -69,6 +69,11 @@ export class Archive {
     "comment": string;
 
     /**
+     * Warning message from the backup operation that created this archive
+     */
+    "warningMessage"?: string | null;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
@@ -111,10 +116,10 @@ export class Archive {
      * Creates a new Archive instance from a string or object.
      */
     static createFrom($$source: any = {}): Archive {
-        const $$createField8_0 = $$createType0;
+        const $$createField9_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField8_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField9_0($$parsedSource["edges"]);
         }
         return new Archive($$parsedSource as Partial<Archive>);
     }

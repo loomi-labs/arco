@@ -33,6 +33,8 @@ type Archive struct {
 	WillBePruned bool `json:"willBePruned"`
 	// Comment stored with the archive in borg
 	Comment string `json:"comment"`
+	// Warning message from the backup operation that created this archive
+	WarningMessage *string `json:"warningMessage,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
 	Edges                   ArchiveEdges `json:"edges"`
@@ -85,7 +87,7 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case archive.FieldID:
 			values[i] = new(sql.NullInt64)
-		case archive.FieldName, archive.FieldBorgID, archive.FieldComment:
+		case archive.FieldName, archive.FieldBorgID, archive.FieldComment, archive.FieldWarningMessage:
 			values[i] = new(sql.NullString)
 		case archive.FieldCreatedAt, archive.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -155,6 +157,13 @@ func (_m *Archive) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field comment", values[i])
 			} else if value.Valid {
 				_m.Comment = value.String
+			}
+		case archive.FieldWarningMessage:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field warning_message", values[i])
+			} else if value.Valid {
+				_m.WarningMessage = new(string)
+				*_m.WarningMessage = value.String
 			}
 		case archive.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -236,6 +245,11 @@ func (_m *Archive) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("comment=")
 	builder.WriteString(_m.Comment)
+	builder.WriteString(", ")
+	if v := _m.WarningMessage; v != nil {
+		builder.WriteString("warning_message=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
