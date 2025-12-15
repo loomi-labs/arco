@@ -58,8 +58,8 @@
     --color-error: #EF4444;
     --color-error-content: oklch(96% 0.03 12.58);
 
-    /* Badge colors - Light theme: solid bg with white text */
-    --color-badge-fresh-text: #ffffff;
+    /* Badge colors - Light theme */
+    --color-badge-fresh-text: #111827;    /* gray-900 */
     --color-badge-fresh-bg: #16a34a;      /* green-600 */
     --color-badge-fresh-border: #16a34a;
     --color-badge-recent-text: #ffffff;
@@ -244,7 +244,7 @@
     --color-arco-purple-950: #3b0764;
 
     /* Badge colors - defaults (overridden by daisyui themes) */
-    --color-badge-fresh-text: #ffffff;
+    --color-badge-fresh-text: #111827;
     --color-badge-fresh-bg: #16a34a;
     --color-badge-fresh-border: #16a34a;
     --color-badge-recent-text: #ffffff;
