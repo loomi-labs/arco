@@ -19,8 +19,6 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
-import * as notificationService from "../../bindings/github.com/loomi-labs/arco/backend/app/notification/service";
-import type { ErrorCounts } from "../../bindings/github.com/loomi-labs/arco/backend/app/notification/models";
 import { Events } from "@wailsio/runtime";
 
 /************
@@ -35,7 +33,6 @@ const router = useRouter();
 const isDark = useDark();
 const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
-const errorCounts = ref<ErrorCounts | null>(null);
 const backupConceptsInfoModalKey = useId();
 const backupConceptsInfoModal = useTemplateRef<InstanceType<typeof BackupConceptsInfoModal>>(backupConceptsInfoModalKey);
 
@@ -61,22 +58,6 @@ async function getData() {
   }
 }
 
-async function loadErrorCounts() {
-  try {
-    errorCounts.value = await notificationService.GetUnseenErrorCounts();
-  } catch (error: unknown) {
-    await showAndLogError("Failed to load error counts", error);
-  }
-}
-
-function getProfileErrorCount(profileId: number): number {
-  return errorCounts.value?.byBackupProfile[`${profileId}`] ?? 0;
-}
-
-function getRepoErrorCount(repoId: number): number {
-  return errorCounts.value?.byRepository[`${repoId}`] ?? 0;
-}
-
 function setupRepoStateListeners() {
   // Clean up previous listeners
   repoStateCleanups.forEach((cleanup) => cleanup());
@@ -99,7 +80,6 @@ function showBackupConceptsInfoModal() {
  ************/
 
 getData();
-loadErrorCounts();
 
 // Listen for backup profile CRUD events
 cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), getData));
@@ -111,10 +91,6 @@ cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), getData))
 cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), getData));
 cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData));
 
-// Listen for notification changes to update error counts
-cleanupFunctions.push(Events.On(EventHelpers.notificationDismissedEvent(), loadErrorCounts));
-cleanupFunctions.push(Events.On(EventHelpers.notificationCreatedEvent(), loadErrorCounts));
-
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
   repoStateCleanups.forEach((cleanup) => cleanup());
@@ -125,7 +101,7 @@ onUnmounted(() => {
 <template>
   <div class='text-left py-10 px-8'>
     <!-- Error Section -->
-    <ErrorSection @errors-changed='loadErrorCounts' />
+    <ErrorSection />
 
     <!-- Welcome Banner: shown when both backup profiles and repos are empty -->
     <div v-if='isEmpty' class='ac-card p-8 mb-8'>
@@ -153,7 +129,7 @@ onUnmounted(() => {
     <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
       <!-- Backup Profile Cards -->
       <div v-for='backup in backupProfiles' :key='backup.id'>
-        <BackupProfileCard :backup='backup' :error-count='getProfileErrorCount(backup.id)' />
+        <BackupProfileCard :backup='backup' />
       </div>
 
       <!-- Empty State Card for Backup Profiles -->
@@ -189,7 +165,7 @@ onUnmounted(() => {
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
         <!-- Repository Cards -->
         <div v-for='repo in repos' :key='repo.id'>
-          <RepoCardSimple :repo='repo' :error-count='getRepoErrorCount(repo.id)' />
+          <RepoCardSimple :repo='repo' />
         </div>
 
         <!-- Empty State Card for Repositories -->
