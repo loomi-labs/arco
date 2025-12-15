@@ -83,48 +83,23 @@ const backupIds = computed(() => {
 
 // Async data
 const lastArchive = ref<ent.Archive | undefined>(undefined);
-const failedBackupRun = ref<string>("");
-const warningBackupRun = ref<string>("");
 const cleanupFunctions: (() => void)[] = [];
 
 const lastBackupStatus = computed<"success" | "warning" | "error" | "none">(() => {
-  if (failedBackupRun.value) return "error";
-  if (warningBackupRun.value) return "warning";
-  if (lastArchive.value) return "success";
-  return "none";
+  if (!props.backup.lastBackup) return "none";
+  switch (props.backup.lastBackup.status) {
+    case types.BackupStatus.BackupStatusError: return "error";
+    case types.BackupStatus.BackupStatusWarning: return "warning";
+    case types.BackupStatus.BackupStatusSuccess: return "success";
+    case types.BackupStatus.$zero:
+    default:
+      return "none";
+  }
 });
 
 /************
  * Functions
  ************/
-
-async function getFailedBackupRun() {
-  for (const repo of repositories.value) {
-    try {
-      const backupId = types.BackupId.createFrom();
-      backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repo.id;
-      failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
-      if (failedBackupRun.value) break;
-    } catch (error: unknown) {
-      await showAndLogError("Failed to get last backup error message", error);
-    }
-  }
-}
-
-async function getWarningBackupRun() {
-  for (const repo of repositories.value) {
-    try {
-      const backupId = types.BackupId.createFrom();
-      backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repo.id;
-      warningBackupRun.value = await repoService.GetLastBackupWarningByBackupId(backupId);
-      if (warningBackupRun.value) break;
-    } catch (error: unknown) {
-      await showAndLogError("Failed to get last backup warning message", error);
-    }
-  }
-}
 
 async function getLastArchives() {
   try {
@@ -154,15 +129,11 @@ function navigateToProfile() {
  * Lifecycle
  ************/
 
-getFailedBackupRun();
-getWarningBackupRun();
 getLastArchives();
 
 // Listen for repo state changes
 for (const backupId of backupIds.value) {
   const handleRepoStateChanged = debounce(async () => {
-    await getFailedBackupRun();
-    await getWarningBackupRun();
     await getLastArchives();
   }, 200);
 
@@ -214,11 +185,11 @@ onUnmounted(() => {
           <span class='text-base-content/60'>Last backup</span>
           <div class='flex items-center gap-2'>
             <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
-                  :data-tip='failedBackupRun'>
+                  :data-tip='backup.lastBackup?.message'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
             <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
-                  :data-tip='warningBackupRun'>
+                  :data-tip='backup.lastBackup?.message'>
               <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
             <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'

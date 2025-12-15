@@ -9,6 +9,7 @@ import { toRelativeTimeString } from '../common/time';
 import { Page, withId } from '../router';
 import type * as repoModels from '../../bindings/github.com/loomi-labs/arco/backend/app/repository/models';
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { BackupStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 /************
  * Types
@@ -50,15 +51,20 @@ const formattedSizeOnDisk = computed(() => {
 });
 
 const formattedLastBackupTime = computed(() => {
-  if (!props.repo.lastBackupTime) return undefined;
-  return toRelativeTimeString(new Date(props.repo.lastBackupTime));
+  if (!props.repo.lastBackup?.timestamp) return undefined;
+  return toRelativeTimeString(new Date(props.repo.lastBackup.timestamp));
 });
 
 const lastBackupStatus = computed<'success' | 'warning' | 'error' | 'none'>(() => {
-  if (props.repo.lastBackupError) return 'error';
-  if (props.repo.lastBackupWarning) return 'warning';
-  if (props.repo.lastBackupTime) return 'success';
-  return 'none';
+  if (!props.repo.lastBackup) return 'none';
+  switch (props.repo.lastBackup.status) {
+    case BackupStatus.BackupStatusError: return 'error';
+    case BackupStatus.BackupStatusWarning: return 'warning';
+    case BackupStatus.BackupStatusSuccess: return 'success';
+    case BackupStatus.$zero:
+    default:
+      return 'none';
+  }
 });
 
 const formattedLastCheckTime = computed(() => {
@@ -117,11 +123,11 @@ function navigateToRepo() {
           <div class='flex items-center gap-1'>
             <CheckCircleIcon v-if='lastBackupStatus === "success"' class='size-4 text-success' />
             <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
-                  :data-tip='repo.lastBackupWarning'>
+                  :data-tip='repo.lastBackup?.message'>
               <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
             <span v-else-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
-                  :data-tip='repo.lastBackupError'>
+                  :data-tip='repo.lastBackup?.message'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
             <span>{{ formattedLastBackupTime || 'Never' }}</span>

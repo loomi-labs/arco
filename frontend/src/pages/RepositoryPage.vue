@@ -34,6 +34,7 @@ import ChangePathModal from "../components/ChangePathModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { Anchor, Page } from "../router";
 import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
+import { BackupStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 const router = useRouter();
 const toast = useToast();
@@ -445,7 +446,7 @@ onUnmounted(() => {
                       d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
               </svg>
               <span class='flex-1 text-sm opacity-70'>Last Backup</span>
-              <span v-if='repo.lastBackupError' class='font-bold text-error'>Failed</span>
+              <span v-if='repo.lastBackup?.status === BackupStatus.BackupStatusError' class='font-bold text-error'>Failed</span>
               <span v-else-if='lastArchive' class='font-bold'>{{
                   toRelativeTimeString(lastArchive.createdAt, true)
                 }}</span>

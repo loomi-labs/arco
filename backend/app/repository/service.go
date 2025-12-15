@@ -267,12 +267,6 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	archives := repoEntity.Edges.Archives
 	archiveCount := len(archives)
 
-	var lastBackupTime *time.Time
-	if len(archives) > 0 {
-		// Archives are already ordered by creation time descending
-		lastBackupTime = &archives[0].CreatedAt
-	}
-
 	// Calculate storage used from repository statistics
 	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)  // Compressed & deduplicated storage (actual disk usage)
 	totalSize := int64(repoEntity.StatsTotalSize)     // Total uncompressed size across all archives
@@ -297,10 +291,6 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		spaceSavingsPercent = ((float64(totalSize) - float64(uniqueCsize)) / float64(totalSize)) * 100
 	}
 
-	// Get last backup error and warning messages
-	lastBackupError := s.getLastError(ctx, repoEntity.ID)
-	lastBackupWarning := s.getLastWarning(ctx, repoEntity.ID)
-
 	return &Repository{
 		ID:                  repoEntity.ID,
 		Name:                repoEntity.Name,
@@ -308,9 +298,7 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		Type:                ToLocationUnion(repoType),
 		State:               statemachine.ToRepositoryStateUnion(currentState),
 		ArchiveCount:        archiveCount,
-		LastBackupTime:      lastBackupTime,
-		LastBackupError:     lastBackupError,
-		LastBackupWarning:   lastBackupWarning,
+		LastBackup:          s.getLastBackupMetadata(ctx, repoEntity.ID),
 		LastQuickCheckAt:    repoEntity.LastQuickCheckAt,
 		QuickCheckError:     repoEntity.QuickCheckError,
 		LastFullCheckAt:     repoEntity.LastFullCheckAt,
@@ -2248,83 +2236,6 @@ func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (
 	return nil, nil
 }
 
-// GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
-func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last error notification for the backup profile and repository
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			notification.TypeIn(
-				notification.TypeFailedBackupRun,
-				notification.TypeFailedPruningRun,
-			),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the error message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).
-			Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
-}
-
-func (s *Service) GetLastBackupWarningByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last warning notification for the backup profile and repository
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			notification.TypeIn(
-				notification.TypeWarningBackupRun,
-				notification.TypeWarningPruningRun,
-			),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the warning message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).
-			Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
-}
-
 // ============================================================================
 // VALIDATION METHODS
 // ============================================================================
@@ -2777,50 +2688,68 @@ func (s *Service) getLastError(ctx context.Context, repoID int) string {
 
 // getLastWarning returns the latest backup warning message for a repository
 func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
-	// Query latest warning notification for this repository
-	notificationEnt, err := s.db.Notification.Query().
-		Where(
-			notification.HasRepositoryWith(repository.ID(repoID)),
-			notification.TypeIn(
-				notification.TypeWarningBackupRun,
-				notification.TypeWarningPruningRun,
-			),
-		).
-		Order(ent.Desc("created_at")).
+	// Find the most recent archive for this repository
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(ctx)
 
 	if err != nil {
-		if ent.IsNotFound(err) {
-			// No warning notifications found
-			return ""
+		if !ent.IsNotFound(err) {
+			s.log.Errorw("Failed to query latest archive",
+				"repoID", repoID,
+				"error", err.Error())
 		}
-		s.log.Errorw("Failed to query warning notifications",
-			"repoID", repoID,
-			"error", err.Error())
 		return ""
 	}
 
-	// Check if there's a newer successful archive since this notification
-	// If there is, don't show the old warning
-	hasNewerArchive, err := s.db.Archive.Query().
-		Where(
-			archive.HasRepositoryWith(repository.ID(repoID)),
-			archive.CreatedAtGT(notificationEnt.CreatedAt),
-		).
-		Exist(ctx)
+	// Return warning only if the latest archive has one
+	if lastArchive.WarningMessage != nil {
+		return *lastArchive.WarningMessage
+	}
+	return ""
+}
+
+// getLastBackupMetadata returns consolidated metadata about the last backup for a repository
+func (s *Service) getLastBackupMetadata(ctx context.Context, repoID int) *types.LastBackupMetadata {
+	// Get latest archive for timestamp
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
 	if err != nil {
-		s.log.Errorw("Failed to check for newer archives",
-			"repoID", repoID,
-			"error", err.Error())
-		return ""
+		if !ent.IsNotFound(err) {
+			s.log.Errorw("Failed to query latest archive for metadata",
+				"repoID", repoID,
+				"error", err.Error())
+		}
+		return nil // No backups yet
 	}
 
-	if hasNewerArchive {
-		// There's a newer archive, so clear the old warning
-		return ""
-	} else {
-		// Show the warning message
-		return notificationEnt.Message
+	// Check for error (notification newer than last archive)
+	lastError := s.getLastError(ctx, repoID)
+	if lastError != "" {
+		return &types.LastBackupMetadata{
+			Status:    types.BackupStatusError,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   lastError,
+		}
+	}
+
+	// Check for warning on latest archive
+	if lastArchive.WarningMessage != nil {
+		return &types.LastBackupMetadata{
+			Status:    types.BackupStatusWarning,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   *lastArchive.WarningMessage,
+		}
+	}
+
+	// Success
+	return &types.LastBackupMetadata{
+		Status:    types.BackupStatusSuccess,
+		Timestamp: &lastArchive.CreatedAt,
 	}
 }
 

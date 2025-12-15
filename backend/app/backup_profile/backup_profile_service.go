@@ -17,6 +17,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
@@ -803,8 +804,9 @@ type BackupProfile struct {
 	BackupSchedule *BackupSchedule     `json:"backupSchedule"`
 	PruningRule    *PruningRule        `json:"pruningRule"`
 
-	// Computed field
-	ArchiveCount int `json:"archiveCount"`
+	// Computed fields
+	ArchiveCount int                       `json:"archiveCount"`
+	LastBackup   *types.LastBackupMetadata `json:"lastBackup,omitempty"`
 }
 
 // toBackupSchedule converts an ent.BackupSchedule to the custom BackupSchedule type
@@ -889,7 +891,59 @@ func (s *Service) toBackupProfile(ctx context.Context, ep *ent.BackupProfile) (*
 		BackupSchedule:           toBackupSchedule(ep.Edges.BackupSchedule),
 		PruningRule:              toPruningRule(ep.Edges.PruningRule),
 		ArchiveCount:             archiveCount,
+		LastBackup:               s.getLastBackupMetadata(ctx, ep.ID),
 	}, nil
+}
+
+// getLastBackupMetadata returns the combined last backup metadata for a backup profile
+// across all its repositories. Error takes precedence, then warning, then success.
+func (s *Service) getLastBackupMetadata(ctx context.Context, backupProfileID int) *types.LastBackupMetadata {
+	// Get the latest archive for this backup profile
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	if err != nil {
+		// No archives yet
+		return nil
+	}
+
+	// Check for any error notification newer than the last archive
+	errorNotification, err := s.db.Notification.Query().
+		Where(
+			notification.HasBackupProfileWith(backupprofile.ID(backupProfileID)),
+			notification.TypeIn(
+				notification.TypeFailedBackupRun,
+				notification.TypeFailedPruningRun,
+			),
+			notification.CreatedAtGT(lastArchive.CreatedAt),
+		).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+
+	if err == nil && errorNotification != nil {
+		return &types.LastBackupMetadata{
+			Status:    types.BackupStatusError,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   errorNotification.Message,
+		}
+	}
+
+	// Check if latest archive has a warning
+	if lastArchive.WarningMessage != nil {
+		return &types.LastBackupMetadata{
+			Status:    types.BackupStatusWarning,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   *lastArchive.WarningMessage,
+		}
+	}
+
+	// Success
+	return &types.LastBackupMetadata{
+		Status:    types.BackupStatusSuccess,
+		Timestamp: &lastArchive.CreatedAt,
+	}
 }
 
 // toBackupProfiles converts a slice of ent.BackupProfile to custom BackupProfile types

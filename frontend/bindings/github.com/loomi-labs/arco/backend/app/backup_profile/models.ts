@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as types$0 from "../types/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as backupprofile$0 from "../../ent/backupprofile/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -42,9 +45,10 @@ export class BackupProfile {
     "pruningRule": PruningRule | null;
 
     /**
-     * Computed field
+     * Computed fields
      */
     "archiveCount": number;
+    "lastBackup"?: types$0.LastBackupMetadata | null;
 
     /** Creates a new BackupProfile instance. */
     constructor($$source: Partial<BackupProfile> = {}) {
@@ -115,6 +119,7 @@ export class BackupProfile {
         const $$createField14_0 = $$createType2;
         const $$createField15_0 = $$createType4;
         const $$createField16_0 = $$createType6;
+        const $$createField18_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupPaths" in $$parsedSource) {
             $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
@@ -130,6 +135,9 @@ export class BackupProfile {
         }
         if ("pruningRule" in $$parsedSource) {
             $$parsedSource["pruningRule"] = $$createField16_0($$parsedSource["pruningRule"]);
+        }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField18_0($$parsedSource["lastBackup"]);
         }
         return new BackupProfile($$parsedSource as Partial<BackupProfile>);
     }
@@ -249,7 +257,7 @@ export class GetPruningOptionsResponse {
      * Creates a new GetPruningOptionsResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetPruningOptionsResponse {
-        const $$createField0_0 = $$createType8;
+        const $$createField0_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("options" in $$parsedSource) {
             $$parsedSource["options"] = $$createField0_0($$parsedSource["options"]);
@@ -448,5 +456,7 @@ const $$createType3 = BackupSchedule.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
 const $$createType5 = PruningRule.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = PruningOption.createFrom;
-const $$createType8 = $Create.Array($$createType7);
+const $$createType7 = types$0.LastBackupMetadata.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = PruningOption.createFrom;
+const $$createType10 = $Create.Array($$createType9);

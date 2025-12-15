@@ -41,6 +41,7 @@ const hasNoProfiles = computed(() => backupProfiles.value.length === 0);
 const hasNoRepos = computed(() => repos.value.length === 0);
 
 const cleanupFunctions: (() => void)[] = [];
+let repoStateCleanups: (() => void)[] = [];
 
 /************
  * Functions
@@ -50,8 +51,22 @@ async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
+    setupRepoStateListeners();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
+  }
+}
+
+function setupRepoStateListeners() {
+  // Clean up previous listeners
+  repoStateCleanups.forEach((cleanup) => cleanup());
+  repoStateCleanups = [];
+
+  // Set up new listeners for each repo
+  for (const repo of repos.value) {
+    repoStateCleanups.push(
+      Events.On(EventHelpers.repoStateChangedEvent(repo.id), getData)
+    );
   }
 }
 
@@ -77,6 +92,7 @@ cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData))
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
+  repoStateCleanups.forEach((cleanup) => cleanup());
 });
 
 </script>
