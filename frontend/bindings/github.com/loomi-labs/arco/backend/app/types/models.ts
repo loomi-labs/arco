@@ -72,7 +72,11 @@ export enum Event {
     EventSubscriptionCancelled = "subscriptionCancelled",
     EventSettingsChanged = "settingsChanged",
     EventOperationErrorOccurred = "operationErrorOccurred",
+    EventNotificationDismissed = "notificationDismissed",
+    EventNotificationCreated = "notificationCreated",
 };
+
+export type EventEmitter = any;
 
 /**
  * FrontendError is the error type that is received from the frontend

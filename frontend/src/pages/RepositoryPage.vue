@@ -21,6 +21,7 @@ import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent
 import { toRepoTypeBadge } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
+import ErrorSection from "../components/ErrorSection.vue";
 import { toHumanReadableSize } from "../common/repository";
 import {
   LocationType,
@@ -419,6 +420,9 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
+
+    <!-- Error Section (notification errors) -->
+    <ErrorSection :repository-id='repoId' />
 
     <!-- Two-column grid -->
     <div class='grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 mb-8'>

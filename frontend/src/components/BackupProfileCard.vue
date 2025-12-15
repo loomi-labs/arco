@@ -24,6 +24,7 @@ import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/ty
 
 interface Props {
   backup: BackupProfile;
+  errorCount?: number;
 }
 
 /************
@@ -147,7 +148,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full cursor-pointer' @click='navigateToProfile'>
+  <div class='relative group ac-card-hover h-full w-full cursor-pointer' @click='navigateToProfile'>
+    <!-- Error Badge -->
+    <span
+      v-if='errorCount && errorCount > 0'
+      class='badge badge-error badge-sm absolute -top-1 -right-1 z-10'
+    >
+      {{ errorCount }}
+    </span>
+
     <!-- Header -->
     <div
       class='flex justify-between rounded-t-lg bg-primary text-primary-content px-6 pt-4 pb-2 group-hover:bg-primary/50'>

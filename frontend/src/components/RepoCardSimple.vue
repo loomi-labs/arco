@@ -17,6 +17,7 @@ import { BackupStatus } from "../../bindings/github.com/loomi-labs/arco/backend/
 
 interface Props {
   repo: repoModels.Repository;
+  errorCount?: number;
 }
 
 /************
@@ -93,7 +94,15 @@ function navigateToRepo() {
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full cursor-pointer flex' @click='navigateToRepo'>
+  <div class='relative group ac-card-hover h-full w-full cursor-pointer flex' @click='navigateToRepo'>
+    <!-- Error Badge -->
+    <span
+      v-if='errorCount && errorCount > 0'
+      class='badge badge-error badge-sm absolute -top-1 -right-1 z-10'
+    >
+      {{ errorCount }}
+    </span>
+
     <!-- Content -->
     <div class='flex-1 p-5'>
       <!-- Name & Encryption -->

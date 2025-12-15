@@ -10,3 +10,7 @@ export {
     Notification,
     NotificationLevel
 } from "./models.js";
+
+export type {
+    EventEmitter
+} from "./models.js";

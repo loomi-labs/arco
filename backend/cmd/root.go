@@ -240,6 +240,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),
 			application.NewService(arco.SubscriptionService()),
+			application.NewService(arco.NotificationService()),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: uniqueRunId,
@@ -253,7 +254,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
-			ActivationPolicy:                                application.ActivationPolicyAccessory,
+			ActivationPolicy: application.ActivationPolicyAccessory,
 		},
 		Linux: application.LinuxOptions{
 			DisableQuitOnLastWindowClosed: true,

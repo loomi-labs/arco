@@ -3,18 +3,29 @@
 
 export {
     Archive,
+    ArchiveClient,
     ArchiveEdges,
+    AuthSessionClient,
     BackupProfile,
+    BackupProfileClient,
     BackupProfileEdges,
     BackupSchedule,
+    BackupScheduleClient,
     BackupScheduleEdges,
+    Client,
     CloudRepository,
+    CloudRepositoryClient,
     CloudRepositoryEdges,
     Notification,
+    NotificationClient,
     NotificationEdges,
     PruningRule,
+    PruningRuleClient,
     PruningRuleEdges,
     Repository,
+    RepositoryClient,
     RepositoryEdges,
-    Settings
+    Settings,
+    SettingsClient,
+    UserClient
 } from "./models.js";

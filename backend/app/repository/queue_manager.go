@@ -943,6 +943,7 @@ func (qm *QueueManager) createErrorNotification(ctx context.Context, repoID int,
 			"notificationType", notificationType,
 			"errorCategory", status.Error.Category,
 			"exitCode", status.Error.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
@@ -978,6 +979,7 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 			"notificationType", notificationType,
 			"warningCategory", status.Warning.Category,
 			"exitCode", status.Warning.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
