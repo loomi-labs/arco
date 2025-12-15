@@ -86,6 +86,13 @@ const warningMessage = computed(() => {
   return '';
 });
 
+const lastBackupErrorMessage = computed(() => {
+  if (lastBackupStatus.value === 'error' && props.repo.lastBackup?.message) {
+    return props.repo.lastBackup.message;
+  }
+  return '';
+});
+
 const errorMessages = computed<string[]>(() => {
   const messages: string[] = [];
   // Add healthcheck error
@@ -179,6 +186,16 @@ onUnmounted(() => {
               <span class='text-error'>{{ totalErrorCount > 1 ? `${totalErrorCount} Errors` : 'Error' }}</span>
             </span>
           </ErrorTooltip>
+          <!-- Error status without tooltip (all errors dismissed) -->
+          <span
+            v-else-if='lastBackupStatus === "error"'
+            class='flex items-center gap-1'
+            :class='{ "tooltip tooltip-top tooltip-error": lastBackupErrorMessage }'
+            :data-tip='lastBackupErrorMessage || undefined'
+          >
+            <XCircleIcon class='size-4 text-error' />
+            <span class='text-error'>Error</span>
+          </span>
           <!-- Warning status with simple tooltip -->
           <span
             v-else-if='lastBackupStatus === "warning"'
