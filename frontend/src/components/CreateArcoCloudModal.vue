@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { CheckCircleIcon, CloudIcon, ExclamationCircleIcon } from "@heroicons/vue/24/outline";
 import AuthForm from "./common/AuthForm.vue";
+import PasswordSaveReminder from "./common/PasswordSaveReminder.vue";
 import PlanSelection from "./subscription/PlanSelection.vue";
 import { useAuth } from "../common/auth";
 import { useSubscriptionNotifications } from "../common/subscription";
@@ -76,8 +77,11 @@ const repoName = ref("");
 const repoNameError = ref<string | undefined>(undefined);
 const repoPassword = ref("");
 const repoPasswordError = ref<string | undefined>(undefined);
+const repoConfirmPassword = ref("");
 const selectedLocation = ref<RepositoryLocation>(RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU);
 const isCreatingRepository = ref(false);
+const isSuccess = ref(false);
+const createdRepo = ref<Repository | null>(null);
 
 // Error messages
 const errorMessage = ref<string | undefined>(undefined);
@@ -180,9 +184,17 @@ const selectedPlanData = computed(() =>
   subscriptionPlans.value.find(plan => plan.name === selectedPlan.value)
 );
 
+const confirmPasswordError = computed(() => {
+  if (repoConfirmPassword.value && repoPassword.value !== repoConfirmPassword.value) {
+    return "Passwords do not match";
+  }
+  return undefined;
+});
+
 const isRepoValid = computed(() =>
   repoName.value.length > 0 && !repoNameError.value &&
-  repoPassword.value.length > 0 && !repoPasswordError.value
+  repoPassword.value.length > 0 && !repoPasswordError.value &&
+  repoPassword.value === repoConfirmPassword.value && !confirmPasswordError.value
 );
 
 const activePlanName = computed(() => {
@@ -242,6 +254,13 @@ function goToSubscriptionSelection() {
 /************
  * Functions
  ************/
+
+function handleDialogClose() {
+  // Prevent closing via backdrop/escape on success screen
+  if (!isSuccess.value) {
+    closeModal();
+  }
+}
 
 async function loadSubscriptionPlans() {
   try {
@@ -305,8 +324,11 @@ function resetAll() {
   repoNameError.value = undefined;
   repoPassword.value = "";
   repoPasswordError.value = undefined;
+  repoConfirmPassword.value = "";
   selectedLocation.value = RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU;
   isCreatingRepository.value = false;
+  isSuccess.value = false;
+  createdRepo.value = null;
   errorMessage.value = undefined;
   checkoutSession.value = undefined;
   transitionTo(ComponentState.LOADING_INITIAL);
@@ -314,6 +336,11 @@ function resetAll() {
 
 function closeModal() {
   isOpen.value = false;
+
+  // Emit the stored repo if success state was shown (user confirmed password save)
+  if (createdRepo.value) {
+    emit("repo-created", createdRepo.value);
+  }
 
   // Clean up any active checkout event listeners
   cleanupFunctions.forEach(cleanup => cleanup());
@@ -464,8 +491,9 @@ async function createRepository() {
     );
 
     if (response) {
-      emit("repo-created", response);
-      closeModal();
+      // Store repo to emit later when modal closes (after user confirms password save)
+      createdRepo.value = response;
+      isSuccess.value = true;
     } else {
       errorMessage.value = "Failed to create repository. Please try again.";
     }
@@ -522,7 +550,7 @@ watch(isAuthenticated, async (authenticated) => {
 
 <template>
   <TransitionRoot as='template' :show='isOpen'>
-    <Dialog class='relative z-50' @close='closeModal'>
+    <Dialog class='relative z-50' @close='handleDialogClose'>
       <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
                        leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
         <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
@@ -667,100 +695,126 @@ watch(isAuthenticated, async (authenticated) => {
 
                 <!-- Create Repository State -->
                 <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION'>
-                  <!-- Error Alert for Repository Creation -->
-                  <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none'
-                         viewBox='0 0 24 24'>
-                      <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                            d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
-                    </svg>
-                    <span>{{ errorMessage }}</span>
-                  </div>
+                  <!-- Success View -->
+                  <PasswordSaveReminder v-if='isSuccess'
+                                        :password='repoPassword'
+                                        @close='closeModal' />
 
-                  <div class='flex flex-col gap-4'>
-                    <div class='form-control'>
-                      <label class='label'>
-                        <span class='label-text'>Repository Name</span>
-                      </label>
-                      <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
-                        <input
-                          type='text'
-                          class='grow p-0 [font:inherit]'
-                          v-model='repoName'
-                          @input='onRepoNameInput'
-                          placeholder='my-project'
-                          :disabled='isLoading'
-                        />
-                        <CheckCircleIcon v-if='!repoNameError && repoName.length >= 3' class='size-5 text-success' />
-                        <ExclamationCircleIcon v-if='repoNameError' class='size-5 text-error' />
-                      </label>
-                      <div v-if='repoNameError' class='text-error text-sm mt-1'>{{ repoNameError }}</div>
+                  <!-- Form View -->
+                  <template v-else>
+                    <!-- Error Alert for Repository Creation -->
+                    <div v-if='errorMessage' role='alert' class='alert alert-error mb-4'>
+                      <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none'
+                           viewBox='0 0 24 24'>
+                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                              d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
+                      </svg>
+                      <span>{{ errorMessage }}</span>
                     </div>
 
-                    <div class='form-control'>
-                      <label class='label'>
-                        <span class='label-text'>Password</span>
-                      </label>
-                      <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
-                        <input
-                          type='password'
-                          class='grow p-0 [font:inherit]'
-                          v-model='repoPassword'
-                          @input='onRepoPasswordInput'
-                          placeholder='Enter repository password'
-                          :disabled='isLoading'
-                        />
-                        <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
-                                         class='size-5 text-success' />
-                        <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
-                      </label>
-                      <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
-                    </div>
-
-                    <div>
-                      <label class='label'>
-                        <span class='label-text'>Location</span>
-                      </label>
-                      <div class='flex gap-3'>
-                        <div
-                          v-for='option in locationOptions'
-                          :key='option.value'
-                          class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
-                          :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
-                          @click='selectedLocation = option.value'
-                        >
+                    <div class='flex flex-col gap-4'>
+                      <div class='form-control'>
+                        <label class='label'>
+                          <span class='label-text'>Repository Name</span>
+                        </label>
+                        <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
                           <input
-                            type='radio'
-                            :value='option.value'
-                            v-model='selectedLocation'
-                            class='radio radio-secondary radio-sm'
+                            type='text'
+                            class='grow p-0 [font:inherit]'
+                            v-model='repoName'
+                            @input='onRepoNameInput'
+                            placeholder='my-project'
                             :disabled='isLoading'
                           />
-                          <span class='text-base'>{{ option.emoji }}</span>
-                          <span class='font-medium text-sm'>{{ option.label }}</span>
+                          <CheckCircleIcon v-if='!repoNameError && repoName.length >= 3' class='size-5 text-success' />
+                          <ExclamationCircleIcon v-if='repoNameError' class='size-5 text-error' />
+                        </label>
+                        <div v-if='repoNameError' class='text-error text-sm mt-1'>{{ repoNameError }}</div>
+                      </div>
+
+                      <div class='form-control'>
+                        <label class='label'>
+                          <span class='label-text'>Password</span>
+                        </label>
+                        <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
+                          <input
+                            type='password'
+                            class='grow p-0 [font:inherit]'
+                            v-model='repoPassword'
+                            @input='onRepoPasswordInput'
+                            placeholder='Enter repository password'
+                            :disabled='isLoading'
+                          />
+                          <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
+                                           class='size-5 text-success' />
+                          <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
+                        </label>
+                        <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
+                      </div>
+
+                      <div class='form-control'>
+                        <label class='label'>
+                          <span class='label-text'>Confirm Password</span>
+                        </label>
+                        <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError }'>
+                          <input
+                            type='password'
+                            class='grow p-0 [font:inherit]'
+                            v-model='repoConfirmPassword'
+                            placeholder='Confirm password'
+                            :disabled='isLoading'
+                          />
+                          <CheckCircleIcon v-if='!confirmPasswordError && repoConfirmPassword.length > 0 && repoPassword === repoConfirmPassword' class='size-5 text-success' />
+                          <ExclamationCircleIcon v-if='confirmPasswordError' class='size-5 text-error' />
+                        </label>
+                        <div v-if='confirmPasswordError' class='text-error text-sm mt-1'>{{ confirmPasswordError }}</div>
+                      </div>
+
+                      <div>
+                        <label class='label'>
+                          <span class='label-text'>Location</span>
+                        </label>
+                        <div class='flex gap-3'>
+                          <div
+                            v-for='option in locationOptions'
+                            :key='option.value'
+                            class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
+                            :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
+                            @click='selectedLocation = option.value'
+                          >
+                            <input
+                              type='radio'
+                              :value='option.value'
+                              v-model='selectedLocation'
+                              class='radio radio-secondary radio-sm'
+                              :disabled='isLoading'
+                            />
+                            <span class='text-base'>{{ option.emoji }}</span>
+                            <span class='font-medium text-sm'>{{ option.label }}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- Actions -->
-                  <div class='flex justify-between pt-6'>
-                    <button
-                      class='btn btn-outline'
-                      :disabled='isCreatingRepository'
-                      @click.prevent='closeModal()'
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class='btn btn-success'
-                      :disabled='!isRepoValid || isCreatingRepository'
-                      @click='createRepository()'
-                    >
-                      <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
-                      {{ isCreatingRepository ? "Creating..." : "Create Repository" }}
-                    </button>
-                  </div>
+                    <!-- Actions -->
+                    <div class='flex justify-between pt-6'>
+                      <button
+                        class='btn btn-outline'
+                        :disabled='isCreatingRepository'
+                        @click.prevent='closeModal()'
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        class='btn btn-success'
+                        :disabled='!isRepoValid || isCreatingRepository'
+                        @click='createRepository()'
+                      >
+                        <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
+                        {{ isCreatingRepository ? "Creating..." : "Create Repository" }}
+                      </button>
+                    </div>
+                  </template>
                 </div>
 
               </div>

@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, LockOpenIcon, XCircleIcon } from "@heroicons/vue/24/outline";
+import PasswordSaveReminder from "./common/PasswordSaveReminder.vue";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -35,6 +36,7 @@ const isOpen = ref(false);
 const isCreating = ref(false);
 const isTesting = ref(false);
 const isSuccess = ref(false);
+const createdRepo = ref<Repository | null>(null);
 const isBorgRepo = ref(false);
 const isEncrypted = ref(true);
 const needsPassword = ref(false);
@@ -92,6 +94,10 @@ function handleDialogClose() {
 
 function close() {
   isOpen.value = false;
+  // Emit the stored repo if success state was shown (user confirmed password save)
+  if (createdRepo.value) {
+    emit(emitCreateRepoStr, createdRepo.value);
+  }
   emit("close");
   // Reset form after animation completes
   setTimeout(() => {
@@ -101,6 +107,7 @@ function close() {
 
 function resetAll() {
   isSuccess.value = false;
+  createdRepo.value = null;
   isEncrypted.value = true;
   isNameTouchedByUser.value = false;
   showPassword.value = false;
@@ -132,15 +139,18 @@ async function createRepo() {
       noPassword ? "" : password.value!,
       noPassword
     );
-    if (repo) {
-      emit(emitCreateRepoStr, repo);
-    }
     toast.success("Repository created");
 
     // Show success confirmation for new encrypted repos
-    if (isEncrypted.value && !isBorgRepo.value) {
+    // Store repo to emit later when modal closes (after user confirms password save)
+    if (isEncrypted.value && !isBorgRepo.value && repo) {
+      createdRepo.value = repo;
       isSuccess.value = true;
     } else {
+      // For non-encrypted or existing repos, emit immediately and close
+      if (repo) {
+        emit(emitCreateRepoStr, repo);
+      }
       close();
     }
   } catch (error: unknown) {
@@ -291,21 +301,9 @@ watch([name, location, password, isEncrypted], async () => {
               class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
               <div class='p-10'>
                 <!-- Success View -->
-                <div v-if='isSuccess' class='flex flex-col items-center text-center'>
-                  <div class='w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4'>
-                    <ExclamationTriangleIcon class='h-8 w-8 text-warning' />
-                  </div>
-                  <h3 class='font-bold text-xl mb-2'>Save Your Password</h3>
-                  <p class='text-base-content/70 mb-6'>
-                    Your repository has been created successfully. Please make sure to store your password safely
-                    in a password manager or write it down. It cannot be recovered if lost.
-                  </p>
-                  <button type='button'
-                          class='btn btn-success'
-                          @click='close'>
-                    I Saved My Password
-                  </button>
-                </div>
+                <PasswordSaveReminder v-if='isSuccess'
+                                      :password='password ?? ""'
+                                      @close='close' />
 
                 <!-- Form View -->
                 <template v-else>
