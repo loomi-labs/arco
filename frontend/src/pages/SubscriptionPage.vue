@@ -251,13 +251,6 @@ const switchRepoIncrease = computed(() => {
   return target - current;
 });
 
-const switchPriceChange = computed(() => {
-  if (!selectedSwitchPlanDetails.value || !subscription.value?.plan) return 0;
-  const current = subscription.value.plan.price_cents ?? 0;
-  const target = selectedSwitchPlanDetails.value.price_cents ?? 0;
-  return (target - current) / 100;
-});
-
 const canSwitchPlan = computed(() => {
   return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
     !subscription.value?.cancel_at_period_end &&
@@ -689,7 +682,7 @@ onMounted(async () => {
                 <div class='space-y-2 text-sm'>
                   <div class='flex items-center gap-2'>
                     <span class='font-semibold'>Plan Limit:</span>
-                    <span class='text-base-content/70 ml-auto'>{{ subscription.storage_limit_gb ?? 0 }} GB</span>
+                    <span class='text-base-content/70 ml-auto'>{{ subscription.plan?.storage_gb ?? 0 }} GB</span>
                   </div>
                   <div v-if='isOverage' class='flex items-center gap-2'>
                     <span class='font-semibold'>Beyond Plan:</span>
@@ -698,7 +691,7 @@ onMounted(async () => {
                   <div v-else class='flex items-center gap-2'>
                     <span class='font-semibold'>Remaining:</span>
                     <span class='text-base-content/70 ml-auto'>
-                    {{ (subscription.storage_limit_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
+                    {{ (subscription.plan?.storage_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
                   </span>
                   </div>
                 </div>
@@ -873,13 +866,24 @@ onMounted(async () => {
                         </span>
                       </div>
                     </div>
+                    <!-- Overage price comparison -->
+                    <div class='space-y-1'>
+                      <div class='text-xs font-medium text-base-content/70'>Overage Price</div>
+                      <div class='flex items-center gap-2'>
+                        <span class='text-sm'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB</span>
+                        <span :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                        <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                          ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <!-- Price summary -->
                   <div class='flex items-center justify-between pt-2 border-t border-base-300'>
-                    <span class='text-sm text-base-content/70'>Price difference</span>
+                    <span class='text-sm text-base-content/70'>New Price</span>
                     <span class='font-medium'>
-                      {{ switchPriceChange >= 0 ? "+" : "" }}${{ Math.abs(switchPriceChange).toFixed(2) }}/year
-                      ({{ switchPriceChange >= 0 ? "+" : "" }}${{ Math.abs(switchPriceChange / 12).toFixed(2) }}/month)
+                      ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                      (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
                     </span>
                   </div>
                 </div>
