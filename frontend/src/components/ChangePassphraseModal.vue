@@ -250,7 +250,7 @@ defineExpose({
                       <label class='label'>
                         <span class='label-text'>Confirm New Password</span>
                       </label>
-                      <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError }'>
+                      <label class='input flex items-center w-full gap-2' :class='{ "input-error": confirmPasswordError }'>
                         <input :type="showNewPassword ? 'text' : 'password'"
                                v-model='confirmPassword'
                                class='grow p-0 [font:inherit]'
