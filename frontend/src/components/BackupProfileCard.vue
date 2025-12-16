@@ -92,8 +92,8 @@ const errors = ref<ErrorNotification[]>([]);
 const cleanupFunctions: (() => void)[] = [];
 
 const lastBackupStatus = computed<"success" | "warning" | "error" | "none">(() => {
-  if (!props.backup.lastBackup) return "none";
-  switch (props.backup.lastBackup.status) {
+  if (!props.backup.lastAttempt) return "none";
+  switch (props.backup.lastAttempt.status) {
     case types.BackupStatus.BackupStatusError: return "error";
     case types.BackupStatus.BackupStatusWarning: return "warning";
     case types.BackupStatus.BackupStatusSuccess: return "success";
@@ -105,14 +105,14 @@ const lastBackupStatus = computed<"success" | "warning" | "error" | "none">(() =
 
 const warningMessage = computed(() => {
   if (lastBackupStatus.value === "warning") {
-    return props.backup.lastBackup?.message ?? "";
+    return props.backup.lastAttempt?.message ?? "";
   }
   return "";
 });
 
 const lastBackupErrorMessage = computed(() => {
-  if (lastBackupStatus.value === "error" && props.backup.lastBackup?.message) {
-    return props.backup.lastBackup.message;
+  if (lastBackupStatus.value === "error" && props.backup.lastAttempt?.message) {
+    return props.backup.lastAttempt.message;
   }
   return "";
 });

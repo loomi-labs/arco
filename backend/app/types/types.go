@@ -24,8 +24,14 @@ const (
 	BackupStatusError   BackupStatus = "error"
 )
 
-// LastBackupMetadata contains metadata about the last backup operation
-type LastBackupMetadata struct {
+// LastBackup contains info about the last successful backup
+type LastBackup struct {
+	Timestamp      *time.Time `json:"timestamp,omitempty"`
+	WarningMessage string     `json:"warningMessage,omitempty"`
+}
+
+// LastAttempt contains info about the last backup attempt (success, warning, or error)
+type LastAttempt struct {
 	Status    BackupStatus `json:"status"`
 	Timestamp *time.Time   `json:"timestamp,omitempty"`
 	Message   string       `json:"message,omitempty"`

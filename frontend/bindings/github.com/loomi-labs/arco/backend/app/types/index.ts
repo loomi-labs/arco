@@ -6,7 +6,8 @@ export {
     BackupStatus,
     Event,
     FrontendError,
-    LastBackupMetadata,
+    LastAttempt,
+    LastBackup,
     Notification,
     NotificationLevel
 } from "./models.js";

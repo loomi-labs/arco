@@ -48,7 +48,8 @@ export class BackupProfile {
      * Computed fields
      */
     "archiveCount": number;
-    "lastBackup"?: types$0.LastBackupMetadata | null;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
 
     /** Creates a new BackupProfile instance. */
     constructor($$source: Partial<BackupProfile> = {}) {
@@ -120,6 +121,7 @@ export class BackupProfile {
         const $$createField15_0 = $$createType4;
         const $$createField16_0 = $$createType6;
         const $$createField18_0 = $$createType8;
+        const $$createField19_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupPaths" in $$parsedSource) {
             $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
@@ -138,6 +140,9 @@ export class BackupProfile {
         }
         if ("lastBackup" in $$parsedSource) {
             $$parsedSource["lastBackup"] = $$createField18_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField19_0($$parsedSource["lastAttempt"]);
         }
         return new BackupProfile($$parsedSource as Partial<BackupProfile>);
     }
@@ -257,7 +262,7 @@ export class GetPruningOptionsResponse {
      * Creates a new GetPruningOptionsResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetPruningOptionsResponse {
-        const $$createField0_0 = $$createType10;
+        const $$createField0_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("options" in $$parsedSource) {
             $$parsedSource["options"] = $$createField0_0($$parsedSource["options"]);
@@ -456,7 +461,9 @@ const $$createType3 = BackupSchedule.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
 const $$createType5 = PruningRule.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = types$0.LastBackupMetadata.createFrom;
+const $$createType7 = types$0.LastBackup.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = PruningOption.createFrom;
-const $$createType10 = $Create.Array($$createType9);
+const $$createType9 = types$0.LastAttempt.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = PruningOption.createFrom;
+const $$createType12 = $Create.Array($$createType11);

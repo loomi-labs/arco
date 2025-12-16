@@ -28,7 +28,8 @@ import {
   Repository,
   UpdateRequest
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import { toRelativeTimeString } from "../common/time";
+import { toLongDateString, toRelativeTimeString } from "../common/time";
+import { toCreationTimeTooltip } from "../common/badge";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import ChangePassphraseModal from "../components/ChangePassphraseModal.vue";
 import ChangePathModal from "../components/ChangePathModal.vue";
@@ -75,6 +76,17 @@ const canChangePath = computed(() => {
 
 const isLocalRepo = computed(() => {
   return repo.value.type.type === LocationType.LocationTypeLocal;
+});
+
+// Backup row: show last attempt only if it failed and is newer than last backup
+const showLastAttempt = computed(() => {
+  const attempt = repo.value.lastAttempt;
+  const backup = repo.value.lastBackup;
+
+  if (!attempt || attempt.status !== BackupStatus.BackupStatusError) return false;
+  if (!backup?.timestamp) return true; // No successful backup, show error
+
+  return new Date(attempt.timestamp!) > new Date(backup.timestamp);
 });
 
 const confirmRemoveModalKey = useId();
@@ -442,19 +454,34 @@ onUnmounted(() => {
               <span class='font-bold'>{{ repo.archiveCount }}</span>
             </div>
 
-            <!-- Last Backup Row (static) -->
+            <!-- Backups Row (healthcheck style with two stats) -->
             <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
               <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
                    viewBox='0 0 24 24' stroke='currentColor'>
                 <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
                       d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
               </svg>
-              <span class='flex-1 text-sm opacity-70'>Last Backup</span>
-              <span v-if='repo.lastBackup?.status === BackupStatus.BackupStatusError' class='font-bold text-error'>Failed</span>
-              <span v-else-if='lastArchive' class='font-bold'>{{
-                  toRelativeTimeString(lastArchive.createdAt, true)
-                }}</span>
-              <span v-else class='font-bold opacity-50'>-</span>
+              <div class='flex-1'>
+                <span class='text-sm opacity-70'>Backups</span>
+                <div class='flex gap-6 text-xs mt-1'>
+                  <span class='w-36'>
+                    <span class='opacity-50'>Last Backup:</span>
+                    <span v-if='lastArchive'
+                          :class='toCreationTimeTooltip(lastArchive.createdAt)'
+                          :data-tip='toLongDateString(lastArchive.createdAt)'>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(lastArchive.createdAt, true) }}</span>
+                    </span>
+                    <span v-else class='opacity-50 ml-1'>Never</span>
+                  </span>
+                  <span v-if='showLastAttempt'>
+                    <span class='opacity-50'>Last Attempt:</span>
+                    <span class='tooltip tooltip-top tooltip-error'
+                          :data-tip='toLongDateString(repo.lastAttempt!.timestamp!)'>
+                      <span class='font-medium ml-1 text-error'>{{ toRelativeTimeString(repo.lastAttempt!.timestamp!, true) }} (failed)</span>
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- Location Row (interactive) -->
@@ -495,17 +522,23 @@ onUnmounted(() => {
               </svg>
               <div class='flex-1'>
                 <span class='text-sm opacity-70'>Healthcheck</span>
-                <div class='flex gap-4 text-xs mt-1'>
-                  <span>
+                <div class='flex gap-6 text-xs mt-1'>
+                  <span class='w-36'>
                     <span class='opacity-50'>Quick:</span>
                     <span v-if='repo.lastQuickCheckAt'
-                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
+                          :class='toCreationTimeTooltip(repo.lastQuickCheckAt)'
+                          :data-tip='toLongDateString(repo.lastQuickCheckAt)'>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
+                    </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
                   <span>
                     <span class='opacity-50'>Full:</span>
                     <span v-if='repo.lastFullCheckAt'
-                          class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
+                          :class='toCreationTimeTooltip(repo.lastFullCheckAt)'
+                          :data-tip='toLongDateString(repo.lastFullCheckAt)'>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
+                    </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
                 </div>

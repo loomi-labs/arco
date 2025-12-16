@@ -107,15 +107,15 @@ export class FrontendError {
 }
 
 /**
- * LastBackupMetadata contains metadata about the last backup operation
+ * LastAttempt contains info about the last backup attempt (success, warning, or error)
  */
-export class LastBackupMetadata {
+export class LastAttempt {
     "status": BackupStatus;
     "timestamp"?: time$0.Time | null;
     "message"?: string;
 
-    /** Creates a new LastBackupMetadata instance. */
-    constructor($$source: Partial<LastBackupMetadata> = {}) {
+    /** Creates a new LastAttempt instance. */
+    constructor($$source: Partial<LastAttempt> = {}) {
         if (!("status" in $$source)) {
             this["status"] = BackupStatus.$zero;
         }
@@ -124,11 +124,33 @@ export class LastBackupMetadata {
     }
 
     /**
-     * Creates a new LastBackupMetadata instance from a string or object.
+     * Creates a new LastAttempt instance from a string or object.
      */
-    static createFrom($$source: any = {}): LastBackupMetadata {
+    static createFrom($$source: any = {}): LastAttempt {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new LastBackupMetadata($$parsedSource as Partial<LastBackupMetadata>);
+        return new LastAttempt($$parsedSource as Partial<LastAttempt>);
+    }
+}
+
+/**
+ * LastBackup contains info about the last successful backup
+ */
+export class LastBackup {
+    "timestamp"?: time$0.Time | null;
+    "warningMessage"?: string;
+
+    /** Creates a new LastBackup instance. */
+    constructor($$source: Partial<LastBackup> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LastBackup instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LastBackup {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LastBackup($$parsedSource as Partial<LastBackup>);
     }
 }
 

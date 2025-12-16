@@ -805,8 +805,9 @@ type BackupProfile struct {
 	PruningRule    *PruningRule        `json:"pruningRule"`
 
 	// Computed fields
-	ArchiveCount int                       `json:"archiveCount"`
-	LastBackup   *types.LastBackupMetadata `json:"lastBackup,omitempty"`
+	ArchiveCount int                `json:"archiveCount"`
+	LastBackup   *types.LastBackup  `json:"lastBackup,omitempty"`
+	LastAttempt  *types.LastAttempt `json:"lastAttempt,omitempty"`
 }
 
 // toBackupSchedule converts an ent.BackupSchedule to the custom BackupSchedule type
@@ -891,56 +892,87 @@ func (s *Service) toBackupProfile(ctx context.Context, ep *ent.BackupProfile) (*
 		BackupSchedule:           toBackupSchedule(ep.Edges.BackupSchedule),
 		PruningRule:              toPruningRule(ep.Edges.PruningRule),
 		ArchiveCount:             archiveCount,
-		LastBackup:               s.getLastBackupMetadata(ctx, ep.ID),
+		LastBackup:               s.getLastBackup(ctx, ep.ID),
+		LastAttempt:              s.getLastAttempt(ctx, ep.ID),
 	}, nil
 }
 
-// getLastBackupMetadata returns the combined last backup metadata for a backup profile
-// across all its repositories. Error takes precedence, then warning, then success.
-func (s *Service) getLastBackupMetadata(ctx context.Context, backupProfileID int) *types.LastBackupMetadata {
-	// Get the latest archive for this backup profile
-	lastArchive, err := s.db.Archive.Query().
-		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
-		Order(ent.Desc(archive.FieldCreatedAt)).
-		First(ctx)
-
-	if err != nil {
-		// No archives yet
-		return nil
-	}
-
-	// Check for any error notification newer than the last archive
-	errorNotification, err := s.db.Notification.Query().
+// getLastErrorNotification returns the most recent error notification for a backup profile
+func (s *Service) getLastErrorNotification(ctx context.Context, backupProfileID int) *ent.Notification {
+	notificationEnt, err := s.db.Notification.Query().
 		Where(
 			notification.HasBackupProfileWith(backupprofile.ID(backupProfileID)),
 			notification.TypeIn(
 				notification.TypeFailedBackupRun,
 				notification.TypeFailedPruningRun,
 			),
-			notification.CreatedAtGT(lastArchive.CreatedAt),
 		).
 		Order(ent.Desc(notification.FieldCreatedAt)).
 		First(ctx)
 
-	if err == nil && errorNotification != nil {
-		return &types.LastBackupMetadata{
-			Status:    types.BackupStatusError,
-			Timestamp: &lastArchive.CreatedAt,
-			Message:   errorNotification.Message,
+	if err != nil {
+		return nil
+	}
+	return notificationEnt
+}
+
+// getLastBackup returns info about the last successful backup for a backup profile
+func (s *Service) getLastBackup(ctx context.Context, backupProfileID int) *types.LastBackup {
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	if err != nil {
+		return nil // No successful backups yet
+	}
+
+	result := &types.LastBackup{
+		Timestamp: &lastArchive.CreatedAt,
+	}
+	if lastArchive.WarningMessage != nil {
+		result.WarningMessage = *lastArchive.WarningMessage
+	}
+	return result
+}
+
+// getLastAttempt returns info about the most recent attempt for a backup profile
+func (s *Service) getLastAttempt(ctx context.Context, backupProfileID int) *types.LastAttempt {
+	// Get latest archive
+	lastArchive, _ := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	// Get latest error notification
+	errorNotification := s.getLastErrorNotification(ctx, backupProfileID)
+
+	// Determine which is more recent
+	if errorNotification != nil {
+		// Check if error is newer than archive (or no archive exists)
+		if lastArchive == nil || errorNotification.CreatedAt.After(lastArchive.CreatedAt) {
+			return &types.LastAttempt{
+				Status:    types.BackupStatusError,
+				Timestamp: &errorNotification.CreatedAt,
+				Message:   errorNotification.Message,
+			}
 		}
 	}
 
-	// Check if latest archive has a warning
+	if lastArchive == nil {
+		return nil // No attempts yet
+	}
+
+	// Archive is the most recent attempt
 	if lastArchive.WarningMessage != nil {
-		return &types.LastBackupMetadata{
+		return &types.LastAttempt{
 			Status:    types.BackupStatusWarning,
 			Timestamp: &lastArchive.CreatedAt,
 			Message:   *lastArchive.WarningMessage,
 		}
 	}
 
-	// Success
-	return &types.LastBackupMetadata{
+	return &types.LastAttempt{
 		Status:    types.BackupStatusSuccess,
 		Timestamp: &lastArchive.CreatedAt,
 	}

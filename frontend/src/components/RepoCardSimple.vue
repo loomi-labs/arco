@@ -68,8 +68,8 @@ const formattedLastBackupTime = computed(() => {
 const lastBackupStatus = computed<'success' | 'warning' | 'error' | 'none'>(() => {
   // Healthcheck error takes priority
   if (props.repo.quickCheckError && props.repo.quickCheckError.length > 0) return 'error';
-  if (!props.repo.lastBackup) return 'none';
-  switch (props.repo.lastBackup.status) {
+  if (!props.repo.lastAttempt) return 'none';
+  switch (props.repo.lastAttempt.status) {
     case BackupStatus.BackupStatusError: return 'error';
     case BackupStatus.BackupStatusWarning: return 'warning';
     case BackupStatus.BackupStatusSuccess: return 'success';
@@ -81,14 +81,14 @@ const lastBackupStatus = computed<'success' | 'warning' | 'error' | 'none'>(() =
 
 const warningMessage = computed(() => {
   if (lastBackupStatus.value === 'warning') {
-    return props.repo.lastBackup?.message ?? '';
+    return props.repo.lastAttempt?.message ?? '';
   }
   return '';
 });
 
 const lastBackupErrorMessage = computed(() => {
-  if (lastBackupStatus.value === 'error' && props.repo.lastBackup?.message) {
-    return props.repo.lastBackup.message;
+  if (lastBackupStatus.value === 'error' && props.repo.lastAttempt?.message) {
+    return props.repo.lastAttempt.message;
   }
   return '';
 });
