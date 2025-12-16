@@ -10,6 +10,7 @@ Methods on `(s *Service)` are exposed to the frontend via Wails3 bindings.
 - `All(ctx) ([]*Repository, error)` - Get all repositories with state
 - `Get(ctx, repoId) (*Repository, error)` - Get repository by ID
 - `GetWithQueue(ctx, repoId) (*RepositoryWithQueue, error)` - Get repository with queue info
+- `GetBackupProfilesThatHaveOnlyRepo(ctx, repoId) ([]*ent.BackupProfile, error)` - Get backup profiles using only this repo
 - `Create(ctx, name, location, password, noPassword) (*Repository, error)` - Create local/remote repository
 - `CreateCloudRepository(ctx, name, password, location) (*Repository, error)` - Create ArcoCloud repository
 - `Update(ctx, repoId, *UpdateRequest) (*Repository, error)` - Update repository fields
@@ -19,6 +20,7 @@ Methods on `(s *Service)` are exposed to the frontend via Wails3 bindings.
 ### Archive Operations
 - `RefreshArchives(ctx, repoId) (string, error)` - Queue archive refresh operation
 - `GetPaginatedArchives(ctx, *PaginatedArchivesRequest) (*PaginatedArchivesResponse, error)` - Get archives with filters
+- `GetFilteredArchiveIds(ctx, *PaginatedArchivesRequest) ([]int, error)` - Get filtered archive IDs
 - `GetPruningDates(ctx, archiveIds) (PruningDates, error)` - Get prune dates for archives
 - `GetLastArchiveByRepoId(ctx, repoId) (*ent.Archive, error)` - Get most recent archive
 - `GetLastArchiveByBackupId(ctx, backupId) (*ent.Archive, error)` - Get last archive for backup profile
@@ -27,8 +29,10 @@ Methods on `(s *Service)` are exposed to the frontend via Wails3 bindings.
 - `QueueBackup(ctx, backupId) (string, error)` - Queue backup operation
 - `QueueBackups(ctx, []backupId) ([]string, error)` - Queue multiple backups
 - `QueuePrune(ctx, backupId) (string, error)` - Queue prune operation
+- `QueueCheck(ctx, repoId, quickVerification) (string, error)` - Queue healthcheck operation
 - `QueueArchiveDelete(ctx, archiveId) (string, error)` - Queue archive deletion
 - `QueueArchiveRename(ctx, archiveId, name) (string, error)` - Queue archive rename
+- `QueueArchiveComment(ctx, archiveId, comment) (string, error)` - Queue archive comment update
 
 ### Operation Management
 - `GetActiveOperation(ctx, repoId, *operationType) (*SerializableQueuedOperation, error)` - Get active operation
@@ -50,12 +54,15 @@ Methods on `(s *Service)` are exposed to the frontend via Wails3 bindings.
 ### Validation
 - `ValidateRepoName(ctx, name) (string, error)` - Validate repository name (returns error message or "")
 - `ValidateRepoPath(ctx, path, isLocal) (string, error)` - Validate repository path
+- `ValidatePathChange(ctx, repoId, newPath) (*ValidatePathChangeResult, error)` - Validate path change for existing repo
+- `TestPathConnection(ctx, repoId, newPath, password) (*ValidatePathChangeResult, error)` - Test new path connection
 - `ValidateArchiveName(ctx, archiveId, name) (string, error)` - Validate archive name
 - `TestRepoConnection(ctx, path, password) (TestRepoConnectionResult, error)` - Test repository connection
 - `IsBorgRepository(path) bool` - Check if path is borg repository
 
 ### Password/Key Management
 - `FixStoredPassword(ctx, repoId, password) (FixStoredPasswordResult, error)` - Update stored password
+- `ChangePassphrase(ctx, repoId, currentPassword, newPassword) (ChangePassphraseResult, error)` - Change repository passphrase
 - `RegenerateSSHKey(ctx) error` - Regenerate SSH key for ArcoCloud
 - `BreakLock(ctx, repoId) error` - Break repository lock
 
@@ -104,3 +111,33 @@ Type-safe algebraic data types for state modeling (see backend/CLAUDE.md for ADT
 - **RepositoryWithQueue** - Repository plus queue/active operations
 - **QueuedOperation** - Operation with ID, status, expiration, and immediate flag
 - **ArchiveWithPendingChanges** - Archive with rename/delete operation states
+
+---
+
+# Notification Service
+
+Located at `backend/app/notification/`, this service manages error notifications displayed to users.
+
+## Public Service Methods
+
+- `GetUnseenErrors(ctx) ([]ErrorNotification, error)` - Get all unseen error notifications with related entities
+- `DismissError(ctx, id) error` - Dismiss a single error notification
+- `DismissAllErrors(ctx) error` - Dismiss all error notifications
+- `GetUnseenErrorCounts(ctx) (*ErrorCounts, error)` - Get error counts by repository and backup profile
+
+## Types
+
+- **ErrorNotification** - Error notification with:
+  - `ID`, `Message`, `Type`, `CreatedAt`
+  - `BackupProfileID`, `BackupProfileName`
+  - `RepositoryID`, `RepositoryName`
+- **ErrorCounts** - Maps of unseen error counts:
+  - `ByRepository` - Count per repository ID
+  - `ByBackupProfile` - Count per backup profile ID
+
+## Error Types Tracked
+
+- `FailedBackupRun` - Backup operation failed
+- `FailedPruningRun` - Prune operation failed
+- `FailedQuickCheck` - Quick healthcheck failed
+- `FailedFullCheck` - Full healthcheck failed
