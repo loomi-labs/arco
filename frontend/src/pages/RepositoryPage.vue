@@ -5,9 +5,12 @@ import {
   ArrowTrendingUpIcon,
   ChartPieIcon,
   CircleStackIcon,
+  ComputerDesktopIcon,
+  GlobeEuropeAfricaIcon,
   LockClosedIcon,
   LockOpenIcon
 } from "@heroicons/vue/24/outline";
+import ArcoCloudIcon from "../components/common/ArcoCloudIcon.vue";
 import { toTypedSchema } from "@vee-validate/zod";
 import { Events } from "@wailsio/runtime";
 import { useForm } from "vee-validate";
@@ -76,6 +79,16 @@ const canChangePath = computed(() => {
 
 const isLocalRepo = computed(() => {
   return repo.value.type.type === LocationType.LocationTypeLocal;
+});
+
+const locationTypeIcon = computed(() => {
+  switch (repo.value.type.type) {
+    case LocationType.LocationTypeLocal: return ComputerDesktopIcon;
+    case LocationType.LocationTypeRemote: return GlobeEuropeAfricaIcon;
+    case LocationType.LocationTypeArcoCloud: return ArcoCloudIcon;
+    case LocationType.$zero:
+    default: return ComputerDesktopIcon;
+  }
 });
 
 // Backup row: show last attempt only if it failed and is newer than last backup
@@ -464,7 +477,7 @@ onUnmounted(() => {
               <div class='flex-1'>
                 <span class='text-sm opacity-70'>Backups</span>
                 <div class='flex gap-6 text-xs mt-1'>
-                  <span class='w-36'>
+                  <span class='w-36 whitespace-nowrap'>
                     <span class='opacity-50'>Last Backup:</span>
                     <span v-if='lastArchive'
                           :class='toCreationTimeTooltip(lastArchive.createdAt)'
@@ -494,7 +507,8 @@ onUnmounted(() => {
                       d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' />
               </svg>
               <span class='flex-1 text-sm opacity-70 font-mono truncate'>{{ repo.url }}</span>
-              <span :class='toRepoTypeBadge(repo.type)'>
+              <span :class='toRepoTypeBadge(repo.type)' class='gap-1'>
+                <component :is='locationTypeIcon' class='size-3.5' />
                 {{
                   repo.type.type === LocationType.LocationTypeLocal ? $t("local") :
                     repo.type.type === LocationType.LocationTypeArcoCloud ? "ArcoCloud" : $t("remote")
