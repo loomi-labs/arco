@@ -8,7 +8,8 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import { formInputClass } from "../common/form";
 import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
-import * as yup from "yup";
+import { z } from "zod";
+import { toTypedSchema } from "@vee-validate/zod";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import CompressionCard from "../components/CompressionCard.vue";
 import CompressionInfoModal from "../components/CompressionInfoModal.vue";
@@ -60,12 +61,13 @@ const compressionInfoModalKey = useId();
 const compressionInfoModal = useTemplateRef<InstanceType<typeof CompressionInfoModal>>(compressionInfoModalKey);
 
 const step1Form = useForm({
-  validationSchema: yup.object({
-    name: yup.string()
-      .required("Please choose a name for your backup profile")
-      .min(3, "Name is too short")
-      .max(30, "Name is too long")
-  })
+  validationSchema: toTypedSchema(
+    z.object({
+      name: z.string({ message: "Please choose a name for your backup profile" })
+        .min(3, { message: "Name is too short" })
+        .max(30, { message: "Name is too long" })
+    })
+  )
 });
 
 const [name, nameAttrs] = step1Form.defineField("name", {
@@ -207,7 +209,7 @@ const nextStep = async () => {
       if (!isStep1Valid.value) {
         return;
       }
-      backupProfile.value.name = step1Form.values.name;
+      backupProfile.value.name = step1Form.values.name ?? "";
       currentStep.value++;
       break;
     case Step.Schedule:
