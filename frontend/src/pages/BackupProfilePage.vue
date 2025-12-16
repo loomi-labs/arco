@@ -5,6 +5,7 @@ import * as zod from "zod";
 import { object } from "zod";
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
+import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
@@ -49,8 +50,7 @@ const deleteArchives = ref<boolean>(false);
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
-const addRepoModalKey = useId();
-const addRepoModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(addRepoModalKey);
+const isAddRepoModalOpen = ref(false);
 
 const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
@@ -284,7 +284,7 @@ async function setPruningRule(pruningRule: PruningRule) {
 }
 
 async function addRepo(repo: Repository) {
-  addRepoModal.value?.close();
+  isAddRepoModalOpen.value = false;
   try {
     await backupProfileService.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
     await getData();
@@ -524,7 +524,7 @@ watch(
         <h2 class='text-lg font-bold text-base-strong'>Stored on</h2>
         <button
           v-if='shouldShowPlusInTitle'
-          @click='() => addRepoModal?.showModal()'
+          @click='isAddRepoModalOpen = true'
           class='btn btn-sm btn-ghost gap-1'
         >
           <PlusCircleIcon class='size-5' />
@@ -551,8 +551,8 @@ watch(
           v-if='!shouldShowPlusInTitle'
           role='button'
           tabindex='0'
-          @click='addRepoModal?.showModal()'
-          @keydown='(e) => handleKeyboardActivation(e, () => addRepoModal?.showModal())'
+          @click='isAddRepoModalOpen = true'
+          @keydown='(e) => handleKeyboardActivation(e, () => isAddRepoModalOpen = true)'
           class='flex justify-center items-center gap-2 w-full ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
           aria-label='Add Repository'
         >
@@ -560,59 +560,65 @@ watch(
           <div class='text-base font-semibold'>Add Repository</div>
         </div>
 
-        <dialog
-          :ref='addRepoModalKey'
-          class='modal'
-          @click.stop
-        >
-          <form
-            method='dialog'
-            class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
-          >
-            <div class='modal-action'>
-              <div class='flex flex-col w-full justify-center gap-4'>
-                <ConnectRepo
-                  :show-connected-repos='true'
-                  :use-single-repo='true'
-                  :existing-repos='existingRepos.filter(r => !profileRepos.some(repo => repo.id === r.id))'
-                  @click:repo='(repo) => addRepo(repo)' />
+        <TransitionRoot :show='isAddRepoModalOpen'>
+          <Dialog class='relative z-50' @close='isAddRepoModalOpen = false'>
+            <TransitionChild
+              enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+              leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+              <div class='fixed inset-0 bg-gray-500/75' />
+            </TransitionChild>
 
-                <div class='divider'></div>
+            <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+              <div class='flex min-h-full items-center justify-center p-4'>
+                <TransitionChild
+                  enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                  enter-to='opacity-100 translate-y-0 sm:scale-100'
+                  leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                  leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                  <DialogPanel class='relative transform rounded-lg bg-base-200 p-10 shadow-xl w-11/12 max-w-5xl'>
+                    <div class='flex flex-col w-full justify-center gap-4'>
+                      <ConnectRepo
+                        :show-connected-repos='true'
+                        :use-single-repo='true'
+                        :existing-repos='existingRepos.filter(r => !profileRepos.some(repo => repo.id === r.id))'
+                        @click:repo='(repo) => addRepo(repo)' />
 
-                <!-- Add new Repository -->
-                <div
-                  class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                  role='button'
-                  tabindex='0'
-                  @click='router.push(Page.AddRepository)'
-                  @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
-                  aria-label='Create new repository'
-                >
-                  <p>Create new repository</p>
-                  <div class='relative size-24 group-hover:text-arco-cloud-repo'>
-                    <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
-                    <div
-                      class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-                      <PlusCircleIcon class='size-10' aria-hidden='true' />
+                      <div class='divider'></div>
+
+                      <!-- Add new Repository -->
+                      <div
+                        class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                        role='button'
+                        tabindex='0'
+                        @click='router.push(Page.AddRepository)'
+                        @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
+                        aria-label='Create new repository'
+                      >
+                        <p>Create new repository</p>
+                        <div class='relative size-24 group-hover:text-arco-cloud-repo'>
+                          <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
+                          <div
+                            class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
+                            <PlusCircleIcon class='size-10' aria-hidden='true' />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class='flex justify-end'>
+                        <button
+                          class='btn btn-outline'
+                          @click='isAddRepoModalOpen = false'
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div class='flex justify-end'>
-                  <button
-                    value='false'
-                    class='btn btn-outline'
-                  >
-                    Cancel
-                  </button>
-                </div>
+                  </DialogPanel>
+                </TransitionChild>
               </div>
             </div>
-          </form>
-          <form method='dialog' class='modal-backdrop'>
-            <button>close</button>
-          </form>
-        </dialog>
+          </Dialog>
+        </TransitionRoot>
       </div>
       <ArchivesCard v-if='selectedRepoId'
                     :backup-profile-id='backupProfile.id'

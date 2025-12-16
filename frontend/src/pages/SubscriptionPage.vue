@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { CheckIcon, Cog6ToothIcon, CreditCardIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
 import ArcoLogo from "../components/common/ArcoLogo.vue";
 import { Browser } from "@wailsio/runtime";
@@ -41,9 +42,9 @@ const subscriptionPlans = ref<Plan[]>([]);
 const currentPageState = ref<PageState>(PageState.LOADING);
 const isCanceling = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
-const cancelConfirmModal = ref<HTMLDialogElement>();
-const switchConfirmModal = ref<HTMLDialogElement>();
-const reactivateConfirmModal = ref<HTMLDialogElement>();
+const isCancelModalOpen = ref(false);
+const isSwitchModalOpen = ref(false);
+const isReactivateModalOpen = ref(false);
 const cloudModal = ref<InstanceType<typeof CreateArcoCloudModal>>();
 
 // Plan selection state
@@ -365,28 +366,28 @@ async function loadSubscription() {
 }
 
 function showCancelConfirmation() {
-  cancelConfirmModal.value?.showModal();
+  isCancelModalOpen.value = true;
 }
 
 function closeCancelConfirmation() {
-  cancelConfirmModal.value?.close();
+  isCancelModalOpen.value = false;
 }
 
 function showSwitchConfirmation() {
   if (!selectedSwitchPlan.value) return;
-  switchConfirmModal.value?.showModal();
+  isSwitchModalOpen.value = true;
 }
 
 function closeSwitchConfirmation() {
-  switchConfirmModal.value?.close();
+  isSwitchModalOpen.value = false;
 }
 
 function showReactivateConfirmation() {
-  reactivateConfirmModal.value?.showModal();
+  isReactivateModalOpen.value = true;
 }
 
 function closeReactivateConfirmation() {
-  reactivateConfirmModal.value?.close();
+  isReactivateModalOpen.value = false;
 }
 
 async function confirmCancellation() {
@@ -911,192 +912,244 @@ onMounted(async () => {
       </div>
 
       <!-- Switch Plan Confirmation Modal -->
-      <dialog ref='switchConfirmModal' class='modal'>
-        <div class='modal-box'>
-          <h3 class='font-bold text-lg mb-4'>Confirm Plan Change</h3>
-          <div class='space-y-4' v-if='selectedSwitchPlanDetails'>
-            <!-- Upgrade explanation -->
-            <template v-if='isSwitchUpgrade'>
-              <p class='text-base-content/80'>
-                Your upgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
-              </p>
-              <div class='bg-success/10 rounded-lg p-4 space-y-2'>
-                <div class='flex justify-between text-sm'>
-                  <span>New plan:</span>
-                  <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
-                </div>
-                <div class='flex justify-between text-sm'>
-                  <span>Storage:</span>
-                  <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
-                </div>
-                <div class='flex justify-between text-sm'>
-                  <span>New price:</span>
-                  <span class='font-medium'>
-                  ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
-                  (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
-                </span>
-                </div>
-                <div class='flex justify-between text-sm pt-2 border-t border-success/20'>
-                  <span>Prorated charge now:</span>
-                  <span class='font-bold text-success'>${{ prorationAmount.toFixed(2) }}</span>
-                </div>
-              </div>
-              <p class='text-sm text-base-content/70'>
-                You'll be charged <strong>${{ prorationAmount.toFixed(2) }}</strong> now for the {{ daysRemaining }}
-                days remaining in your billing period.
-              </p>
-            </template>
+      <TransitionRoot :show='isSwitchModalOpen'>
+        <Dialog class='relative z-50' @close='closeSwitchConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
 
-            <!-- Downgrade explanation -->
-            <template v-else>
-              <p class='text-base-content/80'>
-                Your downgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
-              </p>
-              <div class='bg-warning/10 rounded-lg p-4 space-y-2'>
-                <div class='flex justify-between text-sm'>
-                  <span>New plan:</span>
-                  <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
-                </div>
-                <div class='flex justify-between text-sm'>
-                  <span>Storage:</span>
-                  <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
-                </div>
-                <div class='flex justify-between text-sm'>
-                  <span>New price:</span>
-                  <span class='font-medium'>
-                  ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
-                  (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
-                </span>
-                </div>
-                <div class='flex justify-between text-sm pt-2 border-t border-warning/20'>
-                  <span>Credit on next invoice:</span>
-                  <span class='font-bold text-warning'>${{ prorationAmount.toFixed(2) }}</span>
-                </div>
-              </div>
-              <p class='text-sm text-base-content/70'>
-                You'll receive a <strong>${{ prorationAmount.toFixed(2) }}</strong> credit on your next invoice for the
-                {{ daysRemaining }} unused days.
-              </p>
-            </template>
-          </div>
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Confirm Plan Change</DialogTitle>
+                  <div class='space-y-4' v-if='selectedSwitchPlanDetails'>
+                    <!-- Upgrade explanation -->
+                    <template v-if='isSwitchUpgrade'>
+                      <p class='text-base-content/80'>
+                        Your upgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
+                      </p>
+                      <div class='bg-success/10 rounded-lg p-4 space-y-2'>
+                        <div class='flex justify-between text-sm'>
+                          <span>New plan:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>Storage:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>New price:</span>
+                          <span class='font-medium'>
+                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                        </span>
+                        </div>
+                        <div class='flex justify-between text-sm pt-2 border-t border-success/20'>
+                          <span>Prorated charge now:</span>
+                          <span class='font-bold text-success'>${{ prorationAmount.toFixed(2) }}</span>
+                        </div>
+                      </div>
+                      <p class='text-sm text-base-content/70'>
+                        You'll be charged <strong>${{ prorationAmount.toFixed(2) }}</strong> now for the {{ daysRemaining }}
+                        days remaining in your billing period.
+                      </p>
+                    </template>
 
-          <div class='flex justify-between pt-6'>
-            <button class='btn btn-outline' @click='closeSwitchConfirmation' :disabled='isSwitchingPlan'>
-              Cancel
-            </button>
-            <button
-              :class='["btn", isSwitchUpgrade ? "btn-success" : "btn-warning"]'
-              @click='switchPlan'
-              :disabled='isSwitchingPlan'
-            >
-              <span v-if='isSwitchingPlan' class='loading loading-spinner loading-sm'></span>
-              {{ isSwitchUpgrade ? "Confirm Upgrade" : "Confirm Downgrade" }}
-            </button>
+                    <!-- Downgrade explanation -->
+                    <template v-else>
+                      <p class='text-base-content/80'>
+                        Your downgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
+                      </p>
+                      <div class='bg-warning/10 rounded-lg p-4 space-y-2'>
+                        <div class='flex justify-between text-sm'>
+                          <span>New plan:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>Storage:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>New price:</span>
+                          <span class='font-medium'>
+                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                        </span>
+                        </div>
+                        <div class='flex justify-between text-sm pt-2 border-t border-warning/20'>
+                          <span>Credit on next invoice:</span>
+                          <span class='font-bold text-warning'>${{ prorationAmount.toFixed(2) }}</span>
+                        </div>
+                      </div>
+                      <p class='text-sm text-base-content/70'>
+                        You'll receive a <strong>${{ prorationAmount.toFixed(2) }}</strong> credit on your next invoice for the
+                        {{ daysRemaining }} unused days.
+                      </p>
+                    </template>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeSwitchConfirmation' :disabled='isSwitchingPlan'>
+                      Cancel
+                    </button>
+                    <button
+                      :class='["btn", isSwitchUpgrade ? "btn-success" : "btn-warning"]'
+                      @click='switchPlan'
+                      :disabled='isSwitchingPlan'
+                    >
+                      <span v-if='isSwitchingPlan' class='loading loading-spinner loading-sm'></span>
+                      {{ isSwitchUpgrade ? "Confirm Upgrade" : "Confirm Downgrade" }}
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
           </div>
-        </div>
-      </dialog>
+        </Dialog>
+      </TransitionRoot>
 
       <!-- Reactivate Confirmation Modal -->
-      <dialog ref='reactivateConfirmModal' class='modal'>
-        <div class='modal-box'>
-          <h3 class='font-bold text-lg mb-4'>Keep Your Subscription</h3>
-          <div class='space-y-4'>
-            <p class='text-base-content/80'>
-              Your subscription is scheduled to end on <strong>{{ nextBillingDate }}</strong>.
-            </p>
-            <p class='text-base-content/80'>
-              By keeping your subscription, you will:
-            </p>
-            <ul class='list-disc list-inside text-sm space-y-1 text-base-content/70'>
-              <li>Continue with your current plan (<strong>{{ subscription?.plan?.name }}</strong>)</li>
-              <li>Keep all your storage and backups</li>
-              <li>Be charged <strong>${{ formatYearlyPrice(subscription?.plan?.price_cents ?? 0) }}/year</strong> on
-                {{ nextBillingDate }}
-              </li>
-            </ul>
-          </div>
+      <TransitionRoot :show='isReactivateModalOpen'>
+        <Dialog class='relative z-50' @close='closeReactivateConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
 
-          <div class='flex justify-between pt-6'>
-            <button class='btn btn-outline' @click='closeReactivateConfirmation' :disabled='isReactivating'>
-              Cancel
-            </button>
-            <button
-              class='btn btn-success'
-              @click='reactivateSubscription'
-              :disabled='isReactivating'
-            >
-              <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
-              Keep Subscription
-            </button>
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Keep Your Subscription</DialogTitle>
+                  <div class='space-y-4'>
+                    <p class='text-base-content/80'>
+                      Your subscription is scheduled to end on <strong>{{ nextBillingDate }}</strong>.
+                    </p>
+                    <p class='text-base-content/80'>
+                      By keeping your subscription, you will:
+                    </p>
+                    <ul class='list-disc list-inside text-sm space-y-1 text-base-content/70'>
+                      <li>Continue with your current plan (<strong>{{ subscription?.plan?.name }}</strong>)</li>
+                      <li>Keep all your storage and backups</li>
+                      <li>Be charged <strong>${{ formatYearlyPrice(subscription?.plan?.price_cents ?? 0) }}/year</strong> on
+                        {{ nextBillingDate }}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeReactivateConfirmation' :disabled='isReactivating'>
+                      Cancel
+                    </button>
+                    <button
+                      class='btn btn-success'
+                      @click='reactivateSubscription'
+                      :disabled='isReactivating'
+                    >
+                      <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
+                      Keep Subscription
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
           </div>
-        </div>
-      </dialog>
+        </Dialog>
+      </TransitionRoot>
 
       <!-- Cancel Confirmation Modal -->
-      <dialog ref='cancelConfirmModal' class='modal'>
-        <div class='modal-box'>
-          <h3 class='font-bold text-lg mb-4'>Cancel Subscription</h3>
-          <div class='space-y-4'>
+      <TransitionRoot :show='isCancelModalOpen'>
+        <Dialog class='relative z-50' @close='closeCancelConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
 
-            <!-- Explanation of cancellation process -->
-            <p class='text-base-content/80'>
-              Here's what happens when you cancel your subscription:
-            </p>
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Cancel Subscription</DialogTitle>
+                  <div class='space-y-4'>
 
-            <div class='space-y-3 text-sm'>
-              <div class='flex items-start gap-3'>
-                <div class='badge badge-info badge-sm mt-0.5'>1</div>
-                <div>
-                  <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, repositories,
-                  and
-                  use all features normally.
-                </div>
-              </div>
+                    <!-- Explanation of cancellation process -->
+                    <p class='text-base-content/80'>
+                      Here's what happens when you cancel your subscription:
+                    </p>
 
-              <div class='flex items-start gap-3'>
-                <div class='badge badge-warning badge-sm mt-0.5'>2</div>
-                <div>
-                  <strong>After {{ nextBillingDate }}:</strong> Account becomes read-only - you can access and download
-                  your data, but cannot create new backups or repositories.
-                </div>
-              </div>
+                    <div class='space-y-3 text-sm'>
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-info badge-sm mt-0.5'>1</div>
+                        <div>
+                          <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, repositories,
+                          and use all features normally.
+                        </div>
+                      </div>
 
-              <div class='flex items-start gap-3'>
-                <div class='badge badge-error badge-sm mt-0.5'>3</div>
-                <div>
-                  <strong>After {{ getRetentionDays(subscription?.plan ?? undefined) }} days of read-only access
-                    ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
-                </div>
-              </div>
-            </div>
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-warning badge-sm mt-0.5'>2</div>
+                        <div>
+                          <strong>After {{ nextBillingDate }}:</strong> Account becomes read-only - you can access and download
+                          your data, but cannot create new backups or repositories.
+                        </div>
+                      </div>
 
-            <div role='alert' class='alert alert-error'>
-              <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
-              <div>
-                <h4 class='font-bold'>Are you sure you want to cancel?</h4>
-                <div class='text-sm'>You can reactivate your subscription anytime before {{ nextBillingDate }} to
-                  continue
-                  using all features.
-                </div>
-              </div>
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-error badge-sm mt-0.5'>3</div>
+                        <div>
+                          <strong>After {{ getRetentionDays(subscription?.plan ?? undefined) }} days of read-only access
+                            ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div role='alert' class='alert alert-error'>
+                      <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
+                      <div>
+                        <h4 class='font-bold'>Are you sure you want to cancel?</h4>
+                        <div class='text-sm'>You can reactivate your subscription anytime before {{ nextBillingDate }} to
+                          continue using all features.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeCancelConfirmation' :disabled='isCanceling'>
+                      Keep Subscription
+                    </button>
+                    <button
+                      class='btn btn-error'
+                      @click='confirmCancellation'
+                      :disabled='isCanceling'
+                    >
+                      <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
+                      Yes, Cancel Subscription
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
             </div>
           </div>
-
-          <div class='flex justify-between pt-6'>
-            <button class='btn btn-outline' @click='closeCancelConfirmation' :disabled='isCanceling'>
-              Keep Subscription
-            </button>
-            <button
-              class='btn btn-error'
-              @click='confirmCancellation'
-              :disabled='isCanceling'
-            >
-              <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
-              Yes, Cancel Subscription
-            </button>
-          </div>
-        </div>
-      </dialog>
+        </Dialog>
+      </TransitionRoot>
 
       <!-- Subscription Modal -->
       <CreateArcoCloudModal ref='cloudModal' @close='() => {}' @repo-created='onRepoCreated' />
