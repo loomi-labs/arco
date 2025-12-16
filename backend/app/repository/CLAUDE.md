@@ -63,7 +63,6 @@ Methods on `(s *Service)` are exposed to the frontend via Wails3 bindings.
 - `GetBackupButtonStatus(ctx, []backupId) (BackupButtonStatus, error)` - Get combined backup button state
 - `GetCombinedBackupProgress(ctx, []backupId) (*borgtypes.BackupProgress, error)` - Get combined progress
 - `GetBackupState(ctx, backupId) (*statemachine.Backup, error)` - Get backup operation state
-- `GetLastBackupErrorMsgByBackupId(ctx, backupId) (string, error)` - Get last error for backup
 
 ### Utilities
 - `GetConnectedRemoteHosts(ctx) ([]string, error)` - Get connected remote SSH hosts

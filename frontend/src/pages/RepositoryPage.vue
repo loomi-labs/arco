@@ -98,8 +98,9 @@ const showLastAttempt = computed(() => {
 
   if (!attempt || attempt.status !== BackupStatus.BackupStatusError) return false;
   if (!backup?.timestamp) return true; // No successful backup, show error
+  if (!attempt.timestamp) return false;
 
-  return new Date(attempt.timestamp!) > new Date(backup.timestamp);
+  return new Date(attempt.timestamp) > new Date(backup.timestamp);
 });
 
 const confirmRemoveModalKey = useId();
@@ -486,11 +487,11 @@ onUnmounted(() => {
                     </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
-                  <span v-if='showLastAttempt'>
+                  <span v-if='showLastAttempt && repo.lastAttempt?.timestamp'>
                     <span class='opacity-50'>Last Attempt:</span>
                     <span class='tooltip tooltip-top tooltip-error'
-                          :data-tip='toLongDateString(repo.lastAttempt!.timestamp!)'>
-                      <span class='font-medium ml-1 text-error'>{{ toRelativeTimeString(repo.lastAttempt!.timestamp!, true) }} (failed)</span>
+                          :data-tip='toLongDateString(repo.lastAttempt.timestamp)'>
+                      <span class='font-medium ml-1 text-error'>{{ toRelativeTimeString(repo.lastAttempt.timestamp, true) }} (failed)</span>
                     </span>
                   </span>
                 </div>
