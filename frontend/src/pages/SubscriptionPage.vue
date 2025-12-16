@@ -237,20 +237,6 @@ const isSwitchUpgrade = computed(() => {
   return (selectedSwitchPlanDetails.value.price_cents ?? 0) > (subscription.value.plan.price_cents ?? 0);
 });
 
-const switchStorageIncrease = computed(() => {
-  if (!selectedSwitchPlanDetails.value || !subscription.value?.plan) return 0;
-  const current = subscription.value.plan.storage_gb ?? 0;
-  const target = selectedSwitchPlanDetails.value.storage_gb ?? 0;
-  return target - current;
-});
-
-const switchRepoIncrease = computed(() => {
-  if (!selectedSwitchPlanDetails.value || !subscription.value?.plan) return 0;
-  const current = subscription.value.plan.allowed_repositories ?? 0;
-  const target = selectedSwitchPlanDetails.value.allowed_repositories ?? 0;
-  return target - current;
-});
-
 const canSwitchPlan = computed(() => {
   return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
     !subscription.value?.cancel_at_period_end &&
@@ -836,47 +822,28 @@ onMounted(async () => {
                 </div>
                 <!-- Expandable comparison panel -->
                 <div v-if='selectedSwitchPlanDetails' class='mt-3 pt-3 border-t border-base-300 space-y-3'>
-                  <div class='grid grid-cols-2 gap-4'>
-                    <!-- Storage comparison -->
-                    <div class='space-y-1'>
-                      <div class='text-xs font-medium text-base-content/70'>Storage</div>
-                      <div class='flex items-center gap-2'>
-                        <span class='text-sm'>{{ subscription?.plan?.storage_gb ?? 0 }} GB</span>
-                        <span :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
-                        <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>{{
-                            selectedSwitchPlanDetails.storage_gb ?? 0
-                          }} GB</span>
-                        <span :class='["badge badge-sm", isSwitchUpgrade ? "badge-success" : "badge-warning"]'>
-                          {{ switchStorageIncrease >= 0 ? "+" : "" }}{{ switchStorageIncrease }} GB
-                        </span>
-                      </div>
-                    </div>
-                    <!-- Repositories comparison -->
-                    <div class='space-y-1'>
-                      <div class='text-xs font-medium text-base-content/70'>Repositories</div>
-                      <div class='flex items-center gap-2'>
-                        <span class='text-sm'>{{ subscription?.plan?.allowed_repositories ?? 0 }}</span>
-                        <span :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
-                        <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>{{
-                            selectedSwitchPlanDetails.allowed_repositories ?? 0
-                          }}</span>
-                        <span v-if='switchRepoIncrease !== 0'
-                              :class='["badge badge-sm", isSwitchUpgrade ? "badge-success" : "badge-warning"]'>
-                          {{ switchRepoIncrease >= 0 ? "+" : "" }}{{ switchRepoIncrease }}
-                        </span>
-                      </div>
-                    </div>
-                    <!-- Overage price comparison -->
-                    <div class='space-y-1'>
-                      <div class='text-xs font-medium text-base-content/70'>Overage Price</div>
-                      <div class='flex items-center gap-2'>
-                        <span class='text-sm'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB</span>
-                        <span :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
-                        <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
-                          ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB
-                        </span>
-                      </div>
-                    </div>
+                  <div class='grid grid-cols-[auto_auto_1.5rem_auto] gap-x-2 gap-y-2 items-center'>
+                    <!-- Storage -->
+                    <span class='text-sm text-base-content/70'>Storage</span>
+                    <span class='text-sm text-right'>{{ subscription?.plan?.storage_gb ?? 0 }} GB</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      {{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB
+                    </span>
+                    <!-- Overage Price -->
+                    <span class='text-sm text-base-content/70'>Overage Price</span>
+                    <span class='text-sm text-right'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB
+                    </span>
+                    <!-- Repositories -->
+                    <span class='text-sm text-base-content/70'>Repositories</span>
+                    <span class='text-sm text-right'>{{ subscription?.plan?.allowed_repositories ?? 0 }}</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      {{ selectedSwitchPlanDetails.allowed_repositories ?? 0 }}
+                    </span>
                   </div>
                   <!-- Price summary -->
                   <div class='flex items-center justify-between pt-2 border-t border-base-300'>
