@@ -6,7 +6,8 @@ import { HomeIcon, InformationCircleIcon, PlusIcon } from "@heroicons/vue/24/out
 import ExcludePatternInfoModal from "./ExcludePatternInfoModal.vue";
 import type { FieldEntry} from "vee-validate";
 import { useFieldArray, useForm } from "vee-validate";
-import * as yup from "yup";
+import { z } from "zod";
+import { toTypedSchema } from "@vee-validate/zod";
 import { formInputClass, Size } from "../common/form";
 import deepEqual from "deep-equal";
 import FormField from "./common/FormField.vue";
@@ -59,38 +60,34 @@ const excludePatternInfoModalKey = useId();
 const excludePatternInfoModal = useTemplateRef<InstanceType<typeof ExcludePatternInfoModal>>(excludePatternInfoModalKey);
 
 const { meta, errors, values, validate } = useForm({
-  validationSchema: computed(() => yup.object({
-    paths: yup.array().of(
-      yup.string()
-        .required("Path is required")
-        .test("doesPathExist", "Path does not exist", async (path) => {
-          return await doesPathExist(path);
-        })
-        .test("isDuplicatePath", "Path has already been added", (path) => {
-          return !isDuplicatePath(path, 1);
-        })
-    ).test("minOnePath", "At least one path is required", (paths) => {
-      if (props.runMinOnePathValidation) {
-        return paths !== undefined && paths.length > 0;
-      }
-      return true;
+  validationSchema: computed(() => toTypedSchema(
+    z.object({
+      paths: z.array(
+        z.string()
+          .min(1, { message: "Path is required" })
+          .refine(async (path) => await doesPathExist(path), { message: "Path does not exist" })
+          .refine((path) => !isDuplicatePath(path, 1), { message: "Path has already been added" })
+      ).refine((paths) => {
+        if (props.runMinOnePathValidation) {
+          return paths !== undefined && paths.length > 0;
+        }
+        return true;
+      }, { message: "At least one path is required" })
     })
-  }))
+  ))
 });
 
 const { remove, push, fields, replace } = useFieldArray<string>("paths");
 
 const newPathForm = useForm({
-  validationSchema: yup.object({
-    newPath: yup.string()
-      .required("Path is required")
-      .test("doesPathExist", "Path does not exist", async (path) => {
-        return await doesPathExist(path);
-      })
-      .test("isDuplicatePath", "Path has already been added", (path) => {
-        return !isDuplicatePath(path, 0);
-      })
-  })
+  validationSchema: toTypedSchema(
+    z.object({
+      newPath: z.string()
+        .min(1, { message: "Path is required" })
+        .refine(async (path) => await doesPathExist(path), { message: "Path does not exist" })
+        .refine((path) => !isDuplicatePath(path, 0), { message: "Path has already been added" })
+    })
+  )
 });
 
 const [newPath, newPathAttrs] = newPathForm.defineField("newPath", {

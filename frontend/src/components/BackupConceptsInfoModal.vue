@@ -76,8 +76,9 @@ defineExpose({ showModal, close });
                     <h4 class='font-semibold'>How They Work Together</h4>
                   </div>
                   <p class='text-base-content/70 mb-2'>
-                    A backup profile tells Arco <span class='font-semibold'>what</span> to back up and <span class='font-semibold'>when</span>.
-                    A repository tells Arco <span class='font-semibold'>where</span> to store it.
+                    A <span class='font-semibold'>backup profile</span>  tells Arco <span class='font-semibold'>what</span> to back up and <span class='font-semibold'>when</span>.
+                    A <span class='font-semibold'>repository</span> tells Arco <span class='font-semibold'>where</span> to store it.
+                    Each backup creates an <span class='font-semibold'>archive</span> which is a snapshot you can browse and restore.
                   </p>
                   <p class='text-base-content/70'>
                     Multiple profiles can share a repository, but it's better to use separate repositories for <span class='font-semibold'>different data sets</span> (improves deduplication).

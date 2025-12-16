@@ -15,6 +15,7 @@ import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
 import { initializeReducedMotion, setupReducedMotionListener } from "./common/reducedMotion";
+import { useNavigationShortcuts } from "./common/navigationShortcuts";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
@@ -96,6 +97,10 @@ cleanupFunctions.push(setupSettingsListener());
 
 // Setup reduced motion settings listener
 cleanupFunctions.push(setupReducedMotionListener());
+
+// Setup navigation shortcuts (keyboard and mouse)
+const { setupNavigationShortcuts } = useNavigationShortcuts();
+cleanupFunctions.push(setupNavigationShortcuts());
 
 getStartupState();
 

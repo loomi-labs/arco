@@ -6,7 +6,6 @@ import { Page } from "../router";
 import {
   ArrowRightStartOnRectangleIcon,
   BeakerIcon,
-  CreditCardIcon,
   MoonIcon,
   SunIcon,
   UserCircleIcon
@@ -103,10 +102,6 @@ async function handleLogout() {
   }
 }
 
-function navigateToSubscription() {
-  router.push(Page.Subscription);
-}
-
 async function applyTheme(theme: Theme, saveToBackend: boolean = true) {
   selectedTheme.value = theme;
 
@@ -175,24 +170,10 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Subscription Button -->
-              <button
-                @click='navigateToSubscription'
-                class='w-full flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg hover:bg-base-300 transition-colors'
-              >
-                <div class='flex items-center gap-3'>
-                  <CreditCardIcon class='size-5' />
-                  <span>Manage Subscription</span>
-                </div>
-                <svg class='size-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 5l7 7-7 7'></path>
-                </svg>
-              </button>
-
               <!-- Logout Button -->
               <button
                 @click='handleLogout'
-                class='btn btn-outline btn-error w-full'
+                class='btn btn-outline btn-error'
               >
                 <ArrowRightStartOnRectangleIcon class='size-5' />
                 Logout
