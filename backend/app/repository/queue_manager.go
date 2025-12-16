@@ -435,8 +435,9 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 					"category", status.Warning.Category,
 					"exitCode", status.Warning.ExitCode)
 
-				// Only create notifications for certain operations
-				if qm.shouldCreateNotification(op.Operation) {
+				// Only create warning notifications for certain operations
+				// Note: Backup warnings are stored on Archive entity, not as notifications
+				if qm.shouldCreateWarningNotification(op.Operation) {
 					qm.createWarningNotification(ctx, repoID, operationID, status, op.Operation)
 				}
 			} else {
@@ -942,6 +943,7 @@ func (qm *QueueManager) createErrorNotification(ctx context.Context, repoID int,
 			"notificationType", notificationType,
 			"errorCategory", status.Error.Category,
 			"exitCode", status.Error.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
@@ -977,6 +979,7 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 			"notificationType", notificationType,
 			"warningCategory", status.Warning.Category,
 			"exitCode", status.Warning.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
@@ -1070,11 +1073,9 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 }
 
 // getWarningNotificationType determines the notification type for warning cases based on operation type
-// This method should only be called for backup and prune operations
+// This method should only be called for prune and check operations (backup warnings are stored on Archive entity)
 func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operation) notification.Type {
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup:
-		return notification.TypeWarningBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeWarningPruningRun
 	case statemachine.OperationTypeCheck:
@@ -1084,7 +1085,8 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		} else {
 			return notification.TypeWarningFullCheck
 		}
-	case statemachine.OperationTypeDelete,
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
@@ -1094,13 +1096,14 @@ func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operat
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
 		statemachine.OperationTypeUnmountArchive:
-		// This should never happen if shouldCreateNotification is used correctly
+		// This should never happen if shouldCreateWarningNotification is used correctly
+		// Note: Backup warnings are stored on Archive entity, not as notifications
 		qm.log.Errorw("Unexpected operation type for warning notification",
 			"operationType", fmt.Sprintf("%T", operation))
-		return notification.TypeWarningBackupRun // Fallback for safety
+		return notification.TypeWarningPruningRun // Fallback for safety
 	default:
 		assert.Fail("Unhandled OperationType in getWarningNotificationType")
-		return notification.TypeWarningBackupRun // Fallback for safety
+		return notification.TypeWarningPruningRun // Fallback for safety
 	}
 }
 
@@ -1153,7 +1156,7 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 	}
 }
 
-// shouldCreateNotification determines if error/warning notifications should be created for this operation type
+// shouldCreateNotification determines if error notifications should be created for this operation type
 func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
 	switch statemachine.GetOperationType(operation) {
 	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
@@ -1171,6 +1174,30 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 		return false
 	default:
 		assert.Fail("Unhandled OperationType in shouldCreateNotification")
+		return false
+	}
+}
+
+// shouldCreateWarningNotification determines if warning notifications should be created for this operation type
+// Note: Backup warnings are stored on Archive entity, not as notifications
+func (qm *QueueManager) shouldCreateWarningNotification(operation statemachine.Operation) bool {
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
+		return true
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
+		statemachine.OperationTypeExaminePrune,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		return false
+	default:
+		assert.Fail("Unhandled OperationType in shouldCreateWarningNotification")
 		return false
 	}
 }
@@ -1295,8 +1322,14 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 		return status, nil
 	}
 
-	// Refresh the newly created archive in database
-	err = e.refreshNewArchive(ctx, repo, archivePath)
+	// Capture warning message from status if present
+	var warningMessage string
+	if status.HasWarning() {
+		warningMessage = fmt.Sprintf("%s (Exit Code: %d)", status.Warning.Message, status.Warning.ExitCode)
+	}
+
+	// Refresh the newly created archive in database with warning message
+	err = e.refreshNewArchive(ctx, repo, archivePath, warningMessage)
 	if err != nil {
 		e.log.Errorw("Failed to refresh archive after backup",
 			"archivePath", archivePath,
@@ -1980,7 +2013,8 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 
 // syncSingleArchiveToDatabase adds or updates a single archive in the database
 // This method does NOT delete any existing archives - it only adds/updates
-func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context, repositoryID int, archiveData borgtypes.ArchiveList) error {
+// warningMessage is only set on new archive creation (not on updates, to preserve existing warnings)
+func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context, repositoryID int, archiveData borgtypes.ArchiveList, warningMessage string) error {
 	// Get repository with backup profiles for prefix matching
 	repo, err := e.db.Repository.Query().
 		Where(repository.ID(repositoryID)).
@@ -2042,6 +2076,11 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			}
 		}
 
+		// Set warning message if provided (only on new archives)
+		if warningMessage != "" {
+			createQuery = createQuery.SetWarningMessage(warningMessage)
+		}
+
 		// Save the new archive
 		_, err := createQuery.Save(ctx)
 		if err != nil {
@@ -2061,7 +2100,8 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 }
 
 // refreshNewArchive refreshes a single newly created archive in the database
-func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string) error {
+// warningMessage is passed through to syncSingleArchiveToDatabase for storage on the archive
+func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string, warningMessage string) error {
 	// Parse archivePath to extract repository and archive name
 	// archivePath format: "repository::archiveName"
 	parts := strings.SplitN(archivePath, "::", 2)
@@ -2082,7 +2122,7 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 	}
 
 	// Sync only the single archive (no deletions)
-	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0])
+	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0], warningMessage)
 }
 
 // refreshRepositoryStats calls borg info to update repository statistics for local/remote repositories

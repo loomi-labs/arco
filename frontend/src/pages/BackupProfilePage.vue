@@ -24,6 +24,7 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import CompressionCard from "../components/CompressionCard.vue";
+import ErrorSection from "../components/ErrorSection.vue";
 import { format } from "@formkit/tempo";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 
@@ -439,6 +440,9 @@ watch(
         </div>
       </div>
     </div>
+
+    <!-- Error Section -->
+    <ErrorSection :backup-profile-id='backupProfile.id' />
 
     <!-- Data Section -->
     <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'

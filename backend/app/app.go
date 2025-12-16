@@ -21,6 +21,7 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
+	"github.com/loomi-labs/arco/backend/app/notification"
 	"github.com/loomi-labs/arco/backend/app/plan"
 	"github.com/loomi-labs/arco/backend/app/repository"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
@@ -64,6 +65,7 @@ type App struct {
 	subscriptionService  *subscription.ServiceInternal
 	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
+	notificationService  *notification.Service
 }
 
 func NewApp(
@@ -88,6 +90,7 @@ func NewApp(
 		subscriptionService:      subscription.NewService(log, state),
 		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
+		notificationService:      notification.NewService(log),
 	}
 }
 
@@ -113,6 +116,10 @@ func (a *App) PlanService() *plan.Service {
 
 func (a *App) SubscriptionService() *subscription.Service {
 	return a.subscriptionService.Service
+}
+
+func (a *App) NotificationService() *notification.Service {
+	return a.notificationService
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -181,6 +188,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize services with database and authenticated RPC clients
 	a.userService.Init(a.db, a.eventEmitter)
+	a.notificationService.Init(a.db, a.eventEmitter)
 	a.authService.Init(a.db, authRPCClient)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)

@@ -1,22 +1,27 @@
 <script setup lang='ts'>
 import { computed, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/solid";
+import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from "@heroicons/vue/24/solid";
+import { ClockIcon } from "@heroicons/vue/24/outline";
 import { isAfter } from "@formkit/tempo";
 import { debounce } from "lodash";
 import { Events } from "@wailsio/runtime";
 import BackupButton from "./BackupButton.vue";
+import ErrorTooltip from "./common/ErrorTooltip.vue";
 import { getIcon } from "../common/icons";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
-import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
+import { toCreationTimeIconColor, toCreationTimeTooltip } from "../common/badge";
 import { showAndLogError } from "../common/logger";
 import { repoStateChangedEvent } from "../common/events";
 import { Page, withId } from "../router";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as notificationService from "../../bindings/github.com/loomi-labs/arco/backend/app/notification/service";
 import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
+import type { ErrorNotification } from "../../bindings/github.com/loomi-labs/arco/backend/app/notification";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import * as types from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
+import * as EventHelpers from "../common/events";
 
 /************
  * Types
@@ -83,48 +88,42 @@ const backupIds = computed(() => {
 
 // Async data
 const lastArchive = ref<ent.Archive | undefined>(undefined);
-const failedBackupRun = ref<string>("");
-const warningBackupRun = ref<string>("");
+const errors = ref<ErrorNotification[]>([]);
 const cleanupFunctions: (() => void)[] = [];
 
 const lastBackupStatus = computed<"success" | "warning" | "error" | "none">(() => {
-  if (failedBackupRun.value) return "error";
-  if (warningBackupRun.value) return "warning";
-  if (lastArchive.value) return "success";
-  return "none";
+  if (!props.backup.lastAttempt) return "none";
+  switch (props.backup.lastAttempt.status) {
+    case types.BackupStatus.BackupStatusError: return "error";
+    case types.BackupStatus.BackupStatusWarning: return "warning";
+    case types.BackupStatus.BackupStatusSuccess: return "success";
+    case types.BackupStatus.$zero:
+    default:
+      return "none";
+  }
+});
+
+const warningMessage = computed(() => {
+  if (lastBackupStatus.value === "warning") {
+    return props.backup.lastAttempt?.message ?? "";
+  }
+  return "";
+});
+
+const lastBackupErrorMessage = computed(() => {
+  if (lastBackupStatus.value === "error" && props.backup.lastAttempt?.message) {
+    return props.backup.lastAttempt.message;
+  }
+  return "";
+});
+
+const errorMessages = computed<string[]>(() => {
+  return errors.value.map(e => e.message);
 });
 
 /************
  * Functions
  ************/
-
-async function getFailedBackupRun() {
-  for (const repo of repositories.value) {
-    try {
-      const backupId = types.BackupId.createFrom();
-      backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repo.id;
-      failedBackupRun.value = await repoService.GetLastBackupErrorMsgByBackupId(backupId);
-      if (failedBackupRun.value) break;
-    } catch (error: unknown) {
-      await showAndLogError("Failed to get last backup error message", error);
-    }
-  }
-}
-
-async function getWarningBackupRun() {
-  for (const repo of repositories.value) {
-    try {
-      const backupId = types.BackupId.createFrom();
-      backupId.backupProfileId = props.backup.id;
-      backupId.repositoryId = repo.id;
-      warningBackupRun.value = await repoService.GetLastBackupWarningByBackupId(backupId);
-      if (warningBackupRun.value) break;
-    } catch (error: unknown) {
-      await showAndLogError("Failed to get last backup warning message", error);
-    }
-  }
-}
 
 async function getLastArchives() {
   try {
@@ -150,24 +149,34 @@ function navigateToProfile() {
   router.push(withId(Page.BackupProfile, props.backup.id.toString()));
 }
 
+async function loadErrors() {
+  try {
+    const allErrors = await notificationService.GetUnseenErrors();
+    errors.value = (allErrors ?? []).filter(e => e.backupProfileId === props.backup.id);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to load errors", error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
-getFailedBackupRun();
-getWarningBackupRun();
 getLastArchives();
+loadErrors();
 
 // Listen for repo state changes
 for (const backupId of backupIds.value) {
   const handleRepoStateChanged = debounce(async () => {
-    await getFailedBackupRun();
-    await getWarningBackupRun();
     await getLastArchives();
   }, 200);
 
   cleanupFunctions.push(Events.On(repoStateChangedEvent(backupId.repositoryId), handleRepoStateChanged));
 }
+
+// Listen for notification events
+cleanupFunctions.push(Events.On(EventHelpers.notificationCreatedEvent(), loadErrors));
+cleanupFunctions.push(Events.On(EventHelpers.notificationDismissedEvent(), loadErrors));
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
@@ -176,7 +185,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full cursor-pointer' @click='navigateToProfile'>
+  <div class='relative group ac-card-hover h-full w-full cursor-pointer' @click='navigateToProfile'>
     <!-- Header -->
     <div
       class='flex justify-between rounded-t-lg bg-primary text-primary-content px-6 pt-4 pb-2 group-hover:bg-primary/50'>
@@ -209,26 +218,54 @@ onUnmounted(() => {
           <span class='font-medium'>{{ archiveCount }}</span>
         </div>
 
-        <!-- Last backup -->
+        <!-- Status -->
         <div class='flex justify-between items-center'>
-          <span class='text-base-content/60'>Last backup</span>
-          <div class='flex items-center gap-2'>
-            <span v-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
-                  :data-tip='failedBackupRun'>
-              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
+          <span class='text-base-content/60'>Status</span>
+          <!-- Success/None status -->
+          <span v-if='lastBackupStatus === "success" || lastBackupStatus === "none"' class='flex items-center gap-1'>
+            <CheckCircleIcon class='size-4 text-success' />
+            <span class='text-success'>OK</span>
+          </span>
+          <!-- Error status with custom tooltip -->
+          <ErrorTooltip v-else-if='lastBackupStatus === "error" && errorMessages.length > 0' :errors='errorMessages'>
+            <span class='flex items-center gap-1'>
+              <XCircleIcon class='size-4 text-error' />
+              <span class='text-error'>{{ errors.length > 1 ? `${errors.length} Errors` : 'Error' }}</span>
             </span>
-            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
-                  :data-tip='warningBackupRun'>
-              <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
+          </ErrorTooltip>
+          <!-- Error status without tooltip (all errors dismissed) -->
+          <span
+            v-else-if='lastBackupStatus === "error"'
+            class='flex items-center gap-1'
+            :class='{ "tooltip tooltip-top tooltip-error": lastBackupErrorMessage }'
+            :data-tip='lastBackupErrorMessage || undefined'
+          >
+            <XCircleIcon class='size-4 text-error' />
+            <span class='text-error'>Error</span>
+          </span>
+          <!-- Warning status with simple tooltip -->
+          <span
+            v-else-if='lastBackupStatus === "warning"'
+            class='flex items-center gap-1'
+            :class='{ "tooltip tooltip-top tooltip-warning": warningMessage }'
+            :data-tip='warningMessage || undefined'
+          >
+            <ExclamationTriangleIcon class='size-4 text-warning' />
+            <span class='text-warning'>Warning</span>
+          </span>
+        </div>
+
+        <!-- Last Backup -->
+        <div class='flex justify-between items-center'>
+          <span class='text-base-content/60'>Last Backup</span>
+          <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
+                :data-tip='toLongDateString(lastArchive.createdAt)'>
+            <span class='flex items-center gap-1.5'>
+              <ClockIcon :class='["size-4", toCreationTimeIconColor(lastArchive.createdAt)]' />
+              <span>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
             </span>
-            <span v-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
-                  :data-tip='toLongDateString(lastArchive.createdAt)'>
-              <span :class='toCreationTimeBadge(lastArchive.createdAt)'>{{
-                  toRelativeTimeString(lastArchive.createdAt)
-                }}</span>
-            </span>
-            <span v-else>-</span>
-          </div>
+          </span>
+          <span v-else>-</span>
         </div>
       </div>
 

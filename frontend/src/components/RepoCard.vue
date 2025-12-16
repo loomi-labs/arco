@@ -197,12 +197,12 @@ onUnmounted(() => {
           <span class='text-base-content/60'>{{ $t("last_backup") }}</span>
           <div class='flex items-center gap-2'>
             <!-- Error icon with tooltip -->
-            <span v-if='repo.lastBackupError' class='tooltip tooltip-top tooltip-error' :data-tip='repo.lastBackupError'>
+            <span v-if='repo.lastAttempt?.status === types.BackupStatus.BackupStatusError' class='tooltip tooltip-top tooltip-error' :data-tip='repo.lastAttempt?.message'>
               <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
             </span>
             <!-- Warning icon with tooltip -->
-            <span v-else-if='repo.lastBackupWarning && !dismissedWarnings.has(props.repoId)'
-                  class='tooltip tooltip-top tooltip-warning' :data-tip='repo.lastBackupWarning'>
+            <span v-else-if='repo.lastAttempt?.status === types.BackupStatus.BackupStatusWarning && !dismissedWarnings.has(props.repoId)'
+                  class='tooltip tooltip-top tooltip-warning' :data-tip='repo.lastAttempt?.message'>
               <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
             </span>
             <!-- Error badge (repo in error state) -->

@@ -19,6 +19,7 @@ var (
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
 		{Name: "comment", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "warning_message", Type: field.TypeString, Nullable: true},
 		{Name: "archive_repository", Type: field.TypeInt},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
@@ -30,13 +31,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "archives_repositories_repository",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
+				Columns:    []*schema.Column{ArchivesColumns[9]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[9]},
+				Columns:    []*schema.Column{ArchivesColumns[10]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -138,7 +139,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
 		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
 		{Name: "notification_backup_profile", Type: field.TypeInt},

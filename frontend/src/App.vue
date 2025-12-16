@@ -5,7 +5,7 @@ import { showAndLogError } from "./common/logger";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Sidebar from "./components/Sidebar.vue";
-import { computed, onUnmounted, ref, watchEffect } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -99,8 +99,8 @@ cleanupFunctions.push(setupReducedMotionListener());
 
 getStartupState();
 
-watchEffect(async () => {
-  if (isInitialized.value) {
+watch(isInitialized, async (initialized) => {
+  if (initialized) {
     // Initialize settings-dependent features only after startup is complete
     // These require the database to be initialized
     await initializeTheme();
@@ -109,7 +109,7 @@ watchEffect(async () => {
 
     await goToNextPage();
   }
-});
+}, { once: true });
 
 cleanupFunctions.push(Events.On(types.Event.EventStartupStateChanged, getStartupState));
 cleanupFunctions.push(Events.On(types.Event.EventNotificationAvailable, getNotifications));

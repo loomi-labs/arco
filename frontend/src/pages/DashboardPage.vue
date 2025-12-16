@@ -9,6 +9,7 @@ import { Anchor, Page } from "../router";
 import RepoCardSimple from "../components/RepoCardSimple.vue";
 import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
 import EmptyStateCard from "../components/EmptyStateCard.vue";
+import ErrorSection from "../components/ErrorSection.vue";
 import { Vue3Lottie } from "vue3-lottie";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
@@ -41,6 +42,7 @@ const hasNoProfiles = computed(() => backupProfiles.value.length === 0);
 const hasNoRepos = computed(() => repos.value.length === 0);
 
 const cleanupFunctions: (() => void)[] = [];
+let repoStateCleanups: (() => void)[] = [];
 
 /************
  * Functions
@@ -50,8 +52,22 @@ async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
+    setupRepoStateListeners();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
+  }
+}
+
+function setupRepoStateListeners() {
+  // Clean up previous listeners
+  repoStateCleanups.forEach((cleanup) => cleanup());
+  repoStateCleanups = [];
+
+  // Set up new listeners for each repo
+  for (const repo of repos.value) {
+    repoStateCleanups.push(
+      Events.On(EventHelpers.repoStateChangedEvent(repo.id), getData)
+    );
   }
 }
 
@@ -77,12 +93,16 @@ cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData))
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
+  repoStateCleanups.forEach((cleanup) => cleanup());
 });
 
 </script>
 
 <template>
   <div class='text-left py-10 px-8'>
+    <!-- Error Section -->
+    <ErrorSection />
+
     <!-- Welcome Banner: shown when both backup profiles and repos are empty -->
     <div v-if='isEmpty' class='ac-card p-8 mb-8'>
       <div class='flex flex-col items-center text-center gap-4'>

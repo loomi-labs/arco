@@ -96,6 +96,20 @@ func (_c *ArchiveCreate) SetNillableComment(v *string) *ArchiveCreate {
 	return _c
 }
 
+// SetWarningMessage sets the "warning_message" field.
+func (_c *ArchiveCreate) SetWarningMessage(v string) *ArchiveCreate {
+	_c.mutation.SetWarningMessage(v)
+	return _c
+}
+
+// SetNillableWarningMessage sets the "warning_message" field if the given value is not nil.
+func (_c *ArchiveCreate) SetNillableWarningMessage(v *string) *ArchiveCreate {
+	if v != nil {
+		_c.SetWarningMessage(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *ArchiveCreate) SetID(v int) *ArchiveCreate {
 	_c.mutation.SetID(v)
@@ -267,6 +281,10 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Comment(); ok {
 		_spec.SetField(archive.FieldComment, field.TypeString, value)
 		_node.Comment = value
+	}
+	if value, ok := _c.mutation.WarningMessage(); ok {
+		_spec.SetField(archive.FieldWarningMessage, field.TypeString, value)
+		_node.WarningMessage = &value
 	}
 	if nodes := _c.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

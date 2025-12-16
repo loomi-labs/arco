@@ -17,6 +17,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
+	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
@@ -803,8 +804,10 @@ type BackupProfile struct {
 	BackupSchedule *BackupSchedule     `json:"backupSchedule"`
 	PruningRule    *PruningRule        `json:"pruningRule"`
 
-	// Computed field
-	ArchiveCount int `json:"archiveCount"`
+	// Computed fields
+	ArchiveCount int                `json:"archiveCount"`
+	LastBackup   *types.LastBackup  `json:"lastBackup,omitempty"`
+	LastAttempt  *types.LastAttempt `json:"lastAttempt,omitempty"`
 }
 
 // toBackupSchedule converts an ent.BackupSchedule to the custom BackupSchedule type
@@ -889,7 +892,90 @@ func (s *Service) toBackupProfile(ctx context.Context, ep *ent.BackupProfile) (*
 		BackupSchedule:           toBackupSchedule(ep.Edges.BackupSchedule),
 		PruningRule:              toPruningRule(ep.Edges.PruningRule),
 		ArchiveCount:             archiveCount,
+		LastBackup:               s.getLastBackup(ctx, ep.ID),
+		LastAttempt:              s.getLastAttempt(ctx, ep.ID),
 	}, nil
+}
+
+// getLastErrorNotification returns the most recent error notification for a backup profile
+func (s *Service) getLastErrorNotification(ctx context.Context, backupProfileID int) *ent.Notification {
+	notificationEnt, err := s.db.Notification.Query().
+		Where(
+			notification.HasBackupProfileWith(backupprofile.ID(backupProfileID)),
+			notification.TypeIn(
+				notification.TypeFailedBackupRun,
+				notification.TypeFailedPruningRun,
+			),
+		).
+		Order(ent.Desc(notification.FieldCreatedAt)).
+		First(ctx)
+
+	if err != nil {
+		return nil
+	}
+	return notificationEnt
+}
+
+// getLastBackup returns info about the last successful backup for a backup profile
+func (s *Service) getLastBackup(ctx context.Context, backupProfileID int) *types.LastBackup {
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	if err != nil {
+		return nil // No successful backups yet
+	}
+
+	result := &types.LastBackup{
+		Timestamp: &lastArchive.CreatedAt,
+	}
+	if lastArchive.WarningMessage != nil {
+		result.WarningMessage = *lastArchive.WarningMessage
+	}
+	return result
+}
+
+// getLastAttempt returns info about the most recent attempt for a backup profile
+func (s *Service) getLastAttempt(ctx context.Context, backupProfileID int) *types.LastAttempt {
+	// Get latest archive
+	lastArchive, _ := s.db.Archive.Query().
+		Where(archive.HasBackupProfileWith(backupprofile.ID(backupProfileID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	// Get latest error notification
+	errorNotification := s.getLastErrorNotification(ctx, backupProfileID)
+
+	// Determine which is more recent
+	if errorNotification != nil {
+		// Check if error is newer than archive (or no archive exists)
+		if lastArchive == nil || errorNotification.CreatedAt.After(lastArchive.CreatedAt) {
+			return &types.LastAttempt{
+				Status:    types.BackupStatusError,
+				Timestamp: &errorNotification.CreatedAt,
+				Message:   errorNotification.Message,
+			}
+		}
+	}
+
+	if lastArchive == nil {
+		return nil // No attempts yet
+	}
+
+	// Archive is the most recent attempt
+	if lastArchive.WarningMessage != nil {
+		return &types.LastAttempt{
+			Status:    types.BackupStatusWarning,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   *lastArchive.WarningMessage,
+		}
+	}
+
+	return &types.LastAttempt{
+		Status:    types.BackupStatusSuccess,
+		Timestamp: &lastArchive.CreatedAt,
+	}
 }
 
 // toBackupProfiles converts a slice of ent.BackupProfile to custom BackupProfile types

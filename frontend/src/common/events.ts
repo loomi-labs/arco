@@ -49,3 +49,10 @@ export function repositoryDeletedEvent(): string {
   return `${types.Event.EventRepositoryDeleted}`;
 }
 
+export function notificationDismissedEvent(): string {
+  return `${types.Event.EventNotificationDismissed}`;
+}
+
+export function notificationCreatedEvent(): string {
+  return `${types.Event.EventNotificationCreated}`;
+}

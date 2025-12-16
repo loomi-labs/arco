@@ -1,14 +1,22 @@
 <script setup lang='ts'>
-import { computed } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from '@heroicons/vue/24/outline';
-import { CheckCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/vue/24/solid';
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { CheckCircleIcon, ExclamationTriangleIcon, LockClosedIcon, XCircleIcon } from '@heroicons/vue/24/solid';
+import { Events } from "@wailsio/runtime";
 import ArcoCloudIcon from './common/ArcoCloudIcon.vue';
+import ErrorTooltip from './common/ErrorTooltip.vue';
 import { toHumanReadableSize } from '../common/repository';
-import { toRelativeTimeString } from '../common/time';
+import { toLongDateString, toRelativeTimeString } from '../common/time';
+import { toCreationTimeIconColor, toCreationTimeTooltip } from '../common/badge';
+import { showAndLogError } from '../common/logger';
+import * as EventHelpers from '../common/events';
 import { Page, withId } from '../router';
+import * as notificationService from '../../bindings/github.com/loomi-labs/arco/backend/app/notification/service';
 import type * as repoModels from '../../bindings/github.com/loomi-labs/arco/backend/app/repository/models';
+import type { ErrorNotification } from '../../bindings/github.com/loomi-labs/arco/backend/app/notification';
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { BackupStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
 /************
  * Types
@@ -24,6 +32,9 @@ interface Props {
 
 const props = defineProps<Props>();
 const router = useRouter();
+
+const errors = ref<ErrorNotification[]>([]);
+const cleanupFunctions: (() => void)[] = [];
 
 const typeLabel = computed(() => {
   switch (props.repo.type.type) {
@@ -50,26 +61,56 @@ const formattedSizeOnDisk = computed(() => {
 });
 
 const formattedLastBackupTime = computed(() => {
-  if (!props.repo.lastBackupTime) return undefined;
-  return toRelativeTimeString(new Date(props.repo.lastBackupTime));
+  if (!props.repo.lastBackup?.timestamp) return undefined;
+  return toRelativeTimeString(new Date(props.repo.lastBackup.timestamp));
 });
 
 const lastBackupStatus = computed<'success' | 'warning' | 'error' | 'none'>(() => {
-  if (props.repo.lastBackupError) return 'error';
-  if (props.repo.lastBackupWarning) return 'warning';
-  if (props.repo.lastBackupTime) return 'success';
-  return 'none';
-});
-
-const formattedLastCheckTime = computed(() => {
-  if (!props.repo.lastQuickCheckAt) return undefined;
-  return toRelativeTimeString(new Date(props.repo.lastQuickCheckAt));
-});
-
-const lastCheckStatus = computed<'success' | 'error' | 'none'>(() => {
+  // Healthcheck error takes priority
   if (props.repo.quickCheckError && props.repo.quickCheckError.length > 0) return 'error';
-  if (props.repo.lastQuickCheckAt) return 'success';
-  return 'none';
+  if (!props.repo.lastAttempt) return 'none';
+  switch (props.repo.lastAttempt.status) {
+    case BackupStatus.BackupStatusError: return 'error';
+    case BackupStatus.BackupStatusWarning: return 'warning';
+    case BackupStatus.BackupStatusSuccess: return 'success';
+    case BackupStatus.$zero:
+    default:
+      return 'none';
+  }
+});
+
+const warningMessage = computed(() => {
+  if (lastBackupStatus.value === 'warning') {
+    return props.repo.lastAttempt?.message ?? '';
+  }
+  return '';
+});
+
+const lastBackupErrorMessage = computed(() => {
+  if (lastBackupStatus.value === 'error' && props.repo.lastAttempt?.message) {
+    return props.repo.lastAttempt.message;
+  }
+  return '';
+});
+
+const errorMessages = computed<string[]>(() => {
+  const messages: string[] = [];
+  // Add healthcheck error
+  if (props.repo.quickCheckError && props.repo.quickCheckError.length > 0) {
+    messages.push(`Healthcheck: ${props.repo.quickCheckError}`);
+  }
+  // Add backup errors
+  messages.push(...errors.value.map(e => e.message));
+  return messages;
+});
+
+// Total error count (notification errors + healthcheck error if present)
+const totalErrorCount = computed(() => {
+  let count = errors.value.length;
+  if (props.repo.quickCheckError && props.repo.quickCheckError.length > 0) {
+    count += 1;
+  }
+  return count;
 });
 
 /************
@@ -80,14 +121,33 @@ function navigateToRepo() {
   router.push(withId(Page.Repository, props.repo.id));
 }
 
+async function loadErrors() {
+  try {
+    const allErrors = await notificationService.GetUnseenErrors();
+    errors.value = (allErrors ?? []).filter(e => e.repositoryId === props.repo.id);
+  } catch (error: unknown) {
+    await showAndLogError('Failed to load errors', error);
+  }
+}
+
 /************
  * Lifecycle
  ************/
 
+loadErrors();
+
+// Listen for notification events
+cleanupFunctions.push(Events.On(EventHelpers.notificationCreatedEvent(), loadErrors));
+cleanupFunctions.push(Events.On(EventHelpers.notificationDismissedEvent(), loadErrors));
+
+onUnmounted(() => {
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
+
 </script>
 
 <template>
-  <div class='group ac-card-hover h-full w-full cursor-pointer flex' @click='navigateToRepo'>
+  <div class='relative group ac-card-hover h-full w-full cursor-pointer flex' @click='navigateToRepo'>
     <!-- Content -->
     <div class='flex-1 p-5'>
       <!-- Name & Encryption -->
@@ -111,33 +171,53 @@ function navigateToRepo() {
           <span class='text-base-content/60'>Size on Disk</span>
           <span class='font-medium'>{{ formattedSizeOnDisk }}</span>
         </div>
+        <!-- Status -->
+        <div class='flex justify-between items-center'>
+          <span class='text-base-content/60'>Status</span>
+          <!-- Success/None status -->
+          <span v-if='lastBackupStatus === "success" || lastBackupStatus === "none"' class='flex items-center gap-1'>
+            <CheckCircleIcon class='size-4 text-success' />
+            <span class='text-success'>OK</span>
+          </span>
+          <!-- Error status with custom tooltip -->
+          <ErrorTooltip v-else-if='lastBackupStatus === "error" && errorMessages.length > 0' :errors='errorMessages'>
+            <span class='flex items-center gap-1'>
+              <XCircleIcon class='size-4 text-error' />
+              <span class='text-error'>{{ totalErrorCount > 1 ? `${totalErrorCount} Errors` : 'Error' }}</span>
+            </span>
+          </ErrorTooltip>
+          <!-- Error status without tooltip (all errors dismissed) -->
+          <span
+            v-else-if='lastBackupStatus === "error"'
+            class='flex items-center gap-1'
+            :class='{ "tooltip tooltip-top tooltip-error": lastBackupErrorMessage }'
+            :data-tip='lastBackupErrorMessage || undefined'
+          >
+            <XCircleIcon class='size-4 text-error' />
+            <span class='text-error'>Error</span>
+          </span>
+          <!-- Warning status with simple tooltip -->
+          <span
+            v-else-if='lastBackupStatus === "warning"'
+            class='flex items-center gap-1'
+            :class='{ "tooltip tooltip-top tooltip-warning": warningMessage }'
+            :data-tip='warningMessage || undefined'
+          >
+            <ExclamationTriangleIcon class='size-4 text-warning' />
+            <span class='text-warning'>Warning</span>
+          </span>
+        </div>
         <!-- Last Backup -->
         <div class='flex justify-between items-center'>
           <span class='text-base-content/60'>Last Backup</span>
-          <div class='flex items-center gap-1'>
-            <CheckCircleIcon v-if='lastBackupStatus === "success"' class='size-4 text-success' />
-            <span v-else-if='lastBackupStatus === "warning"' class='tooltip tooltip-top tooltip-warning'
-                  :data-tip='repo.lastBackupWarning'>
-              <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
+          <span v-if='repo.lastBackup?.timestamp' :class='toCreationTimeTooltip(repo.lastBackup.timestamp)'
+                :data-tip='toLongDateString(repo.lastBackup.timestamp)'>
+            <span class='flex items-center gap-1.5'>
+              <ClockIcon :class='["size-4", toCreationTimeIconColor(repo.lastBackup.timestamp)]' />
+              <span>{{ formattedLastBackupTime }}</span>
             </span>
-            <span v-else-if='lastBackupStatus === "error"' class='tooltip tooltip-top tooltip-error'
-                  :data-tip='repo.lastBackupError'>
-              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
-            </span>
-            <span>{{ formattedLastBackupTime || 'Never' }}</span>
-          </div>
-        </div>
-        <!-- Last Healthcheck -->
-        <div class='flex justify-between items-center'>
-          <span class='text-base-content/60'>Last Healthcheck</span>
-          <div class='flex items-center gap-1'>
-            <CheckCircleIcon v-if='lastCheckStatus === "success"' class='size-4 text-success' />
-            <span v-else-if='lastCheckStatus === "error"' class='tooltip tooltip-top tooltip-error'
-                  :data-tip='repo.quickCheckError'>
-              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
-            </span>
-            <span>{{ formattedLastCheckTime || 'Never' }}</span>
-          </div>
+          </span>
+          <span v-else>Never</span>
         </div>
       </div>
     </div>

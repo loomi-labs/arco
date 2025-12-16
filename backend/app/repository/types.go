@@ -29,10 +29,9 @@ type Repository struct {
 	State statemachine.RepositoryStateUnion `json:"state"`
 
 	// Metadata
-	ArchiveCount      int        `json:"archiveCount"`
-	LastBackupTime    *time.Time `json:"lastBackupTime,omitempty"`
-	LastBackupError   string     `json:"lastBackupError,omitempty"`
-	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
+	ArchiveCount int                `json:"archiveCount"`
+	LastBackup   *types.LastBackup  `json:"lastBackup,omitempty"`
+	LastAttempt  *types.LastAttempt `json:"lastAttempt,omitempty"`
 
 	// Check tracking
 	LastQuickCheckAt *time.Time `json:"lastQuickCheckAt,omitempty"`

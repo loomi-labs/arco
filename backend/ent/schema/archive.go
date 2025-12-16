@@ -39,6 +39,11 @@ func (Archive) Fields() []ent.Field {
 			Optional().
 			Default("").
 			Comment("Comment stored with the archive in borg"),
+		field.String("warning_message").
+			StructTag(`json:"warningMessage,omitempty"`).
+			Optional().
+			Nillable().
+			Comment("Warning message from the backup operation that created this archive"),
 	}
 }
 

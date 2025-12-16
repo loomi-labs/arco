@@ -183,6 +183,11 @@ export class ArchiveWithPendingChanges {
     "comment": string;
 
     /**
+     * Warning message from the backup operation that created this archive
+     */
+    "warningMessage"?: string | null;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
@@ -241,18 +246,18 @@ export class ArchiveWithPendingChanges {
      * Creates a new ArchiveWithPendingChanges instance from a string or object.
      */
     static createFrom($$source: any = {}): ArchiveWithPendingChanges {
-        const $$createField8_0 = $$createType12;
-        const $$createField9_0 = $$createType13;
-        const $$createField10_0 = $$createType14;
+        const $$createField9_0 = $$createType12;
+        const $$createField10_0 = $$createType13;
+        const $$createField11_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField8_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField9_0($$parsedSource["edges"]);
         }
         if ("editStateUnion" in $$parsedSource) {
-            $$parsedSource["editStateUnion"] = $$createField9_0($$parsedSource["editStateUnion"]);
+            $$parsedSource["editStateUnion"] = $$createField10_0($$parsedSource["editStateUnion"]);
         }
         if ("deleteStateUnion" in $$parsedSource) {
-            $$parsedSource["deleteStateUnion"] = $$createField10_0($$parsedSource["deleteStateUnion"]);
+            $$parsedSource["deleteStateUnion"] = $$createField11_0($$parsedSource["deleteStateUnion"]);
         }
         return new ArchiveWithPendingChanges($$parsedSource as Partial<ArchiveWithPendingChanges>);
     }
@@ -988,9 +993,8 @@ export class Repository {
      * Metadata
      */
     "archiveCount": number;
-    "lastBackupTime"?: time$0.Time | null;
-    "lastBackupError"?: string;
-    "lastBackupWarning"?: string;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
 
     /**
      * Check tracking
@@ -1080,8 +1084,10 @@ export class Repository {
     static createFrom($$source: any = {}): Repository {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField10_0 = $$createType41;
-        const $$createField12_0 = $$createType41;
+        const $$createField6_0 = $$createType42;
+        const $$createField7_0 = $$createType44;
+        const $$createField9_0 = $$createType45;
+        const $$createField11_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1089,11 +1095,17 @@ export class Repository {
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField6_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField7_0($$parsedSource["lastAttempt"]);
+        }
         if ("quickCheckError" in $$parsedSource) {
-            $$parsedSource["quickCheckError"] = $$createField10_0($$parsedSource["quickCheckError"]);
+            $$parsedSource["quickCheckError"] = $$createField9_0($$parsedSource["quickCheckError"]);
         }
         if ("fullCheckError" in $$parsedSource) {
-            $$parsedSource["fullCheckError"] = $$createField12_0($$parsedSource["fullCheckError"]);
+            $$parsedSource["fullCheckError"] = $$createField11_0($$parsedSource["fullCheckError"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }
@@ -1124,9 +1136,8 @@ export class RepositoryWithQueue {
      * Metadata
      */
     "archiveCount": number;
-    "lastBackupTime"?: time$0.Time | null;
-    "lastBackupError"?: string;
-    "lastBackupWarning"?: string;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
 
     /**
      * Check tracking
@@ -1221,10 +1232,12 @@ export class RepositoryWithQueue {
     static createFrom($$source: any = {}): RepositoryWithQueue {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField10_0 = $$createType41;
-        const $$createField12_0 = $$createType41;
-        const $$createField19_0 = $$createType44;
-        const $$createField20_0 = $$createType43;
+        const $$createField6_0 = $$createType42;
+        const $$createField7_0 = $$createType44;
+        const $$createField9_0 = $$createType45;
+        const $$createField11_0 = $$createType45;
+        const $$createField18_0 = $$createType48;
+        const $$createField19_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1232,17 +1245,23 @@ export class RepositoryWithQueue {
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField6_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField7_0($$parsedSource["lastAttempt"]);
+        }
         if ("quickCheckError" in $$parsedSource) {
-            $$parsedSource["quickCheckError"] = $$createField10_0($$parsedSource["quickCheckError"]);
+            $$parsedSource["quickCheckError"] = $$createField9_0($$parsedSource["quickCheckError"]);
         }
         if ("fullCheckError" in $$parsedSource) {
-            $$parsedSource["fullCheckError"] = $$createField12_0($$parsedSource["fullCheckError"]);
+            $$parsedSource["fullCheckError"] = $$createField11_0($$parsedSource["fullCheckError"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField19_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField18_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField20_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField19_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
@@ -1265,7 +1284,7 @@ export class Running {
      * Creates a new Running instance from a string or object.
      */
     static createFrom($$source: any = {}): Running {
-        const $$createField0_0 = $$createType46;
+        const $$createField0_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("progress" in $$parsedSource) {
             $$parsedSource["progress"] = $$createField0_0($$parsedSource["progress"]);
@@ -1340,8 +1359,8 @@ export class SerializableQueuedOperation {
      * Creates a new SerializableQueuedOperation instance from a string or object.
      */
     static createFrom($$source: any = {}): SerializableQueuedOperation {
-        const $$createField3_0 = $$createType47;
-        const $$createField4_0 = $$createType48;
+        const $$createField3_0 = $$createType51;
+        const $$createField4_0 = $$createType52;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("operationUnion" in $$parsedSource) {
             $$parsedSource["operationUnion"] = $$createField3_0($$parsedSource["operationUnion"]);
@@ -1494,11 +1513,15 @@ const $$createType37 = PruningDate.createFrom;
 const $$createType38 = $Create.Array($$createType37);
 const $$createType39 = LocationUnion.createFrom;
 const $$createType40 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType41 = $Create.Array($Create.Any);
-const $$createType42 = SerializableQueuedOperation.createFrom;
-const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = $Create.Array($$createType43);
-const $$createType45 = Progress.createFrom;
-const $$createType46 = $Create.Nullable($$createType45);
-const $$createType47 = statemachine$0.OperationUnion.createFrom;
-const $$createType48 = OperationStatusUnion.createFrom;
+const $$createType41 = types$0.LastBackup.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = types$0.LastAttempt.createFrom;
+const $$createType44 = $Create.Nullable($$createType43);
+const $$createType45 = $Create.Array($Create.Any);
+const $$createType46 = SerializableQueuedOperation.createFrom;
+const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = $Create.Array($$createType47);
+const $$createType49 = Progress.createFrom;
+const $$createType50 = $Create.Nullable($$createType49);
+const $$createType51 = statemachine$0.OperationUnion.createFrom;
+const $$createType52 = OperationStatusUnion.createFrom;

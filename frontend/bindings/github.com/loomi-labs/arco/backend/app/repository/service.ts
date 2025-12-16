@@ -209,17 +209,6 @@ export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$
 }
 
 /**
- * GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
- */
-export function GetLastBackupErrorMsgByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(4136556109, bId);
-}
-
-export function GetLastBackupWarningByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(1506815150, bId);
-}
-
-/**
  * GetPaginatedArchives retrieves paginated archives for a repository
  */
 export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<$models.PaginatedArchivesResponse | null> {

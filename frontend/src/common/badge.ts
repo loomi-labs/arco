@@ -77,6 +77,43 @@ export function toCreationTimeTooltip(date: Date | undefined): string {
 }
 
 /**
+ * Returns just the text color class for an icon based on the difference between the current date and the given date.
+ * Uses the same color scheme as toCreationTimeBadge.
+ * @param date The date to compare with the current date.
+ */
+export function toCreationTimeIconColor(date: Date | undefined): string {
+  if (!date) {
+    return "";
+  }
+
+  const now = new Date();
+  const offsetToUTC = offset(now);
+  date = removeOffset(date, offsetToUTC);
+
+  const dHours = diffHours(now, date);
+  if (dHours < 1) {
+    return "text-badge-fresh-border";
+  }
+  const dDays = diffDays(now, date);
+  if (dDays < 1) {
+    return "text-badge-recent-border";
+  }
+  if (dDays < 2) {
+    return "text-badge-days-border";
+  }
+  if (dDays < 7) {
+    return "text-badge-week-border";
+  }
+  if (dDays < 30) {
+    return "text-badge-month-border";
+  }
+  if (dDays < 365) {
+    return "text-badge-year-border";
+  }
+  return "text-badge-old-border";
+}
+
+/**
  * Returns the style for a badge based on the given repository type.
  * @param type The repository type.
  */

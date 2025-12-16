@@ -120,6 +120,26 @@ func (_u *ArchiveUpdate) ClearComment() *ArchiveUpdate {
 	return _u
 }
 
+// SetWarningMessage sets the "warning_message" field.
+func (_u *ArchiveUpdate) SetWarningMessage(v string) *ArchiveUpdate {
+	_u.mutation.SetWarningMessage(v)
+	return _u
+}
+
+// SetNillableWarningMessage sets the "warning_message" field if the given value is not nil.
+func (_u *ArchiveUpdate) SetNillableWarningMessage(v *string) *ArchiveUpdate {
+	if v != nil {
+		_u.SetWarningMessage(*v)
+	}
+	return _u
+}
+
+// ClearWarningMessage clears the value of the "warning_message" field.
+func (_u *ArchiveUpdate) ClearWarningMessage() *ArchiveUpdate {
+	_u.mutation.ClearWarningMessage()
+	return _u
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
 func (_u *ArchiveUpdate) SetRepositoryID(id int) *ArchiveUpdate {
 	_u.mutation.SetRepositoryID(id)
@@ -252,6 +272,12 @@ func (_u *ArchiveUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.CommentCleared() {
 		_spec.ClearField(archive.FieldComment, field.TypeString)
+	}
+	if value, ok := _u.mutation.WarningMessage(); ok {
+		_spec.SetField(archive.FieldWarningMessage, field.TypeString, value)
+	}
+	if _u.mutation.WarningMessageCleared() {
+		_spec.ClearField(archive.FieldWarningMessage, field.TypeString)
 	}
 	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -422,6 +448,26 @@ func (_u *ArchiveUpdateOne) ClearComment() *ArchiveUpdateOne {
 	return _u
 }
 
+// SetWarningMessage sets the "warning_message" field.
+func (_u *ArchiveUpdateOne) SetWarningMessage(v string) *ArchiveUpdateOne {
+	_u.mutation.SetWarningMessage(v)
+	return _u
+}
+
+// SetNillableWarningMessage sets the "warning_message" field if the given value is not nil.
+func (_u *ArchiveUpdateOne) SetNillableWarningMessage(v *string) *ArchiveUpdateOne {
+	if v != nil {
+		_u.SetWarningMessage(*v)
+	}
+	return _u
+}
+
+// ClearWarningMessage clears the value of the "warning_message" field.
+func (_u *ArchiveUpdateOne) ClearWarningMessage() *ArchiveUpdateOne {
+	_u.mutation.ClearWarningMessage()
+	return _u
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by ID.
 func (_u *ArchiveUpdateOne) SetRepositoryID(id int) *ArchiveUpdateOne {
 	_u.mutation.SetRepositoryID(id)
@@ -584,6 +630,12 @@ func (_u *ArchiveUpdateOne) sqlSave(ctx context.Context) (_node *Archive, err er
 	}
 	if _u.mutation.CommentCleared() {
 		_spec.ClearField(archive.FieldComment, field.TypeString)
+	}
+	if value, ok := _u.mutation.WarningMessage(); ok {
+		_spec.SetField(archive.FieldWarningMessage, field.TypeString, value)
+	}
+	if _u.mutation.WarningMessageCleared() {
+		_spec.ClearField(archive.FieldWarningMessage, field.TypeString)
 	}
 	if _u.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
