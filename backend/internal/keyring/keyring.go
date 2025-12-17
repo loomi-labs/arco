@@ -31,8 +31,9 @@ const (
 
 // Service provides secure credential storage using the system keyring
 type Service struct {
-	log  *zap.SugaredLogger
-	ring keyring.Keyring
+	log    *zap.SugaredLogger
+	config *types.Config
+	ring   keyring.Keyring
 
 	// In-memory token cache
 	mu                 sync.RWMutex
@@ -40,11 +41,19 @@ type Service struct {
 	cachedRefreshToken string
 }
 
-// NewService creates a new keyring service with platform-appropriate backends
-func NewService(log *zap.SugaredLogger, config *types.Config) (*Service, error) {
+// NewService creates a new keyring service
+func NewService(log *zap.SugaredLogger, config *types.Config) *Service {
+	return &Service{
+		log:    log,
+		config: config,
+	}
+}
+
+// Init opens the keyring backend. Call this before any keyring operations.
+func (s *Service) Init() error {
 	// Ensure keyring directory exists with restrictive permissions
-	if err := os.MkdirAll(config.KeyringDir, 0700); err != nil {
-		return nil, fmt.Errorf("failed to create keyring directory: %w", err)
+	if err := os.MkdirAll(s.config.KeyringDir, 0700); err != nil {
+		return fmt.Errorf("failed to create keyring directory: %w", err)
 	}
 
 	// File backend uses a static key - credentials are effectively stored in cleartext.
@@ -52,7 +61,7 @@ func NewService(log *zap.SugaredLogger, config *types.Config) (*Service, error) 
 	const fileBackendKey = "arco-file-backend"
 
 	// Linux: query D-Bus to find the default Secret Service collection name
-	libSecretCollection := getDefaultSecretServiceCollection(log)
+	libSecretCollection := getDefaultSecretServiceCollection(s.log)
 
 	ring, err := keyring.Open(keyring.Config{
 		ServiceName: ServiceName,
@@ -66,7 +75,7 @@ func NewService(log *zap.SugaredLogger, config *types.Config) (*Service, error) 
 		},
 
 		// File backend configuration
-		FileDir: config.KeyringDir,
+		FileDir: s.config.KeyringDir,
 		FilePasswordFunc: func(string) (string, error) {
 			return fileBackendKey, nil
 		},
@@ -78,13 +87,11 @@ func NewService(log *zap.SugaredLogger, config *types.Config) (*Service, error) 
 		LibSecretCollectionName: libSecretCollection,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to open keyring: %w", err)
+		return fmt.Errorf("failed to open keyring: %w", err)
 	}
 
-	return &Service{
-		log:  log,
-		ring: ring,
-	}, nil
+	s.ring = ring
+	return nil
 }
 
 // getDefaultSecretServiceCollection queries D-Bus to find the default Secret Service collection name.
