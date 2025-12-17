@@ -619,7 +619,7 @@ func (a *App) applyMigrations(dbSource string) error {
 
 	// Phase 3: Run remaining migrations
 	if err := goose.Up(db.DB(), "."); err != nil {
-		return fmt.Errorf("failed to apply migrations phase 2: %v", err)
+		return fmt.Errorf("failed to apply migrations phase 3: %v", err)
 	}
 
 	return nil
