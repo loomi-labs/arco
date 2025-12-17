@@ -3,19 +3,15 @@ package app
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 )
 
 // migrateCredentialsToKeyring copies passwords and tokens from the database to the keyring
 // This runs BEFORE SQL migrations that drop the password columns
 // TODO: Remove this file after all users have migrated (e.g., v1.x release)
 func (a *App) migrateCredentialsToKeyring(db *sql.DB) error {
-	keyringService, err := keyring.NewService(a.log, a.config)
-	if err != nil {
-		return fmt.Errorf("failed to initialize keyring: %w", err)
+	if a.keyring == nil {
+		return fmt.Errorf("keyring not initialized")
 	}
-	a.keyring = keyringService
 
 	// Check if password column still exists in repositories table (idempotent check)
 	hasPasswordColumn, err := a.columnExists(db, "repositories", "password")

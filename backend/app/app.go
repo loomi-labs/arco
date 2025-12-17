@@ -152,7 +152,16 @@ func (a *App) Startup(ctx context.Context) {
 		}
 	}
 
-	// Initialize the database
+	// Initialize keyring service (needed for migration and auth)
+	keyringService, err := keyring.NewService(a.log, a.config)
+	if err != nil {
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
+		a.log.Error(err)
+		return
+	}
+	a.keyring = keyringService
+
+	// Initialize the database (migrations may use keyring)
 	db, err := a.initDb()
 	if err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)

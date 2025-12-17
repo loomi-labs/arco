@@ -60,7 +60,6 @@ func NewService(log *zap.SugaredLogger, config *types.Config) (*Service, error) 
 		AllowedBackends: []keyring.BackendType{
 			keyring.SecretServiceBackend, // Linux (GNOME Keyring, KWallet via Secret Service)
 			keyring.KeychainBackend,      // macOS
-			keyring.WinCredBackend,       // Windows
 			keyring.FileBackend,          // Fallback: encrypted file
 		},
 
