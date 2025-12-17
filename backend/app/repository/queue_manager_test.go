@@ -12,6 +12,7 @@ import (
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/enttest"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/mock/gomock"
@@ -62,14 +63,17 @@ func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Cont
 	log := zap.NewNop().Sugar()
 	stateMachine := statemachine.NewRepositoryStateMachine()
 
+	// Create test keyring
+	testKeyring := keyring.NewTestService(log)
+
 	// Create queue manager
 	qm := NewQueueManager(log, stateMachine, 2) // max 2 heavy operations
 
 	// Set the queue manager reference in state machine
 	stateMachine.SetQueueManager(qm)
 
-	// Initialize with real database and mock borg
-	qm.Init(db, mockBorgClient, mockEmitter)
+	// Initialize with real database, mock borg, and test keyring
+	qm.Init(db, mockBorgClient, mockEmitter, testKeyring)
 
 	return qm, db, ctx, mockEmitter
 }
@@ -80,7 +84,6 @@ func createTestRepository(t *testing.T, db *ent.Client, ctx context.Context, id 
 		SetID(id).
 		SetName(fmt.Sprintf("test-repo-%d", id)).
 		SetURL(fmt.Sprintf("/tmp/test-repo-%d", id)).
-		SetPassword("test-password").
 		Save(ctx)
 	assert.NoError(t, err)
 	return repo

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/loomi-labs/arco/backend/app/state"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"go.uber.org/zap"
 )
 
@@ -19,15 +20,17 @@ type JWTAuthInterceptor struct {
 	authServiceRPC *auth.ServiceInternal
 	db             *ent.Client
 	state          *state.State
+	keyring        *keyring.Service
 }
 
 // NewJWTAuthInterceptor creates a new JWT authentication interceptor
-func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client, state *state.State) *JWTAuthInterceptor {
+func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client, state *state.State, keyring *keyring.Service) *JWTAuthInterceptor {
 	return &JWTAuthInterceptor{
 		log:            log,
 		authServiceRPC: authServiceRPC,
 		db:             db,
 		state:          state,
+		keyring:        keyring,
 	}
 }
 
@@ -82,7 +85,13 @@ func (j *JWTAuthInterceptor) UnaryInterceptor() connect.UnaryInterceptorFunc {
 func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string, error) {
 	j.mustHaveDB()
 
-	// Get the first user (since we only store one user)
+	// Try to get access token from keyring
+	accessToken, err := j.keyring.GetAccessToken()
+	if err != nil {
+		return "", fmt.Errorf("no access token in keyring: %w", err)
+	}
+
+	// Get the first user to check token expiry (since we only store one user)
 	user, err := j.db.User.Query().First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -91,58 +100,42 @@ func (j *JWTAuthInterceptor) getCurrentAccessToken(ctx context.Context) (string,
 		return "", fmt.Errorf("failed to query user: %w", err)
 	}
 
-	// Check if user has an access token
-	if user.AccessToken == nil || *user.AccessToken == "" {
-		return "", fmt.Errorf("user has no access token")
-	}
-
 	// Check if token is expired and refresh if needed
 	if user.AccessTokenExpiresAt != nil && user.AccessTokenExpiresAt.Before(time.Now().Add(30*time.Second)) {
 		j.log.Debug("Access token expired, attempting refresh")
 
-		// Validate and refresh tokens - this will update the user in the database
+		// Validate and refresh tokens - this will update keyring
 		err = j.authServiceRPC.ValidateAndRenewStoredTokens(ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to refresh token: %w", err)
 		}
 
-		// Re-fetch the user to get the updated token
-		user, err = j.db.User.Query().First(ctx)
+		// Get the refreshed token from keyring
+		accessToken, err = j.keyring.GetAccessToken()
 		if err != nil {
-			return "", fmt.Errorf("failed to get refreshed user: %w", err)
-		}
-
-		if user.AccessToken == nil || *user.AccessToken == "" {
-			return "", fmt.Errorf("no access token after refresh")
+			return "", fmt.Errorf("no access token after refresh: %w", err)
 		}
 	}
 
-	return *user.AccessToken, nil
+	return accessToken, nil
 }
 
 // clearTokens clears all stored authentication tokens when receiving unauthenticated errors
 func (j *JWTAuthInterceptor) clearTokens(ctx context.Context) error {
 	j.mustHaveDB()
 
-	// Get the first user (since we only store one user)
-	user, err := j.db.User.Query().First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			j.log.Debug("No user found to clear tokens for")
-			return nil // No user means no tokens to clear
-		}
-		return fmt.Errorf("failed to query user: %w", err)
+	// Clear tokens from keyring
+	if err := j.keyring.DeleteTokens(); err != nil {
+		j.log.Warnf("Failed to delete tokens from keyring: %v", err)
 	}
 
-	// Clear all token fields
-	err = user.Update().
-		ClearRefreshToken().
-		ClearAccessToken().
+	// Clear token expiry times from database
+	err := j.db.User.Update().
 		ClearRefreshTokenExpiresAt().
 		ClearAccessTokenExpiresAt().
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to clear tokens: %w", err)
+		return fmt.Errorf("failed to clear token expiry times: %w", err)
 	}
 	j.state.SetNotAuthenticated(ctx)
 

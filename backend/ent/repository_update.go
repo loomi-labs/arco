@@ -68,16 +68,16 @@ func (_u *RepositoryUpdate) SetNillableURL(v *string) *RepositoryUpdate {
 	return _u
 }
 
-// SetPassword sets the "password" field.
-func (_u *RepositoryUpdate) SetPassword(v string) *RepositoryUpdate {
-	_u.mutation.SetPassword(v)
+// SetHasPassword sets the "has_password" field.
+func (_u *RepositoryUpdate) SetHasPassword(v bool) *RepositoryUpdate {
+	_u.mutation.SetHasPassword(v)
 	return _u
 }
 
-// SetNillablePassword sets the "password" field if the given value is not nil.
-func (_u *RepositoryUpdate) SetNillablePassword(v *string) *RepositoryUpdate {
+// SetNillableHasPassword sets the "has_password" field if the given value is not nil.
+func (_u *RepositoryUpdate) SetNillableHasPassword(v *bool) *RepositoryUpdate {
 	if v != nil {
-		_u.SetPassword(*v)
+		_u.SetHasPassword(*v)
 	}
 	return _u
 }
@@ -495,8 +495,8 @@ func (_u *RepositoryUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Password(); ok {
-		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	if value, ok := _u.mutation.HasPassword(); ok {
+		_spec.SetField(repository.FieldHasPassword, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.LastQuickCheckAt(); ok {
 		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)
@@ -788,16 +788,16 @@ func (_u *RepositoryUpdateOne) SetNillableURL(v *string) *RepositoryUpdateOne {
 	return _u
 }
 
-// SetPassword sets the "password" field.
-func (_u *RepositoryUpdateOne) SetPassword(v string) *RepositoryUpdateOne {
-	_u.mutation.SetPassword(v)
+// SetHasPassword sets the "has_password" field.
+func (_u *RepositoryUpdateOne) SetHasPassword(v bool) *RepositoryUpdateOne {
+	_u.mutation.SetHasPassword(v)
 	return _u
 }
 
-// SetNillablePassword sets the "password" field if the given value is not nil.
-func (_u *RepositoryUpdateOne) SetNillablePassword(v *string) *RepositoryUpdateOne {
+// SetNillableHasPassword sets the "has_password" field if the given value is not nil.
+func (_u *RepositoryUpdateOne) SetNillableHasPassword(v *bool) *RepositoryUpdateOne {
 	if v != nil {
-		_u.SetPassword(*v)
+		_u.SetHasPassword(*v)
 	}
 	return _u
 }
@@ -1245,8 +1245,8 @@ func (_u *RepositoryUpdateOne) sqlSave(ctx context.Context) (_node *Repository, 
 	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Password(); ok {
-		_spec.SetField(repository.FieldPassword, field.TypeString, value)
+	if value, ok := _u.mutation.HasPassword(); ok {
+		_spec.SetField(repository.FieldHasPassword, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.LastQuickCheckAt(); ok {
 		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)

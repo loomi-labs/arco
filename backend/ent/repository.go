@@ -27,8 +27,8 @@ type Repository struct {
 	Name string `json:"name"`
 	// URL holds the value of the "url" field.
 	URL string `json:"url"`
-	// Password holds the value of the "password" field.
-	Password string `json:"password"`
+	// Whether this repository has a password stored in the keyring
+	HasPassword bool `json:"hasPassword"`
 	// Timestamp of last quick check (--repository-only)
 	LastQuickCheckAt *time.Time `json:"lastQuickCheckAt"`
 	// Error messages from last quick check, empty array if successful
@@ -116,9 +116,11 @@ func (*Repository) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repository.FieldQuickCheckError, repository.FieldFullCheckError:
 			values[i] = new([]byte)
+		case repository.FieldHasPassword:
+			values[i] = new(sql.NullBool)
 		case repository.FieldID, repository.FieldStatsTotalChunks, repository.FieldStatsTotalSize, repository.FieldStatsTotalCsize, repository.FieldStatsTotalUniqueChunks, repository.FieldStatsUniqueSize, repository.FieldStatsUniqueCsize:
 			values[i] = new(sql.NullInt64)
-		case repository.FieldName, repository.FieldURL, repository.FieldPassword:
+		case repository.FieldName, repository.FieldURL:
 			values[i] = new(sql.NullString)
 		case repository.FieldCreatedAt, repository.FieldUpdatedAt, repository.FieldLastQuickCheckAt, repository.FieldLastFullCheckAt:
 			values[i] = new(sql.NullTime)
@@ -169,11 +171,11 @@ func (_m *Repository) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.URL = value.String
 			}
-		case repository.FieldPassword:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field password", values[i])
+		case repository.FieldHasPassword:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field has_password", values[i])
 			} else if value.Valid {
-				_m.Password = value.String
+				_m.HasPassword = value.Bool
 			}
 		case repository.FieldLastQuickCheckAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -316,8 +318,8 @@ func (_m *Repository) String() string {
 	builder.WriteString("url=")
 	builder.WriteString(_m.URL)
 	builder.WriteString(", ")
-	builder.WriteString("password=")
-	builder.WriteString(_m.Password)
+	builder.WriteString("has_password=")
+	builder.WriteString(fmt.Sprintf("%v", _m.HasPassword))
 	builder.WriteString(", ")
 	if v := _m.LastQuickCheckAt; v != nil {
 		builder.WriteString("last_quick_check_at=")
