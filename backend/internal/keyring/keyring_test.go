@@ -3,7 +3,8 @@ package keyring
 import (
 	"testing"
 
-	extKeyring "github.com/99designs/keyring"
+	"github.com/99designs/keyring"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -12,6 +13,53 @@ import (
 func newTestLogger() *zap.SugaredLogger {
 	logger, _ := zap.NewDevelopment()
 	return logger.Sugar()
+}
+
+// NewTestService creates a keyring service with an in-memory backend for testing
+func NewTestService(log *zap.SugaredLogger) *Service {
+	// Create an in-memory keyring for testing
+	items := make(map[string]keyring.Item)
+	ring := &arrayKeyring{items: items}
+
+	return &Service{
+		log:  log,
+		ring: ring,
+	}
+}
+
+// arrayKeyring is a simple in-memory keyring implementation for testing
+type arrayKeyring struct {
+	items map[string]keyring.Item
+}
+
+func (a *arrayKeyring) Get(key string) (keyring.Item, error) {
+	item, ok := a.items[key]
+	if !ok {
+		return keyring.Item{}, keyring.ErrKeyNotFound
+	}
+	return item, nil
+}
+
+func (a *arrayKeyring) GetMetadata(key string) (keyring.Metadata, error) {
+	return keyring.Metadata{}, nil
+}
+
+func (a *arrayKeyring) Set(item keyring.Item) error {
+	a.items[item.Key] = item
+	return nil
+}
+
+func (a *arrayKeyring) Remove(key string) error {
+	delete(a.items, key)
+	return nil
+}
+
+func (a *arrayKeyring) Keys() ([]string, error) {
+	keys := make([]string, 0, len(a.items))
+	for k := range a.items {
+		keys = append(keys, k)
+	}
+	return keys, nil
 }
 
 func TestRepositoryPassword(t *testing.T) {
@@ -244,7 +292,7 @@ func TestTokenCacheInvalidation(t *testing.T) {
 
 	t.Run("cache populated on get", func(t *testing.T) {
 		// Manually set in keyring without going through Set
-		_ = svc.ring.Set(extKeyring.Item{Key: accessTokenKey, Data: []byte("direct")})
+		_ = svc.ring.Set(keyring.Item{Key: accessTokenKey, Data: []byte("direct")})
 
 		// Cache should be empty
 		assert.Empty(t, svc.cachedAccessToken)

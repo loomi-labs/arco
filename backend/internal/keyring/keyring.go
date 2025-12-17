@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/99designs/keyring"
 	"github.com/godbus/dbus/v5"
@@ -18,7 +19,7 @@ const (
 	ServiceName = "arco-backup"
 
 	// Key prefix for all arco secrets in the default keyring collection
-	keyPrefix = "arcobackup:"
+	keyPrefix = "arco-backup:"
 
 	// Key format for repository passwords
 	repoPasswordKeyFmt = keyPrefix + "repo:%d:password"
@@ -33,7 +34,8 @@ type Service struct {
 	log  *zap.SugaredLogger
 	ring keyring.Keyring
 
-	// In-memory token cache (populated on read, invalidated on write/delete)
+	// In-memory token cache
+	mu                 sync.RWMutex
 	cachedAccessToken  string
 	cachedRefreshToken string
 }
@@ -97,6 +99,11 @@ func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 		log.Infof("Failed to connect to D-Bus session bus: %v", err)
 		return ""
 	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Infof("Failed to close D-Bus connection: %v", err)
+		}
+	}()
 
 	obj := conn.Object("org.freedesktop.secrets", "/org/freedesktop/secrets")
 	var path dbus.ObjectPath
@@ -182,15 +189,24 @@ func (s *Service) HasRepositoryPassword(repoID int) bool {
 
 // GetAccessToken retrieves the stored access token
 func (s *Service) GetAccessToken() (string, error) {
-	if s.cachedAccessToken != "" {
-		return s.cachedAccessToken, nil
+	s.mu.RLock()
+	cached := s.cachedAccessToken
+	s.mu.RUnlock()
+
+	if cached != "" {
+		return cached, nil
 	}
+
 	item, err := s.ring.Get(accessTokenKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to get access token: %w", err)
 	}
+
+	s.mu.Lock()
 	s.cachedAccessToken = string(item.Data)
-	return s.cachedAccessToken, nil
+	s.mu.Unlock()
+
+	return string(item.Data), nil
 }
 
 // SetAccessToken stores the access token
@@ -202,21 +218,34 @@ func (s *Service) SetAccessToken(token string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set access token: %w", err)
 	}
+
+	s.mu.Lock()
 	s.cachedAccessToken = token
+	s.mu.Unlock()
+
 	return nil
 }
 
 // GetRefreshToken retrieves the stored refresh token
 func (s *Service) GetRefreshToken() (string, error) {
-	if s.cachedRefreshToken != "" {
-		return s.cachedRefreshToken, nil
+	s.mu.RLock()
+	cached := s.cachedRefreshToken
+	s.mu.RUnlock()
+
+	if cached != "" {
+		return cached, nil
 	}
+
 	item, err := s.ring.Get(refreshTokenKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to get refresh token: %w", err)
 	}
+
+	s.mu.Lock()
 	s.cachedRefreshToken = string(item.Data)
-	return s.cachedRefreshToken, nil
+	s.mu.Unlock()
+
+	return string(item.Data), nil
 }
 
 // SetRefreshToken stores the refresh token
@@ -228,7 +257,11 @@ func (s *Service) SetRefreshToken(token string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set refresh token: %w", err)
 	}
+
+	s.mu.Lock()
 	s.cachedRefreshToken = token
+	s.mu.Unlock()
+
 	return nil
 }
 
@@ -245,8 +278,10 @@ func (s *Service) DeleteTokens() error {
 	}
 
 	// Clear cache regardless of errors
+	s.mu.Lock()
 	s.cachedAccessToken = ""
 	s.cachedRefreshToken = ""
+	s.mu.Unlock()
 
 	if len(errs) > 0 {
 		return fmt.Errorf("errors deleting tokens: %v", errs)
@@ -264,6 +299,10 @@ func (s *Service) SetTokens(accessToken, refreshToken string) error {
 		if delErr := s.ring.Remove(accessTokenKey); delErr != nil {
 			s.log.Warnf("Failed to rollback access token after refresh token error: %v", delErr)
 		}
+		// Clear access token cache since we removed it from keyring
+		s.mu.Lock()
+		s.cachedAccessToken = ""
+		s.mu.Unlock()
 		return err
 	}
 	return nil
@@ -273,51 +312,4 @@ func (s *Service) SetTokens(accessToken, refreshToken string) error {
 func (s *Service) HasRefreshToken() bool {
 	_, err := s.ring.Get(refreshTokenKey)
 	return err == nil
-}
-
-// NewTestService creates a keyring service with an in-memory backend for testing
-func NewTestService(log *zap.SugaredLogger) *Service {
-	// Create an in-memory keyring for testing
-	items := make(map[string]keyring.Item)
-	ring := &arrayKeyring{items: items}
-
-	return &Service{
-		log:  log,
-		ring: ring,
-	}
-}
-
-// arrayKeyring is a simple in-memory keyring implementation for testing
-type arrayKeyring struct {
-	items map[string]keyring.Item
-}
-
-func (a *arrayKeyring) Get(key string) (keyring.Item, error) {
-	item, ok := a.items[key]
-	if !ok {
-		return keyring.Item{}, keyring.ErrKeyNotFound
-	}
-	return item, nil
-}
-
-func (a *arrayKeyring) GetMetadata(key string) (keyring.Metadata, error) {
-	return keyring.Metadata{}, nil
-}
-
-func (a *arrayKeyring) Set(item keyring.Item) error {
-	a.items[item.Key] = item
-	return nil
-}
-
-func (a *arrayKeyring) Remove(key string) error {
-	delete(a.items, key)
-	return nil
-}
-
-func (a *arrayKeyring) Keys() ([]string, error) {
-	keys := make([]string, 0, len(a.items))
-	for k := range a.items {
-		keys = append(keys, k)
-	}
-	return keys, nil
 }
