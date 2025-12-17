@@ -86,6 +86,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		keyring:                  keyring.NewService(log, config),
 		userService:              user.NewService(log, state),
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
@@ -152,14 +153,12 @@ func (a *App) Startup(ctx context.Context) {
 		}
 	}
 
-	// Initialize keyring service (needed for migration and auth)
-	keyringService, err := keyring.NewService(a.log, a.config)
-	if err != nil {
+	// Init keyring backend (needed for migration and auth)
+	if err := a.keyring.Init(); err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
 		a.log.Error(err)
 		return
 	}
-	a.keyring = keyringService
 
 	// Initialize the database (migrations may use keyring)
 	db, err := a.initDb()
