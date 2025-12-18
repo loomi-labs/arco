@@ -92,13 +92,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            borg-version: "1.4.0"
+            borg-version: "1.4.2"
             base-image: ubuntu-22.04
           - os: ubuntu-latest
-            borg-version: "1.4.1"
+            borg-version: "1.4.2"
             base-image: ubuntu-22.04
           - os: ubuntu-24.04
-            borg-version: "1.4.1"
+            borg-version: "1.4.2"
             base-image: ubuntu-24.04
     permissions:
       contents: read
@@ -131,6 +131,7 @@ jobs:
             --name borg-client-test \
             --network borg-test-network \
             --privileged \
+            --device /dev/fuse \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${PWD}/docker:/app/docker:ro" \
             -v ~/.docker:/home/borg/.docker:ro \
