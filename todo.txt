@@ -1,2 +1,0 @@
-- add arm for linux
-- test arm
