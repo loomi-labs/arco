@@ -229,6 +229,12 @@ async function validate(force = false) {
           passwordError.value = undefined;
           isPasswordCorrect.value = true;
         }
+      } else {
+        // For new repositories (not existing borg repos), default to encrypted
+        isEncrypted.value = true;
+        if (password.value !== undefined || force) {
+          passwordError.value = !password.value ? "Enter a password for this repository" : undefined;
+        }
       }
     } else {
       // Not a valid path or no path entered - reset borg-related state
