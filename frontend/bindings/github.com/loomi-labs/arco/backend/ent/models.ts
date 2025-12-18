@@ -1258,9 +1258,9 @@ export class Repository {
     "url": string;
 
     /**
-     * Password holds the value of the "password" field.
+     * Whether this repository has a password stored in the keyring
      */
-    "password": string;
+    "hasPassword": boolean;
 
     /**
      * Timestamp of last quick check (--repository-only)
@@ -1335,8 +1335,8 @@ export class Repository {
         if (!("url" in $$source)) {
             this["url"] = "";
         }
-        if (!("password" in $$source)) {
-            this["password"] = "";
+        if (!("hasPassword" in $$source)) {
+            this["hasPassword"] = false;
         }
         if (!("lastQuickCheckAt" in $$source)) {
             this["lastQuickCheckAt"] = null;

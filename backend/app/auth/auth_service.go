@@ -13,7 +13,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
-	"github.com/loomi-labs/arco/backend/ent/user"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +30,7 @@ type Service struct {
 	log       *zap.SugaredLogger
 	db        *ent.Client
 	state     *state.State
+	keyring   *keyring.Service
 	rpcClient arcov1connect.AuthServiceClient
 }
 
@@ -47,9 +48,10 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 	}
 }
 
-func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient) {
+func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient, keyring *keyring.Service) {
 	asi.db = db
 	asi.rpcClient = rpcClient
+	asi.keyring = keyring
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -164,28 +166,25 @@ func (as *Service) StartLogin(ctx context.Context, email string) (AuthStatus, er
 func (as *Service) Logout(ctx context.Context) error {
 	as.mustHaveDB()
 
-	// Get the user's refresh token for logout request
-	userEntity, err := as.db.User.Query().
-		Where(user.RefreshTokenNotNil()).
-		First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			// No user with refresh token found, already logged out
-			as.state.SetNotAuthenticated(ctx)
-			return nil
-		}
-		return fmt.Errorf("failed to query user: %w", err)
+	// Check if user has a refresh token in keyring
+	if !as.keyring.HasRefreshToken() {
+		// No refresh token found, already logged out
+		as.state.SetNotAuthenticated(ctx)
+		return nil
 	}
 
-	// Clear tokens locally
-	err = userEntity.Update().
-		ClearRefreshToken().
-		ClearAccessToken().
+	// Clear tokens from keyring
+	if err := as.keyring.DeleteTokens(); err != nil {
+		as.log.Warnf("Failed to delete tokens from keyring: %v", err)
+	}
+
+	// Clear token expiry times from database
+	err := as.db.User.Update().
 		ClearRefreshTokenExpiresAt().
 		ClearAccessTokenExpiresAt().
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to clear tokens: %w", err)
+		return fmt.Errorf("failed to clear token expiry times: %w", err)
 	}
 
 	// Set authentication state
@@ -197,7 +196,14 @@ func (as *Service) Logout(ctx context.Context) error {
 func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) {
 	asi.mustHaveDB()
 
-	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: *userEntity.RefreshToken})
+	// Get refresh token from keyring
+	refreshToken, err := asi.keyring.GetRefreshToken()
+	if err != nil {
+		asi.log.Errorf("Failed to get refresh token from keyring: %v", err)
+		return
+	}
+
+	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: refreshToken})
 
 	resp, err := asi.rpcClient.RefreshToken(ctx, req)
 	if err != nil {
@@ -210,7 +216,6 @@ func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.Us
 		asi.log.Errorf("Failed to update local tokens for user %s: %v", userEntity.Email, err)
 		return
 	}
-	return
 }
 
 // syncAuthenticatedSession syncs tokens from external service to local db
@@ -294,31 +299,40 @@ func (asi *ServiceInternal) RecoverAuthSessions(ctx context.Context) error {
 func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) error {
 	asi.mustHaveDB()
 
-	// Delete expired refresh tokens
-	err := asi.db.User.Update().
-		Where(user.RefreshTokenExpiresAtLT(time.Now())).
-		ClearRefreshToken().
-		ClearAccessToken().
-		ClearRefreshTokenExpiresAt().
-		ClearAccessTokenExpiresAt().
-		Exec(ctx)
-	if err != nil {
-		asi.log.Warnf("Failed to clear expired tokens: %v", err)
+	// Check if we have a refresh token in keyring
+	if !asi.keyring.HasRefreshToken() {
+		asi.log.Info("No refresh token found in keyring")
+		asi.state.SetNotAuthenticated(ctx)
+		return nil
 	}
 
 	// Get the first user (since we only store one user ever)
-	userEntity, err := asi.db.User.Query().
-		Where(user.RefreshTokenNotNil()).
-		First(ctx)
-
+	userEntity, err := asi.db.User.Query().First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			asi.log.Info("No user with refresh token found")
+			asi.log.Info("No user found")
 			asi.state.SetNotAuthenticated(ctx)
 			return nil
 		}
 		asi.state.SetNotAuthenticated(ctx)
-		return fmt.Errorf("failed to query user with refresh token: %w", err)
+		return fmt.Errorf("failed to query user: %w", err)
+	}
+
+	// Check for expired refresh token and clear it
+	if userEntity.RefreshTokenExpiresAt != nil && userEntity.RefreshTokenExpiresAt.Before(time.Now()) {
+		asi.log.Info("Refresh token expired, clearing tokens")
+		if err := asi.keyring.DeleteTokens(); err != nil {
+			asi.log.Warnf("Failed to delete expired tokens from keyring: %v", err)
+		}
+		err := userEntity.Update().
+			ClearRefreshTokenExpiresAt().
+			ClearAccessTokenExpiresAt().
+			Exec(ctx)
+		if err != nil {
+			asi.log.Warnf("Failed to clear token expiration timestamps: %v", err)
+		}
+		asi.state.SetNotAuthenticated(ctx)
+		return nil
 	}
 
 	// Check if access token is still valid
@@ -344,12 +358,17 @@ func (asi *ServiceInternal) updateUserTokens(ctx context.Context, userEntity *en
 		return fmt.Errorf("invalid value for JWT's for user")
 	}
 
+	// Store tokens in keyring
+	if err := asi.keyring.SetTokens(accessToken, refreshToken); err != nil {
+		asi.state.SetNotAuthenticated(ctx)
+		return fmt.Errorf("failed to store tokens in keyring: %w", err)
+	}
+
+	// Store expiry times in database
 	accessExpiresAt := time.Now().Add(time.Duration(float64(accessTokenExpiresIn)*0.9) * time.Second)   // Apply 10% buffer to token expiration
 	refreshExpiresAt := time.Now().Add(time.Duration(float64(refreshTokenExpiresIn)*0.9) * time.Second) // Apply 10% buffer to token expiration
 	err := userEntity.Update().
-		SetAccessToken(accessToken).
 		SetAccessTokenExpiresAt(accessExpiresAt).
-		SetRefreshToken(refreshToken).
 		SetRefreshTokenExpiresAt(refreshExpiresAt).
 		Exec(ctx)
 	if err != nil {

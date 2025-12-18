@@ -15,7 +15,7 @@ import (
 
 	"connectrpc.com/connect"
 	"entgo.io/ent/dialect"
-	"entgo.io/ent/dialect/sql"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
@@ -31,6 +31,7 @@ import (
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pkg/browser"
@@ -59,6 +60,7 @@ type App struct {
 	ctx                  context.Context
 	cancel               context.CancelFunc
 	db                   *ent.Client
+	keyring              *keyring.Service
 	userService          *user.ServiceInternal
 	authService          *auth.ServiceInternal
 	planService          *plan.ServiceInternal
@@ -84,6 +86,7 @@ func NewApp(
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
 		shouldQuit:               false,
+		keyring:                  keyring.NewService(log, config),
 		userService:              user.NewService(log, state),
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
@@ -118,6 +121,10 @@ func (a *App) SubscriptionService() *subscription.Service {
 	return a.subscriptionService.Service
 }
 
+func (a *App) Keyring() *keyring.Service {
+	return a.keyring
+}
+
 func (a *App) NotificationService() *notification.Service {
 	return a.notificationService
 }
@@ -146,7 +153,14 @@ func (a *App) Startup(ctx context.Context) {
 		}
 	}
 
-	// Initialize the database
+	// Init keyring backend (needed for migration and auth)
+	if err := a.keyring.Init(); err != nil {
+		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
+		a.log.Error(err)
+		return
+	}
+
+	// Initialize the database (migrations may use keyring)
 	db, err := a.initDb()
 	if err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
@@ -157,7 +171,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.config.Migrations = nil // Free up memory
 
 	// Create JWT interceptor and HTTP client for cloud services
-	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db, a.state)
+	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db, a.state, a.keyring)
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
 	}
@@ -189,14 +203,14 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize services with database and authenticated RPC clients
 	a.userService.Init(a.db, a.eventEmitter)
 	a.notificationService.Init(a.db, a.eventEmitter)
-	a.authService.Init(a.db, authRPCClient)
+	a.authService.Init(a.db, authRPCClient, a.keyring)
 	a.planService.Init(a.db, planRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
-	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService)
+	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService, a.keyring)
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
@@ -563,12 +577,12 @@ func (a *App) extractAppBundle(zipReader *zip.Reader, appBundlePath string) erro
 }
 
 func (a *App) applyMigrations(dbSource string) error {
-	db, err := sql.Open(dialect.SQLite, dbSource)
+	db, err := entsql.Open(dialect.SQLite, dbSource)
 	if err != nil {
 		return fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
-	defer func(db *sql.Driver) {
+	defer func(db *entsql.Driver) {
 		err := db.Close()
 		if err != nil {
 			a.log.Error("failed to close database connection")
@@ -589,9 +603,24 @@ func (a *App) applyMigrations(dbSource string) error {
 		return fmt.Errorf("failed to set dialect: %v", err)
 	}
 
-	if err := goose.Up(db.DB(), "."); err != nil {
-		return fmt.Errorf("failed to apply migrations: %v", err)
+	// Phase 1: Migrate up to the version that adds has_password column
+	// This ensures the column exists before we try to set it
+	if err := goose.UpTo(db.DB(), ".", 20251217094826); err != nil {
+		return fmt.Errorf("failed to apply migrations phase 1: %v", err)
 	}
+
+	// Phase 2: Migrate credentials to keyring (sets has_password = true)
+	// This runs AFTER has_password column exists but BEFORE password columns are dropped
+	if err := a.migrateCredentialsToKeyring(db.DB()); err != nil {
+		// Log but don't fail - user may have no credentials yet or keyring may be unavailable
+		a.log.Warnf("Credential migration to keyring: %v", err)
+	}
+
+	// Phase 3: Run remaining migrations
+	if err := goose.Up(db.DB(), "."); err != nil {
+		return fmt.Errorf("failed to apply migrations phase 3: %v", err)
+	}
+
 	return nil
 }
 

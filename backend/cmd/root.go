@@ -175,6 +175,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	return &types.Config{
 		Dir:             configDir,
 		SSHDir:          filepath.Join(configDir, "ssh"),
+		KeyringDir:      filepath.Join(configDir, "keyring"),
 		BorgBinaries:    platform.Binaries,
 		BorgPath:        filepath.Join(configDir, platform.Binaries[0].Name),
 		BorgVersion:     platform.Binaries[0].Version.String(),

@@ -245,6 +245,10 @@ func init() {
 			return nil
 		}
 	}()
+	// repositoryDescHasPassword is the schema descriptor for has_password field.
+	repositoryDescHasPassword := repositoryFields[3].Descriptor()
+	// repository.DefaultHasPassword holds the default value on creation for the has_password field.
+	repository.DefaultHasPassword = repositoryDescHasPassword.Default.(bool)
 	// repositoryDescStatsTotalChunks is the schema descriptor for stats_total_chunks field.
 	repositoryDescStatsTotalChunks := repositoryFields[8].Descriptor()
 	// repository.DefaultStatsTotalChunks holds the default value on creation for the stats_total_chunks field.
