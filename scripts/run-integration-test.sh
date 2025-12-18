@@ -42,9 +42,9 @@ print_usage() {
     echo "Examples:"
     echo "  $0 --client-version 1.4.0 --server-version 1.4.0"
     echo "  $0 --client-version 1.4.1 --server-version 1.4.1 --base-image ubuntu:22.04"
-    echo "  $0 --client-version 1.4.2 --server-version 1.4.2"
-    echo "  $0 --client-version 1.4.2 --server-version 1.4.2 --verbose"
-    echo "  $0 --client-version 1.4.2 --server-version 1.4.2 -- -run TestBorgMountOperations -v"
+    echo "  $0 --client-version 1.4.3 --server-version 1.4.3"
+    echo "  $0 --client-version 1.4.3 --server-version 1.4.3 --verbose"
+    echo "  $0 --client-version 1.4.3 --server-version 1.4.3 -- -run TestBorgMountOperations -v"
 }
 
 log_info() {
