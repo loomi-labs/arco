@@ -16,13 +16,14 @@ CLIENT_VERSION=""
 SERVER_VERSION=""
 BASE_IMAGE="ubuntu:24.04"
 VERBOSE=false
+EXTRA_TEST_ARGS=""
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 print_usage() {
-    echo "Usage: $0 --client-version VERSION --server-version VERSION [OPTIONS]"
+    echo "Usage: $0 --client-version VERSION --server-version VERSION [OPTIONS] [-- TEST_ARGS]"
     echo ""
     echo "Required arguments:"
     echo "  --client-version VERSION     Borg client version (e.g., 1.4.0)"
@@ -32,12 +33,18 @@ print_usage() {
     echo "  --base-image IMAGE           Docker base image (default: ubuntu:24.04)"
     echo "  -v, --verbose                Enable verbose test output"
     echo "  -h, --help                   Show this help message"
+    echo "  -- TEST_ARGS                 Pass additional arguments to go test (after --)"
+    echo ""
+    echo "Test arguments (after --):"
+    echo "  -run PATTERN                 Run only tests matching pattern"
+    echo "  -v                           Verbose test output"
     echo ""
     echo "Examples:"
     echo "  $0 --client-version 1.4.0 --server-version 1.4.0"
     echo "  $0 --client-version 1.4.1 --server-version 1.4.1 --base-image ubuntu:22.04"
     echo "  $0 --client-version 1.4.2 --server-version 1.4.2"
     echo "  $0 --client-version 1.4.2 --server-version 1.4.2 --verbose"
+    echo "  $0 --client-version 1.4.2 --server-version 1.4.2 -- -run TestBorgMountOperations -v"
 }
 
 log_info() {
@@ -100,6 +107,11 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             print_usage
             exit 0
+            ;;
+        --)
+            shift
+            EXTRA_TEST_ARGS="$*"
+            break
             ;;
         *)
             log_error "Unknown option: $1"
@@ -204,6 +216,14 @@ docker network create "${NETWORK_NAME}" 2>/dev/null || log_info "Network already
 TEST_ARGS="-test.v"
 if [ "$VERBOSE" = true ]; then
     TEST_ARGS="${TEST_ARGS} -test.run=TestBorgRepositoryOperations"
+fi
+
+# Process extra test arguments (convert -run to -test.run, -v to -test.v)
+if [ -n "$EXTRA_TEST_ARGS" ]; then
+    # Convert standard go test flags to -test.* format for compiled test binary
+    CONVERTED_ARGS=$(echo "$EXTRA_TEST_ARGS" | sed 's/-run /-test.run=/g' | sed 's/-v\b/-test.v/g')
+    TEST_ARGS="${TEST_ARGS} ${CONVERTED_ARGS}"
+    log_info "Test arguments: ${TEST_ARGS}"
 fi
 
 # Get current user's docker group ID

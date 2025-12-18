@@ -96,12 +96,12 @@ tasks:
       - go test -tags=integration -cover -mod=readonly --timeout 10m ./backend/borg/...
 
   test:integration:docker:
-    desc: Runs integration tests in containerized environment (optional with custom client/server/image version)
+    desc: Runs integration tests in containerized environment (use -- to pass test args, e.g. -- -run TestName -v)
     preconditions:
       - sh: command -v docker
         msg: "Docker is required for integration tests"
     cmds:
-      - ./scripts/run-integration-test.sh --client-version {{.CLIENT_VERSION | default "1.4.1"}} --server-version {{.SERVER_VERSION | default "1.4.1"}} --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}
+      - ./scripts/run-integration-test.sh --client-version {{.CLIENT_VERSION | default "1.4.2"}} --server-version {{.SERVER_VERSION | default "1.4.2"}} --base-image {{.BASE_IMAGE | default "ubuntu:24.04"}}{{if .CLI_ARGS}} -- {{.CLI_ARGS}}{{end}}
 
   test:integration:all:
     desc: Runs integration tests with multiple borg version combinations
@@ -112,4 +112,5 @@ tasks:
       - echo "Testing all borg versions..."
       - ./scripts/run-integration-test.sh --client-version 1.4.0 --server-version 1.4.0
       - ./scripts/run-integration-test.sh --client-version 1.4.1 --server-version 1.4.1
+      - ./scripts/run-integration-test.sh --client-version 1.4.2 --server-version 1.4.2
       - echo "Integration testing completed successfully!"
