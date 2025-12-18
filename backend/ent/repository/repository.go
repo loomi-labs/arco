@@ -22,8 +22,8 @@ const (
 	FieldName = "name"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
-	// FieldPassword holds the string denoting the password field in the database.
-	FieldPassword = "password"
+	// FieldHasPassword holds the string denoting the has_password field in the database.
+	FieldHasPassword = "has_password"
 	// FieldLastQuickCheckAt holds the string denoting the last_quick_check_at field in the database.
 	FieldLastQuickCheckAt = "last_quick_check_at"
 	// FieldQuickCheckError holds the string denoting the quick_check_error field in the database.
@@ -89,7 +89,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldURL,
-	FieldPassword,
+	FieldHasPassword,
 	FieldLastQuickCheckAt,
 	FieldQuickCheckError,
 	FieldLastFullCheckAt,
@@ -138,6 +138,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultHasPassword holds the default value on creation for the "has_password" field.
+	DefaultHasPassword bool
 	// DefaultStatsTotalChunks holds the default value on creation for the "stats_total_chunks" field.
 	DefaultStatsTotalChunks int
 	// DefaultStatsTotalSize holds the default value on creation for the "stats_total_size" field.
@@ -180,9 +182,9 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
 }
 
-// ByPassword orders the results by the password field.
-func ByPassword(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+// ByHasPassword orders the results by the has_password field.
+func ByHasPassword(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHasPassword, opts...).ToFunc()
 }
 
 // ByLastQuickCheckAt orders the results by the last_quick_check_at field.

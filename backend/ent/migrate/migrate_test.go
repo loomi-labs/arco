@@ -237,8 +237,8 @@ type PruningRuleRelation struct {
 type RepositoryData struct {
 	ID                     int
 	Name                   string
-	Location               string
-	Password               string
+	Location               string // Note: renamed to 'url' in migration 20251217094826
+	Password               string // Note: removed in migration 20251217094826
 	StatsTotalChunks       int
 	StatsTotalSize         int
 	StatsTotalCsize        int
@@ -666,8 +666,11 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 				repo.ID, expected.Name, repo.Name)
 		}
 
-		if repo.Password != expected.Password {
-			return fmt.Errorf("repository %d: password mismatch", repo.ID)
+		// Validate hasPassword field was set based on whether password was non-empty
+		expectedHasPassword := expected.Password != ""
+		if repo.HasPassword != expectedHasPassword {
+			return fmt.Errorf("repository %d: hasPassword mismatch: expected %v (password was %q), got %v",
+				repo.ID, expectedHasPassword, expected.Password, repo.HasPassword)
 		}
 
 		// Validate stats fields

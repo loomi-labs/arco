@@ -119,6 +119,7 @@ type Icons struct {
 type Config struct {
 	Dir             string
 	SSHDir          string
+	KeyringDir      string
 	BorgBinaries    []platform.BorgBinary
 	BorgPath        string
 	BorgVersion     string

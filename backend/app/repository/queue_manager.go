@@ -22,6 +22,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -52,6 +53,7 @@ type QueueManager struct {
 	db           *ent.Client
 	borg         borg.Borg
 	eventEmitter types.EventEmitter
+	keyring      *keyring.Service
 	queues       map[int]*RepositoryQueue // RepoID -> Queue
 	mu           sync.RWMutex
 
@@ -79,12 +81,13 @@ func NewQueueManager(log *zap.SugaredLogger, stateMachine *statemachine.Reposito
 }
 
 // Init initializes the queue manager with database and borg clients
-func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter) {
+func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter, keyringService *keyring.Service) {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	qm.db = db
 	qm.borg = borgClient
 	qm.eventEmitter = eventEmitter
+	qm.keyring = keyringService
 }
 
 // GetRepositoryState returns the current state of a repository (defaults to idle if not set)
@@ -1221,6 +1224,7 @@ type borgOperationExecutor struct {
 	db              *ent.Client
 	borgClient      borg.Borg
 	eventEmitter    types.EventEmitter
+	keyring         *keyring.Service
 	repoID          int
 	operationID     string
 	progressUpdater progressUpdater
@@ -1233,10 +1237,16 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 		db:              qm.db,
 		log:             qm.log,
 		eventEmitter:    qm.eventEmitter,
+		keyring:         qm.keyring,
 		repoID:          repoID,
 		operationID:     operationID,
 		progressUpdater: qm,
 	}
+}
+
+// getRepoPassword retrieves the password for the executor's repository from the keyring
+func (e *borgOperationExecutor) getRepoPassword() (string, error) {
+	return e.keyring.GetRepositoryPassword(e.repoID)
 }
 
 // Execute implements OperationExecutor.Execute
@@ -1310,6 +1320,12 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	compressionMode := profile.CompressionMode
 	compressionLevel := profile.CompressionLevel
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Create progress channel
 	progressCh := make(chan borgtypes.BackupProgress, 100)
 
@@ -1317,7 +1333,7 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	go e.monitorBackupProgress(ctx, progressCh)
 
 	// Execute borg create command
-	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, progressCh)
+	archivePath, status := e.borgClient.Create(ctx, repo.URL, password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, progressCh)
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}
@@ -1450,11 +1466,17 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 		"pruneOptions", pruneOptions,
 		"isDryRun", isDryRun)
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Create result channel for prune results
 	borgResultCh := make(chan borgtypes.PruneResult, 1)
 
 	// Execute borg prune command
-	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, borgResultCh)
+	status := e.borgClient.Prune(ctx, repo.URL, password, prefix, pruneOptions, isDryRun, borgResultCh)
 
 	// Wait for prune result with timeout
 	select {
@@ -1521,7 +1543,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 	// Skip for dry-run examinations
 	if !isDryRun && status.IsCompletedWithSuccess() {
 		// Get updated archive list from repository
-		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, password, "")
 		if listStatus.IsCompletedWithSuccess() {
 			// Update database with refreshed archive information
 			err := e.syncArchivesToDatabase(ctx, repo.ID, listResponse.Archives)
@@ -1603,8 +1625,14 @@ func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, del
 		return nil, fmt.Errorf("repository %d not found: %w", deleteData.RepositoryID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg delete repository command
-	status := e.borgClient.DeleteRepository(ctx, repo.URL, repo.Password)
+	status := e.borgClient.DeleteRepository(ctx, repo.URL, password)
 
 	// Return status directly (preserves rich error information)
 	return status, nil
@@ -1629,8 +1657,14 @@ func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, delete
 	// Use archive name from database
 	archiveName := archiveEntity.Name
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg delete archive command
-	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, repo.Password)
+	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, password)
 
 	// If deletion was successful, also delete from database and emit event
 	if status.IsCompletedWithSuccess() {
@@ -1660,8 +1694,14 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 		return nil, fmt.Errorf("repository %d not found: %w", refreshData.RepositoryID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg list command to refresh archive information
-	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+	listResponse, status := e.borgClient.List(ctx, repo.URL, password, "")
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}
@@ -1697,8 +1737,14 @@ func (e *borgOperationExecutor) executeCheck(ctx context.Context, checkOp statem
 
 	e.log.Infof("Starting %s check for repo %d", map[bool]string{true: "quick", false: "full"}[checkData.QuickVerification], repo.ID)
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg check command
-	result := e.borgClient.Check(ctx, repo.URL, repo.Password, checkData.QuickVerification)
+	result := e.borgClient.Check(ctx, repo.URL, password, checkData.QuickVerification)
 
 	// Extract error messages for logging and storage
 	errorMessages := make([]string, 0, len(result.ErrorLogs))
@@ -1755,8 +1801,14 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 	currentArchiveName := archiveEntity.Name
 	newArchiveName := fmt.Sprintf("%s%s", renameData.Prefix, renameData.Name)
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg rename command
-	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, repo.Password, newArchiveName)
+	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, password, newArchiveName)
 
 	// If the operation was successful, update the archive name in the database
 	if status.IsCompletedWithSuccess() {
@@ -1789,8 +1841,14 @@ func (e *borgOperationExecutor) executeArchiveComment(ctx context.Context, comme
 	// Get repository from archive relationship
 	repo := archiveEntity.Edges.Repository
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg recreate --comment command
-	status := e.borgClient.Recreate(ctx, repo.URL, archiveEntity.Name, repo.Password, commentData.Comment)
+	status := e.borgClient.Recreate(ctx, repo.URL, archiveEntity.Name, password, commentData.Comment)
 
 	// If the operation was successful, update the archive comment in the database
 	if status.IsCompletedWithSuccess() {
@@ -1823,8 +1881,14 @@ func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statem
 		return nil, fmt.Errorf("failed to create mount path: %w", err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg mount
-	status := e.borgClient.MountRepository(ctx, repo.URL, repo.Password, mountData.MountPath)
+	status := e.borgClient.MountRepository(ctx, repo.URL, password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
@@ -1856,8 +1920,14 @@ func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp
 		return nil, fmt.Errorf("failed to create archive mount path: %w", err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg mount
-	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, repo.Password, mountData.MountPath)
+	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
@@ -2111,8 +2181,14 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 	repoPath := parts[0]
 	archiveName := parts[1]
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Use repository path with archive glob pattern to list only the specific archive
-	listResponse, status := e.borgClient.List(ctx, repoPath, repo.Password, archiveName)
+	listResponse, status := e.borgClient.List(ctx, repoPath, password, archiveName)
 	if status.HasError() {
 		return fmt.Errorf("failed to list archive %s: %w", archiveName, status.Error)
 	}
@@ -2133,8 +2209,14 @@ func (e *borgOperationExecutor) refreshRepositoryStats(ctx context.Context, repo
 		return fmt.Errorf("repository %d not found: %w", repoID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Call borg info to get repository statistics
-	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password, false)
+	infoResponse, status := e.borgClient.Info(ctx, repo.URL, password, false)
 	if status.HasError() {
 		return fmt.Errorf("failed to get repository info: %w", status.Error)
 	}

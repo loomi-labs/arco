@@ -64,9 +64,17 @@ func (_c *RepositoryCreate) SetURL(v string) *RepositoryCreate {
 	return _c
 }
 
-// SetPassword sets the "password" field.
-func (_c *RepositoryCreate) SetPassword(v string) *RepositoryCreate {
-	_c.mutation.SetPassword(v)
+// SetHasPassword sets the "has_password" field.
+func (_c *RepositoryCreate) SetHasPassword(v bool) *RepositoryCreate {
+	_c.mutation.SetHasPassword(v)
+	return _c
+}
+
+// SetNillableHasPassword sets the "has_password" field if the given value is not nil.
+func (_c *RepositoryCreate) SetNillableHasPassword(v *bool) *RepositoryCreate {
+	if v != nil {
+		_c.SetHasPassword(*v)
+	}
 	return _c
 }
 
@@ -307,6 +315,10 @@ func (_c *RepositoryCreate) defaults() {
 		v := repository.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.HasPassword(); !ok {
+		v := repository.DefaultHasPassword
+		_c.mutation.SetHasPassword(v)
+	}
 	if _, ok := _c.mutation.StatsTotalChunks(); !ok {
 		v := repository.DefaultStatsTotalChunks
 		_c.mutation.SetStatsTotalChunks(v)
@@ -352,8 +364,8 @@ func (_c *RepositoryCreate) check() error {
 	if _, ok := _c.mutation.URL(); !ok {
 		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "Repository.url"`)}
 	}
-	if _, ok := _c.mutation.Password(); !ok {
-		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "Repository.password"`)}
+	if _, ok := _c.mutation.HasPassword(); !ok {
+		return &ValidationError{Name: "has_password", err: errors.New(`ent: missing required field "Repository.has_password"`)}
 	}
 	if _, ok := _c.mutation.StatsTotalChunks(); !ok {
 		return &ValidationError{Name: "stats_total_chunks", err: errors.New(`ent: missing required field "Repository.stats_total_chunks"`)}
@@ -421,9 +433,9 @@ func (_c *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 		_spec.SetField(repository.FieldURL, field.TypeString, value)
 		_node.URL = value
 	}
-	if value, ok := _c.mutation.Password(); ok {
-		_spec.SetField(repository.FieldPassword, field.TypeString, value)
-		_node.Password = value
+	if value, ok := _c.mutation.HasPassword(); ok {
+		_spec.SetField(repository.FieldHasPassword, field.TypeBool, value)
+		_node.HasPassword = value
 	}
 	if value, ok := _c.mutation.LastQuickCheckAt(); ok {
 		_spec.SetField(repository.FieldLastQuickCheckAt, field.TypeTime, value)

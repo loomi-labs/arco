@@ -69,46 +69,6 @@ func (_u *UserUpdate) ClearLastLoggedIn() *UserUpdate {
 	return _u
 }
 
-// SetRefreshToken sets the "refresh_token" field.
-func (_u *UserUpdate) SetRefreshToken(v string) *UserUpdate {
-	_u.mutation.SetRefreshToken(v)
-	return _u
-}
-
-// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
-func (_u *UserUpdate) SetNillableRefreshToken(v *string) *UserUpdate {
-	if v != nil {
-		_u.SetRefreshToken(*v)
-	}
-	return _u
-}
-
-// ClearRefreshToken clears the value of the "refresh_token" field.
-func (_u *UserUpdate) ClearRefreshToken() *UserUpdate {
-	_u.mutation.ClearRefreshToken()
-	return _u
-}
-
-// SetAccessToken sets the "access_token" field.
-func (_u *UserUpdate) SetAccessToken(v string) *UserUpdate {
-	_u.mutation.SetAccessToken(v)
-	return _u
-}
-
-// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
-func (_u *UserUpdate) SetNillableAccessToken(v *string) *UserUpdate {
-	if v != nil {
-		_u.SetAccessToken(*v)
-	}
-	return _u
-}
-
-// ClearAccessToken clears the value of the "access_token" field.
-func (_u *UserUpdate) ClearAccessToken() *UserUpdate {
-	_u.mutation.ClearAccessToken()
-	return _u
-}
-
 // SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
 func (_u *UserUpdate) SetAccessTokenExpiresAt(v time.Time) *UserUpdate {
 	_u.mutation.SetAccessTokenExpiresAt(v)
@@ -230,18 +190,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.LastLoggedInCleared() {
 		_spec.ClearField(user.FieldLastLoggedIn, field.TypeTime)
 	}
-	if value, ok := _u.mutation.RefreshToken(); ok {
-		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
-	}
-	if _u.mutation.RefreshTokenCleared() {
-		_spec.ClearField(user.FieldRefreshToken, field.TypeString)
-	}
-	if value, ok := _u.mutation.AccessToken(); ok {
-		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
-	}
-	if _u.mutation.AccessTokenCleared() {
-		_spec.ClearField(user.FieldAccessToken, field.TypeString)
-	}
 	if value, ok := _u.mutation.AccessTokenExpiresAt(); ok {
 		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)
 	}
@@ -313,46 +261,6 @@ func (_u *UserUpdateOne) SetNillableLastLoggedIn(v *time.Time) *UserUpdateOne {
 // ClearLastLoggedIn clears the value of the "last_logged_in" field.
 func (_u *UserUpdateOne) ClearLastLoggedIn() *UserUpdateOne {
 	_u.mutation.ClearLastLoggedIn()
-	return _u
-}
-
-// SetRefreshToken sets the "refresh_token" field.
-func (_u *UserUpdateOne) SetRefreshToken(v string) *UserUpdateOne {
-	_u.mutation.SetRefreshToken(v)
-	return _u
-}
-
-// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
-func (_u *UserUpdateOne) SetNillableRefreshToken(v *string) *UserUpdateOne {
-	if v != nil {
-		_u.SetRefreshToken(*v)
-	}
-	return _u
-}
-
-// ClearRefreshToken clears the value of the "refresh_token" field.
-func (_u *UserUpdateOne) ClearRefreshToken() *UserUpdateOne {
-	_u.mutation.ClearRefreshToken()
-	return _u
-}
-
-// SetAccessToken sets the "access_token" field.
-func (_u *UserUpdateOne) SetAccessToken(v string) *UserUpdateOne {
-	_u.mutation.SetAccessToken(v)
-	return _u
-}
-
-// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
-func (_u *UserUpdateOne) SetNillableAccessToken(v *string) *UserUpdateOne {
-	if v != nil {
-		_u.SetAccessToken(*v)
-	}
-	return _u
-}
-
-// ClearAccessToken clears the value of the "access_token" field.
-func (_u *UserUpdateOne) ClearAccessToken() *UserUpdateOne {
-	_u.mutation.ClearAccessToken()
 	return _u
 }
 
@@ -506,18 +414,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.LastLoggedInCleared() {
 		_spec.ClearField(user.FieldLastLoggedIn, field.TypeTime)
-	}
-	if value, ok := _u.mutation.RefreshToken(); ok {
-		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
-	}
-	if _u.mutation.RefreshTokenCleared() {
-		_spec.ClearField(user.FieldRefreshToken, field.TypeString)
-	}
-	if value, ok := _u.mutation.AccessToken(); ok {
-		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
-	}
-	if _u.mutation.AccessTokenCleared() {
-		_spec.ClearField(user.FieldAccessToken, field.TypeString)
 	}
 	if value, ok := _u.mutation.AccessTokenExpiresAt(); ok {
 		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)

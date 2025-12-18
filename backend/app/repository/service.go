@@ -29,6 +29,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
@@ -51,6 +52,7 @@ type Service struct {
 	eventEmitter    types.EventEmitter
 	borgClient      borg.Borg
 	cloudRepoClient *CloudRepositoryClient
+	keyring         *keyring.Service
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -76,14 +78,15 @@ func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, keyringService *keyring.Service) {
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
+	si.keyring = keyringService
 
 	// Initialize queue manager with database and borg clients
-	si.queueManager.Init(db, si.borgClient, si.eventEmitter)
+	si.queueManager.Init(db, si.borgClient, si.eventEmitter, keyringService)
 
 	// Initialize mount states
 	si.initMountStates(ctx)
@@ -309,7 +312,7 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		DeduplicationRatio:  dedupRatio,
 		CompressionRatio:    compressionRatio,
 		SpaceSavingsPercent: spaceSavingsPercent,
-		HasPassword:         repoEntity.Password != "",
+		HasPassword:         s.keyring.HasRepositoryPassword(repoEntity.ID),
 	}
 }
 
@@ -338,11 +341,23 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 		Create().
 		SetName(name).
 		SetURL(location).
-		SetPassword(password).
+		SetHasPassword(password != "").
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+
+	// Store password in keyring
+	if password != "" {
+		if err := s.keyring.SetRepositoryPassword(repoEntity.ID, password); err != nil {
+			// Rollback: delete the created repository
+			if delErr := s.db.Repository.DeleteOneID(repoEntity.ID).Exec(ctx); delErr != nil {
+				s.log.Warnf("Failed to rollback repository creation: %v", delErr)
+			}
+			return nil, fmt.Errorf("failed to store repository password in keyring: %w", err)
+		}
+	}
+
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, repoEntity), nil
 }
@@ -388,7 +403,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			Create().
 			SetName(name).
 			SetURL(repo.RepoUrl).
-			SetPassword(password).
+			SetHasPassword(password != "").
 			Save(ctx)
 		if txErr != nil {
 			return nil, txErr
@@ -407,6 +422,14 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+
+	// Store password in keyring
+	if password != "" {
+		if err := s.keyring.SetRepositoryPassword(entRepo.ID, password); err != nil {
+			return nil, fmt.Errorf("failed to store repository password in keyring: %w", err)
+		}
+	}
+
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, entRepo), nil
 }
@@ -1533,12 +1556,16 @@ func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password st
 		}
 	}
 
-	// Password is correct, update in database
-	err = repoEntity.Update().
-		SetPassword(password).
-		Exec(ctx)
+	// Password is correct, update in keyring
+	err = s.keyring.SetRepositoryPassword(repoId, password)
 	if err != nil {
-		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to update password in database: %w", err)
+		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to update password in keyring: %w", err)
+	}
+
+	// Update has_password flag
+	err = s.db.Repository.UpdateOneID(repoId).SetHasPassword(true).Exec(ctx)
+	if err != nil {
+		s.log.Warnf("Failed to update has_password flag for repository %d: %v", repoId, err)
 	}
 
 	return FixStoredPasswordResult{
@@ -1601,12 +1628,16 @@ func (s *Service) ChangePassphrase(ctx context.Context, repoId int, currentPassw
 		}, nil
 	}
 
-	// Passphrase changed successfully, update in database
-	err = repoEntity.Update().
-		SetPassword(newPassword).
-		Exec(ctx)
+	// Passphrase changed successfully, update in keyring
+	err = s.keyring.SetRepositoryPassword(repoId, newPassword)
 	if err != nil {
-		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to update password in database: %w", err)
+		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to update password in keyring: %w", err)
+	}
+
+	// Update has_password flag
+	err = s.db.Repository.UpdateOneID(repoId).SetHasPassword(true).Exec(ctx)
+	if err != nil {
+		s.log.Warnf("Failed to update has_password flag for repository %d: %v", repoId, err)
 	}
 
 	return ChangePassphraseResult{
@@ -1674,8 +1705,14 @@ func (s *Service) BreakLock(ctx context.Context, repoId int) error {
 		return fmt.Errorf("repository %d is not in error state, cannot break lock", repoId)
 	}
 
+	// Get password from keyring
+	password, err := s.keyring.GetRepositoryPassword(repoId)
+	if err != nil {
+		return fmt.Errorf("failed to get password for repository %d: %w", repoId, err)
+	}
+
 	// Break borg repository lock
-	status := s.borgClient.BreakLock(ctx, repoEntity.URL, repoEntity.Password)
+	status := s.borgClient.BreakLock(ctx, repoEntity.URL, password)
 	if !status.IsCompletedWithSuccess() {
 		return fmt.Errorf("failed to break lock for repository %d: %s", repoId, status.GetError())
 	}
@@ -2400,8 +2437,8 @@ func (s *Service) ValidatePathChange(ctx context.Context, repoId int, newPath st
 // - IsValid=true + ConnectionWarning: Connection failed (can proceed with warning)
 // - IsValid=true: Connection successful
 func (s *Service) TestPathConnection(ctx context.Context, repoId int, newPath string, password string) (*ValidatePathChangeResult, error) {
-	// Get existing repository
-	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	// Check repository exists
+	_, err := s.db.Repository.Get(ctx, repoId)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return &ValidatePathChangeResult{
@@ -2425,7 +2462,11 @@ func (s *Service) TestPathConnection(ctx context.Context, repoId int, newPath st
 	expandedPath := util.ExpandPath(newPath)
 	usePassword := password
 	if usePassword == "" {
-		usePassword = repoEntity.Password
+		var err error
+		usePassword, err = s.keyring.GetRepositoryPassword(repoId)
+		if err != nil {
+			s.log.Warnf("Failed to get repository password from keyring: %v", err)
+		}
 	}
 	_, status := s.borgClient.Info(ctx, expandedPath, usePassword, true)
 	if status != nil && status.HasError() {

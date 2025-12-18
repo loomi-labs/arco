@@ -25,10 +25,6 @@ type User struct {
 	Email string `json:"email"`
 	// LastLoggedIn holds the value of the "last_logged_in" field.
 	LastLoggedIn *time.Time `json:"lastLoggedIn"`
-	// RefreshToken holds the value of the "refresh_token" field.
-	RefreshToken *string `json:"-"`
-	// AccessToken holds the value of the "access_token" field.
-	AccessToken *string `json:"-"`
 	// AccessTokenExpiresAt holds the value of the "access_token_expires_at" field.
 	AccessTokenExpiresAt *time.Time `json:"access_token_expires_at,omitempty"`
 	// RefreshTokenExpiresAt holds the value of the "refresh_token_expires_at" field.
@@ -43,7 +39,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldID:
 			values[i] = new(sql.NullInt64)
-		case user.FieldEmail, user.FieldRefreshToken, user.FieldAccessToken:
+		case user.FieldEmail:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldLastLoggedIn, user.FieldAccessTokenExpiresAt, user.FieldRefreshTokenExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -92,20 +88,6 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastLoggedIn = new(time.Time)
 				*_m.LastLoggedIn = value.Time
-			}
-		case user.FieldRefreshToken:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field refresh_token", values[i])
-			} else if value.Valid {
-				_m.RefreshToken = new(string)
-				*_m.RefreshToken = value.String
-			}
-		case user.FieldAccessToken:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field access_token", values[i])
-			} else if value.Valid {
-				_m.AccessToken = new(string)
-				*_m.AccessToken = value.String
 			}
 		case user.FieldAccessTokenExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -170,10 +152,6 @@ func (_m *User) String() string {
 		builder.WriteString("last_logged_in=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("refresh_token=<sensitive>")
-	builder.WriteString(", ")
-	builder.WriteString("access_token=<sensitive>")
 	builder.WriteString(", ")
 	if v := _m.AccessTokenExpiresAt; v != nil {
 		builder.WriteString("access_token_expires_at=")

@@ -203,7 +203,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "url", Type: field.TypeString, Unique: true},
-		{Name: "password", Type: field.TypeString},
+		{Name: "has_password", Type: field.TypeBool, Default: false},
 		{Name: "last_quick_check_at", Type: field.TypeTime, Nullable: true},
 		{Name: "quick_check_error", Type: field.TypeJSON, Nullable: true},
 		{Name: "last_full_check_at", Type: field.TypeTime, Nullable: true},
@@ -253,8 +253,6 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "last_logged_in", Type: field.TypeTime, Nullable: true},
-		{Name: "refresh_token", Type: field.TypeString, Nullable: true},
-		{Name: "access_token", Type: field.TypeString, Nullable: true},
 		{Name: "access_token_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "refresh_token_expires_at", Type: field.TypeTime, Nullable: true},
 	}

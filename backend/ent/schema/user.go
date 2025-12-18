@@ -33,14 +33,6 @@ func (User) Fields() []ent.Field {
 			StructTag(`json:"lastLoggedIn"`).
 			Nillable().
 			Optional(),
-		field.String("refresh_token").
-			Sensitive().
-			Nillable().
-			Optional(),
-		field.String("access_token").
-			Sensitive().
-			Nillable().
-			Optional(),
 		field.Time("access_token_expires_at").
 			Nillable().
 			Optional(),

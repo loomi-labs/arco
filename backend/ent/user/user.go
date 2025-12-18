@@ -21,10 +21,6 @@ const (
 	FieldEmail = "email"
 	// FieldLastLoggedIn holds the string denoting the last_logged_in field in the database.
 	FieldLastLoggedIn = "last_logged_in"
-	// FieldRefreshToken holds the string denoting the refresh_token field in the database.
-	FieldRefreshToken = "refresh_token"
-	// FieldAccessToken holds the string denoting the access_token field in the database.
-	FieldAccessToken = "access_token"
 	// FieldAccessTokenExpiresAt holds the string denoting the access_token_expires_at field in the database.
 	FieldAccessTokenExpiresAt = "access_token_expires_at"
 	// FieldRefreshTokenExpiresAt holds the string denoting the refresh_token_expires_at field in the database.
@@ -40,8 +36,6 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldEmail,
 	FieldLastLoggedIn,
-	FieldRefreshToken,
-	FieldAccessToken,
 	FieldAccessTokenExpiresAt,
 	FieldRefreshTokenExpiresAt,
 }
@@ -93,16 +87,6 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByLastLoggedIn orders the results by the last_logged_in field.
 func ByLastLoggedIn(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastLoggedIn, opts...).ToFunc()
-}
-
-// ByRefreshToken orders the results by the refresh_token field.
-func ByRefreshToken(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRefreshToken, opts...).ToFunc()
-}
-
-// ByAccessToken orders the results by the access_token field.
-func ByAccessToken(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAccessToken, opts...).ToFunc()
 }
 
 // ByAccessTokenExpiresAt orders the results by the access_token_expires_at field.

@@ -141,7 +141,6 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 		r, err := db.Repository.Create().
 			SetName("TestRepo").
 			SetURL("/tmp").
-			SetPassword("test").
 			Save(ctx)
 		assert.NoError(t, err, "Failed to create new repository")
 

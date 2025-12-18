@@ -68,34 +68,6 @@ func (_c *UserCreate) SetNillableLastLoggedIn(v *time.Time) *UserCreate {
 	return _c
 }
 
-// SetRefreshToken sets the "refresh_token" field.
-func (_c *UserCreate) SetRefreshToken(v string) *UserCreate {
-	_c.mutation.SetRefreshToken(v)
-	return _c
-}
-
-// SetNillableRefreshToken sets the "refresh_token" field if the given value is not nil.
-func (_c *UserCreate) SetNillableRefreshToken(v *string) *UserCreate {
-	if v != nil {
-		_c.SetRefreshToken(*v)
-	}
-	return _c
-}
-
-// SetAccessToken sets the "access_token" field.
-func (_c *UserCreate) SetAccessToken(v string) *UserCreate {
-	_c.mutation.SetAccessToken(v)
-	return _c
-}
-
-// SetNillableAccessToken sets the "access_token" field if the given value is not nil.
-func (_c *UserCreate) SetNillableAccessToken(v *string) *UserCreate {
-	if v != nil {
-		_c.SetAccessToken(*v)
-	}
-	return _c
-}
-
 // SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
 func (_c *UserCreate) SetAccessTokenExpiresAt(v time.Time) *UserCreate {
 	_c.mutation.SetAccessTokenExpiresAt(v)
@@ -238,14 +210,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LastLoggedIn(); ok {
 		_spec.SetField(user.FieldLastLoggedIn, field.TypeTime, value)
 		_node.LastLoggedIn = &value
-	}
-	if value, ok := _c.mutation.RefreshToken(); ok {
-		_spec.SetField(user.FieldRefreshToken, field.TypeString, value)
-		_node.RefreshToken = &value
-	}
-	if value, ok := _c.mutation.AccessToken(); ok {
-		_spec.SetField(user.FieldAccessToken, field.TypeString, value)
-		_node.AccessToken = &value
 	}
 	if value, ok := _c.mutation.AccessTokenExpiresAt(); ok {
 		_spec.SetField(user.FieldAccessTokenExpiresAt, field.TypeTime, value)

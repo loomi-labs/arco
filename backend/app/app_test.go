@@ -11,6 +11,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
 	borgmocks "github.com/loomi-labs/arco/backend/borg/mocks"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
@@ -67,12 +68,18 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 	// Create a cloud repository client for testing
 	cloudRepositoryClient := repository.NewCloudRepositoryClient(a.log, a.state, config)
 	cloudRepositoryClient.Init(db, nil) // Pass nil for RPC client in tests
+
+	// Create test keyring for tests
+	testKeyring := keyring.NewTestService(a.log)
+	a.keyring = testKeyring
+
 	a.repositoryService.Init(
 		a.ctx,
 		db,
 		mockEventEmitter,
 		mockBorg,
 		cloudRepositoryClient,
+		testKeyring,
 	)
 
 	// Initialize backup profile service with repository service dependency

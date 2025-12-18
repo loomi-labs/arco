@@ -40,8 +40,10 @@ func (Repository) Fields() []ent.Field {
 		field.String("url").
 			StructTag(`json:"url"`).
 			Unique(),
-		field.String("password").
-			StructTag(`json:"password"`),
+		field.Bool("has_password").
+			StructTag(`json:"hasPassword"`).
+			Default(false).
+			Comment("Whether this repository has a password stored in the keyring"),
 
 		// Quick check tracking
 		field.Time("last_quick_check_at").
