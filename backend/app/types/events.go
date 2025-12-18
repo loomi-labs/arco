@@ -30,6 +30,8 @@ const (
 	EventSubscriptionCancelled  Event = "subscriptionCancelled"
 	EventSettingsChanged        Event = "settingsChanged"
 	EventOperationErrorOccurred Event = "operationErrorOccurred"
+	EventNotificationDismissed  Event = "notificationDismissed"
+	EventNotificationCreated    Event = "notificationCreated"
 )
 
 var AllEvents = []Event{
@@ -51,6 +53,8 @@ var AllEvents = []Event{
 	EventSubscriptionCancelled,
 	EventSettingsChanged,
 	EventOperationErrorOccurred,
+	EventNotificationDismissed,
+	EventNotificationCreated,
 }
 
 func (e Event) String() string {
@@ -107,6 +111,14 @@ func EventRepositoryDeletedString() string {
 
 func EventSettingsChangedString() string {
 	return fmt.Sprintf("%s", EventSettingsChanged.String())
+}
+
+func EventNotificationDismissedString() string {
+	return EventNotificationDismissed.String()
+}
+
+func EventNotificationCreatedString() string {
+	return EventNotificationCreated.String()
 }
 
 type RuntimeEventEmitter struct{}

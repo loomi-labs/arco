@@ -14,9 +14,13 @@ func (cr *commandRunner) Info(cmd *exec.Cmd) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func (b *borg) Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status) {
+func (b *borg) Info(ctx context.Context, repository, password string, allowRelocated bool) (*types.InfoResponse, *types.Status) {
 	cmd := exec.CommandContext(ctx, b.path, "info", "--json", repository)
-	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
+	env := NewEnv(b.sshPrivateKeys).WithPassword(password)
+	if allowRelocated {
+		env = env.WithRelocatedRepoAccess()
+	}
+	cmd.Env = env.AsList()
 
 	// Check if we can connect to the repository
 	startTime := b.log.LogCmdStart(cmd.String())

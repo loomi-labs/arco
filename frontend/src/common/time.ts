@@ -213,13 +213,16 @@ function toPastString(date: Date, now: Date): string {
 }
 
 /**
- * toShortDateString converts a Date object to a human-readable string with a long date format.
+ * toLongDateString converts a Date object to a human-readable string with a long date format.
  * @param date The date to convert
+ * @param ignoreTz Whether to ignore timezone offset (default: false)
  */
-export function toLongDateString(date: Date): string {
-  const now = new Date();
-  const offsetToUTC = offset(now);
-  date = removeOffset(date, offsetToUTC);
+export function toLongDateString(date: Date, ignoreTz = false): string {
+  if (!ignoreTz) {
+    const now = new Date();
+    const offsetToUTC = offset(now);
+    date = removeOffset(date, offsetToUTC);
+  }
   return format(date, { date: "long", time: "short" });
 }
 

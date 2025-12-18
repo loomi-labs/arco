@@ -5,7 +5,7 @@ import { showAndLogError } from "./common/logger";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Sidebar from "./components/Sidebar.vue";
-import { computed, onUnmounted, ref, watchEffect } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
@@ -14,6 +14,8 @@ import { initializeFeatureFlags } from "./common/featureFlags";
 import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
+import { initializeReducedMotion, setupReducedMotionListener } from "./common/reducedMotion";
+import { useNavigationShortcuts } from "./common/navigationShortcuts";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
 /************
@@ -89,23 +91,30 @@ function toTitleCase(str: string | undefined): string {
 // Initialize global subscription notifications
 useSubscriptionNotifications();
 
-// Initialize theme from user settings
-initializeTheme();
-
-// Initialize expert mode from user settings
-initializeExpertMode();
-
 // Setup expert mode settings listener
 const { setupSettingsListener } = useExpertMode();
 cleanupFunctions.push(setupSettingsListener());
 
+// Setup reduced motion settings listener
+cleanupFunctions.push(setupReducedMotionListener());
+
+// Setup navigation shortcuts (keyboard and mouse)
+const { setupNavigationShortcuts } = useNavigationShortcuts();
+cleanupFunctions.push(setupNavigationShortcuts());
+
 getStartupState();
 
-watchEffect(() => {
-  if (isInitialized.value) {
-    goToNextPage();
+watch(isInitialized, async (initialized) => {
+  if (initialized) {
+    // Initialize settings-dependent features only after startup is complete
+    // These require the database to be initialized
+    await initializeTheme();
+    await initializeExpertMode();
+    await initializeReducedMotion();
+
+    await goToNextPage();
   }
-});
+}, { once: true });
 
 cleanupFunctions.push(Events.On(types.Event.EventStartupStateChanged, getStartupState));
 cleanupFunctions.push(Events.On(types.Event.EventNotificationAvailable, getNotifications));

@@ -82,6 +82,34 @@ func (_c *ArchiveCreate) SetNillableWillBePruned(v *bool) *ArchiveCreate {
 	return _c
 }
 
+// SetComment sets the "comment" field.
+func (_c *ArchiveCreate) SetComment(v string) *ArchiveCreate {
+	_c.mutation.SetComment(v)
+	return _c
+}
+
+// SetNillableComment sets the "comment" field if the given value is not nil.
+func (_c *ArchiveCreate) SetNillableComment(v *string) *ArchiveCreate {
+	if v != nil {
+		_c.SetComment(*v)
+	}
+	return _c
+}
+
+// SetWarningMessage sets the "warning_message" field.
+func (_c *ArchiveCreate) SetWarningMessage(v string) *ArchiveCreate {
+	_c.mutation.SetWarningMessage(v)
+	return _c
+}
+
+// SetNillableWarningMessage sets the "warning_message" field if the given value is not nil.
+func (_c *ArchiveCreate) SetNillableWarningMessage(v *string) *ArchiveCreate {
+	if v != nil {
+		_c.SetWarningMessage(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *ArchiveCreate) SetID(v int) *ArchiveCreate {
 	_c.mutation.SetID(v)
@@ -165,6 +193,10 @@ func (_c *ArchiveCreate) defaults() {
 		v := archive.DefaultWillBePruned
 		_c.mutation.SetWillBePruned(v)
 	}
+	if _, ok := _c.mutation.Comment(); !ok {
+		v := archive.DefaultComment
+		_c.mutation.SetComment(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -246,6 +278,14 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		_spec.SetField(archive.FieldWillBePruned, field.TypeBool, value)
 		_node.WillBePruned = value
 	}
+	if value, ok := _c.mutation.Comment(); ok {
+		_spec.SetField(archive.FieldComment, field.TypeString, value)
+		_node.Comment = value
+	}
+	if value, ok := _c.mutation.WarningMessage(); ok {
+		_spec.SetField(archive.FieldWarningMessage, field.TypeString, value)
+		_node.WarningMessage = &value
+	}
 	if nodes := _c.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -266,7 +306,7 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 	if nodes := _c.mutation.BackupProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   archive.BackupProfileTable,
 			Columns: []string{archive.BackupProfileColumn},
 			Bidi:    false,
@@ -277,7 +317,7 @@ func (_c *ArchiveCreate) createSpec() (*Archive, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.archive_backup_profile = &nodes[0]
+		_node.backup_profile_archives = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

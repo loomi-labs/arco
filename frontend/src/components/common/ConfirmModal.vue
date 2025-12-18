@@ -79,13 +79,13 @@ defineExpose({
 
 <template>
   <TransitionRoot as='template' :show='isOpen'>
-    <Dialog class='relative z-10' @close='close'>
+    <Dialog class='relative z-50' @close='close'>
       <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100' leave='ease-in duration-200'
                        leave-from='opacity-100' leave-to='opacity-0'>
         <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
       </TransitionChild>
 
-      <div class='fixed inset-0 z-10 w-screen overflow-y-auto'>
+      <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
         <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
           <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
                            enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
@@ -105,15 +105,17 @@ defineExpose({
                     </div>
                   </div>
                   <slot name='actionButtons'>
-                    <div class='flex gap-3 pt-5'>
+                    <div class='flex justify-between pt-5'>
                       <button type='button' class='btn btn-sm' :class='[cancelClass ?? "btn-outline"]' @click='close'>{{ cancelText ?? $t("cancel") }}
                       </button>
-                      <button type='button' class='btn btn-sm' :class='[confirmClass ?? "btn-success"]' @click='confirm'>
-                        {{ confirmText ?? $t("confirm") }}
-                      </button>
-                      <button v-if='secondaryOptionText' type='button' class='btn btn-sm' :class='[secondaryOptionClass ?? "btn-secondary"]'
-                              @click='secondary'>{{ secondaryOptionText }}
-                      </button>
+                      <div class='flex gap-3'>
+                        <button v-if='secondaryOptionText' type='button' class='btn btn-sm' :class='[secondaryOptionClass ?? "btn-secondary"]'
+                                @click='secondary'>{{ secondaryOptionText }}
+                        </button>
+                        <button type='button' class='btn btn-sm' :class='[confirmClass ?? "btn-success"]' @click='confirm'>
+                          {{ confirmText ?? $t("confirm") }}
+                        </button>
+                      </div>
                     </div>
                   </slot>
                 </div>

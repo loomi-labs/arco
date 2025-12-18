@@ -18,11 +18,12 @@ import (
 //go:generate mockgen -destination=mocks/borg.go -package=mocks . Borg,CommandRunner
 
 type Borg interface {
-	Info(ctx context.Context, repository, password string) (*types.InfoResponse, *types.Status)
+	Info(ctx context.Context, repository, password string, allowRelocated bool) (*types.InfoResponse, *types.Status)
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
 	List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status)
 	Compact(ctx context.Context, repository string, password string) *types.Status
-	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status)
+	Check(ctx context.Context, repository, password string, quick bool) *types.CheckResult
+	Create(ctx context.Context, repository, password, prefix string, backupPaths, excludePaths []string, excludeCaches bool, compressionMode backupprofile.CompressionMode, compressionLevel *int, ch chan types.BackupProgress) (string, *types.Status)
 	Rename(ctx context.Context, repository, archive, password, newName string) *types.Status
 	DeleteArchive(ctx context.Context, repository string, archive string, password string) *types.Status
 	DeleteArchives(ctx context.Context, repository, password, prefix string) *types.Status
@@ -32,6 +33,8 @@ type Borg interface {
 	Umount(ctx context.Context, path string) *types.Status
 	Prune(ctx context.Context, repository string, password string, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status
 	BreakLock(ctx context.Context, repository string, password string) *types.Status
+	ChangePassphrase(ctx context.Context, repository, currentPassword, newPassword string) *types.Status
+	Recreate(ctx context.Context, repository, archive, password, comment string) *types.Status
 }
 
 type borg struct {
@@ -101,9 +104,11 @@ func (z *CmdLogger) LogCmdStatus(ctx context.Context, result *types.Status, cmd 
 }
 
 type Env struct {
-	password           *string
-	deleteConfirmation bool
-	sshPrivateKeys     []string
+	password            *string
+	newPassword         *string
+	deleteConfirmation  bool
+	relocatedRepoAccess bool
+	sshPrivateKeys      []string
 }
 
 func NewEnv(sshPrivateKeys []string) Env {
@@ -117,8 +122,18 @@ func (e Env) WithPassword(password string) Env {
 	return e
 }
 
+func (e Env) WithNewPassword(newPassword string) Env {
+	e.newPassword = &newPassword
+	return e
+}
+
 func (e Env) WithDeleteConfirmation() Env {
 	e.deleteConfirmation = true
+	return e
+}
+
+func (e Env) WithRelocatedRepoAccess() Env {
+	e.relocatedRepoAccess = true
 	return e
 }
 
@@ -140,8 +155,14 @@ func (e Env) AsList() []string {
 	if e.password != nil {
 		env = append(env, fmt.Sprintf("BORG_PASSPHRASE=%s", *e.password))
 	}
+	if e.newPassword != nil {
+		env = append(env, fmt.Sprintf("BORG_NEW_PASSPHRASE=%s", *e.newPassword))
+	}
 	if e.deleteConfirmation {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
+	}
+	if e.relocatedRepoAccess {
+		env = append(env, "BORG_RELOCATED_REPO_ACCESS_IS_OK=yes")
 	}
 	return env
 }

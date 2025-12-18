@@ -10,6 +10,20 @@
         font-display: swap;
         src: url('assets/fonts/nunito-v16-latin-regular.woff2') format('woff2');
     }
+
+    /* Reduced motion / accessibility utilities */
+    .no-transitions *,
+    .no-transitions *::before,
+    .no-transitions *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .no-shadows *,
+    .no-shadows *::before,
+    .no-shadows *::after {
+        box-shadow: none !important;
+    }
 }
 
 
@@ -44,8 +58,28 @@
     --color-error: #EF4444;
     --color-error-content: oklch(96% 0.03 12.58);
 
-    /* Custom colors */
-    --color-half-hidden: #9CA3AF;
+    /* Badge colors - Light theme */
+    --color-badge-fresh-text: #111827;    /* gray-900 */
+    --color-badge-fresh-bg: #16a34a;      /* green-600 */
+    --color-badge-fresh-border: #16a34a;
+    --color-badge-recent-text: #ffffff;
+    --color-badge-recent-bg: #0d9488;     /* teal-600 */
+    --color-badge-recent-border: #0d9488;
+    --color-badge-days-text: #ffffff;
+    --color-badge-days-bg: #2563eb;       /* blue-600 */
+    --color-badge-days-border: #2563eb;
+    --color-badge-week-text: #ffffff;
+    --color-badge-week-bg: #1e3a8a;       /* blue-900 */
+    --color-badge-week-border: #1e3a8a;
+    --color-badge-month-text: #ffffff;
+    --color-badge-month-bg: #374151;      /* gray-700 */
+    --color-badge-month-border: #374151;
+    --color-badge-year-text: #ffffff;
+    --color-badge-year-bg: #6b7280;       /* gray-500 */
+    --color-badge-year-border: #6b7280;
+    --color-badge-old-text: #ffffff;
+    --color-badge-old-bg: #9ca3af;        /* gray-400 */
+    --color-badge-old-border: #9ca3af;
 
     --radius-selector: 0.75rem;
     --radius-field: 0.5rem;
@@ -57,6 +91,7 @@
 }
 @plugin "daisyui/theme" {
     name: "dark";
+    color-scheme: dark;
     /* DaisyUI colors - Refined dark palette */
     --color-base-100: #1F1F23;
     --color-base-200: #18181B;
@@ -79,8 +114,28 @@
     --color-error: #EF4444;
     --color-error-content: oklch(96% 0.03 12.58);
 
-    /* Custom colors */
-    --color-half-hidden: #71717A;
+    /* Badge colors - Dark theme: transparent bg with colored text/border */
+    --color-badge-fresh-text: #22c55e;    /* green-500 */
+    --color-badge-fresh-bg: transparent;
+    --color-badge-fresh-border: #22c55e;
+    --color-badge-recent-text: #2dd4bf;   /* teal-400 */
+    --color-badge-recent-bg: transparent;
+    --color-badge-recent-border: #2dd4bf;
+    --color-badge-days-text: #3b82f6;     /* blue-500 */
+    --color-badge-days-bg: transparent;
+    --color-badge-days-border: #3b82f6;
+    --color-badge-week-text: #60a5fa;     /* blue-400 */
+    --color-badge-week-bg: transparent;
+    --color-badge-week-border: #60a5fa;
+    --color-badge-month-text: #bfdbfe;    /* blue-200 */
+    --color-badge-month-bg: transparent;
+    --color-badge-month-border: #bfdbfe;
+    --color-badge-year-text: #9ca3af;     /* gray-400 */
+    --color-badge-year-bg: transparent;
+    --color-badge-year-border: #9ca3af;
+    --color-badge-old-text: #6b7280;      /* gray-500 */
+    --color-badge-old-bg: transparent;
+    --color-badge-old-border: #6b7280;
 
     --radius-selector: 0.75rem;
     --radius-field: 0.5rem;
@@ -93,15 +148,38 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* Fix for webkit checkbox/toggle native appearance showing through */
+/* Fix outline button hover visibility in dark mode - brighter border/text */
+@utility btn-outline {
+    &:where([data-theme=dark], [data-theme=dark] *):hover {
+        border-color: #ffffff;
+        color: #ffffff;
+    }
+}
+
+/* Fix ghost button hover visibility in dark mode - subtle grey border */
+@utility btn-ghost {
+    &:where([data-theme=dark], [data-theme=dark] *):hover {
+        border-color: #A1A1AA;
+    }
+}
+
 @layer base {
+    /* Fix for webkit checkbox/toggle native appearance showing through */
     input[type="checkbox"].toggle,
     input[type="checkbox"].checkbox,
     input[type="radio"].radio {
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
-        background-image: none !important;
+        background-image: none;
+    }
+
+    /* Fix toggle/radio/checkbox/range background in dark mode */
+    [data-theme=dark] input[type="checkbox"].toggle:not(:checked),
+    [data-theme=dark] input[type="checkbox"].checkbox:not(:checked),
+    [data-theme=dark] input[type="radio"].radio:not(:checked),
+    [data-theme=dark] input[type="range"].range {
+        background-color: var(--color-base-100);
     }
 
     /* Hide the browser's internal checkmark indicator (WebKit) */
@@ -111,6 +189,14 @@
         opacity: 0;
         background: none;
     }
+
+    /* Override DaisyUI input focus to use primary color instead of default blue */
+    .input:focus,
+    .input:focus-within {
+        --input-color: var(--color-primary);
+        outline-color: var(--color-primary);
+    }
+
 }
 
 @source '../node_modules/vue-tailwind-datepicker/**/*.js';
@@ -157,7 +243,28 @@
     --color-arco-purple-900: #581c87;
     --color-arco-purple-950: #3b0764;
 
-    --color-half-hidden: #9CA3AF;
+    /* Badge colors - defaults (overridden by daisyui themes) */
+    --color-badge-fresh-text: #111827;
+    --color-badge-fresh-bg: #16a34a;
+    --color-badge-fresh-border: #16a34a;
+    --color-badge-recent-text: #ffffff;
+    --color-badge-recent-bg: #0d9488;
+    --color-badge-recent-border: #0d9488;
+    --color-badge-days-text: #ffffff;
+    --color-badge-days-bg: #2563eb;
+    --color-badge-days-border: #2563eb;
+    --color-badge-week-text: #ffffff;
+    --color-badge-week-bg: #1e3a8a;
+    --color-badge-week-border: #1e3a8a;
+    --color-badge-month-text: #ffffff;
+    --color-badge-month-bg: #374151;
+    --color-badge-month-border: #374151;
+    --color-badge-year-text: #ffffff;
+    --color-badge-year-bg: #6b7280;
+    --color-badge-year-border: #6b7280;
+    --color-badge-old-text: #ffffff;
+    --color-badge-old-bg: #9ca3af;
+    --color-badge-old-border: #9ca3af;
 }
 
 /* Custom styles - Refined with softer shadows */
@@ -166,13 +273,26 @@
     @apply bg-base-100 shadow-md rounded-xl border border-base-300;
 }
 .ac-card-hover {
-    @apply bg-base-100 shadow-md rounded-xl border border-base-300 cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200;
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 cursor-pointer hover:bg-base-200 hover:shadow-lg transition-all duration-200;
+}
+.ac-card-hover-secondary {
+    @apply bg-base-100 shadow-md rounded-xl border border-transparent cursor-pointer hover:shadow-lg hover:border-secondary transition-all duration-200;
 }
 .ac-card-selected {
     @apply bg-base-100/80 shadow-lg rounded-xl border-2 border-primary/30;
 }
+.ac-card-selected-secondary {
+    @apply bg-base-100/80 shadow-lg rounded-xl border border-secondary;
+}
 .ac-card-dotted {
     @apply bg-transparent shadow-sm rounded-xl border-2 border-dashed border-neutral-400 text-neutral-500 hover:text-neutral-600 hover:border-neutral-500 hover:shadow-md transition-all duration-200;
+}
+/* Selectable card variants - consistent border-l-4 for selection highlight */
+.ac-card-selectable {
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 border-l-4 border-l-transparent;
+}
+.ac-card-selectable-hover {
+    @apply bg-base-100 shadow-md rounded-xl border border-base-300 border-l-4 border-l-transparent cursor-pointer hover:shadow-lg transition-all duration-200;
 }
 .text-base-strong {
     @apply text-gray-900 dark:text-gray-50;
@@ -181,4 +301,82 @@
 /* Selection highlight style */
 .ac-card-selected-highlight {
     @apply border-l-4 border-primary bg-base-300/50 dark:bg-primary/5;
+}
+
+/* Custom tooltip colors matching badge colors - use border color for bg (always solid in both themes) */
+.tooltip-badge-fresh::before {
+    @apply bg-badge-fresh-border text-gray-900;
+}
+.tooltip-badge-recent::before {
+    @apply bg-badge-recent-border text-white;
+}
+.tooltip-badge-recent:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-days::before {
+    @apply bg-badge-days-border text-white;
+}
+.tooltip-badge-week::before {
+    @apply bg-badge-week-border text-white;
+}
+.tooltip-badge-week:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-month::before {
+    @apply bg-badge-month-border text-white;
+}
+.tooltip-badge-month:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-year::before {
+    @apply bg-badge-year-border text-white;
+}
+.tooltip-badge-year:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-gray-900;
+}
+.tooltip-badge-old::before {
+    @apply bg-badge-old-border text-gray-900;
+}
+.tooltip-badge-old:where([data-theme=dark], [data-theme=dark] *)::before {
+    @apply text-white;
+}
+
+/* Tooltip arrow colors - ::after is the arrow in DaisyUI tooltips */
+.tooltip-badge-fresh::after {
+    @apply bg-badge-fresh-border;
+}
+.tooltip-badge-recent::after {
+    @apply bg-badge-recent-border;
+}
+.tooltip-badge-days::after {
+    @apply bg-badge-days-border;
+}
+.tooltip-badge-week::after {
+    @apply bg-badge-week-border;
+}
+.tooltip-badge-month::after {
+    @apply bg-badge-month-border;
+}
+.tooltip-badge-year::after {
+    @apply bg-badge-year-border;
+}
+.tooltip-badge-old::after {
+    @apply bg-badge-old-border;
+}
+
+/* Collapse animation utilities for Vue Transition */
+.ac-collapse-enter-active,
+.ac-collapse-leave-active {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 400ms ease-out;
+}
+
+.ac-collapse-enter-from,
+.ac-collapse-leave-to {
+    grid-template-rows: 0fr;
+}
+
+.ac-collapse-content {
+    overflow: hidden;
 }

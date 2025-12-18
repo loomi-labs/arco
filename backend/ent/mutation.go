@@ -58,6 +58,8 @@ type ArchiveMutation struct {
 	addduration           *float64
 	borg_id               *string
 	will_be_pruned        *bool
+	comment               *string
+	warning_message       *string
 	clearedFields         map[string]struct{}
 	repository            *int
 	clearedrepository     bool
@@ -408,6 +410,104 @@ func (m *ArchiveMutation) ResetWillBePruned() {
 	m.will_be_pruned = nil
 }
 
+// SetComment sets the "comment" field.
+func (m *ArchiveMutation) SetComment(s string) {
+	m.comment = &s
+}
+
+// Comment returns the value of the "comment" field in the mutation.
+func (m *ArchiveMutation) Comment() (r string, exists bool) {
+	v := m.comment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldComment returns the old "comment" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldComment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldComment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldComment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldComment: %w", err)
+	}
+	return oldValue.Comment, nil
+}
+
+// ClearComment clears the value of the "comment" field.
+func (m *ArchiveMutation) ClearComment() {
+	m.comment = nil
+	m.clearedFields[archive.FieldComment] = struct{}{}
+}
+
+// CommentCleared returns if the "comment" field was cleared in this mutation.
+func (m *ArchiveMutation) CommentCleared() bool {
+	_, ok := m.clearedFields[archive.FieldComment]
+	return ok
+}
+
+// ResetComment resets all changes to the "comment" field.
+func (m *ArchiveMutation) ResetComment() {
+	m.comment = nil
+	delete(m.clearedFields, archive.FieldComment)
+}
+
+// SetWarningMessage sets the "warning_message" field.
+func (m *ArchiveMutation) SetWarningMessage(s string) {
+	m.warning_message = &s
+}
+
+// WarningMessage returns the value of the "warning_message" field in the mutation.
+func (m *ArchiveMutation) WarningMessage() (r string, exists bool) {
+	v := m.warning_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWarningMessage returns the old "warning_message" field's value of the Archive entity.
+// If the Archive object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArchiveMutation) OldWarningMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWarningMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWarningMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWarningMessage: %w", err)
+	}
+	return oldValue.WarningMessage, nil
+}
+
+// ClearWarningMessage clears the value of the "warning_message" field.
+func (m *ArchiveMutation) ClearWarningMessage() {
+	m.warning_message = nil
+	m.clearedFields[archive.FieldWarningMessage] = struct{}{}
+}
+
+// WarningMessageCleared returns if the "warning_message" field was cleared in this mutation.
+func (m *ArchiveMutation) WarningMessageCleared() bool {
+	_, ok := m.clearedFields[archive.FieldWarningMessage]
+	return ok
+}
+
+// ResetWarningMessage resets all changes to the "warning_message" field.
+func (m *ArchiveMutation) ResetWarningMessage() {
+	m.warning_message = nil
+	delete(m.clearedFields, archive.FieldWarningMessage)
+}
+
 // SetRepositoryID sets the "repository" edge to the Repository entity by id.
 func (m *ArchiveMutation) SetRepositoryID(id int) {
 	m.repository = &id
@@ -520,7 +620,7 @@ func (m *ArchiveMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArchiveMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, archive.FieldCreatedAt)
 	}
@@ -538,6 +638,12 @@ func (m *ArchiveMutation) Fields() []string {
 	}
 	if m.will_be_pruned != nil {
 		fields = append(fields, archive.FieldWillBePruned)
+	}
+	if m.comment != nil {
+		fields = append(fields, archive.FieldComment)
+	}
+	if m.warning_message != nil {
+		fields = append(fields, archive.FieldWarningMessage)
 	}
 	return fields
 }
@@ -559,6 +665,10 @@ func (m *ArchiveMutation) Field(name string) (ent.Value, bool) {
 		return m.BorgID()
 	case archive.FieldWillBePruned:
 		return m.WillBePruned()
+	case archive.FieldComment:
+		return m.Comment()
+	case archive.FieldWarningMessage:
+		return m.WarningMessage()
 	}
 	return nil, false
 }
@@ -580,6 +690,10 @@ func (m *ArchiveMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldBorgID(ctx)
 	case archive.FieldWillBePruned:
 		return m.OldWillBePruned(ctx)
+	case archive.FieldComment:
+		return m.OldComment(ctx)
+	case archive.FieldWarningMessage:
+		return m.OldWarningMessage(ctx)
 	}
 	return nil, fmt.Errorf("unknown Archive field %s", name)
 }
@@ -631,6 +745,20 @@ func (m *ArchiveMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetWillBePruned(v)
 		return nil
+	case archive.FieldComment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetComment(v)
+		return nil
+	case archive.FieldWarningMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWarningMessage(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
 }
@@ -675,7 +803,14 @@ func (m *ArchiveMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ArchiveMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(archive.FieldComment) {
+		fields = append(fields, archive.FieldComment)
+	}
+	if m.FieldCleared(archive.FieldWarningMessage) {
+		fields = append(fields, archive.FieldWarningMessage)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -688,6 +823,14 @@ func (m *ArchiveMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ArchiveMutation) ClearField(name string) error {
+	switch name {
+	case archive.FieldComment:
+		m.ClearComment()
+		return nil
+	case archive.FieldWarningMessage:
+		m.ClearWarningMessage()
+		return nil
+	}
 	return fmt.Errorf("unknown Archive nullable field %s", name)
 }
 
@@ -712,6 +855,12 @@ func (m *ArchiveMutation) ResetField(name string) error {
 		return nil
 	case archive.FieldWillBePruned:
 		m.ResetWillBePruned()
+		return nil
+	case archive.FieldComment:
+		m.ResetComment()
+		return nil
+	case archive.FieldWarningMessage:
+		m.ResetWarningMessage()
 		return nil
 	}
 	return fmt.Errorf("unknown Archive field %s", name)
@@ -1371,6 +1520,7 @@ type BackupProfileMutation struct {
 	appendbackup_paths         []string
 	exclude_paths              *[]string
 	appendexclude_paths        []string
+	exclude_caches             *bool
 	icon                       *backupprofile.Icon
 	compression_mode           *backupprofile.CompressionMode
 	compression_level          *int
@@ -1759,6 +1909,42 @@ func (m *BackupProfileMutation) ResetExcludePaths() {
 	m.exclude_paths = nil
 	m.appendexclude_paths = nil
 	delete(m.clearedFields, backupprofile.FieldExcludePaths)
+}
+
+// SetExcludeCaches sets the "exclude_caches" field.
+func (m *BackupProfileMutation) SetExcludeCaches(b bool) {
+	m.exclude_caches = &b
+}
+
+// ExcludeCaches returns the value of the "exclude_caches" field in the mutation.
+func (m *BackupProfileMutation) ExcludeCaches() (r bool, exists bool) {
+	v := m.exclude_caches
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExcludeCaches returns the old "exclude_caches" field's value of the BackupProfile entity.
+// If the BackupProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupProfileMutation) OldExcludeCaches(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExcludeCaches is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExcludeCaches requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExcludeCaches: %w", err)
+	}
+	return oldValue.ExcludeCaches, nil
+}
+
+// ResetExcludeCaches resets all changes to the "exclude_caches" field.
+func (m *BackupProfileMutation) ResetExcludeCaches() {
+	m.exclude_caches = nil
 }
 
 // SetIcon sets the "icon" field.
@@ -2285,7 +2471,7 @@ func (m *BackupProfileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupProfileMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, backupprofile.FieldCreatedAt)
 	}
@@ -2303,6 +2489,9 @@ func (m *BackupProfileMutation) Fields() []string {
 	}
 	if m.exclude_paths != nil {
 		fields = append(fields, backupprofile.FieldExcludePaths)
+	}
+	if m.exclude_caches != nil {
+		fields = append(fields, backupprofile.FieldExcludeCaches)
 	}
 	if m.icon != nil {
 		fields = append(fields, backupprofile.FieldIcon)
@@ -2342,6 +2531,8 @@ func (m *BackupProfileMutation) Field(name string) (ent.Value, bool) {
 		return m.BackupPaths()
 	case backupprofile.FieldExcludePaths:
 		return m.ExcludePaths()
+	case backupprofile.FieldExcludeCaches:
+		return m.ExcludeCaches()
 	case backupprofile.FieldIcon:
 		return m.Icon()
 	case backupprofile.FieldCompressionMode:
@@ -2375,6 +2566,8 @@ func (m *BackupProfileMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldBackupPaths(ctx)
 	case backupprofile.FieldExcludePaths:
 		return m.OldExcludePaths(ctx)
+	case backupprofile.FieldExcludeCaches:
+		return m.OldExcludeCaches(ctx)
 	case backupprofile.FieldIcon:
 		return m.OldIcon(ctx)
 	case backupprofile.FieldCompressionMode:
@@ -2437,6 +2630,13 @@ func (m *BackupProfileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExcludePaths(v)
+		return nil
+	case backupprofile.FieldExcludeCaches:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExcludeCaches(v)
 		return nil
 	case backupprofile.FieldIcon:
 		v, ok := value.(backupprofile.Icon)
@@ -2576,6 +2776,9 @@ func (m *BackupProfileMutation) ResetField(name string) error {
 		return nil
 	case backupprofile.FieldExcludePaths:
 		m.ResetExcludePaths()
+		return nil
+	case backupprofile.FieldExcludeCaches:
+		m.ResetExcludeCaches()
 		return nil
 	case backupprofile.FieldIcon:
 		m.ResetIcon()
@@ -6471,8 +6674,13 @@ type RepositoryMutation struct {
 	updated_at                   *time.Time
 	name                         *string
 	url                          *string
-	password                     *string
-	next_integrity_check         *time.Time
+	has_password                 *bool
+	last_quick_check_at          *time.Time
+	quick_check_error            *[]string
+	appendquick_check_error      []string
+	last_full_check_at           *time.Time
+	full_check_error             *[]string
+	appendfull_check_error       []string
 	stats_total_chunks           *int
 	addstats_total_chunks        *int
 	stats_total_size             *int
@@ -6750,89 +6958,268 @@ func (m *RepositoryMutation) ResetURL() {
 	m.url = nil
 }
 
-// SetPassword sets the "password" field.
-func (m *RepositoryMutation) SetPassword(s string) {
-	m.password = &s
+// SetHasPassword sets the "has_password" field.
+func (m *RepositoryMutation) SetHasPassword(b bool) {
+	m.has_password = &b
 }
 
-// Password returns the value of the "password" field in the mutation.
-func (m *RepositoryMutation) Password() (r string, exists bool) {
-	v := m.password
+// HasPassword returns the value of the "has_password" field in the mutation.
+func (m *RepositoryMutation) HasPassword() (r bool, exists bool) {
+	v := m.has_password
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldPassword returns the old "password" field's value of the Repository entity.
+// OldHasPassword returns the old "has_password" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldPassword(ctx context.Context) (v string, err error) {
+func (m *RepositoryMutation) OldHasPassword(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPassword is only allowed on UpdateOne operations")
+		return v, errors.New("OldHasPassword is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPassword requires an ID field in the mutation")
+		return v, errors.New("OldHasPassword requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPassword: %w", err)
+		return v, fmt.Errorf("querying old value for OldHasPassword: %w", err)
 	}
-	return oldValue.Password, nil
+	return oldValue.HasPassword, nil
 }
 
-// ResetPassword resets all changes to the "password" field.
-func (m *RepositoryMutation) ResetPassword() {
-	m.password = nil
+// ResetHasPassword resets all changes to the "has_password" field.
+func (m *RepositoryMutation) ResetHasPassword() {
+	m.has_password = nil
 }
 
-// SetNextIntegrityCheck sets the "next_integrity_check" field.
-func (m *RepositoryMutation) SetNextIntegrityCheck(t time.Time) {
-	m.next_integrity_check = &t
+// SetLastQuickCheckAt sets the "last_quick_check_at" field.
+func (m *RepositoryMutation) SetLastQuickCheckAt(t time.Time) {
+	m.last_quick_check_at = &t
 }
 
-// NextIntegrityCheck returns the value of the "next_integrity_check" field in the mutation.
-func (m *RepositoryMutation) NextIntegrityCheck() (r time.Time, exists bool) {
-	v := m.next_integrity_check
+// LastQuickCheckAt returns the value of the "last_quick_check_at" field in the mutation.
+func (m *RepositoryMutation) LastQuickCheckAt() (r time.Time, exists bool) {
+	v := m.last_quick_check_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldNextIntegrityCheck returns the old "next_integrity_check" field's value of the Repository entity.
+// OldLastQuickCheckAt returns the old "last_quick_check_at" field's value of the Repository entity.
 // If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepositoryMutation) OldNextIntegrityCheck(ctx context.Context) (v *time.Time, err error) {
+func (m *RepositoryMutation) OldLastQuickCheckAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNextIntegrityCheck is only allowed on UpdateOne operations")
+		return v, errors.New("OldLastQuickCheckAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNextIntegrityCheck requires an ID field in the mutation")
+		return v, errors.New("OldLastQuickCheckAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNextIntegrityCheck: %w", err)
+		return v, fmt.Errorf("querying old value for OldLastQuickCheckAt: %w", err)
 	}
-	return oldValue.NextIntegrityCheck, nil
+	return oldValue.LastQuickCheckAt, nil
 }
 
-// ClearNextIntegrityCheck clears the value of the "next_integrity_check" field.
-func (m *RepositoryMutation) ClearNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	m.clearedFields[repository.FieldNextIntegrityCheck] = struct{}{}
+// ClearLastQuickCheckAt clears the value of the "last_quick_check_at" field.
+func (m *RepositoryMutation) ClearLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	m.clearedFields[repository.FieldLastQuickCheckAt] = struct{}{}
 }
 
-// NextIntegrityCheckCleared returns if the "next_integrity_check" field was cleared in this mutation.
-func (m *RepositoryMutation) NextIntegrityCheckCleared() bool {
-	_, ok := m.clearedFields[repository.FieldNextIntegrityCheck]
+// LastQuickCheckAtCleared returns if the "last_quick_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastQuickCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastQuickCheckAt]
 	return ok
 }
 
-// ResetNextIntegrityCheck resets all changes to the "next_integrity_check" field.
-func (m *RepositoryMutation) ResetNextIntegrityCheck() {
-	m.next_integrity_check = nil
-	delete(m.clearedFields, repository.FieldNextIntegrityCheck)
+// ResetLastQuickCheckAt resets all changes to the "last_quick_check_at" field.
+func (m *RepositoryMutation) ResetLastQuickCheckAt() {
+	m.last_quick_check_at = nil
+	delete(m.clearedFields, repository.FieldLastQuickCheckAt)
+}
+
+// SetQuickCheckError sets the "quick_check_error" field.
+func (m *RepositoryMutation) SetQuickCheckError(s []string) {
+	m.quick_check_error = &s
+	m.appendquick_check_error = nil
+}
+
+// QuickCheckError returns the value of the "quick_check_error" field in the mutation.
+func (m *RepositoryMutation) QuickCheckError() (r []string, exists bool) {
+	v := m.quick_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuickCheckError returns the old "quick_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldQuickCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuickCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuickCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuickCheckError: %w", err)
+	}
+	return oldValue.QuickCheckError, nil
+}
+
+// AppendQuickCheckError adds s to the "quick_check_error" field.
+func (m *RepositoryMutation) AppendQuickCheckError(s []string) {
+	m.appendquick_check_error = append(m.appendquick_check_error, s...)
+}
+
+// AppendedQuickCheckError returns the list of values that were appended to the "quick_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedQuickCheckError() ([]string, bool) {
+	if len(m.appendquick_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendquick_check_error, true
+}
+
+// ClearQuickCheckError clears the value of the "quick_check_error" field.
+func (m *RepositoryMutation) ClearQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	m.clearedFields[repository.FieldQuickCheckError] = struct{}{}
+}
+
+// QuickCheckErrorCleared returns if the "quick_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) QuickCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldQuickCheckError]
+	return ok
+}
+
+// ResetQuickCheckError resets all changes to the "quick_check_error" field.
+func (m *RepositoryMutation) ResetQuickCheckError() {
+	m.quick_check_error = nil
+	m.appendquick_check_error = nil
+	delete(m.clearedFields, repository.FieldQuickCheckError)
+}
+
+// SetLastFullCheckAt sets the "last_full_check_at" field.
+func (m *RepositoryMutation) SetLastFullCheckAt(t time.Time) {
+	m.last_full_check_at = &t
+}
+
+// LastFullCheckAt returns the value of the "last_full_check_at" field in the mutation.
+func (m *RepositoryMutation) LastFullCheckAt() (r time.Time, exists bool) {
+	v := m.last_full_check_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastFullCheckAt returns the old "last_full_check_at" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldLastFullCheckAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastFullCheckAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastFullCheckAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastFullCheckAt: %w", err)
+	}
+	return oldValue.LastFullCheckAt, nil
+}
+
+// ClearLastFullCheckAt clears the value of the "last_full_check_at" field.
+func (m *RepositoryMutation) ClearLastFullCheckAt() {
+	m.last_full_check_at = nil
+	m.clearedFields[repository.FieldLastFullCheckAt] = struct{}{}
+}
+
+// LastFullCheckAtCleared returns if the "last_full_check_at" field was cleared in this mutation.
+func (m *RepositoryMutation) LastFullCheckAtCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLastFullCheckAt]
+	return ok
+}
+
+// ResetLastFullCheckAt resets all changes to the "last_full_check_at" field.
+func (m *RepositoryMutation) ResetLastFullCheckAt() {
+	m.last_full_check_at = nil
+	delete(m.clearedFields, repository.FieldLastFullCheckAt)
+}
+
+// SetFullCheckError sets the "full_check_error" field.
+func (m *RepositoryMutation) SetFullCheckError(s []string) {
+	m.full_check_error = &s
+	m.appendfull_check_error = nil
+}
+
+// FullCheckError returns the value of the "full_check_error" field in the mutation.
+func (m *RepositoryMutation) FullCheckError() (r []string, exists bool) {
+	v := m.full_check_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFullCheckError returns the old "full_check_error" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepositoryMutation) OldFullCheckError(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFullCheckError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFullCheckError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFullCheckError: %w", err)
+	}
+	return oldValue.FullCheckError, nil
+}
+
+// AppendFullCheckError adds s to the "full_check_error" field.
+func (m *RepositoryMutation) AppendFullCheckError(s []string) {
+	m.appendfull_check_error = append(m.appendfull_check_error, s...)
+}
+
+// AppendedFullCheckError returns the list of values that were appended to the "full_check_error" field in this mutation.
+func (m *RepositoryMutation) AppendedFullCheckError() ([]string, bool) {
+	if len(m.appendfull_check_error) == 0 {
+		return nil, false
+	}
+	return m.appendfull_check_error, true
+}
+
+// ClearFullCheckError clears the value of the "full_check_error" field.
+func (m *RepositoryMutation) ClearFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	m.clearedFields[repository.FieldFullCheckError] = struct{}{}
+}
+
+// FullCheckErrorCleared returns if the "full_check_error" field was cleared in this mutation.
+func (m *RepositoryMutation) FullCheckErrorCleared() bool {
+	_, ok := m.clearedFields[repository.FieldFullCheckError]
+	return ok
+}
+
+// ResetFullCheckError resets all changes to the "full_check_error" field.
+func (m *RepositoryMutation) ResetFullCheckError() {
+	m.full_check_error = nil
+	m.appendfull_check_error = nil
+	delete(m.clearedFields, repository.FieldFullCheckError)
 }
 
 // SetStatsTotalChunks sets the "stats_total_chunks" field.
@@ -7406,7 +7793,7 @@ func (m *RepositoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepositoryMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, repository.FieldCreatedAt)
 	}
@@ -7419,11 +7806,20 @@ func (m *RepositoryMutation) Fields() []string {
 	if m.url != nil {
 		fields = append(fields, repository.FieldURL)
 	}
-	if m.password != nil {
-		fields = append(fields, repository.FieldPassword)
+	if m.has_password != nil {
+		fields = append(fields, repository.FieldHasPassword)
 	}
-	if m.next_integrity_check != nil {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.last_quick_check_at != nil {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.quick_check_error != nil {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.last_full_check_at != nil {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.full_check_error != nil {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	if m.stats_total_chunks != nil {
 		fields = append(fields, repository.FieldStatsTotalChunks)
@@ -7459,10 +7855,16 @@ func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case repository.FieldURL:
 		return m.URL()
-	case repository.FieldPassword:
-		return m.Password()
-	case repository.FieldNextIntegrityCheck:
-		return m.NextIntegrityCheck()
+	case repository.FieldHasPassword:
+		return m.HasPassword()
+	case repository.FieldLastQuickCheckAt:
+		return m.LastQuickCheckAt()
+	case repository.FieldQuickCheckError:
+		return m.QuickCheckError()
+	case repository.FieldLastFullCheckAt:
+		return m.LastFullCheckAt()
+	case repository.FieldFullCheckError:
+		return m.FullCheckError()
 	case repository.FieldStatsTotalChunks:
 		return m.StatsTotalChunks()
 	case repository.FieldStatsTotalSize:
@@ -7492,10 +7894,16 @@ func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldName(ctx)
 	case repository.FieldURL:
 		return m.OldURL(ctx)
-	case repository.FieldPassword:
-		return m.OldPassword(ctx)
-	case repository.FieldNextIntegrityCheck:
-		return m.OldNextIntegrityCheck(ctx)
+	case repository.FieldHasPassword:
+		return m.OldHasPassword(ctx)
+	case repository.FieldLastQuickCheckAt:
+		return m.OldLastQuickCheckAt(ctx)
+	case repository.FieldQuickCheckError:
+		return m.OldQuickCheckError(ctx)
+	case repository.FieldLastFullCheckAt:
+		return m.OldLastFullCheckAt(ctx)
+	case repository.FieldFullCheckError:
+		return m.OldFullCheckError(ctx)
 	case repository.FieldStatsTotalChunks:
 		return m.OldStatsTotalChunks(ctx)
 	case repository.FieldStatsTotalSize:
@@ -7545,19 +7953,40 @@ func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetURL(v)
 		return nil
-	case repository.FieldPassword:
-		v, ok := value.(string)
+	case repository.FieldHasPassword:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetPassword(v)
+		m.SetHasPassword(v)
 		return nil
-	case repository.FieldNextIntegrityCheck:
+	case repository.FieldLastQuickCheckAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetNextIntegrityCheck(v)
+		m.SetLastQuickCheckAt(v)
+		return nil
+	case repository.FieldQuickCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuickCheckError(v)
+		return nil
+	case repository.FieldLastFullCheckAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastFullCheckAt(v)
+		return nil
+	case repository.FieldFullCheckError:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFullCheckError(v)
 		return nil
 	case repository.FieldStatsTotalChunks:
 		v, ok := value.(int)
@@ -7706,8 +8135,17 @@ func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(repository.FieldNextIntegrityCheck) {
-		fields = append(fields, repository.FieldNextIntegrityCheck)
+	if m.FieldCleared(repository.FieldLastQuickCheckAt) {
+		fields = append(fields, repository.FieldLastQuickCheckAt)
+	}
+	if m.FieldCleared(repository.FieldQuickCheckError) {
+		fields = append(fields, repository.FieldQuickCheckError)
+	}
+	if m.FieldCleared(repository.FieldLastFullCheckAt) {
+		fields = append(fields, repository.FieldLastFullCheckAt)
+	}
+	if m.FieldCleared(repository.FieldFullCheckError) {
+		fields = append(fields, repository.FieldFullCheckError)
 	}
 	return fields
 }
@@ -7723,8 +8161,17 @@ func (m *RepositoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
-	case repository.FieldNextIntegrityCheck:
-		m.ClearNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ClearLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ClearQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ClearLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ClearFullCheckError()
 		return nil
 	}
 	return fmt.Errorf("unknown Repository nullable field %s", name)
@@ -7746,11 +8193,20 @@ func (m *RepositoryMutation) ResetField(name string) error {
 	case repository.FieldURL:
 		m.ResetURL()
 		return nil
-	case repository.FieldPassword:
-		m.ResetPassword()
+	case repository.FieldHasPassword:
+		m.ResetHasPassword()
 		return nil
-	case repository.FieldNextIntegrityCheck:
-		m.ResetNextIntegrityCheck()
+	case repository.FieldLastQuickCheckAt:
+		m.ResetLastQuickCheckAt()
+		return nil
+	case repository.FieldQuickCheckError:
+		m.ResetQuickCheckError()
+		return nil
+	case repository.FieldLastFullCheckAt:
+		m.ResetLastFullCheckAt()
+		return nil
+	case repository.FieldFullCheckError:
+		m.ResetFullCheckError()
 		return nil
 	case repository.FieldStatsTotalChunks:
 		m.ResetStatsTotalChunks()
@@ -7931,18 +8387,19 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 // SettingsMutation represents an operation that mutates the Settings nodes in the graph.
 type SettingsMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	show_welcome  *bool
-	expert_mode   *bool
-	theme         *settings.Theme
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Settings, error)
-	predicates    []predicate.Settings
+	op                  Op
+	typ                 string
+	id                  *int
+	created_at          *time.Time
+	updated_at          *time.Time
+	expert_mode         *bool
+	theme               *settings.Theme
+	disable_transitions *bool
+	disable_shadows     *bool
+	clearedFields       map[string]struct{}
+	done                bool
+	oldValue            func(context.Context) (*Settings, error)
+	predicates          []predicate.Settings
 }
 
 var _ ent.Mutation = (*SettingsMutation)(nil)
@@ -8115,42 +8572,6 @@ func (m *SettingsMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (m *SettingsMutation) SetShowWelcome(b bool) {
-	m.show_welcome = &b
-}
-
-// ShowWelcome returns the value of the "show_welcome" field in the mutation.
-func (m *SettingsMutation) ShowWelcome() (r bool, exists bool) {
-	v := m.show_welcome
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldShowWelcome returns the old "show_welcome" field's value of the Settings entity.
-// If the Settings object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SettingsMutation) OldShowWelcome(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldShowWelcome is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldShowWelcome requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldShowWelcome: %w", err)
-	}
-	return oldValue.ShowWelcome, nil
-}
-
-// ResetShowWelcome resets all changes to the "show_welcome" field.
-func (m *SettingsMutation) ResetShowWelcome() {
-	m.show_welcome = nil
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (m *SettingsMutation) SetExpertMode(b bool) {
 	m.expert_mode = &b
@@ -8223,6 +8644,78 @@ func (m *SettingsMutation) ResetTheme() {
 	m.theme = nil
 }
 
+// SetDisableTransitions sets the "disable_transitions" field.
+func (m *SettingsMutation) SetDisableTransitions(b bool) {
+	m.disable_transitions = &b
+}
+
+// DisableTransitions returns the value of the "disable_transitions" field in the mutation.
+func (m *SettingsMutation) DisableTransitions() (r bool, exists bool) {
+	v := m.disable_transitions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisableTransitions returns the old "disable_transitions" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldDisableTransitions(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisableTransitions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisableTransitions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisableTransitions: %w", err)
+	}
+	return oldValue.DisableTransitions, nil
+}
+
+// ResetDisableTransitions resets all changes to the "disable_transitions" field.
+func (m *SettingsMutation) ResetDisableTransitions() {
+	m.disable_transitions = nil
+}
+
+// SetDisableShadows sets the "disable_shadows" field.
+func (m *SettingsMutation) SetDisableShadows(b bool) {
+	m.disable_shadows = &b
+}
+
+// DisableShadows returns the value of the "disable_shadows" field in the mutation.
+func (m *SettingsMutation) DisableShadows() (r bool, exists bool) {
+	v := m.disable_shadows
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisableShadows returns the old "disable_shadows" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldDisableShadows(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisableShadows is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisableShadows requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisableShadows: %w", err)
+	}
+	return oldValue.DisableShadows, nil
+}
+
+// ResetDisableShadows resets all changes to the "disable_shadows" field.
+func (m *SettingsMutation) ResetDisableShadows() {
+	m.disable_shadows = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -8257,21 +8750,24 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, settings.FieldUpdatedAt)
 	}
-	if m.show_welcome != nil {
-		fields = append(fields, settings.FieldShowWelcome)
-	}
 	if m.expert_mode != nil {
 		fields = append(fields, settings.FieldExpertMode)
 	}
 	if m.theme != nil {
 		fields = append(fields, settings.FieldTheme)
+	}
+	if m.disable_transitions != nil {
+		fields = append(fields, settings.FieldDisableTransitions)
+	}
+	if m.disable_shadows != nil {
+		fields = append(fields, settings.FieldDisableShadows)
 	}
 	return fields
 }
@@ -8285,12 +8781,14 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case settings.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case settings.FieldShowWelcome:
-		return m.ShowWelcome()
 	case settings.FieldExpertMode:
 		return m.ExpertMode()
 	case settings.FieldTheme:
 		return m.Theme()
+	case settings.FieldDisableTransitions:
+		return m.DisableTransitions()
+	case settings.FieldDisableShadows:
+		return m.DisableShadows()
 	}
 	return nil, false
 }
@@ -8304,12 +8802,14 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldCreatedAt(ctx)
 	case settings.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case settings.FieldShowWelcome:
-		return m.OldShowWelcome(ctx)
 	case settings.FieldExpertMode:
 		return m.OldExpertMode(ctx)
 	case settings.FieldTheme:
 		return m.OldTheme(ctx)
+	case settings.FieldDisableTransitions:
+		return m.OldDisableTransitions(ctx)
+	case settings.FieldDisableShadows:
+		return m.OldDisableShadows(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -8333,13 +8833,6 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpdatedAt(v)
 		return nil
-	case settings.FieldShowWelcome:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetShowWelcome(v)
-		return nil
 	case settings.FieldExpertMode:
 		v, ok := value.(bool)
 		if !ok {
@@ -8353,6 +8846,20 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTheme(v)
+		return nil
+	case settings.FieldDisableTransitions:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisableTransitions(v)
+		return nil
+	case settings.FieldDisableShadows:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisableShadows(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8409,14 +8916,17 @@ func (m *SettingsMutation) ResetField(name string) error {
 	case settings.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
-	case settings.FieldShowWelcome:
-		m.ResetShowWelcome()
-		return nil
 	case settings.FieldExpertMode:
 		m.ResetExpertMode()
 		return nil
 	case settings.FieldTheme:
 		m.ResetTheme()
+		return nil
+	case settings.FieldDisableTransitions:
+		m.ResetDisableTransitions()
+		return nil
+	case settings.FieldDisableShadows:
+		m.ResetDisableShadows()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8480,8 +8990,6 @@ type UserMutation struct {
 	updated_at               *time.Time
 	email                    *string
 	last_logged_in           *time.Time
-	refresh_token            *string
-	access_token             *string
 	access_token_expires_at  *time.Time
 	refresh_token_expires_at *time.Time
 	clearedFields            map[string]struct{}
@@ -8751,104 +9259,6 @@ func (m *UserMutation) ResetLastLoggedIn() {
 	delete(m.clearedFields, user.FieldLastLoggedIn)
 }
 
-// SetRefreshToken sets the "refresh_token" field.
-func (m *UserMutation) SetRefreshToken(s string) {
-	m.refresh_token = &s
-}
-
-// RefreshToken returns the value of the "refresh_token" field in the mutation.
-func (m *UserMutation) RefreshToken() (r string, exists bool) {
-	v := m.refresh_token
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRefreshToken returns the old "refresh_token" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldRefreshToken(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRefreshToken is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRefreshToken requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRefreshToken: %w", err)
-	}
-	return oldValue.RefreshToken, nil
-}
-
-// ClearRefreshToken clears the value of the "refresh_token" field.
-func (m *UserMutation) ClearRefreshToken() {
-	m.refresh_token = nil
-	m.clearedFields[user.FieldRefreshToken] = struct{}{}
-}
-
-// RefreshTokenCleared returns if the "refresh_token" field was cleared in this mutation.
-func (m *UserMutation) RefreshTokenCleared() bool {
-	_, ok := m.clearedFields[user.FieldRefreshToken]
-	return ok
-}
-
-// ResetRefreshToken resets all changes to the "refresh_token" field.
-func (m *UserMutation) ResetRefreshToken() {
-	m.refresh_token = nil
-	delete(m.clearedFields, user.FieldRefreshToken)
-}
-
-// SetAccessToken sets the "access_token" field.
-func (m *UserMutation) SetAccessToken(s string) {
-	m.access_token = &s
-}
-
-// AccessToken returns the value of the "access_token" field in the mutation.
-func (m *UserMutation) AccessToken() (r string, exists bool) {
-	v := m.access_token
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAccessToken returns the old "access_token" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldAccessToken(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAccessToken is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAccessToken requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAccessToken: %w", err)
-	}
-	return oldValue.AccessToken, nil
-}
-
-// ClearAccessToken clears the value of the "access_token" field.
-func (m *UserMutation) ClearAccessToken() {
-	m.access_token = nil
-	m.clearedFields[user.FieldAccessToken] = struct{}{}
-}
-
-// AccessTokenCleared returns if the "access_token" field was cleared in this mutation.
-func (m *UserMutation) AccessTokenCleared() bool {
-	_, ok := m.clearedFields[user.FieldAccessToken]
-	return ok
-}
-
-// ResetAccessToken resets all changes to the "access_token" field.
-func (m *UserMutation) ResetAccessToken() {
-	m.access_token = nil
-	delete(m.clearedFields, user.FieldAccessToken)
-}
-
 // SetAccessTokenExpiresAt sets the "access_token_expires_at" field.
 func (m *UserMutation) SetAccessTokenExpiresAt(t time.Time) {
 	m.access_token_expires_at = &t
@@ -8981,7 +9391,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -8993,12 +9403,6 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.last_logged_in != nil {
 		fields = append(fields, user.FieldLastLoggedIn)
-	}
-	if m.refresh_token != nil {
-		fields = append(fields, user.FieldRefreshToken)
-	}
-	if m.access_token != nil {
-		fields = append(fields, user.FieldAccessToken)
 	}
 	if m.access_token_expires_at != nil {
 		fields = append(fields, user.FieldAccessTokenExpiresAt)
@@ -9022,10 +9426,6 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case user.FieldLastLoggedIn:
 		return m.LastLoggedIn()
-	case user.FieldRefreshToken:
-		return m.RefreshToken()
-	case user.FieldAccessToken:
-		return m.AccessToken()
 	case user.FieldAccessTokenExpiresAt:
 		return m.AccessTokenExpiresAt()
 	case user.FieldRefreshTokenExpiresAt:
@@ -9047,10 +9447,6 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEmail(ctx)
 	case user.FieldLastLoggedIn:
 		return m.OldLastLoggedIn(ctx)
-	case user.FieldRefreshToken:
-		return m.OldRefreshToken(ctx)
-	case user.FieldAccessToken:
-		return m.OldAccessToken(ctx)
 	case user.FieldAccessTokenExpiresAt:
 		return m.OldAccessTokenExpiresAt(ctx)
 	case user.FieldRefreshTokenExpiresAt:
@@ -9091,20 +9487,6 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLastLoggedIn(v)
-		return nil
-	case user.FieldRefreshToken:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRefreshToken(v)
-		return nil
-	case user.FieldAccessToken:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAccessToken(v)
 		return nil
 	case user.FieldAccessTokenExpiresAt:
 		v, ok := value.(time.Time)
@@ -9153,12 +9535,6 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldLastLoggedIn) {
 		fields = append(fields, user.FieldLastLoggedIn)
 	}
-	if m.FieldCleared(user.FieldRefreshToken) {
-		fields = append(fields, user.FieldRefreshToken)
-	}
-	if m.FieldCleared(user.FieldAccessToken) {
-		fields = append(fields, user.FieldAccessToken)
-	}
 	if m.FieldCleared(user.FieldAccessTokenExpiresAt) {
 		fields = append(fields, user.FieldAccessTokenExpiresAt)
 	}
@@ -9181,12 +9557,6 @@ func (m *UserMutation) ClearField(name string) error {
 	switch name {
 	case user.FieldLastLoggedIn:
 		m.ClearLastLoggedIn()
-		return nil
-	case user.FieldRefreshToken:
-		m.ClearRefreshToken()
-		return nil
-	case user.FieldAccessToken:
-		m.ClearAccessToken()
 		return nil
 	case user.FieldAccessTokenExpiresAt:
 		m.ClearAccessTokenExpiresAt()
@@ -9213,12 +9583,6 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldLastLoggedIn:
 		m.ResetLastLoggedIn()
-		return nil
-	case user.FieldRefreshToken:
-		m.ResetRefreshToken()
-		return nil
-	case user.FieldAccessToken:
-		m.ResetAccessToken()
 		return nil
 	case user.FieldAccessTokenExpiresAt:
 		m.ResetAccessTokenExpiresAt()

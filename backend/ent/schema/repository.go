@@ -40,14 +40,32 @@ func (Repository) Fields() []ent.Field {
 		field.String("url").
 			StructTag(`json:"url"`).
 			Unique(),
-		field.String("password").
-			StructTag(`json:"password"`),
+		field.Bool("has_password").
+			StructTag(`json:"hasPassword"`).
+			Default(false).
+			Comment("Whether this repository has a password stored in the keyring"),
 
-		// Integrity check
-		field.Time("next_integrity_check").
-			StructTag(`json:"nextIntegrityCheck"`).
+		// Quick check tracking
+		field.Time("last_quick_check_at").
+			StructTag(`json:"lastQuickCheckAt"`).
 			Nillable().
-			Optional(),
+			Optional().
+			Comment("Timestamp of last quick check (--repository-only)"),
+		field.JSON("quick_check_error", []string{}).
+			StructTag(`json:"quickCheckError"`).
+			Optional().
+			Comment("Error messages from last quick check, empty array if successful"),
+
+		// Full check tracking
+		field.Time("last_full_check_at").
+			StructTag(`json:"lastFullCheckAt"`).
+			Nillable().
+			Optional().
+			Comment("Timestamp of last full check (--verify-data)"),
+		field.JSON("full_check_error", []string{}).
+			StructTag(`json:"fullCheckError"`).
+			Optional().
+			Comment("Error messages from last full check, empty array if successful"),
 
 		// Stats
 		// Borg repository statistics from cache stats.

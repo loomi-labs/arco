@@ -5,10 +5,10 @@ import * as zod from "zod";
 import { object } from "zod";
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { useRouter } from "vue-router";
+import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
@@ -25,8 +25,8 @@ import SelectIconModal from "../components/SelectIconModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import CompressionCard from "../components/CompressionCard.vue";
+import ErrorSection from "../components/ErrorSection.vue";
 import { format } from "@formkit/tempo";
-import { useExpertMode } from "../common/expertMode";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 
 /************
@@ -42,10 +42,6 @@ const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
 const scheduleSectionCollapsed = ref(false);
-const advancedSectionCollapsed = ref(true);
-
-// Expert mode
-const { expertMode } = useExpertMode();
 
 const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -54,8 +50,7 @@ const deleteArchives = ref<boolean>(false);
 const confirmDeleteModalKey = useId();
 const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmDeleteModalKey);
 
-const addRepoModalKey = useId();
-const addRepoModal = useTemplateRef<InstanceType<typeof HTMLDialogElement>>(addRepoModalKey);
+const isAddRepoModalOpen = ref(false);
 
 const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
@@ -74,13 +69,31 @@ type Breakpoint = "base" | "md" | "xl" | "2xl";
 const currentBreakpoint = ref<Breakpoint>("base");
 
 const dataSectionDetails = computed(() => {
-  return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup,
-  ${backupProfile.value.excludePaths?.length ?? 0} path${backupProfile.value.excludePaths?.length === 1 ? "" : "s"} excluded`;
+  const pathsInfo = `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup, ${backupProfile.value.excludePaths?.length ?? 0} excluded`;
+
+  // Compression info (same logic as old advancedSectionDetails)
+  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
+  const level = backupProfile.value.compressionLevel;
+
+  let compressionInfo = "Compression: Fast";
+  if (mode === CompressionMode.CompressionModeNone) {
+    compressionInfo = "Compression: Off";
+  } else if (mode === CompressionMode.CompressionModeLz4) {
+    compressionInfo = "Compression: Fast";
+  } else if (mode === CompressionMode.CompressionModeZstd && level === 3) {
+    compressionInfo = "Compression: Balanced";
+  } else if (mode === CompressionMode.CompressionModeLzma && level === 6) {
+    compressionInfo = "Compression: Maximum";
+  } else {
+    compressionInfo = "Compression: Custom";
+  }
+
+  return `${pathsInfo}, ${compressionInfo}`;
 });
 
 const scheduleSectionDetails = computed(() => {
-  const schedule = backupProfile.value.edges.backupSchedule;
-  const pruning = backupProfile.value.edges.pruningRule;
+  const schedule = backupProfile.value.backupSchedule;
+  const pruning = backupProfile.value.pruningRule;
 
   if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
     return "No schedules";
@@ -118,50 +131,19 @@ const scheduleSectionDetails = computed(() => {
   return details;
 });
 
-const advancedSectionDetails = computed(() => {
-  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
-  const level = backupProfile.value.compressionLevel;
-
-  if (!expertMode.value) {
-    // Simple mode presets
-    if (mode === CompressionMode.CompressionModeNone) return "Compression: Off";
-    if (mode === CompressionMode.CompressionModeLz4) return "Compression: Fast";
-    if (mode === CompressionMode.CompressionModeZstd && level === 3) return "Compression: Balanced";
-    if (mode === CompressionMode.CompressionModeLzma && level === 6) return "Compression: Maximum";
-    return "Compression: Custom"; // Custom settings
-  }
-
-  // Expert mode summary
-  if (mode === CompressionMode.CompressionModeNone) {
-    return "No compression";
-  }
-
-  if (mode === CompressionMode.CompressionModeLz4) {
-    return "Compression: lz4 (fast)";
-  }
-
-  if (level !== null && level !== undefined) {
-    return `Compression: ${mode}, level ${level}`;
-  }
-
-  return `Compression: ${mode}`;
-});
-
 // Computed property for safe repository access
 const profileRepos = computed(() =>
-  backupProfile.value.edges?.repositories?.filter(r => r !== null) ?? []
+  backupProfile.value.repositories?.filter(r => r !== null) ?? []
 );
 
 // Determine if Add Repository button should be in title (true) or as card (false)
 const shouldShowPlusInTitle = computed(() => {
   const repoCount = profileRepos.value.length;
 
-  // Determine columns based on current breakpoint
+  // Determine columns based on current breakpoint (max 3 columns)
   let columns = 1;
   switch (currentBreakpoint.value) {
     case "2xl":
-      columns = 4;
-      break;
     case "xl":
       columns = 3;
       break;
@@ -205,7 +187,6 @@ async function getData() {
 
     dataSectionCollapsed.value = !!backupProfile.value.dataSectionCollapsed;
     scheduleSectionCollapsed.value = !!backupProfile.value.scheduleSectionCollapsed;
-    advancedSectionCollapsed.value = !!backupProfile.value.advancedSectionCollapsed;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -241,10 +222,19 @@ async function saveExcludePaths(paths: string[]) {
   }
 }
 
-async function saveSchedule(schedule: ent.BackupSchedule) {
+async function saveExcludeCaches(excludeCaches: boolean) {
+  try {
+    backupProfile.value.excludeCaches = excludeCaches;
+    await backupProfileService.UpdateBackupProfile(backupProfile.value);
+  } catch (error: unknown) {
+    await showAndLogError("Failed to save exclude caches setting", error);
+  }
+}
+
+async function saveSchedule(schedule: BackupSchedule) {
   try {
     await backupProfileService.SaveBackupSchedule(backupProfile.value.id, schedule);
-    backupProfile.value.edges.backupSchedule = schedule;
+    backupProfile.value.backupSchedule = schedule;
   } catch (error: unknown) {
     await showAndLogError("Failed to save schedule", error);
   }
@@ -285,16 +275,16 @@ async function saveBackupProfile() {
   }
 }
 
-async function setPruningRule(pruningRule: ent.PruningRule) {
+async function setPruningRule(pruningRule: PruningRule) {
   try {
-    backupProfile.value.edges.pruningRule = pruningRule;
+    backupProfile.value.pruningRule = pruningRule;
   } catch (error: unknown) {
     await showAndLogError("Failed to save pruning rule", error);
   }
 }
 
 async function addRepo(repo: Repository) {
-  addRepoModal.value?.close();
+  isAddRepoModalOpen.value = false;
   try {
     await backupProfileService.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
     await getData();
@@ -314,18 +304,15 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
   }
 }
 
-async function toggleCollapse(type: "data" | "schedule" | "advanced") {
+async function toggleCollapse(type: "data" | "schedule") {
   if (type === "data") {
     dataSectionCollapsed.value = !dataSectionCollapsed.value;
   } else if (type === "schedule") {
     scheduleSectionCollapsed.value = !scheduleSectionCollapsed.value;
-  } else if (type === "advanced") {
-    advancedSectionCollapsed.value = !advancedSectionCollapsed.value;
   }
   try {
     backupProfile.value.dataSectionCollapsed = !!dataSectionCollapsed.value;
     backupProfile.value.scheduleSectionCollapsed = !!scheduleSectionCollapsed.value;
-    backupProfile.value.advancedSectionCollapsed = !!advancedSectionCollapsed.value;
     await backupProfileService.UpdateBackupProfile(backupProfile.value);
   } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
@@ -408,7 +395,7 @@ watch(
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
-               class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary pl-0 shadow-none'
+               class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary -ml-3 shadow-none'
                v-model='name'
                v-bind='nameAttrs'
                @change='saveBackupName'
@@ -428,7 +415,7 @@ watch(
             <div tabindex='0' role='button' class='btn btn-square'>
               <EllipsisVerticalIcon class='size-6' />
             </div>
-            <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm'>
+            <ul tabindex='0' class='dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm'>
               <li><a @click='showDeleteBackupProfileModal' class='text-error'>Delete
                 <TrashIcon class='size-4' />
               </a></li>
@@ -454,6 +441,9 @@ watch(
       </div>
     </div>
 
+    <!-- Error Section -->
+    <ErrorSection :backup-profile-id='backupProfile.id' />
+
     <!-- Data Section -->
     <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
          :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
@@ -461,7 +451,7 @@ watch(
         class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
         @click='toggleCollapse("data")'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
+        <span class='ml-2 transition-all duration-700 ease-in-out'
               :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{
             dataSectionDetails
           }}</span>
@@ -481,9 +471,22 @@ watch(
           <DataSelection
             show-title
             :paths='backupProfile.excludePaths ?? []'
+            :exclude-caches='backupProfile.excludeCaches ?? false'
             :is-backup-selection='false'
             @update:paths='saveExcludePaths'
+            @update:exclude-caches='saveExcludeCaches'
           />
+        </div>
+        <!-- Compression Card on separate row -->
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
+          <CompressionCard
+            :show-title='true'
+            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+            :compression-level='backupProfile.compressionLevel'
+            @update:compression='({ mode, level }) => {
+              backupProfile.compressionMode = mode;
+              backupProfile.compressionLevel = level; saveBackupProfile();
+            }' />
         </div>
       </div>
     </div>
@@ -495,7 +498,7 @@ watch(
         class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
         @click='toggleCollapse("schedule")'>
         <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
+        <span class='ml-2 transition-all duration-700 ease-in-out'
               :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{
             scheduleSectionDetails
           }}</span>
@@ -503,40 +506,14 @@ watch(
 
       <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
         <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-          <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? ent.BackupSchedule.createFrom()'
+          <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
                              @update:schedule='saveSchedule' />
 
           <PruningCard :backup-profile-id='backupProfile.id'
-                       :pruning-rule='backupProfile.edges.pruningRule ?? ent.PruningRule.createFrom()'
+                       :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
                        :ask-for-save-before-leaving='true'
                        @update:pruning-rule='setPruningRule'>
           </PruningCard>
-        </div>
-      </div>
-    </div>
-
-    <!-- Advanced Section -->
-    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
-         :class='advancedSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div
-        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-        @click='toggleCollapse("advanced")'>
-        <span class='text-lg font-bold text-base-strong'>Advanced</span>
-        <span class='ml-2 transition-all duration-1000 ease-in-out'
-              :class='{ "opacity-100": advancedSectionCollapsed, "opacity-0": !advancedSectionCollapsed }'>{{
-            advancedSectionDetails
-          }}</span>
-      </div>
-
-      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
-        <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-          <CompressionCard
-            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-            :compression-level='backupProfile.compressionLevel'
-            @update:compression='({ mode, level }) => {
-              backupProfile.compressionMode = mode;
-              backupProfile.compressionLevel = level; saveBackupProfile();
-            }' />
         </div>
       </div>
     </div>
@@ -547,22 +524,22 @@ watch(
         <h2 class='text-lg font-bold text-base-strong'>Stored on</h2>
         <button
           v-if='shouldShowPlusInTitle'
-          @click='() => addRepoModal?.showModal()'
+          @click='isAddRepoModalOpen = true'
           class='btn btn-sm btn-ghost gap-1'
         >
           <PlusCircleIcon class='size-5' />
           <span>Add Repository</span>
         </button>
       </div>
-      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 mb-4'>
+      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-4'>
         <!-- Repositories -->
-        <div v-for='repo in profileRepos' :key='repo.id' class='min-w-80'>
+        <div v-for='repo in profileRepos' :key='repo.id'>
           <RepoCard
             :repo-id='repo.id'
             :backup-profile-id='backupProfile.id'
             :highlight='profileRepos.length > 1 && repo.id === selectedRepoId'
             :show-hover='profileRepos.length > 1'
-            :is-pruning-shown='backupProfile.edges.pruningRule?.isEnabled ?? false'
+            :is-pruning-shown='backupProfile.pruningRule?.isEnabled ?? false'
             :is-delete-shown='profileRepos.length > 1'
             @click='() => selectedRepoId = repo.id'
             @remove-repo='(delArchives) => removeRepo(repo.id, delArchives)'
@@ -574,73 +551,79 @@ watch(
           v-if='!shouldShowPlusInTitle'
           role='button'
           tabindex='0'
-          @click='addRepoModal?.showModal()'
-          @keydown='(e) => handleKeyboardActivation(e, () => addRepoModal?.showModal())'
-          class='flex justify-center items-center gap-2 w-full min-w-80 ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+          @click='isAddRepoModalOpen = true'
+          @keydown='(e) => handleKeyboardActivation(e, () => isAddRepoModalOpen = true)'
+          class='flex justify-center items-center gap-2 w-full ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
           aria-label='Add Repository'
         >
           <PlusCircleIcon class='size-8' aria-hidden='true' />
           <div class='text-base font-semibold'>Add Repository</div>
         </div>
 
-        <dialog
-          :ref='addRepoModalKey'
-          class='modal'
-          @click.stop
-        >
-          <form
-            method='dialog'
-            class='modal-box flex flex-col w-11/12 max-w-5xl p-10 bg-base-200'
-          >
-            <div class='modal-action'>
-              <div class='flex flex-col w-full justify-center gap-4'>
-                <ConnectRepo
-                  :show-connected-repos='true'
-                  :use-single-repo='true'
-                  :existing-repos='existingRepos.filter(r => !profileRepos.some(repo => repo.id === r.id))'
-                  @click:repo='(repo) => addRepo(repo)' />
+        <TransitionRoot :show='isAddRepoModalOpen'>
+          <Dialog class='relative z-50' @close='isAddRepoModalOpen = false'>
+            <TransitionChild
+              enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+              leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+              <div class='fixed inset-0 bg-gray-500/75' />
+            </TransitionChild>
 
-                <div class='divider'></div>
+            <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+              <div class='flex min-h-full items-center justify-center p-4'>
+                <TransitionChild
+                  enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                  enter-to='opacity-100 translate-y-0 sm:scale-100'
+                  leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                  leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                  <DialogPanel class='relative transform rounded-lg bg-base-200 p-10 shadow-xl w-11/12 max-w-5xl'>
+                    <div class='flex flex-col w-full justify-center gap-4'>
+                      <ConnectRepo
+                        :show-connected-repos='true'
+                        :use-single-repo='true'
+                        :existing-repos='existingRepos.filter(r => !profileRepos.some(repo => repo.id === r.id))'
+                        @click:repo='(repo) => addRepo(repo)' />
 
-                <!-- Add new Repository -->
-                <div
-                  class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                  role='button'
-                  tabindex='0'
-                  @click='router.push(Page.AddRepository)'
-                  @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
-                  aria-label='Create new repository'
-                >
-                  <p>Create new repository</p>
-                  <div class='relative size-24 group-hover:text-arco-cloud-repo'>
-                    <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
-                    <div
-                      class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
-                      <PlusCircleIcon class='size-10' aria-hidden='true' />
+                      <div class='divider'></div>
+
+                      <!-- Add new Repository -->
+                      <div
+                        class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                        role='button'
+                        tabindex='0'
+                        @click='router.push(Page.AddRepository)'
+                        @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
+                        aria-label='Create new repository'
+                      >
+                        <p>Create new repository</p>
+                        <div class='relative size-24 group-hover:text-arco-cloud-repo'>
+                          <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
+                          <div
+                            class='absolute bottom-0 right-0 flex items-center justify-center w-11 h-11 bg-base-100 rounded-full z-20'>
+                            <PlusCircleIcon class='size-10' aria-hidden='true' />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class='flex justify-end'>
+                        <button
+                          class='btn btn-outline'
+                          @click='isAddRepoModalOpen = false'
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div class='flex w-full justify-center gap-4'>
-                  <button
-                    value='false'
-                    class='btn btn-outline'
-                  >
-                    Cancel
-                  </button>
-                </div>
+                  </DialogPanel>
+                </TransitionChild>
               </div>
             </div>
-          </form>
-          <form method='dialog' class='modal-backdrop'>
-            <button>close</button>
-          </form>
-        </dialog>
+          </Dialog>
+        </TransitionRoot>
       </div>
       <ArchivesCard v-if='selectedRepoId'
                     :backup-profile-id='backupProfile.id'
                     :repo-id='selectedRepoId'
-                    :highlight='(backupProfile.edges.repositories?.length ?? 0) > 1'
+                    :highlight='(backupProfile.repositories?.length ?? 0) > 1'
                     :show-name='true'>
       </ArchivesCard>
     </div>

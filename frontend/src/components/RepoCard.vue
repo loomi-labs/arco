@@ -5,12 +5,11 @@ import { Page, withId } from "../router";
 import { showAndLogError } from "../common/logger";
 import { onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { toLongDateString, toRelativeTimeString } from "../common/time";
-import { ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
-import { toCreationTimeBadge } from "../common/badge";
+import { ExclamationTriangleIcon, ScissorsIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import BackupButton from "./BackupButton.vue";
 import { backupStateChangedEvent, repoStateChangedEvent } from "../common/events";
 import { toHumanReadableSize } from "../common/repository";
-import type CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
@@ -65,7 +64,7 @@ const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 
 const deleteArchives = ref<boolean>(false);
 const confirmRemoveRepoModalKey = useId();
-const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(confirmRemoveRepoModalKey);
+const confirmRemoveRepoModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmRemoveRepoModalKey);
 
 // Session-based warning dismissal tracking
 const dismissedWarnings = ref<Set<number>>(new Set());
@@ -160,63 +159,76 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class='flex justify-between ac-card p-10 h-full'
+  <div class='ac-card-selectable h-full pb-4'
        :class='[
-         props.highlight ? "ac-card-selected-highlight" : "border-2 border-transparent",
-         { "ac-card-hover": showHover && !props.highlight }
+         props.highlight ? "ac-card-selected-highlight" : "",
+         { "ac-card-selectable-hover": showHover && !props.highlight }
        ]'
        @click='emits(emitClick)'>
-    <div class='flex flex-col'>
+    <!-- Name header with action buttons -->
+    <div class='flex justify-between items-center px-4 pt-4 pb-2'>
       <h3 class='text-lg font-semibold'>{{ repo?.name || "" }}</h3>
-      <p>{{ $t("last_backup") }}:
-        <span v-if='repo.lastBackupError' class='tooltip tooltip-error' :data-tip='repo.lastBackupError'>
-          <span class='badge badge-error dark:border-error dark:text-error dark:bg-transparent'>{{
-              $t("failed")
-            }}</span>
-        </span>
-        <span v-else-if='lastArchive' class='tooltip' :data-tip='toLongDateString(lastArchive.createdAt)'>
-          <span :class='toCreationTimeBadge(lastArchive?.createdAt)'>{{
-              toRelativeTimeString(lastArchive.createdAt)
-            }}</span>
-        </span>
-        <span v-else>-</span>
-        <!-- Error Badge -->
-        <span v-if='repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError'
-              class='badge badge-error dark:border-error dark:bg-transparent dark:text-error truncate cursor-pointer ml-1'
-              @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
-          Error
-        </span>
-        <!-- Warning Badge -->
-        <span v-if='repo.lastBackupWarning && !dismissedWarnings.has(props.repoId)'
-              class='tooltip tooltip-warning'
-              :data-tip='repo.lastBackupWarning'>
-          <span class='badge badge-warning dark:border-warning dark:bg-transparent dark:text-warning truncate cursor-pointer ml-1'
-                @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
-            Warning
-          </span>
-        </span>
-      </p>
-      <p>{{ $t("size_on_disk") }}: {{ sizeOnDisk }}</p>
-      <p>{{ $t("total_size") }}: {{ totalSize }}</p>
-      <a class='link mt-auto'
-         @click='router.push(withId(Page.Repository, backupId.repositoryId))'>{{ $t("go_to_repository") }}</a>
-    </div>
-    <div class='flex flex-col items-end gap-2'>
-      <div class='flex gap-2'>
-        <button v-if='isPruningShown' class='btn btn-ghost btn-circle'
+      <div class='flex gap-1'>
+        <button v-if='isPruningShown' class='btn btn-ghost btn-circle btn-sm'
                 :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeIdle'
-                @click.stop='prune'
-        >
-          <ScissorsIcon class='size-6' />
+                @click.stop='prune'>
+          <ScissorsIcon class='size-5' />
         </button>
-        <button v-if='isDeleteShown' class='btn btn-ghost btn-circle'
+        <button v-if='isDeleteShown' class='btn btn-ghost btn-circle btn-sm'
                 :disabled='repo.state.type !== statemachine.RepositoryStateType.RepositoryStateTypeIdle'
                 @click.stop='showRemoveRepoModal'>
-          <TrashIcon class='size-6' />
+          <TrashIcon class='size-5' />
         </button>
       </div>
+    </div>
 
-      <div class='mt-auto'>
+    <!-- Two-column content -->
+    <div class='flex'>
+      <!-- Left: Info rows -->
+      <div class='flex-1 p-4 pt-0 space-y-2 text-sm'>
+        <!-- Size on disk row -->
+        <div class='flex justify-between items-center'>
+          <span class='text-base-content/60'>{{ $t("size_on_disk") }}</span>
+          <span class='font-medium'>{{ sizeOnDisk }}</span>
+        </div>
+
+        <!-- Last backup row -->
+        <div class='flex justify-between items-center'>
+          <span class='text-base-content/60'>{{ $t("last_backup") }}</span>
+          <div class='flex items-center gap-2'>
+            <!-- Error icon with tooltip -->
+            <span v-if='repo.lastAttempt?.status === types.BackupStatus.BackupStatusError' class='tooltip tooltip-top tooltip-error' :data-tip='repo.lastAttempt?.message'>
+              <ExclamationTriangleIcon class='size-4 text-error cursor-pointer' />
+            </span>
+            <!-- Warning icon with tooltip -->
+            <span v-else-if='repo.lastAttempt?.status === types.BackupStatus.BackupStatusWarning && !dismissedWarnings.has(props.repoId)'
+                  class='tooltip tooltip-top tooltip-warning' :data-tip='repo.lastAttempt?.message'>
+              <ExclamationTriangleIcon class='size-4 text-warning cursor-pointer' />
+            </span>
+            <!-- Error badge (repo in error state) -->
+            <span v-if='repo.state.type === statemachine.RepositoryStateType.RepositoryStateTypeError'
+                  class='badge badge-error badge-sm cursor-pointer'
+                  @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+              Error
+            </span>
+            <!-- Time badge -->
+            <span v-else-if='lastArchive' :class='toCreationTimeTooltip(lastArchive.createdAt)'
+                  :data-tip='toLongDateString(lastArchive.createdAt)'>
+              <span :class='toCreationTimeBadge(lastArchive.createdAt)'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
+            </span>
+            <span v-else>-</span>
+          </div>
+        </div>
+
+        <!-- Go to repository link -->
+        <a class='link link-info text-sm mt-2 inline-block'
+           @click.stop='router.push(withId(Page.Repository, backupId.repositoryId))'>
+          {{ $t("go_to_repository") }}
+        </a>
+      </div>
+
+      <!-- Right: Backup button -->
+      <div class='flex items-center justify-center px-4'>
         <BackupButton :backup-ids='[backupId]' />
       </div>
     </div>

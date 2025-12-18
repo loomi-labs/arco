@@ -18,6 +18,31 @@ import * as ent$0 from "../../ent/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../time/models.js";
 
+export class ArchiveComment {
+    "archiveId": number;
+    "comment": string;
+
+    /** Creates a new ArchiveComment instance. */
+    constructor($$source: Partial<ArchiveComment> = {}) {
+        if (!("archiveId" in $$source)) {
+            this["archiveId"] = 0;
+        }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArchiveComment instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArchiveComment {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArchiveComment($$parsedSource as Partial<ArchiveComment>);
+    }
+}
+
 export class ArchiveDelete {
     "archiveId": number;
 
@@ -141,6 +166,52 @@ export class Backup {
             $$parsedSource["progress"] = $$createField1_0($$parsedSource["progress"]);
         }
         return new Backup($$parsedSource as Partial<Backup>);
+    }
+}
+
+export class Check {
+    "repositoryId": number;
+    "quickVerification": boolean;
+
+    /** Creates a new Check instance. */
+    constructor($$source: Partial<Check> = {}) {
+        if (!("repositoryId" in $$source)) {
+            this["repositoryId"] = 0;
+        }
+        if (!("quickVerification" in $$source)) {
+            this["quickVerification"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Check instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Check {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Check($$parsedSource as Partial<Check>);
+    }
+}
+
+export class Checking {
+    "startedAt": time$0.Time;
+
+    /** Creates a new Checking instance. */
+    constructor($$source: Partial<Checking> = {}) {
+        if (!("startedAt" in $$source)) {
+            this["startedAt"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Checking instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Checking {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Checking($$parsedSource as Partial<Checking>);
     }
 }
 
@@ -458,10 +529,12 @@ export enum OperationType {
      */
     $zero = "",
 
+    OperationTypeArchiveComment = "ArchiveComment",
     OperationTypeArchiveDelete = "ArchiveDelete",
     OperationTypeArchiveRefresh = "ArchiveRefresh",
     OperationTypeArchiveRename = "ArchiveRename",
     OperationTypeBackup = "Backup",
+    OperationTypeCheck = "Check",
     OperationTypeDelete = "Delete",
     OperationTypeExaminePrune = "ExaminePrune",
     OperationTypeMount = "Mount",
@@ -489,11 +562,13 @@ export class OperationUnion {
     "archiveRefresh"?: ArchiveRefresh | null;
     "archiveDelete"?: ArchiveDelete | null;
     "archiveRename"?: ArchiveRename | null;
+    "archiveComment"?: ArchiveComment | null;
     "mount"?: Mount | null;
     "mountArchive"?: MountArchive | null;
     "unmount"?: Unmount | null;
     "unmountArchive"?: UnmountArchive | null;
     "examinePrune"?: ExaminePrune | null;
+    "check"?: Check | null;
 
     /** Creates a new OperationUnion instance. */
     constructor($$source: Partial<OperationUnion> = {}) {
@@ -519,6 +594,8 @@ export class OperationUnion {
         const $$createField9_0 = $$createType24;
         const $$createField10_0 = $$createType26;
         const $$createField11_0 = $$createType28;
+        const $$createField12_0 = $$createType30;
+        const $$createField13_0 = $$createType32;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backup" in $$parsedSource) {
             $$parsedSource["backup"] = $$createField1_0($$parsedSource["backup"]);
@@ -538,20 +615,26 @@ export class OperationUnion {
         if ("archiveRename" in $$parsedSource) {
             $$parsedSource["archiveRename"] = $$createField6_0($$parsedSource["archiveRename"]);
         }
+        if ("archiveComment" in $$parsedSource) {
+            $$parsedSource["archiveComment"] = $$createField7_0($$parsedSource["archiveComment"]);
+        }
         if ("mount" in $$parsedSource) {
-            $$parsedSource["mount"] = $$createField7_0($$parsedSource["mount"]);
+            $$parsedSource["mount"] = $$createField8_0($$parsedSource["mount"]);
         }
         if ("mountArchive" in $$parsedSource) {
-            $$parsedSource["mountArchive"] = $$createField8_0($$parsedSource["mountArchive"]);
+            $$parsedSource["mountArchive"] = $$createField9_0($$parsedSource["mountArchive"]);
         }
         if ("unmount" in $$parsedSource) {
-            $$parsedSource["unmount"] = $$createField9_0($$parsedSource["unmount"]);
+            $$parsedSource["unmount"] = $$createField10_0($$parsedSource["unmount"]);
         }
         if ("unmountArchive" in $$parsedSource) {
-            $$parsedSource["unmountArchive"] = $$createField10_0($$parsedSource["unmountArchive"]);
+            $$parsedSource["unmountArchive"] = $$createField11_0($$parsedSource["unmountArchive"]);
         }
         if ("examinePrune" in $$parsedSource) {
-            $$parsedSource["examinePrune"] = $$createField11_0($$parsedSource["examinePrune"]);
+            $$parsedSource["examinePrune"] = $$createField12_0($$parsedSource["examinePrune"]);
+        }
+        if ("check" in $$parsedSource) {
+            $$parsedSource["check"] = $$createField13_0($$parsedSource["check"]);
         }
         return new OperationUnion($$parsedSource as Partial<OperationUnion>);
     }
@@ -627,7 +710,7 @@ export class Queued {
      * Creates a new Queued instance from a string or object.
      */
     static createFrom($$source: any = {}): Queued {
-        const $$createField0_0 = $$createType29;
+        const $$createField0_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("nextOperation" in $$parsedSource) {
             $$parsedSource["nextOperation"] = $$createField0_0($$parsedSource["nextOperation"]);
@@ -667,6 +750,7 @@ export enum RepositoryStateType {
     $zero = "",
 
     RepositoryStateTypeBackingUp = "BackingUp",
+    RepositoryStateTypeChecking = "Checking",
     RepositoryStateTypeDeleting = "Deleting",
     RepositoryStateTypeError = "Error",
     RepositoryStateTypeIdle = "Idle",
@@ -695,6 +779,7 @@ export class RepositoryStateUnion {
     "pruning"?: Pruning | null;
     "deleting"?: Deleting | null;
     "refreshing"?: Refreshing | null;
+    "checking"?: Checking | null;
     "mounting"?: Mounting | null;
     "mounted"?: Mounted | null;
     "error"?: Error | null;
@@ -712,15 +797,16 @@ export class RepositoryStateUnion {
      * Creates a new RepositoryStateUnion instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryStateUnion {
-        const $$createField1_0 = $$createType31;
-        const $$createField2_0 = $$createType33;
-        const $$createField3_0 = $$createType35;
-        const $$createField4_0 = $$createType37;
-        const $$createField5_0 = $$createType39;
-        const $$createField6_0 = $$createType41;
-        const $$createField7_0 = $$createType43;
-        const $$createField8_0 = $$createType45;
-        const $$createField9_0 = $$createType47;
+        const $$createField1_0 = $$createType35;
+        const $$createField2_0 = $$createType37;
+        const $$createField3_0 = $$createType39;
+        const $$createField4_0 = $$createType41;
+        const $$createField5_0 = $$createType43;
+        const $$createField6_0 = $$createType45;
+        const $$createField7_0 = $$createType47;
+        const $$createField8_0 = $$createType49;
+        const $$createField9_0 = $$createType51;
+        const $$createField10_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("idle" in $$parsedSource) {
             $$parsedSource["idle"] = $$createField1_0($$parsedSource["idle"]);
@@ -740,14 +826,17 @@ export class RepositoryStateUnion {
         if ("refreshing" in $$parsedSource) {
             $$parsedSource["refreshing"] = $$createField6_0($$parsedSource["refreshing"]);
         }
+        if ("checking" in $$parsedSource) {
+            $$parsedSource["checking"] = $$createField7_0($$parsedSource["checking"]);
+        }
         if ("mounting" in $$parsedSource) {
-            $$parsedSource["mounting"] = $$createField7_0($$parsedSource["mounting"]);
+            $$parsedSource["mounting"] = $$createField8_0($$parsedSource["mounting"]);
         }
         if ("mounted" in $$parsedSource) {
-            $$parsedSource["mounted"] = $$createField8_0($$parsedSource["mounted"]);
+            $$parsedSource["mounted"] = $$createField9_0($$parsedSource["mounted"]);
         }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField9_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField10_0($$parsedSource["error"]);
         }
         return new RepositoryStateUnion($$parsedSource as Partial<RepositoryStateUnion>);
     }
@@ -823,32 +912,38 @@ const $$createType15 = ArchiveDelete.createFrom;
 const $$createType16 = $Create.Nullable($$createType15);
 const $$createType17 = ArchiveRename.createFrom;
 const $$createType18 = $Create.Nullable($$createType17);
-const $$createType19 = Mount.createFrom;
+const $$createType19 = ArchiveComment.createFrom;
 const $$createType20 = $Create.Nullable($$createType19);
-const $$createType21 = MountArchive.createFrom;
+const $$createType21 = Mount.createFrom;
 const $$createType22 = $Create.Nullable($$createType21);
-const $$createType23 = Unmount.createFrom;
+const $$createType23 = MountArchive.createFrom;
 const $$createType24 = $Create.Nullable($$createType23);
-const $$createType25 = UnmountArchive.createFrom;
+const $$createType25 = Unmount.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
-const $$createType27 = ExaminePrune.createFrom;
+const $$createType27 = UnmountArchive.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = OperationUnion.createFrom;
-const $$createType30 = Idle.createFrom;
-const $$createType31 = $Create.Nullable($$createType30);
-const $$createType32 = Queued.createFrom;
-const $$createType33 = $Create.Nullable($$createType32);
-const $$createType34 = BackingUp.createFrom;
+const $$createType29 = ExaminePrune.createFrom;
+const $$createType30 = $Create.Nullable($$createType29);
+const $$createType31 = Check.createFrom;
+const $$createType32 = $Create.Nullable($$createType31);
+const $$createType33 = OperationUnion.createFrom;
+const $$createType34 = Idle.createFrom;
 const $$createType35 = $Create.Nullable($$createType34);
-const $$createType36 = Pruning.createFrom;
+const $$createType36 = Queued.createFrom;
 const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = Deleting.createFrom;
+const $$createType38 = BackingUp.createFrom;
 const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = Refreshing.createFrom;
+const $$createType40 = Pruning.createFrom;
 const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = Mounting.createFrom;
+const $$createType42 = Deleting.createFrom;
 const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = Mounted.createFrom;
+const $$createType44 = Refreshing.createFrom;
 const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = Error.createFrom;
+const $$createType46 = Checking.createFrom;
 const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = Mounting.createFrom;
+const $$createType49 = $Create.Nullable($$createType48);
+const $$createType50 = Mounted.createFrom;
+const $$createType51 = $Create.Nullable($$createType50);
+const $$createType52 = Error.createFrom;
+const $$createType53 = $Create.Nullable($$createType52);

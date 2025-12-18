@@ -31,11 +31,14 @@ type Archive struct {
 	BorgID string `json:"borgId"`
 	// WillBePruned holds the value of the "will_be_pruned" field.
 	WillBePruned bool `json:"willBePruned"`
+	// Comment stored with the archive in borg
+	Comment string `json:"comment"`
+	// Warning message from the backup operation that created this archive
+	WarningMessage *string `json:"warningMessage,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArchiveQuery when eager-loading is set.
 	Edges                   ArchiveEdges `json:"edges"`
 	archive_repository      *int
-	archive_backup_profile  *int
 	backup_profile_archives *int
 	selectValues            sql.SelectValues
 }
@@ -84,15 +87,13 @@ func (*Archive) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case archive.FieldID:
 			values[i] = new(sql.NullInt64)
-		case archive.FieldName, archive.FieldBorgID:
+		case archive.FieldName, archive.FieldBorgID, archive.FieldComment, archive.FieldWarningMessage:
 			values[i] = new(sql.NullString)
 		case archive.FieldCreatedAt, archive.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case archive.ForeignKeys[0]: // archive_repository
 			values[i] = new(sql.NullInt64)
-		case archive.ForeignKeys[1]: // archive_backup_profile
-			values[i] = new(sql.NullInt64)
-		case archive.ForeignKeys[2]: // backup_profile_archives
+		case archive.ForeignKeys[1]: // backup_profile_archives
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -151,6 +152,19 @@ func (_m *Archive) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.WillBePruned = value.Bool
 			}
+		case archive.FieldComment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field comment", values[i])
+			} else if value.Valid {
+				_m.Comment = value.String
+			}
+		case archive.FieldWarningMessage:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field warning_message", values[i])
+			} else if value.Valid {
+				_m.WarningMessage = new(string)
+				*_m.WarningMessage = value.String
+			}
 		case archive.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field archive_repository", value)
@@ -159,13 +173,6 @@ func (_m *Archive) assignValues(columns []string, values []any) error {
 				*_m.archive_repository = int(value.Int64)
 			}
 		case archive.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field archive_backup_profile", value)
-			} else if value.Valid {
-				_m.archive_backup_profile = new(int)
-				*_m.archive_backup_profile = int(value.Int64)
-			}
-		case archive.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field backup_profile_archives", value)
 			} else if value.Valid {
@@ -235,6 +242,14 @@ func (_m *Archive) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("will_be_pruned=")
 	builder.WriteString(fmt.Sprintf("%v", _m.WillBePruned))
+	builder.WriteString(", ")
+	builder.WriteString("comment=")
+	builder.WriteString(_m.Comment)
+	builder.WriteString(", ")
+	if v := _m.WarningMessage; v != nil {
+		builder.WriteString("warning_message=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

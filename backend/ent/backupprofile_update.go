@@ -85,6 +85,20 @@ func (_u *BackupProfileUpdate) ClearExcludePaths() *BackupProfileUpdate {
 	return _u
 }
 
+// SetExcludeCaches sets the "exclude_caches" field.
+func (_u *BackupProfileUpdate) SetExcludeCaches(v bool) *BackupProfileUpdate {
+	_u.mutation.SetExcludeCaches(v)
+	return _u
+}
+
+// SetNillableExcludeCaches sets the "exclude_caches" field if the given value is not nil.
+func (_u *BackupProfileUpdate) SetNillableExcludeCaches(v *bool) *BackupProfileUpdate {
+	if v != nil {
+		_u.SetExcludeCaches(*v)
+	}
+	return _u
+}
+
 // SetIcon sets the "icon" field.
 func (_u *BackupProfileUpdate) SetIcon(v backupprofile.Icon) *BackupProfileUpdate {
 	_u.mutation.SetIcon(v)
@@ -449,6 +463,9 @@ func (_u *BackupProfileUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if _u.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ExcludeCaches(); ok {
+		_spec.SetField(backupprofile.FieldExcludeCaches, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)
 	}
@@ -735,6 +752,20 @@ func (_u *BackupProfileUpdateOne) AppendExcludePaths(v []string) *BackupProfileU
 // ClearExcludePaths clears the value of the "exclude_paths" field.
 func (_u *BackupProfileUpdateOne) ClearExcludePaths() *BackupProfileUpdateOne {
 	_u.mutation.ClearExcludePaths()
+	return _u
+}
+
+// SetExcludeCaches sets the "exclude_caches" field.
+func (_u *BackupProfileUpdateOne) SetExcludeCaches(v bool) *BackupProfileUpdateOne {
+	_u.mutation.SetExcludeCaches(v)
+	return _u
+}
+
+// SetNillableExcludeCaches sets the "exclude_caches" field if the given value is not nil.
+func (_u *BackupProfileUpdateOne) SetNillableExcludeCaches(v *bool) *BackupProfileUpdateOne {
+	if v != nil {
+		_u.SetExcludeCaches(*v)
+	}
 	return _u
 }
 
@@ -1131,6 +1162,9 @@ func (_u *BackupProfileUpdateOne) sqlSave(ctx context.Context) (_node *BackupPro
 	}
 	if _u.mutation.ExcludePathsCleared() {
 		_spec.ClearField(backupprofile.FieldExcludePaths, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ExcludeCaches(); ok {
+		_spec.SetField(backupprofile.FieldExcludeCaches, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Icon(); ok {
 		_spec.SetField(backupprofile.FieldIcon, field.TypeEnum, value)

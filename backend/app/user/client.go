@@ -94,9 +94,10 @@ func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) erro
 	s.log.Debugf("Saving settings: %s", settings)
 	err := s.db.Settings.
 		Update().
-		SetShowWelcome(settings.ShowWelcome).
 		SetExpertMode(settings.ExpertMode).
 		SetTheme(settings.Theme).
+		SetDisableTransitions(settings.DisableTransitions).
+		SetDisableShadows(settings.DisableShadows).
 		Exec(ctx)
 	if err != nil {
 		return err

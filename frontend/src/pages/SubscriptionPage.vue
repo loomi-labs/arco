@@ -1,18 +1,20 @@
 <script setup lang='ts'>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { CheckIcon, CloudIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
+import { CheckIcon, Cog6ToothIcon, CreditCardIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+import ArcoLogo from "../components/common/ArcoLogo.vue";
 import { Browser } from "@wailsio/runtime";
 import { Page } from "../router";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
 import { getFeaturesByPlan, getRetentionDays } from "../common/features";
-import { addDay, date, format } from "@formkit/tempo";
+import { addDay, date, diffDays, format } from "@formkit/tempo";
 import * as SubscriptionService from "../../bindings/github.com/loomi-labs/arco/backend/app/subscription/service";
 import * as PlanService from "../../bindings/github.com/loomi-labs/arco/backend/app/plan/service";
 import type { Plan, Subscription } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 import { SubscriptionStatus } from "../../bindings/github.com/loomi-labs/arco/backend/api/v1";
-import ArcoCloudModal from "../components/ArcoCloudModal.vue";
+import CreateArcoCloudModal from "../components/CreateArcoCloudModal.vue";
 import PlanSelection from "../components/subscription/PlanSelection.vue";
 import CheckoutProcessing from "../components/subscription/CheckoutProcessing.vue";
 
@@ -40,13 +42,14 @@ const subscriptionPlans = ref<Plan[]>([]);
 const currentPageState = ref<PageState>(PageState.LOADING);
 const isCanceling = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
-const cancelConfirmModal = ref<HTMLDialogElement>();
-const cloudModal = ref<InstanceType<typeof ArcoCloudModal>>();
+const isCancelModalOpen = ref(false);
+const isSwitchModalOpen = ref(false);
+const isReactivateModalOpen = ref(false);
+const cloudModal = ref<InstanceType<typeof CreateArcoCloudModal>>();
 
 // Plan selection state
 const selectedPlan = ref<string | undefined>(undefined);
 const selectedCheckoutPlan = ref<string | undefined>(undefined);
-const selectedUpgradePlan = ref<string | undefined>(undefined);
 
 const selectedCheckoutPlanId = computed(() => {
   if (!selectedCheckoutPlan.value) return undefined;
@@ -151,8 +154,8 @@ const currentPrice = computed(() => {
 });
 
 const isReactivating = ref(false);
-const isUpgrading = ref(false);
-const isDowngrading = ref(false);
+const isSwitchingPlan = ref(false);
+const isOpeningPortal = ref(false);
 
 const _storageUsageText = computed(() => {
   if (!subscription.value) return "0 GB";
@@ -215,34 +218,83 @@ const canReactivate = computed(() => {
   return subscription.value?.cancel_at_period_end === true;
 });
 
-const canUpgrade = computed(() => {
-  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
-    !subscription.value?.cancel_at_period_end &&
-    availableUpgradePlans.value.length > 0;
-});
+// Switch plan computed properties
+const selectedSwitchPlan = ref<string | undefined>(undefined);
 
-const canDowngrade = computed(() => {
-  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
-    !subscription.value?.cancel_at_period_end &&
-    availableDowngradePlans.value.length > 0;
-});
-
-const availableUpgradePlans = computed(() => {
-  if (!subscription.value?.plan?.price_cents || !subscriptionPlans.value.length) return [];
-  const currentPrice = subscription.value.plan.price_cents;
-  const upgradePlans = subscriptionPlans.value
-    .filter(plan => (plan.price_cents ?? 0) > currentPrice)
-    .sort((a, b) => (a.price_cents ?? 0) - (b.price_cents ?? 0));
-  return upgradePlans;
-});
-
-const availableDowngradePlans = computed(() => {
-  if (!subscription.value?.plan?.price_cents || !subscriptionPlans.value.length) return [];
-  const currentPrice = subscription.value.plan.price_cents;
+const availableSwitchPlans = computed(() => {
+  if (!subscription.value?.plan?.id || !subscriptionPlans.value.length) return [];
   return subscriptionPlans.value
-    .filter(plan => (plan.price_cents ?? 0) < currentPrice)
-    .sort((a, b) => (b.price_cents ?? 0) - (a.price_cents ?? 0));
+    .filter(plan => plan.id !== subscription.value?.plan?.id)
+    .sort((a, b) => (a.price_cents ?? 0) - (b.price_cents ?? 0)); // lowest price first
 });
+
+const selectedSwitchPlanDetails = computed(() => {
+  if (!selectedSwitchPlan.value) return null;
+  return availableSwitchPlans.value.find(p => p.id === selectedSwitchPlan.value) ?? null;
+});
+
+const isSwitchUpgrade = computed(() => {
+  if (!selectedSwitchPlanDetails.value || !subscription.value?.plan) return true;
+  return (selectedSwitchPlanDetails.value.price_cents ?? 0) > (subscription.value.plan.price_cents ?? 0);
+});
+
+const canSwitchPlan = computed(() => {
+  return subscription.value?.status === SubscriptionStatus.SubscriptionStatus_SUBSCRIPTION_STATUS_ACTIVE &&
+    !subscription.value?.cancel_at_period_end &&
+    availableSwitchPlans.value.length > 0;
+});
+
+// Proration calculation
+const daysInPeriod = computed(() => {
+  if (!subscription.value?.current_period_start || !subscription.value?.current_period_end) return 365;
+  const startSeconds = subscription.value.current_period_start.seconds ?? 0;
+  const endSeconds = subscription.value.current_period_end.seconds ?? 0;
+  if (startSeconds <= 0 || endSeconds <= 0) return 365;
+  const startDate = date(new Date(startSeconds * 1000));
+  const endDate = date(new Date(endSeconds * 1000));
+  return Math.max(1, diffDays(endDate, startDate));
+});
+
+const daysRemaining = computed(() => {
+  if (!subscription.value?.current_period_end) return 0;
+  const endSeconds = subscription.value.current_period_end.seconds ?? 0;
+  if (endSeconds <= 0) return 0;
+  const endDate = date(new Date(endSeconds * 1000));
+  const today = date(new Date());
+  return Math.max(0, diffDays(endDate, today));
+});
+
+const prorationAmount = computed(() => {
+  if (!selectedSwitchPlanDetails.value || !subscription.value?.plan) return 0;
+
+  const currentPriceCents = subscription.value.plan.price_cents ?? 0;
+  const newPriceCents = selectedSwitchPlanDetails.value.price_cents ?? 0;
+  const days = daysInPeriod.value;
+  const remaining = daysRemaining.value;
+
+  const currentDailyRate = currentPriceCents / days;
+  const newDailyRate = newPriceCents / days;
+
+  const credit = currentDailyRate * remaining;
+  const charge = newDailyRate * remaining;
+
+  if (isSwitchUpgrade.value) {
+    // Upgrade: user pays the difference
+    return (charge - credit) / 100;
+  } else {
+    // Downgrade: user gets credit
+    return (credit - charge) / 100;
+  }
+});
+
+// Helper to format price as monthly
+function formatMonthlyPrice(priceCents: number): string {
+  return (priceCents / 100 / 12).toFixed(2);
+}
+
+function formatYearlyPrice(priceCents: number): string {
+  return (priceCents / 100).toFixed(2);
+}
 
 const showCancelationWarning = computed(() => {
   return subscription.value?.cancel_at_period_end;
@@ -288,8 +340,8 @@ async function loadSubscriptionPlans() {
 
 async function loadSubscription() {
   if (!isAuthenticated.value) {
-    subscription.value = null
-    return
+    subscription.value = null;
+    return;
   }
 
   currentPageState.value = PageState.LOADING;
@@ -314,11 +366,28 @@ async function loadSubscription() {
 }
 
 function showCancelConfirmation() {
-  cancelConfirmModal.value?.showModal();
+  isCancelModalOpen.value = true;
 }
 
 function closeCancelConfirmation() {
-  cancelConfirmModal.value?.close();
+  isCancelModalOpen.value = false;
+}
+
+function showSwitchConfirmation() {
+  if (!selectedSwitchPlan.value) return;
+  isSwitchModalOpen.value = true;
+}
+
+function closeSwitchConfirmation() {
+  isSwitchModalOpen.value = false;
+}
+
+function showReactivateConfirmation() {
+  isReactivateModalOpen.value = true;
+}
+
+function closeReactivateConfirmation() {
+  isReactivateModalOpen.value = false;
 }
 
 async function confirmCancellation() {
@@ -388,6 +457,7 @@ async function reactivateSubscription() {
     if (response?.success) {
       // Reload subscription to get updated status
       await loadSubscription();
+      closeReactivateConfirmation();
     } else {
       errorMessage.value = "Failed to reactivate subscription.";
     }
@@ -399,85 +469,51 @@ async function reactivateSubscription() {
   }
 }
 
-async function upgradeSubscription() {
-  if (!selectedUpgradePlan.value) {
-    errorMessage.value = "Please select a plan to upgrade to.";
-    return;
-  }
+async function switchPlan() {
+  if (!selectedSwitchPlan.value || !subscription.value?.id) return;
 
-  isUpgrading.value = true;
+  isSwitchingPlan.value = true;
 
   try {
-    // Find the selected plan in available upgrade plans
-    const targetPlan = availableUpgradePlans.value.find(plan => plan.id === selectedUpgradePlan.value);
-    
-    if (!targetPlan) {
-      errorMessage.value = "Selected plan not found. Please select a valid plan.";
+    const targetPlan = selectedSwitchPlanDetails.value;
+    if (!targetPlan?.id) {
+      errorMessage.value = "Please select a plan to switch to.";
       return;
     }
 
-    // Validate plan ID exists
-    if (!targetPlan.id || targetPlan.id.trim() === "") {
-      errorMessage.value = "Selected plan is missing required ID information.";
-      return;
-    }
+    // Determine if upgrade or downgrade based on price
+    const isUpgrade = isSwitchUpgrade.value;
 
-    // Validate subscription ID exists
-    if (!subscription.value?.id) {
-      errorMessage.value = "No active subscription found.";
-      return;
-    }
-
-    const response = await SubscriptionService.UpgradeSubscription(subscription.value.id, targetPlan.id);
+    const response = isUpgrade
+      ? await SubscriptionService.UpgradeSubscription(subscription.value.id, targetPlan.id)
+      : await SubscriptionService.DowngradeSubscription(subscription.value.id, targetPlan.id);
 
     if (response?.success) {
-      // Clear the selected plan and reload subscription data
-      selectedUpgradePlan.value = undefined;
+      selectedSwitchPlan.value = undefined;
       await loadSubscription();
-      
-      // Success message - staying on subscription dashboard
+      closeSwitchConfirmation();
       errorMessage.value = undefined;
     } else {
-      errorMessage.value = "Failed to upgrade subscription. Please try again.";
+      errorMessage.value = `Failed to ${isUpgrade ? "upgrade" : "downgrade"} subscription.`;
     }
   } catch (_error) {
-    errorMessage.value = "Failed to upgrade subscription.";
+    errorMessage.value = "Failed to switch plan.";
+    await showAndLogError("Failed to switch plan", _error);
   } finally {
-    isUpgrading.value = false;
+    isSwitchingPlan.value = false;
   }
 }
 
-async function downgradeSubscription() {
-  if (!subscription.value?.id || availableDowngradePlans.value.length === 0) return;
-
-  isDowngrading.value = true;
-
+async function openCustomerPortal() {
+  isOpeningPortal.value = true;
   try {
-    // For now, use the most expensive downgrade option (first in sorted array)
-    const targetPlan = availableDowngradePlans.value[0];
-
-    // Validate plan ID exists
-    if (!targetPlan.id || targetPlan.id.trim() === "") {
-      errorMessage.value = "Selected plan is missing required ID information.";
-      return;
-    }
-
-    const response = await SubscriptionService.DowngradeSubscription(
-      subscription.value.id,
-      targetPlan.id
-    );
-
-    if (response?.success) {
-      // Reload subscription to get updated info
-      await loadSubscription();
-    } else {
-      errorMessage.value = "Failed to schedule downgrade.";
-    }
+    await SubscriptionService.CreateCustomerPortalSession();
+    // Browser opens automatically via backend
   } catch (_error) {
-    errorMessage.value = "Failed to schedule downgrade.";
-    await showAndLogError("...", _error);
+    errorMessage.value = "Failed to open billing portal.";
+    await showAndLogError("Failed to open billing portal", _error);
   } finally {
-    isDowngrading.value = false;
+    isOpeningPortal.value = false;
   }
 }
 
@@ -501,186 +537,179 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class='container mx-auto text-left py-10'>
-    <div class='flex items-center gap-4 pb-6'>
-      <h1 class='text-4xl font-bold'>Subscription</h1>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if='currentPageState === PageState.LOADING' class='text-center py-12'>
-      <div class='loading loading-spinner loading-lg'></div>
-      <p class='mt-4 text-base-content/70'>Loading subscription details...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if='currentPageState === PageState.ERROR' class='space-y-6'>
-      <div role='alert' class='alert alert-error alert-vertical sm:alert-horizontal'>
-        <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none' viewBox='0 0 24 24'>
-          <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
-        </svg>
-        <span>{{ errorMessage }}</span>
-        <div>
-          <button class='btn btn-sm btn-outline' @click='retryLoadSubscription'>
-            Retry
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- No Subscription - Plan Selection -->
-    <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_PLANS' class='space-y-8'>
-      <div class='text-left mb-8'>
-        <h2 class='text-2xl font-bold mb-4'>Subscribe to Arco Cloud</h2>
-        <p class='text-base-content/70 mb-6'>Get secure cloud backup storage with automatic encryption and choose the
-          plan that fits your needs.</p>
+  <div class='flex-1 overflow-y-auto'>
+    <div class='max-w-4xl mx-auto p-6 space-y-6'>
+      <!-- Header -->
+      <div class='mb-8'>
+        <h1 class='text-3xl font-bold'>Subscription</h1>
+        <p class='text-base-content/70 mt-2'>Manage your Arco Cloud subscription and billing</p>
       </div>
 
-      <PlanSelection
-        :plans='subscriptionPlans'
-        :selected-plan='selectedPlan'
-        :has-active-subscription='false'
-        @plan-selected='onPlanSelected'
-        @subscribe-clicked='onSubscribeClicked'
-      />
-    </div>
-
-    <!-- No Subscription - Checkout Processing -->
-    <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_CHECKOUT' class='space-y-8'>
-      <div class='text-left mb-8'>
-        <h2 class='text-2xl font-bold mb-4'>Complete Your Subscription</h2>
+      <!-- Loading State -->
+      <div v-if='currentPageState === PageState.LOADING' class='text-center py-12'>
+        <div class='loading loading-spinner loading-lg'></div>
+        <p class='mt-4 text-base-content/70'>Loading subscription details...</p>
       </div>
 
-      <CheckoutProcessing
-        :plan-id='selectedCheckoutPlanId ?? ""'
-        @checkout-completed='onCheckoutCompleted'
-        @checkout-failed='onCheckoutFailed'
-        @checkout-cancelled='onCheckoutCancelled'
-      />
-    </div>
-
-    <!-- Card-based Subscription Dashboard -->
-    <div v-else-if='currentPageState === PageState.HAS_SUBSCRIPTION && subscription' class='space-y-8'>
-      <!-- Cancelation Warning -->
-      <div v-if='showCancelationWarning' role='alert' class='alert alert-warning alert-vertical sm:alert-horizontal'>
-        <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
-        <div>
-          <h3 class='font-bold'>Subscription Canceled</h3>
-          <div class='text-xs'>Your subscription will end on {{ nextBillingDate }}. You'll continue to have access until
-            then. All data will be deleted on {{ dataDeletionDate }}.
+      <!-- Error State -->
+      <div v-else-if='currentPageState === PageState.ERROR' class='space-y-6'>
+        <div role='alert' class='alert alert-error alert-vertical sm:alert-horizontal'>
+          <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 shrink-0 stroke-current' fill='none'
+               viewBox='0 0 24 24'>
+            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                  d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
+          </svg>
+          <span>{{ errorMessage }}</span>
+          <div>
+            <button class='btn btn-sm btn-outline' @click='retryLoadSubscription'>
+              Retry
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Plan Overview Card (Storage as Hero) -->
-      <div class='card bg-base-100 border border-base-300 shadow-sm'>
-        <div class='card-body'>
-          <div class='flex items-start justify-between mb-6'>
-            <div class='flex-1'>
-              <div class='flex items-center gap-4'>
-                <div class='p-3 bg-secondary/20 rounded-full'>
-                  <CloudIcon class='size-8 text-secondary' />
-                </div>
-                <div>
-                  <h2 class='text-3xl font-bold'>{{ subscription.plan?.name ?? "Unknown Plan" }}</h2>
-                  <div class='flex items-center gap-3 mt-2'>
-                    <div :class='["badge badge-lg", subscriptionStatusColor]'>
-                      {{ subscriptionStatusText }}
+      <!-- No Subscription - Plan Selection -->
+      <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_PLANS' class='space-y-8'>
+        <div class='text-left mb-8'>
+          <h2 class='text-2xl font-bold mb-4'>Subscribe to Arco Cloud</h2>
+          <p class='text-base-content/70 mb-6'>Get secure cloud backup storage with automatic encryption and choose the
+            plan that fits your needs.</p>
+        </div>
+
+        <PlanSelection
+          :plans='subscriptionPlans'
+          :selected-plan='selectedPlan'
+          :has-active-subscription='false'
+          @plan-selected='onPlanSelected'
+          @subscribe-clicked='onSubscribeClicked'
+        />
+      </div>
+
+      <!-- No Subscription - Checkout Processing -->
+      <div v-else-if='currentPageState === PageState.NO_SUBSCRIPTION_CHECKOUT' class='space-y-8'>
+        <div class='text-left mb-8'>
+          <h2 class='text-2xl font-bold mb-4'>Complete Your Subscription</h2>
+        </div>
+
+        <CheckoutProcessing
+          :plan-id='selectedCheckoutPlanId ?? ""'
+          @checkout-completed='onCheckoutCompleted'
+          @checkout-failed='onCheckoutFailed'
+          @checkout-cancelled='onCheckoutCancelled'
+        />
+      </div>
+
+      <!-- Card-based Subscription Dashboard -->
+      <div v-else-if='currentPageState === PageState.HAS_SUBSCRIPTION && subscription' class='space-y-8'>
+        <!-- Cancelation Warning -->
+        <div v-if='showCancelationWarning' role='alert' class='alert alert-warning alert-vertical sm:alert-horizontal'>
+          <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
+          <div>
+            <h3 class='font-bold'>Subscription Canceled</h3>
+            <div class='text-xs'>Your subscription will end on {{ nextBillingDate }}. You'll continue to have access
+              until
+              then. All data will be deleted on {{ dataDeletionDate }}.
+            </div>
+          </div>
+        </div>
+
+        <!-- Plan Overview Card (Storage as Hero) -->
+        <div class='card bg-base-200 shadow-sm'>
+          <div class='card-body'>
+            <div class='flex items-start justify-between mb-6'>
+              <div class='flex-1'>
+                <div class='flex items-center gap-4'>
+                  <div class='p-3 bg-primary/20 rounded-full'>
+                    <ArcoLogo svgClass='size-8 text-primary' />
+                  </div>
+                  <div>
+                    <h2 class='text-3xl font-bold'>{{ subscription.plan?.name ?? "Unknown Plan" }}</h2>
+                    <div class='flex items-center gap-3 mt-2'>
+                      <div :class='["badge badge-lg", subscriptionStatusColor]'>
+                        {{ subscriptionStatusText }}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Storage Usage as Primary Metric -->
-          <div :class='["grid gap-8", isSubscriptionActive ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"]'>
-            <div class='space-y-4'>
-              <div class='flex justify-between items-center'>
-                <h3 class='text-xl font-bold'>Storage Usage</h3>
-                <span v-if='isOverage' class='text-lg font-semibold text-secondary'>Additional Usage</span>
-              </div>
+            <!-- Storage Usage as Primary Metric -->
+            <div :class='["grid gap-8", isSubscriptionActive ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"]'>
+              <div class='space-y-4'>
+                <div class='flex justify-between items-center'>
+                  <h3 class='text-xl font-bold'>Storage Usage</h3>
+                  <span v-if='isOverage' class='text-lg font-semibold text-secondary'>Additional Usage</span>
+                </div>
 
-              <!-- Total used -->
-              <div class='text-3xl font-bold'>
-                {{ subscription.storage_used_gb ?? 0 }} GB total used
-              </div>
+                <!-- Total used -->
+                <div class='text-3xl font-bold'>
+                  {{ subscription.storage_used_gb ?? 0 }} GB total used
+                </div>
 
-              <!-- Segmented progress bar -->
-              <div class='w-full bg-base-300 rounded-full h-4 relative overflow-hidden'>
-                <!-- Plan storage portion (always shown) -->
-                <div
-                  class='absolute left-0 top-0 h-4 bg-gradient-to-r from-primary to-secondary transition-all duration-500'
-                  :style='{
+                <!-- Segmented progress bar -->
+                <div class='w-full bg-base-300 rounded-full h-4 relative overflow-hidden'>
+                  <!-- Plan storage portion (always shown) -->
+                  <div
+                    class='absolute left-0 top-0 h-4 bg-secondary transition-all duration-500'
+                    :style='{
                     width: `${planStoragePercentage}%`,
                     borderRight: isOverage ? "2px solid oklch(var(--b1))" : "none"
                   }'
-                ></div>
-                <!-- Additional usage portion (only when overage) -->
-                <div
-                  v-if='isOverage'
-                  class='absolute top-0 h-4 bg-gradient-to-r from-secondary to-secondary/80 transition-all duration-500'
-                  :style='{ left: `${planStoragePercentage}%`, width: `${overagePercentage}%` }'
-                ></div>
-              </div>
-
-              <!-- Segment labels -->
-              <div v-if='isOverage' class='text-sm text-center text-base-content/70'>
-                ← {{ planStorageGb }} GB (Plan) → ← {{ overageGb }} GB (Additional) →
-              </div>
-
-              <!-- Breakdown -->
-              <div class='space-y-2 text-sm'>
-                <div class='flex items-center gap-2'>
-                  <span class='font-semibold'>Plan Limit:</span>
-                  <span class='text-base-content/70 ml-auto'>{{ subscription.storage_limit_gb ?? 0 }} GB</span>
+                  ></div>
+                  <!-- Additional usage portion (only when overage) -->
+                  <div
+                    v-if='isOverage'
+                    class='absolute top-0 h-4 bg-warning transition-all duration-500'
+                    :style='{ left: `${planStoragePercentage}%`, width: `${overagePercentage}%` }'
+                  ></div>
                 </div>
-                <div v-if='isOverage' class='flex items-center gap-2'>
-                  <span class='font-semibold'>Beyond Plan:</span>
-                  <span class='text-secondary ml-auto'>+{{ overageGb }} GB</span>
-                </div>
-                <div v-else class='flex items-center gap-2'>
-                  <span class='font-semibold'>Remaining:</span>
-                  <span class='text-base-content/70 ml-auto'>
-                    {{ (subscription.storage_limit_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
+
+                <!-- Breakdown -->
+                <div class='space-y-2 text-sm'>
+                  <div class='flex items-center gap-2'>
+                    <span class='font-semibold'>Plan Limit:</span>
+                    <span class='text-base-content/70 ml-auto'>{{ subscription.plan?.storage_gb ?? 0 }} GB</span>
+                  </div>
+                  <div v-if='isOverage' class='flex items-center gap-2'>
+                    <span class='font-semibold'>Beyond Plan:</span>
+                    <span class='text-secondary ml-auto'>+{{ overageGb }} GB</span>
+                  </div>
+                  <div v-else class='flex items-center gap-2'>
+                    <span class='font-semibold'>Remaining:</span>
+                    <span class='text-base-content/70 ml-auto'>
+                    {{ (subscription.plan?.storage_gb ?? 0) - (subscription.storage_used_gb ?? 0) }} GB
                   </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Plan Features (only show if subscription is not active) -->
-            <div v-if='!isSubscriptionActive' class='space-y-4'>
-              <h3 class='text-xl font-bold'>Plan Features</h3>
-              <div class='grid grid-cols-1 gap-3'>
-                <div v-for='feature in planFeatures' :key='feature.text'
-                     class='flex items-center gap-3 p-3 bg-base-100/50 rounded-lg'>
-                  <CheckIcon class='size-5 text-success flex-shrink-0' />
-                  <span :class='["text-sm font-medium", feature.highlight ? "text-secondary" : ""]'>{{
-                      feature.text
-                    }}</span>
+              <!-- Plan Features (only show if subscription is not active) -->
+              <div v-if='!isSubscriptionActive' class='space-y-4'>
+                <h3 class='text-xl font-bold'>Plan Features</h3>
+                <div class='grid grid-cols-1 gap-3'>
+                  <div v-for='feature in planFeatures' :key='feature.text'
+                       class='flex items-center gap-3 p-3 bg-base-100/50 rounded-lg'>
+                    <CheckIcon class='size-5 text-success flex-shrink-0' />
+                    <span :class='["text-sm font-medium", feature.highlight ? "text-secondary" : ""]'>{{
+                        feature.text
+                      }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Secondary Cards Grid -->
-      <div class='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         <!-- Billing Information Card -->
-        <div class='card bg-base-100 border border-base-300 shadow-sm'>
+        <div class='card bg-base-200 shadow-sm'>
           <div class='card-body'>
-            <div class='flex items-center gap-3 mb-4'>
-              <div class='p-2 bg-success/20 rounded-lg'>
-                <svg class='size-6 text-success' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                        d='M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'></path>
-                </svg>
-              </div>
-              <h3 class='text-xl font-bold'>Billing Information</h3>
-            </div>
+            <h2 class='card-title flex items-center gap-2'>
+              <CreditCardIcon class='size-6' />
+              Billing Information
+            </h2>
 
-            <div class='space-y-4'>
+            <div class='space-y-4 mt-4'>
               <div class='grid grid-cols-2 gap-4'>
                 <div>
                   <div class='font-semibold text-sm'>Current Price</div>
@@ -713,176 +742,417 @@ onMounted(async () => {
                 </div>
               </div>
 
+              <!-- Billing Portal Button -->
+              <div class='pt-4 border-t border-base-300'>
+                <button
+                  class='btn btn-outline btn-sm'
+                  @click='openCustomerPortal'
+                  :disabled='isOpeningPortal'
+                >
+                  <span v-if='isOpeningPortal' class='loading loading-spinner loading-xs'></span>
+                  Billing Portal
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
 
         <!-- Subscription Actions Card -->
-        <div class='card bg-base-100 border border-base-300 shadow-sm'>
+        <div class='card bg-base-200 shadow-sm'>
           <div class='card-body'>
-            <div class='flex items-center gap-3 mb-4'>
-              <div class='p-2 bg-warning/20 rounded-lg'>
-                <svg class='size-6 text-warning' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                        d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'></path>
-                  <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                        d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'></path>
-                </svg>
-              </div>
-              <h3 class='text-xl font-bold'>Subscription Actions</h3>
-            </div>
+            <h2 class='card-title flex items-center gap-2'>
+              <Cog6ToothIcon class='size-6' />
+              Manage Subscription
+            </h2>
 
-            <div class='space-y-4'>
-              <div class='p-4 bg-base-200/50 rounded-lg'>
-                <div class='font-semibold text-sm mb-2'>Manage Subscription</div>
-                <div class='text-sm text-base-content/70 mb-4'>
-                  Control your subscription settings and billing preferences.
-                </div>
-
-                <div class='flex flex-col gap-2'>
-                  <div v-if='canUpgrade' class='space-y-2'>
-                    <div class='form-control'>
-                      <label class='label'>
-                        <span class='label-text text-sm font-medium'>Choose upgrade plan:</span>
-                      </label>
-                      <select 
-                        v-model='selectedUpgradePlan' 
-                        class='select select-bordered select-sm'
-                        :disabled='isUpgrading'
-                      >
-                        <option value=''>Select a plan...</option>
-                        <option 
-                          v-for='plan in availableUpgradePlans' 
-                          :key='plan.id' 
-                          :value='plan.id'
-                        >
-                          {{ plan.name }} - ${{ ((plan.price_cents ?? 0) / 100).toFixed(2) }}/year
-                        </option>
-                      </select>
+            <div class='space-y-4 mt-4'>
+              <!-- Switch Plan Row -->
+              <div v-if='canSwitchPlan' class='py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex items-center justify-between'>
+                  <div class='flex-1'>
+                    <p class='font-medium'>Switch Plan</p>
+                    <p class='text-sm text-base-content/70 mt-1'>
+                      Change your plan to get more or less storage.
+                    </p>
+                  </div>
+                  <div class='flex items-center gap-2'>
+                    <div class='dropdown dropdown-end'>
+                      <div tabindex='0' role='button' class='btn btn-sm btn-outline min-w-40'>
+                        <template v-if='selectedSwitchPlanDetails'>
+                          {{ selectedSwitchPlanDetails.name }}
+                        </template>
+                        <template v-else>
+                          Select plan...
+                        </template>
+                        <svg class='size-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                      <ul tabindex='0' class='dropdown-content menu bg-base-200 rounded-box z-10 w-80 p-2 shadow-lg'>
+                        <li v-for='plan in availableSwitchPlans' :key='plan.id'>
+                          <a @click='selectedSwitchPlan = plan.id'
+                             :class='{ "bg-primary/10": selectedSwitchPlan === plan.id }'>
+                            <div class='flex flex-col gap-1'>
+                              <span class='font-medium'>{{ plan.name }}</span>
+                              <span class='text-xs text-base-content/70'>
+                                {{ plan.storage_gb ?? 0 }} GB storage • {{ plan.allowed_repositories ?? 0 }} repos
+                              </span>
+                              <span class='text-xs text-base-content/70'>
+                                ${{
+                                  formatMonthlyPrice(plan.price_cents ?? 0)
+                                }}/month (${{ formatYearlyPrice(plan.price_cents ?? 0) }}/year)
+                              </span>
+                            </div>
+                          </a>
+                        </li>
+                      </ul>
                     </div>
                     <button
-                      class='btn btn-primary btn-sm'
-                      @click='upgradeSubscription'
-                      :disabled='isUpgrading || !selectedUpgradePlan'
+                      :class='[
+                        "btn btn-sm",
+                        isSwitchUpgrade ? "btn-success" : "btn-warning"
+                      ]'
+                      @click='showSwitchConfirmation'
+                      :disabled='isSwitchingPlan || !selectedSwitchPlan'
                     >
-                      <span v-if='isUpgrading' class='loading loading-spinner loading-xs'></span>
-                      {{ isUpgrading ? 'Processing...' : 'Upgrade Subscription' }}
+                      <span v-if='isSwitchingPlan' class='loading loading-spinner loading-xs'></span>
+                      {{ isSwitchUpgrade ? "Upgrade" : "Downgrade" }}
                     </button>
                   </div>
-
-                  <button
-                    v-if='canDowngrade'
-                    class='btn btn-warning btn-outline'
-                    @click='downgradeSubscription'
-                    :disabled='isDowngrading'
-                  >
-                    <span v-if='isDowngrading' class='loading loading-spinner loading-sm'></span>
-                    Downgrade to {{ availableDowngradePlans[0]?.name }}
-                  </button>
-
-                  <button
-                    v-if='canReactivate'
-                    class='btn btn-success btn-outline'
-                    @click='reactivateSubscription'
-                    :disabled='isReactivating'
-                  >
-                    <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
-                    Keep Subscription
-                  </button>
-
-                  <button
-                    v-if='canCancel'
-                    class='btn btn-error btn-outline'
-                    @click='showCancelConfirmation'
-                    :disabled='isCanceling'
-                  >
-                    <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
-                    Cancel Subscription
-                  </button>
+                </div>
+                <!-- Expandable comparison panel -->
+                <div v-if='selectedSwitchPlanDetails' class='mt-3 pt-3 border-t border-base-300 space-y-3'>
+                  <div class='grid grid-cols-[auto_auto_1.5rem_auto] gap-x-2 gap-y-2 items-center'>
+                    <!-- Storage -->
+                    <span class='text-sm text-base-content/70'>Storage</span>
+                    <span class='text-sm text-right'>{{ subscription?.plan?.storage_gb ?? 0 }} GB</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      {{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB
+                    </span>
+                    <!-- Overage Price -->
+                    <span class='text-sm text-base-content/70'>Overage Price</span>
+                    <span class='text-sm text-right'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB
+                    </span>
+                    <!-- Repositories -->
+                    <span class='text-sm text-base-content/70'>Repositories</span>
+                    <span class='text-sm text-right'>{{ subscription?.plan?.allowed_repositories ?? 0 }}</span>
+                    <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
+                    <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
+                      {{ selectedSwitchPlanDetails.allowed_repositories ?? 0 }}
+                    </span>
+                  </div>
+                  <!-- Price summary -->
+                  <div class='flex items-center justify-between pt-2 border-t border-base-300'>
+                    <span class='text-sm text-base-content/70'>New Price</span>
+                    <span class='font-medium'>
+                      ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                      (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div class='p-4 bg-info/10 rounded-lg border border-info/20'>
-                <div class='font-semibold text-sm mb-2'>Need Help?</div>
-                <div class='text-sm text-base-content/70 mb-3'>
-                  Contact our support team for assistance with your subscription.
+              <!-- Reactivate Row -->
+              <div v-if='canReactivate' class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Keep Subscription</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Cancel the pending cancellation and keep your subscription active.
+                  </p>
                 </div>
-                <button class='btn btn-info btn-outline btn-sm' @click="Browser.OpenURL('mailto:mail@arco-backup.com')">
+                <button
+                  class='btn btn-success btn-sm'
+                  @click='showReactivateConfirmation'
+                  :disabled='isReactivating'
+                >
+                  <span v-if='isReactivating' class='loading loading-spinner loading-xs'></span>
+                  Keep Subscription
+                </button>
+              </div>
+
+              <!-- Cancel Row -->
+              <div v-if='canCancel' class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Cancel Subscription</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Cancel your subscription at the end of the billing period.
+                  </p>
+                </div>
+                <button
+                  class='btn btn-error btn-outline btn-sm'
+                  @click='showCancelConfirmation'
+                  :disabled='isCanceling'
+                >
+                  <span v-if='isCanceling' class='loading loading-spinner loading-xs'></span>
+                  Cancel
+                </button>
+              </div>
+
+              <!-- Need Help Row -->
+              <div class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Need Help?</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Contact our support team for assistance with your subscription.
+                  </p>
+                </div>
+                <button class='btn btn-outline btn-sm' @click="Browser.OpenURL('mailto:mail@arco-backup.com')">
                   Contact Support
                 </button>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
+      <!-- Switch Plan Confirmation Modal -->
+      <TransitionRoot :show='isSwitchModalOpen'>
+        <Dialog class='relative z-50' @close='closeSwitchConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
+
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Confirm Plan Change</DialogTitle>
+                  <div class='space-y-4' v-if='selectedSwitchPlanDetails'>
+                    <!-- Upgrade explanation -->
+                    <template v-if='isSwitchUpgrade'>
+                      <p class='text-base-content/80'>
+                        Your upgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
+                      </p>
+                      <div class='bg-success/10 rounded-lg p-4 space-y-2'>
+                        <div class='flex justify-between text-sm'>
+                          <span>New plan:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>Storage:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>New price:</span>
+                          <span class='font-medium'>
+                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                        </span>
+                        </div>
+                        <div class='flex justify-between text-sm pt-2 border-t border-success/20'>
+                          <span>Prorated charge now:</span>
+                          <span class='font-bold text-success'>${{ prorationAmount.toFixed(2) }}</span>
+                        </div>
+                      </div>
+                      <p class='text-sm text-base-content/70'>
+                        You'll be charged <strong>${{ prorationAmount.toFixed(2) }}</strong> now for the {{ daysRemaining }}
+                        days remaining in your billing period.
+                      </p>
+                    </template>
+
+                    <!-- Downgrade explanation -->
+                    <template v-else>
+                      <p class='text-base-content/80'>
+                        Your downgrade to <strong>{{ selectedSwitchPlanDetails.name }}</strong> will take effect immediately.
+                      </p>
+                      <div class='bg-warning/10 rounded-lg p-4 space-y-2'>
+                        <div class='flex justify-between text-sm'>
+                          <span>New plan:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.name }}</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>Storage:</span>
+                          <span class='font-medium'>{{ selectedSwitchPlanDetails.storage_gb ?? 0 }} GB</span>
+                        </div>
+                        <div class='flex justify-between text-sm'>
+                          <span>New price:</span>
+                          <span class='font-medium'>
+                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                        </span>
+                        </div>
+                        <div class='flex justify-between text-sm pt-2 border-t border-warning/20'>
+                          <span>Credit on next invoice:</span>
+                          <span class='font-bold text-warning'>${{ prorationAmount.toFixed(2) }}</span>
+                        </div>
+                      </div>
+                      <p class='text-sm text-base-content/70'>
+                        You'll receive a <strong>${{ prorationAmount.toFixed(2) }}</strong> credit on your next invoice for the
+                        {{ daysRemaining }} unused days.
+                      </p>
+                    </template>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeSwitchConfirmation' :disabled='isSwitchingPlan'>
+                      Cancel
+                    </button>
+                    <button
+                      :class='["btn", isSwitchUpgrade ? "btn-success" : "btn-warning"]'
+                      @click='switchPlan'
+                      :disabled='isSwitchingPlan'
+                    >
+                      <span v-if='isSwitchingPlan' class='loading loading-spinner loading-sm'></span>
+                      {{ isSwitchUpgrade ? "Confirm Upgrade" : "Confirm Downgrade" }}
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </TransitionRoot>
+
+      <!-- Reactivate Confirmation Modal -->
+      <TransitionRoot :show='isReactivateModalOpen'>
+        <Dialog class='relative z-50' @close='closeReactivateConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
+
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Keep Your Subscription</DialogTitle>
+                  <div class='space-y-4'>
+                    <p class='text-base-content/80'>
+                      Your subscription is scheduled to end on <strong>{{ nextBillingDate }}</strong>.
+                    </p>
+                    <p class='text-base-content/80'>
+                      By keeping your subscription, you will:
+                    </p>
+                    <ul class='list-disc list-inside text-sm space-y-1 text-base-content/70'>
+                      <li>Continue with your current plan (<strong>{{ subscription?.plan?.name }}</strong>)</li>
+                      <li>Keep all your storage and backups</li>
+                      <li>Be charged <strong>${{ formatYearlyPrice(subscription?.plan?.price_cents ?? 0) }}/year</strong> on
+                        {{ nextBillingDate }}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeReactivateConfirmation' :disabled='isReactivating'>
+                      Cancel
+                    </button>
+                    <button
+                      class='btn btn-success'
+                      @click='reactivateSubscription'
+                      :disabled='isReactivating'
+                    >
+                      <span v-if='isReactivating' class='loading loading-spinner loading-sm'></span>
+                      Keep Subscription
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </TransitionRoot>
+
+      <!-- Cancel Confirmation Modal -->
+      <TransitionRoot :show='isCancelModalOpen'>
+        <Dialog class='relative z-50' @close='closeCancelConfirmation'>
+          <TransitionChild
+            enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100'
+            leave='ease-in duration-200' leave-from='opacity-100' leave-to='opacity-0'>
+            <div class='fixed inset-0 bg-gray-500/75' />
+          </TransitionChild>
+
+          <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+            <div class='flex min-h-full items-center justify-center p-4'>
+              <TransitionChild
+                enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
+                enter-to='opacity-100 translate-y-0 sm:scale-100'
+                leave='ease-in duration-200' leave-from='opacity-100 translate-y-0 sm:scale-100'
+                leave-to='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'>
+                <DialogPanel class='relative transform rounded-lg bg-base-100 px-4 pb-4 pt-5 shadow-xl sm:w-full sm:max-w-lg sm:p-6'>
+                  <DialogTitle class='font-bold text-lg mb-4'>Cancel Subscription</DialogTitle>
+                  <div class='space-y-4'>
+
+                    <!-- Explanation of cancellation process -->
+                    <p class='text-base-content/80'>
+                      Here's what happens when you cancel your subscription:
+                    </p>
+
+                    <div class='space-y-3 text-sm'>
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-info badge-sm mt-0.5'>1</div>
+                        <div>
+                          <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, repositories,
+                          and use all features normally.
+                        </div>
+                      </div>
+
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-warning badge-sm mt-0.5'>2</div>
+                        <div>
+                          <strong>After {{ nextBillingDate }}:</strong> Account becomes read-only - you can access and download
+                          your data, but cannot create new backups or repositories.
+                        </div>
+                      </div>
+
+                      <div class='flex items-start gap-3'>
+                        <div class='badge badge-error badge-sm mt-0.5'>3</div>
+                        <div>
+                          <strong>After {{ getRetentionDays(subscription?.plan ?? undefined) }} days of read-only access
+                            ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div role='alert' class='alert alert-error'>
+                      <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
+                      <div>
+                        <h4 class='font-bold'>Are you sure you want to cancel?</h4>
+                        <div class='text-sm'>You can reactivate your subscription anytime before {{ nextBillingDate }} to
+                          continue using all features.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class='flex justify-between pt-6'>
+                    <button class='btn btn-outline' @click='closeCancelConfirmation' :disabled='isCanceling'>
+                      Keep Subscription
+                    </button>
+                    <button
+                      class='btn btn-error'
+                      @click='confirmCancellation'
+                      :disabled='isCanceling'
+                    >
+                      <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
+                      Yes, Cancel Subscription
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </TransitionRoot>
+
+      <!-- Subscription Modal -->
+      <CreateArcoCloudModal ref='cloudModal' @close='() => {}' @repo-created='onRepoCreated' />
     </div>
-
-    <!-- Cancel Confirmation Modal -->
-    <dialog ref='cancelConfirmModal' class='modal'>
-      <div class='modal-box'>
-        <h3 class='font-bold text-lg mb-4'>Cancel Subscription</h3>
-        <div class='space-y-4'>
-
-          <!-- Explanation of cancellation process -->
-          <p class='text-base-content/80'>
-            Here's what happens when you cancel your subscription:
-          </p>
-
-          <div class='space-y-3 text-sm'>
-            <div class='flex items-start gap-3'>
-              <div class='badge badge-info badge-sm mt-0.5'>1</div>
-              <div>
-                <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, repositories, and
-                use all features normally.
-              </div>
-            </div>
-
-            <div class='flex items-start gap-3'>
-              <div class='badge badge-warning badge-sm mt-0.5'>2</div>
-              <div>
-                <strong>After {{ nextBillingDate }}:</strong> Account becomes read-only - you can access and download
-                your data, but cannot create new backups or repositories.
-              </div>
-            </div>
-
-            <div class='flex items-start gap-3'>
-              <div class='badge badge-error badge-sm mt-0.5'>3</div>
-              <div>
-                <strong>After {{ getRetentionDays(subscription?.plan ?? undefined) }} days of read-only access
-                  ({{ dataDeletionDate }}):</strong> All your data and backups will be permanently deleted.
-              </div>
-            </div>
-          </div>
-
-          <div role='alert' class='alert alert-error'>
-            <ExclamationTriangleIcon class='h-6 w-6 shrink-0' />
-            <div>
-              <h4 class='font-bold'>Are you sure you want to cancel?</h4>
-              <div class='text-sm'>You can reactivate your subscription anytime before {{ nextBillingDate }} to continue
-                using all features.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class='modal-action'>
-          <button class='btn btn-outline' @click='closeCancelConfirmation' :disabled='isCanceling'>
-            Keep Subscription
-          </button>
-          <button
-            class='btn btn-error'
-            @click='confirmCancellation'
-            :disabled='isCanceling'
-          >
-            <span v-if='isCanceling' class='loading loading-spinner loading-sm'></span>
-            Yes, Cancel Subscription
-          </button>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- Subscription Modal -->
-    <ArcoCloudModal ref='cloudModal' @close='() => {}' @repo-created='onRepoCreated' />
   </div>
 </template>

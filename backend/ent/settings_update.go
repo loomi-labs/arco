@@ -35,20 +35,6 @@ func (_u *SettingsUpdate) SetUpdatedAt(v time.Time) *SettingsUpdate {
 	return _u
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (_u *SettingsUpdate) SetShowWelcome(v bool) *SettingsUpdate {
-	_u.mutation.SetShowWelcome(v)
-	return _u
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_u *SettingsUpdate) SetNillableShowWelcome(v *bool) *SettingsUpdate {
-	if v != nil {
-		_u.SetShowWelcome(*v)
-	}
-	return _u
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (_u *SettingsUpdate) SetExpertMode(v bool) *SettingsUpdate {
 	_u.mutation.SetExpertMode(v)
@@ -73,6 +59,34 @@ func (_u *SettingsUpdate) SetTheme(v settings.Theme) *SettingsUpdate {
 func (_u *SettingsUpdate) SetNillableTheme(v *settings.Theme) *SettingsUpdate {
 	if v != nil {
 		_u.SetTheme(*v)
+	}
+	return _u
+}
+
+// SetDisableTransitions sets the "disable_transitions" field.
+func (_u *SettingsUpdate) SetDisableTransitions(v bool) *SettingsUpdate {
+	_u.mutation.SetDisableTransitions(v)
+	return _u
+}
+
+// SetNillableDisableTransitions sets the "disable_transitions" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableDisableTransitions(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetDisableTransitions(*v)
+	}
+	return _u
+}
+
+// SetDisableShadows sets the "disable_shadows" field.
+func (_u *SettingsUpdate) SetDisableShadows(v bool) *SettingsUpdate {
+	_u.mutation.SetDisableShadows(v)
+	return _u
+}
+
+// SetNillableDisableShadows sets the "disable_shadows" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableDisableShadows(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetDisableShadows(*v)
 	}
 	return _u
 }
@@ -149,14 +163,17 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
-	}
 	if value, ok := _u.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.DisableTransitions(); ok {
+		_spec.SetField(settings.FieldDisableTransitions, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableShadows(); ok {
+		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -186,20 +203,6 @@ func (_u *SettingsUpdateOne) SetUpdatedAt(v time.Time) *SettingsUpdateOne {
 	return _u
 }
 
-// SetShowWelcome sets the "show_welcome" field.
-func (_u *SettingsUpdateOne) SetShowWelcome(v bool) *SettingsUpdateOne {
-	_u.mutation.SetShowWelcome(v)
-	return _u
-}
-
-// SetNillableShowWelcome sets the "show_welcome" field if the given value is not nil.
-func (_u *SettingsUpdateOne) SetNillableShowWelcome(v *bool) *SettingsUpdateOne {
-	if v != nil {
-		_u.SetShowWelcome(*v)
-	}
-	return _u
-}
-
 // SetExpertMode sets the "expert_mode" field.
 func (_u *SettingsUpdateOne) SetExpertMode(v bool) *SettingsUpdateOne {
 	_u.mutation.SetExpertMode(v)
@@ -224,6 +227,34 @@ func (_u *SettingsUpdateOne) SetTheme(v settings.Theme) *SettingsUpdateOne {
 func (_u *SettingsUpdateOne) SetNillableTheme(v *settings.Theme) *SettingsUpdateOne {
 	if v != nil {
 		_u.SetTheme(*v)
+	}
+	return _u
+}
+
+// SetDisableTransitions sets the "disable_transitions" field.
+func (_u *SettingsUpdateOne) SetDisableTransitions(v bool) *SettingsUpdateOne {
+	_u.mutation.SetDisableTransitions(v)
+	return _u
+}
+
+// SetNillableDisableTransitions sets the "disable_transitions" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableDisableTransitions(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetDisableTransitions(*v)
+	}
+	return _u
+}
+
+// SetDisableShadows sets the "disable_shadows" field.
+func (_u *SettingsUpdateOne) SetDisableShadows(v bool) *SettingsUpdateOne {
+	_u.mutation.SetDisableShadows(v)
+	return _u
+}
+
+// SetNillableDisableShadows sets the "disable_shadows" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableDisableShadows(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetDisableShadows(*v)
 	}
 	return _u
 }
@@ -330,14 +361,17 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(settings.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.ShowWelcome(); ok {
-		_spec.SetField(settings.FieldShowWelcome, field.TypeBool, value)
-	}
 	if value, ok := _u.mutation.ExpertMode(); ok {
 		_spec.SetField(settings.FieldExpertMode, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Theme(); ok {
 		_spec.SetField(settings.FieldTheme, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.DisableTransitions(); ok {
+		_spec.SetField(settings.FieldDisableTransitions, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableShadows(); ok {
+		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}

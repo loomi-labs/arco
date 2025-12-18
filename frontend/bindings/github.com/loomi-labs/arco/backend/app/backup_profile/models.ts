@@ -5,6 +5,149 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as types$0 from "../types/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as backupprofile$0 from "../../ent/backupprofile/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as backupschedule$0 from "../../ent/backupschedule/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as time$0 from "../../../../../../time/models.js";
+
+/**
+ * BackupProfile is a flattened view of ent.BackupProfile with edges as direct properties.
+ */
+export class BackupProfile {
+    "id": number;
+    "createdAt": time$0.Time;
+    "updatedAt": time$0.Time;
+    "name": string;
+    "prefix": string;
+    "backupPaths": string[];
+    "excludePaths": string[];
+    "excludeCaches": boolean;
+    "icon": backupprofile$0.Icon;
+    "compressionMode": backupprofile$0.CompressionMode;
+    "compressionLevel": number | null;
+    "dataSectionCollapsed": boolean;
+    "scheduleSectionCollapsed": boolean;
+    "advancedSectionCollapsed": boolean;
+
+    /**
+     * Flattened edges (direct properties instead of .Edges.X)
+     */
+    "repositories": RepositorySummary[];
+    "backupSchedule": BackupSchedule | null;
+    "pruningRule": PruningRule | null;
+
+    /**
+     * Computed fields
+     */
+    "archiveCount": number;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
+
+    /** Creates a new BackupProfile instance. */
+    constructor($$source: Partial<BackupProfile> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("prefix" in $$source)) {
+            this["prefix"] = "";
+        }
+        if (!("backupPaths" in $$source)) {
+            this["backupPaths"] = [];
+        }
+        if (!("excludePaths" in $$source)) {
+            this["excludePaths"] = [];
+        }
+        if (!("excludeCaches" in $$source)) {
+            this["excludeCaches"] = false;
+        }
+        if (!("icon" in $$source)) {
+            this["icon"] = backupprofile$0.Icon.$zero;
+        }
+        if (!("compressionMode" in $$source)) {
+            this["compressionMode"] = backupprofile$0.CompressionMode.$zero;
+        }
+        if (!("compressionLevel" in $$source)) {
+            this["compressionLevel"] = null;
+        }
+        if (!("dataSectionCollapsed" in $$source)) {
+            this["dataSectionCollapsed"] = false;
+        }
+        if (!("scheduleSectionCollapsed" in $$source)) {
+            this["scheduleSectionCollapsed"] = false;
+        }
+        if (!("advancedSectionCollapsed" in $$source)) {
+            this["advancedSectionCollapsed"] = false;
+        }
+        if (!("repositories" in $$source)) {
+            this["repositories"] = [];
+        }
+        if (!("backupSchedule" in $$source)) {
+            this["backupSchedule"] = null;
+        }
+        if (!("pruningRule" in $$source)) {
+            this["pruningRule"] = null;
+        }
+        if (!("archiveCount" in $$source)) {
+            this["archiveCount"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BackupProfile instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BackupProfile {
+        const $$createField5_0 = $$createType0;
+        const $$createField6_0 = $$createType0;
+        const $$createField14_0 = $$createType2;
+        const $$createField15_0 = $$createType4;
+        const $$createField16_0 = $$createType6;
+        const $$createField18_0 = $$createType8;
+        const $$createField19_0 = $$createType10;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("backupPaths" in $$parsedSource) {
+            $$parsedSource["backupPaths"] = $$createField5_0($$parsedSource["backupPaths"]);
+        }
+        if ("excludePaths" in $$parsedSource) {
+            $$parsedSource["excludePaths"] = $$createField6_0($$parsedSource["excludePaths"]);
+        }
+        if ("repositories" in $$parsedSource) {
+            $$parsedSource["repositories"] = $$createField14_0($$parsedSource["repositories"]);
+        }
+        if ("backupSchedule" in $$parsedSource) {
+            $$parsedSource["backupSchedule"] = $$createField15_0($$parsedSource["backupSchedule"]);
+        }
+        if ("pruningRule" in $$parsedSource) {
+            $$parsedSource["pruningRule"] = $$createField16_0($$parsedSource["pruningRule"]);
+        }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField18_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField19_0($$parsedSource["lastAttempt"]);
+        }
+        return new BackupProfile($$parsedSource as Partial<BackupProfile>);
+    }
+}
+
 export class BackupProfileFilter {
     "id"?: number;
     "name": string;
@@ -35,6 +178,74 @@ export class BackupProfileFilter {
     }
 }
 
+/**
+ * BackupSchedule is a standalone view of ent.BackupSchedule without back-edges
+ */
+export class BackupSchedule {
+    "id": number;
+    "createdAt": time$0.Time;
+    "updatedAt": time$0.Time;
+    "mode": backupschedule$0.Mode;
+    "dailyAt": time$0.Time;
+    "weekday": backupschedule$0.Weekday;
+    "weeklyAt": time$0.Time;
+    "monthday": number;
+    "monthlyAt": time$0.Time;
+    "nextRun": time$0.Time;
+    "lastRun": time$0.Time | null;
+    "lastRunStatus": string | null;
+
+    /** Creates a new BackupSchedule instance. */
+    constructor($$source: Partial<BackupSchedule> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = backupschedule$0.Mode.$zero;
+        }
+        if (!("dailyAt" in $$source)) {
+            this["dailyAt"] = null;
+        }
+        if (!("weekday" in $$source)) {
+            this["weekday"] = backupschedule$0.Weekday.$zero;
+        }
+        if (!("weeklyAt" in $$source)) {
+            this["weeklyAt"] = null;
+        }
+        if (!("monthday" in $$source)) {
+            this["monthday"] = 0;
+        }
+        if (!("monthlyAt" in $$source)) {
+            this["monthlyAt"] = null;
+        }
+        if (!("nextRun" in $$source)) {
+            this["nextRun"] = null;
+        }
+        if (!("lastRun" in $$source)) {
+            this["lastRun"] = null;
+        }
+        if (!("lastRunStatus" in $$source)) {
+            this["lastRunStatus"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BackupSchedule instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BackupSchedule {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BackupSchedule($$parsedSource as Partial<BackupSchedule>);
+    }
+}
+
 export class GetPruningOptionsResponse {
     "options": PruningOption[];
 
@@ -51,7 +262,7 @@ export class GetPruningOptionsResponse {
      * Creates a new GetPruningOptionsResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetPruningOptionsResponse {
-        const $$createField0_0 = $$createType1;
+        const $$createField0_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("options" in $$parsedSource) {
             $$parsedSource["options"] = $$createField0_0($$parsedSource["options"]);
@@ -113,6 +324,106 @@ export enum PruningOptionName {
     PruningOptionCustom = "custom",
 };
 
+/**
+ * PruningRule is a standalone view of ent.PruningRule without back-edges
+ */
+export class PruningRule {
+    "id": number;
+    "createdAt": time$0.Time;
+    "updatedAt": time$0.Time;
+    "isEnabled": boolean;
+    "keepHourly": number;
+    "keepDaily": number;
+    "keepWeekly": number;
+    "keepMonthly": number;
+    "keepYearly": number;
+    "keepWithinDays": number;
+    "nextRun": time$0.Time;
+    "lastRun": time$0.Time | null;
+    "lastRunStatus": string | null;
+
+    /** Creates a new PruningRule instance. */
+    constructor($$source: Partial<PruningRule> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
+        }
+        if (!("isEnabled" in $$source)) {
+            this["isEnabled"] = false;
+        }
+        if (!("keepHourly" in $$source)) {
+            this["keepHourly"] = 0;
+        }
+        if (!("keepDaily" in $$source)) {
+            this["keepDaily"] = 0;
+        }
+        if (!("keepWeekly" in $$source)) {
+            this["keepWeekly"] = 0;
+        }
+        if (!("keepMonthly" in $$source)) {
+            this["keepMonthly"] = 0;
+        }
+        if (!("keepYearly" in $$source)) {
+            this["keepYearly"] = 0;
+        }
+        if (!("keepWithinDays" in $$source)) {
+            this["keepWithinDays"] = 0;
+        }
+        if (!("nextRun" in $$source)) {
+            this["nextRun"] = null;
+        }
+        if (!("lastRun" in $$source)) {
+            this["lastRun"] = null;
+        }
+        if (!("lastRunStatus" in $$source)) {
+            this["lastRunStatus"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PruningRule instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PruningRule {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PruningRule($$parsedSource as Partial<PruningRule>);
+    }
+}
+
+/**
+ * RepositorySummary contains minimal repository info for BackupProfile display
+ */
+export class RepositorySummary {
+    "id": number;
+    "name": string;
+
+    /** Creates a new RepositorySummary instance. */
+    constructor($$source: Partial<RepositorySummary> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RepositorySummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RepositorySummary {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RepositorySummary($$parsedSource as Partial<RepositorySummary>);
+    }
+}
+
 export class SelectDirectoryData {
     "title": string;
     "message": string;
@@ -143,5 +454,16 @@ export class SelectDirectoryData {
 }
 
 // Private type creation functions
-const $$createType0 = PruningOption.createFrom;
-const $$createType1 = $Create.Array($$createType0);
+const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = RepositorySummary.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = BackupSchedule.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);
+const $$createType5 = PruningRule.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = types$0.LastBackup.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = types$0.LastAttempt.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = PruningOption.createFrom;
+const $$createType12 = $Create.Array($$createType11);

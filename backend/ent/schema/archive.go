@@ -34,6 +34,16 @@ func (Archive) Fields() []ent.Field {
 		field.Bool("will_be_pruned").
 			StructTag(`json:"willBePruned"`).
 			Default(false),
+		field.String("comment").
+			StructTag(`json:"comment"`).
+			Optional().
+			Default("").
+			Comment("Comment stored with the archive in borg"),
+		field.String("warning_message").
+			StructTag(`json:"warningMessage,omitempty"`).
+			Optional().
+			Nillable().
+			Comment("Warning message from the backup operation that created this archive"),
 	}
 }
 
@@ -44,7 +54,8 @@ func (Archive) Edges() []ent.Edge {
 			Required().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Unique(),
-		edge.To("backup_profile", BackupProfile.Type).
+		edge.From("backup_profile", BackupProfile.Type).
+			Ref("archives").
 			StructTag(`json:"backupProfile,omitempty"`).
 			Unique(),
 	}

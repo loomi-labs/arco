@@ -24,6 +24,9 @@ var appIconLightFs embed.FS
 //go:embed build/darwin/icons.icns
 var darwinIconsFs embed.FS
 
+//go:embed build/darwin/menubar-icon.png
+var darwinMenubarIconFs embed.FS
+
 //go:embed build/windows/icon.ico
 //var windowsIconFs embed.FS
 
@@ -54,11 +57,13 @@ func getIcons() *types.Icons {
 	appIconDark := readEmbeddedFile(appIconDarkFs, "build/appicon-dark.png")
 	appIconLight := readEmbeddedFile(appIconLightFs, "build/appicon-light.png")
 	darwinIcons := readEmbeddedFile(darwinIconsFs, "build/darwin/icons.icns")
+	darwinMenubarIcon := readEmbeddedFile(darwinMenubarIconFs, "build/darwin/menubar-icon.png")
 
 	return &types.Icons{
-		AppIconDark:  appIconDark,
-		AppIconLight: appIconLight,
-		DarwinIcons:  darwinIcons,
+		AppIconDark:       appIconDark,
+		AppIconLight:      appIconLight,
+		DarwinIcons:       darwinIcons,
+		DarwinMenubarIcon: darwinMenubarIcon,
 	}
 }
 

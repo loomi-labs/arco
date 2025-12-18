@@ -172,6 +172,24 @@ func (s *Service) DowngradeSubscription(ctx context.Context, subscriptionID stri
 	return resp.Msg, nil
 }
 
+// CreateCustomerPortalSession creates a pre-authenticated session URL for the Polar customer portal
+func (s *Service) CreateCustomerPortalSession(ctx context.Context) (*arcov1.CreateCustomerPortalSessionResponse, error) {
+	req := connect.NewRequest(&arcov1.CreateCustomerPortalSessionRequest{})
+
+	resp, err := s.rpcClient.CreateCustomerPortalSession(ctx, req)
+	if err != nil {
+		s.log.Errorf("Failed to create customer portal session from cloud service: %v", err)
+		return nil, err
+	}
+
+	// Open the portal URL in the default browser
+	if err := browser.OpenURL(resp.Msg.PortalUrl); err != nil {
+		s.log.Warnf("Failed to open browser for customer portal: %v", err)
+	}
+
+	return resp.Msg, nil
+}
+
 // Backend-only Connect RPC handler methods
 
 // startCheckoutMonitoring starts monitoring a checkout session for completion

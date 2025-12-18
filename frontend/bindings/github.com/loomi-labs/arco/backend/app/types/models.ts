@@ -5,6 +5,10 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as time$0 from "../../../../../../time/models.js";
+
 export class BackupId {
     "backupProfileId": number;
     "repositoryId": number;
@@ -30,6 +34,20 @@ export class BackupId {
     }
 }
 
+/**
+ * BackupStatus represents the status of the last backup
+ */
+export enum BackupStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BackupStatusSuccess = "success",
+    BackupStatusWarning = "warning",
+    BackupStatusError = "error",
+};
+
 export enum Event {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -54,7 +72,11 @@ export enum Event {
     EventSubscriptionCancelled = "subscriptionCancelled",
     EventSettingsChanged = "settingsChanged",
     EventOperationErrorOccurred = "operationErrorOccurred",
+    EventNotificationDismissed = "notificationDismissed",
+    EventNotificationCreated = "notificationCreated",
 };
+
+export type EventEmitter = any;
 
 /**
  * FrontendError is the error type that is received from the frontend
@@ -81,6 +103,54 @@ export class FrontendError {
     static createFrom($$source: any = {}): FrontendError {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new FrontendError($$parsedSource as Partial<FrontendError>);
+    }
+}
+
+/**
+ * LastAttempt contains info about the last backup attempt (success, warning, or error)
+ */
+export class LastAttempt {
+    "status": BackupStatus;
+    "timestamp"?: time$0.Time | null;
+    "message"?: string;
+
+    /** Creates a new LastAttempt instance. */
+    constructor($$source: Partial<LastAttempt> = {}) {
+        if (!("status" in $$source)) {
+            this["status"] = BackupStatus.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LastAttempt instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LastAttempt {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LastAttempt($$parsedSource as Partial<LastAttempt>);
+    }
+}
+
+/**
+ * LastBackup contains info about the last successful backup
+ */
+export class LastBackup {
+    "timestamp"?: time$0.Time | null;
+    "warningMessage"?: string;
+
+    /** Creates a new LastBackup instance. */
+    constructor($$source: Partial<LastBackup> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LastBackup instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LastBackup {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LastBackup($$parsedSource as Partial<LastBackup>);
     }
 }
 

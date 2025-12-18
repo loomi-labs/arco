@@ -41,6 +41,11 @@ type ArchiveRename struct {
 	Name      string `json:"name"`
 }
 
+type ArchiveComment struct {
+	ArchiveID int    `json:"archiveId"`
+	Comment   string `json:"comment"`
+}
+
 type Mount struct {
 	RepositoryID int    `json:"repositoryId"`
 	MountPath    string `json:"mountPath"`
@@ -68,6 +73,11 @@ type ExaminePrune struct {
 	ResultCh    chan borgtypes.PruneResult `json:"-"` // Channel to receive results
 }
 
+type Check struct {
+	RepositoryID      int  `json:"repositoryId"`
+	QuickVerification bool `json:"quickVerification"`
+}
+
 // Operation ADT definition
 type Operation adtenum.Enum[Operation]
 
@@ -78,11 +88,13 @@ func (Delete) isADTVariant() Operation         { var zero Operation; return zero
 func (ArchiveRefresh) isADTVariant() Operation { var zero Operation; return zero }
 func (ArchiveDelete) isADTVariant() Operation  { var zero Operation; return zero }
 func (ArchiveRename) isADTVariant() Operation  { var zero Operation; return zero }
+func (ArchiveComment) isADTVariant() Operation { var zero Operation; return zero }
 func (Mount) isADTVariant() Operation          { var zero Operation; return zero }
 func (MountArchive) isADTVariant() Operation   { var zero Operation; return zero }
 func (Unmount) isADTVariant() Operation        { var zero Operation; return zero }
 func (UnmountArchive) isADTVariant() Operation { var zero Operation; return zero }
 func (ExaminePrune) isADTVariant() Operation   { var zero Operation; return zero }
+func (Check) isADTVariant() Operation          { var zero Operation; return zero }
 
 // ============================================================================
 // QUEUE MANAGEMENT
@@ -99,9 +111,9 @@ const (
 // GetOperationWeight determines operation weight for concurrency control
 func GetOperationWeight(op Operation) OperationWeight {
 	switch GetOperationType(op) {
-	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete:
+	case OperationTypeBackup, OperationTypePrune, OperationTypeDelete, OperationTypeCheck:
 		return WeightHeavy
-	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
+	case OperationTypeArchiveRefresh, OperationTypeArchiveDelete, OperationTypeArchiveRename, OperationTypeArchiveComment, OperationTypeMount, OperationTypeMountArchive, OperationTypeUnmount, OperationTypeUnmountArchive, OperationTypeExaminePrune:
 		return WeightLight
 	default:
 		assert.Fail("Unhandled OperationType in GetOperationWeight")

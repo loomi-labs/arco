@@ -3,7 +3,7 @@ import { ref, useId, useTemplateRef, watch } from "vue";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
-import ArcoCloudModal from "./ArcoCloudModal.vue";
+import CreateArcoCloudModal from "./CreateArcoCloudModal.vue";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import { useAuth } from "../common/auth";
@@ -65,7 +65,7 @@ const createLocalRepoModal = useTemplateRef<InstanceType<typeof CreateLocalRepos
 const createRemoteRepoModalKey = useId();
 const createRemoteRepoModal = useTemplateRef<InstanceType<typeof CreateRemoteRepositoryModal>>(createRemoteRepoModalKey);
 const arcoCloudModalKey = useId();
-const arcoCloudModal = useTemplateRef<InstanceType<typeof ArcoCloudModal>>(arcoCloudModalKey);
+const arcoCloudModal = useTemplateRef<InstanceType<typeof CreateArcoCloudModal>>(arcoCloudModalKey);
 
 // Needed so that the tailwindcss compiler includes these classes
 // noinspection JSUnusedGlobalSymbols
@@ -119,7 +119,7 @@ function connectOrDisconnectRepo(repo: Repository) {
 function getRepoCardClass(repo: Repository) {
   const isConnected = connectedRepos.value.some(r => r.id === repo.id);
   const isConnectedClass = isConnected ?
-    `ac-card-selected border-secondary text-secondary` :
+    `ac-card-selected-secondary text-secondary` :
     `border-transparent hover:text-secondary group-hover:text-secondary`;
   return `${isConnectedClass}`;
 }
@@ -135,14 +135,14 @@ watch(() => props.existingRepos, (newRepos) => {
 </script>
 
 <template>
-  <div v-if='showConnectedRepos'>
+  <div v-if='showConnectedRepos && existingRepos.length > 0'>
     <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Your Repositories</h2>
     <p class='text-lg'>Choose in which repositories you want to store your backups.</p>
 
     <div class='grid grid-flow-col auto-rows-max justify-start py-4 gap-4'
          :class='`grid-rows-${Math.ceil(existingRepos.length / 4)}`'>
       <div
-        class='group ac-card ac-card-hover flex flex-col items-center justify-center border min-w-48 max-w-48 p-6 gap-2'
+        class='group ac-card-hover-secondary flex flex-col items-center justify-center min-w-48 max-w-48 p-6 gap-2'
         v-for='(repo, index) in existingRepos' :key='index'
         :class='getRepoCardClass(repo)'
         @click='connectOrDisconnectRepo(repo)'
@@ -155,7 +155,7 @@ watch(() => props.existingRepos, (newRepos) => {
     </div>
   </div>
 
-  <div v-if='showConnectedRepos && showAddRepo' class='divider'></div>
+  <div v-if='showConnectedRepos && showAddRepo && existingRepos.length > 0' class='divider'></div>
 
   <div v-if='showAddRepo'>
     <h2 v-if='showTitles' class='text-3xl font-semibold py-4'>Add Repository</h2>
@@ -178,7 +178,7 @@ watch(() => props.existingRepos, (newRepos) => {
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
 
-    <ArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
+    <CreateArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
                     @close='onArcoCloudModalClose'
                     @repo-created='(repo) => addRepo(repo)' />
   </div>

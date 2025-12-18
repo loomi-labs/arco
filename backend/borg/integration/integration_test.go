@@ -76,6 +76,10 @@ TestBorgRenameOperation
 TestBorgBreakLockOperation
 * Break repository lock (should succeed even without lock)
 
+TestBorgChangePassphraseOperation
+* ChangePassphrase - Change repository passphrase and verify old/new passwords
+* WrongCurrentPassword - Error handling for incorrect current password
+
 TestBorgMountOperations
 * MountRepository - Mount entire repository to filesystem and verify access
 * MountArchive - Mount specific archive to filesystem and verify content
@@ -86,10 +90,21 @@ TestBorgDeleteArchives
 * Verify auto-compact after bulk deletion
 * Verify selective deletion (only matching prefix)
 
+TestBorgCheckOperations
+* QuickMode - Quick repository-only integrity check
+* FullMode - Full repository and data verification check
+* NonExistentRepository - Error handling for non-existent repository
+* WrongPassword - Error handling for incorrect password
+
 TestBorgErrorHandling
 * InvalidRepository - Error handling for non-existent repository
 * WrongPassword - Error handling for incorrect password
 * InvalidArchiveName - Error handling for non-existent archive deletion
+
+TestBorgRelocatedRepository
+* Verifies BORG_RELOCATED_REPO_ACCESS_IS_OK flag behavior
+* Info without flag fails on moved repository
+* Info with allowRelocated=true succeeds on moved repository
 
 */
 
@@ -224,6 +239,12 @@ func (s *TestIntegrationSuite) startBorgServer(t *testing.T, networkName string)
 	hostPort, err := s.serverContainer.MappedPort(s.ctx, "22")
 	require.NoError(t, err)
 	s.serverHostPort = hostPort.Port()
+
+	// Clean up stale known_hosts entries for localhost with this port
+	// This is needed because each container run gets a new SSH host key
+	// and borg uses StrictHostKeyChecking=accept-new which rejects changed keys
+	cleanCmd := exec.Command("ssh-keygen", "-R", fmt.Sprintf("[localhost]:%s", s.serverHostPort))
+	_ = cleanCmd.Run() // Ignore errors - file might not have the entry
 
 	// In containerized environment, we need to determine how to connect
 	if _, inContainer := os.LookupEnv("SERVER_IMAGE"); inContainer {
@@ -378,7 +399,7 @@ func TestBorgRepositoryOperations(t *testing.T) {
 		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
 
 		// Test repository info
-		info, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
+		info, status := suite.borg.Info(suite.ctx, repoPath, testPassword, false)
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository info should succeed: %v", status.GetError())
 		assert.NotNil(t, info, "Info response should not be nil")
 		assert.NotEmpty(t, info.Repository.ID, "Repository ID should not be empty")
@@ -423,6 +444,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -451,6 +473,7 @@ func TestBorgArchiveOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -490,6 +513,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -519,7 +543,7 @@ func TestBorgDeleteOperations(t *testing.T) {
 		assert.True(t, status.IsCompletedWithSuccess(), "Repository deletion should succeed: %v", status.GetError())
 
 		// Verify repository is deleted by trying to get info
-		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword)
+		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword, false)
 		assert.True(t, status.HasError(), "Info should fail on deleted repository")
 	})
 }
@@ -547,6 +571,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -576,6 +601,7 @@ func TestBorgMaintenanceOperations(t *testing.T) {
 				fmt.Sprintf("test-archive-%d", i),
 				[]string{dataDir},
 				[]string{},
+				false,
 				backupprofile.CompressionModeLz4,
 				nil,
 				progressChan,
@@ -621,6 +647,7 @@ func TestBorgRenameOperation(t *testing.T) {
 		"prefix-",
 		[]string{dataDir},
 		[]string{},
+		false,
 		backupprofile.CompressionModeLz4,
 		nil,
 		progressChan,
@@ -657,6 +684,49 @@ func TestBorgBreakLockOperation(t *testing.T) {
 	assert.True(t, status.IsCompletedWithSuccess(), "Break lock should succeed: %v", status.GetError())
 }
 
+// TestBorgChangePassphraseOperation tests changing repository passphrase
+func TestBorgChangePassphraseOperation(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	t.Run("ChangePassphrase", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+		newPassword := "newPassword123"
+
+		// Initialize repository with original password
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Change passphrase
+		status = suite.borg.ChangePassphrase(suite.ctx, repoPath, testPassword, newPassword)
+		assert.True(t, status.IsCompletedWithSuccess(), "Change passphrase should succeed: %v", status.GetError())
+
+		// Verify old password no longer works
+		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword, false)
+		assert.True(t, status.HasError(), "Old password should no longer work")
+		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
+
+		// Verify new password works
+		info, status := suite.borg.Info(suite.ctx, repoPath, newPassword, false)
+		assert.True(t, status.IsCompletedWithSuccess(), "New password should work: %v", status.GetError())
+		assert.NotNil(t, info, "Info should return repository information")
+	})
+
+	t.Run("WrongCurrentPassword", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Try to change with wrong current password
+		status = suite.borg.ChangePassphrase(suite.ctx, repoPath, "wrongpassword", "newpassword")
+		assert.True(t, status.HasError(), "Change with wrong password should fail")
+		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
+	})
+}
+
 // TestBorgMountOperations tests mount and unmount operations
 func TestBorgMountOperations(t *testing.T) {
 	suite := &TestIntegrationSuite{}
@@ -681,6 +751,7 @@ func TestBorgMountOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -730,6 +801,7 @@ func TestBorgMountOperations(t *testing.T) {
 			"test-archive",
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -819,6 +891,7 @@ func TestBorgDeleteArchives(t *testing.T) {
 			fmt.Sprintf("%s-%d", archivePrefix, i),
 			[]string{dataDir},
 			[]string{},
+			false,
 			backupprofile.CompressionModeLz4,
 			nil,
 			progressChan,
@@ -835,6 +908,7 @@ func TestBorgDeleteArchives(t *testing.T) {
 		"other-archive-",
 		[]string{dataDir},
 		[]string{},
+		false,
 		backupprofile.CompressionModeLz4,
 		nil,
 		progressChan,
@@ -858,9 +932,98 @@ func TestBorgDeleteArchives(t *testing.T) {
 
 	// Verify repository is compacted (this happens automatically in DeleteArchives)
 	// We can't directly test compaction, but we can verify the operation completed successfully
-	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword)
+	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword, false)
 	assert.True(t, status.IsCompletedWithSuccess(), "Info should succeed after deletion and compaction")
 	assert.NotNil(t, info, "Info should return repository information")
+}
+
+// TestBorgCheckOperations tests check operations
+func TestBorgCheckOperations(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	t.Run("QuickMode", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+		dataDir := suite.createTestData(t)
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Create backup
+		progressChan := make(chan types.BackupProgress, 10)
+		_, status = suite.borg.Create(
+			suite.ctx,
+			repoPath,
+			testPassword,
+			"test-archive",
+			[]string{dataDir},
+			[]string{},
+			false,
+			backupprofile.CompressionModeLz4,
+			nil,
+			progressChan,
+		)
+		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+
+		// Run quick check
+		result := suite.borg.Check(suite.ctx, repoPath, testPassword, true)
+		assert.True(t, result.Status.IsCompletedWithSuccess(), "Quick check should succeed: %v", result.Status.GetError())
+		assert.Empty(t, result.ErrorLogs, "Quick check should have no error logs")
+	})
+
+	t.Run("FullMode", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+		dataDir := suite.createTestData(t)
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Create backup
+		progressChan := make(chan types.BackupProgress, 10)
+		_, status = suite.borg.Create(
+			suite.ctx,
+			repoPath,
+			testPassword,
+			"test-archive",
+			[]string{dataDir},
+			[]string{},
+			false,
+			backupprofile.CompressionModeLz4,
+			nil,
+			progressChan,
+		)
+		require.True(t, status.IsCompletedWithSuccess(), "Archive creation should succeed")
+
+		// Run full check (verify data)
+		result := suite.borg.Check(suite.ctx, repoPath, testPassword, false)
+		assert.True(t, result.Status.IsCompletedWithSuccess(), "Full check should succeed: %v", result.Status.GetError())
+		assert.Empty(t, result.ErrorLogs, "Full check should have no error logs")
+	})
+
+	t.Run("NonExistentRepository", func(t *testing.T) {
+		invalidRepoPath := "/nonexistent/repo"
+
+		// Run check on non-existent repository
+		result := suite.borg.Check(suite.ctx, invalidRepoPath, testPassword, true)
+		assert.True(t, result.Status.HasError(), "Check should fail for non-existent repository")
+		assert.True(t, errors.Is(result.Status.Error, types.ErrorRepositoryDoesNotExist), "Should be repository does not exist error")
+	})
+
+	t.Run("WrongPassword", func(t *testing.T) {
+		repoPath := suite.getTestRepositoryPath()
+
+		// Initialize repository
+		status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+		// Try to check with wrong password
+		result := suite.borg.Check(suite.ctx, repoPath, "wrongpassword", false)
+		assert.True(t, result.Status.HasError(), "Check should fail with wrong password")
+		assert.True(t, errors.Is(result.Status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
+	})
 }
 
 // TestBorgErrorHandling tests error handling scenarios
@@ -873,7 +1036,7 @@ func TestBorgErrorHandling(t *testing.T) {
 		invalidRepoPath := "/nonexistent/path"
 
 		// Try to get info from non-existent repository
-		_, status := suite.borg.Info(suite.ctx, invalidRepoPath, testPassword)
+		_, status := suite.borg.Info(suite.ctx, invalidRepoPath, testPassword, false)
 		assert.True(t, status.HasError(), "Info should fail for non-existent repository")
 		assert.True(t, errors.Is(status.Error, types.ErrorRepositoryDoesNotExist), "Should be repository does not exist error")
 	})
@@ -886,7 +1049,7 @@ func TestBorgErrorHandling(t *testing.T) {
 		require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
 
 		// Try to access with wrong password
-		_, status = suite.borg.Info(suite.ctx, repoPath, "wrongpassword")
+		_, status = suite.borg.Info(suite.ctx, repoPath, "wrongpassword", false)
 		assert.True(t, status.HasError(), "Info should fail with wrong password")
 		assert.True(t, errors.Is(status.Error, types.ErrorPassphraseWrong), "Should be incorrect passphrase error")
 	})
@@ -922,19 +1085,71 @@ func TestBorgErrorHandling(t *testing.T) {
 		}
 		privateKeyPath := filepath.Join(sshKeysDir, "borg_test_key")
 
-		// Verify SSH key exists before deletion
-		_, err := os.Stat(privateKeyPath)
-		require.NoError(t, err, "SSH key should exist before test")
+		// Read the key content before deleting so we can restore it
+		keyContent, err := os.ReadFile(privateKeyPath)
+		require.NoError(t, err, "Should be able to read SSH key")
+
+		// Restore key after test (even if test fails)
+		t.Cleanup(func() {
+			_ = os.WriteFile(privateKeyPath, keyContent, 0600)
+		})
 
 		// Delete the SSH private key
 		err = os.Remove(privateKeyPath)
 		require.NoError(t, err, "Should be able to delete SSH key")
 
 		// Try to perform a borg operation that requires SSH - this should fail
-		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword)
+		_, status = suite.borg.Info(suite.ctx, repoPath, testPassword, false)
 		assert.True(t, status.HasError(), "Info should fail when SSH key is missing")
 
 		// The error should be related to connection or general error
 		assert.True(t, errors.Is(status.Error, types.ErrorConnectionClosedWithHint), "Should be a connection closed with hint error")
 	})
+}
+
+// TestBorgRelocatedRepository tests the BORG_RELOCATED_REPO_ACCESS_IS_OK flag
+func TestBorgRelocatedRepository(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	// Create initial repository
+	repoPath := suite.getTestRepositoryPath()
+
+	// Initialize repository
+	status := suite.borg.Init(suite.ctx, repoPath, testPassword, false)
+	require.True(t, status.IsCompletedWithSuccess(), "Repository initialization should succeed")
+
+	// Verify initial repo works
+	info, status := suite.borg.Info(suite.ctx, repoPath, testPassword, false)
+	require.True(t, status.IsCompletedWithSuccess(), "Initial info should succeed")
+	require.NotNil(t, info)
+
+	// Extract the repository directory path from the SSH URL
+	// Format: ssh://user@host:port/home/borg/repositories/repo-name
+	// We need to extract /home/borg/repositories/repo-name
+	repoDir := strings.TrimPrefix(repoPath, fmt.Sprintf("ssh://%s@", sshUser))
+	// Remove host:port part
+	if idx := strings.Index(repoDir, "/"); idx != -1 {
+		repoDir = repoDir[idx:] // /home/borg/repositories/repo-name
+	}
+	newRepoDir := repoDir + "-moved"
+
+	// Move repository to new location via container exec
+	exitCode, _, err := suite.serverContainer.Exec(suite.ctx, []string{"mv", repoDir, newRepoDir})
+	require.NoError(t, err, "Container exec should not error")
+	require.Equal(t, 0, exitCode, "Move command should succeed")
+
+	// Build new repo path URL
+	newRepoPath := strings.Replace(repoPath, repoDir, newRepoDir, 1)
+
+	// Test 1: Info WITHOUT allowRelocated flag should fail
+	// Borg will detect the repository was moved and return an error
+	_, status = suite.borg.Info(suite.ctx, newRepoPath, testPassword, false)
+	assert.True(t, status.HasError(), "Info without allowRelocated should fail for moved repo")
+
+	// Test 2: Info WITH allowRelocated flag should succeed
+	info, status = suite.borg.Info(suite.ctx, newRepoPath, testPassword, true)
+	assert.True(t, status.IsCompletedWithSuccess(), "Info with allowRelocated should succeed: %v", status.GetError())
+	assert.NotNil(t, info, "Info should return repository information")
 }

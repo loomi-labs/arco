@@ -79,62 +79,62 @@ export class ArchiveDeleteStateUnion {
 }
 
 /**
- * ArchiveRenameStateType is the discriminator enum for ArchiveRenameState
+ * ArchiveEditStateType is the discriminator enum for ArchiveEditState
  */
-export enum ArchiveRenameStateType {
+export enum ArchiveEditStateType {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    ArchiveRenameStateTypeRenameActive = "RenameActive",
-    ArchiveRenameStateTypeRenameNone = "RenameNone",
-    ArchiveRenameStateTypeRenameQueued = "RenameQueued",
+    ArchiveEditStateTypeEditActive = "EditActive",
+    ArchiveEditStateTypeEditNone = "EditNone",
+    ArchiveEditStateTypeEditQueued = "EditQueued",
 };
 
 /**
- * ArchiveRenameStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+ * ArchiveEditStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
  */
-export class ArchiveRenameStateUnion {
+export class ArchiveEditStateUnion {
     /**
      * Discriminator field
      */
-    "type": ArchiveRenameStateType;
+    "type": ArchiveEditStateType;
 
     /**
      * Variant fields - only one will be non-nil
      */
-    "renameNone"?: RenameNone | null;
-    "renameQueued"?: RenameQueued | null;
-    "renameActive"?: RenameActive | null;
+    "editNone"?: EditNone | null;
+    "editQueued"?: EditQueued | null;
+    "editActive"?: EditActive | null;
 
-    /** Creates a new ArchiveRenameStateUnion instance. */
-    constructor($$source: Partial<ArchiveRenameStateUnion> = {}) {
+    /** Creates a new ArchiveEditStateUnion instance. */
+    constructor($$source: Partial<ArchiveEditStateUnion> = {}) {
         if (!("type" in $$source)) {
-            this["type"] = ArchiveRenameStateType.$zero;
+            this["type"] = ArchiveEditStateType.$zero;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new ArchiveRenameStateUnion instance from a string or object.
+     * Creates a new ArchiveEditStateUnion instance from a string or object.
      */
-    static createFrom($$source: any = {}): ArchiveRenameStateUnion {
+    static createFrom($$source: any = {}): ArchiveEditStateUnion {
         const $$createField1_0 = $$createType7;
         const $$createField2_0 = $$createType9;
         const $$createField3_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("renameNone" in $$parsedSource) {
-            $$parsedSource["renameNone"] = $$createField1_0($$parsedSource["renameNone"]);
+        if ("editNone" in $$parsedSource) {
+            $$parsedSource["editNone"] = $$createField1_0($$parsedSource["editNone"]);
         }
-        if ("renameQueued" in $$parsedSource) {
-            $$parsedSource["renameQueued"] = $$createField2_0($$parsedSource["renameQueued"]);
+        if ("editQueued" in $$parsedSource) {
+            $$parsedSource["editQueued"] = $$createField2_0($$parsedSource["editQueued"]);
         }
-        if ("renameActive" in $$parsedSource) {
-            $$parsedSource["renameActive"] = $$createField3_0($$parsedSource["renameActive"]);
+        if ("editActive" in $$parsedSource) {
+            $$parsedSource["editActive"] = $$createField3_0($$parsedSource["editActive"]);
         }
-        return new ArchiveRenameStateUnion($$parsedSource as Partial<ArchiveRenameStateUnion>);
+        return new ArchiveEditStateUnion($$parsedSource as Partial<ArchiveEditStateUnion>);
     }
 }
 
@@ -178,15 +178,25 @@ export class ArchiveWithPendingChanges {
     "willBePruned": boolean;
 
     /**
+     * Comment stored with the archive in borg
+     */
+    "comment": string;
+
+    /**
+     * Warning message from the backup operation that created this archive
+     */
+    "warningMessage"?: string | null;
+
+    /**
      * Edges holds the relations/edges for other nodes in the graph.
      * The values are being populated by the ArchiveQuery when eager-loading is set.
      */
     "edges": ent$0.ArchiveEdges;
 
     /**
-     * Serializable rename operation state
+     * Serializable edit operation state (rename + comment)
      */
-    "renameStateUnion": ArchiveRenameStateUnion;
+    "editStateUnion": ArchiveEditStateUnion;
 
     /**
      * Serializable delete operation state
@@ -216,11 +226,14 @@ export class ArchiveWithPendingChanges {
         if (!("willBePruned" in $$source)) {
             this["willBePruned"] = false;
         }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
         if (!("edges" in $$source)) {
             this["edges"] = (new ent$0.ArchiveEdges());
         }
-        if (!("renameStateUnion" in $$source)) {
-            this["renameStateUnion"] = (new ArchiveRenameStateUnion());
+        if (!("editStateUnion" in $$source)) {
+            this["editStateUnion"] = (new ArchiveEditStateUnion());
         }
         if (!("deleteStateUnion" in $$source)) {
             this["deleteStateUnion"] = (new ArchiveDeleteStateUnion());
@@ -233,18 +246,18 @@ export class ArchiveWithPendingChanges {
      * Creates a new ArchiveWithPendingChanges instance from a string or object.
      */
     static createFrom($$source: any = {}): ArchiveWithPendingChanges {
-        const $$createField7_0 = $$createType12;
-        const $$createField8_0 = $$createType13;
-        const $$createField9_0 = $$createType14;
+        const $$createField9_0 = $$createType12;
+        const $$createField10_0 = $$createType13;
+        const $$createField11_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField9_0($$parsedSource["edges"]);
         }
-        if ("renameStateUnion" in $$parsedSource) {
-            $$parsedSource["renameStateUnion"] = $$createField8_0($$parsedSource["renameStateUnion"]);
+        if ("editStateUnion" in $$parsedSource) {
+            $$parsedSource["editStateUnion"] = $$createField10_0($$parsedSource["editStateUnion"]);
         }
         if ("deleteStateUnion" in $$parsedSource) {
-            $$parsedSource["deleteStateUnion"] = $$createField9_0($$parsedSource["deleteStateUnion"]);
+            $$parsedSource["deleteStateUnion"] = $$createField11_0($$parsedSource["deleteStateUnion"]);
         }
         return new ArchiveWithPendingChanges($$parsedSource as Partial<ArchiveWithPendingChanges>);
     }
@@ -315,6 +328,31 @@ export class BackupProfileFilter {
     static createFrom($$source: any = {}): BackupProfileFilter {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new BackupProfileFilter($$parsedSource as Partial<BackupProfileFilter>);
+    }
+}
+
+/**
+ * ChangePassphraseResult represents the result of changing repository passphrase
+ */
+export class ChangePassphraseResult {
+    "success": boolean;
+    "errorMessage"?: string;
+
+    /** Creates a new ChangePassphraseResult instance. */
+    constructor($$source: Partial<ChangePassphraseResult> = {}) {
+        if (!("success" in $$source)) {
+            this["success"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ChangePassphraseResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ChangePassphraseResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ChangePassphraseResult($$parsedSource as Partial<ChangePassphraseResult>);
     }
 }
 
@@ -390,6 +428,78 @@ export class DeleteQueued {
     static createFrom($$source: any = {}): DeleteQueued {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new DeleteQueued($$parsedSource as Partial<DeleteQueued>);
+    }
+}
+
+export class EditActive {
+    /**
+     * Full new name if rename active
+     */
+    "newName"?: string | null;
+
+    /**
+     * New comment if comment change active
+     */
+    "newComment"?: string | null;
+
+    /** Creates a new EditActive instance. */
+    constructor($$source: Partial<EditActive> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditActive instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditActive {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditActive($$parsedSource as Partial<EditActive>);
+    }
+}
+
+/**
+ * Archive edit state variants (combined rename + comment operations)
+ */
+export class EditNone {
+
+    /** Creates a new EditNone instance. */
+    constructor($$source: Partial<EditNone> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditNone instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditNone {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditNone($$parsedSource as Partial<EditNone>);
+    }
+}
+
+export class EditQueued {
+    /**
+     * Full new name if rename queued
+     */
+    "newName"?: string | null;
+
+    /**
+     * New comment if comment change queued
+     */
+    "newComment"?: string | null;
+
+    /** Creates a new EditQueued instance. */
+    constructor($$source: Partial<EditQueued> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditQueued instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditQueued {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EditQueued($$parsedSource as Partial<EditQueued>);
     }
 }
 
@@ -858,74 +968,6 @@ export class Remote {
     }
 }
 
-export class RenameActive {
-    /**
-     * Full new name (prefix + name)
-     */
-    "newName": string;
-
-    /** Creates a new RenameActive instance. */
-    constructor($$source: Partial<RenameActive> = {}) {
-        if (!("newName" in $$source)) {
-            this["newName"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameActive instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameActive {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameActive($$parsedSource as Partial<RenameActive>);
-    }
-}
-
-/**
- * Archive rename state variants
- */
-export class RenameNone {
-
-    /** Creates a new RenameNone instance. */
-    constructor($$source: Partial<RenameNone> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameNone instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameNone {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameNone($$parsedSource as Partial<RenameNone>);
-    }
-}
-
-export class RenameQueued {
-    /**
-     * Full new name (prefix + name)
-     */
-    "newName": string;
-
-    /** Creates a new RenameQueued instance. */
-    constructor($$source: Partial<RenameQueued> = {}) {
-        if (!("newName" in $$source)) {
-            this["newName"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RenameQueued instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RenameQueued {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RenameQueued($$parsedSource as Partial<RenameQueued>);
-    }
-}
-
 /**
  * Repository represents the consolidated repository data structure
  */
@@ -951,9 +993,16 @@ export class Repository {
      * Metadata
      */
     "archiveCount": number;
-    "lastBackupTime"?: time$0.Time | null;
-    "lastBackupError"?: string;
-    "lastBackupWarning"?: string;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
+
+    /**
+     * Check tracking
+     */
+    "lastQuickCheckAt"?: time$0.Time | null;
+    "quickCheckError"?: string[];
+    "lastFullCheckAt"?: time$0.Time | null;
+    "fullCheckError"?: string[];
 
     /**
      * Storage Statistics
@@ -980,6 +1029,12 @@ export class Repository {
      * Overall space savings percentage
      */
     "spaceSavingsPercent": number;
+
+    /**
+     * Security
+     * Whether repository has encryption passphrase
+     */
+    "hasPassword": boolean;
 
     /** Creates a new Repository instance. */
     constructor($$source: Partial<Repository> = {}) {
@@ -1016,6 +1071,9 @@ export class Repository {
         if (!("spaceSavingsPercent" in $$source)) {
             this["spaceSavingsPercent"] = 0;
         }
+        if (!("hasPassword" in $$source)) {
+            this["hasPassword"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1026,12 +1084,28 @@ export class Repository {
     static createFrom($$source: any = {}): Repository {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
+        const $$createField6_0 = $$createType42;
+        const $$createField7_0 = $$createType44;
+        const $$createField9_0 = $$createType45;
+        const $$createField11_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
         }
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
+        }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField6_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField7_0($$parsedSource["lastAttempt"]);
+        }
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField9_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField11_0($$parsedSource["fullCheckError"]);
         }
         return new Repository($$parsedSource as Partial<Repository>);
     }
@@ -1062,9 +1136,16 @@ export class RepositoryWithQueue {
      * Metadata
      */
     "archiveCount": number;
-    "lastBackupTime"?: time$0.Time | null;
-    "lastBackupError"?: string;
-    "lastBackupWarning"?: string;
+    "lastBackup"?: types$0.LastBackup | null;
+    "lastAttempt"?: types$0.LastAttempt | null;
+
+    /**
+     * Check tracking
+     */
+    "lastQuickCheckAt"?: time$0.Time | null;
+    "quickCheckError"?: string[];
+    "lastFullCheckAt"?: time$0.Time | null;
+    "fullCheckError"?: string[];
 
     /**
      * Storage Statistics
@@ -1091,6 +1172,12 @@ export class RepositoryWithQueue {
      * Overall space savings percentage
      */
     "spaceSavingsPercent": number;
+
+    /**
+     * Security
+     * Whether repository has encryption passphrase
+     */
+    "hasPassword": boolean;
     "queuedOperations": (SerializableQueuedOperation | null)[];
     "activeOperation"?: SerializableQueuedOperation | null;
 
@@ -1129,6 +1216,9 @@ export class RepositoryWithQueue {
         if (!("spaceSavingsPercent" in $$source)) {
             this["spaceSavingsPercent"] = 0;
         }
+        if (!("hasPassword" in $$source)) {
+            this["hasPassword"] = false;
+        }
         if (!("queuedOperations" in $$source)) {
             this["queuedOperations"] = [];
         }
@@ -1142,8 +1232,12 @@ export class RepositoryWithQueue {
     static createFrom($$source: any = {}): RepositoryWithQueue {
         const $$createField3_0 = $$createType39;
         const $$createField4_0 = $$createType40;
-        const $$createField14_0 = $$createType43;
-        const $$createField15_0 = $$createType42;
+        const $$createField6_0 = $$createType42;
+        const $$createField7_0 = $$createType44;
+        const $$createField9_0 = $$createType45;
+        const $$createField11_0 = $$createType45;
+        const $$createField18_0 = $$createType48;
+        const $$createField19_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1151,11 +1245,23 @@ export class RepositoryWithQueue {
         if ("state" in $$parsedSource) {
             $$parsedSource["state"] = $$createField4_0($$parsedSource["state"]);
         }
+        if ("lastBackup" in $$parsedSource) {
+            $$parsedSource["lastBackup"] = $$createField6_0($$parsedSource["lastBackup"]);
+        }
+        if ("lastAttempt" in $$parsedSource) {
+            $$parsedSource["lastAttempt"] = $$createField7_0($$parsedSource["lastAttempt"]);
+        }
+        if ("quickCheckError" in $$parsedSource) {
+            $$parsedSource["quickCheckError"] = $$createField9_0($$parsedSource["quickCheckError"]);
+        }
+        if ("fullCheckError" in $$parsedSource) {
+            $$parsedSource["fullCheckError"] = $$createField11_0($$parsedSource["fullCheckError"]);
+        }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField14_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField18_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField15_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField19_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }
@@ -1178,7 +1284,7 @@ export class Running {
      * Creates a new Running instance from a string or object.
      */
     static createFrom($$source: any = {}): Running {
-        const $$createField0_0 = $$createType45;
+        const $$createField0_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("progress" in $$parsedSource) {
             $$parsedSource["progress"] = $$createField0_0($$parsedSource["progress"]);
@@ -1253,8 +1359,8 @@ export class SerializableQueuedOperation {
      * Creates a new SerializableQueuedOperation instance from a string or object.
      */
     static createFrom($$source: any = {}): SerializableQueuedOperation {
-        const $$createField3_0 = $$createType46;
-        const $$createField4_0 = $$createType47;
+        const $$createField3_0 = $$createType51;
+        const $$createField4_0 = $$createType52;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("operationUnion" in $$parsedSource) {
             $$parsedSource["operationUnion"] = $$createField3_0($$parsedSource["operationUnion"]);
@@ -1311,6 +1417,11 @@ export class UpdateRequest {
      */
     "name"?: string;
 
+    /**
+     * Repository path/URL (local or remote)
+     */
+    "url"?: string;
+
     /** Creates a new UpdateRequest instance. */
     constructor($$source: Partial<UpdateRequest> = {}) {
 
@@ -1326,6 +1437,40 @@ export class UpdateRequest {
     }
 }
 
+/**
+ * ValidatePathChangeResult represents the result of validating a repository path change
+ */
+export class ValidatePathChangeResult {
+    "isValid": boolean;
+
+    /**
+     * Error that blocks path change
+     */
+    "errorMessage"?: string;
+
+    /**
+     * Warning if connection test fails (path change still allowed)
+     */
+    "connectionWarning"?: string;
+
+    /** Creates a new ValidatePathChangeResult instance. */
+    constructor($$source: Partial<ValidatePathChangeResult> = {}) {
+        if (!("isValid" in $$source)) {
+            this["isValid"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ValidatePathChangeResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ValidatePathChangeResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ValidatePathChangeResult($$parsedSource as Partial<ValidatePathChangeResult>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = DeleteNone.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
@@ -1333,14 +1478,14 @@ const $$createType2 = DeleteQueued.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = DeleteActive.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = RenameNone.createFrom;
+const $$createType6 = EditNone.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = RenameQueued.createFrom;
+const $$createType8 = EditQueued.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = RenameActive.createFrom;
+const $$createType10 = EditActive.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
 const $$createType12 = ent$0.ArchiveEdges.createFrom;
-const $$createType13 = ArchiveRenameStateUnion.createFrom;
+const $$createType13 = ArchiveEditStateUnion.createFrom;
 const $$createType14 = ArchiveDeleteStateUnion.createFrom;
 const $$createType15 = types$0.BackupId.createFrom;
 const $$createType16 = Local.createFrom;
@@ -1368,10 +1513,15 @@ const $$createType37 = PruningDate.createFrom;
 const $$createType38 = $Create.Array($$createType37);
 const $$createType39 = LocationUnion.createFrom;
 const $$createType40 = statemachine$0.RepositoryStateUnion.createFrom;
-const $$createType41 = SerializableQueuedOperation.createFrom;
+const $$createType41 = types$0.LastBackup.createFrom;
 const $$createType42 = $Create.Nullable($$createType41);
-const $$createType43 = $Create.Array($$createType42);
-const $$createType44 = Progress.createFrom;
-const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = statemachine$0.OperationUnion.createFrom;
-const $$createType47 = OperationStatusUnion.createFrom;
+const $$createType43 = types$0.LastAttempt.createFrom;
+const $$createType44 = $Create.Nullable($$createType43);
+const $$createType45 = $Create.Array($Create.Any);
+const $$createType46 = SerializableQueuedOperation.createFrom;
+const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = $Create.Array($$createType47);
+const $$createType49 = Progress.createFrom;
+const $$createType50 = $Create.Nullable($$createType49);
+const $$createType51 = statemachine$0.OperationUnion.createFrom;
+const $$createType52 = OperationStatusUnion.createFrom;

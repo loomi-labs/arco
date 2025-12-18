@@ -10,7 +10,7 @@ import (
 func searchSSHKeysInDir(log *zap.SugaredLogger, sshDir string) []string {
 	files, err := os.ReadDir(sshDir)
 	if err != nil {
-		log.Warnf("Failed to read directory %s: %v", sshDir, err)
+		log.Infof("Failed to read directory %s: %v", sshDir, err)
 		return nil
 	}
 

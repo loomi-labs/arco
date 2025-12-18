@@ -22,6 +22,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -52,6 +53,7 @@ type QueueManager struct {
 	db           *ent.Client
 	borg         borg.Borg
 	eventEmitter types.EventEmitter
+	keyring      *keyring.Service
 	queues       map[int]*RepositoryQueue // RepoID -> Queue
 	mu           sync.RWMutex
 
@@ -79,12 +81,13 @@ func NewQueueManager(log *zap.SugaredLogger, stateMachine *statemachine.Reposito
 }
 
 // Init initializes the queue manager with database and borg clients
-func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter) {
+func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter, keyringService *keyring.Service) {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	qm.db = db
 	qm.borg = borgClient
 	qm.eventEmitter = eventEmitter
+	qm.keyring = keyringService
 }
 
 // GetRepositoryState returns the current state of a repository (defaults to idle if not set)
@@ -122,6 +125,7 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 	case statemachine.RepositoryStateTypeIdle,
 		statemachine.RepositoryStateTypeQueued,
 		statemachine.RepositoryStateTypeDeleting,
+		statemachine.RepositoryStateTypeChecking,
 		statemachine.RepositoryStateTypeMounting,
 		statemachine.RepositoryStateTypeMounted,
 		statemachine.RepositoryStateTypeError:
@@ -246,12 +250,14 @@ func (qm *QueueManager) RemoveOperation(repoID int, operationID string) error {
 	case statemachine.OperationTypeBackup,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeExaminePrune:
 		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventArchivesChangedString(repoID))
 
 	// Non-archive-affecting operations - no action
 	case statemachine.OperationTypeDelete,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypePrune,
@@ -432,8 +438,9 @@ func (qm *QueueManager) StartOperation(ctx context.Context, repoID int, operatio
 					"category", status.Warning.Category,
 					"exitCode", status.Warning.ExitCode)
 
-				// Only create notifications for certain operations
-				if qm.shouldCreateNotification(op.Operation) {
+				// Only create warning notifications for certain operations
+				// Note: Backup warnings are stored on Archive entity, not as notifications
+				if qm.shouldCreateWarningNotification(op.Operation) {
 					qm.createWarningNotification(ctx, repoID, operationID, status, op.Operation)
 				}
 			} else {
@@ -805,6 +812,9 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 	case statemachine.OperationTypeArchiveRefresh:
 		return statemachine.CreateRefreshingState(ctx), nil
 
+	case statemachine.OperationTypeCheck:
+		return statemachine.CreateCheckingState(ctx), nil
+
 	case statemachine.OperationTypeArchiveDelete:
 		deleteVariant := op.Operation.(statemachine.ArchiveDeleteVariant)
 		deleteData := deleteVariant()
@@ -832,6 +842,10 @@ func (qm *QueueManager) getTargetStateForOperation(ctx context.Context, op *Queu
 
 	case statemachine.OperationTypeExaminePrune:
 		// ExaminePrune is a lightweight operation, treat as refreshing
+		return statemachine.CreateRefreshingState(ctx), nil
+
+	case statemachine.OperationTypeArchiveComment:
+		// Archive comment is a lightweight operation, treat as refreshing
 		return statemachine.CreateRefreshingState(ctx), nil
 
 	default:
@@ -884,8 +898,10 @@ func (qm *QueueManager) getCompletionStateForRepository(repoID int, completedOp 
 		statemachine.OperationTypePrune,
 		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeUnmount,
 		statemachine.OperationTypeUnmountArchive,
 		statemachine.OperationTypeExaminePrune:
@@ -930,6 +946,7 @@ func (qm *QueueManager) createErrorNotification(ctx context.Context, repoID int,
 			"notificationType", notificationType,
 			"errorCategory", status.Error.Category,
 			"exitCode", status.Error.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
@@ -965,6 +982,7 @@ func (qm *QueueManager) createWarningNotification(ctx context.Context, repoID in
 			"notificationType", notificationType,
 			"warningCategory", status.Warning.Category,
 			"exitCode", status.Warning.ExitCode)
+		qm.eventEmitter.EmitEvent(ctx, types.EventNotificationCreatedString())
 	}
 }
 
@@ -999,6 +1017,15 @@ func (qm *QueueManager) sendFrontendNotification(ctx context.Context, repoID int
 		message = fmt.Sprintf("Failed to unmount archive: %s", errorMsg)
 	case statemachine.OperationTypeExaminePrune:
 		message = fmt.Sprintf("Failed to examine prune: %s", errorMsg)
+	case statemachine.OperationTypeArchiveComment:
+		message = fmt.Sprintf("Failed to update archive comment: %s", errorMsg)
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			message = fmt.Sprintf("Repository quick check failed: %s", errorMsg)
+		} else {
+			message = fmt.Sprintf("Repository full check failed: %s", errorMsg)
+		}
 	default:
 		assert.Fail("Unhandled OperationType in sendFrontendNotification")
 	}
@@ -1021,10 +1048,18 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 		return notification.TypeFailedBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeFailedPruningRun
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			return notification.TypeFailedQuickCheck
+		} else {
+			return notification.TypeFailedFullCheck
+		}
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
@@ -1041,29 +1076,37 @@ func (qm *QueueManager) getErrorNotificationType(operation statemachine.Operatio
 }
 
 // getWarningNotificationType determines the notification type for warning cases based on operation type
-// This method should only be called for backup and prune operations
+// This method should only be called for prune and check operations (backup warnings are stored on Archive entity)
 func (qm *QueueManager) getWarningNotificationType(operation statemachine.Operation) notification.Type {
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup:
-		return notification.TypeWarningBackupRun
 	case statemachine.OperationTypePrune:
 		return notification.TypeWarningPruningRun
-	case statemachine.OperationTypeDelete,
+	case statemachine.OperationTypeCheck:
+		checkOp := operation.(statemachine.CheckVariant)()
+		if checkOp.QuickVerification {
+			return notification.TypeWarningQuickCheck
+		} else {
+			return notification.TypeWarningFullCheck
+		}
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
 		statemachine.OperationTypeUnmountArchive:
-		// This should never happen if shouldCreateNotification is used correctly
+		// This should never happen if shouldCreateWarningNotification is used correctly
+		// Note: Backup warnings are stored on Archive entity, not as notifications
 		qm.log.Errorw("Unexpected operation type for warning notification",
 			"operationType", fmt.Sprintf("%T", operation))
-		return notification.TypeWarningBackupRun // Fallback for safety
+		return notification.TypeWarningPruningRun // Fallback for safety
 	default:
 		assert.Fail("Unhandled OperationType in getWarningNotificationType")
-		return notification.TypeWarningBackupRun // Fallback for safety
+		return notification.TypeWarningPruningRun // Fallback for safety
 	}
 }
 
@@ -1082,10 +1125,26 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 		examinePruneVariant := operation.(statemachine.ExaminePruneVariant)
 		examinePruneData := examinePruneVariant()
 		return examinePruneData.BackupID.BackupProfileId
+	case statemachine.OperationTypeCheck:
+		// Check is repository-wide, get first backup profile for the repository
+		checkVariant := operation.(statemachine.CheckVariant)
+		checkData := checkVariant()
+		// Query first backup profile for this repository
+		backupProfile, err := qm.db.BackupProfile.Query().
+			Where(backupprofile.HasRepositoriesWith(repository.ID(checkData.RepositoryID))).
+			First(context.Background())
+		if err != nil {
+			qm.log.Errorw("Failed to get backup profile for check notification",
+				"repositoryID", checkData.RepositoryID,
+				"error", err.Error())
+			return 0
+		}
+		return backupProfile.ID
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -1100,15 +1159,16 @@ func (qm *QueueManager) getBackupProfileIDFromOperation(operation statemachine.O
 	}
 }
 
-// shouldCreateNotification determines if error/warning notifications should be created for this operation type
+// shouldCreateNotification determines if error notifications should be created for this operation type
 func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operation) bool {
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
 		return true
 	case statemachine.OperationTypeDelete,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeArchiveDelete,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeExaminePrune,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
@@ -1117,6 +1177,30 @@ func (qm *QueueManager) shouldCreateNotification(operation statemachine.Operatio
 		return false
 	default:
 		assert.Fail("Unhandled OperationType in shouldCreateNotification")
+		return false
+	}
+}
+
+// shouldCreateWarningNotification determines if warning notifications should be created for this operation type
+// Note: Backup warnings are stored on Archive entity, not as notifications
+func (qm *QueueManager) shouldCreateWarningNotification(operation statemachine.Operation) bool {
+	switch statemachine.GetOperationType(operation) {
+	case statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
+		return true
+	case statemachine.OperationTypeBackup,
+		statemachine.OperationTypeDelete,
+		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
+		statemachine.OperationTypeExaminePrune,
+		statemachine.OperationTypeMount,
+		statemachine.OperationTypeMountArchive,
+		statemachine.OperationTypeUnmount,
+		statemachine.OperationTypeUnmountArchive:
+		return false
+	default:
+		assert.Fail("Unhandled OperationType in shouldCreateWarningNotification")
 		return false
 	}
 }
@@ -1140,6 +1224,7 @@ type borgOperationExecutor struct {
 	db              *ent.Client
 	borgClient      borg.Borg
 	eventEmitter    types.EventEmitter
+	keyring         *keyring.Service
 	repoID          int
 	operationID     string
 	progressUpdater progressUpdater
@@ -1152,10 +1237,16 @@ func (qm *QueueManager) newBorgOperationExecutor(repoID int, operationID string)
 		db:              qm.db,
 		log:             qm.log,
 		eventEmitter:    qm.eventEmitter,
+		keyring:         qm.keyring,
 		repoID:          repoID,
 		operationID:     operationID,
 		progressUpdater: qm,
 	}
+}
+
+// getRepoPassword retrieves the password for the executor's repository from the keyring
+func (e *borgOperationExecutor) getRepoPassword() (string, error) {
+	return e.keyring.GetRepositoryPassword(e.repoID)
 }
 
 // Execute implements OperationExecutor.Execute
@@ -1173,8 +1264,12 @@ func (e *borgOperationExecutor) Execute(ctx context.Context, operation statemach
 		return e.executeArchiveDelete(ctx, operation.(statemachine.ArchiveDeleteVariant))
 	case statemachine.OperationTypeArchiveRefresh:
 		return e.executeArchiveRefresh(ctx, operation.(statemachine.ArchiveRefreshVariant))
+	case statemachine.OperationTypeCheck:
+		return e.executeCheck(ctx, operation.(statemachine.CheckVariant))
 	case statemachine.OperationTypeArchiveRename:
 		return e.executeArchiveRename(ctx, operation.(statemachine.ArchiveRenameVariant))
+	case statemachine.OperationTypeArchiveComment:
+		return e.executeArchiveComment(ctx, operation.(statemachine.ArchiveCommentVariant))
 	case statemachine.OperationTypeMount:
 		return e.executeMount(ctx, operation.(statemachine.MountVariant))
 	case statemachine.OperationTypeMountArchive:
@@ -1220,9 +1315,16 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 
 	backupPaths := profile.BackupPaths
 	excludePaths := profile.ExcludePaths
+	excludeCaches := profile.ExcludeCaches
 	prefix := profile.Prefix
 	compressionMode := profile.CompressionMode
 	compressionLevel := profile.CompressionLevel
+
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
 
 	// Create progress channel
 	progressCh := make(chan borgtypes.BackupProgress, 100)
@@ -1231,13 +1333,19 @@ func (e *borgOperationExecutor) executeBackup(ctx context.Context, backupOp stat
 	go e.monitorBackupProgress(ctx, progressCh)
 
 	// Execute borg create command
-	archivePath, status := e.borgClient.Create(ctx, repo.URL, repo.Password, prefix, backupPaths, excludePaths, compressionMode, compressionLevel, progressCh)
+	archivePath, status := e.borgClient.Create(ctx, repo.URL, password, prefix, backupPaths, excludePaths, excludeCaches, compressionMode, compressionLevel, progressCh)
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}
 
-	// Refresh the newly created archive in database
-	err = e.refreshNewArchive(ctx, repo, archivePath)
+	// Capture warning message from status if present
+	var warningMessage string
+	if status.HasWarning() {
+		warningMessage = fmt.Sprintf("%s (Exit Code: %d)", status.Warning.Message, status.Warning.ExitCode)
+	}
+
+	// Refresh the newly created archive in database with warning message
+	err = e.refreshNewArchive(ctx, repo, archivePath, warningMessage)
 	if err != nil {
 		e.log.Errorw("Failed to refresh archive after backup",
 			"archivePath", archivePath,
@@ -1358,11 +1466,17 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 		"pruneOptions", pruneOptions,
 		"isDryRun", isDryRun)
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Create result channel for prune results
 	borgResultCh := make(chan borgtypes.PruneResult, 1)
 
 	// Execute borg prune command
-	status := e.borgClient.Prune(ctx, repo.URL, repo.Password, prefix, pruneOptions, isDryRun, borgResultCh)
+	status := e.borgClient.Prune(ctx, repo.URL, password, prefix, pruneOptions, isDryRun, borgResultCh)
 
 	// Wait for prune result with timeout
 	select {
@@ -1429,7 +1543,7 @@ func (e *borgOperationExecutor) executePrune(ctx context.Context, backupID types
 	// Skip for dry-run examinations
 	if !isDryRun && status.IsCompletedWithSuccess() {
 		// Get updated archive list from repository
-		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+		listResponse, listStatus := e.borgClient.List(ctx, repo.URL, password, "")
 		if listStatus.IsCompletedWithSuccess() {
 			// Update database with refreshed archive information
 			err := e.syncArchivesToDatabase(ctx, repo.ID, listResponse.Archives)
@@ -1511,8 +1625,14 @@ func (e *borgOperationExecutor) executeRepositoryDelete(ctx context.Context, del
 		return nil, fmt.Errorf("repository %d not found: %w", deleteData.RepositoryID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg delete repository command
-	status := e.borgClient.DeleteRepository(ctx, repo.URL, repo.Password)
+	status := e.borgClient.DeleteRepository(ctx, repo.URL, password)
 
 	// Return status directly (preserves rich error information)
 	return status, nil
@@ -1537,8 +1657,14 @@ func (e *borgOperationExecutor) executeArchiveDelete(ctx context.Context, delete
 	// Use archive name from database
 	archiveName := archiveEntity.Name
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg delete archive command
-	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, repo.Password)
+	status := e.borgClient.DeleteArchive(ctx, repo.URL, archiveName, password)
 
 	// If deletion was successful, also delete from database and emit event
 	if status.IsCompletedWithSuccess() {
@@ -1568,8 +1694,14 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 		return nil, fmt.Errorf("repository %d not found: %w", refreshData.RepositoryID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.getRepoPassword()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg list command to refresh archive information
-	listResponse, status := e.borgClient.List(ctx, repo.URL, repo.Password, "")
+	listResponse, status := e.borgClient.List(ctx, repo.URL, password, "")
 	if !status.IsCompletedWithSuccess() {
 		return status, nil
 	}
@@ -1593,6 +1725,62 @@ func (e *borgOperationExecutor) executeArchiveRefresh(ctx context.Context, refre
 	return status, nil
 }
 
+// executeCheck performs a borg check operation to verify repository integrity
+func (e *borgOperationExecutor) executeCheck(ctx context.Context, checkOp statemachine.CheckVariant) (*borgtypes.Status, error) {
+	checkData := checkOp()
+
+	// Get repository from database using RepositoryID
+	repo, err := e.db.Repository.Get(ctx, checkData.RepositoryID)
+	if err != nil {
+		return nil, fmt.Errorf("repository %d not found: %w", checkData.RepositoryID, err)
+	}
+
+	e.log.Infof("Starting %s check for repo %d", map[bool]string{true: "quick", false: "full"}[checkData.QuickVerification], repo.ID)
+
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
+	// Execute borg check command
+	result := e.borgClient.Check(ctx, repo.URL, password, checkData.QuickVerification)
+
+	// Extract error messages for logging and storage
+	errorMessages := make([]string, 0, len(result.ErrorLogs))
+	for _, msg := range result.ErrorLogs {
+		errorMessages = append(errorMessages, msg.Message)
+	}
+
+	// Log captured error messages
+	if len(result.ErrorLogs) > 0 {
+		e.log.Infow("Check operation found errors",
+			"repoID", repo.ID,
+			"checkType", map[bool]string{true: "quick", false: "full"}[checkData.QuickVerification],
+			"errorCount", len(result.ErrorLogs),
+			"errors", errorMessages)
+	}
+
+	// Update database fields based on check type and result
+	now := time.Now()
+	updateQuery := e.db.Repository.UpdateOne(repo)
+
+	if checkData.QuickVerification {
+		// Update quick check fields
+		updateQuery = updateQuery.
+			SetLastQuickCheckAt(now).
+			SetQuickCheckError(errorMessages) // Empty array if no errors
+	} else {
+		// Update full check fields
+		updateQuery = updateQuery.
+			SetLastFullCheckAt(now).
+			SetFullCheckError(errorMessages) // Empty array if no errors
+	}
+
+	// Save updates
+	return result.Status, updateQuery.Exec(ctx)
+}
+
 // executeArchiveRename performs a borg rename operation
 func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, renameOp statemachine.ArchiveRenameVariant) (*borgtypes.Status, error) {
 	renameData := renameOp()
@@ -1613,14 +1801,60 @@ func (e *borgOperationExecutor) executeArchiveRename(ctx context.Context, rename
 	currentArchiveName := archiveEntity.Name
 	newArchiveName := fmt.Sprintf("%s%s", renameData.Prefix, renameData.Name)
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg rename command
-	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, repo.Password, newArchiveName)
+	status := e.borgClient.Rename(ctx, repo.URL, currentArchiveName, password, newArchiveName)
 
 	// If the operation was successful, update the archive name in the database
 	if status.IsCompletedWithSuccess() {
 		err := e.db.Archive.UpdateOneID(archiveEntity.ID).SetName(newArchiveName).Exec(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("borg rename succeeded but failed to update archive name in database: %w", err)
+		}
+
+		// Emit event for archive change
+		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repo.ID))
+	}
+
+	// Return status directly (preserves rich error information)
+	return status, nil
+}
+
+// executeArchiveComment performs a borg recreate --comment operation
+func (e *borgOperationExecutor) executeArchiveComment(ctx context.Context, commentOp statemachine.ArchiveCommentVariant) (*borgtypes.Status, error) {
+	commentData := commentOp()
+
+	// Get archive from database to get repository
+	archiveEntity, err := e.db.Archive.Query().
+		Where(archive.ID(commentData.ArchiveID)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("archive %d not found: %w", commentData.ArchiveID, err)
+	}
+
+	// Get repository from archive relationship
+	repo := archiveEntity.Edges.Repository
+
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
+	// Execute borg recreate --comment command
+	status := e.borgClient.Recreate(ctx, repo.URL, archiveEntity.Name, password, commentData.Comment)
+
+	// If the operation was successful, update the archive comment in the database
+	if status.IsCompletedWithSuccess() {
+		err := e.db.Archive.UpdateOneID(archiveEntity.ID).SetComment(commentData.Comment).Exec(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("borg recreate succeeded but failed to update archive comment in database: %w", err)
 		}
 
 		// Emit event for archive change
@@ -1647,8 +1881,14 @@ func (e *borgOperationExecutor) executeMount(ctx context.Context, mountOp statem
 		return nil, fmt.Errorf("failed to create mount path: %w", err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg mount
-	status := e.borgClient.MountRepository(ctx, repo.URL, repo.Password, mountData.MountPath)
+	status := e.borgClient.MountRepository(ctx, repo.URL, password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
@@ -1680,8 +1920,14 @@ func (e *borgOperationExecutor) executeMountArchive(ctx context.Context, mountOp
 		return nil, fmt.Errorf("failed to create archive mount path: %w", err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Execute borg mount
-	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, repo.Password, mountData.MountPath)
+	status := e.borgClient.MountArchive(ctx, repo.URL, archiveEntity.Name, password, mountData.MountPath)
 
 	// On success, open file manager
 	if status == nil || !status.HasError() {
@@ -1760,23 +2006,38 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 		return fmt.Errorf("failed to query existing archives: %w", err)
 	}
 
-	// Create map of existing borg IDs for faster lookup
-	existingBorgIds := make(map[string]bool)
+	// Create map of existing archives by borg ID for faster lookup
+	existingArchiveMap := make(map[string]*ent.Archive)
 	for _, arch := range existingArchives {
-		existingBorgIds[arch.BorgID] = true
+		existingArchiveMap[arch.BorgID] = arch
 	}
 
-	// Create new archives for those not already in database
+	// Create or update archives
 	newArchiveCount := 0
+	updatedArchiveCount := 0
 	for _, arch := range archives {
-		if existingBorgIds[arch.ID] {
-			continue // Archive already exists, skip
-		}
-
 		// Calculate duration from start to end time
 		startTime := time.Time(arch.Start)
 		endTime := time.Time(arch.End)
 		duration := endTime.Sub(startTime)
+
+		if existingArch, exists := existingArchiveMap[arch.ID]; exists {
+			// Check if any field has changed
+			if existingArch.Name != arch.Name ||
+				existingArch.Comment != arch.Comment ||
+				existingArch.Duration != duration.Seconds() {
+				_, err := existingArch.Update().
+					SetName(arch.Name).
+					SetComment(arch.Comment).
+					SetDuration(duration.Seconds()).
+					Save(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to update archive %s: %w", arch.Name, err)
+				}
+				updatedArchiveCount++
+			}
+			continue
+		}
 
 		// Create base archive creation query
 		createQuery := e.db.Archive.Create().
@@ -1784,7 +2045,8 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 			SetName(arch.Name).
 			SetCreatedAt(startTime).
 			SetDuration(duration.Seconds()).
-			SetRepositoryID(repositoryID)
+			SetRepositoryID(repositoryID).
+			SetComment(arch.Comment)
 
 		// Find matching backup profile by prefix
 		for _, backupProfile := range repo.Edges.BackupProfiles {
@@ -1807,8 +2069,12 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 		e.log.Infow("Created new archives", "count", newArchiveCount, "repositoryID", repositoryID)
 	}
 
-	// Emit event if any archives were changed (deleted or created)
-	if deletedCount > 0 || newArchiveCount > 0 {
+	if updatedArchiveCount > 0 {
+		e.log.Infow("Updated existing archives", "count", updatedArchiveCount, "repositoryID", repositoryID)
+	}
+
+	// Emit event if any archives were changed (deleted, created, or updated)
+	if deletedCount > 0 || newArchiveCount > 0 || updatedArchiveCount > 0 {
 		e.eventEmitter.EmitEvent(ctx, types.EventArchivesChangedString(repositoryID))
 	}
 
@@ -1817,7 +2083,8 @@ func (e *borgOperationExecutor) syncArchivesToDatabase(ctx context.Context, repo
 
 // syncSingleArchiveToDatabase adds or updates a single archive in the database
 // This method does NOT delete any existing archives - it only adds/updates
-func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context, repositoryID int, archiveData borgtypes.ArchiveList) error {
+// warningMessage is only set on new archive creation (not on updates, to preserve existing warnings)
+func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context, repositoryID int, archiveData borgtypes.ArchiveList, warningMessage string) error {
 	// Get repository with backup profiles for prefix matching
 	repo, err := e.db.Repository.Query().
 		Where(repository.ID(repositoryID)).
@@ -1851,6 +2118,7 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 		_, err := existingArchive.Update().
 			SetName(archiveData.Name).
 			SetDuration(duration.Seconds()).
+			SetComment(archiveData.Comment).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to update archive %s: %w", archiveData.Name, err)
@@ -1867,7 +2135,8 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 			SetName(archiveData.Name).
 			SetCreatedAt(startTime).
 			SetDuration(duration.Seconds()).
-			SetRepositoryID(repositoryID)
+			SetRepositoryID(repositoryID).
+			SetComment(archiveData.Comment)
 
 		// Find matching backup profile by prefix
 		for _, backupProfile := range repo.Edges.BackupProfiles {
@@ -1875,6 +2144,11 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 				createQuery = createQuery.SetBackupProfileID(backupProfile.ID)
 				break
 			}
+		}
+
+		// Set warning message if provided (only on new archives)
+		if warningMessage != "" {
+			createQuery = createQuery.SetWarningMessage(warningMessage)
 		}
 
 		// Save the new archive
@@ -1896,7 +2170,8 @@ func (e *borgOperationExecutor) syncSingleArchiveToDatabase(ctx context.Context,
 }
 
 // refreshNewArchive refreshes a single newly created archive in the database
-func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string) error {
+// warningMessage is passed through to syncSingleArchiveToDatabase for storage on the archive
+func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent.Repository, archivePath string, warningMessage string) error {
 	// Parse archivePath to extract repository and archive name
 	// archivePath format: "repository::archiveName"
 	parts := strings.SplitN(archivePath, "::", 2)
@@ -1906,8 +2181,14 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 	repoPath := parts[0]
 	archiveName := parts[1]
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Use repository path with archive glob pattern to list only the specific archive
-	listResponse, status := e.borgClient.List(ctx, repoPath, repo.Password, archiveName)
+	listResponse, status := e.borgClient.List(ctx, repoPath, password, archiveName)
 	if status.HasError() {
 		return fmt.Errorf("failed to list archive %s: %w", archiveName, status.Error)
 	}
@@ -1917,7 +2198,7 @@ func (e *borgOperationExecutor) refreshNewArchive(ctx context.Context, repo *ent
 	}
 
 	// Sync only the single archive (no deletions)
-	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0])
+	return e.syncSingleArchiveToDatabase(ctx, e.repoID, listResponse.Archives[0], warningMessage)
 }
 
 // refreshRepositoryStats calls borg info to update repository statistics for local/remote repositories
@@ -1928,8 +2209,14 @@ func (e *borgOperationExecutor) refreshRepositoryStats(ctx context.Context, repo
 		return fmt.Errorf("repository %d not found: %w", repoID, err)
 	}
 
+	// Get password from keyring
+	password, err := e.keyring.GetRepositoryPassword(repo.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository password: %w", err)
+	}
+
 	// Call borg info to get repository statistics
-	infoResponse, status := e.borgClient.Info(ctx, repo.URL, repo.Password)
+	infoResponse, status := e.borgClient.Info(ctx, repo.URL, password, false)
 	if status.HasError() {
 		return fmt.Errorf("failed to get repository info: %w", status.Error)
 	}
@@ -1999,7 +2286,7 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 
 	// Now determine operation-specific behavior
 	switch statemachine.GetOperationType(operation) {
-	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune:
+	case statemachine.OperationTypeBackup, statemachine.OperationTypePrune, statemachine.OperationTypeCheck:
 		// Critical operations - full error handling with persistent notifications
 		return OperationErrorResponse{
 			ErrorType:                 errorType,
@@ -2011,6 +2298,7 @@ func (qm *QueueManager) mapOperationErrorResponse(ctx context.Context, borgError
 
 	case statemachine.OperationTypeArchiveRename,
 		statemachine.OperationTypeArchiveDelete,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeArchiveRefresh,
 		statemachine.OperationTypeDelete,
 		statemachine.OperationTypeMount,

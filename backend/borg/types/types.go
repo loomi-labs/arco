@@ -198,6 +198,7 @@ type ArchiveList struct {
 	Name     string     `json:"name"`
 	Start    StringTime `json:"start"`
 	End      StringTime `json:"end"`
+	Comment  string     `json:"comment"`
 }
 
 type Limits struct {
@@ -243,6 +244,11 @@ type Stats struct {
 	TotalUniqueChunks int `json:"total_unique_chunks"` // Number of unique chunks
 	UniqueSize        int `json:"unique_size"`         // Uncompressed size of all chunks
 	UniqueCSize       int `json:"unique_csize"`        // Compressed and encrypted size of all chunks
+}
+
+type CheckResult struct {
+	Status    *Status      // Command execution status
+	ErrorLogs []LogMessage // Captured ERROR messages only
 }
 
 type Cache struct {

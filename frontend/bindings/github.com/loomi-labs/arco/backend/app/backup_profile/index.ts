@@ -7,9 +7,13 @@ export {
 };
 
 export {
+    BackupProfile,
     BackupProfileFilter,
+    BackupSchedule,
     GetPruningOptionsResponse,
     PruningOption,
     PruningOptionName,
+    PruningRule,
+    RepositorySummary,
     SelectDirectoryData
 } from "./models.js";

@@ -3,7 +3,7 @@
 import { onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon } from "@heroicons/vue/24/outline";
+import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, XMarkIcon } from "@heroicons/vue/24/outline";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
@@ -17,7 +17,7 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
+import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 
@@ -34,7 +34,7 @@ const route = useRoute();
 const { isAuthenticated, userEmail } = useAuth();
 const { featureFlags } = useFeatureFlags();
 
-const backupProfiles = ref<ent.BackupProfile[]>([]);
+const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
 const isMobileMenuOpen = ref(false);
 
@@ -65,7 +65,7 @@ function onAuthenticated() {
 
 async function loadData() {
   try {
-    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is ent.BackupProfile => p !== null) ?? [];
+    backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
     repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
   } catch (error: unknown) {
     await showAndLogError("Failed to load sidebar data", error);
@@ -129,9 +129,12 @@ onUnmounted(() => {
 
 <template>
   <!-- Mobile menu button -->
-  <div class='xl:hidden fixed top-4 left-4 z-50'>
+  <div :class='[
+    "xl:hidden fixed top-4 z-50 transition-all duration-300",
+    isMobileMenuOpen ? "left-46" : "left-4"
+  ]'>
     <button @click='toggleMobileMenu' class='btn btn-circle btn-ghost'>
-      <Bars3Icon class='size-6' />
+      <component :is='isMobileMenuOpen ? XMarkIcon : Bars3Icon' class='size-6' />
     </button>
   </div>
 
@@ -139,14 +142,14 @@ onUnmounted(() => {
   <div
     v-if='isMobileMenuOpen'
     @click='closeMobileMenu'
-    class='xl:hidden fixed inset-0 bg-black/20 z-40 transition-opacity'
+    class='xl:hidden fixed inset-0 bg-black/20 z-30 transition-opacity'
   ></div>
 
   <!-- Sidebar -->
   <aside
     :class='[
       isDesktop ? "sticky" : "fixed",
-      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-50 transition-transform duration-300",
+      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-40 transition-transform duration-300",
       isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
     ]'
   >

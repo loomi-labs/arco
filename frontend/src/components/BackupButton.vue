@@ -317,7 +317,7 @@ onUnmounted(() => {
 <template>
   <div v-if='buttonStatus'
        class='relative flex items-center justify-center w-[94px] h-[94px]'
-       :class='hasRepositoryErrors ? "tooltip tooltip-left" : ""'
+       :class='hasRepositoryErrors ? "tooltip tooltip-left tooltip-error" : ""'
        :data-tip='errorTooltipText'>
     <div class='absolute radial-progress'
          :class='[buttonTextColor, hasRepositoryErrors ? "bg-error/20" : "bg-transparent"]'
@@ -336,7 +336,7 @@ onUnmounted(() => {
   </div>
 
   <div v-if='showProgressSpinner'
-       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500/75'>
+       class='fixed inset-0 z-20 flex items-center justify-center bg-gray-500/75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
       <p class='mb-4'>{{ $t("breaking_lock") }}</p>
       <span class='loading loading-dots loading-md'></span>

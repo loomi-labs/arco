@@ -339,7 +339,9 @@ func (q *RepositoryQueue) CanAddOperation(op statemachine.Operation) (bool, stri
 		}
 	case statemachine.OperationTypePrune,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -516,7 +518,9 @@ func (q *RepositoryQueue) addToTrackingMaps(op *QueuedOperation) {
 		q.hasRepoDelete = true
 	case statemachine.OperationTypePrune,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -543,7 +547,9 @@ func (q *RepositoryQueue) removeFromTrackingMaps(op *QueuedOperation) {
 		q.hasRepoDelete = false
 	case statemachine.OperationTypePrune,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,
@@ -598,7 +604,9 @@ func (q *RepositoryQueue) canAddOperationLocked(op statemachine.Operation) (bool
 		}
 	case statemachine.OperationTypePrune,
 		statemachine.OperationTypeArchiveRefresh,
+		statemachine.OperationTypeCheck,
 		statemachine.OperationTypeArchiveRename,
+		statemachine.OperationTypeArchiveComment,
 		statemachine.OperationTypeMount,
 		statemachine.OperationTypeMountArchive,
 		statemachine.OperationTypeUnmount,

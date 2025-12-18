@@ -116,6 +116,7 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 	pruning := NewRepositoryStatePruning(Pruning{})
 	deleting := NewRepositoryStateDeleting(Deleting{})
 	refreshing := NewRepositoryStateRefreshing(Refreshing{})
+	checking := NewRepositoryStateChecking(Checking{})
 	mounting := NewRepositoryStateMounting(Mounting{})
 	mounted := NewRepositoryStateMounted(Mounted{})
 	errorState := NewRepositoryStateError(Error{})
@@ -139,6 +140,7 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 		{From: idle, To: pruning, Guard: nop},    // Start prune immediately (no queue)
 		{From: idle, To: deleting, Guard: nop},   // Start repository delete operation
 		{From: idle, To: refreshing, Guard: nop}, // Start refreshing archive list
+		{From: idle, To: checking, Guard: nop},   // Start checking repository integrity
 		{From: idle, To: mounting, Guard: nop},   // Start mounting repository or archive
 		{From: idle, To: errorState, Guard: nop}, // Unexpected error (e.g., repository locked)
 
@@ -147,6 +149,7 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 		{From: queued, To: pruning, Guard: nop},    // Prune operation starts from queue
 		{From: queued, To: deleting, Guard: nop},   // Delete operation starts from queue
 		{From: queued, To: refreshing, Guard: nop}, // Refresh operation starts from queue
+		{From: queued, To: checking, Guard: nop},   // Check operation starts from queue
 		{From: queued, To: mounting, Guard: nop},   // Mount operation starts from queue
 		{From: queued, To: idle, Guard: nop},       // Queue cleared or all operations expired
 		{From: queued, To: errorState, Guard: nop}, // Queue processing error
@@ -170,6 +173,11 @@ func (sm *RepositoryStateMachine) initializeTransitions() {
 		{From: refreshing, To: idle, Guard: nop},            // Refresh completed successfully
 		{From: refreshing, To: errorState, Guard: nop},      // Refresh failed with error
 		{From: refreshing, To: queued, Guard: hasQueuedOps}, // Refresh cancelled, more operations waiting
+
+		// From Checking
+		{From: checking, To: idle, Guard: nop},            // Check completed successfully
+		{From: checking, To: errorState, Guard: nop},      // Check failed with error
+		{From: checking, To: queued, Guard: hasQueuedOps}, // Check cancelled, more operations waiting
 
 		// From Mounting
 		{From: mounting, To: mounted, Guard: nop},         // Mount completed successfully

@@ -64,14 +64,19 @@ func UpdatedAt(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// ShowWelcome applies equality check predicate on the "show_welcome" field. It's identical to ShowWelcomeEQ.
-func ShowWelcome(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
-}
-
 // ExpertMode applies equality check predicate on the "expert_mode" field. It's identical to ExpertModeEQ.
 func ExpertMode(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldExpertMode, v))
+}
+
+// DisableTransitions applies equality check predicate on the "disable_transitions" field. It's identical to DisableTransitionsEQ.
+func DisableTransitions(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldDisableTransitions, v))
+}
+
+// DisableShadows applies equality check predicate on the "disable_shadows" field. It's identical to DisableShadowsEQ.
+func DisableShadows(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldDisableShadows, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -154,16 +159,6 @@ func UpdatedAtLTE(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// ShowWelcomeEQ applies the EQ predicate on the "show_welcome" field.
-func ShowWelcomeEQ(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldEQ(FieldShowWelcome, v))
-}
-
-// ShowWelcomeNEQ applies the NEQ predicate on the "show_welcome" field.
-func ShowWelcomeNEQ(v bool) predicate.Settings {
-	return predicate.Settings(sql.FieldNEQ(FieldShowWelcome, v))
-}
-
 // ExpertModeEQ applies the EQ predicate on the "expert_mode" field.
 func ExpertModeEQ(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldExpertMode, v))
@@ -192,6 +187,26 @@ func ThemeIn(vs ...Theme) predicate.Settings {
 // ThemeNotIn applies the NotIn predicate on the "theme" field.
 func ThemeNotIn(vs ...Theme) predicate.Settings {
 	return predicate.Settings(sql.FieldNotIn(FieldTheme, vs...))
+}
+
+// DisableTransitionsEQ applies the EQ predicate on the "disable_transitions" field.
+func DisableTransitionsEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldDisableTransitions, v))
+}
+
+// DisableTransitionsNEQ applies the NEQ predicate on the "disable_transitions" field.
+func DisableTransitionsNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldDisableTransitions, v))
+}
+
+// DisableShadowsEQ applies the EQ predicate on the "disable_shadows" field.
+func DisableShadowsEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldDisableShadows, v))
+}
+
+// DisableShadowsNEQ applies the NEQ predicate on the "disable_shadows" field.
+func DisableShadowsNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldDisableShadows, v))
 }
 
 // And groups predicates with the AND operator between them.

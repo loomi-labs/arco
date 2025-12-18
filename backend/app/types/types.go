@@ -4,11 +4,38 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/platform"
 )
+
+// ============================================================================
+// BACKUP STATUS TYPES
+// ============================================================================
+
+// BackupStatus represents the status of the last backup
+type BackupStatus string
+
+const (
+	BackupStatusSuccess BackupStatus = "success"
+	BackupStatusWarning BackupStatus = "warning"
+	BackupStatusError   BackupStatus = "error"
+)
+
+// LastBackup contains info about the last successful backup
+type LastBackup struct {
+	Timestamp      *time.Time `json:"timestamp,omitempty"`
+	WarningMessage string     `json:"warningMessage,omitempty"`
+}
+
+// LastAttempt contains info about the last backup attempt (success, warning, or error)
+type LastAttempt struct {
+	Status    BackupStatus `json:"status"`
+	Timestamp *time.Time   `json:"timestamp,omitempty"`
+	Message   string       `json:"message,omitempty"`
+}
 
 const WindowTitle = "Arco"
 
@@ -83,14 +110,16 @@ const (
 )
 
 type Icons struct {
-	AppIconDark  []byte
-	AppIconLight []byte
-	DarwinIcons  []byte
+	AppIconDark       []byte
+	AppIconLight      []byte
+	DarwinIcons       []byte
+	DarwinMenubarIcon []byte
 }
 
 type Config struct {
 	Dir             string
 	SSHDir          string
+	KeyringDir      string
 	BorgBinaries    []platform.BorgBinary
 	BorgPath        string
 	BorgVersion     string

@@ -15,6 +15,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as arcov1$0 from "../../api/v1/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as backup_profile$0 from "../backup_profile/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as statemachine$0 from "../statemachine/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -68,6 +71,15 @@ export function CancelOperation(repositoryId: number, operationId: string): $Can
 }
 
 /**
+ * ChangePassphrase changes the passphrase of a repository's encryption key
+ */
+export function ChangePassphrase(repoId: number, currentPassword: string, newPassword: string): $CancellablePromise<$models.ChangePassphraseResult> {
+    return $Call.ByID(4221631574, repoId, currentPassword, newPassword).then(($result: any) => {
+        return $$createType3($result);
+    });
+}
+
+/**
  * Create creates a new repository
  */
 export function Create(name: string, location: string, password: string, noPassword: boolean): $CancellablePromise<$models.Repository | null> {
@@ -95,9 +107,9 @@ export function Delete(id: number): $CancellablePromise<void> {
 /**
  * ExaminePrunes analyzes what would be pruned with given rules
  */
-export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
+export function ExaminePrunes(backupProfileId: number, pruningRule: backup_profile$0.PruningRule | null, saveResults: boolean): $CancellablePromise<$models.ExaminePruningResult[]> {
     return $Call.ByID(166629156, backupProfileId, pruningRule, saveResults).then(($result: any) => {
-        return $$createType4($result);
+        return $$createType5($result);
     });
 }
 
@@ -106,7 +118,7 @@ export function ExaminePrunes(backupProfileId: number, pruningRule: ent$0.Prunin
  */
 export function FixStoredPassword(repoId: number, password: string): $CancellablePromise<$models.FixStoredPasswordResult> {
     return $Call.ByID(2845614759, repoId, password).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType6($result);
     });
 }
 
@@ -121,7 +133,7 @@ export function Get(repoId: number): $CancellablePromise<$models.Repository | nu
 
 export function GetActiveOperation(repoId: number, operationType: statemachine$0.OperationType | null): $CancellablePromise<$models.SerializableQueuedOperation | null> {
     return $Call.ByID(3370809829, repoId, operationType).then(($result: any) => {
-        return $$createType7($result);
+        return $$createType8($result);
     });
 }
 
@@ -137,7 +149,7 @@ export function GetBackupButtonStatus(backupIds: types$0.BackupId[]): $Cancellab
  */
 export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellablePromise<(ent$0.BackupProfile | null)[]> {
     return $Call.ByID(2432944859, repoId).then(($result: any) => {
-        return $$createType10($result);
+        return $$createType11($result);
     });
 }
 
@@ -146,7 +158,7 @@ export function GetBackupProfilesThatHaveOnlyRepo(repoId: number): $CancellableP
  */
 export function GetBackupState(backupId: types$0.BackupId): $CancellablePromise<statemachine$0.Backup | null> {
     return $Call.ByID(2620182497, backupId).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType13($result);
     });
 }
 
@@ -155,7 +167,7 @@ export function GetBackupState(backupId: types$0.BackupId): $CancellablePromise<
  */
 export function GetCombinedBackupProgress(backupIds: types$0.BackupId[]): $CancellablePromise<types$1.BackupProgress | null> {
     return $Call.ByID(3581877548, backupIds).then(($result: any) => {
-        return $$createType14($result);
+        return $$createType15($result);
     });
 }
 
@@ -164,7 +176,17 @@ export function GetCombinedBackupProgress(backupIds: types$0.BackupId[]): $Cance
  */
 export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
     return $Call.ByID(423138286).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType16($result);
+    });
+}
+
+/**
+ * GetFilteredArchiveIds retrieves all archive IDs matching the filter criteria (without pagination)
+ * This is used for "select all across pages" functionality
+ */
+export function GetFilteredArchiveIds(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<number[]> {
+    return $Call.ByID(2154529177, req).then(($result: any) => {
+        return $$createType17($result);
     });
 }
 
@@ -173,7 +195,7 @@ export function GetConnectedRemoteHosts(): $CancellablePromise<string[]> {
  */
 export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(2844713878, backupId).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType19($result);
     });
 }
 
@@ -182,19 +204,8 @@ export function GetLastArchiveByBackupId(backupId: types$0.BackupId): $Cancellab
  */
 export function GetLastArchiveByRepoId(repoId: number): $CancellablePromise<ent$0.Archive | null> {
     return $Call.ByID(3556071828, repoId).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType19($result);
     });
-}
-
-/**
- * GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
- */
-export function GetLastBackupErrorMsgByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(4136556109, bId);
-}
-
-export function GetLastBackupWarningByBackupId(bId: types$0.BackupId): $CancellablePromise<string> {
-    return $Call.ByID(1506815150, bId);
 }
 
 /**
@@ -202,7 +213,7 @@ export function GetLastBackupWarningByBackupId(bId: types$0.BackupId): $Cancella
  */
 export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | null): $CancellablePromise<$models.PaginatedArchivesResponse | null> {
     return $Call.ByID(3644900762, req).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType21($result);
     });
 }
 
@@ -211,7 +222,7 @@ export function GetPaginatedArchives(req: $models.PaginatedArchivesRequest | nul
  */
 export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$models.PruningDates> {
     return $Call.ByID(2102076250, archiveIds).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType22($result);
     });
 }
 
@@ -220,7 +231,7 @@ export function GetPruningDates(archiveIds: number[]): $CancellablePromise<$mode
  */
 export function GetQueuedOperations(repoId: number, operationType: statemachine$0.OperationType | null): $CancellablePromise<($models.SerializableQueuedOperation | null)[]> {
     return $Call.ByID(1376269121, repoId, operationType).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType23($result);
     });
 }
 
@@ -229,7 +240,7 @@ export function GetQueuedOperations(repoId: number, operationType: statemachine$
  */
 export function GetWithQueue(repoId: number): $CancellablePromise<$models.RepositoryWithQueue | null> {
     return $Call.ByID(144266353, repoId).then(($result: any) => {
-        return $$createType23($result);
+        return $$createType25($result);
     });
 }
 
@@ -252,6 +263,13 @@ export function Mount(repoId: number): $CancellablePromise<string> {
  */
 export function MountArchive(archiveId: number): $CancellablePromise<string> {
     return $Call.ByID(1226599023, archiveId);
+}
+
+/**
+ * QueueArchiveComment queues an archive comment update operation
+ */
+export function QueueArchiveComment(archiveId: number, comment: string): $CancellablePromise<string> {
+    return $Call.ByID(3108311810, archiveId, comment);
 }
 
 /**
@@ -280,8 +298,15 @@ export function QueueBackup(backupId: types$0.BackupId): $CancellablePromise<str
  */
 export function QueueBackups(backupIds: types$0.BackupId[]): $CancellablePromise<string[]> {
     return $Call.ByID(1401293560, backupIds).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType16($result);
     });
+}
+
+/**
+ * QueueCheck queues a repository integrity check operation
+ */
+export function QueueCheck(repoId: number, quickVerification: boolean): $CancellablePromise<string> {
+    return $Call.ByID(4176731931, repoId, quickVerification);
 }
 
 /**
@@ -313,11 +338,25 @@ export function Remove(id: number): $CancellablePromise<void> {
 }
 
 /**
+ * TestPathConnection tests if a path can connect to a valid borg repository.
+ * Requires repository to be in Idle state (for borg call).
+ * Returns:
+ * - IsValid=false + ErrorMessage: Not idle (blocking)
+ * - IsValid=true + ConnectionWarning: Connection failed (can proceed with warning)
+ * - IsValid=true: Connection successful
+ */
+export function TestPathConnection(repoId: number, newPath: string, password: string): $CancellablePromise<$models.ValidatePathChangeResult | null> {
+    return $Call.ByID(971940321, repoId, newPath, password).then(($result: any) => {
+        return $$createType27($result);
+    });
+}
+
+/**
  * TestRepoConnection tests connection to a repository
  */
 export function TestRepoConnection(path: string, password: string): $CancellablePromise<$models.TestRepoConnectionResult> {
     return $Call.ByID(1151269054, path, password).then(($result: any) => {
-        return $$createType24($result);
+        return $$createType28($result);
     });
 }
 
@@ -333,7 +372,7 @@ export function Unmount(repoId: number): $CancellablePromise<string> {
  */
 export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<any[]> {
     return $Call.ByID(1105783937, repoIds).then(($result: any) => {
-        return $$createType25($result);
+        return $$createType29($result);
     });
 }
 
@@ -361,6 +400,18 @@ export function ValidateArchiveName(archiveId: number, name: string): $Cancellab
 }
 
 /**
+ * ValidatePathChange validates path format and uniqueness (no connection test).
+ * Returns:
+ * - IsValid=false + ErrorMessage: Blocking errors (cannot proceed)
+ * - IsValid=true: Path is valid (connection not tested)
+ */
+export function ValidatePathChange(repoId: number, newPath: string): $CancellablePromise<$models.ValidatePathChangeResult | null> {
+    return $Call.ByID(2418041363, repoId, newPath).then(($result: any) => {
+        return $$createType27($result);
+    });
+}
+
+/**
  * ValidateRepoName validates a repository name
  */
 export function ValidateRepoName(name: string): $CancellablePromise<string> {
@@ -378,26 +429,30 @@ export function ValidateRepoPath(path: string, isLocal: boolean): $CancellablePr
 const $$createType0 = $models.Repository.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = $models.ExaminePruningResult.createFrom;
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = $models.FixStoredPasswordResult.createFrom;
-const $$createType6 = $models.SerializableQueuedOperation.createFrom;
-const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = ent$0.BackupProfile.createFrom;
-const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = $Create.Array($$createType9);
-const $$createType11 = statemachine$0.Backup.createFrom;
-const $$createType12 = $Create.Nullable($$createType11);
-const $$createType13 = types$1.BackupProgress.createFrom;
-const $$createType14 = $Create.Nullable($$createType13);
-const $$createType15 = $Create.Array($Create.Any);
-const $$createType16 = ent$0.Archive.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = $models.PaginatedArchivesResponse.createFrom;
+const $$createType3 = $models.ChangePassphraseResult.createFrom;
+const $$createType4 = $models.ExaminePruningResult.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = $models.FixStoredPasswordResult.createFrom;
+const $$createType7 = $models.SerializableQueuedOperation.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = ent$0.BackupProfile.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = statemachine$0.Backup.createFrom;
+const $$createType13 = $Create.Nullable($$createType12);
+const $$createType14 = types$1.BackupProgress.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = $Create.Array($Create.Any);
+const $$createType17 = $Create.Array($Create.Any);
+const $$createType18 = ent$0.Archive.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = $models.PruningDates.createFrom;
-const $$createType21 = $Create.Array($$createType7);
-const $$createType22 = $models.RepositoryWithQueue.createFrom;
-const $$createType23 = $Create.Nullable($$createType22);
-const $$createType24 = $models.TestRepoConnectionResult.createFrom;
-const $$createType25 = $Create.Array($Create.Any);
+const $$createType20 = $models.PaginatedArchivesResponse.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = $models.PruningDates.createFrom;
+const $$createType23 = $Create.Array($$createType8);
+const $$createType24 = $models.RepositoryWithQueue.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);
+const $$createType26 = $models.ValidatePathChangeResult.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = $models.TestRepoConnectionResult.createFrom;
+const $$createType29 = $Create.Array($Create.Any);

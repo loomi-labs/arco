@@ -29,10 +29,15 @@ type Repository struct {
 	State statemachine.RepositoryStateUnion `json:"state"`
 
 	// Metadata
-	ArchiveCount      int        `json:"archiveCount"`
-	LastBackupTime    *time.Time `json:"lastBackupTime,omitempty"`
-	LastBackupError   string     `json:"lastBackupError,omitempty"`
-	LastBackupWarning string     `json:"lastBackupWarning,omitempty"`
+	ArchiveCount int                `json:"archiveCount"`
+	LastBackup   *types.LastBackup  `json:"lastBackup,omitempty"`
+	LastAttempt  *types.LastAttempt `json:"lastAttempt,omitempty"`
+
+	// Check tracking
+	LastQuickCheckAt *time.Time `json:"lastQuickCheckAt,omitempty"`
+	QuickCheckError  []string   `json:"quickCheckError,omitempty"`
+	LastFullCheckAt  *time.Time `json:"lastFullCheckAt,omitempty"`
+	FullCheckError   []string   `json:"fullCheckError,omitempty"`
 
 	// Storage Statistics
 	SizeOnDisk          int64   `json:"sizeOnDisk"`          // Actual storage used (compressed + deduplicated)
@@ -40,6 +45,9 @@ type Repository struct {
 	DeduplicationRatio  float64 `json:"deduplicationRatio"`  // How much deduplication saved (totalSize / uniqueSize)
 	CompressionRatio    float64 `json:"compressionRatio"`    // How much compression saved (uniqueSize / uniqueCsize)
 	SpaceSavingsPercent float64 `json:"spaceSavingsPercent"` // Overall space savings percentage
+
+	// Security
+	HasPassword bool `json:"hasPassword"` // Whether repository has encryption passphrase
 }
 
 // GetID implements the statemachine.Repository interface
@@ -120,15 +128,17 @@ func (Expired) isADTVariant() OperationStatus   { var zero OperationStatus; retu
 // ARCHIVE OPERATION STATE ADTS
 // ============================================================================
 
-// Archive rename state variants
-type RenameNone struct{}
+// Archive edit state variants (combined rename + comment operations)
+type EditNone struct{}
 
-type RenameQueued struct {
-	NewName string `json:"newName"` // Full new name (prefix + name)
+type EditQueued struct {
+	NewName    *string `json:"newName,omitempty"`    // Full new name if rename queued
+	NewComment *string `json:"newComment,omitempty"` // New comment if comment change queued
 }
 
-type RenameActive struct {
-	NewName string `json:"newName"` // Full new name (prefix + name)
+type EditActive struct {
+	NewName    *string `json:"newName,omitempty"`    // Full new name if rename active
+	NewComment *string `json:"newComment,omitempty"` // New comment if comment change active
 }
 
 // Archive delete state variants
@@ -139,13 +149,13 @@ type DeleteQueued struct{}
 type DeleteActive struct{}
 
 // ADT definitions
-type ArchiveRenameState adtenum.Enum[ArchiveRenameState]
+type ArchiveEditState adtenum.Enum[ArchiveEditState]
 type ArchiveDeleteState adtenum.Enum[ArchiveDeleteState]
 
-// Implement adtVariant marker interface for rename states
-func (RenameNone) isADTVariant() ArchiveRenameState   { var zero ArchiveRenameState; return zero }
-func (RenameQueued) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
-func (RenameActive) isADTVariant() ArchiveRenameState { var zero ArchiveRenameState; return zero }
+// Implement adtVariant marker interface for edit states
+func (EditNone) isADTVariant() ArchiveEditState   { var zero ArchiveEditState; return zero }
+func (EditQueued) isADTVariant() ArchiveEditState { var zero ArchiveEditState; return zero }
+func (EditActive) isADTVariant() ArchiveEditState { var zero ArchiveEditState; return zero }
 
 // Implement adtVariant marker interface for delete states
 func (DeleteNone) isADTVariant() ArchiveDeleteState   { var zero ArchiveDeleteState; return zero }
@@ -245,7 +255,7 @@ type PaginatedArchivesRequest struct {
 // ArchiveWithPendingChanges represents an archive with potential pending operations
 type ArchiveWithPendingChanges struct {
 	*ent.Archive
-	RenameStateUnion ArchiveRenameStateUnion `json:"renameStateUnion"` // Serializable rename operation state
+	EditStateUnion   ArchiveEditStateUnion   `json:"editStateUnion"`   // Serializable edit operation state (rename + comment)
 	DeleteStateUnion ArchiveDeleteStateUnion `json:"deleteStateUnion"` // Serializable delete operation state
 }
 
@@ -269,10 +279,24 @@ type PruningDate struct {
 // UpdateRequest represents fields that can be updated for a repository
 type UpdateRequest struct {
 	Name string `json:"name,omitempty"` // Repository name
+	URL  string `json:"url,omitempty"`  // Repository path/URL (local or remote)
+}
+
+// ValidatePathChangeResult represents the result of validating a repository path change
+type ValidatePathChangeResult struct {
+	IsValid           bool   `json:"isValid"`
+	ErrorMessage      string `json:"errorMessage,omitempty"`      // Error that blocks path change
+	ConnectionWarning string `json:"connectionWarning,omitempty"` // Warning if connection test fails (path change still allowed)
 }
 
 // FixStoredPasswordResult represents the result of fixing stored repository password
 type FixStoredPasswordResult struct {
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+}
+
+// ChangePassphraseResult represents the result of changing repository passphrase
+type ChangePassphraseResult struct {
 	Success      bool   `json:"success"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
 }

@@ -121,7 +121,7 @@ onUnmounted(() => {
     <!-- Open in Browser button -->
     <div class='flex justify-start' v-if='!isCreatingSession'>
       <button
-        class='btn btn-secondary btn-lg'
+        class='btn btn-primary btn-lg'
         :disabled='!checkoutSession?.checkout_url'
         @click='checkoutSession?.checkout_url && openCheckoutUrl(checkoutSession.checkout_url)'
       >

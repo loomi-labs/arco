@@ -13,6 +13,7 @@ type RepositoryStateType string
 
 const (
 	RepositoryStateTypeBackingUp  RepositoryStateType = "BackingUp"
+	RepositoryStateTypeChecking   RepositoryStateType = "Checking"
 	RepositoryStateTypeDeleting   RepositoryStateType = "Deleting"
 	RepositoryStateTypeError      RepositoryStateType = "Error"
 	RepositoryStateTypeIdle       RepositoryStateType = "Idle"
@@ -25,6 +26,7 @@ const (
 
 // RepositoryState variant wrappers
 type BackingUpVariant adtenum.OneVariantValue[BackingUp]
+type CheckingVariant adtenum.OneVariantValue[Checking]
 type DeletingVariant adtenum.OneVariantValue[Deleting]
 type ErrorVariant adtenum.OneVariantValue[Error]
 type IdleVariant adtenum.OneVariantValue[Idle]
@@ -36,6 +38,7 @@ type RefreshingVariant adtenum.OneVariantValue[Refreshing]
 
 // RepositoryState constructors
 var NewRepositoryStateBackingUp = adtenum.CreateOneVariantValueConstructor[BackingUpVariant]()
+var NewRepositoryStateChecking = adtenum.CreateOneVariantValueConstructor[CheckingVariant]()
 var NewRepositoryStateDeleting = adtenum.CreateOneVariantValueConstructor[DeletingVariant]()
 var NewRepositoryStateError = adtenum.CreateOneVariantValueConstructor[ErrorVariant]()
 var NewRepositoryStateIdle = adtenum.CreateOneVariantValueConstructor[IdleVariant]()
@@ -47,6 +50,7 @@ var NewRepositoryStateRefreshing = adtenum.CreateOneVariantValueConstructor[Refr
 
 // EnumType methods for RepositoryState variants
 func (v BackingUpVariant) EnumType() RepositoryState  { return v }
+func (v CheckingVariant) EnumType() RepositoryState   { return v }
 func (v DeletingVariant) EnumType() RepositoryState   { return v }
 func (v ErrorVariant) EnumType() RepositoryState      { return v }
 func (v IdleVariant) EnumType() RepositoryState       { return v }
@@ -71,6 +75,8 @@ func GetRepositoryStateType(enum RepositoryState) RepositoryStateType {
 		return RepositoryStateTypeDeleting
 	case RefreshingVariant:
 		return RepositoryStateTypeRefreshing
+	case CheckingVariant:
+		return RepositoryStateTypeChecking
 	case MountingVariant:
 		return RepositoryStateTypeMounting
 	case MountedVariant:
@@ -94,6 +100,7 @@ type RepositoryStateUnion struct {
 	Pruning    *Pruning    `json:"pruning,omitempty"`
 	Deleting   *Deleting   `json:"deleting,omitempty"`
 	Refreshing *Refreshing `json:"refreshing,omitempty"`
+	Checking   *Checking   `json:"checking,omitempty"`
 	Mounting   *Mounting   `json:"mounting,omitempty"`
 	Mounted    *Mounted    `json:"mounted,omitempty"`
 	Error      *Error      `json:"error,omitempty"`
@@ -138,6 +145,12 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 			Type:       RepositoryStateTypeRefreshing,
 			Refreshing: &data,
 		}
+	case CheckingVariant:
+		data := i()
+		return RepositoryStateUnion{
+			Type:     RepositoryStateTypeChecking,
+			Checking: &data,
+		}
 	case MountingVariant:
 		data := i()
 		return RepositoryStateUnion{
@@ -168,10 +181,12 @@ func ToRepositoryStateUnion(r RepositoryState) RepositoryStateUnion {
 type OperationType string
 
 const (
+	OperationTypeArchiveComment OperationType = "ArchiveComment"
 	OperationTypeArchiveDelete  OperationType = "ArchiveDelete"
 	OperationTypeArchiveRefresh OperationType = "ArchiveRefresh"
 	OperationTypeArchiveRename  OperationType = "ArchiveRename"
 	OperationTypeBackup         OperationType = "Backup"
+	OperationTypeCheck          OperationType = "Check"
 	OperationTypeDelete         OperationType = "Delete"
 	OperationTypeExaminePrune   OperationType = "ExaminePrune"
 	OperationTypeMount          OperationType = "Mount"
@@ -182,10 +197,12 @@ const (
 )
 
 // Operation variant wrappers
+type ArchiveCommentVariant adtenum.OneVariantValue[ArchiveComment]
 type ArchiveDeleteVariant adtenum.OneVariantValue[ArchiveDelete]
 type ArchiveRefreshVariant adtenum.OneVariantValue[ArchiveRefresh]
 type ArchiveRenameVariant adtenum.OneVariantValue[ArchiveRename]
 type BackupVariant adtenum.OneVariantValue[Backup]
+type CheckVariant adtenum.OneVariantValue[Check]
 type DeleteVariant adtenum.OneVariantValue[Delete]
 type ExaminePruneVariant adtenum.OneVariantValue[ExaminePrune]
 type MountVariant adtenum.OneVariantValue[Mount]
@@ -195,10 +212,12 @@ type UnmountVariant adtenum.OneVariantValue[Unmount]
 type UnmountArchiveVariant adtenum.OneVariantValue[UnmountArchive]
 
 // Operation constructors
+var NewOperationArchiveComment = adtenum.CreateOneVariantValueConstructor[ArchiveCommentVariant]()
 var NewOperationArchiveDelete = adtenum.CreateOneVariantValueConstructor[ArchiveDeleteVariant]()
 var NewOperationArchiveRefresh = adtenum.CreateOneVariantValueConstructor[ArchiveRefreshVariant]()
 var NewOperationArchiveRename = adtenum.CreateOneVariantValueConstructor[ArchiveRenameVariant]()
 var NewOperationBackup = adtenum.CreateOneVariantValueConstructor[BackupVariant]()
+var NewOperationCheck = adtenum.CreateOneVariantValueConstructor[CheckVariant]()
 var NewOperationDelete = adtenum.CreateOneVariantValueConstructor[DeleteVariant]()
 var NewOperationExaminePrune = adtenum.CreateOneVariantValueConstructor[ExaminePruneVariant]()
 var NewOperationMount = adtenum.CreateOneVariantValueConstructor[MountVariant]()
@@ -208,10 +227,12 @@ var NewOperationUnmount = adtenum.CreateOneVariantValueConstructor[UnmountVarian
 var NewOperationUnmountArchive = adtenum.CreateOneVariantValueConstructor[UnmountArchiveVariant]()
 
 // EnumType methods for Operation variants
+func (v ArchiveCommentVariant) EnumType() Operation { return v }
 func (v ArchiveDeleteVariant) EnumType() Operation  { return v }
 func (v ArchiveRefreshVariant) EnumType() Operation { return v }
 func (v ArchiveRenameVariant) EnumType() Operation  { return v }
 func (v BackupVariant) EnumType() Operation         { return v }
+func (v CheckVariant) EnumType() Operation          { return v }
 func (v DeleteVariant) EnumType() Operation         { return v }
 func (v ExaminePruneVariant) EnumType() Operation   { return v }
 func (v MountVariant) EnumType() Operation          { return v }
@@ -235,6 +256,8 @@ func GetOperationType(enum Operation) OperationType {
 		return OperationTypeArchiveDelete
 	case ArchiveRenameVariant:
 		return OperationTypeArchiveRename
+	case ArchiveCommentVariant:
+		return OperationTypeArchiveComment
 	case MountVariant:
 		return OperationTypeMount
 	case MountArchiveVariant:
@@ -245,9 +268,11 @@ func GetOperationType(enum Operation) OperationType {
 		return OperationTypeUnmountArchive
 	case ExaminePruneVariant:
 		return OperationTypeExaminePrune
+	case CheckVariant:
+		return OperationTypeCheck
 	default:
 		assert.Fail("Unhandled Operation variant in GetOperationType")
-		return OperationTypeArchiveDelete
+		return OperationTypeArchiveComment
 	}
 }
 
@@ -262,11 +287,13 @@ type OperationUnion struct {
 	ArchiveRefresh *ArchiveRefresh `json:"archiveRefresh,omitempty"`
 	ArchiveDelete  *ArchiveDelete  `json:"archiveDelete,omitempty"`
 	ArchiveRename  *ArchiveRename  `json:"archiveRename,omitempty"`
+	ArchiveComment *ArchiveComment `json:"archiveComment,omitempty"`
 	Mount          *Mount          `json:"mount,omitempty"`
 	MountArchive   *MountArchive   `json:"mountArchive,omitempty"`
 	Unmount        *Unmount        `json:"unmount,omitempty"`
 	UnmountArchive *UnmountArchive `json:"unmountArchive,omitempty"`
 	ExaminePrune   *ExaminePrune   `json:"examinePrune,omitempty"`
+	Check          *Check          `json:"check,omitempty"`
 }
 
 // ToOperationUnion converts an ADT Operation to an OperationUnion
@@ -308,6 +335,12 @@ func ToOperationUnion(r Operation) OperationUnion {
 			Type:          OperationTypeArchiveRename,
 			ArchiveRename: &data,
 		}
+	case ArchiveCommentVariant:
+		data := i()
+		return OperationUnion{
+			Type:           OperationTypeArchiveComment,
+			ArchiveComment: &data,
+		}
 	case MountVariant:
 		data := i()
 		return OperationUnion{
@@ -338,10 +371,16 @@ func ToOperationUnion(r Operation) OperationUnion {
 			Type:         OperationTypeExaminePrune,
 			ExaminePrune: &data,
 		}
+	case CheckVariant:
+		data := i()
+		return OperationUnion{
+			Type:  OperationTypeCheck,
+			Check: &data,
+		}
 	default:
 		return OperationUnion{
-			Type:          OperationTypeArchiveDelete,
-			ArchiveDelete: &ArchiveDelete{},
+			Type:           OperationTypeArchiveComment,
+			ArchiveComment: &ArchiveComment{},
 		}
 	}
 }

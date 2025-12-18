@@ -29,6 +29,14 @@ func initLogger(configDir string) *zap.SugaredLogger {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zap.Must(config.Build()).Sugar()
 	} else {
+		// Use default config directory if none provided
+		if configDir == "" {
+			var err error
+			configDir, err = getConfigDir()
+			if err != nil {
+				panic(fmt.Errorf("failed to get config directory: %w", err))
+			}
+		}
 		logDir := filepath.Join(util.ExpandPath(configDir), "logs")
 		if _, err := os.Stat(logDir); os.IsNotExist(err) {
 			err = os.MkdirAll(logDir, 0755)
@@ -67,6 +75,25 @@ func getConfigDir() (path string, err error) {
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		return
+	}
+	if platform.IsMacOS() {
+		newPath := filepath.Join(dir, "Library", "Application Support", "Arco")
+		oldPath := filepath.Join(dir, ".config", "arco")
+
+		// TODO: this can be removed in a future release (assuming all users have migrated)
+		// Migrate from old location if it exists and new doesn't
+		if _, err := os.Stat(oldPath); err == nil {
+			if _, err := os.Stat(newPath); os.IsNotExist(err) {
+				// Old exists, new doesn't - migrate
+				if err := os.MkdirAll(filepath.Dir(newPath), 0755); err != nil {
+					return "", fmt.Errorf("failed to create config directory during migration: %w", err)
+				}
+				if err := os.Rename(oldPath, newPath); err != nil {
+					return "", fmt.Errorf("failed to migrate config from %q to %q: %w", oldPath, newPath, err)
+				}
+			}
+		}
+		return newPath, nil
 	}
 	return filepath.Join(dir, ".config", "arco"), nil
 }
@@ -148,6 +175,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	return &types.Config{
 		Dir:             configDir,
 		SSHDir:          filepath.Join(configDir, "ssh"),
+		KeyringDir:      filepath.Join(configDir, "keyring"),
 		BorgBinaries:    platform.Binaries,
 		BorgPath:        filepath.Join(configDir, platform.Binaries[0].Name),
 		BorgVersion:     platform.Binaries[0].Version.String(),
@@ -161,6 +189,9 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 }
 
 func showOrCreateMainWindow(config *types.Config) {
+	// Show dock icon when opening a window on macOS
+	platform.ShowDockIcon()
+
 	wailsApp := application.Get()
 	window, ok := wailsApp.Window.GetByName(types.WindowTitle)
 	if ok {
@@ -169,7 +200,7 @@ func showOrCreateMainWindow(config *types.Config) {
 		return
 	}
 
-	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	newWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  types.WindowTitle,
 		Title: types.WindowTitle,
 		Mac: application.MacWindow{
@@ -185,6 +216,11 @@ func showOrCreateMainWindow(config *types.Config) {
 		StartState:       application.WindowStateMinimised,
 		MaxWidth:         3840,
 		MaxHeight:        3840,
+	})
+
+	// Hide dock icon when window is closed on macOS
+	newWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		platform.HideDockIcon()
 	})
 }
 
@@ -205,6 +241,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			application.NewService(arco.AuthService()),
 			application.NewService(arco.PlanService()),
 			application.NewService(arco.SubscriptionService()),
+			application.NewService(arco.NotificationService()),
 		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: uniqueRunId,
@@ -218,14 +255,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
+			ActivationPolicy: application.ActivationPolicyAccessory,
 		},
 		Linux: application.LinuxOptions{
 			DisableQuitOnLastWindowClosed: true,
 		},
 		LogLevel: slog.Level(log.Level() * 4), // slog uses a multiplier of 4
-		ShouldQuit: func() bool {
-			return arco.ShouldQuit()
-		},
 		OnShutdown: func() {
 			arco.Shutdown()
 		},
@@ -240,14 +275,14 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	})
 
 	systray := wailsApp.SystemTray.New()
-	systray.SetLabel(app.Name)
 	if platform.IsMacOS() {
 		// Support for template icons on macOS
-		systray.SetTemplateIcon(config.Icons.DarwinIcons)
+		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
 	} else {
 		// Support for light/dark mode icons
 		systray.SetDarkModeIcon(config.Icons.AppIconDark)
 		systray.SetIcon(config.Icons.AppIconLight)
+		systray.SetLabel(app.Name)
 	}
 
 	// Add menu

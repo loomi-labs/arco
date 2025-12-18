@@ -3,8 +3,15 @@
 
 export {
     BackupId,
+    BackupStatus,
     Event,
     FrontendError,
+    LastAttempt,
+    LastBackup,
     Notification,
     NotificationLevel
+} from "./models.js";
+
+export type {
+    EventEmitter
 } from "./models.js";

@@ -26,6 +26,10 @@ const (
 	FieldBorgID = "borg_id"
 	// FieldWillBePruned holds the string denoting the will_be_pruned field in the database.
 	FieldWillBePruned = "will_be_pruned"
+	// FieldComment holds the string denoting the comment field in the database.
+	FieldComment = "comment"
+	// FieldWarningMessage holds the string denoting the warning_message field in the database.
+	FieldWarningMessage = "warning_message"
 	// EdgeRepository holds the string denoting the repository edge name in mutations.
 	EdgeRepository = "repository"
 	// EdgeBackupProfile holds the string denoting the backup_profile edge name in mutations.
@@ -45,7 +49,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "backupprofile" package.
 	BackupProfileInverseTable = "backup_profiles"
 	// BackupProfileColumn is the table column denoting the backup_profile relation/edge.
-	BackupProfileColumn = "archive_backup_profile"
+	BackupProfileColumn = "backup_profile_archives"
 )
 
 // Columns holds all SQL columns for archive fields.
@@ -57,13 +61,14 @@ var Columns = []string{
 	FieldDuration,
 	FieldBorgID,
 	FieldWillBePruned,
+	FieldComment,
+	FieldWarningMessage,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "archives"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"archive_repository",
-	"archive_backup_profile",
 	"backup_profile_archives",
 }
 
@@ -91,6 +96,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultWillBePruned holds the default value on creation for the "will_be_pruned" field.
 	DefaultWillBePruned bool
+	// DefaultComment holds the default value on creation for the "comment" field.
+	DefaultComment string
 )
 
 // OrderOption defines the ordering options for the Archive queries.
@@ -131,6 +138,16 @@ func ByWillBePruned(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWillBePruned, opts...).ToFunc()
 }
 
+// ByComment orders the results by the comment field.
+func ByComment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldComment, opts...).ToFunc()
+}
+
+// ByWarningMessage orders the results by the warning_message field.
+func ByWarningMessage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWarningMessage, opts...).ToFunc()
+}
+
 // ByRepositoryField orders the results by repository field.
 func ByRepositoryField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -155,6 +172,6 @@ func newBackupProfileStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackupProfileInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, BackupProfileTable, BackupProfileColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, BackupProfileTable, BackupProfileColumn),
 	)
 }

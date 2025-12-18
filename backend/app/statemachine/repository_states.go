@@ -51,6 +51,11 @@ type Refreshing struct {
 	cancelCtx cancelCtx
 }
 
+type Checking struct {
+	StartedAt time.Time `json:"startedAt"`
+	cancelCtx cancelCtx
+}
+
 type Mounting struct {
 	MountType MountType `json:"mountType"`
 	ArchiveID *int      `json:"archiveId,omitempty"`
@@ -77,6 +82,7 @@ func (BackingUp) isADTVariant() RepositoryState  { var zero RepositoryState; ret
 func (Pruning) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
 func (Deleting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
 func (Refreshing) isADTVariant() RepositoryState { var zero RepositoryState; return zero }
+func (Checking) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
 func (Mounting) isADTVariant() RepositoryState   { var zero RepositoryState; return zero }
 func (Mounted) isADTVariant() RepositoryState    { var zero RepositoryState; return zero }
 func (Error) isADTVariant() RepositoryState      { var zero RepositoryState; return zero }
@@ -141,6 +147,8 @@ func GetStateTypeName(state RepositoryState) string {
 		return "Deleting"
 	case RepositoryStateTypeRefreshing:
 		return "Refreshing"
+	case RepositoryStateTypeChecking:
+		return "Checking"
 	case RepositoryStateTypeMounting:
 		return "Mounting"
 	case RepositoryStateTypeMounted:
@@ -158,7 +166,7 @@ func GetStateTypeName(state RepositoryState) string {
 // IsActiveState returns true if the state represents an active operation
 func IsActiveState(state RepositoryState) bool {
 	switch GetRepositoryStateType(state) {
-	case RepositoryStateTypeBackingUp, RepositoryStateTypePruning, RepositoryStateTypeDeleting, RepositoryStateTypeRefreshing, RepositoryStateTypeMounting:
+	case RepositoryStateTypeBackingUp, RepositoryStateTypePruning, RepositoryStateTypeDeleting, RepositoryStateTypeRefreshing, RepositoryStateTypeChecking, RepositoryStateTypeMounting:
 		return true
 	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeError:
 		return false
@@ -217,6 +225,10 @@ func GetCancelCtxOrDefault(defaultContext context.Context, state RepositoryState
 		refreshingVariant := state.(RefreshingVariant)
 		data := refreshingVariant()
 		return data.cancelCtx.ctx
+	case RepositoryStateTypeChecking:
+		checkingVariant := state.(CheckingVariant)
+		data := checkingVariant()
+		return data.cancelCtx.ctx
 	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeMounting, RepositoryStateTypeError:
 		return defaultContext
 	default:
@@ -243,6 +255,10 @@ func GetCancel(state RepositoryState) (context.CancelFunc, bool) {
 	case RepositoryStateTypeRefreshing:
 		refreshingVariant := state.(RefreshingVariant)
 		data := refreshingVariant()
+		return data.cancelCtx.cancel, true
+	case RepositoryStateTypeChecking:
+		checkingVariant := state.(CheckingVariant)
+		data := checkingVariant()
 		return data.cancelCtx.cancel, true
 	case RepositoryStateTypeIdle, RepositoryStateTypeQueued, RepositoryStateTypeMounted, RepositoryStateTypeMounting, RepositoryStateTypeError:
 		return nil, false
@@ -307,6 +323,14 @@ func CreateDeletingState(ctx context.Context, archiveId int) RepositoryState {
 // CreateRefreshingState creates a new refreshing state with context
 func CreateRefreshingState(ctx context.Context) RepositoryState {
 	return NewRepositoryStateRefreshing(Refreshing{
+		StartedAt: time.Now(),
+		cancelCtx: createCancelContext(ctx),
+	})
+}
+
+// CreateCheckingState creates a new checking state with context
+func CreateCheckingState(ctx context.Context) RepositoryState {
+	return NewRepositoryStateChecking(Checking{
 		StartedAt: time.Now(),
 		cancelCtx: createCancelContext(ctx),
 	})

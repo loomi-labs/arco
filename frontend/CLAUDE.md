@@ -112,6 +112,78 @@ Follow DaisyUI conventions from https://daisyui.com/llms.txt:
 - Leverage variant classes: `btn-primary`, `btn-outline`, `alert-error`
 - Use utility classes for spacing and layout
 
+### Toggle Color Conventions
+Use semantic colors for toggle switches based on their purpose:
+- **`toggle-secondary` (orange)**: Feature toggles that enable/disable functionality (e.g., enable schedule, encryption)
+- **`toggle-error` (red)**: Destructive/danger options that could result in data loss (e.g., "delete archives" option)
+
+### Input Validation
+Use icons inside inputs for validation feedback:
+
+```vue
+<div class='form-control'>
+  <label class='label'>
+    <span class='label-text'>Location</span>
+  </label>
+  <label class='input flex items-center gap-2' :class='{ "input-error": error }'>
+    <input type='text' class='grow p-0 [font:inherit]' v-model='value' placeholder='path/to/repo' />
+    <!-- Valid: green checkmark inside input -->
+    <CheckCircleIcon v-if='!error && isValid' class='size-5 text-success' />
+    <!-- Error: red exclamation inside input -->
+    <ExclamationCircleIcon v-if='error' class='size-5 text-error' />
+  </label>
+  <!-- Error text below with tight spacing -->
+  <div v-if='error' class='text-error text-sm mt-1'>Path does not exist</div>
+</div>
+```
+
+**Key points:**
+- Icons appear INSIDE the input (not below)
+- Valid state: green checkmark only (no text)
+- Error state: red exclamation + error text below with `mt-1`
+- Inner input uses `class='grow p-0 [font:inherit]'`:
+  - `grow` to fill available space
+  - `p-0` to remove default padding (parent label provides padding via input class)
+  - `[font:inherit]` to inherit font-size and font-weight from parent
+
+### Z-Index Hierarchy
+The project uses a standardized z-index scale to ensure proper UI element layering. Always use these predefined values:
+
+| Value | Purpose | Usage |
+|-------|---------|-------|
+| `z-10` | Dropdowns & Popovers | DaisyUI dropdown menus, tooltips, and other floating UI elements |
+| `z-20` | Progress Overlays | Loading spinners, progress indicators that cover content |
+| `z-30` | Mobile Nav Backdrop | Semi-transparent overlay behind mobile navigation |
+| `z-40` | Mobile Nav Panel | Mobile sidebar and navigation panels |
+| `z-50` | Modals & Dialogs | All modal dialogs (highest priority - always on top) |
+
+**Guidelines:**
+- **Never use custom z-index values** - always use the standardized scale above
+- **Modals must use z-50** to ensure they appear above all other UI elements
+- **Dropdowns use z-10** for consistency across all components
+- **Mobile navigation** uses z-30 (backdrop) and z-40 (panel) to stay above content but below modals
+- **Progress overlays** use z-20 to indicate loading states without blocking modals
+
+**Example Usage:**
+```vue
+<!-- Dropdown menu -->
+<ul class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm">
+  <!-- items -->
+</ul>
+
+<!-- Progress overlay -->
+<div v-if="isLoading" class="fixed inset-0 z-20 flex items-center justify-center bg-gray-500/75">
+  <span class="loading loading-dots loading-md"></span>
+</div>
+
+<!-- Modal dialog (using HeadlessUI) -->
+<Dialog class="relative z-50" @close="close">
+  <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
+    <!-- modal content -->
+  </div>
+</Dialog>
+```
+
 ### Import Organization
 Group imports in this order:
 1. Vue framework imports
@@ -143,10 +215,42 @@ import type { Plan } from "../../bindings/.../models";
 - Implement state machines for complex component states (see `ArcoCloudModal.vue`)
 
 ### Modal Management
-- Use DaisyUI modal classes with `<dialog>` element
-- Implement proper open/close lifecycle with `showModal()`/`close()`
-- Add animation delays for state resets to prevent flicker
-- Expose modal methods via `defineExpose()`
+
+**Prefer HeadlessUI Dialog for all modals** - The project standardizes on HeadlessUI's Dialog component for complex, accessible modals with proper animations and transitions.
+
+#### HeadlessUI Dialog Pattern
+
+Use HeadlessUI's `Dialog` component from `@headlessui/vue` for all modal implementations.
+
+**Component Structure:**
+```vue
+<TransitionRoot :show='isOpen'>
+  <Dialog class='relative z-50' @close='close'>
+    <!-- Backdrop with fade transition -->
+    <TransitionChild><div class='fixed inset-0 bg-gray-500/75' /></TransitionChild>
+
+    <!-- Modal container -->
+    <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
+      <!-- Modal panel with slide-up transition -->
+      <TransitionChild>
+        <DialogPanel class='relative transform rounded-lg bg-base-100 shadow-xl'>
+          <DialogTitle>Title</DialogTitle>
+          <!-- Content -->
+        </DialogPanel>
+      </TransitionChild>
+    </div>
+  </Dialog>
+</TransitionRoot>
+```
+
+**Requirements:**
+- **Dialog must use `z-50`** (see Z-Index Hierarchy section)
+- Use `TransitionRoot` and `TransitionChild` for smooth animations
+- Expose `showModal()` and `close()` methods via `defineExpose()`
+- Add 200ms delay before resetting state in `close()` to allow animations
+- Include semi-transparent backdrop (`bg-gray-500/75`)
+
+**Reference:** See `frontend/src/components/common/ConfirmModal.vue` for complete implementation example.
 
 ### Form Handling
 - Use `FormField.vue` component for consistent styling
@@ -169,16 +273,95 @@ import type { Plan } from "../../bindings/.../models";
 - **TooltipIcon.vue**: Icon with hover tooltips
 
 ### Modal Components
-- Implement state machines for complex flows
+
+**Always use HeadlessUI Dialog** - All modals must use HeadlessUI's Dialog component as documented in the Modal Management section above.
+
+**Implementation Guidelines:**
+- Use **HeadlessUI Dialog** (not DaisyUI `<dialog>` element) for all modals
+- Always apply `z-50` class to the Dialog component
+- Implement state machines for complex modal flows (see `ArcoCloudModal.vue`)
 - Use semantic state enums instead of boolean flags
-- Handle close events properly with animation delays
+- Handle close events properly with animation delays (200ms)
 - Provide clear loading and error states
+- Expose `showModal()` and `close()` methods via `defineExpose()`
+
+**When to Use:**
+- **ConfirmModal.vue**: For simple confirmation dialogs (delete, remove, etc.)
+- **Custom Dialog**: For complex modals with forms, multi-step flows, or custom content
+
+**Example Modal Implementations:**
+- `ConfirmModal.vue` - Reusable confirmation dialog (canonical example)
+- `CompressionInfoModal.vue` - Information modal with read-only content
+- `ArcoCloudModal.vue` - Complex multi-state modal with forms
+
+### Modal Button Styling
+
+All modal action buttons follow a standardized layout and styling pattern:
+
+**Layout Rules:**
+- Use `flex justify-between` to position buttons (cancel on left, actions on right)
+- For 3+ buttons: group action buttons on the right with `<div class='flex gap-3'>`
+- Add `pt-5` or `pt-6` for spacing above button row
+
+**Button Sizing:**
+- **ConfirmModal and its custom slots**: Use `btn-sm` (small buttons)
+- **All other Dialog modals**: Use normal `btn` (no size modifier)
+
+**Button Colors:**
+| Action Type | Class | Example |
+|-------------|-------|---------|
+| Cancel/Close | `btn-outline` | Cancel, Close, Back |
+| Primary action | `btn-primary` | Save, Submit, Login |
+| Create action | `btn-success` | Create, Connect |
+| Secondary positive | `btn-success btn-outline` | Test Connection |
+| Destructive | `btn-error` | Delete |
+| Warning/Discard | `btn-warning` | Discard changes |
+
+**Standard Pattern (Dialog modals):**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <button class='btn btn-primary' :disabled='!isValid' @click='submit'>
+    Submit
+  </button>
+</div>
+```
+
+**Pattern with 3+ buttons:**
+```vue
+<div class='flex justify-between pt-6'>
+  <button class='btn btn-outline' @click='close'>
+    Cancel
+  </button>
+  <div class='flex gap-3'>
+    <button class='btn btn-success btn-outline' @click='test'>
+      Test Connection
+    </button>
+    <button class='btn btn-success' @click='create'>
+      Create
+    </button>
+  </div>
+</div>
+```
+
+**ConfirmModal custom slot pattern (uses btn-sm):**
+```vue
+<template v-slot:actionButtons>
+  <div class='flex justify-between pt-5'>
+    <button class='btn btn-sm btn-outline' @click='cancel'>Cancel</button>
+    <button class='btn btn-sm btn-error' @click='delete'>Delete</button>
+  </div>
+</template>
+```
 
 ### Error Handling
 - **Two Patterns Available**:
   - **`showAndLogError()`**: Shows toast notification + logs error (for immediate feedback)
   - **`logError()`**: Logs error without toast (for UI error display)
-- Never use `console.error` - always use one of the above logging methods
+- **Debug Logging**: Use `logDebug()` from `common/logger.ts` instead of `console.log` for debug messages
+- Never use `console.log` or `console.error` - always use logger functions
 - Choose pattern based on UX needs: toast for immediate feedback, UI display for persistent errors
 - Implement retry mechanisms for failed operations
 - Always await logging calls for proper error handling

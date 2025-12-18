@@ -75,14 +75,19 @@ func URL(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldEQ(FieldURL, v))
 }
 
-// Password applies equality check predicate on the "password" field. It's identical to PasswordEQ.
-func Password(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
+// HasPassword applies equality check predicate on the "has_password" field. It's identical to HasPasswordEQ.
+func HasPassword(v bool) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldHasPassword, v))
 }
 
-// NextIntegrityCheck applies equality check predicate on the "next_integrity_check" field. It's identical to NextIntegrityCheckEQ.
-func NextIntegrityCheck(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldNextIntegrityCheck, v))
+// LastQuickCheckAt applies equality check predicate on the "last_quick_check_at" field. It's identical to LastQuickCheckAtEQ.
+func LastQuickCheckAt(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLastQuickCheckAt, v))
+}
+
+// LastFullCheckAt applies equality check predicate on the "last_full_check_at" field. It's identical to LastFullCheckAtEQ.
+func LastFullCheckAt(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLastFullCheckAt, v))
 }
 
 // StatsTotalChunks applies equality check predicate on the "stats_total_chunks" field. It's identical to StatsTotalChunksEQ.
@@ -325,119 +330,134 @@ func URLContainsFold(v string) predicate.Repository {
 	return predicate.Repository(sql.FieldContainsFold(FieldURL, v))
 }
 
-// PasswordEQ applies the EQ predicate on the "password" field.
-func PasswordEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldPassword, v))
+// HasPasswordEQ applies the EQ predicate on the "has_password" field.
+func HasPasswordEQ(v bool) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldHasPassword, v))
 }
 
-// PasswordNEQ applies the NEQ predicate on the "password" field.
-func PasswordNEQ(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldNEQ(FieldPassword, v))
+// HasPasswordNEQ applies the NEQ predicate on the "has_password" field.
+func HasPasswordNEQ(v bool) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldHasPassword, v))
 }
 
-// PasswordIn applies the In predicate on the "password" field.
-func PasswordIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldIn(FieldPassword, vs...))
+// LastQuickCheckAtEQ applies the EQ predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLastQuickCheckAt, v))
 }
 
-// PasswordNotIn applies the NotIn predicate on the "password" field.
-func PasswordNotIn(vs ...string) predicate.Repository {
-	return predicate.Repository(sql.FieldNotIn(FieldPassword, vs...))
+// LastQuickCheckAtNEQ applies the NEQ predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtNEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldLastQuickCheckAt, v))
 }
 
-// PasswordGT applies the GT predicate on the "password" field.
-func PasswordGT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGT(FieldPassword, v))
+// LastQuickCheckAtIn applies the In predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldLastQuickCheckAt, vs...))
 }
 
-// PasswordGTE applies the GTE predicate on the "password" field.
-func PasswordGTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldGTE(FieldPassword, v))
+// LastQuickCheckAtNotIn applies the NotIn predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtNotIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldLastQuickCheckAt, vs...))
 }
 
-// PasswordLT applies the LT predicate on the "password" field.
-func PasswordLT(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLT(FieldPassword, v))
+// LastQuickCheckAtGT applies the GT predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtGT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldLastQuickCheckAt, v))
 }
 
-// PasswordLTE applies the LTE predicate on the "password" field.
-func PasswordLTE(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldLTE(FieldPassword, v))
+// LastQuickCheckAtGTE applies the GTE predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtGTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldLastQuickCheckAt, v))
 }
 
-// PasswordContains applies the Contains predicate on the "password" field.
-func PasswordContains(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContains(FieldPassword, v))
+// LastQuickCheckAtLT applies the LT predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtLT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldLastQuickCheckAt, v))
 }
 
-// PasswordHasPrefix applies the HasPrefix predicate on the "password" field.
-func PasswordHasPrefix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasPrefix(FieldPassword, v))
+// LastQuickCheckAtLTE applies the LTE predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtLTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldLastQuickCheckAt, v))
 }
 
-// PasswordHasSuffix applies the HasSuffix predicate on the "password" field.
-func PasswordHasSuffix(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldHasSuffix(FieldPassword, v))
+// LastQuickCheckAtIsNil applies the IsNil predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldLastQuickCheckAt))
 }
 
-// PasswordEqualFold applies the EqualFold predicate on the "password" field.
-func PasswordEqualFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldEqualFold(FieldPassword, v))
+// LastQuickCheckAtNotNil applies the NotNil predicate on the "last_quick_check_at" field.
+func LastQuickCheckAtNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldLastQuickCheckAt))
 }
 
-// PasswordContainsFold applies the ContainsFold predicate on the "password" field.
-func PasswordContainsFold(v string) predicate.Repository {
-	return predicate.Repository(sql.FieldContainsFold(FieldPassword, v))
+// QuickCheckErrorIsNil applies the IsNil predicate on the "quick_check_error" field.
+func QuickCheckErrorIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldQuickCheckError))
 }
 
-// NextIntegrityCheckEQ applies the EQ predicate on the "next_integrity_check" field.
-func NextIntegrityCheckEQ(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldEQ(FieldNextIntegrityCheck, v))
+// QuickCheckErrorNotNil applies the NotNil predicate on the "quick_check_error" field.
+func QuickCheckErrorNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldQuickCheckError))
 }
 
-// NextIntegrityCheckNEQ applies the NEQ predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNEQ(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldNEQ(FieldNextIntegrityCheck, v))
+// LastFullCheckAtEQ applies the EQ predicate on the "last_full_check_at" field.
+func LastFullCheckAtEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldEQ(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckIn applies the In predicate on the "next_integrity_check" field.
-func NextIntegrityCheckIn(vs ...time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldIn(FieldNextIntegrityCheck, vs...))
+// LastFullCheckAtNEQ applies the NEQ predicate on the "last_full_check_at" field.
+func LastFullCheckAtNEQ(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNEQ(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckNotIn applies the NotIn predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNotIn(vs ...time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldNotIn(FieldNextIntegrityCheck, vs...))
+// LastFullCheckAtIn applies the In predicate on the "last_full_check_at" field.
+func LastFullCheckAtIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldIn(FieldLastFullCheckAt, vs...))
 }
 
-// NextIntegrityCheckGT applies the GT predicate on the "next_integrity_check" field.
-func NextIntegrityCheckGT(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldGT(FieldNextIntegrityCheck, v))
+// LastFullCheckAtNotIn applies the NotIn predicate on the "last_full_check_at" field.
+func LastFullCheckAtNotIn(vs ...time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldNotIn(FieldLastFullCheckAt, vs...))
 }
 
-// NextIntegrityCheckGTE applies the GTE predicate on the "next_integrity_check" field.
-func NextIntegrityCheckGTE(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldGTE(FieldNextIntegrityCheck, v))
+// LastFullCheckAtGT applies the GT predicate on the "last_full_check_at" field.
+func LastFullCheckAtGT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGT(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckLT applies the LT predicate on the "next_integrity_check" field.
-func NextIntegrityCheckLT(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldLT(FieldNextIntegrityCheck, v))
+// LastFullCheckAtGTE applies the GTE predicate on the "last_full_check_at" field.
+func LastFullCheckAtGTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldGTE(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckLTE applies the LTE predicate on the "next_integrity_check" field.
-func NextIntegrityCheckLTE(v time.Time) predicate.Repository {
-	return predicate.Repository(sql.FieldLTE(FieldNextIntegrityCheck, v))
+// LastFullCheckAtLT applies the LT predicate on the "last_full_check_at" field.
+func LastFullCheckAtLT(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLT(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckIsNil applies the IsNil predicate on the "next_integrity_check" field.
-func NextIntegrityCheckIsNil() predicate.Repository {
-	return predicate.Repository(sql.FieldIsNull(FieldNextIntegrityCheck))
+// LastFullCheckAtLTE applies the LTE predicate on the "last_full_check_at" field.
+func LastFullCheckAtLTE(v time.Time) predicate.Repository {
+	return predicate.Repository(sql.FieldLTE(FieldLastFullCheckAt, v))
 }
 
-// NextIntegrityCheckNotNil applies the NotNil predicate on the "next_integrity_check" field.
-func NextIntegrityCheckNotNil() predicate.Repository {
-	return predicate.Repository(sql.FieldNotNull(FieldNextIntegrityCheck))
+// LastFullCheckAtIsNil applies the IsNil predicate on the "last_full_check_at" field.
+func LastFullCheckAtIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldLastFullCheckAt))
+}
+
+// LastFullCheckAtNotNil applies the NotNil predicate on the "last_full_check_at" field.
+func LastFullCheckAtNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldLastFullCheckAt))
+}
+
+// FullCheckErrorIsNil applies the IsNil predicate on the "full_check_error" field.
+func FullCheckErrorIsNil() predicate.Repository {
+	return predicate.Repository(sql.FieldIsNull(FieldFullCheckError))
+}
+
+// FullCheckErrorNotNil applies the NotNil predicate on the "full_check_error" field.
+func FullCheckErrorNotNil() predicate.Repository {
+	return predicate.Repository(sql.FieldNotNull(FieldFullCheckError))
 }
 
 // StatsTotalChunksEQ applies the EQ predicate on the "stats_total_chunks" field.

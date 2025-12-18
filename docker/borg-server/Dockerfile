@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     ca-certificates \
     curl \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Create borg user and directories (handle existing user/group conflicts)
@@ -67,10 +68,16 @@ RUN chmod +x /usr/local/bin/arco-cli
 
 # Download and install borg binary using dynamic URL detection
 RUN BORG_URL=$(/usr/local/bin/arco-cli --show-borg-url) && \
+    if [ -z "$BORG_URL" ]; then \
+        echo "Error: Failed to detect Borg URL for this system" >&2; \
+        exit 1; \
+    fi && \
     echo "Detected Borg URL for this system: $BORG_URL" && \
-    curl -L "$BORG_URL" -o /usr/local/bin/borg && \
+    curl -fsSL "$BORG_URL" -o /usr/local/bin/borg && \
+    file /usr/local/bin/borg && \
     chmod +x /usr/local/bin/borg && \
     chown root:root /usr/local/bin/borg && \
+    /usr/local/bin/borg --version && \
     ln -s /usr/local/bin/borg /usr/bin/borg
 
 # Copy SSH authorized keys

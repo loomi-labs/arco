@@ -10,6 +10,7 @@ import {
   ClockIcon,
   CloudArrowDownIcon,
   DocumentMagnifyingGlassIcon,
+  ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   ScissorsIcon,
@@ -17,9 +18,9 @@ import {
   XMarkIcon
 } from "@heroicons/vue/24/solid";
 import { isInPast, toDurationString, toLongDateString, toRelativeTimeString } from "../common/time";
-import { toCreationTimeBadge } from "../common/badge";
+import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
-import RenameArchiveModal from "./RenameArchiveModal.vue";
+import EditArchiveModal from "./EditArchiveModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import { archivesChanged, repoStateChangedEvent } from "../common/events";
@@ -34,7 +35,7 @@ import type {
 } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import {
   ArchiveDeleteStateType,
-  ArchiveRenameStateType,
+  ArchiveEditStateType,
   PaginatedArchivesRequest,
   PaginatedArchivesResponse,
   PruningDates,
@@ -77,6 +78,7 @@ const confirmDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
 );
 const selectedArchives = ref<Set<number>>(new Set());
 const isAllSelected = ref<boolean>(false);
+const isAllPagesSelected = ref<boolean>(false);
 const confirmDeleteMultipleModalKey = useId();
 const confirmDeleteMultipleModal = useTemplateRef<
   InstanceType<typeof ConfirmModal>
@@ -93,10 +95,11 @@ const confirmUnmountBulkDeleteModalKey = useId();
 const confirmUnmountBulkDeleteModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(
   confirmUnmountBulkDeleteModalKey
 );
-const renameArchiveModalKey = useId();
-const renameArchiveModal = useTemplateRef<InstanceType<typeof RenameArchiveModal>>(
-  renameArchiveModalKey
+const editArchiveModalKey = useId();
+const editArchiveModal = useTemplateRef<InstanceType<typeof EditArchiveModal>>(
+  editArchiveModalKey
 );
+const pendingComment = ref<string>("");
 const backupProfileFilterOptions = ref<BackupProfileFilter[]>([]);
 const backupProfileFilter = ref<BackupProfileFilter>();
 const search = ref<string>("");
@@ -264,10 +267,10 @@ const isArchiveQueuedForDeletion = (archiveId: number) => {
   return queuedArchiveDeleteIds.value.has(archiveId);
 };
 
-// Check if a specific archive is being renamed (uses backend-provided ADT state)
-const isArchiveBeingRenamed = (archive: ArchiveWithPendingChanges) => {
-  return archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive ||
-    archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameQueued;
+// Check if a specific archive has any pending edit (rename or comment)
+const isArchiveBeingEdited = (archive: ArchiveWithPendingChanges) => {
+  return archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive ||
+    archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued;
 };
 
 // Check if a specific archive is being deleted (uses backend-provided ADT state)
@@ -276,18 +279,34 @@ const isArchiveBeingDeleted = (archive: ArchiveWithPendingChanges) => {
     archive.deleteStateUnion.type === ArchiveDeleteStateType.ArchiveDeleteStateTypeDeleteQueued;
 };
 
-// Check if a specific archive is actively being renamed (not queued)
-const isArchiveActivelyRenaming = (archive: ArchiveWithPendingChanges) => {
-  return archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive;
+// Check if a specific archive is actively being edited (not just queued)
+const isArchiveActivelyEditing = (archive: ArchiveWithPendingChanges) => {
+  return archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive;
 };
 
-// Get the pending new name for an archive being renamed
+// Check if a specific archive is queued for editing (can be cancelled)
+const isArchiveQueuedForEditing = (archive: ArchiveWithPendingChanges) => {
+  return archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued;
+};
+
+// Get the pending new name for an archive being edited
 const getPendingArchiveName = (archive: ArchiveWithPendingChanges): string | null => {
-  if (archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameQueued) {
-    return archive.renameStateUnion.renameQueued?.newName ?? null;
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued) {
+    return archive.editStateUnion.editQueued?.newName ?? null;
   }
-  if (archive.renameStateUnion.type === ArchiveRenameStateType.ArchiveRenameStateTypeRenameActive) {
-    return archive.renameStateUnion.renameActive?.newName ?? null;
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive) {
+    return archive.editStateUnion.editActive?.newName ?? null;
+  }
+  return null;
+};
+
+// Get the pending comment for an archive being edited
+const getPendingArchiveComment = (archive: ArchiveWithPendingChanges): string | null => {
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditQueued) {
+    return archive.editStateUnion.editQueued?.newComment ?? null;
+  }
+  if (archive.editStateUnion.type === ArchiveEditStateType.ArchiveEditStateTypeEditActive) {
+    return archive.editStateUnion.editActive?.newComment ?? null;
   }
   return null;
 };
@@ -302,14 +321,16 @@ const getQueuedDeleteOperationId = (archiveId: number): string | null => {
   return null;
 };
 
-// Helper function to find the operation ID for a queued rename operation by archive ID
-const getQueuedRenameOperationId = (archiveId: number): string | null => {
+// Helper function to find the operation IDs for queued edit operations (rename + comment) by archive ID
+const getQueuedEditOperationIds = (archiveId: number): string[] => {
+  const ids: string[] = [];
   for (const op of queuedOperations.value) {
-    if (op?.operationUnion?.archiveRename?.archiveId === archiveId) {
-      return op.id;
+    if (op?.operationUnion?.archiveRename?.archiveId === archiveId ||
+        op?.operationUnion?.archiveComment?.archiveId === archiveId) {
+      ids.push(op.id);
     }
   }
-  return null;
+  return ids;
 };
 
 /************
@@ -426,17 +447,19 @@ async function cancelArchiveDelete(archiveId: number) {
   }
 }
 
-async function cancelArchiveRename(archiveId: number) {
+async function cancelArchiveEdit(archiveId: number) {
   try {
-    const operationId = getQueuedRenameOperationId(archiveId);
-    if (!operationId) {
-      await showAndLogError("Failed to cancel archive rename", "Operation not found");
+    const operationIds = getQueuedEditOperationIds(archiveId);
+    if (operationIds.length === 0) {
+      await showAndLogError("Failed to cancel archive edit", "Operation not found");
       return;
     }
 
-    await repoService.CancelOperation(props.repoId, operationId);
+    for (const operationId of operationIds) {
+      await repoService.CancelOperation(props.repoId, operationId);
+    }
   } catch (error: unknown) {
-    await showAndLogError("Failed to cancel archive rename", error);
+    await showAndLogError("Failed to cancel archive edit", error);
   }
 }
 
@@ -505,17 +528,28 @@ async function unmountAll() {
 }
 
 async function unmountAllAndRename() {
-  // Store the user's input value before refreshing the state
+  // Store the user's input values before refreshing the state
   const newName = archiveToBeRenamed.value ?
     inputValues.value[archiveToBeRenamed.value.id] : undefined;
+  const newComment = pendingComment.value;
   const archive = archiveToBeRenamed.value;
+  const originalName = archive ? archiveNameWithoutPrefix(archive) : undefined;
+  const originalComment = archive?.comment ?? "";
 
   await unmountAll();
   await getRepository(); // Refresh repository state
 
-  if (archive && newName !== undefined) {
-    await rename(archive, newName);
+  if (archive) {
+    // Queue rename if name changed
+    if (newName !== undefined && newName !== originalName) {
+      await rename(archive, newName);
+    }
+    // Queue comment update if comment changed
+    if (newComment !== originalComment) {
+      await updateComment(archive, newComment);
+    }
     archiveToBeRenamed.value = undefined;
+    pendingComment.value = "";
   }
 }
 
@@ -536,6 +570,19 @@ function handleUnmountRenameModalClose() {
     inputValues.value[archiveToBeRenamed.value.id] = archiveNameWithoutPrefix(archiveToBeRenamed.value);
   }
   archiveToBeRenamed.value = undefined;
+  pendingComment.value = "";
+}
+
+async function updateComment(archive: ArchiveWithPendingChanges, comment: string) {
+  try {
+    progressSpinnerText.value = "Updating comment";
+    await repoService.QueueArchiveComment(archive.id, comment);
+    await getPaginatedArchives();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to update archive comment", error);
+  } finally {
+    progressSpinnerText.value = undefined;
+  }
 }
 
 async function getBackupProfileFilterOptions() {
@@ -636,27 +683,42 @@ function archiveNameWithoutPrefix(archive: ArchiveWithPendingChanges): string {
 
 function openRenameModal(archive: ArchiveWithPendingChanges) {
   const currentName = archiveNameWithoutPrefix(archive);
-  renameArchiveModal.value?.showModal(archive, currentName);
+  editArchiveModal.value?.showModal(archive, currentName);
 }
 
-async function handleRenameConfirm(archiveId: number, newName: string) {
+async function handleRenameConfirm(archiveId: number, newName: string, newComment: string) {
   const archive = archives.value.find(a => a.id === archiveId);
   if (!archive) return;
+
+  const originalName = archiveNameWithoutPrefix(archive);
+  const originalComment = archive.comment ?? "";
+  const nameChanged = newName !== originalName;
+  const commentChanged = newComment !== originalComment;
 
   // Check if repository is mounted or mounting - show unmount modal proactively
   if (isMountedOrMounting.value) {
     archiveToBeRenamed.value = archive;
-    // Store the new name for later use
+    // Store the new name and comment for later use
     inputValues.value[archive.id] = newName;
+    pendingComment.value = newComment;
     confirmUnmountRenameModal.value?.showModal();
-    renameArchiveModal.value?.closeModal();
+    editArchiveModal.value?.close();
     (document.activeElement as HTMLElement)?.blur();
     return;
   }
 
-  await rename(archive, newName);
-  // Close modal on successful rename
-  renameArchiveModal.value?.closeModal();
+  // Queue rename if name changed
+  if (nameChanged) {
+    await rename(archive, newName);
+  }
+
+  // Queue comment update if comment changed
+  if (commentChanged) {
+    await updateComment(archive, newComment);
+  }
+
+  // Close modal on successful operation
+  editArchiveModal.value?.close();
   (document.activeElement as HTMLElement)?.blur();
 }
 
@@ -690,6 +752,7 @@ async function validateName(archiveId: number) {
 function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedArchives.value.clear();
+    isAllPagesSelected.value = false;
   } else {
     archives.value.forEach((archive) => {
       selectedArchives.value.add(archive.id);
@@ -701,6 +764,7 @@ function toggleSelectAll() {
 function clearSelection() {
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 }
 
 function toggleArchiveSelection(archiveId: number) {
@@ -710,10 +774,46 @@ function toggleArchiveSelection(archiveId: number) {
     selectedArchives.value.add(archiveId);
   }
 
+  // Reset "all pages" selection when manually toggling
+  isAllPagesSelected.value = false;
+
   // Update the select all checkbox state
   isAllSelected.value =
     selectedArchives.value.size === archives.value.length &&
     archives.value.length > 0;
+}
+
+async function selectAllPages() {
+  try {
+    const request = PaginatedArchivesRequest.createFrom();
+    request.repositoryId = props.repoId;
+    // Page and pageSize not needed for this query but set them anyway
+    request.page = 1;
+    request.pageSize = pagination.value.total;
+
+    if (props.backupProfileId) {
+      request.backupProfileFilter = BackupProfileFilter.createFrom();
+      request.backupProfileFilter.id = props.backupProfileId;
+    } else {
+      request.backupProfileFilter = backupProfileFilter.value;
+    }
+    request.search = search.value;
+    request.startDate = dateRange.value.startDate
+      ? new Date(dateRange.value.startDate)
+      : undefined;
+    request.endDate = dateRange.value.endDate
+      ? dayEnd(new Date(dateRange.value.endDate))
+      : undefined;
+
+    const ids = await repoService.GetFilteredArchiveIds(request);
+    if (ids) {
+      selectedArchives.value = new Set(ids);
+      isAllPagesSelected.value = true;
+      isAllSelected.value = true;
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to select all archives", error);
+  }
 }
 
 async function deleteSelectedArchives() {
@@ -863,6 +963,7 @@ watch([backupProfileFilter, search, dateRange], async () => {
   await getPaginatedArchives();
   selectedArchives.value.clear();
   isAllSelected.value = false;
+  isAllPagesSelected.value = false;
 });
 
 onUnmounted(() => {
@@ -900,13 +1001,12 @@ onUnmounted(() => {
           <!-- Mount Status Indicator -->
           <div v-if='archiveMountCount > 0' class='flex items-center gap-1 text-sm'>
             <span v-if='archiveMountCount > 0'
-                  class='tooltip tooltip-info'
+                  class='tooltip'
                   :data-tip='canPerformOperations ? `Unmount ${archiveMountCount} archive${archiveMountCount > 1 ? "s" : ""}` : ""'>
-              <button class='btn btn-sm btn-info btn-outline text-info rounded-full'
+              <button class='btn btn-sm btn-circle btn-outline'
                       :disabled='!canPerformOperations'
                       @click='unmountAll()'>
                 <CloudArrowDownIcon class='size-4' />
-                <span class='text-xs'>{{ archiveMountCount }}</span>
               </button>
             </span>
           </div>
@@ -914,9 +1014,9 @@ onUnmounted(() => {
           <!-- Repository Browse and Mount Actions -->
           <!-- Unmount Repository Button (only when mounted) -->
           <span v-if='hasRepositoryMountActive'
-                class='tooltip tooltip-info'
+                class='tooltip'
                 :data-tip='canPerformOperations ? `Unmount repository from ${repositoryMountInfo?.mountPath}` : ""'>
-            <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+            <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations'
                     @click='unmountRepository()'>
               <CloudArrowDownIcon class='size-4' />
@@ -924,23 +1024,22 @@ onUnmounted(() => {
           </span>
 
           <!-- Browse Repository Button (always visible) -->
-          <span class='tooltip tooltip-info'
+          <span class='tooltip'
                 :data-tip='canPerformOperations && archiveMountCount === 0 ? (hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository") : ""'>
-            <button :class="{
-                      'btn btn-sm btn-info btn-circle btn-outline': true,
-                      'text-info': !(!canPerformOperations || archiveMountCount > 0)
-                    }"
+            <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations || archiveMountCount > 0'
                     @click='mountRepository()'>
               <DocumentMagnifyingGlassIcon class='size-4' />
             </button>
           </span>
 
-          <button class='btn btn-ghost btn-circle btn-info'
-                  :disabled='!isRepositoryIdle'
-                  @click='refreshArchives'>
-            <ArrowPathIcon class='size-6' />
-          </button>
+          <span class='tooltip' data-tip='Refresh archives'>
+            <button class='btn btn-sm btn-circle btn-outline'
+                    :disabled='!isRepositoryIdle'
+                    @click='refreshArchives'>
+              <ArrowPathIcon class='size-4' />
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -972,7 +1071,7 @@ onUnmounted(() => {
         </label>
 
         <!-- Search -->
-        <label class='form-control flex flex-col' :class='{ "lg:col-span-2": !isBackupProfileFilterVisible }'>
+        <label class='form-control flex flex-col'>
           <span class='label'>
             <span class='label-text-alt'>Search</span>
           </span>
@@ -985,6 +1084,20 @@ onUnmounted(() => {
           </label>
         </label>
       </div>
+    </div>
+
+    <!-- Select all pages indicator -->
+    <div v-if='isAllSelected && pagination.total > archives.length && !isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ archives.length }} archives on this page are selected.
+      <a class='link link-secondary' @click='selectAllPages'>
+        Select all {{ pagination.total }} archives
+      </a>
+    </div>
+    <div v-else-if='isAllPagesSelected'
+         class='mb-2 text-sm text-center bg-base-200 py-2 rounded'>
+      All {{ pagination.total }} archives are selected.
+      <a class='link' @click='clearSelection'>Clear selection</a>
     </div>
 
     <div>
@@ -1001,10 +1114,11 @@ onUnmounted(() => {
                    :disabled='archives.length === 0' />
           </th>
           <th class='min-w-32 sm:min-w-48'>{{ $t("name") }}</th>
-          <th v-if='showBackupProfileColumn' class='hidden lg:table-cell w-32'>Backup profile</th>
+          <th class='[display:none] md:[display:table-cell] min-w-32'>Comment</th>
+          <th v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell] w-32'>Backup profile</th>
           <th class='min-w-24 sm:min-w-32 lg:min-w-40'>Creation time</th>
-          <th class='text-right hidden md:table-cell w-20'>Duration</th>
-          <th class='min-w-16 sm:min-w-32 text-right'>{{ $t("action") }}</th>
+          <th class='text-right [display:none] lg:[display:table-cell] w-20'>Duration</th>
+          <th class='min-w-16 sm:min-w-32 text-right'>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -1013,9 +1127,9 @@ onUnmounted(() => {
             :key='index'
             class='cursor-pointer hover:bg-base-300'
             :class='{
-              "cursor-not-allowed": isArchiveBeingDeleted(archive) || isArchiveBeingRenamed(archive)
+              "cursor-not-allowed": isArchiveBeingDeleted(archive) || isArchiveBeingEdited(archive)
             }'
-            @click='!isArchiveBeingDeleted(archive) && !isArchiveBeingRenamed(archive) && toggleArchiveSelection(archive.id)'>
+            @click='!isArchiveBeingDeleted(archive) && !isArchiveBeingEdited(archive) && toggleArchiveSelection(archive.id)'>
           <!-- Checkbox -->
           <td>
             <input type='checkbox'
@@ -1024,7 +1138,7 @@ onUnmounted(() => {
                    :checked='selectedArchives.has(archive.id)'
                    @change='toggleArchiveSelection(archive.id)'
                    @click.stop
-                   :disabled='isArchiveBeingDeleted(archive) || isArchiveBeingRenamed(archive)' />
+                   :disabled='isArchiveBeingDeleted(archive) || isArchiveBeingEdited(archive)' />
           </td>
           <!-- Name -->
           <td class='flex flex-col min-w-32 sm:min-w-48'>
@@ -1040,12 +1154,12 @@ onUnmounted(() => {
                            :class='{ "animate-pulse": isArchiveActivelyDeleting(archive.id) }' />
               </span>
 
-              <!-- Rename indicator (active or queued) -->
+              <!-- Edit indicator (active or queued) -->
               <span class='tooltip tooltip-warning'
-                    :class='{ invisible: !isArchiveBeingRenamed(archive) }'
-                    :data-tip='isArchiveActivelyRenaming(archive) ? "Archive rename in progress" : "Queued for renaming"'>
+                    :class='{ invisible: !isArchiveBeingEdited(archive) }'
+                    :data-tip='isArchiveActivelyEditing(archive) ? "Archive edit in progress" : "Edit queued"'>
                 <PencilIcon class='size-4 text-warning'
-                            :class='{ "animate-pulse": isArchiveActivelyRenaming(archive) }' />
+                            :class='{ "animate-pulse": isArchiveActivelyEditing(archive) }' />
               </span>
 
               <span class='tooltip tooltip-info'
@@ -1055,58 +1169,71 @@ onUnmounted(() => {
               </span>
             </div>
           </td>
+          <!-- Comment -->
+          <td class='[display:none] md:[display:table-cell]'>
+            <span v-if='getPendingArchiveComment(archive) ?? archive.comment'
+                  class='tooltip max-w-48 truncate'
+                  :data-tip='getPendingArchiveComment(archive) ?? archive.comment'>
+              {{ getPendingArchiveComment(archive) ?? archive.comment }}
+            </span>
+          </td>
           <!-- Backup -->
-          <td v-if='showBackupProfileColumn' class='hidden lg:table-cell'>
+          <td v-if='showBackupProfileColumn' class='[display:none] lg:[display:table-cell]'>
             <span>{{ archive?.edges.backupProfile?.name }}</span>
           </td>
           <!-- Creation time -->
           <td>
-            <span class='tooltip' :data-tip='toLongDateString(archive.createdAt)'>
-              <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
-                  toRelativeTimeString(archive.createdAt)
-                }}</span>
-            </span>
+            <div class='flex items-center justify-between gap-2'>
+              <span :class='toCreationTimeTooltip(archive.createdAt)' :data-tip='toLongDateString(archive.createdAt)'>
+                <span :class='toCreationTimeBadge(archive?.createdAt)'>{{
+                    toRelativeTimeString(archive.createdAt)
+                  }}</span>
+              </span>
+              <!-- Warning indicator -->
+              <span v-if='archive.warningMessage'
+                    class='tooltip tooltip-warning'
+                    :data-tip='archive.warningMessage'>
+                <ExclamationTriangleIcon class='size-4 text-warning' />
+              </span>
+            </div>
           </td>
           <!-- Duration -->
-          <td class='hidden md:table-cell'>
+          <td class='[display:none] lg:[display:table-cell]'>
             <p class='text-right'>{{ toDurationString(archive.duration) }}</p>
           </td>
           <!-- Action -->
           <td class='flex items-center gap-1 sm:gap-2 justify-end min-w-16 sm:min-w-32'>
             <!-- Unmount Archive Button (only when mounted) -->
             <span v-if='isArchiveMounted(archive.id)'
-                  class='tooltip tooltip-info'
+                  class='tooltip'
                   :data-tip='`Unmount archive from ${getArchiveMountInfo(archive.id)?.mountPath}`'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline text-info'
+              <button class='btn btn-sm btn-circle btn-outline'
                       @click.stop='unmountArchive(archive.id)'>
                 <CloudArrowDownIcon class='size-4' />
               </button>
             </span>
 
             <!-- Browse Archive Button (always visible) -->
-            <span class='tooltip tooltip-info'
+            <span class='tooltip'
                   :data-tip='canPerformOperations && (isArchiveMounted(archive.id) || hasRepositoryMountActive || canMountNewArchive) ? (isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive") : ""'>
-              <button class='btn btn-sm btn-info btn-circle btn-outline'
-                      :class="{
-                        'text-info': !(!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive))
-                      }"
+              <button class='btn btn-sm btn-circle btn-outline'
                       :disabled='!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive)'
                       @click.stop='mountArchive(archive.id)'>
                 <DocumentMagnifyingGlassIcon class='size-4' />
               </button>
             </span>
 
-            <!-- Rename/Cancel Rename Button -->
+            <!-- Edit/Cancel Edit Button -->
             <span class='tooltip'
-                  :class='isArchiveBeingRenamed(archive) ? "tooltip-warning" : "tooltip-neutral"'
-                  :data-tip='isArchiveBeingRenamed(archive) ? "Cancel rename" : (!isArchiveQueuedForDeletion(archive.id) && !isArchiveActivelyDeleting(archive.id) ? "Rename archive" : "")'>
+                  :class='isArchiveQueuedForEditing(archive) ? "tooltip-warning" : "tooltip-neutral"'
+                  :data-tip='isArchiveQueuedForEditing(archive) ? "Cancel edit" : (!isArchiveQueuedForDeletion(archive.id) && !isArchiveActivelyDeleting(archive.id) && !isArchiveActivelyEditing(archive) ? "Edit archive" : "")'>
               <button class='btn btn-sm btn-circle btn-outline'
                       :class='{
-                        "btn-warning": isArchiveBeingRenamed(archive),
+                        "btn-warning": isArchiveQueuedForEditing(archive),
                       }'
-                      :disabled='!isArchiveBeingRenamed(archive) && (isArchiveQueuedForDeletion(archive.id) || isArchiveActivelyDeleting(archive.id))'
-                      @click.stop='isArchiveBeingRenamed(archive) ? cancelArchiveRename(archive.id) : openRenameModal(archive)'>
-                <XMarkIcon v-if='isArchiveBeingRenamed(archive)' class='size-4' />
+                      :disabled='!isArchiveQueuedForEditing(archive) && (isArchiveQueuedForDeletion(archive.id) || isArchiveActivelyDeleting(archive.id) || isArchiveActivelyEditing(archive))'
+                      @click.stop='isArchiveQueuedForEditing(archive) ? cancelArchiveEdit(archive.id) : openRenameModal(archive)'>
+                <XMarkIcon v-if='isArchiveQueuedForEditing(archive)' class='size-4' />
                 <PencilIcon v-else class='size-4' />
               </button>
             </span>
@@ -1114,12 +1241,12 @@ onUnmounted(() => {
             <!-- Delete/Cancel Delete Button -->
             <span class='tooltip'
                   :class='isArchiveQueuedForDeletion(archive.id) ? "tooltip-warning" : "tooltip-neutral"'
-                  :data-tip='isArchiveQueuedForDeletion(archive.id) ? "Cancel deletion" : (!isArchiveBeingRenamed(archive) && !isArchiveActivelyDeleting(archive.id) ? "Delete archive" : "")'>
+                  :data-tip='isArchiveQueuedForDeletion(archive.id) ? "Cancel deletion" : (!isArchiveBeingEdited(archive) && !isArchiveActivelyDeleting(archive.id) ? "Delete archive" : "")'>
               <button class='btn btn-sm btn-circle btn-outline'
                       :class='{
                         "btn-warning": isArchiveQueuedForDeletion(archive.id),
                       }'
-                      :disabled='!isArchiveQueuedForDeletion(archive.id) && (isArchiveBeingRenamed(archive) || isArchiveActivelyDeleting(archive.id))'
+                      :disabled='!isArchiveQueuedForDeletion(archive.id) && (isArchiveBeingEdited(archive) || isArchiveActivelyDeleting(archive.id))'
                       @click.stop='isArchiveQueuedForDeletion(archive.id) ? cancelArchiveDelete(archive.id) : (() => { archiveToBeDeleted = archive.id; confirmDeleteModal?.showModal(); })()'>
                 <ClockIcon v-if='isArchiveQueuedForDeletion(archive.id)' class='size-4' />
                 <TrashIcon v-else class='size-4' />
@@ -1129,7 +1256,7 @@ onUnmounted(() => {
         </tr>
         <!-- Filler row (this is a hack to take up the same amount of space even if there are not enough rows) -->
         <tr v-for='index in pagination.pageSize - archives.length' :key='`empty-${index}`'>
-          <td :colspan='showBackupProfileColumn ? 6 : 5'>
+          <td :colspan='showBackupProfileColumn ? 7 : 6'>
             <button class='btn btn-sm invisible' disabled>
               <TrashIcon class='size-4' />
             </button>
@@ -1166,7 +1293,7 @@ onUnmounted(() => {
   </div>
 
   <div v-if='progressSpinnerText'
-       class='fixed inset-0 z-10 flex items-center justify-center bg-gray-500/75'>
+       class='fixed inset-0 z-20 flex items-center justify-center bg-gray-500/75'>
     <div class='flex flex-col justify-center items-center bg-base-100 p-6 rounded-lg shadow-md'>
       <p class='mb-4'>{{ progressSpinnerText }}</p>
       <span class='loading loading-dots loading-md' />
@@ -1196,12 +1323,12 @@ onUnmounted(() => {
 
   <ConfirmModal :ref='confirmUnmountRenameModalKey'
                 title='Stop browsing'
-                confirm-text='Stop browsing and rename archive'
+                confirm-text='Stop browsing and save changes'
                 confirm-class='btn-info'
                 @confirm='unmountAllAndRename()'
                 @close='handleUnmountRenameModalClose'>
     <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
-    <p class='mb-4'>Do you want to stop browsing and rename the archive?</p>
+    <p class='mb-4'>Do you want to stop browsing and save the archive changes?</p>
   </ConfirmModal>
 
   <ConfirmModal :ref='confirmUnmountDeleteModalKey'
@@ -1225,7 +1352,7 @@ onUnmounted(() => {
       archive{{ selectedArchives.size > 1 ? "s" : "" }}?</p>
   </ConfirmModal>
 
-  <RenameArchiveModal :ref='renameArchiveModalKey'
+  <EditArchiveModal :ref='editArchiveModalKey'
                       @confirm='handleRenameConfirm'
                       @close='() => {}' />
 </template>

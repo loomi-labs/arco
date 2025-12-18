@@ -18,13 +18,13 @@ defineExpose({ showModal, close });
 
 <template>
   <TransitionRoot as='template' :show='isOpen'>
-    <Dialog class='relative z-10' @close='close'>
+    <Dialog class='relative z-50' @close='close'>
       <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0' enter-to='opacity-100' leave='ease-in duration-200'
                        leave-from='opacity-100' leave-to='opacity-0'>
         <div class='fixed inset-0 bg-gray-500/75 transition-opacity' />
       </TransitionChild>
 
-      <div class='fixed inset-0 z-10 w-screen overflow-y-auto'>
+      <div class='fixed inset-0 z-50 w-screen overflow-y-auto'>
         <div class='flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0'>
           <TransitionChild as='template' enter='ease-out duration-300' enter-from='opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95'
                            enter-to='opacity-100 translate-y-0 sm:scale-100' leave='ease-in duration-200'
@@ -146,25 +146,25 @@ defineExpose({ showModal, close });
                 <div class='bg-base-200 rounded-lg p-4'>
                   <h4 class='font-semibold mb-3'>Tips</h4>
                   <ul class='list-disc list-inside space-y-1 text-sm text-base-content/70'>
-                    <li>Higher compression levels use more CPU and memory</li>
-                    <li>Slow storage? Higher compression may help overall performance</li>
-                    <li>Compressing already-compressed data (videos, images) is pointless</li>
-                    <li>Compression settings only affect future backups, not existing archives</li>
-                    <li>You can change algorithms anytime and mix different compression between backups</li>
+                    <li>The level slider controls the speed vs size trade-off. Higher levels compress more but take longer</li>
+                    <li>Each algorithm has a different speed and compression ratio. The bars above show typical values at default level</li>
+                    <li>Already-compressed files (videos, images, archives) won't compress further</li>
+                    <li>Compression settings only affect new backups, not existing ones</li>
+                    <li>You can switch algorithms anytime. Different backups can use different compressions</li>
                   </ul>
                 </div>
 
                 <!-- Learn More Link -->
                 <div class='mt-4'>
                   <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/internals/data-structures.html#data-compression")'
-                     class='link link-primary text-sm'>
+                     class='link link-info text-sm cursor-pointer'>
                     Learn more in Borg documentation →
                   </a>
                 </div>
 
                 <!-- Close Button -->
                 <div class='flex justify-end mt-6'>
-                  <button type='button' class='btn btn-sm' @click='close'>
+                  <button type='button' class='btn btn-outline' @click='close'>
                     Close
                   </button>
                 </div>

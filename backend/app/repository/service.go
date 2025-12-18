@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	backupprofileservice "github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/database"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -28,6 +29,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/repository"
 	"github.com/loomi-labs/arco/backend/ent/schema"
+	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
@@ -50,6 +52,7 @@ type Service struct {
 	eventEmitter    types.EventEmitter
 	borgClient      borg.Borg
 	cloudRepoClient *CloudRepositoryClient
+	keyring         *keyring.Service
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -75,14 +78,15 @@ func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, keyringService *keyring.Service) {
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
+	si.keyring = keyringService
 
 	// Initialize queue manager with database and borg clients
-	si.queueManager.Init(db, si.borgClient, si.eventEmitter)
+	si.queueManager.Init(db, si.borgClient, si.eventEmitter, keyringService)
 
 	// Initialize mount states
 	si.initMountStates(ctx)
@@ -266,12 +270,6 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	archives := repoEntity.Edges.Archives
 	archiveCount := len(archives)
 
-	var lastBackupTime *time.Time
-	if len(archives) > 0 {
-		// Archives are already ordered by creation time descending
-		lastBackupTime = &archives[0].CreatedAt
-	}
-
 	// Calculate storage used from repository statistics
 	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)  // Compressed & deduplicated storage (actual disk usage)
 	totalSize := int64(repoEntity.StatsTotalSize)     // Total uncompressed size across all archives
@@ -296,10 +294,6 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		spaceSavingsPercent = ((float64(totalSize) - float64(uniqueCsize)) / float64(totalSize)) * 100
 	}
 
-	// Get last backup error and warning messages
-	lastBackupError := s.getLastError(ctx, repoEntity.ID)
-	lastBackupWarning := s.getLastWarning(ctx, repoEntity.ID)
-
 	return &Repository{
 		ID:                  repoEntity.ID,
 		Name:                repoEntity.Name,
@@ -307,14 +301,18 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		Type:                ToLocationUnion(repoType),
 		State:               statemachine.ToRepositoryStateUnion(currentState),
 		ArchiveCount:        archiveCount,
-		LastBackupTime:      lastBackupTime,
-		LastBackupError:     lastBackupError,
-		LastBackupWarning:   lastBackupWarning,
+		LastBackup:          s.getLastBackup(ctx, repoEntity.ID),
+		LastAttempt:         s.getLastAttempt(ctx, repoEntity.ID),
+		LastQuickCheckAt:    repoEntity.LastQuickCheckAt,
+		QuickCheckError:     repoEntity.QuickCheckError,
+		LastFullCheckAt:     repoEntity.LastFullCheckAt,
+		FullCheckError:      repoEntity.FullCheckError,
 		SizeOnDisk:          sizeOnDisk,
 		TotalSize:           totalSize,
 		DeduplicationRatio:  dedupRatio,
 		CompressionRatio:    compressionRatio,
 		SpaceSavingsPercent: spaceSavingsPercent,
+		HasPassword:         s.keyring.HasRepositoryPassword(repoEntity.ID),
 	}
 }
 
@@ -343,11 +341,23 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 		Create().
 		SetName(name).
 		SetURL(location).
-		SetPassword(password).
+		SetHasPassword(password != "").
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+
+	// Store password in keyring
+	if password != "" {
+		if err := s.keyring.SetRepositoryPassword(repoEntity.ID, password); err != nil {
+			// Rollback: delete the created repository
+			if delErr := s.db.Repository.DeleteOneID(repoEntity.ID).Exec(ctx); delErr != nil {
+				s.log.Warnf("Failed to rollback repository creation: %v", delErr)
+			}
+			return nil, fmt.Errorf("failed to store repository password in keyring: %w", err)
+		}
+	}
+
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, repoEntity), nil
 }
@@ -393,7 +403,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 			Create().
 			SetName(name).
 			SetURL(repo.RepoUrl).
-			SetPassword(password).
+			SetHasPassword(password != "").
 			Save(ctx)
 		if txErr != nil {
 			return nil, txErr
@@ -412,6 +422,14 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository in database: %w", err)
 	}
+
+	// Store password in keyring
+	if password != "" {
+		if err := s.keyring.SetRepositoryPassword(entRepo.ID, password); err != nil {
+			return nil, fmt.Errorf("failed to store repository password in keyring: %w", err)
+		}
+	}
+
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
 	return s.entityToRepository(ctx, entRepo), nil
 }
@@ -530,6 +548,26 @@ func (s *Service) Update(ctx context.Context, repoId int, updateReq *UpdateReque
 		updateQuery = updateQuery.SetName(updateReq.Name)
 	}
 
+	// Handle URL update with validation
+	if updateReq.URL != "" {
+		// Check repository is in Idle state before allowing path changes
+		currentState := s.queueManager.GetRepositoryState(repoId)
+		if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+			return nil, errors.New("repository must be idle to change path")
+		}
+
+		result, err := s.ValidatePathChange(ctx, repoId, updateReq.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate path change: %w", err)
+		}
+		if !result.IsValid {
+			return nil, errors.New(result.ErrorMessage)
+		}
+
+		// Update the URL
+		updateQuery = updateQuery.SetURL(updateReq.URL)
+	}
+
 	// Execute the update
 	_, err := updateQuery.Save(ctx)
 	if err != nil {
@@ -564,7 +602,7 @@ func (s *Service) Remove(ctx context.Context, id int) error {
 	}
 
 	// 3. Remove repository and backup profiles in a transaction
-	return database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
+	err = database.WithTx(ctx, s.db, func(tx *ent.Tx) error {
 		// Delete backup profiles that only have this repository
 		if len(backupProfiles) > 0 {
 			bpIds := make([]int, 0, len(backupProfiles))
@@ -685,6 +723,34 @@ func (s *Service) RefreshArchives(ctx context.Context, repoId int) (string, erro
 		return "", fmt.Errorf("failed to queue archive refresh operation: %w", err)
 	}
 
+	return operationID, nil
+}
+
+// QueueCheck queues a repository integrity check operation
+func (s *Service) QueueCheck(ctx context.Context, repoId int, quickVerification bool) (string, error) {
+	// Create check operation
+	checkOp := statemachine.NewOperationCheck(statemachine.Check{
+		RepositoryID:      repoId,
+		QuickVerification: quickVerification,
+	})
+
+	// Create queued operation with immediate flag
+	queue := s.queueManager.GetQueue(repoId)
+	queuedOp := queue.CreateQueuedOperation(
+		checkOp,
+		repoId,
+		nil,   // No backup profile for check (repository-wide operation)
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue check operation: %w", err)
+	}
+
+	s.log.Infof("Queued %s check for repo %d", map[bool]string{true: "quick", false: "full"}[quickVerification], repoId)
 	return operationID, nil
 }
 
@@ -928,6 +994,47 @@ func (s *Service) QueueArchiveRename(ctx context.Context, archiveId int, name st
 	operationID, err := s.queueManager.AddOperation(archiveEntity.Edges.Repository.ID, queuedOp)
 	if err != nil {
 		return "", fmt.Errorf("failed to queue archive rename operation: %w", err)
+	}
+
+	return operationID, nil
+}
+
+// QueueArchiveComment queues an archive comment update operation
+func (s *Service) QueueArchiveComment(ctx context.Context, archiveId int, comment string) (string, error) {
+	// Get archive to determine repository ID
+	archiveEntity, err := s.db.Archive.Query().
+		Where(archive.ID(archiveId)).
+		WithRepository().
+		Only(ctx)
+	if err != nil {
+		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+	}
+
+	// Check if repository is mounted or mounting - cannot update comments in this state
+	if s.isRepositoryMountedOrMounting(archiveEntity.Edges.Repository.ID) {
+		return "", fmt.Errorf("cannot update archive comment while repository is mounted or mounting - please unmount the repository first")
+	}
+
+	// Create archive comment operation
+	archiveCommentOp := statemachine.NewOperationArchiveComment(statemachine.ArchiveComment{
+		ArchiveID: archiveId,
+		Comment:   comment,
+	})
+
+	// Create queued operation using factory method
+	queue := s.queueManager.GetQueue(archiveEntity.Edges.Repository.ID)
+	queuedOp := queue.CreateQueuedOperation(
+		archiveCommentOp,
+		archiveEntity.Edges.Repository.ID,
+		nil,   // no backup profile ID
+		nil,   // no expiration
+		false, // will be queued
+	)
+
+	// Add to queue
+	operationID, err := s.queueManager.AddOperation(archiveEntity.Edges.Repository.ID, queuedOp)
+	if err != nil {
+		return "", fmt.Errorf("failed to queue archive comment operation: %w", err)
 	}
 
 	return operationID, nil
@@ -1276,7 +1383,7 @@ func (s *Service) clearWillBePrunedFlags(ctx context.Context, backupProfile *ent
 }
 
 // ExaminePrunes analyzes what would be pruned with given rules
-func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *ent.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
+func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, pruningRule *backupprofileservice.PruningRule, saveResults bool) ([]ExaminePruningResult, error) {
 	backupProfile, err := s.db.BackupProfile.
 		Query().
 		WithRepositories().
@@ -1286,8 +1393,11 @@ func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, prunin
 		return []ExaminePruningResult{{Error: err}}, nil
 	}
 
+	// Convert custom type to ent type for internal use
+	entPruningRule := pruningRule.ToEnt()
+
 	// If pruning is disabled and we're saving results, just clear all WillBePruned flags
-	if !pruningRule.IsEnabled && saveResults {
+	if !entPruningRule.IsEnabled && saveResults {
 		s.log.Infow("Pruning rule is disabled, clearing all WillBePruned flags",
 			"backupProfileId", backupProfileId)
 		err := s.clearWillBePrunedFlags(ctx, backupProfile)
@@ -1307,7 +1417,7 @@ func (s *Service) ExaminePrunes(ctx context.Context, backupProfileId int, prunin
 	for _, repo := range backupProfile.Edges.Repositories {
 		wg.Add(1)
 		bId := types.BackupId{BackupProfileId: backupProfileId, RepositoryId: repo.ID}
-		go s.startExaminePrune(ctx, bId, pruningRule, saveResults, &wg, resultCh)
+		go s.startExaminePrune(ctx, bId, entPruningRule, saveResults, &wg, resultCh)
 	}
 
 	// Wait for all examine prune jobs to finish
@@ -1407,7 +1517,7 @@ func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password st
 	}
 
 	// Test the new password by calling borg info
-	_, status := s.borgClient.Info(ctx, repoEntity.URL, password)
+	_, status := s.borgClient.Info(ctx, repoEntity.URL, password, false)
 
 	// Check if password is wrong
 	if status.HasError() {
@@ -1446,15 +1556,91 @@ func (s *Service) FixStoredPassword(ctx context.Context, repoId int, password st
 		}
 	}
 
-	// Password is correct, update in database
-	err = repoEntity.Update().
-		SetPassword(password).
-		Exec(ctx)
+	// Password is correct, update in keyring
+	err = s.keyring.SetRepositoryPassword(repoId, password)
 	if err != nil {
-		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to update password in database: %w", err)
+		return FixStoredPasswordResult{Success: false}, fmt.Errorf("failed to update password in keyring: %w", err)
+	}
+
+	// Update has_password flag
+	err = s.db.Repository.UpdateOneID(repoId).SetHasPassword(true).Exec(ctx)
+	if err != nil {
+		s.log.Warnf("Failed to update has_password flag for repository %d: %v", repoId, err)
 	}
 
 	return FixStoredPasswordResult{
+		Success:      true,
+		ErrorMessage: "",
+	}, nil
+}
+
+// ChangePassphrase changes the passphrase of a repository's encryption key
+func (s *Service) ChangePassphrase(ctx context.Context, repoId int, currentPassword, newPassword string) (ChangePassphraseResult, error) {
+	// Validate inputs
+	if currentPassword == "" {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "current password cannot be empty",
+		}, nil
+	}
+	if newPassword == "" {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "new password cannot be empty",
+		}, nil
+	}
+	if currentPassword == newPassword {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "new password must be different from current password",
+		}, nil
+	}
+
+	// Get repository from database
+	repoEntity, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Check repository is in Idle state
+	currentState := s.queueManager.GetRepositoryState(repoId)
+	if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: "repository must be idle to change passphrase",
+		}, nil
+	}
+
+	// Call borg to change the passphrase
+	status := s.borgClient.ChangePassphrase(ctx, repoEntity.URL, currentPassword, newPassword)
+
+	// Check for errors
+	if status.HasError() {
+		if status.Error.ExitCode == borgtypes.ErrorPassphraseWrong.ExitCode {
+			return ChangePassphraseResult{
+				Success:      false,
+				ErrorMessage: "incorrect current password",
+			}, nil
+		}
+		return ChangePassphraseResult{
+			Success:      false,
+			ErrorMessage: status.GetError(),
+		}, nil
+	}
+
+	// Passphrase changed successfully, update in keyring
+	err = s.keyring.SetRepositoryPassword(repoId, newPassword)
+	if err != nil {
+		return ChangePassphraseResult{Success: false}, fmt.Errorf("failed to update password in keyring: %w", err)
+	}
+
+	// Update has_password flag
+	err = s.db.Repository.UpdateOneID(repoId).SetHasPassword(true).Exec(ctx)
+	if err != nil {
+		s.log.Warnf("Failed to update has_password flag for repository %d: %v", repoId, err)
+	}
+
+	return ChangePassphraseResult{
 		Success:      true,
 		ErrorMessage: "",
 	}, nil
@@ -1519,8 +1705,14 @@ func (s *Service) BreakLock(ctx context.Context, repoId int) error {
 		return fmt.Errorf("repository %d is not in error state, cannot break lock", repoId)
 	}
 
+	// Get password from keyring
+	password, err := s.keyring.GetRepositoryPassword(repoId)
+	if err != nil {
+		return fmt.Errorf("failed to get password for repository %d: %w", repoId, err)
+	}
+
 	// Break borg repository lock
-	status := s.borgClient.BreakLock(ctx, repoEntity.URL, repoEntity.Password)
+	status := s.borgClient.BreakLock(ctx, repoEntity.URL, password)
 	if !status.IsCompletedWithSuccess() {
 		return fmt.Errorf("failed to break lock for repository %d: %s", repoId, status.GetError())
 	}
@@ -1557,9 +1749,16 @@ func (s *Service) GetLastArchiveByRepoId(ctx context.Context, repoId int) (*ent.
 	return archiveEntity, nil
 }
 
+// editStateData holds the accumulated edit state data for an archive
+type editStateData struct {
+	newName    *string
+	newComment *string
+	isActive   bool
+}
+
 // getArchiveOperationStates returns maps of archive IDs to their operation states
-func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameState, map[int]ArchiveDeleteState) {
-	renameStates := make(map[int]ArchiveRenameState)
+func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveEditState, map[int]ArchiveDeleteState) {
+	editData := make(map[int]*editStateData) // Track edit data per archive
 	deleteStates := make(map[int]ArchiveDeleteState)
 
 	// Get the repository queue
@@ -1571,14 +1770,24 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 		case statemachine.OperationTypeArchiveRename:
 			renameOp := active.Operation.(statemachine.ArchiveRenameVariant)()
 			newName := renameOp.Prefix + renameOp.Name
-			renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameActive(RenameActive{
-				NewName: newName,
-			})
+			if editData[renameOp.ArchiveID] == nil {
+				editData[renameOp.ArchiveID] = &editStateData{}
+			}
+			editData[renameOp.ArchiveID].newName = &newName
+			editData[renameOp.ArchiveID].isActive = true
+		case statemachine.OperationTypeArchiveComment:
+			commentOp := active.Operation.(statemachine.ArchiveCommentVariant)()
+			if editData[commentOp.ArchiveID] == nil {
+				editData[commentOp.ArchiveID] = &editStateData{}
+			}
+			editData[commentOp.ArchiveID].newComment = &commentOp.Comment
+			editData[commentOp.ArchiveID].isActive = true
 		case statemachine.OperationTypeArchiveDelete:
 			deleteOp := active.Operation.(statemachine.ArchiveDeleteVariant)()
 			deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteActive(DeleteActive{})
 		case statemachine.OperationTypeArchiveRefresh,
 			statemachine.OperationTypeBackup,
+			statemachine.OperationTypeCheck,
 			statemachine.OperationTypeDelete,
 			statemachine.OperationTypeExaminePrune,
 			statemachine.OperationTypeMount,
@@ -1586,7 +1795,7 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 			statemachine.OperationTypePrune,
 			statemachine.OperationTypeUnmount,
 			statemachine.OperationTypeUnmountArchive:
-			// These operations don't affect individual archive rename/delete states
+			// These operations don't affect individual archive edit/delete states
 		}
 	}
 
@@ -1596,9 +1805,27 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 	for _, queuedOp := range queuedRenames {
 		renameOp := queuedOp.Operation.(statemachine.ArchiveRenameVariant)()
 		newName := renameOp.Prefix + renameOp.Name
-		renameStates[renameOp.ArchiveID] = NewArchiveRenameStateRenameQueued(RenameQueued{
-			NewName: newName,
-		})
+		if editData[renameOp.ArchiveID] == nil {
+			editData[renameOp.ArchiveID] = &editStateData{}
+		}
+		// Only set if not already active (active takes precedence)
+		if editData[renameOp.ArchiveID].newName == nil {
+			editData[renameOp.ArchiveID].newName = &newName
+		}
+	}
+
+	// Check queued comment operations
+	archiveCommentType := statemachine.OperationTypeArchiveComment
+	queuedComments := queue.GetQueuedOperations(&archiveCommentType)
+	for _, queuedOp := range queuedComments {
+		commentOp := queuedOp.Operation.(statemachine.ArchiveCommentVariant)()
+		if editData[commentOp.ArchiveID] == nil {
+			editData[commentOp.ArchiveID] = &editStateData{}
+		}
+		// Only set if not already active (active takes precedence)
+		if editData[commentOp.ArchiveID].newComment == nil {
+			editData[commentOp.ArchiveID].newComment = &commentOp.Comment
+		}
 	}
 
 	// Check queued delete operations
@@ -1609,7 +1836,23 @@ func (s *Service) getArchiveOperationStates(repoID int) (map[int]ArchiveRenameSt
 		deleteStates[deleteOp.ArchiveID] = NewArchiveDeleteStateDeleteQueued(DeleteQueued{})
 	}
 
-	return renameStates, deleteStates
+	// Convert editData to ArchiveEditState
+	editStates := make(map[int]ArchiveEditState)
+	for archiveID, data := range editData {
+		if data.isActive {
+			editStates[archiveID] = NewArchiveEditStateEditActive(EditActive{
+				NewName:    data.newName,
+				NewComment: data.newComment,
+			})
+		} else {
+			editStates[archiveID] = NewArchiveEditStateEditQueued(EditQueued{
+				NewName:    data.newName,
+				NewComment: data.newComment,
+			})
+		}
+	}
+
+	return editStates, deleteStates
 }
 
 // GetPaginatedArchives retrieves paginated archives for a repository
@@ -1642,9 +1885,12 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 		// Filter all is implicit
 	}
 
-	// If a search term is specified, filter by it
+	// If a search term is specified, filter by name or comment
 	if req.Search != "" {
-		archivePredicates = append(archivePredicates, archive.NameContains(req.Search))
+		archivePredicates = append(archivePredicates, archive.Or(
+			archive.NameContains(req.Search),
+			archive.CommentContains(req.Search),
+		))
 	}
 
 	// If start date is specified, filter by it
@@ -1681,7 +1927,7 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 	}
 
 	// Get pending operation states for this repository
-	renameStates, deleteStates := s.getArchiveOperationStates(req.RepositoryId)
+	editStates, deleteStates := s.getArchiveOperationStates(req.RepositoryId)
 
 	// Convert archives to enhanced archives with pending changes
 	enhancedArchives := make([]*ArchiveWithPendingChanges, len(archives))
@@ -1690,12 +1936,12 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 			Archive: archiveEntity,
 		}
 
-		// Set rename state (default to none if not found)
-		if renameState, exists := renameStates[archiveEntity.ID]; exists {
-			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(renameState)
+		// Set edit state (default to none if not found)
+		if editState, exists := editStates[archiveEntity.ID]; exists {
+			enhancedArchive.EditStateUnion = ToArchiveEditStateUnion(editState)
 		} else {
-			noneState := NewArchiveRenameStateRenameNone(RenameNone{})
-			enhancedArchive.RenameStateUnion = ToArchiveRenameStateUnion(noneState)
+			noneState := NewArchiveEditStateEditNone(EditNone{})
+			enhancedArchive.EditStateUnion = ToArchiveEditStateUnion(noneState)
 		}
 
 		// Set delete state (default to none if not found)
@@ -1713,6 +1959,53 @@ func (s *Service) GetPaginatedArchives(ctx context.Context, req *PaginatedArchiv
 		Archives: enhancedArchives,
 		Total:    total,
 	}, nil
+}
+
+// GetFilteredArchiveIds retrieves all archive IDs matching the filter criteria (without pagination)
+// This is used for "select all across pages" functionality
+func (s *Service) GetFilteredArchiveIds(ctx context.Context, req *PaginatedArchivesRequest) ([]int, error) {
+	if req.RepositoryId <= 0 {
+		return nil, fmt.Errorf("repositoryId is required")
+	}
+
+	// Build filter predicates (same logic as GetPaginatedArchives)
+	archivePredicates := []predicate.Archive{
+		archive.HasRepositoryWith(repository.ID(req.RepositoryId)),
+	}
+
+	if req.BackupProfileFilter != nil {
+		if req.BackupProfileFilter.Id != 0 {
+			archivePredicates = append(archivePredicates, archive.HasBackupProfileWith(backupprofile.ID(req.BackupProfileFilter.Id)))
+		} else if req.BackupProfileFilter.IsUnknownFilter {
+			archivePredicates = append(archivePredicates, archive.Not(archive.HasBackupProfile()))
+		}
+	}
+
+	if req.Search != "" {
+		archivePredicates = append(archivePredicates, archive.Or(
+			archive.NameContains(req.Search),
+			archive.CommentContains(req.Search),
+		))
+	}
+
+	if !req.StartDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtGTE(req.StartDate))
+	}
+
+	if !req.EndDate.IsZero() {
+		archivePredicates = append(archivePredicates, archive.CreatedAtLTE(req.EndDate))
+	}
+
+	// Query only IDs
+	ids, err := s.db.Archive.
+		Query().
+		Where(archive.And(archivePredicates...)).
+		IDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }
 
 // GetPruningDates retrieves pruning dates for specified archives
@@ -1806,6 +2099,7 @@ func (s *Service) getSingleBackupButtonStatus(ctx context.Context, backupId type
 	case statemachine.RepositoryStateTypePruning,
 		statemachine.RepositoryStateTypeDeleting,
 		statemachine.RepositoryStateTypeRefreshing,
+		statemachine.RepositoryStateTypeChecking,
 		statemachine.RepositoryStateTypeMounting:
 		// Repository is busy with other operations
 		return BackupButtonStatusBusy, nil
@@ -1980,83 +2274,6 @@ func (s *Service) GetBackupState(ctx context.Context, backupId types.BackupId) (
 	return nil, nil
 }
 
-// GetLastBackupErrorMsgByBackupId gets last backup error message for backup profile
-func (s *Service) GetLastBackupErrorMsgByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last error notification for the backup profile and repository
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			notification.TypeIn(
-				notification.TypeFailedBackupRun,
-				notification.TypeFailedPruningRun,
-			),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the error message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).
-			Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
-}
-
-func (s *Service) GetLastBackupWarningByBackupId(ctx context.Context, bId types.BackupId) (string, error) {
-	// Get the last warning notification for the backup profile and repository
-	lastNotification, err := s.db.Notification.
-		Query().
-		Where(notification.And(
-			notification.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-			notification.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-			notification.TypeIn(
-				notification.TypeWarningBackupRun,
-				notification.TypeWarningPruningRun,
-			),
-		)).
-		Order(ent.Desc(notification.FieldCreatedAt)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return "", err
-	}
-	if lastNotification != nil {
-		// Check if there is a new archive since the last notification
-		// If there is, we don't show the warning message
-		exist, err := s.db.Archive.
-			Query().
-			Where(archive.And(
-				archive.HasBackupProfileWith(backupprofile.ID(bId.BackupProfileId)),
-				archive.HasRepositoryWith(repository.ID(bId.RepositoryId)),
-				archive.CreatedAtGT(lastNotification.CreatedAt),
-			)).
-			Exist(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return "", err
-		}
-		if !exist {
-			return lastNotification.Message, nil
-		}
-	}
-	return "", nil
-}
-
 // ============================================================================
 // VALIDATION METHODS
 // ============================================================================
@@ -2128,6 +2345,153 @@ func (s *Service) ValidateRepoPath(ctx context.Context, path string, isLocal boo
 	return "", nil
 }
 
+// ValidatePathChange validates path format and uniqueness (no connection test).
+// Returns:
+// - IsValid=false + ErrorMessage: Blocking errors (cannot proceed)
+// - IsValid=true: Path is valid (connection not tested)
+func (s *Service) ValidatePathChange(ctx context.Context, repoId int, newPath string) (*ValidatePathChangeResult, error) {
+	// Get existing repository with cloud association
+	repoEntity, err := s.db.Repository.Query().
+		Where(repository.ID(repoId)).
+		WithCloudRepository().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Repository not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// 1. Check not ArcoCloud
+	if repoEntity.Edges.CloudRepository != nil {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Cannot change path for ArcoCloud repositories",
+		}, nil
+	}
+
+	// Determine if current repo is local (path starts with /)
+	isCurrentLocal := strings.HasPrefix(repoEntity.URL, "/")
+	isNewLocal := strings.HasPrefix(newPath, "/")
+
+	// 2. Validate path format matches repo type
+	if isCurrentLocal != isNewLocal {
+		if isCurrentLocal {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "New path must be a local path (starting with /)",
+			}, nil
+		}
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "New path must be a remote path (SSH format)",
+		}, nil
+	}
+
+	// 3. For local paths, validate path exists
+	if isNewLocal {
+		expandedPath := util.ExpandPath(newPath)
+		if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Path does not exist",
+			}, nil
+		}
+		if info, err := os.Stat(expandedPath); err == nil && !info.IsDir() {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Path is not a folder",
+			}, nil
+		}
+	}
+
+	// 4. Check path uniqueness (excluding current repo)
+	exists, err := s.db.Repository.Query().
+		Where(
+			repository.URL(newPath),
+			repository.IDNEQ(repoId),
+		).
+		Exist(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check path uniqueness: %w", err)
+	}
+	if exists {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Path is already used by another repository",
+		}, nil
+	}
+
+	return &ValidatePathChangeResult{
+		IsValid: true,
+	}, nil
+}
+
+// TestPathConnection tests if a path can connect to a valid borg repository.
+// Requires repository to be in Idle state (for borg call).
+// Returns:
+// - IsValid=false + ErrorMessage: Not idle (blocking)
+// - IsValid=true + ConnectionWarning: Connection failed (can proceed with warning)
+// - IsValid=true: Connection successful
+func (s *Service) TestPathConnection(ctx context.Context, repoId int, newPath string, password string) (*ValidatePathChangeResult, error) {
+	// Check repository exists
+	_, err := s.db.Repository.Get(ctx, repoId)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ValidatePathChangeResult{
+				IsValid:      false,
+				ErrorMessage: "Repository not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Check repository is Idle (required for borg call)
+	currentState := s.queueManager.GetRepositoryState(repoId)
+	if statemachine.GetRepositoryStateType(currentState) != statemachine.RepositoryStateTypeIdle {
+		return &ValidatePathChangeResult{
+			IsValid:      false,
+			ErrorMessage: "Repository must be idle to test connection",
+		}, nil
+	}
+
+	// Test connection with borg info
+	expandedPath := util.ExpandPath(newPath)
+	usePassword := password
+	if usePassword == "" {
+		var err error
+		usePassword, err = s.keyring.GetRepositoryPassword(repoId)
+		if err != nil {
+			s.log.Warnf("Failed to get repository password from keyring: %v", err)
+		}
+	}
+	_, status := s.borgClient.Info(ctx, expandedPath, usePassword, true)
+	if status != nil && status.HasError() {
+		// Check for common errors and return as warnings
+		var warning string
+		if errors.Is(status.Error, borgtypes.ErrorRepositoryDoesNotExist) ||
+			errors.Is(status.Error, borgtypes.ErrorRepositoryInvalidRepository) {
+			warning = "Path is not a valid Borg repository"
+		} else if errors.Is(status.Error, borgtypes.ErrorPassphraseWrong) {
+			warning = "Invalid password"
+		} else {
+			warning = fmt.Sprintf("Failed to connect: %s", status.Error.Error())
+		}
+		return &ValidatePathChangeResult{
+			IsValid:           true,
+			ConnectionWarning: warning,
+		}, nil
+	}
+
+	// Connection successful
+	return &ValidatePathChangeResult{
+		IsValid: true,
+	}, nil
+}
+
 // ValidateArchiveName validates an archive name
 func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name string) (string, error) {
 	if name == "" {
@@ -2195,6 +2559,7 @@ func (s *Service) ValidateArchiveName(ctx context.Context, archiveId int, name s
 		Query().
 		Where(archive.Name(fullName)).
 		Where(archive.HasRepositoryWith(repository.ID(arch.Edges.Repository.ID))).
+		Where(archive.IDNEQ(archiveId)).
 		Exist(ctx)
 	if err != nil {
 		return "", err
@@ -2217,7 +2582,7 @@ func (s *Service) testRepoConnection(ctx context.Context, path, password string)
 		IsBorgRepo:      false,
 	}
 
-	_, status := s.borgClient.Info(ctx, path, password)
+	_, status := s.borgClient.Info(ctx, path, password, false)
 	if status == nil {
 		result.Success = true
 		result.IsPasswordValid = true
@@ -2314,9 +2679,8 @@ func (s *Service) IsBorgRepository(path string) bool {
 // INTERNAL HELPERS
 // ============================================================================
 
-// getLastError returns the latest backup error message for a repository
-func (s *Service) getLastError(ctx context.Context, repoID int) string {
-	// Query latest error notification for this repository
+// getLastErrorNotification returns the most recent error notification for a repository
+func (s *Service) getLastErrorNotification(ctx context.Context, repoID int) *ent.Notification {
 	notificationEnt, err := s.db.Notification.Query().
 		Where(
 			notification.HasRepositoryWith(repository.ID(repoID)),
@@ -2329,86 +2693,86 @@ func (s *Service) getLastError(ctx context.Context, repoID int) string {
 		First(ctx)
 
 	if err != nil {
-		if ent.IsNotFound(err) {
-			// No error notifications found
-			return ""
+		if !ent.IsNotFound(err) {
+			s.log.Errorw("Failed to query error notifications",
+				"repoID", repoID,
+				"error", err.Error())
 		}
-		s.log.Errorw("Failed to query error notifications",
-			"repoID", repoID,
-			"error", err.Error())
-		return ""
+		return nil
 	}
-
-	// Check if there's a newer successful archive since this notification
-	// If there is, don't show the old error
-	hasNewerArchive, err := s.db.Archive.Query().
-		Where(
-			archive.HasRepositoryWith(repository.ID(repoID)),
-			archive.CreatedAtGT(notificationEnt.CreatedAt),
-		).
-		Exist(ctx)
-	if err != nil {
-		s.log.Errorw("Failed to check for newer archives",
-			"repoID", repoID,
-			"error", err.Error())
-		return ""
-	}
-
-	if hasNewerArchive {
-		// There's a newer archive, so clear the old error
-		return ""
-	} else {
-		// Show the error message
-		return notificationEnt.Message
-	}
+	return notificationEnt
 }
 
-// getLastWarning returns the latest backup warning message for a repository
-func (s *Service) getLastWarning(ctx context.Context, repoID int) string {
-	// Query latest warning notification for this repository
-	notificationEnt, err := s.db.Notification.Query().
-		Where(
-			notification.HasRepositoryWith(repository.ID(repoID)),
-			notification.TypeIn(
-				notification.TypeWarningBackupRun,
-				notification.TypeWarningPruningRun,
-			),
-		).
-		Order(ent.Desc("created_at")).
+// getLastBackup returns info about the last successful backup
+func (s *Service) getLastBackup(ctx context.Context, repoID int) *types.LastBackup {
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
 		First(ctx)
 
 	if err != nil {
-		if ent.IsNotFound(err) {
-			// No warning notifications found
-			return ""
+		if !ent.IsNotFound(err) {
+			s.log.Errorw("Failed to query latest archive",
+				"repoID", repoID,
+				"error", err.Error())
 		}
-		s.log.Errorw("Failed to query warning notifications",
-			"repoID", repoID,
-			"error", err.Error())
-		return ""
+		return nil // No successful backups yet
 	}
 
-	// Check if there's a newer successful archive since this notification
-	// If there is, don't show the old warning
-	hasNewerArchive, err := s.db.Archive.Query().
-		Where(
-			archive.HasRepositoryWith(repository.ID(repoID)),
-			archive.CreatedAtGT(notificationEnt.CreatedAt),
-		).
-		Exist(ctx)
-	if err != nil {
-		s.log.Errorw("Failed to check for newer archives",
+	result := &types.LastBackup{
+		Timestamp: &lastArchive.CreatedAt,
+	}
+	if lastArchive.WarningMessage != nil {
+		result.WarningMessage = *lastArchive.WarningMessage
+	}
+	return result
+}
+
+// getLastAttempt returns info about the most recent attempt (success, warning, or error)
+func (s *Service) getLastAttempt(ctx context.Context, repoID int) *types.LastAttempt {
+	// Get latest archive
+	lastArchive, err := s.db.Archive.Query().
+		Where(archive.HasRepositoryWith(repository.ID(repoID))).
+		Order(ent.Desc(archive.FieldCreatedAt)).
+		First(ctx)
+
+	if err != nil && !ent.IsNotFound(err) {
+		s.log.Errorw("Failed to query latest archive for attempt",
 			"repoID", repoID,
 			"error", err.Error())
-		return ""
 	}
 
-	if hasNewerArchive {
-		// There's a newer archive, so clear the old warning
-		return ""
-	} else {
-		// Show the warning message
-		return notificationEnt.Message
+	// Get latest error notification
+	errorNotification := s.getLastErrorNotification(ctx, repoID)
+
+	// Determine which is more recent
+	if errorNotification != nil {
+		// Check if error is newer than archive (or no archive exists)
+		if lastArchive == nil || errorNotification.CreatedAt.After(lastArchive.CreatedAt) {
+			return &types.LastAttempt{
+				Status:    types.BackupStatusError,
+				Timestamp: &errorNotification.CreatedAt,
+				Message:   errorNotification.Message,
+			}
+		}
+	}
+
+	if lastArchive == nil {
+		return nil // No attempts yet
+	}
+
+	// Archive is the most recent attempt
+	if lastArchive.WarningMessage != nil {
+		return &types.LastAttempt{
+			Status:    types.BackupStatusWarning,
+			Timestamp: &lastArchive.CreatedAt,
+			Message:   *lastArchive.WarningMessage,
+		}
+	}
+
+	return &types.LastAttempt{
+		Status:    types.BackupStatusSuccess,
+		Timestamp: &lastArchive.CreatedAt,
 	}
 }
 

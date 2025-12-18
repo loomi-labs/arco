@@ -18,8 +18,9 @@ var (
 		{Name: "duration", Type: field.TypeFloat64},
 		{Name: "borg_id", Type: field.TypeString},
 		{Name: "will_be_pruned", Type: field.TypeBool, Default: false},
+		{Name: "comment", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "warning_message", Type: field.TypeString, Nullable: true},
 		{Name: "archive_repository", Type: field.TypeInt},
-		{Name: "archive_backup_profile", Type: field.TypeInt, Nullable: true},
 		{Name: "backup_profile_archives", Type: field.TypeInt, Nullable: true},
 	}
 	// ArchivesTable holds the schema information for the "archives" table.
@@ -30,19 +31,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "archives_repositories_repository",
-				Columns:    []*schema.Column{ArchivesColumns[7]},
+				Columns:    []*schema.Column{ArchivesColumns[9]},
 				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "archives_backup_profiles_backup_profile",
-				Columns:    []*schema.Column{ArchivesColumns[8]},
-				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "archives_backup_profiles_archives",
-				Columns:    []*schema.Column{ArchivesColumns[9]},
+				Columns:    []*schema.Column{ArchivesColumns[10]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -72,6 +67,7 @@ var (
 		{Name: "prefix", Type: field.TypeString, Unique: true},
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},
+		{Name: "exclude_caches", Type: field.TypeBool, Default: false},
 		{Name: "icon", Type: field.TypeEnum, Enums: []string{"home", "briefcase", "book", "envelope", "camera", "fire"}},
 		{Name: "compression_mode", Type: field.TypeEnum, Enums: []string{"none", "lz4", "zstd", "zlib", "lzma"}, Default: "lz4"},
 		{Name: "compression_level", Type: field.TypeInt, Nullable: true},
@@ -143,7 +139,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "message", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_backup_run", "warning_pruning_run"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"failed_backup_run", "failed_pruning_run", "warning_pruning_run", "failed_quick_check", "failed_full_check", "warning_quick_check", "warning_full_check"}},
 		{Name: "seen", Type: field.TypeBool, Default: false},
 		{Name: "action", Type: field.TypeEnum, Nullable: true, Enums: []string{"unlockRepository"}},
 		{Name: "notification_backup_profile", Type: field.TypeInt},
@@ -207,8 +203,11 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "url", Type: field.TypeString, Unique: true},
-		{Name: "password", Type: field.TypeString},
-		{Name: "next_integrity_check", Type: field.TypeTime, Nullable: true},
+		{Name: "has_password", Type: field.TypeBool, Default: false},
+		{Name: "last_quick_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "quick_check_error", Type: field.TypeJSON, Nullable: true},
+		{Name: "last_full_check_at", Type: field.TypeTime, Nullable: true},
+		{Name: "full_check_error", Type: field.TypeJSON, Nullable: true},
 		{Name: "stats_total_chunks", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_size", Type: field.TypeInt, Default: 0},
 		{Name: "stats_total_csize", Type: field.TypeInt, Default: 0},
@@ -225,7 +224,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "repositories_cloud_repositories_repository",
-				Columns:    []*schema.Column{RepositoriesColumns[13]},
+				Columns:    []*schema.Column{RepositoriesColumns[16]},
 				RefColumns: []*schema.Column{CloudRepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -236,9 +235,10 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "show_welcome", Type: field.TypeBool, Default: true},
 		{Name: "expert_mode", Type: field.TypeBool, Default: false},
 		{Name: "theme", Type: field.TypeEnum, Enums: []string{"light", "dark", "system"}, Default: "system"},
+		{Name: "disable_transitions", Type: field.TypeBool, Default: false},
+		{Name: "disable_shadows", Type: field.TypeBool, Default: false},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{
@@ -253,8 +253,6 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "last_logged_in", Type: field.TypeTime, Nullable: true},
-		{Name: "refresh_token", Type: field.TypeString, Nullable: true},
-		{Name: "access_token", Type: field.TypeString, Nullable: true},
 		{Name: "access_token_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "refresh_token_expires_at", Type: field.TypeTime, Nullable: true},
 	}
@@ -308,10 +306,9 @@ var (
 func init() {
 	ArchivesTable.ForeignKeys[0].RefTable = RepositoriesTable
 	ArchivesTable.ForeignKeys[1].RefTable = BackupProfilesTable
-	ArchivesTable.ForeignKeys[2].RefTable = BackupProfilesTable
 	BackupProfilesTable.Annotation = &entsql.Annotation{}
 	BackupProfilesTable.Annotation.Checks = map[string]string{
-		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode IN ('zlib', 'lzma') AND compression_level >= 0 AND compression_level <= 9)\n\t\t\t\t)",
+		"compression_level_valid": "(\n\t\t\t\t\t(compression_mode IN ('none', 'lz4') AND compression_level IS NULL) OR\n\t\t\t\t\t(compression_mode = 'zstd' AND compression_level >= 1 AND compression_level <= 22) OR\n\t\t\t\t\t(compression_mode = 'zlib' AND compression_level >= 0 AND compression_level <= 9) OR\n\t\t\t\t\t(compression_mode = 'lzma' AND compression_level >= 0 AND compression_level <= 6)\n\t\t\t\t)",
 	}
 	BackupSchedulesTable.ForeignKeys[0].RefTable = BackupProfilesTable
 	NotificationsTable.ForeignKeys[0].RefTable = BackupProfilesTable

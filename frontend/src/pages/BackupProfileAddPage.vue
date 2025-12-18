@@ -8,21 +8,23 @@ import ScheduleSelection from "../components/ScheduleSelection.vue";
 import { formInputClass } from "../common/form";
 import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
-import * as yup from "yup";
+import { z } from "zod";
+import { toTypedSchema } from "@vee-validate/zod";
 import SelectIconModal from "../components/SelectIconModal.vue";
 import CompressionCard from "../components/CompressionCard.vue";
+import CompressionInfoModal from "../components/CompressionInfoModal.vue";
 import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
-import { ArrowLongRightIcon, QuestionMarkCircleIcon } from "@heroicons/vue/24/outline";
+import { InformationCircleIcon } from "@heroicons/vue/24/outline";
+import ExcludePatternInfoModal from "../components/ExcludePatternInfoModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/ent";
-import { Browser } from "@wailsio/runtime";
+import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 /************
  * Types
@@ -53,14 +55,19 @@ const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(conf
 const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(true);
+const excludePatternInfoModalKey = useId();
+const excludePatternInfoModal = useTemplateRef<InstanceType<typeof ExcludePatternInfoModal>>(excludePatternInfoModalKey);
+const compressionInfoModalKey = useId();
+const compressionInfoModal = useTemplateRef<InstanceType<typeof CompressionInfoModal>>(compressionInfoModalKey);
 
 const step1Form = useForm({
-  validationSchema: yup.object({
-    name: yup.string()
-      .required("Please choose a name for your backup profile")
-      .min(3, "Name is too short")
-      .max(30, "Name is too long")
-  })
+  validationSchema: toTypedSchema(
+    z.object({
+      name: z.string({ message: "Please choose a name for your backup profile" })
+        .min(3, { message: "Name is too short" })
+        .max(30, { message: "Name is too long" })
+    })
+  )
 });
 
 const [name, nameAttrs] = step1Form.defineField("name", {
@@ -76,7 +83,7 @@ const isStep1Valid = computed(() => {
 const isStep2Valid = computed(() => {
   return pruningCardRef.value?.isValid ?? false;
 });
-const pruningCardRef = ref();
+const pruningCardRef = ref<InstanceType<typeof PruningCard> | null>(null);
 
 // Step 3
 const connectedRepos = ref<Repository[]>([]);
@@ -98,6 +105,14 @@ function getMaxWithPerStep(): string {
     default:
       return "max-w-[600px]";
   }
+}
+
+function toggleExcludePatternInfoModal() {
+  excludePatternInfoModal.value?.showModal();
+}
+
+function toggleCompressionInfoModal() {
+  compressionInfoModal.value?.showModal();
 }
 
 // Step 1
@@ -150,8 +165,8 @@ async function getExistingRepositories() {
 }
 
 // Step 2
-function saveSchedule(schedule: BackupSchedule | undefined) {
-  backupProfile.value.edges.backupSchedule = schedule;
+function saveSchedule(schedule: BackupSchedule | null) {
+  backupProfile.value.backupSchedule = schedule;
 }
 
 // Step 3
@@ -162,18 +177,17 @@ const connectRepos = (repos: Repository[]) => {
 async function saveBackupProfile(): Promise<boolean> {
   try {
     backupProfile.value.prefix = await backupProfileService.GetPrefixSuggestion(backupProfile.value.name);
-    backupProfile.value.edges = backupProfile.value.edges ?? {};
     const savedBackupProfile = await backupProfileService.CreateBackupProfile(
       backupProfile.value,
       (connectedRepos.value ?? []).filter((r) => r !== null).map((r) => r.id)
     ) ?? BackupProfile.createFrom();
 
-    if (backupProfile.value.edges.backupSchedule) {
-      await backupProfileService.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.edges.backupSchedule);
+    if (backupProfile.value.backupSchedule) {
+      await backupProfileService.SaveBackupSchedule(savedBackupProfile.id, backupProfile.value.backupSchedule);
     }
 
-    if (backupProfile.value.edges.pruningRule) {
-      await backupProfileService.SavePruningRule(savedBackupProfile.id, backupProfile.value.edges.pruningRule);
+    if (backupProfile.value.pruningRule) {
+      await backupProfileService.SavePruningRule(savedBackupProfile.id, backupProfile.value.pruningRule);
     }
 
     backupProfile.value = await backupProfileService.GetBackupProfile(savedBackupProfile.id) ?? BackupProfile.createFrom();
@@ -195,14 +209,14 @@ const nextStep = async () => {
       if (!isStep1Valid.value) {
         return;
       }
-      backupProfile.value.name = step1Form.values.name;
+      backupProfile.value.name = step1Form.values.name ?? "";
       currentStep.value++;
       break;
     case Step.Schedule:
       if (!isStep2Valid.value) {
         return;
       }
-      backupProfile.value.edges.pruningRule = pruningCardRef.value.pruningRule;
+      backupProfile.value.pruningRule = pruningCardRef.value?.pruningRule ?? null;
       currentStep.value++;
       break;
     case Step.Repository:
@@ -267,54 +281,56 @@ onBeforeRouteLeave(async (to, _from) => {
     <!-- 1. Step - Data Selection -->
     <template v-if='currentStep === Step.SelectData'>
       <!-- Data to backup Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to backup</h2>
-      <p class='flex gap-2 mb-3'>
-        Select folders and files that you want to include in your backups.
-      </p>
+      <h2 class='text-3xl py-4'>Data to backup</h2>
+      <!-- Info box -->
+      <div role='alert' class='alert alert-soft alert-info mb-4'>
+        <InformationCircleIcon class='size-5 shrink-0' />
+        <div>Select the folders and files you want to include in your backups.</div>
+      </div>
       <DataSelection
         :paths='backupProfile.backupPaths ?? []'
         :suggestions='directorySuggestions'
         :is-backup-selection='true'
         :show-title='false'
+        :show-quick-add-home='true'
         :run-min-one-path-validation='true'
         :show-min-one-path-error-only-after-touch='true'
         @update:paths='saveBackupPaths'
         @update:is-valid='(isValid) => isBackupPathsValid = isValid' />
 
       <!-- Data to ignore Card -->
-      <h2 class='flex items-center gap-1 text-3xl py-4'>Data to ignore</h2>
-      <div class='mb-4'>
-        <p>
-          Select <span class='font-semibold'>files</span>, <span class='font-semibold'>folders</span> or <span class='font-semibold'>patterns</span>
-          that you don't want to include in your backups.<br>
-        </p>
-        <p class='pt-2'>Examples:</p>
-        <ul class='pl-4'>
-          <li class='flex gap-2'>
-            *.cache
-            <ArrowLongRightIcon class='size-6' />
-            exclude all .cache folders
-          </li>
-          <li class='flex gap-2'>
-            /home/secretfolder
-            <ArrowLongRightIcon class='size-6' />
-            exclude the secretfolder in your home directory
-          </li>
-        </ul>
-        <!-- link to borg help -->
-        <a @click='Browser.OpenURL("https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns")'
-           class='link flex gap-1 pt-1'>
-          Learn more about exclusion patterns
-          <QuestionMarkCircleIcon class='size-6' />
-        </a>
+      <div class='flex items-center justify-between py-4'>
+        <h2 class='text-3xl'>Data to ignore</h2>
+        <button @click='toggleExcludePatternInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+          <InformationCircleIcon class='size-6' />
+        </button>
       </div>
-
+      <!-- Info box -->
+      <div role='alert' class='alert alert-soft alert-info mb-4'>
+        <InformationCircleIcon class='size-5 shrink-0' />
+        <div>Exclude files, folders, or patterns from backups.<br>Common exclusions: cache folders, temporary files, build outputs.</div>
+      </div>
       <DataSelection
         :paths='backupProfile.excludePaths ?? []'
+        :exclude-caches='backupProfile.excludeCaches ?? false'
         :is-backup-selection='false'
         :show-title='false'
         @update:paths='saveExcludePaths'
+        @update:exclude-caches='(val) => backupProfile.excludeCaches = val'
         @update:is-valid='(isValid) => isExcludePathsValid = isValid' />
+
+      <!-- Compression Card -->
+      <div class='flex items-center justify-between pt-8 pb-4'>
+        <h2 class='text-3xl'>Compression</h2>
+        <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+          <InformationCircleIcon class='size-6' />
+        </button>
+      </div>
+      <CompressionCard
+        :show-title='false'
+        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
+        :compression-level='backupProfile.compressionLevel'
+        @update:compression='saveCompression' />
 
       <!-- Name and Logo Selection Card-->
       <h2 class='text-3xl pt-8 pb-4'>Name</h2>
@@ -322,7 +338,7 @@ onBeforeRouteLeave(async (to, _from) => {
 
         <!-- Name -->
         <label class='w-full py-6'>
-          <FormField :error='step1Form.errors.value.name'>
+          <FormField :error='step1Form.errors.value.name' :isValid='!step1Form.errors.value.name && !!name'>
             <input :class='formInputClass' type='text' placeholder='fancy-pants-backup'
                    v-model='name'
                    v-bind='nameAttrs' />
@@ -332,13 +348,6 @@ onBeforeRouteLeave(async (to, _from) => {
         <!-- Icon -->
         <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
       </div>
-
-      <!-- Compression Card -->
-      <h2 class='text-3xl pt-8 pb-4'>Compression</h2>
-      <CompressionCard
-        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-        :compression-level='backupProfile.compressionLevel'
-        @update:compression='saveCompression' />
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
@@ -350,13 +359,13 @@ onBeforeRouteLeave(async (to, _from) => {
     <template v-if='currentStep === Step.Schedule'>
       <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
       <div class='flex flex-col gap-10'>
-        <ScheduleSelection :schedule='backupProfile.edges.backupSchedule ?? BackupSchedule.createFrom()'
+        <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
                            @update:schedule='saveSchedule'
-                           @delete:schedule='() => saveSchedule(undefined)' />
+                           @delete:schedule='() => saveSchedule(null)' />
 
         <PruningCard ref='pruningCardRef'
                      :backup-profile-id='backupProfile.id'
-                     :pruning-rule='backupProfile.edges.pruningRule ?? PruningRule.createFrom()'
+                     :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
                      :ask-for-save-before-leaving='false'>
         </PruningCard>
       </div>
@@ -396,8 +405,15 @@ onBeforeRouteLeave(async (to, _from) => {
     <p>You did not finish your backup profile <span class='italic font-semibold'>{{ backupProfile.name }}</span></p>
     <p>Do you wan to discard your changes?</p>
   </ConfirmModal>
+
+  <ExcludePatternInfoModal :ref='excludePatternInfoModalKey' />
+  <CompressionInfoModal :ref='compressionInfoModalKey' />
 </template>
 
 <style scoped>
-
+/* Animated stepper - transition for step dots and lines */
+.steps .step::before,
+.steps .step::after {
+  transition: background-color 0.5s ease-in-out;
+}
 </style>
