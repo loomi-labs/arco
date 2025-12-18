@@ -65,7 +65,8 @@ RUN if ! getent group borg; then \
             useradd -m -u 1000 -g borg -s /bin/bash borg; \
         fi; \
     fi && \
-    usermod -aG docker borg
+    usermod -aG docker borg && \
+    usermod -aG fuse borg
 
 # Copy Arco binary for borg-url detection (must be before borg install)
 COPY --from=builder /arco-cli /usr/local/bin/arco-cli

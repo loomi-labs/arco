@@ -57,7 +57,8 @@ RUN apt-get update && apt-get install -y \
 # Create borg user and directories (simplified for Ubuntu 20.04)
 RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
-    usermod -aG docker borg
+    usermod -aG docker borg && \
+    usermod -aG fuse borg
 
 # Copy Arco binary for borg-url detection (must be before borg install)
 COPY --from=builder /arco-cli /usr/local/bin/arco-cli
