@@ -12,40 +12,31 @@ import (
 
 // Binaries contains all available Borg binary variants
 var Binaries = []BorgBinary{
-	// Borg 1.4.2 - Linux variants (x86_64 only, new naming convention)
+	// Borg 1.4.3 - Linux x86_64 variants
 	{
-		Name:         "borg_1.4.2",
-		Version:      version.Must(version.NewVersion("1.4.2")),
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
 		Os:           Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.31")),
 		Arch:         "amd64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.2/borg-linux-glibc231-x86_64",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc231-x86_64",
 	},
 	{
-		Name:         "borg_1.4.2",
-		Version:      version.Must(version.NewVersion("1.4.2")),
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
 		Os:           Linux,
 		GlibcVersion: version.Must(version.NewVersion("2.35")),
 		Arch:         "amd64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.2/borg-linux-glibc235-x86_64-gh",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-x86_64-gh",
 	},
-	// Borg 1.4.2 - macOS Intel (x86_64)
+	// Borg 1.4.3 - Linux ARM64
 	{
-		Name:         "borg_1.4.2",
-		Version:      version.Must(version.NewVersion("1.4.2")),
-		Os:           Darwin,
-		GlibcVersion: nil,
-		Arch:         "amd64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.2/borg-macos-13-x86_64-gh",
-	},
-	// Borg 1.4.2 - macOS Apple Silicon (ARM64)
-	{
-		Name:         "borg_1.4.2",
-		Version:      version.Must(version.NewVersion("1.4.2")),
-		Os:           Darwin,
-		GlibcVersion: nil,
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
+		Os:           Linux,
+		GlibcVersion: version.Must(version.NewVersion("2.35")),
 		Arch:         "arm64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.2/borg-macos-14-arm64-gh",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-arm64-gh",
 	},
 	// Borg 1.4.1 - Linux variants
 	{

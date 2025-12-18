@@ -32,8 +32,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        borg-version: ["1.4.0", "1.4.1", "1.4.2"]
+        borg-version: ["1.4.0", "1.4.1", "1.4.3"]
         base-image: ["ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"]
+        arch: ["amd64", "arm64"]
+        exclude:
+          # Only build ARM64 for 1.4.3 (older versions don't have ARM binaries)
+          - borg-version: "1.4.0"
+            arch: "arm64"
+          - borg-version: "1.4.1"
+            arch: "arm64"
     permissions:
       contents: read
       packages: write
@@ -49,6 +56,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        if: needs.detect-changes.outputs.borg == 'true'
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         if: needs.detect-changes.outputs.borg == 'true'
         uses: docker/setup-buildx-action@v3
@@ -56,32 +67,34 @@ jobs:
       # Build Borg Client Images
       - name: Build and push Borg client image
         if: needs.detect-changes.outputs.borg == 'true'
-        timeout-minutes: 20
+        timeout-minutes: 30
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/borg-client/${{ matrix.base-image }}.Dockerfile
+          platforms: linux/${{ matrix.arch }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}-${{ matrix.arch }}
           build-args: |
             CLIENT_BORG_VERSION=${{ matrix.borg-version }}
-          cache-from: type=gha,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}
-          cache-to: type=gha,mode=max,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}
+          cache-from: type=gha,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=client-${{ matrix.borg-version }}-${{ matrix.base-image }}-${{ matrix.arch }}
 
-      # Build Borg Server Images (only once per version)
+      # Build Borg Server Images (only once per version per arch)
       - name: Build and push Borg server image
-        if: needs.detect-changes.outputs.borg == 'true' && matrix.base-image == 'ubuntu-22.04'  # Only build server once per version
-        timeout-minutes: 15
+        if: needs.detect-changes.outputs.borg == 'true' && matrix.base-image == 'ubuntu-22.04'
+        timeout-minutes: 20
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/borg-server/Dockerfile
+          platforms: linux/${{ matrix.arch }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}-${{ matrix.arch }}
           build-args: |
             BORG_VERSION=${{ matrix.borg-version }}
-          cache-from: type=gha,scope=server-${{ matrix.borg-version }}
-          cache-to: type=gha,mode=max,scope=server-${{ matrix.borg-version }}
+          cache-from: type=gha,scope=server-${{ matrix.borg-version }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=server-${{ matrix.borg-version }}-${{ matrix.arch }}
 
   # Ubuntu integration tests using Docker
   ubuntu-tests:
@@ -92,14 +105,18 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            borg-version: "1.4.2"
+            borg-version: "1.4.3"
             base-image: ubuntu-22.04
-          - os: ubuntu-latest
-            borg-version: "1.4.2"
-            base-image: ubuntu-22.04
+            arch: amd64
           - os: ubuntu-24.04
-            borg-version: "1.4.2"
+            borg-version: "1.4.3"
             base-image: ubuntu-24.04
+            arch: amd64
+          # ARM64 tests via QEMU emulation
+          - os: ubuntu-latest
+            borg-version: "1.4.3"
+            base-image: ubuntu-24.04
+            arch: arm64
     permissions:
       contents: read
       packages: read
@@ -115,11 +132,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        if: needs.detect-changes.outputs.borg == 'true' && matrix.arch == 'arm64'
+        uses: docker/setup-qemu-action@v3
+
       - name: Run integration tests in client container
         if: needs.detect-changes.outputs.borg == 'true'
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           echo "Running integration tests in client container..."
+          echo "Architecture: ${{ matrix.arch }}"
 
           # Get Docker group ID for proper permissions
           DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
@@ -129,6 +151,7 @@ jobs:
           # Run client container with same approach as script
           docker run --rm \
             --name borg-client-test \
+            --platform linux/${{ matrix.arch }} \
             --network borg-test-network \
             --privileged \
             --device /dev/fuse \
@@ -137,7 +160,7 @@ jobs:
             -v ~/.docker:/home/borg/.docker:ro \
             -e CLIENT_BORG_VERSION=${{ matrix.borg-version }} \
             -e SERVER_BORG_VERSION=${{ matrix.borg-version }} \
-            -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }} \
+            -e SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-server-${{ matrix.borg-version }}-${{ matrix.arch }} \
             -e TESTCONTAINERS_RYUK_DISABLED=true \
             -e TESTCONTAINERS_CHECKS_DISABLE=true \
             -e TESTCONTAINERS_NETWORK_STRATEGY=reuse \
@@ -145,7 +168,7 @@ jobs:
             -e DOCKER_HOST=unix:///var/run/docker.sock \
             -e TEST_ARGS="-test.v" \
             --group-add "${DOCKER_GID}" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }} || {
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-client-${{ matrix.borg-version }}-${{ matrix.base-image }}-${{ matrix.arch }} || {
             echo "Integration tests failed"
             exit 1
           }
