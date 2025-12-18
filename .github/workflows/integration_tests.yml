@@ -29,7 +29,7 @@ jobs:
   # Build and cache Docker images for Ubuntu testing
   build-images:
     needs: detect-changes
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     strategy:
       matrix:
         include:
@@ -67,10 +67,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        if: needs.detect-changes.outputs.borg == 'true'
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         if: needs.detect-changes.outputs.borg == 'true'
@@ -129,8 +125,8 @@ jobs:
             borg-version: "1.4.3"
             base-image: ubuntu-24.04
             arch: amd64
-          # ARM64 tests via QEMU emulation
-          - os: ubuntu-latest
+          # ARM64 tests on native runner
+          - os: ubuntu-24.04-arm
             borg-version: "1.4.3"
             base-image: ubuntu-24.04
             arch: arm64
@@ -158,10 +154,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        if: needs.detect-changes.outputs.borg == 'true' && matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v3
-
       - name: Run integration tests in client container
         if: needs.detect-changes.outputs.borg == 'true'
         timeout-minutes: 15
@@ -177,7 +169,6 @@ jobs:
           # Run client container with same approach as script
           docker run --rm \
             --name borg-client-test \
-            --platform linux/${{ matrix.arch }} \
             --network borg-test-network \
             --privileged \
             --device /dev/fuse \
