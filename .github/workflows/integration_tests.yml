@@ -32,15 +32,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        borg-version: ["1.4.0", "1.4.1", "1.4.3"]
-        base-image: ["ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"]
-        arch: ["amd64", "arm64"]
-        exclude:
-          # Only build ARM64 for 1.4.3 (older versions don't have ARM binaries)
-          - borg-version: "1.4.0"
+        include:
+          # Latest borg on all Ubuntu versions
+          - borg-version: "1.4.3"
+            base-image: "ubuntu-20.04"
+            arch: "amd64"
+          - borg-version: "1.4.3"
+            base-image: "ubuntu-22.04"
+            arch: "amd64"
+          - borg-version: "1.4.3"
+            base-image: "ubuntu-24.04"
+            arch: "amd64"
+          - borg-version: "1.4.3"
+            base-image: "ubuntu-24.04"
             arch: "arm64"
+          # Older borg versions on Ubuntu 24.04 only
           - borg-version: "1.4.1"
-            arch: "arm64"
+            base-image: "ubuntu-24.04"
+            arch: "amd64"
+          - borg-version: "1.4.0"
+            base-image: "ubuntu-24.04"
+            arch: "amd64"
     permissions:
       contents: read
       packages: write
@@ -82,7 +94,7 @@ jobs:
 
       # Build Borg Server Images (only once per version per arch)
       - name: Build and push Borg server image
-        if: needs.detect-changes.outputs.borg == 'true' && matrix.base-image == 'ubuntu-22.04'
+        if: needs.detect-changes.outputs.borg == 'true' && matrix.base-image == 'ubuntu-24.04'
         timeout-minutes: 20
         uses: docker/build-push-action@v6
         with:
@@ -104,6 +116,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Latest borg on all Ubuntu versions
+          - os: ubuntu-latest
+            borg-version: "1.4.3"
+            base-image: ubuntu-20.04
+            arch: amd64
           - os: ubuntu-latest
             borg-version: "1.4.3"
             base-image: ubuntu-22.04
@@ -117,6 +134,15 @@ jobs:
             borg-version: "1.4.3"
             base-image: ubuntu-24.04
             arch: arm64
+          # Older borg versions on Ubuntu 24.04 only
+          - os: ubuntu-24.04
+            borg-version: "1.4.1"
+            base-image: ubuntu-24.04
+            arch: amd64
+          - os: ubuntu-24.04
+            borg-version: "1.4.0"
+            base-image: ubuntu-24.04
+            arch: amd64
     permissions:
       contents: read
       packages: read
