@@ -54,6 +54,7 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
     usermod -aG docker borg && \
+    (getent group fuse || groupadd fuse) && \
     usermod -aG fuse borg
 
 # Copy Arco binary for borg-url detection (must be before borg install)

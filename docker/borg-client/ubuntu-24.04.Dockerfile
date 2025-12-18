@@ -66,6 +66,7 @@ RUN if ! getent group borg; then \
         fi; \
     fi && \
     usermod -aG docker borg && \
+    (getent group fuse || groupadd fuse) && \
     usermod -aG fuse borg
 
 # Copy Arco binary for borg-url detection (must be before borg install)
