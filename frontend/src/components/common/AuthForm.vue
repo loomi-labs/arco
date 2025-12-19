@@ -1,10 +1,14 @@
 <script setup lang='ts'>
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { CheckCircleIcon, EnvelopeIcon } from "@heroicons/vue/24/outline";
 import FormField from "./FormField.vue";
+import LegalDocumentModal from "./LegalDocumentModal.vue";
 import { formInputClass } from "../../common/form";
 import { useAuth } from "../../common/auth";
+import { logError } from "../../common/logger";
 import { AuthStatus } from "../../../bindings/github.com/loomi-labs/arco/backend/app/auth";
+import { Service as LegalService } from "../../../bindings/github.com/loomi-labs/arco/backend/app/legal";
+import type { GetLegalDocumentsResponse } from "../../../bindings/github.com/loomi-labs/arco/backend/api/v1";
 
 /************
  * Types
@@ -35,6 +39,16 @@ const isWaitingForAuth = ref(false);
 // Resend timer state
 const resendTimer = ref(0);
 
+// Terms acceptance state
+const termsAccepted = ref(false);
+const termsModal = ref<InstanceType<typeof LegalDocumentModal>>();
+const privacyModal = ref<InstanceType<typeof LegalDocumentModal>>();
+
+// Legal documents state
+const legalDocuments = ref<GetLegalDocumentsResponse | null>(null);
+const legalLoading = ref(false);
+const legalError = ref<string | undefined>(undefined);
+
 /************
  * Computed
  ************/
@@ -47,7 +61,8 @@ const isEmailValid = computed(() => {
 const isValid = computed(() =>
   email.value.length > 0 &&
   isEmailValid.value &&
-  !emailError.value
+  !emailError.value &&
+  (activeTab.value === "login" || (termsAccepted.value && legalDocuments.value !== null))
 );
 
 
@@ -93,6 +108,7 @@ function reset() {
   isLoading.value = false;
   isWaitingForAuth.value = false;
   resendTimer.value = 0;
+  termsAccepted.value = false;
 }
 
 function switchTab(tab: "login" | "register") {
@@ -190,9 +206,51 @@ function closeModal() {
   emit("close");
 }
 
+function showTerms() {
+  termsModal.value?.showModal();
+}
+
+function showPrivacy() {
+  privacyModal.value?.showModal();
+}
+
+function retryLoadLegalDocuments() {
+  legalDocuments.value = null;
+  legalError.value = undefined;
+  fetchLegalDocuments();
+}
+
+async function fetchLegalDocuments() {
+  if (legalDocuments.value || legalLoading.value) {
+    return; // Already loaded or loading
+  }
+
+  legalLoading.value = true;
+  legalError.value = undefined;
+
+  try {
+    const response = await LegalService.GetLegalDocuments();
+    if (response) {
+      legalDocuments.value = response;
+    } else {
+      legalError.value = "Failed to load legal documents";
+    }
+  } catch (error: unknown) {
+    await logError("Failed to fetch legal documents", error);
+    legalError.value = "Failed to load legal documents";
+  } finally {
+    legalLoading.value = false;
+  }
+}
+
 /************
  * Lifecycle
  ************/
+
+// Fetch legal documents on mount
+onMounted(() => {
+  fetchLegalDocuments();
+});
 
 // Watch for authentication success
 watch(isAuthenticated, (authenticated) => {
@@ -225,6 +283,38 @@ watch(isAuthenticated, (authenticated) => {
         <CheckCircleIcon v-if="isEmailValid && email.length > 0" class="size-6 text-success" />
         <EnvelopeIcon v-else class="size-6 text-base-content/50" />
       </FormField>
+
+      <!-- Terms acceptance checkbox (Register only) -->
+      <div v-if="activeTab === 'register'" class="form-control">
+        <div v-if="legalLoading" class="flex items-center gap-2 text-sm text-base-content/70">
+          <span class="loading loading-spinner loading-xs"></span>
+          Loading terms...
+        </div>
+        <div v-else-if="legalError" role="alert" class="alert alert-error alert-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ legalError }}</span>
+          <button class="btn btn-xs btn-outline" @click="retryLoadLegalDocuments">
+            Retry
+          </button>
+        </div>
+        <label v-else-if="legalDocuments" class="label cursor-pointer justify-start gap-3">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-sm checkbox-secondary"
+            v-model="termsAccepted"
+            :disabled="isLoading"
+          />
+          <span class="label-text">
+            I agree to the
+            <a class="link link-secondary" @click.prevent="showTerms">Terms of Service</a>
+            and
+            <a class="link link-secondary" @click.prevent="showPrivacy">Privacy Policy</a>
+          </span>
+        </label>
+      </div>
 
       <div class="flex justify-between pt-6">
         <button
@@ -298,4 +388,20 @@ watch(isAuthenticated, (authenticated) => {
       </ul>
     </div>
   </div>
+
+  <!-- Legal Document Modals -->
+  <LegalDocumentModal
+    v-if="legalDocuments?.terms_of_service"
+    ref="termsModal"
+    :title="legalDocuments.terms_of_service.title ?? 'Terms of Service'"
+    :content="legalDocuments.terms_of_service.content ?? ''"
+    :last-updated="legalDocuments.terms_of_service.last_updated ?? ''"
+  />
+  <LegalDocumentModal
+    v-if="legalDocuments?.privacy_policy"
+    ref="privacyModal"
+    :title="legalDocuments.privacy_policy.title ?? 'Privacy Policy'"
+    :content="legalDocuments.privacy_policy.content ?? ''"
+    :last-updated="legalDocuments.privacy_policy.last_updated ?? ''"
+  />
 </template>

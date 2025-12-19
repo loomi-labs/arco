@@ -221,6 +221,46 @@ export class DowngradeSubscriptionResponse {
 }
 
 /**
+ * GetLegalDocumentsResponse contains all legal documents.
+ * 
+ * Returns the current terms of service and privacy policy with their
+ * content and last updated dates.
+ */
+export class GetLegalDocumentsResponse {
+    /**
+     * Terms of service document.
+     */
+    "terms_of_service"?: LegalDocument | null;
+
+    /**
+     * Privacy policy document.
+     */
+    "privacy_policy"?: LegalDocument | null;
+
+    /** Creates a new GetLegalDocumentsResponse instance. */
+    constructor($$source: Partial<GetLegalDocumentsResponse> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetLegalDocumentsResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetLegalDocumentsResponse {
+        const $$createField0_0 = $$createType3;
+        const $$createField1_0 = $$createType3;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("terms_of_service" in $$parsedSource) {
+            $$parsedSource["terms_of_service"] = $$createField0_0($$parsedSource["terms_of_service"]);
+        }
+        if ("privacy_policy" in $$parsedSource) {
+            $$parsedSource["privacy_policy"] = $$createField1_0($$parsedSource["privacy_policy"]);
+        }
+        return new GetLegalDocumentsResponse($$parsedSource as Partial<GetLegalDocumentsResponse>);
+    }
+}
+
+/**
  * GetSubscriptionResponse contains the user's subscription details.
  * 
  * Returns null subscription field if the user has no active subscription.
@@ -248,8 +288,8 @@ export class GetSubscriptionResponse {
      * Creates a new GetSubscriptionResponse instance from a string or object.
      */
     static createFrom($$source: any = {}): GetSubscriptionResponse {
-        const $$createField0_0 = $$createType3;
-        const $$createField1_0 = $$createType5;
+        const $$createField0_0 = $$createType5;
+        const $$createField1_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("subscription" in $$parsedSource) {
             $$parsedSource["subscription"] = $$createField0_0($$parsedSource["subscription"]);
@@ -258,6 +298,40 @@ export class GetSubscriptionResponse {
             $$parsedSource["current_period_charges"] = $$createField1_0($$parsedSource["current_period_charges"]);
         }
         return new GetSubscriptionResponse($$parsedSource as Partial<GetSubscriptionResponse>);
+    }
+}
+
+/**
+ * LegalDocument represents a legal document with its content and metadata.
+ */
+export class LegalDocument {
+    /**
+     * Document title (e.g., "Terms of Service", "Privacy Policy").
+     */
+    "title"?: string;
+
+    /**
+     * HTML content of the document.
+     */
+    "content"?: string;
+
+    /**
+     * Last updated date in ISO format (e.g., "2025-01-01").
+     */
+    "last_updated"?: string;
+
+    /** Creates a new LegalDocument instance. */
+    constructor($$source: Partial<LegalDocument> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LegalDocument instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LegalDocument {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LegalDocument($$parsedSource as Partial<LegalDocument>);
     }
 }
 
@@ -488,7 +562,7 @@ export class Subscription {
         const $$createField6_0 = $$createType1;
         const $$createField7_0 = $$createType1;
         const $$createField8_0 = $$createType1;
-        const $$createField9_0 = $$createType7;
+        const $$createField9_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current_period_start" in $$parsedSource) {
             $$parsedSource["current_period_start"] = $$createField3_0($$parsedSource["current_period_start"]);
@@ -610,9 +684,11 @@ export class UpgradeSubscriptionResponse {
 // Private type creation functions
 const $$createType0 = timestamppb$0.Timestamp.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = Subscription.createFrom;
+const $$createType2 = LegalDocument.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = CurrentPeriodCharges.createFrom;
+const $$createType4 = Subscription.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = Plan.createFrom;
+const $$createType6 = CurrentPeriodCharges.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = Plan.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);

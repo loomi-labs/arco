@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+// LegalService provides public access to legal documents.
+//
+// This service is publicly accessible and does not require authentication.
+// It returns the current terms of service and privacy policy content
+// for display during user registration.
+service LegalService {
+  // GetLegalDocuments returns the current terms of service and privacy policy.
+  //
+  // This endpoint is publicly accessible and returns all legal documents
+  // needed for user registration consent.
+  rpc GetLegalDocuments(GetLegalDocumentsRequest) returns (GetLegalDocumentsResponse) {}
+}
+
+// GetLegalDocumentsRequest initiates retrieval of legal documents.
+//
+// This request requires no parameters as it returns all current legal documents.
+message GetLegalDocumentsRequest {}
+
+// GetLegalDocumentsResponse contains all legal documents.
+//
+// Returns the current terms of service and privacy policy with their
+// content and last updated dates.
+message GetLegalDocumentsResponse {
+  // Terms of service document.
+  LegalDocument terms_of_service = 1;
+
+  // Privacy policy document.
+  LegalDocument privacy_policy = 2;
+}
+
+// LegalDocument represents a legal document with its content and metadata.
+message LegalDocument {
+  // Document title (e.g., "Terms of Service", "Privacy Policy").
+  string title = 1;
+
+  // HTML content of the document.
+  string content = 2;
+
+  // Last updated date in ISO format (e.g., "2025-01-01").
+  string last_updated = 3;
+}
