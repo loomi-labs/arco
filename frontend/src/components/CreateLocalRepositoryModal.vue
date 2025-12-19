@@ -119,13 +119,14 @@ function resetAll() {
 }
 
 async function createRepo() {
+  isCreating.value = true;
   await validate(true);
   if (!isValid.value) {
+    isCreating.value = false;
     return;
   }
 
   try {
-    isCreating.value = true;
     const noPassword = !isEncrypted.value;
     const repo = await repoService.Create(
       name.value!,
@@ -230,10 +231,9 @@ async function validate(force = false) {
           isPasswordCorrect.value = true;
         }
       } else {
-        // For new repositories (not existing borg repos), default to encrypted
-        isEncrypted.value = true;
+        // For new repositories (not existing borg repos)
         if (password.value !== undefined || force) {
-          passwordError.value = !password.value ? "Enter a password for this repository" : undefined;
+          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
         }
       }
     } else {
@@ -396,7 +396,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='label'>
                       <span class='label-text'>Confirm Password</span>
                     </label>
-                    <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
+                    <label class='input w-full flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
                       <input :type="showPassword ? 'text' : 'password'"
                              class='grow p-0 [font:inherit]'
                              v-model='confirmPassword'
@@ -413,7 +413,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='label'>
                       <span class='label-text'>Name</span>
                     </label>
-                    <label class='input flex items-center gap-2' :class='{ "input-error": nameError }'>
+                    <label class='input w-full flex items-center gap-2' :class='{ "input-error": nameError }'>
                       <input type='text'
                              class='grow p-0 [font:inherit]'
                              v-model='name'
