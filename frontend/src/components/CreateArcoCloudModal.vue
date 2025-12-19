@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import { CheckCircleIcon, CloudIcon, ExclamationCircleIcon } from "@heroicons/vue/24/outline";
+import { CheckCircleIcon, CloudIcon, ExclamationCircleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
 import AuthForm from "./common/AuthForm.vue";
 import PasswordSaveReminder from "./common/PasswordSaveReminder.vue";
 import PlanSelection from "./subscription/PlanSelection.vue";
@@ -78,6 +78,7 @@ const repoNameError = ref<string | undefined>(undefined);
 const repoPassword = ref("");
 const repoPasswordError = ref<string | undefined>(undefined);
 const repoConfirmPassword = ref("");
+const showPassword = ref(false);
 const selectedLocation = ref<RepositoryLocation>(RepositoryLocation.RepositoryLocation_REPOSITORY_LOCATION_EU);
 const isCreatingRepository = ref(false);
 const isSuccess = ref(false);
@@ -161,7 +162,7 @@ const modalDescription = computed(() => {
     case ComponentState.CHECKOUT_PROCESSING:
       return "Complete your subscription checkout in the browser.";
     case ComponentState.REPOSITORY_CREATION:
-      return "Create a new repository in Arco Cloud.";
+      return "Create a repository in Arco Cloud.";
     case ComponentState.ERROR_PLANS:
     case ComponentState.ERROR_SUBSCRIPTION:
     case ComponentState.ERROR_CHECKOUT:
@@ -177,7 +178,7 @@ const modalMaxWidth = computed(() => {
     currentState.value === ComponentState.SUBSCRIPTION_SELECTION_AUTH) {
     return "sm:max-w-4xl";
   }
-  return "sm:max-w-2xl";
+  return "sm:max-w-lg";
 });
 
 const selectedPlanData = computed(() =>
@@ -201,23 +202,6 @@ const activePlanName = computed(() => {
   if (!userSubscriptionPlan.value) return "";
   const plan = subscriptionPlans.value.find(p => p.name === userSubscriptionPlan.value);
   return plan?.name ?? "";
-});
-
-const subscriptionEndDate = computed(() => {
-  if (!userSubscription.value?.current_period_end) return "Active";
-
-  try {
-    // Parse the protobuf timestamp and format as readable date
-    const seconds = userSubscription.value.current_period_end.seconds ?? 0;
-    if (seconds <= 0) return "Active";
-    const endDate = new Date(seconds * 1000);
-    return `Active until ${endDate.toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric"
-    })}`;
-  } catch (_error) {
-    return "Active";
-  }
 });
 
 /************
@@ -583,12 +567,9 @@ watch(isAuthenticated, async (authenticated) => {
 
                   <!-- Active subscription badge for Create Repository state -->
                   <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
-                       class='bg-success/10 border border-success/20 rounded-lg px-3 py-2 flex-shrink-0'>
-                    <div class='flex items-center gap-2 mb-1'>
-                      <CloudIcon class='size-4 text-success' />
-                      <span class='text-sm font-medium text-success'>{{ activePlanName }} Plan</span>
-                    </div>
-                    <p class='text-xs text-base-content/60'>{{ subscriptionEndDate }}</p>
+                       class='badge badge-success gap-1'>
+                    <CloudIcon class='size-3' />
+                    {{ activePlanName }}
                   </div>
                 </div>
                 <div class='pb-4'></div>
@@ -717,7 +698,7 @@ watch(isAuthenticated, async (authenticated) => {
                         <label class='label'>
                           <span class='label-text'>Repository Name</span>
                         </label>
-                        <label class='input flex items-center gap-2' :class='{ "input-error": repoNameError }'>
+                        <label class='input w-full flex items-center gap-2' :class='{ "input-error": repoNameError }'>
                           <input
                             type='text'
                             class='grow p-0 [font:inherit]'
@@ -736,19 +717,28 @@ watch(isAuthenticated, async (authenticated) => {
                         <label class='label'>
                           <span class='label-text'>Password</span>
                         </label>
-                        <label class='input flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
-                          <input
-                            type='password'
-                            class='grow p-0 [font:inherit]'
-                            v-model='repoPassword'
-                            @input='onRepoPasswordInput'
-                            placeholder='Enter repository password'
-                            :disabled='isLoading'
-                          />
-                          <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
-                                           class='size-5 text-success' />
-                          <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
-                        </label>
+                        <div class='join w-full'>
+                          <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": repoPasswordError }'>
+                            <input
+                              :type="showPassword ? 'text' : 'password'"
+                              class='grow p-0 [font:inherit]'
+                              v-model='repoPassword'
+                              @input='onRepoPasswordInput'
+                              placeholder='Enter repository password'
+                              :disabled='isLoading'
+                            />
+                            <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
+                                             class='size-5 text-success' />
+                            <ExclamationCircleIcon v-if='repoPasswordError' class='size-5 text-error' />
+                          </label>
+                          <button type='button'
+                                  class='btn btn-square join-item'
+                                  @click='showPassword = !showPassword'
+                                  :disabled='isLoading'>
+                            <EyeIcon v-if='!showPassword' class='size-5' />
+                            <EyeSlashIcon v-else class='size-5' />
+                          </button>
+                        </div>
                         <div v-if='repoPasswordError' class='text-error text-sm mt-1'>{{ repoPasswordError }}</div>
                       </div>
 
@@ -756,9 +746,9 @@ watch(isAuthenticated, async (authenticated) => {
                         <label class='label'>
                           <span class='label-text'>Confirm Password</span>
                         </label>
-                        <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError }'>
+                        <label class='input w-full flex items-center gap-2' :class='{ "input-error": confirmPasswordError }'>
                           <input
-                            type='password'
+                            :type="showPassword ? 'text' : 'password'"
                             class='grow p-0 [font:inherit]'
                             v-model='repoConfirmPassword'
                             placeholder='Confirm password'
@@ -774,11 +764,11 @@ watch(isAuthenticated, async (authenticated) => {
                         <label class='label'>
                           <span class='label-text'>Location</span>
                         </label>
-                        <div class='flex gap-3'>
+                        <div class='flex flex-col gap-2'>
                           <div
                             v-for='option in locationOptions'
                             :key='option.value'
-                            class='flex-1 flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
+                            class='flex items-center gap-2 px-3 py-2 border border-base-300 rounded-lg hover:bg-base-50 cursor-pointer transition-colors'
                             :class='{ "border-secondary bg-secondary/5": selectedLocation === option.value }'
                             @click='selectedLocation = option.value'
                           >
