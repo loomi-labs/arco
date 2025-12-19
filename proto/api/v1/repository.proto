@@ -103,11 +103,10 @@ service RepositoryService {
 // master ArcoCloud account, isolated for the authenticated user.
 message AddRepositoryRequest {
   // Human-readable name for the repository.
-  // Must be unique within the user's repositories and follow ArcoCloud naming rules.
+  // Must be unique within the user's repositories.
   string name = 1 [(buf.validate.field).string = {
-    min_len: 1,
-    max_len: 64,
-    pattern: "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
+    min_len: 3,
+    max_len: 30
   }];
 
   // SSH public key for repository access.
