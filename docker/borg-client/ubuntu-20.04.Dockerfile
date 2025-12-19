@@ -1,7 +1,7 @@
 # Borg Client Container for Integration Tests - Ubuntu 20.04
 
 # Import from main Dockerfile's builder stage
-FROM docker.io/library/golang:1.25-bookworm AS builder
+FROM docker.io/library/golang:1.24-bullseye AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -16,17 +16,17 @@ WORKDIR /app
 # Copy Go module files
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download dependencies (allow toolchain auto-download for go 1.25)
+RUN GOTOOLCHAIN=auto go mod download
 
 # Copy source code (only backend needed for integration tests)
 COPY backend/ ./backend/
 
-# Build integration test binary
-RUN CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg/integration
+# Build integration test binary (using auto toolchain for go 1.25)
+RUN GOTOOLCHAIN=auto CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg/integration
 
 # Build minimal arco binary for borg-url detection (no CGO needed)
-RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
+RUN GOTOOLCHAIN=auto CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
 
 # Ubuntu 20.04 specific runtime environment
 FROM ubuntu:20.04
@@ -36,8 +36,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Re-declare build arguments
-ARG CLIENT_BORG_VERSION=1.4.0
-ARG SERVER_BORG_VERSION=1.4.0
+ARG CLIENT_BORG_VERSION=1.4.3
+ARG SERVER_BORG_VERSION=1.4.3
 
 # Install required packages - Ubuntu 20.04 uses libfuse2
 RUN apt-get update && apt-get install -y \
@@ -57,7 +57,9 @@ RUN apt-get update && apt-get install -y \
 # Create borg user and directories (simplified for Ubuntu 20.04)
 RUN groupadd -g 1000 borg && \
     useradd -m -u 1000 -g borg -s /bin/bash borg && \
-    usermod -aG docker borg
+    usermod -aG docker borg && \
+    (getent group fuse || groupadd fuse) && \
+    usermod -aG fuse borg
 
 # Copy Arco binary for borg-url detection (must be before borg install)
 COPY --from=builder /arco-cli /usr/local/bin/arco-cli

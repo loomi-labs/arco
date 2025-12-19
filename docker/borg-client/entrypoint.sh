@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# Fix FUSE permissions if /dev/fuse exists (needed for borg mount tests)
+if [ -c /dev/fuse ]; then
+    # Try to fix permissions (will only work if running privileged)
+    chmod 666 /dev/fuse 2>/dev/null && echo "✅ Fixed /dev/fuse permissions" || true
+fi
+
 # Check Docker socket access
 if [ -S /var/run/docker.sock ]; then
     echo "✅ Docker socket available at /var/run/docker.sock"
