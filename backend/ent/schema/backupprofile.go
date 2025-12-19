@@ -35,7 +35,8 @@ func (BackupProfile) Fields() []ent.Field {
 		field.String("name").
 			StructTag(`json:"name"`).
 			MinLen(ValBackupProfileMinNameLength).
-			MaxLen(ValBackupProfileMaxNameLength),
+			MaxLen(ValBackupProfileMaxNameLength).
+			Unique(),
 		field.String("prefix").
 			StructTag(`json:"prefix"`).
 			// Match the prefix to be an alphanumeric string ending with a hyphen

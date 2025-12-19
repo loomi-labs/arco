@@ -63,7 +63,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "name", Type: field.TypeString, Size: 30},
+		{Name: "name", Type: field.TypeString, Unique: true, Size: 30},
 		{Name: "prefix", Type: field.TypeString, Unique: true},
 		{Name: "backup_paths", Type: field.TypeJSON},
 		{Name: "exclude_paths", Type: field.TypeJSON, Nullable: true},

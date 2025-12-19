@@ -305,6 +305,7 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 // ValidateBackupProfileName validates a backup profile name and returns an error message if invalid.
 // Returns empty string if valid.
 func (s *Service) ValidateBackupProfileName(ctx context.Context, name string) (string, error) {
+	s.mustHaveDB()
 	if name == "" {
 		return "Name is required", nil
 	}
@@ -314,6 +315,18 @@ func (s *Service) ValidateBackupProfileName(ctx context.Context, name string) (s
 	if len(name) > schema.ValBackupProfileMaxNameLength {
 		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValBackupProfileMaxNameLength), nil
 	}
+
+	exist, err := s.db.BackupProfile.
+		Query().
+		Where(backupprofile.Name(name)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Backup profile name must be unique", nil
+	}
+
 	return "", nil
 }
 
