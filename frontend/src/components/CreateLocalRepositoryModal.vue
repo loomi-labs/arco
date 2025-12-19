@@ -119,13 +119,14 @@ function resetAll() {
 }
 
 async function createRepo() {
+  isCreating.value = true;
   await validate(true);
   if (!isValid.value) {
+    isCreating.value = false;
     return;
   }
 
   try {
-    isCreating.value = true;
     const noPassword = !isEncrypted.value;
     const repo = await repoService.Create(
       name.value!,
@@ -230,10 +231,9 @@ async function validate(force = false) {
           isPasswordCorrect.value = true;
         }
       } else {
-        // For new repositories (not existing borg repos), default to encrypted
-        isEncrypted.value = true;
+        // For new repositories (not existing borg repos)
         if (password.value !== undefined || force) {
-          passwordError.value = !password.value ? "Enter a password for this repository" : undefined;
+          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
         }
       }
     } else {
@@ -290,7 +290,7 @@ watch([name, location, password, isEncrypted], async () => {
 
                 <!-- Form View -->
                 <template v-else>
-                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add a local repository</DialogTitle>
+                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add Local Repository</DialogTitle>
                   <p class='text-base-content/70 mb-4'>You can create a new repository or connect an existing one.</p>
 
                   <div v-if='isBorgRepo' role='alert' class='alert alert-soft alert-info py-2 mb-4'>
@@ -396,7 +396,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='label'>
                       <span class='label-text'>Confirm Password</span>
                     </label>
-                    <label class='input flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
+                    <label class='input w-full flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
                       <input :type="showPassword ? 'text' : 'password'"
                              class='grow p-0 [font:inherit]'
                              v-model='confirmPassword'
@@ -413,7 +413,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='label'>
                       <span class='label-text'>Name</span>
                     </label>
-                    <label class='input flex items-center gap-2' :class='{ "input-error": nameError }'>
+                    <label class='input w-full flex items-center gap-2' :class='{ "input-error": nameError }'>
                       <input type='text'
                              class='grow p-0 [font:inherit]'
                              v-model='name'

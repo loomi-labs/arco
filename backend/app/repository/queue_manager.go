@@ -109,6 +109,12 @@ func (qm *QueueManager) setRepositoryState(repoID int, state statemachine.Reposi
 	defer qm.statesMu.Unlock()
 	qm.repositoryStates[repoID] = state
 
+	// Don't emit state change event for Deleting state
+	// The repositoryDeleted event will be emitted separately
+	if statemachine.GetRepositoryStateType(state) == statemachine.RepositoryStateTypeDeleting {
+		return
+	}
+
 	// Emit event for state change
 	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
 
@@ -177,8 +183,10 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 	// Attempt to start operation if possible
 	err := qm.processQueue(repoID)
 	if err != nil {
-		// Emit repo changed event even on error
-		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+		// Emit repo changed event even on error (but not for delete operations)
+		if statemachine.GetOperationType(op.Operation) != statemachine.OperationTypeDelete {
+			qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+		}
 		return operationID, err
 	}
 
@@ -201,8 +209,10 @@ func (qm *QueueManager) AddOperation(repoID int, op *QueuedOperation) (string, e
 		}
 	}
 
-	// Emit repo changed event AFTER state update
-	qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+	// Emit repo changed event AFTER state update (but not for delete operations)
+	if statemachine.GetOperationType(op.Operation) != statemachine.OperationTypeDelete {
+		qm.eventEmitter.EmitEvent(application.Get().Context(), types.EventRepoStateChangedString(repoID))
+	}
 
 	return operationID, nil
 }
