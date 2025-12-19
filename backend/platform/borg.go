@@ -12,6 +12,32 @@ import (
 
 // Binaries contains all available Borg binary variants
 var Binaries = []BorgBinary{
+	// Borg 1.4.3 - Linux x86_64 variants
+	{
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
+		Os:           Linux,
+		GlibcVersion: version.Must(version.NewVersion("2.31")),
+		Arch:         "amd64",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc231-x86_64",
+	},
+	{
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
+		Os:           Linux,
+		GlibcVersion: version.Must(version.NewVersion("2.35")),
+		Arch:         "amd64",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-x86_64-gh",
+	},
+	// Borg 1.4.3 - Linux ARM64
+	{
+		Name:         "borg_1.4.3",
+		Version:      version.Must(version.NewVersion("1.4.3")),
+		Os:           Linux,
+		GlibcVersion: version.Must(version.NewVersion("2.35")),
+		Arch:         "arm64",
+		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-arm64-gh",
+	},
 	// Borg 1.4.1 - Linux variants
 	{
 		Name:         "borg_1.4.1",
@@ -78,28 +104,39 @@ var Binaries = []BorgBinary{
 func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 	// 1. Check if Linux or Darwin -> if not return error
 	currentOS := OS(runtime.GOOS)
+	currentArch := runtime.GOARCH
 	if !IsLinux() && !IsMacOS() {
 		return BorgBinary{}, fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
 
-	// 2. Find latest binary for current OS
+	// 2. Find latest binary for current OS and architecture
 	var latestBinary BorgBinary
 	var latestVersion *version.Version
 
 	for _, binary := range binaries {
-		if binary.Os == currentOS {
-			if latestVersion == nil || binary.Version.GreaterThan(latestVersion) {
-				latestBinary = binary
-				latestVersion = binary.Version
-			}
+		// Check OS compatibility
+		if binary.Os != currentOS {
+			continue
+		}
+
+		// Check architecture compatibility
+		// Empty Arch means compatible with any architecture (backward compatibility)
+		if binary.Arch != "" && binary.Arch != currentArch {
+			continue
+		}
+
+		// Track the latest version
+		if latestVersion == nil || binary.Version.GreaterThan(latestVersion) {
+			latestBinary = binary
+			latestVersion = binary.Version
 		}
 	}
 
 	if latestVersion == nil {
-		return BorgBinary{}, fmt.Errorf("no binary found for operating system %s", runtime.GOOS)
+		return BorgBinary{}, fmt.Errorf("no binary found for operating system %s and architecture %s", runtime.GOOS, currentArch)
 	}
 
-	// 3. If on Darwin, return this binary
+	// 3. If on Darwin, return the architecture-matched binary
 	if IsMacOS() {
 		return latestBinary, nil
 	}
@@ -108,7 +145,7 @@ func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 	systemGlibc, err := getGlibcVersion()
 	if err != nil {
 		// If GLIBC detection fails, fallback to lowest GLIBC requirement
-		return selectLowestGlibcBinary(binaries), nil
+		return selectLowestGlibcBinary(binaries, currentArch), nil
 	}
 
 	// 5. Compare GLIBC versions -> select highest version that is <= system GLIBC version
@@ -116,8 +153,14 @@ func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 	var bestGlibcVersion *version.Version
 
 	for _, binary := range binaries {
+		// Only consider binaries for current OS, architecture, and latest Borg version
 		if binary.Os != currentOS || !binary.Version.Equal(latestVersion) {
-			continue // Only consider binaries for current OS with latest Borg version
+			continue
+		}
+
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != currentArch {
+			continue
 		}
 
 		if binary.GlibcVersion != nil && binary.GlibcVersion.LessThanOrEqual(systemGlibc) {
@@ -130,7 +173,7 @@ func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 
 	if bestGlibcVersion == nil {
 		// No compatible GLIBC version found, return lowest available
-		return selectLowestGlibcBinary(binaries), nil
+		return selectLowestGlibcBinary(binaries, currentArch), nil
 	}
 
 	return bestBinary, nil
@@ -177,21 +220,28 @@ func getGlibcVersion() (*version.Version, error) {
 	return v, nil
 }
 
-// selectLowestGlibcBinary returns the binary with the lowest GLIBC requirement
-func selectLowestGlibcBinary(binaries []BorgBinary) BorgBinary {
+// selectLowestGlibcBinary returns the binary with the lowest GLIBC requirement for the given architecture
+func selectLowestGlibcBinary(binaries []BorgBinary, arch string) BorgBinary {
 	if len(binaries) == 0 {
 		return BorgBinary{}
 	}
 
-	lowest := binaries[0]
+	var lowest BorgBinary
+	foundCompatible := false
 
-	for _, binary := range binaries[1:] {
+	for _, binary := range binaries {
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != arch {
+			continue
+		}
+
 		if binary.GlibcVersion == nil {
 			continue
 		}
 
-		if lowest.GlibcVersion == nil || binary.GlibcVersion.LessThan(lowest.GlibcVersion) {
+		if !foundCompatible || binary.GlibcVersion.LessThan(lowest.GlibcVersion) {
 			lowest = binary
+			foundCompatible = true
 		}
 	}
 

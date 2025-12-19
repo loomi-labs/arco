@@ -2,7 +2,7 @@
 # Runs borg in server mode over SSH for client connections
 
 # Builder stage for arco-cli
-FROM docker.io/library/golang:1.25-bookworm AS builder
+FROM docker.io/library/golang:1.24-bullseye AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -17,14 +17,14 @@ WORKDIR /app
 # Copy Go module files
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download dependencies (allow toolchain auto-download for go 1.25)
+RUN GOTOOLCHAIN=auto go mod download
 
 # Copy source code (only backend needed for integration tests)
 COPY backend/ ./backend/
 
 # Build minimal arco binary for borg-url detection (no CGO needed)
-RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
+RUN GOTOOLCHAIN=auto CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/cmd/integration
 
 # Ubuntu 24.04 runtime environment
 FROM ubuntu:24.04

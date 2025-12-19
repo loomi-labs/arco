@@ -21,6 +21,7 @@ type BorgBinary struct {
 	Version      *version.Version
 	Os           OS
 	GlibcVersion *version.Version // Only applicable for Linux, nil for non-Linux
+	Arch         string           // CPU architecture (amd64, arm64), empty means any
 	Url          string
 }
 
