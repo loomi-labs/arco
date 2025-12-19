@@ -10,7 +10,7 @@ Quick reference for managing Linear issues using the `linctl` CLI.
 ## Project Context
 
 - **Team**: TECH
-- **Assignee**: dev@uupi.cloud
+- **Assignee**: (your email here)
 - **Statuses**: Backlog, Todo, In Progress, Code Review, Done, Canceled, Duplicate
 
 ## Common Operations
