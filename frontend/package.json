@@ -27,6 +27,7 @@
     "@wailsio/runtime": "3.0.0-alpha.73",
     "dayjs": "^1.11.19",
     "deep-equal": "^2.2.3",
+    "dompurify": "^3.3.1",
     "flag-icons": "^7.5.0",
     "lodash": "^4.17.21",
     "vee-validate": "^4.15.1",

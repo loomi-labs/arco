@@ -1,6 +1,7 @@
 <script setup lang='ts'>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import DOMPurify from 'dompurify';
 
 /************
  * Types
@@ -16,9 +17,15 @@ interface Props {
  * Variables
  ************/
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const isOpen = ref(false);
+
+/************
+ * Computed
+ ************/
+
+const sanitizedContent = computed(() => DOMPurify.sanitize(props.content));
 
 /************
  * Functions
@@ -59,7 +66,7 @@ defineExpose({ showModal, close });
 
                 <!-- Scrollable Content Area -->
                 <div class='max-h-[60vh] overflow-y-auto pr-2 border-y border-base-300 py-4'>
-                  <div class='prose prose-sm max-w-none' v-html='content'></div>
+                  <div class='prose prose-sm max-w-none' v-html='sanitizedContent'></div>
                 </div>
 
                 <!-- Close Button -->
