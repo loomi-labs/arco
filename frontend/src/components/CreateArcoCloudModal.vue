@@ -411,8 +411,8 @@ function validateRepoName() {
 
   if (repoName.value.length < 3) {
     repoNameError.value = "Repository name must be at least 3 characters";
-  } else if (!/^[a-zA-Z0-9-_]+$/.test(repoName.value)) {
-    repoNameError.value = "Repository name can only contain letters, numbers, dashes, and underscores";
+  } else if (repoName.value.length > 30) {
+    repoNameError.value = "Repository name can not be longer than 30 characters";
   } else {
     repoNameError.value = undefined;
   }
