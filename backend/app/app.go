@@ -21,6 +21,7 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
+	"github.com/loomi-labs/arco/backend/app/legal"
 	"github.com/loomi-labs/arco/backend/app/notification"
 	"github.com/loomi-labs/arco/backend/app/plan"
 	"github.com/loomi-labs/arco/backend/app/repository"
@@ -64,6 +65,7 @@ type App struct {
 	userService          *user.ServiceInternal
 	authService          *auth.ServiceInternal
 	planService          *plan.ServiceInternal
+	legalService         *legal.ServiceInternal
 	subscriptionService  *subscription.ServiceInternal
 	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
@@ -90,6 +92,7 @@ func NewApp(
 		userService:              user.NewService(log, state),
 		authService:              auth.NewService(log, state),
 		planService:              plan.NewService(log, state),
+		legalService:             legal.NewService(log, state),
 		subscriptionService:      subscription.NewService(log, state),
 		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
@@ -115,6 +118,10 @@ func (a *App) AuthService() *auth.Service {
 
 func (a *App) PlanService() *plan.Service {
 	return a.planService.Service
+}
+
+func (a *App) LegalService() *legal.Service {
+	return a.legalService.Service
 }
 
 func (a *App) SubscriptionService() *subscription.Service {
@@ -181,6 +188,10 @@ func (a *App) Startup(ctx context.Context) {
 		httpClient,
 		a.config.CloudRPCURL,
 	)
+	legalRPCClient := arcov1connect.NewLegalServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+	)
 
 	// Create authenticated RPC clients
 	planRPCClient := arcov1connect.NewPlanServiceClient(
@@ -205,6 +216,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.notificationService.Init(a.db, a.eventEmitter)
 	a.authService.Init(a.db, authRPCClient, a.keyring)
 	a.planService.Init(a.db, planRPCClient)
+	a.legalService.Init(a.db, legalRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
