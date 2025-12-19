@@ -290,7 +290,7 @@ watch([name, location, password, isEncrypted], async () => {
 
                 <!-- Form View -->
                 <template v-else>
-                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add a local repository</DialogTitle>
+                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add Local Repository</DialogTitle>
                   <p class='text-base-content/70 mb-4'>You can create a new repository or connect an existing one.</p>
 
                   <div v-if='isBorgRepo' role='alert' class='alert alert-soft alert-info py-2 mb-4'>
