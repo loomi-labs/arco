@@ -19,6 +19,7 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupschedule"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
+	"github.com/loomi-labs/arco/backend/ent/schema"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -299,6 +300,34 @@ func (s *Service) GetPrefixSuggestion(ctx context.Context, name string) (string,
 		return s.GetPrefixSuggestion(ctx, prefix)
 	}
 	return fullPrefix, nil
+}
+
+// ValidateBackupProfileName validates a backup profile name and returns an error message if invalid.
+// Returns empty string if valid.
+func (s *Service) ValidateBackupProfileName(ctx context.Context, name string) (string, error) {
+	s.mustHaveDB()
+	if name == "" {
+		return "Name is required", nil
+	}
+	if len(name) < schema.ValBackupProfileMinNameLength {
+		return fmt.Sprintf("Name must be at least %d characters long", schema.ValBackupProfileMinNameLength), nil
+	}
+	if len(name) > schema.ValBackupProfileMaxNameLength {
+		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValBackupProfileMaxNameLength), nil
+	}
+
+	exist, err := s.db.BackupProfile.
+		Query().
+		Where(backupprofile.Name(name)).
+		Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if exist {
+		return "Backup profile name must be unique", nil
+	}
+
+	return "", nil
 }
 
 func (s *Service) CreateBackupProfile(ctx context.Context, backup BackupProfile, repositoryIds []int) (*BackupProfile, error) {

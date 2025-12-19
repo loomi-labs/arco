@@ -445,11 +445,41 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 			len(preMigrationState.BackupProfiles), len(profiles))
 	}
 
+	// Build a map of original names to detect duplicates
+	originalNameCounts := make(map[string]int)
+	for _, profile := range preMigrationState.BackupProfiles {
+		originalNameCounts[profile.Name]++
+	}
+
 	// Validate backup profile data
 	for i, profile := range profiles {
 		expected := preMigrationState.BackupProfiles[i]
 
-		if profile.Name != expected.Name {
+		// For profiles that had duplicate names, verify the name was properly transformed
+		if originalNameCounts[expected.Name] > 1 {
+			// Find how many profiles with same name had lower IDs
+			countWithLowerID := 0
+			for _, p := range preMigrationState.BackupProfiles {
+				if p.Name == expected.Name && p.ID < expected.ID {
+					countWithLowerID++
+				}
+			}
+
+			if countWithLowerID == 0 {
+				// First occurrence keeps original name
+				if profile.Name != expected.Name {
+					return fmt.Errorf("backup profile %d: first occurrence should keep original name %q, got %q",
+						profile.ID, expected.Name, profile.Name)
+				}
+			} else {
+				// Subsequent occurrences get " (N)" appended
+				expectedNewName := fmt.Sprintf("%s (%d)", expected.Name, countWithLowerID)
+				if profile.Name != expectedNewName {
+					return fmt.Errorf("backup profile %d: duplicate name should be renamed to %q, got %q",
+						profile.ID, expectedNewName, profile.Name)
+				}
+			}
+		} else if profile.Name != expected.Name {
 			return fmt.Errorf("backup profile %d: name mismatch: expected %q, got %q",
 				profile.ID, expected.Name, profile.Name)
 		}
@@ -494,6 +524,16 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 			return fmt.Errorf("backup profile %d: advanced_section_collapsed should default to true, got %t",
 				profile.ID, profile.AdvancedSectionCollapsed)
 		}
+	}
+
+	// Validate that all backup profile names are unique after migration
+	postMigrationNames := make(map[string]int)
+	for _, profile := range profiles {
+		if existingID, exists := postMigrationNames[profile.Name]; exists {
+			return fmt.Errorf("backup profile names not unique after migration: profiles %d and %d both have name %q",
+				existingID, profile.ID, profile.Name)
+		}
+		postMigrationNames[profile.Name] = profile.ID
 	}
 
 	// Validate backup_profile_repositories relationships using Ent edges

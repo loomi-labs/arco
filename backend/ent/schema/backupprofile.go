@@ -22,6 +22,11 @@ func (BackupProfile) Mixin() []ent.Mixin {
 	}
 }
 
+var (
+	ValBackupProfileMinNameLength = 3
+	ValBackupProfileMaxNameLength = 30
+)
+
 // Fields of the BackupProfile.
 func (BackupProfile) Fields() []ent.Field {
 	return []ent.Field{
@@ -29,8 +34,9 @@ func (BackupProfile) Fields() []ent.Field {
 			StructTag(`json:"id"`),
 		field.String("name").
 			StructTag(`json:"name"`).
-			MinLen(3).
-			MaxLen(30),
+			MinLen(ValBackupProfileMinNameLength).
+			MaxLen(ValBackupProfileMaxNameLength).
+			Unique(),
 		field.String("prefix").
 			StructTag(`json:"prefix"`).
 			// Match the prefix to be an alphanumeric string ending with a hyphen

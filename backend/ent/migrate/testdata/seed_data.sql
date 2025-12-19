@@ -9,17 +9,20 @@ VALUES
     (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Test Repo 2', 'ssh://user@host2.example.com:22/~/backup', 'password456', 200, 2048000, 1024000, 150, 1638400, 819200);
 
 -- Insert backup profiles
+-- Note: Profile 3 intentionally has the same name as Profile 1 to test duplicate name migration
 INSERT INTO `backup_profiles` (`id`, `created_at`, `updated_at`, `name`, `prefix`, `backup_paths`, `exclude_paths`, `icon`, `data_section_collapsed`, `schedule_section_collapsed`)
 VALUES
-    (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Home Backup', 'home', '["\/home\/user\/documents", "\/home\/user\/photos"]', '["*.tmp", "*.cache"]', 'home', false, false),
-    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Work Backup', 'work', '["\/home\/user\/work"]', '["node_modules"]', 'briefcase', false, false);
+    (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Home Backup', 'home-', '["\/home\/user\/documents", "\/home\/user\/photos"]', '["*.tmp", "*.cache"]', 'home', false, false),
+    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Work Backup', 'work-', '["\/home\/user\/work"]', '["node_modules"]', 'briefcase', false, false),
+    (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', 'Home Backup', 'home2-', '["\/home\/user\/music"]', '["*.mp3"]', 'camera', true, true);
 
 -- Insert backup_profile_repositories relationships (this is the critical data to preserve)
 INSERT INTO `backup_profile_repositories` (`backup_profile_id`, `repository_id`)
 VALUES
     (1, 1),  -- Home Backup -> Test Repo 1
     (1, 2),  -- Home Backup -> Test Repo 2
-    (2, 1);  -- Work Backup -> Test Repo 1
+    (2, 1),  -- Work Backup -> Test Repo 1
+    (3, 2);  -- Home Backup (duplicate) -> Test Repo 2
 
 -- Insert archives
 -- Note: Using archive_backup_profile column as this represents state before October 2025 migration
@@ -38,12 +41,14 @@ VALUES
 INSERT INTO `backup_schedules` (`id`, `created_at`, `updated_at`, `mode`, `daily_at`, `weekday`, `weekly_at`, `monthday`, `monthly_at`, `backup_profile_backup_schedule`)
 VALUES
     (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'daily', '2024-01-01 02:00:00', 'monday', '2024-01-01 02:00:00', 1, '2024-01-01 02:00:00', 1),
-    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'weekly', '2024-01-02 03:00:00', 'sunday', '2024-01-02 03:00:00', 1, '2024-01-02 03:00:00', 2);
+    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'weekly', '2024-01-02 03:00:00', 'sunday', '2024-01-02 03:00:00', 1, '2024-01-02 03:00:00', 2),
+    (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', 'monthly', '2024-01-03 04:00:00', 'friday', '2024-01-03 04:00:00', 15, '2024-01-03 04:00:00', 3);
 
 -- Insert pruning rules
 INSERT INTO `pruning_rules` (`id`, `created_at`, `updated_at`, `is_enabled`, `keep_hourly`, `keep_daily`, `keep_weekly`, `keep_monthly`, `keep_yearly`, `keep_within_days`, `backup_profile_pruning_rule`)
 VALUES
     (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', true, 24, 7, 4, 6, 2, 30, 1),
-    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', true, 0, 14, 8, 12, 3, 60, 2);
+    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', true, 0, 14, 8, 12, 3, 60, 2),
+    (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', false, 12, 30, 12, 24, 5, 90, 3);
 
 -- Settings row already exists from 20241202193640_default_settings.sql migration

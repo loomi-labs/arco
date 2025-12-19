@@ -120,6 +120,14 @@ export function UpdateBackupProfile(backup: $models.BackupProfile): $Cancellable
     return $Call.ByID(3631835510, backup);
 }
 
+/**
+ * ValidateBackupProfileName validates a backup profile name and returns an error message if invalid.
+ * Returns empty string if valid.
+ */
+export function ValidateBackupProfileName(name: string): $CancellablePromise<string> {
+    return $Call.ByID(832939032, name);
+}
+
 // Private type creation functions
 const $$createType0 = $models.BackupProfile.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

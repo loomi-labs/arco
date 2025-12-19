@@ -2289,10 +2289,6 @@ func (s *Service) ValidateRepoName(ctx context.Context, name string) (string, er
 	if len(name) > schema.ValRepositoryMaxNameLength {
 		return fmt.Sprintf("Name can not be longer than %d characters", schema.ValRepositoryMaxNameLength), nil
 	}
-	matched := schema.ValRepositoryNamePattern.MatchString(name)
-	if !matched {
-		return "Name can only contain letters, numbers, hyphens, and underscores", nil
-	}
 
 	exist, err := s.db.Repository.
 		Query().
