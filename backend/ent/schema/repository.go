@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"regexp"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -23,7 +21,6 @@ func (Repository) Mixin() []ent.Mixin {
 var (
 	ValRepositoryMinNameLength = 3
 	ValRepositoryMaxNameLength = 30
-	ValRepositoryNamePattern   = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`) // Only letters, numbers, hyphens, and underscores
 )
 
 // Fields of the Repository.
@@ -35,7 +32,6 @@ func (Repository) Fields() []ent.Field {
 			StructTag(`json:"name"`).
 			MinLen(ValRepositoryMinNameLength).
 			MaxLen(ValRepositoryMaxNameLength).
-			Match(ValRepositoryNamePattern).
 			Unique(),
 		field.String("url").
 			StructTag(`json:"url"`).
