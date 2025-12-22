@@ -736,6 +736,7 @@ func (a *App) installBorgBinary() error {
 // codesignBinary performs ad-hoc codesigning on macOS binaries.
 // This prevents slow syspolicyd malware scanning of unsigned binaries.
 func (a *App) codesignBinary(path string) error {
+	a.log.Infof("Sign binary in %s", path)
 	cmd := exec.Command("codesign", "--force", "--sign", "-", path)
 	return cmd.Run()
 }
