@@ -172,13 +172,18 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		}
 	}
 
+	binary, err := platform.GetLatestBorgBinary(platform.Binaries)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get borg binary for current platform: %w", err)
+	}
+
 	return &types.Config{
 		Dir:             configDir,
 		SSHDir:          filepath.Join(configDir, "ssh"),
 		KeyringDir:      filepath.Join(configDir, "keyring"),
 		BorgBinaries:    platform.Binaries,
-		BorgPath:        filepath.Join(configDir, platform.Binaries[0].Name),
-		BorgVersion:     platform.Binaries[0].Version.String(),
+		BorgPath:        filepath.Join(configDir, binary.Name),
+		BorgVersion:     binary.Version.String(),
 		Icons:           icons,
 		Migrations:      migrations,
 		GithubAssetName: platform.GithubAssetName(),
