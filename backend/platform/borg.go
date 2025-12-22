@@ -86,13 +86,14 @@ var Binaries = []BorgBinary{
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc236",
 		SupportsMount: true,
 	},
-	// Borg 1.4.1 - macOS (single binary with FUSE support)
+	// Borg 1.4.1 - macOS (directory distribution with FUSE support)
 	{
 		Name:          "borg_1.4.1",
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Darwin,
-		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012",
-		SupportsMount: true, // Single binary includes llfuse
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012.tgz",
+		IsDirectory:   true,
+		SupportsMount: true, // Non-gh builds include llfuse
 	},
 	// Borg 1.4.0 - Linux variants
 	{

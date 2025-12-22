@@ -676,6 +676,17 @@ func (a *App) ensureBorgBinary() error {
 			}
 		}
 	}
+
+	// On macOS, ensure mount binary is installed (separate from main binary)
+	// This is called independently because the main binary might already be installed
+	// but the mount binary might not exist yet (e.g., after a code update that adds mount support)
+	if platform.IsMacOS() {
+		if err := a.ensureBorgMountBinary(); err != nil {
+			a.log.Warnf("Failed to install borg mount binary: %v", err)
+			// Don't fail startup - mount just won't work
+		}
+	}
+
 	return nil
 }
 
@@ -732,14 +743,6 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
-	// On macOS, also download 1.4.1 for mount operations (has FUSE support)
-	if platform.IsMacOS() {
-		if err := a.installBorgMountBinary(); err != nil {
-			a.log.Warnf("Failed to install borg mount binary: %v", err)
-			// Don't fail - mount just won't work
-		}
-	}
-
 	// Clean up old borg directories that are no longer needed
 	a.cleanupOldBorgBinaries()
 
@@ -768,10 +771,11 @@ func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary, target
 	return nil
 }
 
-// installBorgMountBinary downloads and installs a Borg binary with FUSE support for mount operations.
+// ensureBorgMountBinary ensures a Borg binary with FUSE support is installed for mount operations.
 // On macOS, the fast 1.4.3 directory distribution doesn't include FUSE support,
 // so we use a separate binary (e.g., 1.4.1) which has it.
-func (a *App) installBorgMountBinary() error {
+// This function checks if the mount binary is already installed before downloading.
+func (a *App) ensureBorgMountBinary() error {
 	mountBinary := a.config.BorgMountBinary
 	mountBinaryPath := a.config.BorgMountExePath
 	mountPath := a.config.BorgMountPath
@@ -807,22 +811,7 @@ func (a *App) installBorgMountBinary() error {
 		}
 	}
 
-	// Ad-hoc codesign on macOS for single binaries to prevent slow syspolicyd malware scanning
-	if platform.IsMacOS() && !mountBinary.IsDirectory {
-		if err := a.codesignBinary(mountBinaryPath); err != nil {
-			a.log.Warnf("Failed to codesign borg mount binary: %v", err)
-			// Don't fail - binary will still work, just slower first run
-		}
-	}
-
 	return nil
-}
-
-// codesignBinary performs ad-hoc codesigning on macOS binaries.
-// This prevents slow syspolicyd malware scanning of unsigned binaries.
-func (a *App) codesignBinary(path string) error {
-	cmd := exec.Command("codesign", "--force", "--sign", "-", path)
-	return cmd.Run()
 }
 
 // cleanupOldBorgBinaries removes old Borg installations that are no longer needed.
