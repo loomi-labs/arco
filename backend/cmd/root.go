@@ -177,12 +177,25 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		return nil, fmt.Errorf("failed to get borg binary for current platform: %w", err)
 	}
 
+	// Determine borg paths based on distribution type
+	var borgPath, borgExePath string
+	if binary.IsDirectory {
+		// Directory distribution (.tgz): extracts to borg-dir/borg.exe
+		borgPath = filepath.Join(configDir, "borg-dir")
+		borgExePath = filepath.Join(borgPath, "borg.exe")
+	} else {
+		// Single binary: path and executable are the same
+		borgPath = filepath.Join(configDir, binary.Name)
+		borgExePath = borgPath
+	}
+
 	return &types.Config{
 		Dir:             configDir,
 		SSHDir:          filepath.Join(configDir, "ssh"),
 		KeyringDir:      filepath.Join(configDir, "keyring"),
 		BorgBinaries:    platform.Binaries,
-		BorgPath:        filepath.Join(configDir, binary.Name),
+		BorgPath:        borgPath,
+		BorgExePath:     borgExePath,
 		BorgVersion:     binary.Version.String(),
 		Icons:           icons,
 		Migrations:      migrations,

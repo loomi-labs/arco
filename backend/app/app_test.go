@@ -34,6 +34,7 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 		SSHDir:          filepath.Join(tempDir, "ssh"),
 		BorgBinaries:    nil,
 		BorgPath:        "",
+		BorgExePath:     "",
 		BorgVersion:     "",
 		Icons:           nil,
 		Migrations:      migrationsDir,

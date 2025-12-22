@@ -121,7 +121,8 @@ type Config struct {
 	SSHDir          string
 	KeyringDir      string
 	BorgBinaries    []platform.BorgBinary
-	BorgPath        string
+	BorgPath        string // Base path for borg (directory for .tgz distributions, file for single binaries)
+	BorgExePath     string // Actual executable path (same as BorgPath for single binaries, BorgPath/borg.exe for directories)
 	BorgVersion     string
 	Icons           *Icons
 	Migrations      fs.FS

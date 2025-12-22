@@ -83,7 +83,7 @@ func NewApp(
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys, nil),
+		borg:                     borg.NewBorg(config.BorgExePath, log, sshPrivateKeys, nil),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
@@ -690,7 +690,7 @@ func (a *App) isTargetVersionInstalled(targetVersion string) bool {
 }
 
 func (a *App) version() (string, error) {
-	cmd := exec.Command(a.config.BorgPath, "--version")
+	cmd := exec.Command(a.config.BorgExePath, "--version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err
@@ -705,10 +705,10 @@ func (a *App) version() (string, error) {
 }
 
 func (a *App) installBorgBinary() error {
-	// Delete old binary if it exists
+	// Delete old binary/directory if it exists
 	if _, err := os.Stat(a.config.BorgPath); err == nil {
-		if err := os.Remove(a.config.BorgPath); err != nil {
-			return err
+		if err := os.RemoveAll(a.config.BorgPath); err != nil {
+			return fmt.Errorf("failed to remove old borg installation: %w", err)
 		}
 	}
 
@@ -717,26 +717,36 @@ func (a *App) installBorgBinary() error {
 		return err
 	}
 
-	// Download the binary
-	if err := util.DownloadFile(a.config.BorgPath, binary.Url); err != nil {
-		return err
-	}
-
-	// Ad-hoc codesign on macOS to prevent slow syspolicyd malware scanning
-	if platform.IsMacOS() {
-		if err := a.codesignBinary(a.config.BorgPath); err != nil {
-			a.log.Warnf("Failed to codesign borg binary: %v", err)
-			// Don't fail - binary still works, just slower
+	if binary.IsDirectory {
+		// Download and extract directory distribution (.tgz)
+		if err := a.downloadAndExtractBorgDirectory(binary); err != nil {
+			return err
+		}
+	} else {
+		// Download single binary
+		if err := util.DownloadFile(a.config.BorgPath, binary.Url); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-// codesignBinary performs ad-hoc codesigning on macOS binaries.
-// This prevents slow syspolicyd malware scanning of unsigned binaries.
-func (a *App) codesignBinary(path string) error {
-	a.log.Infof("Sign binary in %s", path)
-	cmd := exec.Command("codesign", "--force", "--sign", "-", path)
-	return cmd.Run()
+func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary) error {
+	// Download to temp file
+	tmpFile := filepath.Join(os.TempDir(), "borg.tgz")
+	a.log.Infof("Downloading borg directory distribution from %s", binary.Url)
+	if err := util.DownloadFile(tmpFile, binary.Url); err != nil {
+		return fmt.Errorf("failed to download borg: %w", err)
+	}
+	defer os.Remove(tmpFile)
+
+	// Extract to config directory
+	// The .tgz contains: borg-dir/borg.exe and borg-dir/_internal/
+	a.log.Infof("Extracting borg to %s", a.config.Dir)
+	if err := util.ExtractTarGz(tmpFile, a.config.Dir); err != nil {
+		return fmt.Errorf("failed to extract borg: %w", err)
+	}
+
+	return nil
 }

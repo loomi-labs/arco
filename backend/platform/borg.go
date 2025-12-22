@@ -38,6 +38,24 @@ var Binaries = []BorgBinary{
 		Arch:         "arm64",
 		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-arm64-gh",
 	},
+	// Borg 1.4.3 - macOS Intel (directory distribution for faster startup)
+	{
+		Name:        "borg_1.4.3",
+		Version:     version.Must(version.NewVersion("1.4.3")),
+		Os:          Darwin,
+		Arch:        "amd64",
+		Url:         "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-macos-13-x86_64-gh.tgz",
+		IsDirectory: true,
+	},
+	// Borg 1.4.3 - macOS Apple Silicon (directory distribution for faster startup)
+	{
+		Name:        "borg_1.4.3",
+		Version:     version.Must(version.NewVersion("1.4.3")),
+		Os:          Darwin,
+		Arch:        "arm64",
+		Url:         "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-macos-14-arm64-gh.tgz",
+		IsDirectory: true,
+	},
 	// Borg 1.4.1 - Linux variants
 	{
 		Name:         "borg_1.4.1",
