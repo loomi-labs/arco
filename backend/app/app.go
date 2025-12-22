@@ -381,7 +381,7 @@ func (a *App) getLatestRelease(client *github.Client) (*github.RepositoryRelease
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()
 
-	release, _, err := client.Repositories.GetLatestRelease(ctx, "shifty11", "arco-test")
+	release, _, err := client.Repositories.GetLatestRelease(ctx, "loomi-labs", "arco")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest release: %w", err)
 	}
@@ -402,7 +402,7 @@ func (a *App) findReleaseAsset(release *github.RepositoryRelease) (*github.Relea
 
 func (a *App) downloadReleaseAsset(client *github.Client, asset *github.ReleaseAsset, path string) error {
 	httpClient := &http.Client{Timeout: time.Second * 60}
-	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "shifty11", "arco-test", *asset.ID, httpClient)
+	readCloser, _, err := client.Repositories.DownloadReleaseAsset(a.ctx, "loomi-labs", "arco", *asset.ID, httpClient)
 	if err != nil {
 		return fmt.Errorf("failed to download release asset: %w", err)
 	}
