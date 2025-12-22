@@ -319,7 +319,7 @@ func (s *TestIntegrationSuite) setupSSHConnection(t *testing.T) {
 	}
 
 	// Update borg instance with SSH key
-	s.borg = borg.NewBorg("/usr/bin/borg", s.logger, []string{privateKeyPath}, nil)
+	s.borg = borg.NewBorg("/usr/bin/borg", "/usr/bin/borg", s.logger, []string{privateKeyPath}, nil)
 }
 
 // teardownBorgEnvironment cleans up the test environment

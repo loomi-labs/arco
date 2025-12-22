@@ -22,7 +22,8 @@ func (b *borg) mount(ctx context.Context, repository string, archive *string, pa
 		archiveOrRepo = fmt.Sprintf("%s::%s", repository, *archive)
 	}
 
-	cmd := exec.CommandContext(ctx, b.path, "mount", archiveOrRepo, mountPath)
+	// Use mountPath which has FUSE support on macOS
+	cmd := exec.CommandContext(ctx, b.mountPath, "mount", archiveOrRepo, mountPath)
 	cmd.Env = NewEnv(b.sshPrivateKeys).WithPassword(password).AsList()
 
 	startTime := b.log.LogCmdStart(cmd.String())
@@ -33,7 +34,8 @@ func (b *borg) mount(ctx context.Context, repository string, archive *string, pa
 }
 
 func (b *borg) Umount(ctx context.Context, path string) *types.Status {
-	cmd := exec.CommandContext(ctx, b.path, "umount", path)
+	// Use mountPath which has FUSE support on macOS
+	cmd := exec.CommandContext(ctx, b.mountPath, "umount", path)
 
 	startTime := b.log.LogCmdStart(cmd.String())
 	out, err := cmd.CombinedOutput()

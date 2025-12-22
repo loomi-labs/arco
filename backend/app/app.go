@@ -83,7 +83,7 @@ func NewApp(
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgExePath, log, sshPrivateKeys, nil),
+		borg:                     borg.NewBorg(config.BorgExePath, config.BorgMountExePath, log, sshPrivateKeys, nil),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
@@ -705,21 +705,24 @@ func (a *App) version() (string, error) {
 }
 
 func (a *App) installBorgBinary() error {
-	// Delete old binary/directory if it exists
-	if _, err := os.Stat(a.config.BorgPath); err == nil {
-		if err := os.RemoveAll(a.config.BorgPath); err != nil {
-			return fmt.Errorf("failed to remove old borg installation: %w", err)
-		}
-	}
-
 	binary, err := platform.GetLatestBorgBinary(a.config.BorgBinaries)
 	if err != nil {
 		return err
 	}
 
+	// Delete old binary/directory only if it won't affect mount binary
+	if _, err := os.Stat(a.config.BorgPath); err == nil {
+		// Safe to delete if mount binary is at a different path (won't be affected)
+		if a.config.BorgPath != a.config.BorgMountPath {
+			if err := os.RemoveAll(a.config.BorgPath); err != nil {
+				return fmt.Errorf("failed to remove old borg installation: %w", err)
+			}
+		}
+	}
+
 	if binary.IsDirectory {
 		// Download and extract directory distribution (.tgz)
-		if err := a.downloadAndExtractBorgDirectory(binary); err != nil {
+		if err := a.downloadAndExtractBorgDirectory(binary, a.config.BorgPath); err != nil {
 			return err
 		}
 	} else {
@@ -729,10 +732,21 @@ func (a *App) installBorgBinary() error {
 		}
 	}
 
+	// On macOS, also download 1.4.1 for mount operations (has FUSE support)
+	if platform.IsMacOS() {
+		if err := a.installBorgMountBinary(); err != nil {
+			a.log.Warnf("Failed to install borg mount binary: %v", err)
+			// Don't fail - mount just won't work
+		}
+	}
+
+	// Clean up old borg directories that are no longer needed
+	a.cleanupOldBorgBinaries()
+
 	return nil
 }
 
-func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary) error {
+func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary, targetPath string) error {
 	// Download to temp file
 	tmpFile := filepath.Join(os.TempDir(), "borg.tgz")
 	a.log.Infof("Downloading borg directory distribution from %s", binary.Url)
@@ -741,12 +755,108 @@ func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary) error 
 	}
 	defer os.Remove(tmpFile)
 
-	// Extract to config directory
-	// The .tgz contains: borg-dir/borg.exe and borg-dir/_internal/
-	a.log.Infof("Extracting borg to %s", a.config.Dir)
-	if err := util.ExtractTarGz(tmpFile, a.config.Dir); err != nil {
+	// Extract with directory rename: borg-dir/ -> borg-1.4.3-dir/
+	// targetPath is the full path like "~/.config/arco/borg-1.4.3-dir"
+	targetDir := filepath.Base(targetPath) // "borg-1.4.3-dir"
+	destDir := filepath.Dir(targetPath)    // "~/.config/arco"
+
+	a.log.Infof("Extracting borg to %s", targetPath)
+	if err := util.ExtractTarGzWithRename(tmpFile, destDir, targetDir); err != nil {
 		return fmt.Errorf("failed to extract borg: %w", err)
 	}
 
 	return nil
+}
+
+// installBorgMountBinary downloads and installs a Borg binary with FUSE support for mount operations.
+// On macOS, the fast 1.4.3 directory distribution doesn't include FUSE support,
+// so we use a separate binary (e.g., 1.4.1) which has it.
+func (a *App) installBorgMountBinary() error {
+	mountBinary := a.config.BorgMountBinary
+	mountBinaryPath := a.config.BorgMountExePath
+	mountPath := a.config.BorgMountPath
+
+	// Skip if mount binary is same as main binary (already installed)
+	if a.config.BorgExePath == mountBinaryPath {
+		return nil
+	}
+
+	// Check if already installed with correct version
+	if _, err := os.Stat(mountBinaryPath); err == nil {
+		cmd := exec.Command(mountBinaryPath, "--version")
+		out, err := cmd.CombinedOutput()
+		if err == nil && strings.Contains(string(out), mountBinary.Version.String()) {
+			a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
+			return nil // Already installed
+		}
+		// Wrong version or corrupted, remove the whole directory/file
+		os.RemoveAll(mountPath)
+	}
+
+	a.log.Infof("Installing borg %s for mount operations (FUSE support)", mountBinary.Version.String())
+
+	if mountBinary.IsDirectory {
+		// Download and extract directory distribution
+		if err := a.downloadAndExtractBorgDirectory(mountBinary, mountPath); err != nil {
+			return fmt.Errorf("failed to install borg mount directory: %w", err)
+		}
+	} else {
+		// Download single binary
+		if err := util.DownloadFile(mountBinaryPath, mountBinary.Url); err != nil {
+			return fmt.Errorf("failed to download borg mount binary: %w", err)
+		}
+	}
+
+	// Ad-hoc codesign on macOS for single binaries to prevent slow syspolicyd malware scanning
+	if platform.IsMacOS() && !mountBinary.IsDirectory {
+		if err := a.codesignBinary(mountBinaryPath); err != nil {
+			a.log.Warnf("Failed to codesign borg mount binary: %v", err)
+			// Don't fail - binary will still work, just slower first run
+		}
+	}
+
+	return nil
+}
+
+// codesignBinary performs ad-hoc codesigning on macOS binaries.
+// This prevents slow syspolicyd malware scanning of unsigned binaries.
+func (a *App) codesignBinary(path string) error {
+	cmd := exec.Command("codesign", "--force", "--sign", "-", path)
+	return cmd.Run()
+}
+
+// cleanupOldBorgBinaries removes old Borg installations that are no longer needed.
+// Preserves: current main binary (BorgPath) and mount binary (BorgMountPath)
+func (a *App) cleanupOldBorgBinaries() {
+	entries, err := os.ReadDir(a.config.Dir)
+	if err != nil {
+		a.log.Warnf("Failed to read config dir for cleanup: %v", err)
+		return
+	}
+
+	// Patterns to match old borg binaries/directories:
+	// - borg_X.X.X (single binaries)
+	// - borg-X.X.X-dir (versioned directory distributions)
+	// - borg-mount-X.X.X-dir (mount directory distributions)
+
+	for _, entry := range entries {
+		name := entry.Name()
+		path := filepath.Join(a.config.Dir, name)
+
+		// Skip if this is the current main or mount binary
+		if path == a.config.BorgPath || path == a.config.BorgMountPath {
+			continue
+		}
+
+		// Check if this looks like an old borg binary/directory
+		isOldBorg := strings.HasPrefix(name, "borg_") ||
+			(strings.HasPrefix(name, "borg-") && strings.HasSuffix(name, "-dir"))
+
+		if isOldBorg {
+			a.log.Infof("Cleaning up old borg installation: %s", name)
+			if err := os.RemoveAll(path); err != nil {
+				a.log.Warnf("Failed to clean up %s: %v", name, err)
+			}
+		}
+	}
 }

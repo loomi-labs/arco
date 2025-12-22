@@ -305,7 +305,7 @@ func TestBorgInfo(t *testing.T) {
 
 		cr = mocks.NewMockCommandRunner(gomock.NewController(t))
 		cr.EXPECT().Info(gomock.Any()).Return(output, err)
-		b = NewBorg("borg", log.Sugar(), []string{}, cr)
+		b = NewBorg("borg", "borg", log.Sugar(), []string{}, cr)
 	}
 
 	tests := []testBorgInfo{

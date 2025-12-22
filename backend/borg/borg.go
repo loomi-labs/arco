@@ -38,7 +38,8 @@ type Borg interface {
 }
 
 type borg struct {
-	path           string
+	path           string // Main borg path (fast operations)
+	mountPath      string // Path for mount operations (FUSE support on macOS)
 	log            *CmdLogger
 	sshPrivateKeys []string
 	commandRunner  CommandRunner
@@ -51,12 +52,16 @@ type CommandRunner interface {
 type commandRunner struct {
 }
 
-func NewBorg(path string, log *zap.SugaredLogger, sshPrivateKeys []string, cr CommandRunner) Borg {
+func NewBorg(path string, mountPath string, log *zap.SugaredLogger, sshPrivateKeys []string, cr CommandRunner) Borg {
 	if cr == nil {
 		cr = &commandRunner{}
 	}
+	if mountPath == "" {
+		mountPath = path // Fallback to main path if not specified
+	}
 	return &borg{
 		path:           path,
+		mountPath:      mountPath,
 		log:            NewCmdLogger(log),
 		sshPrivateKeys: sshPrivateKeys,
 		commandRunner:  cr,
