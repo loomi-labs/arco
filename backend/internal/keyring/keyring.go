@@ -106,11 +106,10 @@ func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 		log.Infof("Failed to connect to D-Bus session bus: %v", err)
 		return ""
 	}
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Infof("Failed to close D-Bus connection: %v", err)
-		}
-	}()
+	// Note: Do NOT close the session bus connection here.
+	// dbus.SessionBus() returns a shared singleton connection.
+	// Closing it would terminate the connection for the entire process,
+	// including the Wails systray which uses it for StatusNotifierItem.
 
 	obj := conn.Object("org.freedesktop.secrets", "/org/freedesktop/secrets")
 	var path dbus.ObjectPath
