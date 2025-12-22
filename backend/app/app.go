@@ -718,5 +718,24 @@ func (a *App) installBorgBinary() error {
 	}
 
 	// Download the binary
-	return util.DownloadFile(a.config.BorgPath, binary.Url)
+	if err := util.DownloadFile(a.config.BorgPath, binary.Url); err != nil {
+		return err
+	}
+
+	// Ad-hoc codesign on macOS to prevent slow syspolicyd malware scanning
+	if platform.IsMacOS() {
+		if err := a.codesignBinary(a.config.BorgPath); err != nil {
+			a.log.Warnf("Failed to codesign borg binary: %v", err)
+			// Don't fail - binary still works, just slower
+		}
+	}
+
+	return nil
+}
+
+// codesignBinary performs ad-hoc codesigning on macOS binaries.
+// This prevents slow syspolicyd malware scanning of unsigned binaries.
+func (a *App) codesignBinary(path string) error {
+	cmd := exec.Command("codesign", "--force", "--sign", "-", path)
+	return cmd.Run()
 }
