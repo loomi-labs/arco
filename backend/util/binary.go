@@ -46,68 +46,6 @@ func DownloadFile(filepath string, url string) error {
 	return nil
 }
 
-// ExtractTarGz extracts a .tar.gz file to the specified destination directory
-func ExtractTarGz(tgzPath, destDir string) error {
-	file, err := os.Open(tgzPath)
-	if err != nil {
-		return fmt.Errorf("failed to open archive %s: %w", tgzPath, err)
-	}
-	defer file.Close()
-
-	gzr, err := gzip.NewReader(file)
-	if err != nil {
-		return fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer gzr.Close()
-
-	tr := tar.NewReader(gzr)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to read tar header: %w", err)
-		}
-
-		target := filepath.Join(destDir, header.Name)
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", target, err)
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return fmt.Errorf("failed to create parent directory for %s: %w", target, err)
-			}
-			outFile, err := os.Create(target)
-			if err != nil {
-				return fmt.Errorf("failed to create file %s: %w", target, err)
-			}
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
-				return fmt.Errorf("failed to write file %s: %w", target, err)
-			}
-			outFile.Close()
-			if err := os.Chmod(target, os.FileMode(header.Mode)); err != nil {
-				return fmt.Errorf("failed to set permissions on %s: %w", target, err)
-			}
-		case tar.TypeSymlink:
-			// Ensure parent directory exists
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return fmt.Errorf("failed to create parent directory for symlink %s: %w", target, err)
-			}
-			// Remove existing file/symlink if it exists
-			os.Remove(target)
-			if err := os.Symlink(header.Linkname, target); err != nil {
-				return fmt.Errorf("failed to create symlink %s -> %s: %w", target, header.Linkname, err)
-			}
-		}
-	}
-	return nil
-}
-
 // ExtractTarGzWithRename extracts a .tar.gz file, remapping the top-level directory.
 // Example: if archive contains "borg-dir/borg.exe" and targetDir is "borg-1.4.3-dir",
 // the file will be extracted to "destDir/borg-1.4.3-dir/borg.exe"
@@ -146,6 +84,11 @@ func ExtractTarGzWithRename(tgzPath, destDir, targetDir string) error {
 
 		target := filepath.Join(destDir, name)
 
+		// Validate path to prevent path traversal attacks
+		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(destDir)+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid file path in archive: %s", header.Name)
+		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
@@ -171,6 +114,14 @@ func ExtractTarGzWithRename(tgzPath, destDir, targetDir string) error {
 			// Ensure parent directory exists
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return fmt.Errorf("failed to create parent directory for symlink %s: %w", target, err)
+			}
+			// Validate symlink target stays within destDir
+			linkTarget := header.Linkname
+			if !filepath.IsAbs(linkTarget) {
+				linkTarget = filepath.Join(filepath.Dir(target), linkTarget)
+			}
+			if !strings.HasPrefix(filepath.Clean(linkTarget), filepath.Clean(destDir)+string(os.PathSeparator)) {
+				return fmt.Errorf("symlink %s points outside destination: %s", header.Name, header.Linkname)
 			}
 			// Remove existing file/symlink if it exists
 			os.Remove(target)
