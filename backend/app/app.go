@@ -789,9 +789,12 @@ func (a *App) ensureBorgMountBinary() error {
 	if _, err := os.Stat(mountBinaryPath); err == nil {
 		cmd := exec.Command(mountBinaryPath, "--version")
 		out, err := cmd.CombinedOutput()
-		if err == nil && strings.Contains(string(out), mountBinary.Version.String()) {
-			a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
-			return nil // Already installed
+		if err == nil {
+			fields := strings.Fields(string(out))
+			if len(fields) >= 2 && fields[1] == mountBinary.Version.String() {
+				a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
+				return nil // Already installed
+			}
 		}
 		// Wrong version or corrupted, remove the whole directory/file
 		os.RemoveAll(mountPath)
