@@ -691,7 +691,7 @@ func (a *App) ensureBorgBinary() error {
 
 func (a *App) isTargetVersionInstalled(targetVersion string) bool {
 	// Check if the binary is installed
-	if _, err := os.Stat(a.config.BorgPath); err == nil {
+	if _, err := os.Stat(a.config.BorgExePath); err == nil {
 		installedVersion, status := a.borg.Version(a.ctx)
 		// Check if the version is correct
 		return !status.HasError() && installedVersion.String() == targetVersion
