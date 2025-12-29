@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -693,26 +692,11 @@ func (a *App) ensureBorgBinary() error {
 func (a *App) isTargetVersionInstalled(targetVersion string) bool {
 	// Check if the binary is installed
 	if _, err := os.Stat(a.config.BorgPath); err == nil {
-		version, err := a.version()
+		installedVersion, status := a.borg.Version(a.ctx)
 		// Check if the version is correct
-		return err == nil && version == targetVersion
+		return !status.HasError() && installedVersion.String() == targetVersion
 	}
 	return false
-}
-
-func (a *App) version() (string, error) {
-	cmd := exec.Command(a.config.BorgExePath, "--version")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	// Output is in the format "xxx 1.2.8\n"
-	// We want to return "1.2.8"
-	fields := strings.Fields(string(out))
-	if len(fields) < 2 {
-		return "", fmt.Errorf("unexpected output: %s", string(out))
-	}
-	return fields[1], nil
 }
 
 func (a *App) installBorgBinary() error {
@@ -787,14 +771,10 @@ func (a *App) ensureBorgMountBinary() error {
 
 	// Check if already installed with correct version
 	if _, err := os.Stat(mountBinaryPath); err == nil {
-		cmd := exec.Command(mountBinaryPath, "--version")
-		out, err := cmd.CombinedOutput()
-		if err == nil {
-			fields := strings.Fields(string(out))
-			if len(fields) >= 2 && fields[1] == mountBinary.Version.String() {
-				a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
-				return nil // Already installed
-			}
+		installedVersion, status := a.borg.MountVersion(a.ctx)
+		if !status.HasError() && installedVersion.Equal(mountBinary.Version) {
+			a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
+			return nil // Already installed
 		}
 		// Wrong version or corrupted, remove the whole directory/file
 		os.RemoveAll(mountPath)

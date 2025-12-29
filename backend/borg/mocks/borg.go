@@ -14,6 +14,7 @@ import (
 	exec "os/exec"
 	reflect "reflect"
 
+	version "github.com/hashicorp/go-version"
 	types "github.com/loomi-labs/arco/backend/borg/types"
 	backupprofile "github.com/loomi-labs/arco/backend/ent/backupprofile"
 	gomock "go.uber.org/mock/gomock"
@@ -228,6 +229,21 @@ func (mr *MockBorgMockRecorder) MountRepository(ctx, repository, password, mount
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRepository", reflect.TypeOf((*MockBorg)(nil).MountRepository), ctx, repository, password, mountPath)
 }
 
+// MountVersion mocks base method.
+func (m *MockBorg) MountVersion(ctx context.Context) (*version.Version, *types.Status) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MountVersion", ctx)
+	ret0, _ := ret[0].(*version.Version)
+	ret1, _ := ret[1].(*types.Status)
+	return ret0, ret1
+}
+
+// MountVersion indicates an expected call of MountVersion.
+func (mr *MockBorgMockRecorder) MountVersion(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountVersion", reflect.TypeOf((*MockBorg)(nil).MountVersion), ctx)
+}
+
 // Prune mocks base method.
 func (m *MockBorg) Prune(ctx context.Context, repository, password, prefix string, pruneOptions []string, isDryRun bool, ch chan types.PruneResult) *types.Status {
 	m.ctrl.T.Helper()
@@ -282,6 +298,21 @@ func (m *MockBorg) Umount(ctx context.Context, path string) *types.Status {
 func (mr *MockBorgMockRecorder) Umount(ctx, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Umount", reflect.TypeOf((*MockBorg)(nil).Umount), ctx, path)
+}
+
+// Version mocks base method.
+func (m *MockBorg) Version(ctx context.Context) (*version.Version, *types.Status) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Version", ctx)
+	ret0, _ := ret[0].(*version.Version)
+	ret1, _ := ret[1].(*types.Status)
+	return ret0, ret1
+}
+
+// Version indicates an expected call of Version.
+func (mr *MockBorgMockRecorder) Version(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockBorg)(nil).Version), ctx)
 }
 
 // MockCommandRunner is a mock of CommandRunner interface.
