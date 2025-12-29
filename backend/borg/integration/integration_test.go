@@ -53,6 +53,10 @@ Run with: `task test:integration` or `go test -v ./backend/borg/integration/...`
 
 TEST CASES - integration_test.go
 
+TestBorgVersionOperations
+* Version - Retrieve main borg binary version
+* MountVersion - Retrieve mount borg binary version
+
 TestBorgRepositoryOperations
 * Init - Repository initialization with SSH
 * Info - Repository info retrieval after init
@@ -375,6 +379,29 @@ func (s *TestIntegrationSuite) createTestData(t *testing.T) string {
 	}
 
 	return dataDir
+}
+
+// TestBorgVersionOperations tests version retrieval operations
+func TestBorgVersionOperations(t *testing.T) {
+	suite := &TestIntegrationSuite{}
+	suite.setupBorgEnvironment(t)
+	defer suite.teardownBorgEnvironment(t)
+
+	t.Run("Version", func(t *testing.T) {
+		version, status := suite.borg.Version(suite.ctx)
+		assert.True(t, status.IsCompletedWithSuccess(), "Version should succeed: %v", status.GetError())
+		assert.NotNil(t, version, "Version should not be nil")
+		// Borg version should be at least 1.x
+		assert.True(t, version.Segments()[0] >= 1, "Major version should be at least 1")
+	})
+
+	t.Run("MountVersion", func(t *testing.T) {
+		version, status := suite.borg.MountVersion(suite.ctx)
+		assert.True(t, status.IsCompletedWithSuccess(), "MountVersion should succeed: %v", status.GetError())
+		assert.NotNil(t, version, "MountVersion should not be nil")
+		// Borg version should be at least 1.x
+		assert.True(t, version.Segments()[0] >= 1, "Major version should be at least 1")
+	})
 }
 
 // TestBorgRepositoryOperations tests basic repository operations
