@@ -97,6 +97,20 @@ const OVERRIDE_CSS = `
   [data-theme=dark] .dark\\:hover\\:text-vtd-primary-300:hover { color: var(--color-vtd-primary-300) !important; }
   [data-theme=dark] .dark\\:focus\\:bg-vtd-secondary-700:focus { background-color: var(--color-vtd-secondary-700) !important; }
   [data-theme=dark] .dark\\:focus\\:text-vtd-primary-300:focus { color: var(--color-vtd-primary-300) !important; }
+
+  /* === 4. FIX TRIANGLE ARROW (vtd-datepicker:before pseudo-element) === */
+  /* Neutralize dark mode from media query - reset to light values */
+  @media (prefers-color-scheme: dark) {
+    .vtd-datepicker:before {
+      background-color: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+  }
+  /* Re-apply dark mode only for [data-theme=dark] */
+  [data-theme=dark] .vtd-datepicker:before {
+    background-color: var(--color-vtd-secondary-800) !important;
+    border-color: var(--color-vtd-secondary-700) !important;
+  }
 `;
 
 let overrideStyleEl: HTMLStyleElement | null = null;
