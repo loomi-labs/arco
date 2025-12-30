@@ -18,8 +18,9 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 /
 ├── backend/
 │   ├── app/              # Application services
-│   │   ├── auth/         # Authentication service
+│   │   ├── auth/         # Authentication service + JWT interceptor
 │   │   ├── backup/       # Backup management service
+│   │   ├── keyring/      # Secure credential storage (system keyring)
 │   │   ├── plan/         # Plan service
 │   │   ├── subscription/ # Subscription service
 │   │   └── user/         # User management service
@@ -28,10 +29,6 @@ Arco is a desktop backup management application built with Go backend and Vue fr
 │   ├── ent/              # Database models and ORM
 │   │   ├── schema/       # Entity definitions
 │   │   └── migrate/      # Database migrations
-│   ├── internal/         # Internal packages
-│   │   ├── logger/       # Logging utilities
-│   │   ├── state/        # Application state management
-│   │   └── utils/        # Utility functions
 │   └── api/              # Generated API code
 │       └── v1/           # Proto-generated Go code
 ├── frontend/
@@ -102,6 +99,7 @@ This tasks do usually not have to be called directly (they will be called by dev
 - Go: Use standard Go formatting/linting conventions
 - Imports: Use alphabetical order for imports
 - DB: Use Ent for database operations
+- Folder structure: Do not use `internal/` folder. As a Wails3 desktop app with no external importers, all backend code belongs in `app/`
 
 ### Frontend
 - Imports: Group standard library, external, then internal imports

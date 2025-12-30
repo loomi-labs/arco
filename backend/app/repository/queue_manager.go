@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/borg"
@@ -22,7 +23,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/loomi-labs/arco/backend/ent/notification"
 	"github.com/loomi-labs/arco/backend/ent/repository"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/negrel/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"

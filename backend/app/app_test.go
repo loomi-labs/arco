@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/types"
 	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
 	borgmocks "github.com/loomi-labs/arco/backend/borg/mocks"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"

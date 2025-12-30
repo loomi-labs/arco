@@ -7,24 +7,23 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/loomi-labs/arco/backend/app/auth"
+	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/ent"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"go.uber.org/zap"
 )
 
 // JWTAuthInterceptor provides JWT authentication for Connect RPC clients
 type JWTAuthInterceptor struct {
 	log            *zap.SugaredLogger
-	authServiceRPC *auth.ServiceInternal
+	authServiceRPC *ServiceInternal
 	db             *ent.Client
 	state          *state.State
 	keyring        *keyring.Service
 }
 
 // NewJWTAuthInterceptor creates a new JWT authentication interceptor
-func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *auth.ServiceInternal, db *ent.Client, state *state.State, keyring *keyring.Service) *JWTAuthInterceptor {
+func NewJWTAuthInterceptor(log *zap.SugaredLogger, authServiceRPC *ServiceInternal, db *ent.Client, state *state.State, keyring *keyring.Service) *JWTAuthInterceptor {
 	return &JWTAuthInterceptor{
 		log:            log,
 		authServiceRPC: authServiceRPC,
