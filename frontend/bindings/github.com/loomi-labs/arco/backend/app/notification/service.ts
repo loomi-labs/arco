@@ -36,6 +36,13 @@ export function DismissError(id: number): $CancellablePromise<void> {
 }
 
 /**
+ * DismissErrors marks specific error notifications as seen by their IDs
+ */
+export function DismissErrors(ids: number[]): $CancellablePromise<void> {
+    return $Call.ByID(281332034, ids);
+}
+
+/**
  * GetUnseenErrorCounts returns counts of unseen errors per repository and backup profile
  */
 export function GetUnseenErrorCounts(): $CancellablePromise<$models.ErrorCounts | null> {

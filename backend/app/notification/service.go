@@ -134,6 +134,25 @@ func (s *Service) DismissAllErrors(ctx context.Context) error {
 	return nil
 }
 
+// DismissErrors marks specific error notifications as seen by their IDs
+func (s *Service) DismissErrors(ctx context.Context, ids []int) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	_, err := s.db.Notification.Update().
+		Where(notification.IDIn(ids...)).
+		SetSeen(true).
+		Save(ctx)
+	if err != nil {
+		s.log.Errorf("Failed to dismiss errors %v: %v", ids, err)
+		return err
+	}
+
+	s.eventEmitter.EmitEvent(ctx, types.EventNotificationDismissedString())
+	return nil
+}
+
 // GetUnseenErrorCounts returns counts of unseen errors per repository and backup profile
 func (s *Service) GetUnseenErrorCounts(ctx context.Context) (*ErrorCounts, error) {
 	notifications, err := s.db.Notification.Query().
