@@ -51,6 +51,8 @@ getAppInfo();
         <button tabindex="0" class="text-xs opacity-70 flex items-center gap-1 hover:opacity-100 transition-opacity cursor-pointer">
           <span>Built with</span>
           <span class="text-red-500">❤️</span>
+          <span>in</span>
+          <span>🇨🇭</span>
         </button>
         <div tabindex="0" class="dropdown-content z-10 p-4 shadow bg-base-200 rounded-box w-80 text-left">
           <div class="text-sm">
