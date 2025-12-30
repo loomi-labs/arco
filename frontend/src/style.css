@@ -199,10 +199,37 @@
 
 }
 
+@source '../node_modules/vue-tailwind-datepicker/**/*.js';
 
 @theme {
     --font-*: initial;
     --font-sans: Nunito, sans-serif;
+
+    /* Required by vue-tailwind-datepicker */
+    --color-vtd-primary-50: #faf5ff;
+    --color-vtd-primary-100: #f3e8ff;
+    --color-vtd-primary-200: #e9d5ff;
+    --color-vtd-primary-300: #d8b4fe;
+    --color-vtd-primary-400: #c084fc;
+    --color-vtd-primary-500: #a855f7;
+    --color-vtd-primary-600: #9333ea;
+    --color-vtd-primary-700: #7e22ce;
+    --color-vtd-primary-800: #6b21a8;
+    --color-vtd-primary-900: #581c87;
+    --color-vtd-primary-950: #3b0764;
+
+    /* Required by vue-tailwind-datepicker */
+    --color-vtd-secondary-50: #f9fafb;
+    --color-vtd-secondary-100: #f3f4f6;
+    --color-vtd-secondary-200: #e5e7eb;
+    --color-vtd-secondary-300: #d1d5db;
+    --color-vtd-secondary-400: #9ca3af;
+    --color-vtd-secondary-500: #6b7280;
+    --color-vtd-secondary-600: #4b5563;
+    --color-vtd-secondary-700: #374151;
+    --color-vtd-secondary-800: #1f2937;
+    --color-vtd-secondary-900: #111827;
+    --color-vtd-secondary-950: #030712;
 
     --color-arco-purple-50: #faf5ff;
     --color-arco-purple-100: #f3e8ff;
