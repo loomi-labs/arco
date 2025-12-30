@@ -126,7 +126,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
+    <div class='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 pt-4'>
       <!-- Backup Profile Cards -->
       <div v-for='backup in backupProfiles' :key='backup.id'>
         <BackupProfileCard :backup='backup' />
@@ -162,7 +162,7 @@ onUnmounted(() => {
     <!-- Repositories Section -->
     <div class='text-left'>
       <h1 class='text-4xl font-bold text-base-strong pb-2' :id='Anchor.Repositories'>Repositories</h1>
-      <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4'>
+      <div class='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 pt-4'>
         <!-- Repository Cards -->
         <div v-for='repo in repos' :key='repo.id'>
           <RepoCardSimple :repo='repo' />
