@@ -76,8 +76,9 @@ async function dismissError(id: number, event: Event) {
 
 async function dismissAllErrors() {
   try {
-    await notificationService.DismissAllErrors();
-    errors.value = [];
+    const ids = filteredErrors.value.map(e => e.id);
+    await notificationService.DismissErrors(ids);
+    errors.value = errors.value.filter(e => !ids.includes(e.id));
     emit('errorsChanged');
   } catch (error: unknown) {
     await showAndLogError('Failed to dismiss all errors', error);
