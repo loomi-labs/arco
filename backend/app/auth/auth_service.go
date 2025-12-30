@@ -8,12 +8,12 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"github.com/loomi-labs/arco/backend/app/keyring"
 
 	v1 "github.com/loomi-labs/arco/backend/api/v1"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"go.uber.org/zap"
 )
 

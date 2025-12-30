@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
 	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
@@ -12,7 +13,6 @@ import (
 	borgtypes "github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/ent/enttest"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/mock/gomock"

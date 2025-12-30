@@ -20,6 +20,7 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
+	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/legal"
 	"github.com/loomi-labs/arco/backend/app/notification"
 	"github.com/loomi-labs/arco/backend/app/plan"
@@ -30,8 +31,6 @@ import (
 	"github.com/loomi-labs/arco/backend/app/user"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
-	internalauth "github.com/loomi-labs/arco/backend/internal/auth"
-	"github.com/loomi-labs/arco/backend/internal/keyring"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pkg/browser"
@@ -177,7 +176,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.config.Migrations = nil // Free up memory
 
 	// Create JWT interceptor and HTTP client for cloud services
-	jwtInterceptor := internalauth.NewJWTAuthInterceptor(a.log, a.authService, a.db, a.state, a.keyring)
+	jwtInterceptor := auth.NewJWTAuthInterceptor(a.log, a.authService, a.db, a.state, a.keyring)
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
 	}
