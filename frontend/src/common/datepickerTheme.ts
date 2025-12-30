@@ -129,6 +129,9 @@ function injectOverrideStyles() {
 }
 
 export function applyDatepickerThemeOverrides() {
+  // Only apply in production - dev mode CSS works correctly
+  if (!import.meta.env.PROD) return;
+
   if (typeof document === "undefined") return;
 
   // Initial injection
